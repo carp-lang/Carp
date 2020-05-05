@@ -181,7 +181,7 @@ envIsExternal env =
 isExternalType :: TypeEnv -> Ty -> Bool
 isExternalType typeEnv (PointerTy p) =
   isExternalType typeEnv p
-isExternalType typeEnv (StructTy name _) =
+isExternalType typeEnv (StructTy (ConcreteNameTy name) _) =
   case lookupInEnv (SymPath [] name) (getTypeEnv typeEnv) of
     Just (_, Binder _ (XObj (Lst (XObj (ExternalType _) _ _ : _)) _ _)) -> True
     Just _ -> False
@@ -191,7 +191,7 @@ isExternalType _ _ =
 
 -- | Is this type managed - does it need to be freed?
 isManaged :: TypeEnv -> Ty -> Bool
-isManaged typeEnv (StructTy name _) =
+isManaged typeEnv (StructTy (ConcreteNameTy name) _) =
   (name == "Array") || (name == "StaticArray") || (name == "Dictionary") || (
     case lookupInEnv (SymPath [] name) (getTypeEnv typeEnv) of
          Just (_, Binder _ (XObj (Lst (XObj (ExternalType _) _ _ : _)) _ _)) -> False

@@ -506,7 +506,7 @@ primitiveDeftype xobj ctx (name:rest) =
            (XObj (Sym (SymPath _ typeName) _) i _, Just okTypeVariables) ->
              case creatorFunction typeEnv env pathStrings typeName okTypeVariables rest i preExistingModule of
                Right (typeModuleName, typeModuleXObj, deps) ->
-                 let structTy = StructTy typeName okTypeVariables
+                 let structTy = StructTy (ConcreteNameTy typeName) okTypeVariables
                      typeDefinition =
                        -- NOTE: The type binding is needed to emit the type definition and all the member functions of the type.
                        XObj (Lst (XObj (typeConstructor structTy) Nothing Nothing :

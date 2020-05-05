@@ -243,7 +243,7 @@ genConstraints globalEnv root rootSig = fmap sort (gen root)
                                   (info o) (ty o)
                                headObj = XObj (Sym (SymPath [] ("I inferred the type of the array from its first element " ++ show (getPath x))) Symbol)
                                   (info x) (Just headTy)
-                               Just (StructTy "Array" [t]) = ty xobj
+                               Just (StructTy (ConcreteNameTy "Array") [t]) = ty xobj
                                betweenExprConstraints = zipWith (\o n -> Constraint headTy (forceTy o) headObj (genObj o n) xobj OrdArrBetween) xs [1..]
                                headConstraint = Constraint headTy t headObj (genObj x 1) xobj OrdArrHead
                            return (headConstraint : insideExprConstraints ++ betweenExprConstraints)
@@ -258,7 +258,7 @@ genConstraints globalEnv root rootSig = fmap sort (gen root)
                                   (info o) (ty o)
                                headObj = XObj (Sym (SymPath [] ("I inferred the type of the static array from its first element " ++ show (getPath x))) Symbol)
                                   (info x) (Just headTy)
-                               Just (RefTy(StructTy "StaticArray" [t]) _) = ty xobj
+                               Just (RefTy(StructTy (ConcreteNameTy "StaticArray") [t]) _) = ty xobj
                                betweenExprConstraints = zipWith (\o n -> Constraint headTy (forceTy o) headObj (genObj o n) xobj OrdArrBetween) xs [1..]
                                headConstraint = Constraint headTy t headObj (genObj x 1) xobj OrdArrHead
                            return (headConstraint : insideExprConstraints ++ betweenExprConstraints)

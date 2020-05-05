@@ -210,7 +210,7 @@ toC toCMode (Binder meta root) = emitterSrc (execState (visit startingIndent roo
                      callbackMangled = pathToC callback
                      needEnv = not (null capturedVars)
                      lambdaEnvTypeName = callbackMangled ++ "_env" -- The name of the struct is the callback name with suffix '_env'.
-                     lambdaEnvType = StructTy lambdaEnvTypeName []
+                     lambdaEnvType = StructTy (ConcreteNameTy lambdaEnvTypeName) []
                      lambdaEnvName = freshVar i ++ "_env"
                  appendToSrc (addIndent indent ++ "// This lambda captures " ++
                               show (length capturedVars) ++ " variables: " ++
@@ -555,8 +555,8 @@ toC toCMode (Binder meta root) = emitterSrc (execState (visit startingIndent roo
                        else tyToCLambdaFix retTy ++ "(*)(" ++ joinWithComma (map tyToCLambdaFix argTys) ++ ")"
                      castToFnWithEnv =
                        if unwrapLambdas
-                       then tyToCLambdaFix retTy ++ "(*)(" ++ joinWithComma (map tyToCRawFunctionPtrFix (StructTy "LambdaEnv" [] : argTys)) ++ ")"
-                       else tyToCLambdaFix retTy ++ "(*)(" ++ joinWithComma (map tyToCLambdaFix (StructTy "LambdaEnv" [] : argTys)) ++ ")"
+                       then tyToCLambdaFix retTy ++ "(*)(" ++ joinWithComma (map tyToCRawFunctionPtrFix (StructTy (ConcreteNameTy "LambdaEnv") [] : argTys)) ++ ")"
+                       else tyToCLambdaFix retTy ++ "(*)(" ++ joinWithComma (map tyToCLambdaFix (StructTy (ConcreteNameTy "LambdaEnv") [] : argTys)) ++ ")"
                      callLambda = funcToCall ++ ".env ? ((" ++ castToFnWithEnv ++ ")" ++ funcToCall ++ ".callback)" ++ "(" ++ funcToCall ++ ".env" ++ (if null args then "" else ", ") ++ argListAsC ++ ") : ((" ++ castToFn ++ ")" ++ funcToCall ++ ".callback)(" ++ argListAsC ++ ");\n"
                  if retTy == UnitTy
                    then do appendToSrc (addIndent indent ++ callLambda)
@@ -591,7 +591,7 @@ toC toCMode (Binder meta root) = emitterSrc (execState (visit startingIndent roo
         visitArray indent (XObj (Arr xobjs) (Just i) t) =
           do let arrayVar = freshVar i
                  len = length xobjs
-                 Just (StructTy "Array" [innerTy]) = t
+                 Just (StructTy (ConcreteNameTy "Array") [innerTy]) = t
              appendToSrc (addIndent indent ++ "Array " ++ arrayVar ++
                           " = { .len = " ++ show len ++ "," ++
                           " .capacity = " ++ show len ++ "," ++
@@ -613,7 +613,7 @@ toC toCMode (Binder meta root) = emitterSrc (execState (visit startingIndent roo
                  retVar = arrayVar ++ "_retref"
                  arrayDataVar = arrayVar ++ "_data"
                  len = length xobjs
-                 Just tt@(RefTy (StructTy "StaticArray" [innerTy]) _) = t
+                 Just tt@(RefTy (StructTy (ConcreteNameTy "StaticArray") [innerTy]) _) = t
              appendToSrc (addIndent indent ++ tyToCLambdaFix innerTy ++ " " ++ arrayDataVar ++ "[" ++ show len ++ "];\n")
              appendToSrc (addIndent indent ++ "Array " ++ arrayVar ++
                            " = { .len = " ++ show len ++ "," ++
