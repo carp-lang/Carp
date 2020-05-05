@@ -870,4 +870,4 @@ commandInlineC ctx args =
         stringify :: XObj -> String
         stringify (XObj (Sym p _) _ _) = show p
         stringify x@(XObj (Num _ _) _ _) = pretty x
-        stringify (XObj (Str s) _ _) = s
+        stringify (XObj (Str s) _ _) = joinWith "\n" (split "\\n" s)
