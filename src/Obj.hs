@@ -618,12 +618,21 @@ incrementEnvNestLevel :: Env -> Env
 incrementEnvNestLevel env = let current = envFunctionNestingLevel env
                             in env { envFunctionNestingLevel = current + 1 }
 
+-- | This flag is used on Carp source files to decide wether to reload them or not when calling `(reload)` / `:r`
+data ReloadMode = DoesReload | Frozen deriving Show
+
+showLoader :: (FilePath, ReloadMode) -> String
+showLoader (fp, DoesReload) = fp ++ " (reloads)"
+showLoader (fp, Frozen) = fp ++ " (frozen)"
+
+
+
 -- | Project (represents a lot of useful information for working at the REPL and building executables)
 data Project = Project { projectTitle :: String
                        , projectIncludes :: [Includer]
                        , projectCFlags :: [FilePath]
                        , projectLibFlags :: [FilePath]
-                       , projectFiles :: [FilePath]
+                       , projectFiles :: [(FilePath, ReloadMode)]
                        , projectAlreadyLoaded :: [FilePath]
                        , projectEchoC :: Bool
                        , projectLibDir :: FilePath
@@ -684,7 +693,7 @@ instance Show Project where
             , "Includes:\n    " ++ joinWith "\n    " (map show incl)
             , "Cflags:\n    " ++ joinWith "\n    " cFlags
             , "Library flags:\n    " ++ joinWith "\n    " libFlags
-            , "Carp source files:\n    " ++ joinWith "\n    " srcFiles
+            , "Carp source files:\n    " ++ joinWith "\n    " (map showLoader srcFiles)
             , "Already loaded:\n    " ++ joinWith "\n    " alreadyLoaded
             , "Echo C: " ++ showB echoC
             , "Echo compilation command: " ++ showB echoCompilationCommand

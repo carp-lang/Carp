@@ -536,7 +536,19 @@ primitiveDefmodule xobj ctx@(Context env i typeEnv pathStrings proj lastInput ex
 
 -- | Command for loading a Carp file.
 commandLoad :: CommandCallback
-commandLoad ctx [xobj@(XObj (Str path) i _)] = do
+commandLoad ctx [xobj@(XObj (Str path) i _)] =
+  loadInternal ctx xobj path i DoesReload
+commandLoad ctx [x] =
+  return $ evalError ctx ("Invalid args to `load`: " ++ pretty x) (info x)
+
+commandLoadOnce :: CommandCallback
+commandLoadOnce ctx [xobj@(XObj (Str path) i _)] =
+  loadInternal ctx xobj path i Frozen
+commandLoadOnce ctx [x] =
+  return $ evalError ctx ("Invalid args to `load-once`: " ++ pretty x) (info x)
+
+loadInternal :: Context -> XObj -> String -> Maybe Info -> ReloadMode -> IO (Context, Either EvalError XObj)
+loadInternal ctx xobj path i reloadMode = do
   let proj = contextProj ctx
   libDir <- liftIO $ cachePath $ projectLibDir proj
   let relativeTo = case i of
@@ -571,19 +583,25 @@ commandLoad ctx [xobj@(XObj (Str path) i _)] = do
                                                       Nothing -> ""))
          if canonicalPath == fileThatLoads
            then return $ cantLoadSelf ctx path
-           else do let alreadyLoaded = projectAlreadyLoaded proj
+           else do let alreadyLoaded = projectAlreadyLoaded proj ++ frozenPaths proj
                    if canonicalPath `elem` alreadyLoaded
                      then return (ctx, dynamicNil)
                      else do
                       contents <- liftIO $ slurp canonicalPath
                       let files = projectFiles proj
-                          files' = if canonicalPath `elem` files
+                          files' = if canonicalPath `elem` (map fst files)
                                    then files
-                                   else files ++ [canonicalPath]
+                                   else files ++ [(canonicalPath, reloadMode)]
                           proj' = proj { projectFiles = files', projectAlreadyLoaded = canonicalPath : alreadyLoaded }
                       newCtx <- liftIO $ executeString True False (ctx { contextProj = proj' }) contents canonicalPath
                       return (newCtx, dynamicNil)
   where
+    frozenPaths proj =
+      map fst $ filter (isFrozen . snd) (projectFiles proj)
+
+    isFrozen Frozen = True
+    isFrozen _ = False
+
     fppl ctx =
       projectFilePathPrintLength (contextProj ctx)
     invalidPath ctx path =
@@ -664,15 +682,19 @@ commandLoad ctx [xobj@(XObj (Str path) i _)] = do
         case res of
           ret@(Right _) -> return (newCtx, ret)
           Left _ ->  commandLoad ctx [XObj (Str mainToLoad) Nothing Nothing]
-commandLoad ctx [x] =
-  return $ evalError ctx ("Invalid args to `load`: " ++ pretty x) (info x)
 
 -- | Load several files in order.
 loadFiles :: Context -> [FilePath] -> IO Context
-loadFiles ctxStart filesToLoad = foldM folder ctxStart filesToLoad
+loadFiles = loadFilesExt commandLoad
+
+loadFilesOnce :: Context -> [FilePath] -> IO Context
+loadFilesOnce = loadFilesExt commandLoadOnce
+
+loadFilesExt :: CommandCallback -> Context -> [FilePath] -> IO Context
+loadFilesExt loadCmd ctxStart filesToLoad = foldM folder ctxStart filesToLoad
   where folder :: Context -> FilePath -> IO Context
         folder ctx file = do
-         (newCtx, ret) <- commandLoad ctx [XObj (Str file) Nothing Nothing]
+         (newCtx, ret) <- loadCmd ctx [XObj (Str file) Nothing Nothing]
          let fppl = projectFilePathPrintLength (contextProj newCtx)
          case ret of
            Left err -> throw (EvalException err)
@@ -682,16 +704,18 @@ loadFiles ctxStart filesToLoad = foldM folder ctxStart filesToLoad
 commandReload :: CommandCallback
 commandReload ctx args = do
   let paths = projectFiles (contextProj ctx)
-      f :: Context -> FilePath -> IO Context
-      f context filepath = do let proj = contextProj context
-                                  alreadyLoaded = projectAlreadyLoaded proj
-                              if filepath `elem` alreadyLoaded
-                                then
-                                     return context
-                                else do
-                                        contents <- slurp filepath
-                                        let proj' = proj { projectAlreadyLoaded = filepath : alreadyLoaded }
-                                        executeString False False (context { contextProj = proj' }) contents filepath
+      f :: Context -> (FilePath, ReloadMode) -> IO Context
+      f context (_, Frozen) = return context
+      f context (filepath, DoesReload) =
+        do let proj = contextProj context
+               alreadyLoaded = projectAlreadyLoaded proj
+           if filepath `elem` alreadyLoaded
+             then
+                  return context
+             else do
+                     contents <- slurp filepath
+                     let proj' = proj { projectAlreadyLoaded = filepath : alreadyLoaded }
+                     executeString False False (context { contextProj = proj' }) contents filepath
   newCtx <- liftIO (foldM f ctx paths)
   return (newCtx, dynamicNil)
 
