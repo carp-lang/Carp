@@ -543,10 +543,7 @@ commandLoad ctx [x] =
 
 commandLoadOnce :: CommandCallback
 commandLoadOnce ctx [xobj@(XObj (Str path) i _)] =
-  let reloadMode = if projectForceReload (contextProj ctx)
-                   then DoesReload -- Forced by project setting!
-                   else Frozen -- Normal behaviour.
-  in loadInternal ctx xobj path i reloadMode
+  loadInternal ctx xobj path i Frozen
 commandLoadOnce ctx [x] =
   return $ evalError ctx ("Invalid args to `load-once`: " ++ pretty x) (info x)
 
@@ -710,8 +707,8 @@ commandReload :: CommandCallback
 commandReload ctx args = do
   let paths = projectFiles (contextProj ctx)
       f :: Context -> (FilePath, ReloadMode) -> IO Context
-      f context (_, Frozen) = return context
-      f context (filepath, DoesReload) =
+      f context (_, Frozen) | not (projectForceReload (contextProj context)) = return context
+      f context (filepath, _) =
         do let proj = contextProj context
                alreadyLoaded = projectAlreadyLoaded proj
            if filepath `elem` alreadyLoaded
