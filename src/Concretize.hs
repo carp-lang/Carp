@@ -472,7 +472,7 @@ replaceGenericTypeSymbolsOnCase mappings singleCase@(XObj (Lst (caseName : caseM
 -- expects and only matches on a Lst, so we convert the problematic cases to a
 -- canonical form. (see `depsForCase` above
 replaceGenericTypeSymbolsOnCase mappings nakedCase@(XObj (Sym (SymPath _ _) _) i t) =
-  XObj (Lst [nakedCase, XObj (Arr []) i t]) i t
+  XObj (Lst [nakedCase, XObj (Arr []) i t]) i t -- NOTE: This transformation is done in some other pass too, just returning 'nakedCase' would be fine here.
 replaceGenericTypeSymbolsOnCase mappings unknownCase = unknownCase -- TODO: error out?
 
 -- | Get the type of a symbol at a given path.
