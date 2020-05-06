@@ -18,6 +18,7 @@ module Types ( TypeMappings
              , doesTypeContainTyVarWithName
              , lambdaEnvTy
              , typeEqIgnoreLifetimes
+             , checkKinds
              ) where
 
 import qualified Data.Map as Map
@@ -49,6 +50,21 @@ data Ty = IntTy
         | DynamicTy -- the type of dynamic functions (used in REPL and macros)
         | InterfaceTy
         deriving (Eq, Ord)
+
+-- | Kinds checking
+-- Carp's system is simple enough that we do not need to describe kinds by their airty.
+-- After confirming two tys have either base or higher kind
+-- unification checks are sufficient to determine whether their arities are compatible.
+data Kind = Base
+          | Higher
+          deriving (Eq, Ord, Show)
+
+tyToKind :: Ty -> Kind
+tyToKind (StructTy _ _) = Higher
+tyToKind (FuncTy _ _ _) = Higher -- the type of functions, consider the (->) constructor in Haskell
+tyToKind (PointerTy _)  = Higher
+tyToKind (RefTy _ _)    = Higher -- Refs may also be treated as a data constructor
+tyToKind _              = Base
 
 -- Exactly like '==' for Ty, but ignore lifetime parameter
 typeEqIgnoreLifetimes :: Ty -> Ty -> Bool
@@ -284,6 +300,17 @@ areUnifiable (FuncTy argTysA retTyA ltA) (FuncTy argTysB retTyB ltB)
 areUnifiable FuncTy{} _ = False
 areUnifiable a b | a == b    = True
           | otherwise = False
+
+-- Checks whether or not the kindedness of types match
+-- Kinds are polymorphic constructors such as (f a)
+-- Note that this disagrees with the notion of unifiablitity in areUnifiable
+checkKinds :: Ty -> Ty -> Bool
+-- Base < Higher
+checkKinds (FuncTy argTysA retTyA _) (FuncTy argTysB retTyB _) =
+  let argKinds = zipWith checkKinds argTysA argTysB
+      retKinds = tyToKind retTyA <= tyToKind retTyB
+  in all (== True) (retKinds : argKinds)
+checkKinds t t' = tyToKind t <= tyToKind t'
 
 -- | Put concrete types into the places where there are type variables.
 --   For example (Fn [a] b) => (Fn [Int] Bool)

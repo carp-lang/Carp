@@ -53,6 +53,7 @@ data TypeError = SymbolMissingType XObj Env
                | DuplicateBinding XObj
                | DefinitionsMustBeAtToplevel XObj
                | UsingDeadReference XObj String
+               | UninhabitedConstructor Ty XObj Int Int
 
 instance Show TypeError where
   show (SymbolMissingType xobj env) =
@@ -240,6 +241,8 @@ instance Show TypeError where
 
   show (UsingDeadReference xobj dependsOn) =
     "The reference '" ++ pretty xobj ++ "' (depending on the variable '" ++ dependsOn ++ "') isn't alive at " ++ prettyInfoFromXObj xobj ++ "."
+  show (UninhabitedConstructor ty xobj got wanted) =
+    "Can't use a struct or sumtype constructor without arguments as a member type at " ++ prettyInfoFromXObj xobj ++ ". The type constructor " ++ show ty ++ " expects " ++ show wanted ++ " arguments but got " ++ show got
 
 machineReadableErrorStrings :: FilePathPrintLength -> TypeError -> [String]
 machineReadableErrorStrings fppl err =
@@ -360,6 +363,8 @@ machineReadableErrorStrings fppl err =
       [machineReadableInfoFromXObj fppl xobj ++ " Definition not at top level: `" ++ pretty xobj ++ "`"]
     (UsingDeadReference xobj dependsOn) ->
       [machineReadableInfoFromXObj fppl xobj ++ " The reference '" ++ pretty xobj ++ "' isn't alive."]
+    (UninhabitedConstructor ty xobj got wanted) ->
+      [machineReadableInfoFromXObj fppl xobj ++ "Can't use a struct or sumtype constructor without arguments as a member type at " ++ prettyInfoFromXObj xobj ++ ". The type constructor " ++ show ty ++ " expects " ++ show wanted ++ " arguments but got " ++ show got]
 
     _ ->
       [show err]
