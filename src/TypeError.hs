@@ -218,7 +218,7 @@ instance Show TypeError where
     ".\n\nSumtype cases look like this: `(Foo [Int typevar])`"
   show (InvalidMemberType t xobj) =
     "I can’t use the type `" ++ show t ++ "` as a member type at " ++
-    pretty xobj ++
+    prettyInfoFromXObj xobj ++
     ".\n\nIs it defined and captured in the head of the type definition?"
   show (InvalidMemberTypeWhenConcretizing t xobj err) =
     "I can’t use the concrete type `" ++ show t ++ "` at " ++ prettyInfoFromXObj xobj ++ ": " ++ show err
