@@ -600,7 +600,7 @@ prettyEnvironmentChain env =
           Nothing -> "")
 
 pathToEnv :: Env -> [String]
-pathToEnv rootEnv = visit rootEnv
+pathToEnv rootEnv = reverse (visit rootEnv)
   where
     visit env =
       case envModuleName env of

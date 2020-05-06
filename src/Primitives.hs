@@ -4,6 +4,7 @@ import Control.Monad (unless, when, foldM)
 import Control.Monad.IO.Class (liftIO)
 import Data.List (foldl')
 import qualified Data.Map as Map
+import Data.Maybe (fromMaybe)
 
 import ColorText
 import Commands
@@ -363,32 +364,36 @@ primitiveMetaSet _ ctx [target@(XObj (Sym path@(SymPath _ name) _) _ _), XObj (S
       fppl = projectFilePathPrintLength (contextProj ctx)
       fullPath = consPath pathStrings path
   case lookupInEnv fullPath env of
-    Just (_, binder@(Binder _ xobj)) ->
+    Just (foundEnv, binder@(Binder _ xobj)) ->
       -- | Set meta on existing binder
-      setMetaOn ctx binder
+      setMetaOn ctx (Just foundEnv) binder
     Nothing ->
       -- | Try dynamic scope
       case lookupInEnv (consPath ["Dynamic"] fullPath) env of
-        Just (_, binder@(Binder _ xobj)) ->
-          setMetaOn ctx binder
+        Just (foundEnv, binder@(Binder _ xobj)) ->
+          setMetaOn ctx (Just foundEnv) binder
         Nothing ->
           case path of
             -- | If the path is unqualified, create a binder and set the meta on that one. This enables docstrings before function exists.
             (SymPath [] name) ->
-              setMetaOn ctx (Binder emptyMeta (XObj (Lst [XObj DocStub Nothing Nothing,
-                                                          XObj (Sym (SymPath pathStrings name) Symbol) Nothing Nothing])
-                                               (Just dummyInfo)
-                                               (Just (VarTy "a"))))
+              setMetaOn ctx Nothing (Binder emptyMeta (XObj (Lst [XObj DocStub Nothing Nothing,
+                                                                  XObj (Sym (SymPath pathStrings name) Symbol) Nothing Nothing])
+                                                       (Just dummyInfo)
+                                                       (Just (VarTy "a"))))
             (SymPath _ _) ->
               return (evalError ctx ("`meta-set!` failed, I can't find the symbol `" ++ show path ++ "`") (info target))
     where
-      setMetaOn :: Context -> Binder -> IO (Context, Either EvalError XObj)
-      setMetaOn ctx binder@(Binder metaData xobj) =
+      setMetaOn :: Context -> Maybe Env -> Binder -> IO (Context, Either EvalError XObj)
+      setMetaOn ctx foundEnv binder@(Binder metaData xobj) =
         do let globalEnv = contextGlobalEnv ctx
                newMetaData = MetaData (Map.insert key value (getMeta metaData))
                xobjPath = getPath xobj
+               prefixPath = fromMaybe [] (fmap pathToEnv foundEnv)
+               fullPath = case xobjPath of
+                            SymPath [] _ -> consPath prefixPath xobjPath
+                            SymPath _ _ -> xobjPath
                newBinder = binder { binderMeta = newMetaData }
-               newEnv = envInsertAt globalEnv xobjPath newBinder
+               newEnv = envInsertAt globalEnv fullPath newBinder
            return (ctx { contextGlobalEnv = newEnv }, dynamicNil)
 primitiveMetaSet _ ctx [XObj (Sym _ _) _ _, key, _] =
   argumentErr ctx "meta-set!" "a string" "second" key
