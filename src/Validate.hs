@@ -68,7 +68,7 @@ canBeUsedAsMemberType typeEnv typeVariables t xobj =
              (ConcreteNameTy n) ->
                case lookupInEnv (SymPath [] n) (getTypeEnv typeEnv) of
                  Just (_, binder@(Binder _ xo@(XObj (Lst (XObj (Deftype t') _ _ : _))_ _))) ->
-                     checkInhabitants t'
+                   checkInhabitants t'
                  Just (_, binder@(Binder _ xo@(XObj (Lst (XObj (DefSumtype t') _ _ : _))_ _))) ->
                    checkInhabitants t'
                  _ -> Left (InvalidMemberType t xobj)

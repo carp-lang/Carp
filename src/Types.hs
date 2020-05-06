@@ -310,16 +310,6 @@ checkKinds (FuncTy argTysA retTyA _) (FuncTy argTysB retTyB _) =
   let argKinds = zipWith (<=) (map tyToKind argTysA) (map tyToKind argTysB)
       retKinds = tyToKind retTyA <= tyToKind retTyB
   in all (== True) (retKinds : argKinds)
---checkKinds (StructTy _ argTysA) (StructTy _ argTysB) =
---  let argKinds = zipWith checkKinds argTysA argTysB
---  in all (== True) argKinds
-----checkKinds s@(StructTy _ _) t = tyToKind s == tyToKind t
-----checkKinds t s@(StructTy _ _) = tyToKind s == tyToKind t
---checkKinds (RefTy argTyA _) (RefTy argTyB _) = checkKinds argTyA argTyB
---checkKinds (PointerTy argTyA) (PointerTy argTyB) = checkKinds argTyA argTyB
-----checkKinds (VarTy _) (VarTy _) = False -- prevent type erasures--a variable cannot be replaced by a variable.
---checkKinds (VarTy _) _ = True
---checkKinds _ (VarTy _) = True
 checkKinds t t' = tyToKind t == tyToKind t'
 
 -- | Put concrete types into the places where there are type variables.
