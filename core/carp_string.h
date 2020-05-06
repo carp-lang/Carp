@@ -1,3 +1,5 @@
+#include <wchar.h>
+
 String String_allocate(int len, char byte) {
     /* Allocate a string of length 'len + 1'
      * setting the first len bytes to byte
@@ -166,9 +168,9 @@ String Bool_format(const String *str, bool b) {
     return buffer;
 }
 
-String Char_str(char c) {
-    String buffer = CARP_MALLOC(2);
-    sprintf(buffer, "%c", c);
+String Char_str(Char c) {
+    String buffer = CARP_MALLOC(sizeof(Char) + 1);
+    swprintf((void*)buffer, 2, L"%c", c);
     return buffer;
 }
 

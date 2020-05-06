@@ -12,6 +12,7 @@ typedef SSIZE_T ssize_t;
 typedef char *String;
 typedef char *Pattern;
 typedef int64_t Long;
+typedef unsigned int Char;
 
 #if defined NDEBUG
 #define CHK_INDEX(i, n)

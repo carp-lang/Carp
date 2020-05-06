@@ -110,7 +110,7 @@ toC toCMode (Binder meta root) = emitterSrc (execState (visit startingIndent roo
                                 '\t' -> "'\\t'"
                                 '\n' -> "'\\n'"
                                 '\\' -> "'\\\\'"
-                                x -> ['\'', x, '\'']
+                                x -> ['U', '\'', x, '\'']
             Closure elem _ -> visit indent elem
             Sym _ _ -> visitSymbol indent xobj
             (Defn _) -> error (show (DontVisitObj xobj))
