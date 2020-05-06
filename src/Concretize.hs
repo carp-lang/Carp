@@ -554,8 +554,8 @@ depsOfPolymorphicFunction typeEnv env visitedDefinitions functionName functionTy
       case concretizeDefinition False typeEnv env visitedDefinitions single functionType of
         Left err -> error (show err)
         Right (ok, deps) -> ok : deps
-    _ ->
-      (trace $ "Too many '" ++ functionName ++ "' functions found with type " ++ show functionType ++ ", can't figure out dependencies.")
+    tooMany ->
+      (trace $ "Too many '" ++ functionName ++ "' functions found with type " ++ show functionType ++ ", can't figure out dependencies:\n  " ++ joinWith "\n  " (map ((" - " ++) . show . snd) tooMany))
       []
 
 -- | Helper for finding the 'delete' function for a type.
