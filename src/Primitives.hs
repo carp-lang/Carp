@@ -122,7 +122,7 @@ registerInInterfaceIfNeeded ctx path@(SymPath _ name) definitionSignature =
                      in  return $ ctx { contextTypeEnv = TypeEnv (extendEnv typeEnv name updatedInterface) }
                 else Left ("[INTERFACE ERROR] " ++ show path ++ " : " ++ show definitionSignature ++
                            " doesn't match the interface signature " ++ show interfaceSignature)
-           else Left ("[INTERFACE ERROR] " ++ show path ++ ":" ++ show definitionSignature ++ " kind mismatch")
+           else Left ("[INTERFACE ERROR] " ++ show path ++ ":" ++ " One or more types in the interface implementation " ++ show definitionSignature ++ " have kinds that do not match the kinds of the types in the interface signature " ++ show interfaceSignature ++ "\n" ++ "Types of the form (f a) must be matched by constructor types such as (Maybe a)")
        Just (_, Binder _ x) ->
          error ("A non-interface named '" ++ name ++ "' was found in the type environment: " ++ show x)
        Nothing -> return ctx
