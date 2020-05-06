@@ -397,5 +397,3 @@ It will create a copy. If you want to avoid that, consider using [`endo-filter`]
       (for [i 0 (StaticArray.length sarr)]
         (aset-uninitialized! &darr i @(StaticArray.unsafe-nth sarr i)))
       darr)))
-
-(macro-log "hello from Array")
