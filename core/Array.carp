@@ -376,7 +376,7 @@ It will create a copy. If you want to avoid that, consider using [`endo-filter`]
     => [[1 2 3 4]]
     ```")
   (sig partition (Fn [(Ref (Array a) b) Int] (Array (Array a))))
-  (defn partition [arr n] 
+  (defn partition [arr n]
       (let-do [x 0
                y 0
                a []]
@@ -398,3 +398,4 @@ It will create a copy. If you want to avoid that, consider using [`endo-filter`]
         (aset-uninitialized! &darr i @(StaticArray.unsafe-nth sarr i)))
       darr)))
 
+(macro-log "hello from Array")

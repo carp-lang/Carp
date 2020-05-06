@@ -654,6 +654,7 @@ data Project = Project { projectTitle :: String
                        , projectFilePathPrintLength :: FilePathPrintLength
                        , projectGenerateOnly :: Bool
                        , projectBalanceHints :: Bool
+                       , projectForceReload :: Bool -- Setting this to true will make the `load-once` command work just like `load`.
                        }
 
 projectFlags :: Project -> String
@@ -687,6 +688,7 @@ instance Show Project where
         filePathPrintLength
         generateOnly
         balanceHints
+        forceReload
        ) =
     unlines [ "Title: " ++ title
             , "Compiler: " ++ compiler
@@ -714,6 +716,7 @@ instance Show Project where
             , "File path print length (when using --check): " ++ show filePathPrintLength
             , "Generate Only: " ++ showB generateOnly
             , "Balance Hints: " ++ showB balanceHints
+            , "Force Reload: " ++ showB forceReload
             ]
     where showB b = if b then "true" else "false"
 

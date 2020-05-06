@@ -45,6 +45,7 @@ defaultProject =
           , projectCanExecute = False
           , projectFilePathPrintLength = FullPath
           , projectGenerateOnly = False
+          , projectForceReload = False
           }
 
 -- | Starting point of the application.

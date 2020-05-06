@@ -120,6 +120,8 @@ commandProjectConfig ctx [xobj@(XObj (Str key) _ _), value] = do
                   "paren-balance-hints" ->
                     do balanceHints <- unwrapBoolXObj value
                        return (proj { projectBalanceHints = balanceHints })
+                  "force-reload" -> do forceReload <- unwrapBoolXObj value
+                                       return (proj { projectForceReload = forceReload })
                   _ -> Left ("Project.config can't understand the key '" ++ key ++ "' at " ++ prettyInfoFromXObj xobj ++ ".")
   case newProj of
     Left errorMessage -> presentError ("[CONFIG ERROR] " ++ errorMessage) (ctx, dynamicNil)
@@ -369,23 +371,25 @@ commandHelp ctx [XObj(Str "interop") _ _] =
 commandHelp ctx [XObj(Str "project") _ _] =
   liftIO $ do putStrLn "(Project.config <setting> <value>) handles the following settings:"
               putStrLn ""
-              putStrLn "'cflag'              - Add a flag to the compiler."
-              putStrLn "'libflag'            - Add a library flag to the compiler."
-              putStrLn "'compiler'           - Set what compiler should be run with the 'build' command."
-              putStrLn "'title'              - Set the title of the current project, will affect the name of the binary produced."
-              putStrLn "'output-directory'   - Where to put compiler artifacts, etc."
-              putStrLn "'docs-directory'     - Where to put generated documentation."
-              putStrLn "'docs-logo'          - Location of the documentation logo."
-              putStrLn "'docs-prelude'       - The documentation foreword."
-              putStrLn "'docs-url'           - A URL for the project (useful for generated documentation)."
-              putStrLn "'docs-generate-index'- Whether to generate the documentation index."
-              putStrLn "'docs-styling'        - A URL to CSS for the project documentation."
-              putStrLn "'prompt'             - Set the prompt in the repl."
-              putStrLn "'search-path'        - Add a path where the Carp compiler will look for '*.carp' files."
+              putStrLn "'cflag'                - Add a flag to the compiler."
+              putStrLn "'libflag'              - Add a library flag to the compiler."
+              putStrLn "'compiler'             - Set what compiler should be run with the 'build' command."
+              putStrLn "'title'                - Set the title of the current project, will affect the name of the binary produced."
+              putStrLn "'output-directory'     - Where to put compiler artifacts, etc."
+              putStrLn "'docs-directory'       - Where to put generated documentation."
+              putStrLn "'docs-logo'            - Location of the documentation logo."
+              putStrLn "'docs-prelude'         - The documentation foreword."
+              putStrLn "'docs-url'             - A URL for the project (useful for generated documentation)."
+              putStrLn "'docs-generate-index'  - Whether to generate the documentation index."
+              putStrLn "'docs-styling'         - A URL to CSS for the project documentation."
+              putStrLn "'prompt'               - Set the prompt in the repl."
+              putStrLn "'search-path'          - Add a path where the Carp compiler will look for '*.carp' files."
               putStrLn ""
-              putStrLn "'echo-c'             - When a form is defined using 'def' or 'defn' its C code will be printed."
-              putStrLn "'echo-compiler-cmd'  - When building the project the command for running the C compiler will be printed."
-              putStrLn "'print-ast'          - The 'info' command will print the AST for a binding."
+              putStrLn "'echo-c'               - When a form is defined using 'def' or 'defn' its C code will be printed."
+              putStrLn "'echo-compiler-cmd'    - When building the project the command for running the C compiler will be printed."
+              putStrLn "'print-ast'            - The 'info' command will print the AST for a binding."
+              putStrLn "'paren-balance-hints'  - Whether to print the ongoing stack of parens to close in the REPL, or not."
+              putStrLn "'force-reload'         - If true, the 'load-once' command will work just like 'load' (useful for library developers)."
               putStrLn ""
               return (ctx, dynamicNil)
 
