@@ -286,6 +286,15 @@ You can use pattern matching to extract values in a safe way
 (register-type Banana [price Double, size Int]) ;; Register an external C-structs, this will generate getters, setters and updaters.
 ```
 
+Often type names in C are lowercase (e.g. `size_t`) and just registering them will be problematic since Carp thinks that such variables are generic types.
+To be able to interop wich such types, `register-type` takes an optional string after the type name, like this:
+
+```clojure
+(register-type SizeT "size_t")
+```
+
+This will make the name of the type in Carp code be `SizeT`, while the emitted C code will use `size_t` instead.
+
 ### Patterns
 
 Patterns are similar to, but not the same as, Regular Expressions. They were
