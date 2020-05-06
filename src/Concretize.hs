@@ -449,6 +449,10 @@ instantiateGenericSumtype typeEnv originalStructTy@(StructTy _ originalTyVars) g
                                             : concat okDeps
                     Left err -> Left err
 
+-- Resolves dependencies for sumtype cases.
+-- NOTE: This function only accepts cases that are in "canonical form"
+-- (Just [x]) aka XObj (Lst (Sym...) (Arr members))
+-- On other cases it will return an error.
 depsForCase :: TypeEnv -> XObj -> Either TypeError [XObj]
 depsForCase typeEnv x@(XObj (Lst [_, XObj (Arr members) _ _]) _ _) =
   concat <$>
@@ -456,12 +460,20 @@ depsForCase typeEnv x@(XObj (Lst [_, XObj (Arr members) _ _]) _ _) =
                Just okTy -> concretizeType typeEnv okTy
                Nothing -> error ("Failed to convert " ++ pretty m ++ " to a type: " ++ pretty x))
     members
+depsForCase _ x = Left (InvalidSumtypeCase x)
 
 replaceGenericTypeSymbolsOnCase :: Map.Map String Ty -> XObj -> XObj
 replaceGenericTypeSymbolsOnCase mappings singleCase@(XObj (Lst (caseName : caseMembers)) i t) =
   XObj (Lst (caseName : map replacer caseMembers)) i t
   where replacer memberXObj =
           replaceGenericTypeSymbols mappings memberXObj
+-- Handle cases like `(State a) Done (Value [a]))`
+-- `Done` is a Sym, not a Lst. DepsForCase, like this function
+-- expects and only matches on a Lst, so we convert the problematic cases to a
+-- canonical form. (see `depsForCase` above
+replaceGenericTypeSymbolsOnCase mappings nakedCase@(XObj (Sym (SymPath _ _) _) i t) =
+  XObj (Lst [nakedCase, XObj (Arr []) i t]) i t
+replaceGenericTypeSymbolsOnCase mappings unknownCase = unknownCase -- TODO: error out?
 
 -- | Get the type of a symbol at a given path.
 typeFromPath :: Env -> SymPath -> Ty
