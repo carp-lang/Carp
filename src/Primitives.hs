@@ -116,11 +116,13 @@ registerInInterfaceIfNeeded ctx path@(SymPath _ name) definitionSignature =
   let typeEnv = getTypeEnv (contextTypeEnv ctx)
   in case lookupInEnv (SymPath [] name) typeEnv of
        Just (_, Binder _ (XObj (Lst [XObj (Interface interfaceSignature paths) ii it, isym]) i t)) ->
-         if areUnifiable interfaceSignature definitionSignature
-         then let updatedInterface = XObj (Lst [XObj (Interface interfaceSignature (addIfNotPresent path paths)) ii it, isym]) i t
-              in  return $ ctx { contextTypeEnv = TypeEnv (extendEnv typeEnv name updatedInterface) }
-         else Left ("[INTERFACE ERROR] " ++ show path ++ " : " ++ show definitionSignature ++
-                    " doesn't match the interface signature " ++ show interfaceSignature)
+         if checkKinds interfaceSignature definitionSignature
+           then if areUnifiable interfaceSignature definitionSignature
+                then let updatedInterface = XObj (Lst [XObj (Interface interfaceSignature (addIfNotPresent path paths)) ii it, isym]) i t
+                     in  return $ ctx { contextTypeEnv = TypeEnv (extendEnv typeEnv name updatedInterface) }
+                else Left ("[INTERFACE ERROR] " ++ show path ++ " : " ++ show definitionSignature ++
+                           " doesn't match the interface signature " ++ show interfaceSignature)
+           else Left ("[INTERFACE ERROR] " ++ show path ++ ":" ++ " One or more types in the interface implementation " ++ show definitionSignature ++ " have kinds that do not match the kinds of the types in the interface signature " ++ show interfaceSignature ++ "\n" ++ "Types of the form (f a) must be matched by constructor types such as (Maybe a)")
        Just (_, Binder _ x) ->
          error ("A non-interface named '" ++ name ++ "' was found in the type environment: " ++ show x)
        Nothing -> return ctx
@@ -359,20 +361,26 @@ primitiveMetaSet _ ctx [target@(XObj (Sym path@(SymPath _ name) _) _ _), XObj (S
   let env = contextGlobalEnv ctx
       pathStrings = contextPath ctx
       fppl = projectFilePathPrintLength (contextProj ctx)
-  case lookupInEnv (consPath pathStrings path) env of
+      fullPath = consPath pathStrings path
+  case lookupInEnv fullPath env of
     Just (_, binder@(Binder _ xobj)) ->
       -- | Set meta on existing binder
       setMetaOn ctx binder
     Nothing ->
-      case path of
-        -- | If the path is unqualified, create a binder and set the meta on that one. This enables docstrings before function exists.
-        (SymPath [] name) ->
-          setMetaOn ctx (Binder emptyMeta (XObj (Lst [XObj DocStub Nothing Nothing,
-                                                      XObj (Sym (SymPath pathStrings name) Symbol) Nothing Nothing])
-                                           (Just dummyInfo)
-                                           (Just (VarTy "a"))))
-        (SymPath _ _) ->
-          return (evalError ctx ("`meta-set!` failed, I can't find the symbol `" ++ show path ++ "`") (info target))
+      -- | Try dynamic scope
+      case lookupInEnv (consPath ["Dynamic"] fullPath) env of
+        Just (_, binder@(Binder _ xobj)) ->
+          setMetaOn ctx binder
+        Nothing ->
+          case path of
+            -- | If the path is unqualified, create a binder and set the meta on that one. This enables docstrings before function exists.
+            (SymPath [] name) ->
+              setMetaOn ctx (Binder emptyMeta (XObj (Lst [XObj DocStub Nothing Nothing,
+                                                          XObj (Sym (SymPath pathStrings name) Symbol) Nothing Nothing])
+                                               (Just dummyInfo)
+                                               (Just (VarTy "a"))))
+            (SymPath _ _) ->
+              return (evalError ctx ("`meta-set!` failed, I can't find the symbol `" ++ show path ++ "`") (info target))
     where
       setMetaOn :: Context -> Binder -> IO (Context, Either EvalError XObj)
       setMetaOn ctx binder@(Binder metaData xobj) =

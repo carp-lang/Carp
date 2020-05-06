@@ -167,10 +167,16 @@ checkForConflict mappings constraint name otherTy =
     else
       case found of --trace ("CHECK CONFLICT " ++ show constraint ++ " with name " ++ name ++ ", otherTy: " ++ show otherTy ++ ", found: " ++ show found) found of
         Just (VarTy _) -> ok
-        Just (StructTy structName structTyVars) ->
+        Just (StructTy (VarTy _) structTyVars) ->
           case otherTy of
-            StructTy otherStructName otherTyVars | structName == otherStructName ->
-                                                   foldM solveOneInternal mappings (zipWith (mkConstraint OrdStruct xobj1 xobj2 ctx) structTyVars otherTyVars)
+            StructTy otherStructName otherTyVars -> foldM solveOneInternal mappings (zipWith (mkConstraint OrdStruct xobj1 xobj2 ctx) structTyVars otherTyVars)
+            VarTy _ -> Right mappings
+            _ -> Left (UnificationFailure constraint mappings)
+        Just (StructTy (ConcreteNameTy structName) structTyVars) ->
+          case otherTy of
+            StructTy (ConcreteNameTy otherStructName) otherTyVars
+              | structName == otherStructName -> foldM solveOneInternal mappings (zipWith (mkConstraint OrdStruct xobj1 xobj2 ctx) structTyVars otherTyVars)
+            StructTy (VarTy _) otherTyVars -> foldM solveOneInternal mappings (zipWith (mkConstraint OrdStruct xobj1 xobj2 ctx) structTyVars otherTyVars)
             VarTy _ -> Right mappings
             _ -> Left (UnificationFailure constraint mappings)
         Just (FuncTy argTys retTy lifetimeTy) ->

@@ -46,16 +46,16 @@ falseXObj :: XObj
 falseXObj = XObj (Bol False) Nothing Nothing
 
 -- | Use this function to register commands in the environment.
-addCommand :: String -> Int -> CommandCallback -> (String, Binder)
+addCommand :: SymPath -> Int -> CommandCallback -> (String, Binder)
 addCommand name arity callback = addCommandConfigurable name (Just arity) callback
 
-addCommandConfigurable :: String -> Maybe Int -> CommandCallback -> (String, Binder)
-addCommandConfigurable name maybeArity callback =
-  let path = SymPath [] name
-      cmd = XObj (Lst [XObj (Command (CommandFunction f)) (Just dummyInfo) Nothing
+addCommandConfigurable :: SymPath -> Maybe Int -> CommandCallback -> (String, Binder)
+addCommandConfigurable path maybeArity callback =
+  let cmd = XObj (Lst [XObj (Command (CommandFunction f)) (Just dummyInfo) Nothing
                       ,XObj (Sym path Symbol) Nothing Nothing
                       ])
             (Just dummyInfo) (Just DynamicTy)
+      SymPath _ name = path
   in (name, Binder emptyMeta cmd)
   where f = case maybeArity of
               Just arity -> withArity arity
@@ -64,7 +64,7 @@ addCommandConfigurable name maybeArity callback =
           if length args == arity
             then callback ctx args
             else
-              return (evalError ctx ("Invalid args to '" ++ name ++ "' command: " ++ joinWithComma (map pretty args)) Nothing)
+              return (evalError ctx ("Invalid args to '" ++ show path ++ "' command: " ++ joinWithComma (map pretty args)) Nothing)
 
 presentError :: MonadIO m => String -> a -> m a
 presentError msg ret =
