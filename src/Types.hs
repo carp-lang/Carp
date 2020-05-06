@@ -307,10 +307,10 @@ areUnifiable a b | a == b    = True
 checkKinds :: Ty -> Ty -> Bool
 -- Base < Higher
 checkKinds (FuncTy argTysA retTyA _) (FuncTy argTysB retTyB _) =
-  let argKinds = zipWith (<=) (map tyToKind argTysA) (map tyToKind argTysB)
+  let argKinds = zipWith checkKinds argTysA argTysB
       retKinds = tyToKind retTyA <= tyToKind retTyB
   in all (== True) (retKinds : argKinds)
-checkKinds t t' = tyToKind t == tyToKind t'
+checkKinds t t' = tyToKind t <= tyToKind t'
 
 -- | Put concrete types into the places where there are type variables.
 --   For example (Fn [a] b) => (Fn [Int] Bool)
