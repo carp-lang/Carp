@@ -45,6 +45,7 @@ defaultProject =
           , projectCanExecute = False
           , projectFilePathPrintLength = FullPath
           , projectGenerateOnly = False
+          , projectForceReload = False
           }
 
 -- | Starting point of the application.
@@ -78,7 +79,7 @@ main = do setLocaleEncoding utf8
                                  ""
                                  execMode
                                  []
-          context <- loadFiles startingContext coreModulesToLoad
+          context <- loadFilesOnce startingContext coreModulesToLoad
           carpProfile <- configPath "profile.carp"
           hasProfile <- doesFileExist carpProfile
           context' <- if (not noProfile) && hasProfile

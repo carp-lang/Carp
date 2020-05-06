@@ -330,6 +330,7 @@ dynamicModule = Env { envBindings = bindings
                     , addCommandConfigurable (SymPath path "help") Nothing commandHelp
                     , addCommand (SymPath path "project") 0 commandProject
                     , addCommand (SymPath path "load") 1 commandLoad
+                    , addCommand (SymPath path "load-once") 1 commandLoadOnce
                     , addCommand (SymPath path "expand") 1 commandExpand
                     , addCommand (SymPath path "os") 0 commandOS
                     , addCommand (SymPath path "system-include") 1 commandAddSystemInclude
