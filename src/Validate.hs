@@ -58,9 +58,8 @@ canBeUsedAsMemberType typeEnv typeVariables t xobj =
              case lookupInEnv (SymPath [] name') (getTypeEnv typeEnv) of
                Just _ -> return ()
                Nothing -> Left (NotAmongRegisteredTypes t xobj)
-        -- e.g. (deftype (Higher f a) (Of [(f a)]))
-        t@(VarTy _) -> do _ <- canBeUsedAsMemberType typeEnv typeVariables tyVars xobj
-                          canBeUsedAsMemberType typeEnv typeVariables t xobj
+        -- e.g. (deftype (Higher (f a)) (Of [(f a)]))
+        t@(VarTy _) -> return ()
     s@(StructTy name tyvar) ->
       if isExternalType typeEnv s
       then return ()
