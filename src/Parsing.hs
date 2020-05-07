@@ -78,6 +78,24 @@ number = Parsec.try float <|>
          Parsec.try long <|>
          Parsec.try integer
 
+rawString :: Parsec.Parsec String ParseState XObj
+rawString = do
+    i <- createInfo
+    _ <- Parsec.try $ Parsec.string "r\""
+    strL <- Parsec.many (Parsec.try continuation <|> simple)
+    let str = concat strL
+    _ <- Parsec.char '"'
+    incColumn (length str + 3)
+    incLine (countLinebreaks str)
+    return (XObj (Str str) i Nothing)
+  where
+    continuation = do
+      Parsec.try $ Parsec.count 2 $ Parsec.char '"'
+      return ['"']
+    simple = do
+      c <- Parsec.noneOf ['"']
+      return [c]
+
 string :: Parsec.Parsec String ParseState XObj
 string = do i <- createInfo
             _ <- Parsec.char '"'
@@ -89,7 +107,9 @@ string = do i <- createInfo
             return (XObj (Str str) i Nothing)
   where simple = do c <- Parsec.noneOf ['"']
                     return [c]
-        countLinebreaks = foldr (\x sum -> if x == '\n' then sum+1 else sum) 0
+
+countLinebreaks =
+  foldr (\x sum -> if x == '\n' then sum+1 else sum) 0
 
 parseInternalPattern :: Parsec.Parsec String ParseState String
 parseInternalPattern = do maybeAnchor <- Parsec.optionMaybe (Parsec.char '^')
@@ -243,7 +263,7 @@ symbol = do i <- createInfo
                 name   -> return (XObj (Sym (SymPath (init segments) name) Symbol) i Nothing)
 
 atom :: Parsec.Parsec String ParseState XObj
-atom = Parsec.choice [number, pat, string, aChar, symbol]
+atom = Parsec.choice [number, pat, rawString, string, aChar, symbol]
 
 incColumn :: Int -> Parsec.Parsec String ParseState ()
 incColumn x = do s <- Parsec.getState
