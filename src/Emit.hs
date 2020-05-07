@@ -3,6 +3,7 @@ module Emit (toC,
              globalsToC,
              projectIncludesToC,
              envToDeclarations,
+             envToInlinedC,
              checkForUnresolvedSymbols,
              ToCMode(..),
              wrapInInitFunction
@@ -793,6 +794,8 @@ toDeclaration (Binder meta xobj@(XObj (Lst xobjs) _ t)) =
       ""
     XObj (Primitive _) _ _ : _ ->
       ""
+    XObj (InlinedC _) _ _ : _ ->
+      ""
     _ -> error ("Internal compiler error: Can't emit other kinds of definitions: " ++ show xobj)
 toDeclaration _ = error "Missing case."
 
@@ -818,6 +821,7 @@ binderToC toCMode binder =
         XObj (ExternalType _) _ _ -> Right ""
         XObj (Command _) _ _ -> Right ""
         XObj (Mod env) _ _ -> envToC env toCMode
+        XObj (InlinedC c) _ _ -> Right ""
         _ -> case ty xobj of
                Just t -> if isTypeGeneric t
                          then Right ""
@@ -830,6 +834,7 @@ binderToDeclaration typeEnv binder =
   let xobj = binderXObj binder
   in  case xobj of
         XObj (Mod env) _ _ -> envToDeclarations typeEnv env
+        XObj (InlinedC _) _ _ -> Right ""
         _ -> case ty xobj of
                Just t -> if isTypeGeneric t then Right "" else Right (toDeclaration binder ++ "")
                Nothing -> Left (BinderIsMissingType binder)
@@ -848,6 +853,13 @@ globalsToC globalEnv =
                            (binderToC Globals binder))
                          (sortGlobalVariableBinders globalEnv allGlobalBinders)
          return (concat okCodes)
+
+envToInlinedC :: Env -> Either ToCError String
+envToInlinedC globalEnv =
+  let res = concatMap extractInlinedC (findAllInlinedC globalEnv)
+  in return res
+  where
+    extractInlinedC (Binder _ (XObj (InlinedC c) _ _)) = c ++ "\n"
 
 envToDeclarations :: TypeEnv -> Env -> Either ToCError String
 envToDeclarations typeEnv env =

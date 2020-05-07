@@ -89,6 +89,7 @@ data Obj = Sym SymPath SymbolMode
          | Ref
          | Deref
          | Interface Ty [SymPath]
+         | InlinedC String
          deriving (Show, Eq)
 
 -- | This instance is needed for the dynamic Dictionary
@@ -330,6 +331,7 @@ pretty = visit 0
             Break -> "break"
             Interface _ _ -> "interface"
             With -> "with"
+            InlinedC _ -> "inlined-c"
 
 prettyUpTo :: Int -> XObj -> String
 prettyUpTo max xobj =
@@ -392,6 +394,7 @@ prettyUpTo max xobj =
             Break -> ""
             Interface _ _ -> ""
             With -> ""
+            InlinedC _ -> ""
 
 prettyCaptures :: Set.Set XObj -> String
 prettyCaptures captures =
@@ -898,7 +901,6 @@ data Context = Context { contextGlobalEnv :: Env
                        , contextLastInput :: String
                        , contextExecMode :: ExecutionMode
                        , contextHistory :: ![XObj]
-                       , contextInlinedC :: String
                        } deriving Show
 
 popModulePath :: Context -> Context

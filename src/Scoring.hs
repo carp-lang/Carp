@@ -33,6 +33,8 @@ scoreTypeBinder typeEnv b@(Binder _ (XObj (Lst (XObj x _ _ : XObj (Sym _ _) _ _ 
 
 scoreTypeBinder _ b@(Binder _ (XObj (Mod _) _ _)) =
   (1000, b)
+scoreTypeBinder _ b@(Binder _ (XObj (InlinedC _) _ _)) =
+  (0, b) -- doesn't really matter at InlinedC aren't emited by binders.
 scoreTypeBinder _ x = error ("Can't score: " ++ show x)
 
 depthOfDeftype :: TypeEnv -> Set.Set Ty -> XObj -> [Ty] -> Int

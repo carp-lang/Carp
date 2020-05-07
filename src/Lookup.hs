@@ -41,6 +41,19 @@ findAllGlobalVariables env =
         finder _ =
           []
 
+-- |
+findAllInlinedC :: Env -> [Binder]
+findAllInlinedC env =
+  concatMap finder (envBindings env)
+  where 
+    finder :: Binder -> [Binder]
+    finder def@(Binder _ (XObj (InlinedC _) _ _)) =
+      [def]
+    finder (Binder _ (XObj (Mod innerEnv) _ _)) =
+      findAllInlinedC innerEnv
+    finder _ =
+      []
+
 -- | Find all the possible (imported) symbols that could be referred to
 multiLookup :: String -> Env -> [(Env, Binder)]
 multiLookup = multiLookupInternal False

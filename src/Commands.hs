@@ -199,10 +199,10 @@ commandBuild shutUp ctx args = do
       typeEnv = contextTypeEnv ctx
       proj = contextProj ctx
       execMode = contextExecMode ctx
-      inlinedC = contextInlinedC ctx
       src = do decl <- envToDeclarations typeEnv env
                typeDecl <- envToDeclarations typeEnv (getTypeEnv typeEnv)
                c <- envToC env Functions
+               inlinedC <- envToInlinedC env
                initGlobals <- fmap (wrapInInitFunction (projectCore proj)) (globalsToC env)
                return ("//Types:\n" ++ typeDecl ++
                        "\n\n//Declarations:\n" ++ decl ++
@@ -855,20 +855,26 @@ saveDocs ctx pathsAndEnvBinders = do
      return (ctx, dynamicNil)
 
 commandInlineC :: CommandCallback
-commandInlineC ctx args =
-     case mapM (checkArg ctx) args of
-       Just (err:_) -> return err
-       Nothing -> do
-        let new_src = concatMap stringify args
-            src = contextInlinedC ctx ++ new_src ++ "\n"
-        return (ctx { contextInlinedC = src }, dynamicNil)
-     where
-        checkArg _ (XObj (Sym _ _) _ _) = Nothing
-        checkArg _ (XObj (Num _ _) _ _) = Nothing
-        checkArg _ (XObj (Str _) _ _) = Nothing
-        checkArg ctx x = Just (evalError ctx ("Invalid argument to inline-c (expected Num, Str, Sym, InlinedC) : " ++ pretty x) (info x))
+commandInlineC ctx (XObj (Str name) _ _ : args) =
+  case mapM (checkArg ctx) args of
+    Just (err:_) -> return err
+    Nothing -> do
+      let src = concatMap stringify args
+          registration = XObj (InlinedC ("// " ++ name ++ "\n" ++ src)) Nothing Nothing
+          globalEnv = contextGlobalEnv ctx
+          path = SymPath [] name
+          env' = envInsertAt globalEnv path (Binder emptyMeta registration)
+      return (ctx { contextGlobalEnv = env' }, dynamicNil)
+  where
+    checkArg _ (XObj (Sym _ _) _ _) = Nothing
+    checkArg _ (XObj (Num _ _) _ _) = Nothing
+    checkArg _ (XObj (Str _) _ _) = Nothing
+    checkArg ctx x = Just (evalError ctx ("Invalid argument to inline-c (expected Num, Str, Sym, InlinedC) : " ++ pretty x) (info x))
 
-        stringify :: XObj -> String
-        stringify (XObj (Sym p _) _ _) = show p
-        stringify x@(XObj (Num _ _) _ _) = pretty x
-        stringify (XObj (Str s) _ _) = unescapeString s
+    stringify :: XObj -> String
+    stringify (XObj (Sym p _) _ _) = show p
+    stringify x@(XObj (Num _ _) _ _) = pretty x
+    stringify (XObj (Str s) _ _) = unescapeString s
+
+commandInlineC ctx _ =
+  return (evalError ctx "inline-c expects at least 2 argument." (Just dummyInfo))
