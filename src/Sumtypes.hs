@@ -49,7 +49,7 @@ replaceGenericTypesOnCases :: TypeMappings -> [SumtypeCase] -> [SumtypeCase]
 replaceGenericTypesOnCases mappings cases =
   map replaceOnCase cases
   where replaceOnCase theCase =
-          let newTys = trace log (map (replaceTyVars mappings) (caseTys theCase))
+          let newTys = (map (replaceTyVars mappings) (caseTys theCase))
           in  theCase { caseTys = newTys }
 
 initers :: [String] -> Ty -> [SumtypeCase] -> Either TypeError [(String, Binder)]
