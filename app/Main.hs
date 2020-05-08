@@ -4,8 +4,6 @@ import qualified System.Environment as SystemEnvironment
 import System.Console.Haskeline (runInputT)
 import GHC.IO.Encoding
 
-import qualified Data.Map as Map
-
 import ColorText
 import Obj
 import Types

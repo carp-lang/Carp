@@ -873,7 +873,8 @@ commandInlineC ctx (XObj (Sym p _) _ _ : args) =
     stringify :: XObj -> String
     --stringify (XObj (Sym p _) _ _) = show p
     stringify x@(XObj (Num _ _) _ _) = pretty x
-    stringify (XObj (Str s) _ _) = unescapeString s
-
-commandInlineC ctx _ =
+    stringify (XObj (Str s) _ _) = s
+commandInlineC ctx (v@XObj{} : _) =
+  return (evalError ctx ("The first argument of inline-c must be a symbol, got " ++ pretty v ++ " instead.") (info v))
+commandInlineC ctx [] =
   return (evalError ctx "inline-c expects a Symbol then some Strings and/or Numbers." (Just dummyInfo))
