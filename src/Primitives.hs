@@ -16,6 +16,8 @@ import Sumtypes
 import TypeError
 import Types
 import Util
+import Template
+import ToTemplate
 
 import Debug.Trace
 
@@ -592,3 +594,35 @@ primitiveDefined _ ctx [XObj (Sym path _) _ _] = do
     Nothing -> return (ctx, Right falseXObj)
 primitiveDefined _ ctx [arg] =
   argumentErr ctx "defined" "a symbol" "first" arg
+
+primitiveDeftemplate :: Primitive
+-- deftemplate can't receive a dependency function, as Ty aren't exposed in Carp
+primitiveDeftemplate _ ctx [XObj (Sym p@(SymPath _ name) _) pinfo _, ty, XObj (Str declTempl) _ _, XObj (Str defTempl) _ _] = do
+  let pathStrings = contextPath ctx
+      typeEnv = contextTypeEnv ctx
+      globalEnv = contextGlobalEnv ctx
+      path = SymPath pathStrings name
+  case xobjToTy ty of
+    Just t ->
+      case defineTemplate p t "" (toTemplate declTempl) (toTemplate defTempl) (const []) of
+        (_, b@(Binder _ (XObj (Lst (XObj (Deftemplate template) _ _ : _)) _ _))) ->
+          if isTypeGeneric t
+          then
+            let (Binder _ registration) = b
+                meta = existingMeta globalEnv registration
+                env' = envInsertAt globalEnv path (Binder meta registration)
+            in return (ctx { contextGlobalEnv = env' }, dynamicNil)
+          else
+            let templateCreator = getTemplateCreator template
+                (registration, _) = instantiateTemplate path t (templateCreator typeEnv globalEnv)
+                meta = existingMeta globalEnv registration
+                env' = envInsertAt globalEnv path (Binder meta registration)
+            in return (ctx { contextGlobalEnv = env' }, dynamicNil)
+        (a, Binder _ b) -> trace ("Something weird happened :\n" ++ a ++ "\n" ++ show b) $
+          return (evalError ctx "I'm not sure :/" pinfo)
+    Nothing ->
+      return (evalError ctx ("I do not understand the type form in " ++ pretty ty) (info ty))
+primitiveDeftemplate _ ctx [] =
+  return (evalError ctx "`deftemplate` requires a Symbol, a Type, two Strings." (Just dummyInfo))
+primitiveDeftemplate _ ctx (x:_) =
+  return (evalError ctx ("Invalid `deftemplate` call : " ++ pretty x) (info x))
