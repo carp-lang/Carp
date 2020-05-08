@@ -296,49 +296,49 @@ dynamicModule = Env { envBindings = bindings
                     , envFunctionNestingLevel = 0 }
   where path = ["Dynamic"]
         bindings = Map.fromList $
-                    [ addCommand (SymPath path "list?") 1 commandIsList
-                    , addCommand (SymPath path "array?") 1 commandIsArray
-                    , addCommand (SymPath path "symbol?") 1 commandIsSymbol
-                    , addCommand (SymPath path "length") 1 commandLength
-                    , addCommand (SymPath path "car") 1 commandCar
-                    , addCommand (SymPath path "cdr") 1 commandCdr
-                    , addCommand (SymPath path "last") 1 commandLast
-                    , addCommand (SymPath path "all-but-last") 1 commandAllButLast
-                    , addCommand (SymPath path "cons") 2 commandCons
-                    , addCommand (SymPath path "cons-last") 2 commandConsLast
-                    , addCommand (SymPath path "append") 2 commandAppend
-                    , addCommandConfigurable (SymPath path "array") Nothing commandArray
-                    , addCommandConfigurable (SymPath path "list") Nothing commandList
-                    , addCommand (SymPath path "macro-error") 1 commandMacroError
-                    , addCommandConfigurable (SymPath path "macro-log") Nothing commandMacroLog
-                    , addCommandConfigurable (SymPath path "str") Nothing commandStr
-                    , addCommand (SymPath path "not") 1 commandNot
-                    , addCommand (SymPath path "=") 2 commandEq
-                    , addCommand (SymPath path "<") 2 commandLt
-                    , addCommand (SymPath path ">") 2 commandGt
-                    , addCommand (SymPath path "+") 2 commandPlus
-                    , addCommand (SymPath path "-") 2 commandMinus
-                    , addCommand (SymPath path "/") 2 commandDiv
-                    , addCommand (SymPath path "*") 2 commandMul
-                    , addCommand (SymPath path "c") 1 commandC
-                    , addCommand (SymPath path "quit") 0 commandQuit
-                    , addCommand (SymPath path "cat") 0 commandCat
-                    , addCommand (SymPath path "run") 0 commandRunExe
-                    , addCommand (SymPath path "build") 0 (commandBuild False)
-                    , addCommand (SymPath path "reload") 0 commandReload
-                    , addCommand (SymPath path "env") 0 commandListBindings
-                    , addCommandConfigurable (SymPath path "help") Nothing commandHelp
-                    , addCommand (SymPath path "project") 0 commandProject
-                    , addCommand (SymPath path "load") 1 commandLoad
-                    , addCommand (SymPath path "load-once") 1 commandLoadOnce
-                    , addCommand (SymPath path "expand") 1 commandExpand
-                    , addCommand (SymPath path "os") 0 commandOS
-                    , addCommand (SymPath path "system-include") 1 commandAddSystemInclude
-                    , addCommand (SymPath path "relative-include") 1 commandAddRelativeInclude
-                    , addCommand (SymPath path "save-docs-internal") 1 commandSaveDocsInternal
-                    , addCommand (SymPath path "read-file") 1 commandReadFile
-                    , addCommand (SymPath path "write-file") 2 commandWriteFile
-                    , addCommand (SymPath path "bit-width") 0 commandBitWidth
+                    [ addCommand (SymPath path "list?") 1 commandIsList "checks whether the argument is a list." "(list? '()) ; => true"
+                    , addCommand (SymPath path "array?") 1 commandIsArray "checks whether the arguments is an array." "(array? []) ; => true"
+                    , addCommand (SymPath path "symbol?") 1 commandIsSymbol "checks whether the argument is a symbol." "(symbol? 'x) ; => true"
+                    , addCommand (SymPath path "length") 1 commandLength "returns the length of the argument (must be an array, string or list)." "(length '(1 2 3)) ; => 3"
+                    , addCommand (SymPath path "car") 1 commandCar "gets the head of a list or array." "(car '(1 2 3)) ; => 1"
+                    , addCommand (SymPath path "cdr") 1 commandCdr "gets the tail of a list or array." "(cdr '(1 2 3)) ; => '(2 3)"
+                    , addCommand (SymPath path "last") 1 commandLast "gets the last element of a list or array." "(last '(1 2 3)) ; => 3"
+                    , addCommand (SymPath path "all-but-last") 1 commandAllButLast "gets all elements except for the last one of a list or array." "(all-but-last '(1 2 3)) ; => '(1 2)"
+                    , addCommand (SymPath path "cons") 2 commandCons "adds an element to the front of an array or list" "(cons 1 '(2 3)) ; => '(1 2 3)"
+                    , addCommand (SymPath path "cons-last") 2 commandConsLast "adds an element to the back of an array or list" "(cons-last 3 '(1 2)) ; => '(1 2 3)"
+                    , addCommand (SymPath path "append") 2 commandAppend "appends two lists or arrays." "(append '(1 2) '(3 4)) ; => '(1 2 3 4)"
+                    , addCommandConfigurable (SymPath path "array") Nothing commandArray "creates an array from a collection of elements." "(array 1 2 3) ; => [1 2 3]"
+                    , addCommandConfigurable (SymPath path "list") Nothing commandList "creates an array from a collection of elements." "(list 1 2 3) ; => (1 2 3)"
+                    , addCommand (SymPath path "macro-error") 1 commandMacroError "logs an error and errors out of a macro." "(macro-error \"this is wrong\")"
+                    , addCommandConfigurable (SymPath path "macro-log") Nothing commandMacroLog "logs a message in a macro." "(macro-log \"this will be printed at compile time\")"
+                    , addCommandConfigurable (SymPath path "str") Nothing commandStr "stringifies its arguments." "(str 1 \" \" 2 \" \" 3) ; => \"1 2 3\""
+                    , addCommand (SymPath path "not") 1 commandNot "negates its boolean argument." "(not false) ; => true"
+                    , addCommand (SymPath path "=") 2 commandEq "compares its arguments for equality." "(= 1 2) ; => false"
+                    , addCommand (SymPath path "<") 2 commandLt "checks whether its first argument is less than its second." "(< 1 2) ; => true"
+                    , addCommand (SymPath path ">") 2 commandGt "checks whether its first argument is greater than its second." "(> 1 2) ; => false"
+                    , addCommand (SymPath path "+") 2 commandPlus "adds its two arguments." "(+ 1 2) ; => 3"
+                    , addCommand (SymPath path "-") 2 commandMinus "subtracts its second argument from its first." "(- 1 2) ; => -1"
+                    , addCommand (SymPath path "/") 2 commandDiv "divides its first argument by its second." "(/ 4 2) ; => 2"
+                    , addCommand (SymPath path "*") 2 commandMul "multiplies its two arguments." "(* 2 3) ; => 6"
+                    , addCommand (SymPath path "c") 1 commandC "prints the C code emitted for a binding." "(c '(+ 2 3)) ; => int _3 = Int__PLUS_(2, 3);"
+                    , addCommand (SymPath path "quit") 0 commandQuit "quits the program." "(quit)"
+                    , addCommand (SymPath path "cat") 0 commandCat "spits out the generated C code." "(cat)"
+                    , addCommand (SymPath path "run") 0 commandRunExe "runs the built executable." "(run)"
+                    , addCommand (SymPath path "build") 0 (commandBuild False) "builds the current code to an executable." "(build)"
+                    , addCommand (SymPath path "reload") 0 commandReload "reloads all currently loaded files that weren’t marked as only loading once (see `load` and `load-once`)." "(reload)"
+                    , addCommand (SymPath path "env") 0 commandListBindings "lists all current bindings." "(env)"
+                    , addCommandConfigurable (SymPath path "help") Nothing commandHelp "prints help." "(help)"
+                    , addCommand (SymPath path "project") 0 commandProject "prints the current project state." "(project)"
+                    , addCommand (SymPath path "load") 1 commandLoad "loads a file into the current environment." "(load \"myfile.carp\")"
+                    , addCommand (SymPath path "load-once") 1 commandLoadOnce "loads a file and prevents it from being reloaded (see `reload`)." "(load-once \"myfile.carp\")"
+                    , addCommand (SymPath path "expand") 1 commandExpand "expands a macro and prints the result." "(expand '(when true 1)) ; => (if true 1 ())"
+                    , addCommand (SymPath path "os") 0 commandOS "prints the operating system (as returned by the Haskell function `System.Info.os`)." "(os)"
+                    , addCommand (SymPath path "system-include") 1 commandAddSystemInclude "adds a system include, i.e. a C `#include` with angle brackets (`<>`)." "(system-include \"stdint.h\")"
+                    , addCommand (SymPath path "relative-include") 1 commandAddRelativeInclude "adds a relative include, i.e. a C `include` with quotes. It also prepends the current directory." "(relative-include \"myheader.h\")"
+                    , addCommand (SymPath path "save-docs-internal") 1 commandSaveDocsInternal "is the internal companion command to `save-docs`. `save-docs` should be called instead." "(save-docs-internal 'Module)"
+                    , addCommand (SymPath path "read-file") 1 commandReadFile "reads a file into a string." "(read-file \"myfile.txt\")"
+                    , addCommand (SymPath path "write-file") 2 commandWriteFile "writes a string to a file." "(write-file \"myfile\" \"hello there!\")"
+                    , addCommand (SymPath path "bit-width") 0 commandBitWidth "gets the bit width of the platform." "(bit-width) ; => your host machine’s bit width, e.g. 32 or 64"
                     , makePrim "quote" 1 "quotes any value." "(quote x) ; where x is an actual symbol" (\_ ctx [x] -> return (ctx, Right x))
                     , makeVarPrim "file" "returns the file a symbol was defined in." "(file mysymbol)" primitiveFile
                     , makeVarPrim "line" "returns the line a symbol was defined on." "(line mysymbol)" primitiveLine
@@ -374,12 +374,12 @@ dynamicStringModule = Env { envBindings = bindings
                           , envMode = ExternalEnv
                           , envFunctionNestingLevel = 0 }
   where path = ["Dynamic", "String"]
-        bindings = Map.fromList [ addCommand (SymPath path "char-at") 2 commandCharAt
-                                , addCommand (SymPath path "index-of") 2 commandIndexOf
-                                , addCommand (SymPath path "slice") 3 commandSubstring
-                                , addCommand (SymPath path "length") 1 commandStringLength
-                                , addCommand (SymPath path "concat") 1 commandStringConcat
-                                , addCommand (SymPath path "directory") 1 commandStringDirectory
+        bindings = Map.fromList [ addCommand (SymPath path "char-at") 2 commandCharAt "gets the nth character of a string." "(String.char-at \"hi\" 1) ; => \\i"
+                                , addCommand (SymPath path "index-of") 2 commandIndexOf "gets the index of a character in a string (or returns `-1` if the character is not found)." "(index-of \"hi\" \\i) ; => 1"
+                                , addCommand (SymPath path "slice") 3 commandSubstring "creates a substring from a beginning index to an end index." "(String.slice \"hello\" 1 3) ; => \"ell\""
+                                , addCommand (SymPath path "length") 1 commandStringLength "gets the length of a string." "(String.length \"hi\") ; => 2"
+                                , addCommand (SymPath path "concat") 1 commandStringConcat "concatenates a list of strings together." "(String.concat [\"hi \" \"there\"]) ; => \"hi there\""
+                                , addCommand (SymPath path "directory") 1 commandStringDirectory "takes the basename of a string taken to be a filepath.\n\nHistorical note: this is a command because it used to power one of the `include` macros." "(String.directory \"dir/file\") ; => \"dir\""
                                 ]
 
 -- | A submodule of the Dynamic module. Contains functions for working with symbols in the repl or during compilation.
@@ -391,10 +391,10 @@ dynamicSymModule = Env { envBindings = bindings
                        , envMode = ExternalEnv
                        , envFunctionNestingLevel = 0 }
   where path = ["Dynamic", "Symbol"]
-        bindings = Map.fromList [ addCommand (SymPath path "concat") 1 commandSymConcat
-                                , addCommand (SymPath path "prefix") 2 commandSymPrefix
-                                , addCommand (SymPath path "from") 1 commandSymFrom
-                                , addCommand (SymPath path "str") 1 commandSymStr
+        bindings = Map.fromList [ addCommand (SymPath path "concat") 1 commandSymConcat "concatenates a list of symbols together." "(Symbol.concat ['x 'y 'z]) ; => 'xyz"
+                                , addCommand (SymPath path "prefix") 2 commandSymPrefix "prefixes a symbol with a module." "(Symbol.prefix 'Module 'fun) ; => Module.fun"
+                                , addCommand (SymPath path "from") 1 commandSymFrom "converts a variety of types to a symbol." "(Symbol.from true) ; => True"
+                                , addCommand (SymPath path "str") 1 commandSymStr "converts a symbol to a string." "(Symbol.str 'x) ; => \"x\""
                                 ]
 
 -- | A submodule of the Dynamic module. Contains functions for working with the active Carp project.
@@ -406,8 +406,8 @@ dynamicProjectModule = Env { envBindings = bindings
                            , envMode = ExternalEnv
                            , envFunctionNestingLevel = 0 }
   where path = ["Dynamic", "Project"]
-        bindings = Map.fromList [ addCommand (SymPath path "config") 2 commandProjectConfig
-                                , addCommand (SymPath path "get-config") 1 commandProjectGetConfig
+        bindings = Map.fromList [ addCommand (SymPath path "config") 2 commandProjectConfig "sets a project config key." "(Project.config \"paren-balance-hints\" false)"
+                                , addCommand (SymPath path "get-config") 1 commandProjectGetConfig "gets a project config value under a key." "(Project.get-config \"paren-balance-hints\")"
                                 ]
 
 -- | A hack-ish function for converting any enum to an int.

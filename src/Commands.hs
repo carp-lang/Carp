@@ -46,25 +46,28 @@ falseXObj :: XObj
 falseXObj = XObj (Bol False) Nothing Nothing
 
 -- | Use this function to register commands in the environment.
-addCommand :: SymPath -> Int -> CommandCallback -> (String, Binder)
-addCommand name arity callback = addCommandConfigurable name (Just arity) callback
+addCommand :: SymPath -> Int -> CommandCallback -> String -> String -> (String, Binder)
+addCommand name arity callback doc example = addCommandConfigurable name (Just arity) callback doc example
 
-addCommandConfigurable :: SymPath -> Maybe Int -> CommandCallback -> (String, Binder)
-addCommandConfigurable path maybeArity callback =
+addCommandConfigurable :: SymPath -> Maybe Int -> CommandCallback -> String -> String -> (String, Binder)
+addCommandConfigurable path maybeArity callback doc example =
   let cmd = XObj (Lst [XObj (Command (CommandFunction f)) (Just dummyInfo) Nothing
                       ,XObj (Sym path Symbol) Nothing Nothing
                       ])
             (Just dummyInfo) (Just DynamicTy)
       SymPath _ name = path
-  in (name, Binder emptyMeta cmd)
+      meta = MetaData (Map.insert "doc" (XObj (Str docString) Nothing Nothing) Map.empty)
+  in (name, Binder meta cmd)
   where f = case maybeArity of
               Just arity -> withArity arity
               Nothing -> callback
+        docString = doc ++ "\n\n" ++ exampleUsage
+        exampleUsage = "Example Usage\n```\n" ++ example ++ "\n```\n"
         withArity arity ctx args =
           if length args == arity
             then callback ctx args
             else
-              return (evalError ctx ("Invalid args to '" ++ show path ++ "' command: " ++ joinWithComma (map pretty args)) Nothing)
+              return (evalError ctx ("Invalid args to '" ++ show path ++ "' command: " ++ joinWithComma (map pretty args) ++ "\n\n" ++ exampleUsage) Nothing)
 
 presentError :: MonadIO m => String -> a -> m a
 presentError msg ret =

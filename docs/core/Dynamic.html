@@ -173,7 +173,11 @@
                     
                 </span>
                 <p class="doc">
-                    
+                    <p>multiplies its two arguments.</p>
+<p>Example Usage</p>
+<pre><code>(* 2 3) ; =&gt; 6
+</code></pre>
+
                 </p>
             </div>
             <div class="binder">
@@ -192,7 +196,11 @@
                     
                 </span>
                 <p class="doc">
-                    
+                    <p>adds its two arguments.</p>
+<p>Example Usage</p>
+<pre><code>(+ 1 2) ; =&gt; 3
+</code></pre>
+
                 </p>
             </div>
             <div class="binder">
@@ -211,7 +219,11 @@
                     
                 </span>
                 <p class="doc">
-                    
+                    <p>subtracts its second argument from its first.</p>
+<p>Example Usage</p>
+<pre><code>(- 1 2) ; =&gt; -1
+</code></pre>
+
                 </p>
             </div>
             <div class="binder">
@@ -230,7 +242,11 @@
                     
                 </span>
                 <p class="doc">
-                    
+                    <p>divides its first argument by its second.</p>
+<p>Example Usage</p>
+<pre><code>(/ 4 2) ; =&gt; 2
+</code></pre>
+
                 </p>
             </div>
             <div class="binder">
@@ -249,7 +265,11 @@
                     
                 </span>
                 <p class="doc">
-                    
+                    <p>checks whether its first argument is less than its second.</p>
+<p>Example Usage</p>
+<pre><code>(&lt; 1 2) ; =&gt; true
+</code></pre>
+
                 </p>
             </div>
             <div class="binder">
@@ -268,7 +288,11 @@
                     
                 </span>
                 <p class="doc">
-                    
+                    <p>compares its arguments for equality.</p>
+<p>Example Usage</p>
+<pre><code>(= 1 2) ; =&gt; false
+</code></pre>
+
                 </p>
             </div>
             <div class="binder">
@@ -287,7 +311,11 @@
                     
                 </span>
                 <p class="doc">
-                    
+                    <p>checks whether its first argument is greater than its second.</p>
+<p>Example Usage</p>
+<pre><code>(&gt; 1 2) ; =&gt; false
+</code></pre>
+
                 </p>
             </div>
             <div class="binder">
@@ -363,7 +391,11 @@
                     
                 </span>
                 <p class="doc">
-                    
+                    <p>gets all elements except for the last one of a list or array.</p>
+<p>Example Usage</p>
+<pre><code>(all-but-last '(1 2 3)) ; =&gt; '(1 2)
+</code></pre>
+
                 </p>
             </div>
             <div class="binder">
@@ -429,7 +461,11 @@ function <code>f</code>.</p>
                     
                 </span>
                 <p class="doc">
-                    
+                    <p>appends two lists or arrays.</p>
+<p>Example Usage</p>
+<pre><code>(append '(1 2) '(3 4)) ; =&gt; '(1 2 3 4)
+</code></pre>
+
                 </p>
             </div>
             <div class="binder">
@@ -469,7 +505,11 @@ in the list as an argument to the function.</p>
                     
                 </span>
                 <p class="doc">
-                    
+                    <p>creates an array from a collection of elements.</p>
+<p>Example Usage</p>
+<pre><code>(array 1 2 3) ; =&gt; [1 2 3]
+</code></pre>
+
                 </p>
             </div>
             <div class="binder">
@@ -488,7 +528,11 @@ in the list as an argument to the function.</p>
                     
                 </span>
                 <p class="doc">
-                    
+                    <p>checks whether the arguments is an array.</p>
+<p>Example Usage</p>
+<pre><code>(array? []) ; =&gt; true
+</code></pre>
+
                 </p>
             </div>
             <div class="binder">
@@ -507,7 +551,11 @@ in the list as an argument to the function.</p>
                     
                 </span>
                 <p class="doc">
-                    
+                    <p>gets the bit width of the platform.</p>
+<p>Example Usage</p>
+<pre><code>(bit-width) ; =&gt; your host machine’s bit width, e.g. 32 or 64
+</code></pre>
+
                 </p>
             </div>
             <div class="binder">
@@ -526,7 +574,11 @@ in the list as an argument to the function.</p>
                     
                 </span>
                 <p class="doc">
-                    
+                    <p>builds the current code to an executable.</p>
+<p>Example Usage</p>
+<pre><code>(build)
+</code></pre>
+
                 </p>
             </div>
             <div class="binder">
@@ -545,7 +597,11 @@ in the list as an argument to the function.</p>
                     
                 </span>
                 <p class="doc">
-                    
+                    <p>prints the C code emitted for a binding.</p>
+<p>Example Usage</p>
+<pre><code>(c '(+ 2 3)) ; =&gt; int _3 = Int__PLUS_(2, 3);
+</code></pre>
+
                 </p>
             </div>
             <div class="binder">
@@ -830,7 +886,11 @@ in the list as an argument to the function.</p>
                     
                 </span>
                 <p class="doc">
-                    
+                    <p>gets the head of a list or array.</p>
+<p>Example Usage</p>
+<pre><code>(car '(1 2 3)) ; =&gt; 1
+</code></pre>
+
                 </p>
             </div>
             <div class="binder">
@@ -849,7 +909,11 @@ in the list as an argument to the function.</p>
                     
                 </span>
                 <p class="doc">
-                    
+                    <p>spits out the generated C code.</p>
+<p>Example Usage</p>
+<pre><code>(cat)
+</code></pre>
+
                 </p>
             </div>
             <div class="binder">
@@ -1134,7 +1198,11 @@ in the list as an argument to the function.</p>
                     
                 </span>
                 <p class="doc">
-                    
+                    <p>gets the tail of a list or array.</p>
+<p>Example Usage</p>
+<pre><code>(cdr '(1 2 3)) ; =&gt; '(2 3)
+</code></pre>
+
                 </p>
             </div>
             <div class="binder">
@@ -1257,7 +1325,11 @@ For exmaple:
                     
                 </span>
                 <p class="doc">
-                    
+                    <p>adds an element to the front of an array or list</p>
+<p>Example Usage</p>
+<pre><code>(cons 1 '(2 3)) ; =&gt; '(1 2 3)
+</code></pre>
+
                 </p>
             </div>
             <div class="binder">
@@ -1276,7 +1348,11 @@ For exmaple:
                     
                 </span>
                 <p class="doc">
-                    
+                    <p>adds an element to the back of an array or list</p>
+<p>Example Usage</p>
+<pre><code>(cons-last 3 '(1 2)) ; =&gt; '(1 2 3)
+</code></pre>
+
                 </p>
             </div>
             <div class="binder">
@@ -1624,7 +1700,11 @@ and then to the following argument.</p>
                     
                 </span>
                 <p class="doc">
-                    
+                    <p>lists all current bindings.</p>
+<p>Example Usage</p>
+<pre><code>(env)
+</code></pre>
+
                 </p>
             </div>
             <div class="binder">
@@ -1704,7 +1784,11 @@ and then to the following argument.</p>
                     
                 </span>
                 <p class="doc">
-                    
+                    <p>expands a macro and prints the result.</p>
+<p>Example Usage</p>
+<pre><code>(expand '(when true 1)) ; =&gt; (if true 1 ())
+</code></pre>
+
                 </p>
             </div>
             <div class="binder">
@@ -1800,7 +1884,11 @@ and then to the following argument.</p>
                     
                 </span>
                 <p class="doc">
-                    
+                    <p>prints help.</p>
+<p>Example Usage</p>
+<pre><code>(help)
+</code></pre>
+
                 </p>
             </div>
             <div class="binder">
@@ -1861,7 +1949,11 @@ and then to the following argument.</p>
                     
                 </span>
                 <p class="doc">
-                    
+                    <p>gets the last element of a list or array.</p>
+<p>Example Usage</p>
+<pre><code>(last '(1 2 3)) ; =&gt; 3
+</code></pre>
+
                 </p>
             </div>
             <div class="binder">
@@ -1880,7 +1972,11 @@ and then to the following argument.</p>
                     
                 </span>
                 <p class="doc">
-                    
+                    <p>returns the length of the argument (must be an array, string or list).</p>
+<p>Example Usage</p>
+<pre><code>(length '(1 2 3)) ; =&gt; 3
+</code></pre>
+
                 </p>
             </div>
             <div class="binder">
@@ -1922,7 +2018,11 @@ and then to the following argument.</p>
                     
                 </span>
                 <p class="doc">
-                    
+                    <p>creates an array from a collection of elements.</p>
+<p>Example Usage</p>
+<pre><code>(list 1 2 3) ; =&gt; (1 2 3)
+</code></pre>
+
                 </p>
             </div>
             <div class="binder">
@@ -1960,7 +2060,11 @@ and then to the following argument.</p>
                     
                 </span>
                 <p class="doc">
-                    
+                    <p>checks whether the argument is a list.</p>
+<p>Example Usage</p>
+<pre><code>(list? '()) ; =&gt; true
+</code></pre>
+
                 </p>
             </div>
             <div class="binder">
@@ -1979,7 +2083,11 @@ and then to the following argument.</p>
                     
                 </span>
                 <p class="doc">
-                    
+                    <p>loads a file into the current environment.</p>
+<p>Example Usage</p>
+<pre><code>(load &quot;myfile.carp&quot;)
+</code></pre>
+
                 </p>
             </div>
             <div class="binder">
@@ -1998,7 +2106,11 @@ and then to the following argument.</p>
                     
                 </span>
                 <p class="doc">
-                    
+                    <p>loads a file and prevents it from being reloaded (see <code>reload</code>).</p>
+<p>Example Usage</p>
+<pre><code>(load-once &quot;myfile.carp&quot;)
+</code></pre>
+
                 </p>
             </div>
             <div class="binder">
@@ -2017,7 +2129,11 @@ and then to the following argument.</p>
                     
                 </span>
                 <p class="doc">
-                    
+                    <p>logs an error and errors out of a macro.</p>
+<p>Example Usage</p>
+<pre><code>(macro-error &quot;this is wrong&quot;)
+</code></pre>
+
                 </p>
             </div>
             <div class="binder">
@@ -2036,7 +2152,11 @@ and then to the following argument.</p>
                     
                 </span>
                 <p class="doc">
-                    
+                    <p>logs a message in a macro.</p>
+<p>Example Usage</p>
+<pre><code>(macro-log &quot;this will be printed at compile time&quot;)
+</code></pre>
+
                 </p>
             </div>
             <div class="binder">
@@ -2174,7 +2294,11 @@ applications.</p>
                     
                 </span>
                 <p class="doc">
-                    
+                    <p>negates its boolean argument.</p>
+<p>Example Usage</p>
+<pre><code>(not false) ; =&gt; true
+</code></pre>
+
                 </p>
             </div>
             <div class="binder">
@@ -2231,7 +2355,11 @@ applications.</p>
                     
                 </span>
                 <p class="doc">
-                    
+                    <p>prints the operating system (as returned by the Haskell function <code>System.Info.os</code>).</p>
+<p>Example Usage</p>
+<pre><code>(os)
+</code></pre>
+
                 </p>
             </div>
             <div class="binder">
@@ -2250,7 +2378,11 @@ applications.</p>
                     
                 </span>
                 <p class="doc">
-                    
+                    <p>prints the current project state.</p>
+<p>Example Usage</p>
+<pre><code>(project)
+</code></pre>
+
                 </p>
             </div>
             <div class="binder">
@@ -2269,7 +2401,11 @@ applications.</p>
                     
                 </span>
                 <p class="doc">
-                    
+                    <p>quits the program.</p>
+<p>Example Usage</p>
+<pre><code>(quit)
+</code></pre>
+
                 </p>
             </div>
             <div class="binder">
@@ -2330,7 +2466,11 @@ applications.</p>
                     
                 </span>
                 <p class="doc">
-                    
+                    <p>reads a file into a string.</p>
+<p>Example Usage</p>
+<pre><code>(read-file &quot;myfile.txt&quot;)
+</code></pre>
+
                 </p>
             </div>
             <div class="binder">
@@ -2416,7 +2556,11 @@ value through successive applications of <code>f</code>.</p>
                     
                 </span>
                 <p class="doc">
-                    
+                    <p>adds a relative include, i.e. a C <code>include</code> with quotes. It also prepends the current directory.</p>
+<p>Example Usage</p>
+<pre><code>(relative-include &quot;myheader.h&quot;)
+</code></pre>
+
                 </p>
             </div>
             <div class="binder">
@@ -2435,7 +2579,11 @@ value through successive applications of <code>f</code>.</p>
                     
                 </span>
                 <p class="doc">
-                    
+                    <p>reloads all currently loaded files that weren’t marked as only loading once (see <code>load</code> and <code>load-once</code>).</p>
+<p>Example Usage</p>
+<pre><code>(reload)
+</code></pre>
+
                 </p>
             </div>
             <div class="binder">
@@ -2481,7 +2629,11 @@ value through successive applications of <code>f</code>.</p>
                     
                 </span>
                 <p class="doc">
-                    
+                    <p>runs the built executable.</p>
+<p>Example Usage</p>
+<pre><code>(run)
+</code></pre>
+
                 </p>
             </div>
             <div class="binder">
@@ -2500,7 +2652,11 @@ value through successive applications of <code>f</code>.</p>
                     
                 </span>
                 <p class="doc">
-                    
+                    <p>is the internal companion command to <code>save-docs</code>. <code>save-docs</code> should be called instead.</p>
+<p>Example Usage</p>
+<pre><code>(save-docs-internal 'Module)
+</code></pre>
+
                 </p>
             </div>
             <div class="binder">
@@ -2519,7 +2675,11 @@ value through successive applications of <code>f</code>.</p>
                     
                 </span>
                 <p class="doc">
-                    
+                    <p>stringifies its arguments.</p>
+<p>Example Usage</p>
+<pre><code>(str 1 &quot; &quot; 2 &quot; &quot; 3) ; =&gt; &quot;1 2 3&quot;
+</code></pre>
+
                 </p>
             </div>
             <div class="binder">
@@ -2538,7 +2698,11 @@ value through successive applications of <code>f</code>.</p>
                     
                 </span>
                 <p class="doc">
-                    
+                    <p>checks whether the argument is a symbol.</p>
+<p>Example Usage</p>
+<pre><code>(symbol? 'x) ; =&gt; true
+</code></pre>
+
                 </p>
             </div>
             <div class="binder">
@@ -2557,7 +2721,11 @@ value through successive applications of <code>f</code>.</p>
                     
                 </span>
                 <p class="doc">
-                    
+                    <p>adds a system include, i.e. a C <code>#include</code> with angle brackets (<code>&lt;&gt;</code>).</p>
+<p>Example Usage</p>
+<pre><code>(system-include &quot;stdint.h&quot;)
+</code></pre>
+
                 </p>
             </div>
             <div class="binder">
@@ -2678,7 +2846,11 @@ Collects results in the structure given by <code>acc</code>.</p>
                     
                 </span>
                 <p class="doc">
-                    
+                    <p>writes a string to a file.</p>
+<p>Example Usage</p>
+<pre><code>(write-file &quot;myfile&quot; &quot;hello there!&quot;)
+</code></pre>
+
                 </p>
             </div>
             <div class="binder">
