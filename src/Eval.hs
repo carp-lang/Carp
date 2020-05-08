@@ -247,6 +247,8 @@ eval ctx xobj@(XObj o i t) =
                case acc of
                  err@(Left _) -> return (ctx, err)
                  Right _ -> eval ctx x
+       [XObj While _ _, cond, body] ->
+         specialCommandWhile ctx cond body
        [] -> return (ctx, dynamicNil)
        x -> do
         return (evalError ctx ("I did not understand the form `" ++ pretty xobj ++ "`") (info xobj))
@@ -470,6 +472,23 @@ specialCommandDefine ctx xobj =
             return (ctxWithDef, dynamicNil)
        Left err ->
          return (ctx, Left err)
+
+specialCommandWhile :: Context -> XObj -> XObj -> IO (Context, Either EvalError XObj)
+specialCommandWhile ctx cond body = do
+  (newCtx, evd) <- eval ctx cond
+  case evd of
+    Right c ->
+      case obj c of
+        Bol b -> if b
+          then do
+            (newCtx, _) <- eval newCtx body
+            specialCommandWhile newCtx cond body
+          else
+            return (newCtx, dynamicNil)
+        _ ->
+          return (evalError ctx ("This `while` condition contains the non-boolean value '" ++
+                  pretty c ++ "`") (info c))
+    Left e -> return (newCtx, Left e)
 
 getSigFromDefnOrDef :: Context -> Env -> FilePathPrintLength -> XObj -> (Either EvalError (Maybe (Ty, XObj)))
 getSigFromDefnOrDef ctx globalEnv fppl xobj =
