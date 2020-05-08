@@ -286,6 +286,9 @@ areUnifiable (StructTy a aArgs) (StructTy b bArgs)
   | areUnifiable a b = let argBools = zipWith areUnifiable aArgs bArgs
                        in  all (== True) argBools
   | otherwise = False
+areUnifiable (StructTy (VarTy _) aArgs) (FuncTy bArgs _ _)
+  | length aArgs /= length bArgs = False
+  | otherwise = all (== True) (zipWith areUnifiable aArgs bArgs)
 areUnifiable (StructTy _ _) _ = False
 areUnifiable (PointerTy a) (PointerTy b) = areUnifiable a b
 areUnifiable (PointerTy _) _ = False
