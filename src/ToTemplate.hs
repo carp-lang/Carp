@@ -36,7 +36,7 @@ toTemplate text = case Parsec.runParser templateSyntax 0 "(template)" text of
     parseTokC = do s <- Parsec.many1 validInSymbol
                    return (TokC s)
       where validInSymbol = Parsec.choice [Parsec.letter, Parsec.digit, Parsec.oneOf validCharactersInTemplate]
-            validCharactersInTemplate = " ><{}()[]|;:.,_-+*#/'^!?€%&=@\"\n\t"
+            validCharactersInTemplate = " ><{}()[]|;:.,_-+*#/'^!?€%&=@\"\n\t\\"
 
     parseTokTy :: Parsec.Parsec String Int Token
     parseTokTy = do _ <- Parsec.char '$'

@@ -359,6 +359,7 @@ dynamicModule = Env { envBindings = bindings
                     , makePrim "use" 1 "uses a module, i.e. imports the symbols inside that module into the current module." "(use MyModule)" primitiveUse
                     , makePrim "eval" 1 "evaluates a list." "(eval mycode)" primitiveEval
                     , makePrim "defined?" 1 "checks whether a symbol is defined." "(defined? mysymbol)" primitiveDefined
+                    , makePrim "deftemplate" 4 "defines a new C template." "(deftemplate symbol Type declString defString)" primitiveDeftemplate
                     ]
                     ++ [("String", Binder emptyMeta (XObj (Mod dynamicStringModule) Nothing Nothing))
                        ,("Symbol", Binder emptyMeta (XObj (Mod dynamicSymModule) Nothing Nothing))
