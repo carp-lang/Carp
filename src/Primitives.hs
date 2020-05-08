@@ -623,6 +623,6 @@ primitiveDeftemplate _ ctx [XObj (Sym p@(SymPath _ name) _) pinfo _, ty, XObj (S
     Nothing ->
       return (evalError ctx ("I do not understand the type form in " ++ pretty ty) (info ty))
 primitiveDeftemplate _ ctx [] =
-  return (evalError ctx "`deftemplate` requires a Symbol, a Type, two Strings." (Just dummyInfo))
+  return (evalError ctx "`deftemplate` requires a symbol, a type, two strings." (Just dummyInfo))
 primitiveDeftemplate _ ctx (x:_) =
   return (evalError ctx ("Invalid `deftemplate` call : " ++ pretty x) (info x))
