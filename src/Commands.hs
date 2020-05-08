@@ -62,7 +62,7 @@ addCommandConfigurable path maybeArity callback doc example =
               Just arity -> withArity arity
               Nothing -> callback
         docString = doc ++ "\n\n" ++ exampleUsage
-        exampleUsage = "Example Usage\n```\n" ++ example ++ "\n```\n"
+        exampleUsage = "Example Usage:\n```\n" ++ example ++ "\n```\n"
         withArity arity ctx args =
           if length args == arity
             then callback ctx args
