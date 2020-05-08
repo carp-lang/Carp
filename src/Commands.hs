@@ -201,12 +201,10 @@ commandBuild shutUp ctx args = do
       src = do decl <- envToDeclarations typeEnv env
                typeDecl <- envToDeclarations typeEnv (getTypeEnv typeEnv)
                c <- envToC env Functions
-               inlinedC <- envToInlinedC env
                initGlobals <- fmap (wrapInInitFunction (projectCore proj)) (globalsToC env)
                return ("//Types:\n" ++ typeDecl ++
                        "\n\n//Declarations:\n" ++ decl ++
                        "\n\n//Init globals:\n" ++ initGlobals ++
-                       "\n\n//Inlined C:\n" ++ inlinedC ++
                        "\n\n//Definitions:\n" ++ c
                       )
   case src of
@@ -852,28 +850,3 @@ saveDocs :: Context -> [(SymPath, Binder)] -> IO (Context, Either a XObj)
 saveDocs ctx pathsAndEnvBinders = do
      liftIO (saveDocsForEnvs (contextProj ctx) pathsAndEnvBinders)
      return (ctx, dynamicNil)
-
-commandInlineC :: CommandCallback
-commandInlineC ctx (XObj (Sym p _) _ _ : args) =
-  case mapM (checkArg ctx) args of
-    Just (err:_) -> return err
-    Nothing -> do
-      let src = concatMap stringify args
-          registration = XObj (InlinedC ("// " ++ show p ++ "\n" ++ src)) Nothing Nothing
-          globalEnv = contextGlobalEnv ctx
-          env' = envInsertAt globalEnv p (Binder emptyMeta registration)
-      return (ctx { contextGlobalEnv = env' }, dynamicNil)
-  where
-    --checkArg _ (XObj (Sym _ _) _ _) = Nothing
-    checkArg _ (XObj (Num _ _) _ _) = Nothing
-    checkArg _ (XObj (Str _) _ _) = Nothing
-    checkArg ctx x = Just (evalError ctx ("Invalid argument to inline-c (expected Num, Str, Sym, InlinedC) : " ++ pretty x) (info x))
-
-    stringify :: XObj -> String
-    --stringify (XObj (Sym p _) _ _) = show p
-    stringify x@(XObj (Num _ _) _ _) = pretty x
-    stringify (XObj (Str s) _ _) = s
-commandInlineC ctx (v@XObj{} : _) =
-  return (evalError ctx ("The first argument of inline-c must be a symbol, got " ++ pretty v ++ " instead.") (info v))
-commandInlineC ctx [] =
-  return (evalError ctx "inline-c expects a Symbol then some Strings and/or Numbers." (Just dummyInfo))

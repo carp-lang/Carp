@@ -312,7 +312,6 @@ dynamicModule = Env { envBindings = bindings
                     , addCommand (SymPath path "macro-error") 1 commandMacroError
                     , addCommandConfigurable (SymPath path "macro-log") Nothing commandMacroLog
                     , addCommandConfigurable (SymPath path "str") Nothing commandStr
-                    , addCommandConfigurable (SymPath path "inline-c") Nothing commandInlineC
                     , addCommand (SymPath path "not") 1 commandNot
                     , addCommand (SymPath path "=") 2 commandEq
                     , addCommand (SymPath path "<") 2 commandLt
