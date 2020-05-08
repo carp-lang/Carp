@@ -61,7 +61,10 @@ eval ctx xobj@(XObj o i t) =
                 case lookupInEnv path (contextGlobalEnv ctx) of
                   Just (_, Binder _ found) -> return (ctx, Right (resolveDef found))
                   Nothing ->
-                    return (evalError ctx ("Can't find symbol '" ++ show path ++ "'") i)
+                    case lookupInEnv path (getTypeEnv (contextTypeEnv ctx)) of
+                      Just (_, Binder _ found) -> return (ctx, Right (resolveDef found))
+                      Nothing ->
+                        return (evalError ctx ("Can't find symbol '" ++ show path ++ "'") i)
     Arr objs  -> do
       (newCtx, evaled) <- foldlM successiveEval (ctx, Right []) objs
       return (newCtx, do ok <- evaled
@@ -210,6 +213,11 @@ eval ctx xobj@(XObj o i t) =
        x@(XObj (Lst [XObj (Primitive prim) _ _, _]) _ _):args -> (getPrimitive prim) x ctx args
 
        XObj (Lst (XObj (Defn _) _ _:_)) _ _:_ -> return (ctx, Right xobj)
+       XObj (Lst (XObj (Interface _ _) _ _:_)) _ _:_ -> return (ctx, Right xobj)
+       XObj (Lst (XObj (Instantiate _) _ _:_)) _ _:_ -> return (ctx, Right xobj)
+       XObj (Lst (XObj (Deftemplate _) _ _:_)) _ _:_ -> return (ctx, Right xobj)
+       XObj (Lst (XObj (External _) _ _:_)) _ _:_ -> return (ctx, Right xobj)
+       XObj (Match _) _ _:_ -> return (ctx, Right xobj)
 
        l@(XObj (Lst _) i t):args -> do
          (newCtx, f) <- eval ctx l
@@ -375,20 +383,34 @@ executeCommand ctx@(Context env _ _ _ _ _ _ _) xobj =
        Left e -> do
          reportExecutionError newCtx (show e)
          return (xobj, newCtx)
-       -- special case: calling a function at the repl
+       -- special case: calling something static at the repl
        Right (XObj (Lst (XObj (Lst (XObj (Defn _) _ _:(XObj (Sym (SymPath [] "main") _) _ _):_)) _ _:_)) _ _) ->
         executeCommand newCtx (withBuildAndRun (XObj (Lst []) (Just dummyInfo) Nothing))
        Right (XObj (Lst (XObj (Lst (XObj (Defn _) _ _:name:_)) _ _:args)) i _) -> do
-        (nc, r) <- annotateWithinContext False newCtx (XObj (Lst (name:args)) i Nothing)
-        case r of
-          Right (ann, deps) -> do
-            ctxWithDeps <- liftIO $ foldM (define True) nc deps
-            executeCommand ctxWithDeps (withBuildAndRun (buildMainFunction ann))
-          Left err -> do
-           reportExecutionError nc (show err)
-           return (xobj, nc)
+         callFromRepl newCtx (XObj (Lst (name:args)) i Nothing)
+       Right (XObj (Lst (XObj (Lst (XObj (Interface _ _) _ _:name:_)) _ _:args)) i _) -> do
+         callFromRepl newCtx (XObj (Lst (name:args)) i Nothing)
+       Right (XObj (Lst (XObj (Lst (XObj (Instantiate _) _ _:name:_)) _ _:args)) i _) -> do
+         callFromRepl newCtx (XObj (Lst (name:args)) i Nothing)
+       Right (XObj (Lst (XObj (Lst (XObj (Deftemplate _) _ _:name:_)) _ _:args)) i _) -> do
+         callFromRepl newCtx (XObj (Lst (name:args)) i Nothing)
+       Right (XObj (Lst (XObj (Lst (XObj (External _) _ _:name:_)) _ _:args)) i _) -> do
+         callFromRepl newCtx (XObj (Lst (name:args)) i Nothing)
+       Right x@(XObj (Lst (XObj (Match _) _ _ : _)) i _) -> do
+         callFromRepl newCtx x
+       Right x@(XObj (Lst (XObj The _ _ : _)) i _) -> do
+         callFromRepl newCtx x
        Right result -> return (result, newCtx)
-  where withBuildAndRun xobj =
+  where callFromRepl newCtx xobj = do
+          (nc, r) <- annotateWithinContext False newCtx xobj
+          case r of
+            Right (ann, deps) -> do
+              ctxWithDeps <- liftIO $ foldM (define True) nc deps
+              executeCommand ctxWithDeps (withBuildAndRun (buildMainFunction ann))
+            Left err -> do
+             reportExecutionError nc (show err)
+             return (xobj, nc)
+        withBuildAndRun xobj =
           XObj (Lst [ XObj Do (Just dummyInfo) Nothing
                     , xobj
                     , XObj (Lst [XObj (Sym (SymPath [] "build") Symbol) (Just dummyInfo) Nothing])

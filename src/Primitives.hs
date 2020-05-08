@@ -61,7 +61,7 @@ makePrim' name maybeArity docString example callback =
             "The primitive `" ++ name ++ "` expected " ++ show a ++
             " arguments, but got " ++ show l ++ ".\n\n" ++ exampleUsage) (info x))
         doc = docString ++ "\n\n" ++ exampleUsage
-        exampleUsage = "Example Usage\n```\n" ++ example ++ "\n```\n"
+        exampleUsage = "Example Usage:\n```\n" ++ example ++ "\n```\n"
 
 primitiveFile :: Primitive
 primitiveFile x@(XObj _ i t) ctx [] =
