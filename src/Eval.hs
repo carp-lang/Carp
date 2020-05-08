@@ -153,7 +153,7 @@ eval ctx xobj@(XObj o i t) =
                    Right newCtx -> do
                           (finalCtx, evaledBody) <- eval newCtx body
                           let Just e = contextInternalEnv finalCtx
-                          return (finalCtx{contextInternalEnv=envParent (trace (show e) e)},
+                          return (finalCtx{contextInternalEnv=envParent e},
                                   do okBody <- evaledBody
                                      Right okBody)
          where unwrapVar [] acc = acc
