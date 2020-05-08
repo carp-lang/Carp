@@ -15,7 +15,7 @@
   (doc sleep-seconds "Sleeps for a specified number of microseconds.")
   (register sleep-micros (Fn [Int] ()))
   (doc system "Performs a system command.")
-  (register system (Fn [&String] ()))
+  (register system (Fn [&String] Int))
   (doc get-arg "Gets the command line argument at a specified index.")
   (register get-arg (Fn [Int] (Ref String)))
   (doc get-args-len "Gets the number of command line arguments.")
