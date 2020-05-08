@@ -1,4 +1,4 @@
-(relative-include "carp_stdint.h")
+(system-include "carp_stdint.h")
 
 (register-type Uint8)
 (register-type Uint16)
