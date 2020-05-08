@@ -709,3 +709,7 @@ The expression must be evaluable at compile time.")
 (defmacro comp [:rest fns]
   (let [x (gensym)]
     (list 'fn [x] (comp-internal x fns))))
+
+(doc inline-c "inlines some custom C code.")
+(defmacro inline-c [name def decl]
+  (list 'deftemplate name (list) (eval def) (eval decl)))
