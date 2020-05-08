@@ -8,10 +8,14 @@ is scarce, you have to constantly ration, and you better stay out of the sun.
 This document aims to be a guide for how to ration with Carp. To do that, we
 first have to identify what resource it is that we’re most concerned about: is
 it executable size? Do we have timing-critical code? Do we want to avoid
-allocations?
+allocations? Once you have an answer to those questions, this guide can help
+you get there.
 
 Because Carp compiles to C, a lot of the same considerations, tricks, and
-reasoning apply to Carp.
+reasoning apply to Carp. If you already know what flags you need to get the job
+done, great! Carp will probably work with them out of the box. Still, getting
+acquainted with the tools it provides might help you have an easier time
+getting productive.
 
 ## Fundamentals
 
