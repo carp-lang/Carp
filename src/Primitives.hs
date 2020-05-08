@@ -622,7 +622,7 @@ primitiveDeftemplate _ ctx [XObj (Sym p@(SymPath _ name) _) pinfo _, ty, XObj (S
       return (evalError ctx ("I do not understand the type form in " ++ pretty ty) (info ty))
 primitiveDeftemplate _ ctx [XObj (Sym _ _) _ _, _, XObj (Str _) _ _, x] =
   argumentErr ctx "deftemplate" "a string" "fourth" x
-primitiveDeftemplate _ ctx [XObj _ _ _, _, x, _] =
+primitiveDeftemplate _ ctx [XObj (Sym _ _) _ _, _, x, _] =
   argumentErr ctx "deftemplate" "a string" "third" x
 primitiveDeftemplate _ ctx [x, _, _, _] =
   argumentErr ctx "deftemplate" "a symbol" "first" x
