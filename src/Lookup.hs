@@ -230,6 +230,18 @@ keysInEnvEditDistance path@(SymPath (p : ps) name) env distance =
         Just parent -> keysInEnvEditDistance path parent distance
         Nothing -> []
 
+envReplaceBinding :: SymPath -> Binder -> Env -> Env
+envReplaceBinding s@(SymPath [] name) binder env =
+  case Map.lookup name (envBindings env) of
+    Just _ ->
+      envAddBinding env name binder
+    Nothing ->
+      case envParent env of
+        Just parent -> env {envParent = Just (envReplaceBinding s binder parent)}
+        Nothing -> env
+envReplaceBinding (SymPath p name) xobj e = error "TODO: cannot replace qualified bindings"
+
+
 bindingNames :: Env -> [String]
 bindingNames = concatMap select . envBindings
   where select :: Binder -> [String]

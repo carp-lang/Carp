@@ -17,6 +17,11 @@
                    1))]
     (f 1)))
 
+; make sure let bindings get updated in the right scope
+(defmacro let-and-set []
+  (let-do [x 1]
+    (let [] (set! x 2))
+    (= x 2)))
 
 (use-all Test Vector2 Foo)
 
@@ -45,4 +50,7 @@
                 2
                 (nested-lambdas)
                 "test that nested lambdas can use captured values")
+  (assert-true test
+               (let-and-set)
+               "test that nested let bindings and set! interplay nicely")
 )

@@ -152,8 +152,10 @@ eval ctx xobj@(XObj o i t) =
                    Left err -> return (ctx, Left err)
                    Right newCtx -> do
                           (finalCtx, evaledBody) <- eval newCtx body
-                          return (finalCtx{contextInternalEnv=i}, do okBody <- evaledBody
-                                                                     Right okBody)
+                          let Just e = contextInternalEnv finalCtx
+                          return (finalCtx{contextInternalEnv=envParent e},
+                                  do okBody <- evaledBody
+                                     Right okBody)
          where unwrapVar [] acc = acc
                unwrapVar ((XObj (Sym (SymPath [] x) _) _ _,y):xs) acc = unwrapVar xs ((x,y):acc)
                successiveEval (n, x) =
@@ -820,7 +822,7 @@ specialCommandSet ctx [x@(XObj (Sym path@(SymPath mod n) _) _ _), value] = do
         Nothing -> return (nctx, dynamicNil)
         Just env ->
           if contextPath nctx == mod
-          then return (nctx{contextInternalEnv=Just (envInsertAt env (SymPath [] n) binder)}, dynamicNil)
+          then return (nctx{contextInternalEnv=Just (envReplaceBinding (SymPath [] n) binder env)}, dynamicNil)
           else return (nctx, dynamicNil)
 specialCommandSet ctx [notName, body] =
   return (evalError ctx ("`set!` expected a name as first argument, but got " ++ pretty notName) (info notName))
