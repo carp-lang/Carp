@@ -132,10 +132,12 @@ primitiveImplements xobj ctx [x@(XObj (Sym interface@(SymPath _ _) _) _ _), i@(X
            let adjustedMeta = meta {getMeta = Map.insert "implements" x (getMeta meta)}
            in  return (ctx' {contextGlobalEnv = envInsertAt global (getPath defobj) (Binder adjustedMeta defobj)},
                              dynamicNil)
-     _ -> return $ evalError
-            ctx ("Couldn't find a defintion for " ++ show impl ++ " did you define it?") (info x)
+     -- If the implementation binding doesn't exist yet, set the implements
+     -- meta. This enables specifying a function as an implementation before
+     -- defining it.
+     Nothing -> primitiveMetaSet xobj ctx [i, XObj (Str "implements") (Just dummyInfo) (Just StringTy), x]
 primitiveImplements xobj ctx [x, y] =
-  return $ evalError ctx ("`implements` expects symbol arguemnts.") (info x)
+  return $ evalError ctx ("`implements` expects symbol arguments.") (info x)
 primitiveImplements x@(XObj _ i t) ctx args =
   return $ evalError
     ctx ("`implements` expected 2 arguments, but got " ++ show (length args)) (info x)
@@ -203,8 +205,18 @@ define hidden ctx@(Context globalEnv _ typeEnv _ proj _ _ _) annXObj =
                                            "' from " ++ show previousTypeUnwrapped ++ " to " ++ show (forceTy annXObj))
                      putStrLnWithColor White "" -- To restore color for sure.
               Nothing -> return ()
-            return (ctx {contextGlobalEnv = envInsertAt globalEnv (getPath annXObj) (Binder adjustedMeta annXObj)})
-            -- TODO: Retroactively register interface impls when implements metadata is present.
+            case Map.lookup "implements" (getMeta previousMeta) of
+              Just (XObj (Sym interface@(SymPath _ _) _) _ _) ->
+                case registerDefnOrDefInInterfaceIfNeeded ctx annXObj interface of
+                  Left err ->
+                    do case contextExecMode ctx of
+                         Check ->
+                           let fppl = projectFilePathPrintLength (contextProj ctx)
+                           in putStrLn (machineReadableInfoFromXObj fppl annXObj ++ " " ++ err)
+                         _ -> putStrLnWithColor Red err
+                       return ctx
+                  Right ctx' -> return (ctx' {contextGlobalEnv = envInsertAt globalEnv (getPath annXObj) (Binder adjustedMeta annXObj)})
+              _ -> return (ctx {contextGlobalEnv = envInsertAt globalEnv (getPath annXObj) (Binder adjustedMeta annXObj)})
 
 primitiveRegisterType :: Primitive
 primitiveRegisterType _ ctx [XObj (Sym (SymPath [] t) _) _ _] =
@@ -398,7 +410,8 @@ primitiveMetaSet _ ctx [target@(XObj (Sym path@(SymPath _ name) _) _ _), XObj (S
           setMetaOn ctx (Just foundEnv) binder
         Nothing ->
           case path of
-            -- | If the path is unqualified, create a binder and set the meta on that one. This enables docstrings before function exists.
+            -- | If the path is unqualified, create a binder and set the meta on that one.
+            -- This enables docstrings and implementation declarations before function exists.
             (SymPath [] name) ->
               setMetaOn ctx Nothing (Binder emptyMeta (XObj (Lst [XObj DocStub Nothing Nothing,
                                                                   XObj (Sym (SymPath pathStrings name) Symbol) Nothing Nothing])
