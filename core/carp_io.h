@@ -14,63 +14,19 @@ void IO_error(String *s) {
 
 char IO_EOF = (char)EOF;
 
-#ifdef _WIN32
-// getline isn't a C standard library function so it's missing on windows
-// This implementation is stolen from StackOverflow, not sure if it's optimal...
-size_t getline(char **lineptr, size_t *n, FILE *stream) {
-    size_t pos;
-    int c;
-
-    if (lineptr == NULL || stream == NULL || n == NULL) {
-        errno = EINVAL;
-        return -1;
-    }
-
-    c = fgetc(stream);
-    if (c == EOF) {
-        return -1;
-    }
-
-    if (*lineptr == NULL) {
-        *lineptr = malloc(128);
-        if (*lineptr == NULL) {
-            return -1;
-        }
-        *n = 128;
-    }
-
-    pos = 0;
-    while (c != EOF) {
-        if (pos + 1 >= *n) {
-            size_t new_size = *n + (*n >> 2);
-            if (new_size < 128) {
-                new_size = 128;
-            }
-            char *new_ptr = CARP_REALLOC(*lineptr, new_size);
-            if (new_ptr == NULL) {
-                return -1;
-            }
-            *n = new_size;
-            *lineptr = new_ptr;
-        }
-
-        ((unsigned char *)(*lineptr))[pos++] = c;
-        if (c == '\n') {
-            break;
-        }
-        c = fgetc(stream);
-    }
-
-    (*lineptr)[pos] = '\0';
-    return pos;
-}
-#endif
-
 String IO_get_MINUS_line() {
-    size_t size = 1024;
-    String buffer = CARP_MALLOC(size);
-    getline(&buffer, &size, stdin);
-    return buffer;
+    char *b = NULL;
+    size_t cap = 64;
+    size_t sofar = 0;
+    while (1) {
+        b = CARP_REALLOC(b, cap);
+        b[cap - 1] = -1;
+        if (!fgets(b + sofar, cap - sofar, stdin)) break;
+        sofar = cap - 1;
+        if (b[cap - 1] == -1) break;
+        cap *= 2;
+    }
+    return b;
 }
 
 String IO_read_MINUS_file(const String *filename) {
