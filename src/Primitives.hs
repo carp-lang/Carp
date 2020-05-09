@@ -618,11 +618,11 @@ primitiveDeftemplate _ ctx [XObj (Sym p@(SymPath _ name) _) pinfo _, ty, XObj (S
                 meta = existingMeta globalEnv registration
                 env' = envInsertAt globalEnv path (Binder meta registration)
             in return (ctx { contextGlobalEnv = env' }, dynamicNil)
-        (a, Binder _ b) -> trace ("Something weird happened :\n" ++ a ++ "\n" ++ show b) $
-          return (evalError ctx "I'm not sure :/" pinfo)
     Nothing ->
       return (evalError ctx ("I do not understand the type form in " ++ pretty ty) (info ty))
-primitiveDeftemplate _ ctx [] =
-  return (evalError ctx "`deftemplate` requires a Symbol, a Type, two Strings." (Just dummyInfo))
-primitiveDeftemplate _ ctx (x:_) =
-  return (evalError ctx ("Invalid `deftemplate` call : " ++ pretty x) (info x))
+primitiveDeftemplate _ ctx [XObj (Sym _ _) _ _, _, XObj (Str _) _ _, x] =
+  argumentErr ctx "deftemplate" "a string" "fourth" x
+primitiveDeftemplate _ ctx [XObj (Sym _ _) _ _, _, x, _] =
+  argumentErr ctx "deftemplate" "a string" "third" x
+primitiveDeftemplate _ ctx [x, _, _, _] =
+  argumentErr ctx "deftemplate" "a symbol" "first" x

@@ -555,6 +555,10 @@ primitiveDefmodule xobj ctx@(Context env i typeEnv pathStrings proj lastInput ex
                  case result of
                    Left err -> return (newCtx, Left err)
                    Right _ -> return (newCtx, r)
+primitiveDefmodule _ ctx (x:_) =
+  return (evalError ctx ("`defmodule` expects a symbol, got '" ++ pretty x ++ "' instead.") (info x))
+primitiveDefmodule _ ctx [] =
+  return (evalError ctx "`defmodule` requires at least a symbol, received none." (Just dummyInfo))
 
 -- | "NORMAL" COMMANDS (just like the ones in Command.hs, but these need access to 'eval', etc.)
 
