@@ -295,6 +295,7 @@ The trailing elements of the longer array will be discarded.")
 
   (doc zero "returns the empty array.")
   (defn zero [] [])
+  (implements zero Array.zero)
 
   (doc concat "returns a new array which is the concatenation of the provided nested array `xs`.")
   (defn concat [xs]

@@ -32,9 +32,12 @@
   (defn random-between [lower upper]
     (let [diff (- upper lower)]
       (+ (Double.to-int (* (Double.from-int diff) (Random.random))) lower)))
+  (implements random-between Int.random-between)
 
   (defn random []
     (random-between 0 MAX))
+
+  (implements random Int.random)
 )
 
 (defmodule Float
@@ -42,34 +45,43 @@
     (let [diff (- upper lower)]
       (+ (Double.to-float (* (Double.from-float diff) (Random.random))) lower)))
 
+  (implements random-between Float.random-between)
+
   (defn random []
     (random-between 0.0f (from-int Int.MAX)))
+  (implements random Float.random)
 )
 
 (defmodule Long
   (defn random-between [lower upper]
     (let [diff (- upper lower)]
       (+ (Double.to-long (* (Double.from-long diff) (Random.random))) lower)))
+  (implements random-between Long.random-between)
 
   (defn random []
     (random-between 0l (from-int Int.MAX)))
+  (implements random Long.random)
 )
 
 (defmodule Double
   (defn random-between [lower upper]
     (let [diff (- upper lower)]
       (+ (* diff (Random.random)) lower)))
+  (implements random-between Double.random-between)
 
   (defn random []
     (random-between 0.0 (from-int Int.MAX)))
+  (implements random Double.random)
 )
 
 (defmodule Char
   (defn random []
     (Char.from-int (Int.random)))
+  (implements random Char.random)
 
   (defn random-between [a b]
     (Char.from-int (Int.random-between (Char.to-int a) (Char.to-int b))))
+  (implements random-between Char.random-between)
 )
 
 (defmodule String
@@ -80,8 +92,10 @@
 (defmodule Byte
   (defn random-between [lower upper]
     (Byte.from-int (Int.random-between (Byte.to-int lower) (Byte.to-int upper))))
+  (implements random-between Byte.random-between)
 
   (defn random []
     (Byte.from-int (Int.random)))
+  (implements random Byte.random)
 )
 

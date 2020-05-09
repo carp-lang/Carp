@@ -1,0 +1,11 @@
+(definterface unsafe-nth (Fn [(Ref (a b) c) Int] &b))
+(definterface length (Fn [(Ref (a b))] Int))
+
+(defmodule Collections
+  (defn empty? [a] 
+    (= 0 (length a)))
+  (defn first [a] 
+    (if (empty? a)
+        (Maybe.Nothing)
+        (Maybe.Just @(unsafe-nth a 0))))
+)

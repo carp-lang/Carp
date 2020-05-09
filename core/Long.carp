@@ -27,6 +27,21 @@
 to non-refs.")
   (register copy (λ [&Long] Long))
 
+  (implements + Long.+)
+  (implements - Long.-)
+  (implements * Long.*)
+  (implements / Long./)
+  (implements < Long.<)
+  (implements > Long.>)
+  (implements = Long.=)
+  (implements copy Long.copy)
+  (implements inc Long.inc)
+  (implements dec Long.dec)
+  (implements neg Long.neg)
+  (implements mod Long.mod)
+  (implements to-int Long.to-int)
+  (implements from-int Long.from-int)
+
   (not-on-windows ; this seems to generate invalid code on some windows machines
     (register safe-add (λ [Long Long (Ref Long)] Bool))
     (register safe-sub (λ [Long Long (Ref Long)] Bool))
@@ -39,6 +54,9 @@ to non-refs.")
   (defn odd? [a] (not (even? a)))
 
   (defn zero [] 0l)
+
+  (implements abs Long.abs)
+  (implements zero Long.zero)
 )
 
 (defmodule LongRef

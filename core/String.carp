@@ -24,6 +24,13 @@
   (register string-set-at! (Fn [&String Int &String] ()))
   (register allocate (Fn [Int Char] String))
 
+  (implements < String.<)
+  (implements > String.>)
+  (implements = String.=)
+  (implements copy String.copy)
+  (implements prn String.prn)
+  (implements str String.str)
+
   (doc head "Returns the character at start of string.")
   (defn head [s]
     (char-at s 0))
@@ -65,6 +72,7 @@
 
   (defn slice [s a b]
     (from-chars &(Array.slice &(chars s) a b)))
+  (implements slice String.slice)
 
   (doc prefix "Return the first `a` characters of the string `s`.")
   (defn prefix [s a]
@@ -87,6 +95,7 @@
 
   (doc zero "The empty string.")
   (defn zero [] @"")
+  (implements zero String.zero)
 
   (doc sum-length "Returns the sum of lengths from an array of Strings.")
   (defn sum-length [strings]
@@ -158,79 +167,99 @@
 
   (defn = [a b]
     (String.= &a &b))
+  (implements = StringCopy.=)
 
   (defn < [a b]
     (String.< &a &b))
+  (implements = StringCopy.<)
 
   (defn > [a b]
     (String.> &a &b))
+  (implements = StringCopy.>)
 
   (defn prn [s]
     (prn &(the String s)))
 
   (defn str [s]
     (str &(the String s)))
+  (implements str StringCopy.str)
 )
 
 (defmodule Bool
   (register str (Fn [Bool] String))
   (register format (Fn [&String Bool] String))
+  (implements format Bool.format)
 )
 
 (defmodule Int
   (register str (Fn [Int] String))
   (register format (Fn [&String Int] String))
+  (implements format Int.format)
   (register from-string (λ [&String] Int))
+  (implements from-string Int.from-string)
 )
 
 (defmodule Byte
   (register str (Fn [Byte] String))
   (register format (Fn [&String Byte] String))
+  (implements format Byte.format)
   (register from-string (λ [&String] Byte))
+  (implements from-string Byte.from-string)
 )
 
 (defmodule Float
   (register str (Fn [Float] String))
   (register format (Fn [&String Float] String))
+  (implements format Float.format)
   (register from-string (λ [&String] Float))
+  (implements from-string Float.from-string)
 )
 
 (defmodule Long
   (register str (Fn [Long] String))
   (register format (Fn [&String Long] String))
+  (implements format Long.format)
   (register from-string (λ [&String] Long))
+  (implements from-string Long.from-string)
 )
 
 (defmodule Double
   (register str (Fn [Double] String))
   (register format (Fn [&String Double] String))
+  (implements format Double.format)
   (register from-string (λ [&String] Double))
+  (implements from-string Double.from-string)
 )
 
 (defmodule Char
   (register str (Fn [Char] String))
   (register prn (Fn [Char] String))
+  (implements prn Char.prn)
   (register format (Fn [&String Char] String))
+  (implements format Char.format)
 )
 
-(defmodule Int (defn prn [x] (Int.str x)))
-(defmodule Byte (defn prn [x] (Byte.str x)))
+(defmodule Int (defn prn [x] (Int.str x))  (implements prn Int.prn))
+(defmodule Byte (defn prn [x] (Byte.str x)) (implements prn Byte.prn))
 (defmodule IntRef
   (defn prn [x] (Int.str @x))
+  (implements prn IntRef.prn)
   (defn str [x] (Int.str @x))
   )
 
 (defmodule BoolRef
   (defn prn [x] (Bool.str @x))
+  (implements prn BoolRef.prn)
   (defn str [x] (Bool.str @x)))
 
 (defmodule ByteRef
   (defn prn [x] (Byte.str @x))
+  (implements prn ByteRef.prn)
   (defn str [x] (Byte.str @x))
   )
 
-(defmodule Long (defn prn [x] (Long.str x)))
-(defmodule Float (defn prn [x] (Float.str x)))
-(defmodule Double (defn prn [x] (Double.str x)))
-(defmodule Bool (defn prn [x] (Bool.str x)))
-(defmodule Array (defn prn [x] (Array.str x)))
+(defmodule Long (defn prn [x] (Long.str x)) (implements prn Long.prn))
+(defmodule Float (defn prn [x] (Float.str x)) (implements prn Float.prn))
+(defmodule Double (defn prn [x] (Double.str x)) (implements prn Double.prn))
+(defmodule Bool (defn prn [x] (Bool.str x)) (implements prn Bool.prn))
+(defmodule Array (defn prn [x] (Array.str x)) (implements prn Array.prn))

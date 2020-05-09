@@ -114,10 +114,36 @@ primitiveColumn x@(XObj _ i t) ctx args =
       ("`column` expected 0 or 1 arguments, but got " ++ show (length args))
       (info x))
 
-registerInInterfaceIfNeeded :: Context -> SymPath -> Ty -> Either String Context
-registerInInterfaceIfNeeded ctx path@(SymPath _ name) definitionSignature =
+primitiveImplements :: Primitive
+primitiveImplements xobj ctx [x@(XObj (Sym interface@(SymPath _ _) _) _ _), i@(XObj (Sym impl@(SymPath _ _) _) _ _)] =
+  let tyEnv = getTypeEnv . contextTypeEnv $ ctx
+      global = contextGlobalEnv ctx
+      def = lookupInEnv impl global
+  in case def of
+     Just (_, Binder meta defobj) ->
+       case registerDefnOrDefInInterfaceIfNeeded ctx defobj interface of
+         Left err ->
+           do case contextExecMode ctx of
+                Check -> let fppl = projectFilePathPrintLength (contextProj ctx)
+                         in  putStrLn (machineReadableInfoFromXObj fppl defobj ++ " " ++ err)
+                _ -> putStrLnWithColor Red err
+              return $ evalError ctx err (info x)
+         Right ctx' ->
+           let adjustedMeta = meta {getMeta = Map.insert "implements" x (getMeta meta)}
+           in  return (ctx' {contextGlobalEnv = envInsertAt global (getPath defobj) (Binder adjustedMeta defobj)},
+                             dynamicNil)
+     _ -> return $ evalError
+            ctx ("Couldn't find a defintion for " ++ show impl ++ " did you define it?") (info x)
+primitiveImplements xobj ctx [x, y] =
+  return $ evalError ctx ("`implements` expects symbol arguemnts.") (info x)
+primitiveImplements x@(XObj _ i t) ctx args =
+  return $ evalError
+    ctx ("`implements` expected 2 arguments, but got " ++ show (length args)) (info x)
+
+registerInInterfaceIfNeeded :: Context -> SymPath -> SymPath -> Ty -> Either String Context
+registerInInterfaceIfNeeded ctx path@(SymPath _ name) interface@(SymPath [] inter) definitionSignature =
   let typeEnv = getTypeEnv (contextTypeEnv ctx)
-  in case lookupInEnv (SymPath [] name) typeEnv of
+  in case lookupInEnv interface typeEnv of
        Just (_, Binder _ (XObj (Lst [XObj (Interface interfaceSignature paths) ii it, isym]) i t)) ->
          if checkKinds interfaceSignature definitionSignature
            then if areUnifiable interfaceSignature definitionSignature
@@ -127,22 +153,26 @@ registerInInterfaceIfNeeded ctx path@(SymPath _ name) definitionSignature =
                            " doesn't match the interface signature " ++ show interfaceSignature)
            else Left ("[INTERFACE ERROR] " ++ show path ++ ":" ++ " One or more types in the interface implementation " ++ show definitionSignature ++ " have kinds that do not match the kinds of the types in the interface signature " ++ show interfaceSignature ++ "\n" ++ "Types of the form (f a) must be matched by constructor types such as (Maybe a)")
        Just (_, Binder _ x) ->
-         error ("A non-interface named '" ++ name ++ "' was found in the type environment: " ++ show x)
+         error ("Can't implement the non-interface '" ++ inter ++ "' in the type environment: " ++ show x)
        Nothing -> return ctx
 
--- | Ensure that a 'def' / 'defn' has registered with an interface (if they share the same name).
-registerDefnOrDefInInterfaceIfNeeded :: Context -> XObj -> Either String Context
-registerDefnOrDefInInterfaceIfNeeded ctx xobj =
+-- | Given an XObj and an interface path, ensure that a 'def' / 'defn' is
+-- registered with the interface.
+registerDefnOrDefInInterfaceIfNeeded :: Context -> XObj -> SymPath -> Either String Context
+registerDefnOrDefInInterfaceIfNeeded ctx xobj interface =
   case xobj of
     XObj (Lst [XObj (Defn _) _ _, XObj (Sym path _) _ _, _, _]) _ (Just t) ->
       -- This is a function, does it belong to an interface?
-      registerInInterfaceIfNeeded ctx path t
+      registerInInterfaceIfNeeded ctx path interface t
     XObj (Lst [XObj (Deftemplate _) _ _, XObj (Sym path _) _ _]) _ (Just t) ->
       -- Templates should also be registered.
-      registerInInterfaceIfNeeded ctx path t
+      registerInInterfaceIfNeeded ctx path interface t
     XObj (Lst [XObj Def _ _, XObj (Sym path _) _ _, _]) _ (Just t) ->
       -- Global variables can also be part of an interface
-      registerInInterfaceIfNeeded ctx path t
+      registerInInterfaceIfNeeded ctx path interface t
+      -- So can externals!
+    XObj (Lst [XObj (External _) _ _, XObj (Sym path _) _ _]) _ (Just t) ->
+      registerInInterfaceIfNeeded ctx path interface t
     _ -> return ctx
 
 define :: Bool -> Context -> XObj -> IO Context
@@ -173,15 +203,8 @@ define hidden ctx@(Context globalEnv _ typeEnv _ proj _ _ _) annXObj =
                                            "' from " ++ show previousTypeUnwrapped ++ " to " ++ show (forceTy annXObj))
                      putStrLnWithColor White "" -- To restore color for sure.
               Nothing -> return ()
-            case registerDefnOrDefInInterfaceIfNeeded ctx annXObj of
-              Left err ->
-                do case contextExecMode ctx of
-                     Check -> let fppl = projectFilePathPrintLength (contextProj ctx)
-                              in  putStrLn (machineReadableInfoFromXObj fppl annXObj ++ " " ++ err)
-                     _ -> putStrLnWithColor Red err
-                   return ctx
-              Right ctx' ->
-                return (ctx' { contextGlobalEnv = envInsertAt globalEnv (getPath annXObj) (Binder adjustedMeta annXObj) })
+            return (ctx {contextGlobalEnv = envInsertAt globalEnv (getPath annXObj) (Binder adjustedMeta annXObj)})
+            -- TODO: Retroactively register interface impls when implements metadata is present.
 
 primitiveRegisterType :: Primitive
 primitiveRegisterType _ ctx [XObj (Sym (SymPath [] t) _) _ _] =
@@ -401,13 +424,13 @@ primitiveMetaSet _ ctx [XObj (Sym _ _) _ _, key, _] =
 primitiveMetaSet _ ctx [target, _, _] =
   argumentErr ctx "meta-set!" "a symbol" "first" target
 
-retroactivelyRegisterInterfaceFunctions :: Context -> String -> Ty -> IO Context
-retroactivelyRegisterInterfaceFunctions ctx name t = do
+retroactivelyRegisterInterfaceFunctions :: Context -> String -> SymPath -> IO Context
+retroactivelyRegisterInterfaceFunctions ctx name interface = do
   let env = contextGlobalEnv ctx
       found = multiLookupALL name env
       binders = map snd found
       resultCtx = foldl' (\maybeCtx binder -> case maybeCtx of
-                                                Right ok -> registerDefnOrDefInInterfaceIfNeeded ok (binderXObj binder)
+                                                Right ok -> registerDefnOrDefInInterfaceIfNeeded ok (binderXObj binder) interface
                                                 Left err -> Left err)
                          (Right ctx) binders
   case resultCtx of
@@ -430,8 +453,8 @@ primitiveDefinterface xobj ctx [nameXObj@(XObj (Sym path@(SymPath [] name) _) _ 
           let interface = defineInterface name t [] (info nameXObj)
               typeEnv' = TypeEnv (envInsertAt typeEnv (SymPath [] name) (Binder emptyMeta interface))
           in  do
-                 newCtx <- retroactivelyRegisterInterfaceFunctions (ctx { contextTypeEnv = typeEnv' }) name t
-                 return (newCtx, dynamicNil)
+                 -- TODO: Retroactively register functions with an implements meta for this interface.
+                 return (ctx { contextTypeEnv = typeEnv' }, dynamicNil)
     Nothing ->
       return (evalError ctx ("Invalid type for interface `" ++ name ++ "`: " ++ pretty ty) (info ty))
 primitiveDefinterface _ ctx [name, _] = do
@@ -450,11 +473,8 @@ registerInternal ctx name ty override = do
                              (info ty) (Just t)
               meta = existingMeta globalEnv registration
               env' = envInsertAt globalEnv path (Binder meta registration)
-          in  case registerInInterfaceIfNeeded ctx path t of
-                Left errorMessage ->
-                  return (makeEvalError ctx Nothing errorMessage (info ty))
-                Right ctx' ->
-                  do return (ctx' { contextGlobalEnv = env' }, dynamicNil)
+          in  return (ctx { contextGlobalEnv = env' }, dynamicNil)
+              -- TODO: Retroactively register in interface if implements metadata is present.
         Nothing ->
           return (evalError ctx
             ("Can't understand type when registering '" ++ name ++ "'") (info ty))
@@ -532,9 +552,10 @@ primitiveDeftype xobj ctx (name:rest) =
                                  })
                  in do ctxWithDeps <- liftIO (foldM (define True) ctx' deps)
                        let ctxWithInterfaceRegistrations =
-                             foldM (\context (path, sig) -> registerInInterfaceIfNeeded context path sig) ctxWithDeps
-                                   [(SymPath (pathStrings ++ [typeModuleName]) "str", FuncTy [RefTy structTy (VarTy "q")] StringTy StaticLifetimeTy)
-                                   ,(SymPath (pathStrings ++ [typeModuleName]) "copy", FuncTy [RefTy structTy (VarTy "q")] structTy StaticLifetimeTy)]
+                             -- Since these functions are autogenerated, we treat them as a special case and automatically implement the interfaces.
+                             foldM (\context (path, sig, interface) -> registerInInterfaceIfNeeded context path interface sig) ctxWithDeps
+                                   [(SymPath (pathStrings ++ [typeModuleName]) "str", FuncTy [RefTy structTy (VarTy "q")] StringTy StaticLifetimeTy, (SymPath [] "str"))
+                                   ,(SymPath (pathStrings ++ [typeModuleName]) "copy", FuncTy [RefTy structTy (VarTy "q")] structTy StaticLifetimeTy, (SymPath [] "copy"))]
                        case ctxWithInterfaceRegistrations of
                          Left err -> do
                           liftIO (putStrLnWithColor Red err)

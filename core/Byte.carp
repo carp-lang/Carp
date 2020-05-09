@@ -1,30 +1,49 @@
 (system-include "carp_byte.h")
 
 (defmodule Byte
+  (register = (λ [Byte Byte] Bool))
+  (register copy (λ [&Byte] Byte))
   (register + (λ [Byte Byte] Byte))
   (register - (λ [Byte Byte] Byte))
   (register * (λ [Byte Byte] Byte))
   (register / (λ [Byte Byte] Byte))
   (register < (λ [Byte Byte] Bool))
   (register > (λ [Byte Byte] Bool))
-  (register = (λ [Byte Byte] Bool))
   (register mod (λ [Byte Byte] Byte))
+  (register inc (λ [Byte] Byte))
+  (register dec (λ [Byte] Byte))
+  (register to-int (λ [Byte] Int))
+  (register from-int (λ [Int] Byte))
+  (defn zero [] 0b)
+
+  (implements = Byte.=)
+  (implements copy Byte.copy)
+  (implements + Byte.+)
+  (implements - Byte.-)
+  (implements * Byte.*)
+  (implements / Byte./)
+  (implements < Byte.<)
+  (implements > Byte.>)
+  (implements mod Byte.mod)
+  (implements inc Byte.inc)
+  (implements dec Byte.dec)
+  (implements zero Byte.zero)
+  (implements to-int Byte.to-int)
+  (implements from-int Byte.from-int)
+
+)
+
+(defmodule Byte
   (register bit-shift-left (λ [Byte Byte] Byte))
   (register bit-shift-right (λ [Byte Byte] Byte))
   (register bit-and (λ [Byte Byte] Byte))
   (register bit-or (λ [Byte Byte] Byte))
   (register bit-xor (λ [Byte Byte] Byte))
   (register bit-not (λ [Byte] Byte))
-  (register inc (λ [Byte] Byte))
-  (register dec (λ [Byte] Byte))
-  (register copy (λ [&Byte] Byte))
-  (register to-int (λ [Byte] Int))
-  (register from-int (λ [Int] Byte))
 
   (defn even? [a] (= (mod a 2b) 0b))
   (defn odd? [a] (not (even? a)))
 
-  (defn zero [] 0b)
 
   (defn add-ref [x y]
     (Byte.+ @x @y))
@@ -47,6 +66,9 @@
           (set! y (/ y 2b))
           (set! x (* x x))))
       r))
+
+  (implements pow Byte.pow)
+  (implements add-ref Byte.add-ref)
 )
 
 (defmodule ByteRef
@@ -58,4 +80,8 @@
 
   (defn > [a b]
     (Byte.> @a @b))
+
+  (implements = ByteRef.=)
+  (implements < ByteRef.<)
+  (implements > ByteRef.>)
 )

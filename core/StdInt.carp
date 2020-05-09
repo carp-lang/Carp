@@ -32,6 +32,18 @@
   (defn zero [] (from-long 0l))
 
   (register from-bytes (Fn [&(Array Byte)] (Array Int8)))
+
+  (implements + Int8.+)
+  (implements - Int8.-)
+  (implements * Int8.*)
+  (implements / Int8./)
+  (implements < Int8.<)
+  (implements > Int8.>)
+  (implements = Int8.=)
+  (implements copy Int8.copy)
+  (implements str Int8.str)
+  (implements prn Int8.prn)
+  (implements zero Int8.zero)
 )
 
 (defmodule Int8Extra
@@ -63,6 +75,18 @@
   (defn zero [] (from-long 0l))
 
   (register from-bytes (Fn [&(Array Byte)] (Array Int16)))
+
+  (implements + Int16.+)
+  (implements - Int16.-)
+  (implements * Int16.*)
+  (implements / Int16./)
+  (implements < Int16.<)
+  (implements > Int16.>)
+  (implements = Int16.=)
+  (implements copy Int16.copy)
+  (implements str Int16.str)
+  (implements prn Int16.prn)
+  (implements zero Int16.zero)
 )
 
 (defmodule Int16Extra
@@ -94,6 +118,18 @@
   (defn zero [] (from-long 0l))
 
   (register from-bytes (Fn [&(Array Byte)] (Array Int32)))
+
+  (implements + Int32.+)
+  (implements - Int32.-)
+  (implements * Int32.*)
+  (implements / Int32./)
+  (implements < Int32.<)
+  (implements > Int32.>)
+  (implements = Int32.=)
+  (implements copy Int32.copy)
+  (implements str Int32.str)
+  (implements prn Int32.prn)
+  (implements zero Int32.zero)
 )
 
 (defmodule Int32Extra
@@ -125,6 +161,18 @@
   (defn zero [] (from-long 0l))
 
   (register from-bytes (Fn [&(Array Byte)] (Array Int64)))
+
+  (implements + Int64.+)
+  (implements - Int64.-)
+  (implements * Int64.*)
+  (implements / Int64./)
+  (implements < Int64.<)
+  (implements > Int64.>)
+  (implements = Int64.=)
+  (implements copy Int64.copy)
+  (implements str Int64.str)
+  (implements prn Int64.prn)
+  (implements zero Int64.zero)
 )
 
 (defmodule Int64Extra
@@ -156,6 +204,18 @@
   (defn zero [] (from-long 0l))
 
   (register from-bytes (Fn [&(Array Byte)] (Array Uint8)))
+
+  (implements + Uint8.+)
+  (implements - Uint8.-)
+  (implements * Uint8.*)
+  (implements / Uint8./)
+  (implements < Uint8.<)
+  (implements > Uint8.>)
+  (implements = Uint8.=)
+  (implements copy Uint8.copy)
+  (implements str Uint8.str)
+  (implements prn Uint8.prn)
+  (implements zero Uint8.zero)
 )
 
 (defmodule Uint8Extra
@@ -187,6 +247,18 @@
   (defn zero [] (from-long 0l))
 
   (register from-bytes (Fn [&(Array Byte)] (Array Uint16)))
+
+  (implements + Uint16.+)
+  (implements - Uint16.-)
+  (implements * Uint16.*)
+  (implements / Uint16./)
+  (implements < Uint16.<)
+  (implements > Uint16.>)
+  (implements = Uint16.=)
+  (implements copy Uint16.copy)
+  (implements str Uint16.str)
+  (implements prn Uint16.prn)
+  (implements zero Uint16.zero)
 )
 
 (defmodule Uint16Extra
@@ -218,6 +290,18 @@
   (defn zero [] (from-long 0l))
 
   (register from-bytes (Fn [&(Array Byte)] (Array Uint32)))
+
+  (implements + Uint32.+)
+  (implements - Uint32.-)
+  (implements * Uint32.*)
+  (implements / Uint32./)
+  (implements < Uint32.<)
+  (implements > Uint32.>)
+  (implements = Uint32.=)
+  (implements copy Uint32.copy)
+  (implements str Uint32.str)
+  (implements prn Uint32.prn)
+  (implements zero Uint32.zero)
 )
 
 (defmodule Uint32Extra
@@ -249,6 +333,18 @@
   (defn zero [] (from-long 0l))
 
   (register from-bytes (Fn [&(Array Byte)] (Array Uint64)))
+
+  (implements + Uint64.+)
+  (implements - Uint64.-)
+  (implements * Uint64.*)
+  (implements / Uint64./)
+  (implements < Uint64.<)
+  (implements > Uint64.>)
+  (implements = Uint64.=)
+  (implements copy Uint64.copy)
+  (implements str Uint64.str)
+  (implements prn Uint64.prn)
+  (implements zero Uint64.zero)
 )
 
 (defmodule Uint64Extra
