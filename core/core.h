@@ -8,6 +8,7 @@ typedef SSIZE_T ssize_t;
 #include <unistd.h>
 #endif
 #include <inttypes.h>
+#include <locale.h>
 
 typedef char *String;
 typedef char *Pattern;

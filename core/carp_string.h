@@ -23,7 +23,7 @@ void String_string_MINUS_set_BANG_(String *s, int i, char ch) {
 void String_string_MINUS_set_MINUS_at_BANG_(String *into, int i,
                                             const String *src) {
     char *dest = (*into) + i;
-    int lsrc = strlen(*src);
+    size_t lsrc = strlen(*src);
     /* given a string and indices
      *
      *  0 1 2 3 4 5 6 7 8 9
@@ -166,9 +166,13 @@ String Bool_format(const String *str, bool b) {
     return buffer;
 }
 
-String Char_str(char c) {
-    String buffer = CARP_MALLOC(2);
-    sprintf(buffer, "%c", c);
+String Char_str(int c) {
+    char buf[16];
+    int sz = snprintf(buf, sizeof(buf), "%lc", c);
+    size_t nsz = sz + 1;
+    String buffer = CARP_MALLOC(nsz);
+    assert(sz > 0);
+    memcpy(buffer, buf, nsz);
     return buffer;
 }
 

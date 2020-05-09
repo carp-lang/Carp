@@ -4,6 +4,18 @@
 (use Test)
 
 (deftest test
+  (assert-equal test
+		"a"
+  		&(str \a)
+		"str works with ASCII")
+  (assert-equal test
+		"ñ"
+  		&(str \ñ)
+		"str works with Latin1")
+  (assert-equal test
+		"😲"
+  		&(str \😲)
+		"str works with Emoji")
   (assert-true test
                 (= \a \a)
                 "char = works as expected I")

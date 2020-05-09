@@ -110,7 +110,7 @@ toC toCMode (Binder meta root) = emitterSrc (execState (visit startingIndent roo
                                 '\t' -> "'\\t'"
                                 '\n' -> "'\\n'"
                                 '\\' -> "'\\\\'"
-                                x -> ['\'', x, '\'']
+                                x -> ['U', '\'', x, '\'']
             Closure elem _ -> visit indent elem
             Sym _ _ -> visitSymbol indent xobj
             (Defn _) -> error (show (DontVisitObj xobj))
@@ -915,7 +915,9 @@ wrapInInitFunction :: Bool -> String -> String
 wrapInInitFunction with_core src =
   "void carp_init_globals(int argc, char** argv) {\n" ++
   (if with_core
-    then "  System_args.len = argc;\n  System_args.data = argv;\n"
+    then
+      "  System_args.len = argc;\n  System_args.data = argv;\n" ++
+      "  setlocale(LC_CTYPE, \"\");\n"
     else "")
   ++ src ++
   "}"
