@@ -84,8 +84,9 @@ String IO_read_MINUS_file(const String *filename) {
         fseek(f, 0, SEEK_SET);
         buffer = CARP_MALLOC(length + 1);
         if (buffer) {
-            fread(buffer, 1, length, f);
-            buffer[length] = '\0';
+            size_t sz = fread(buffer, 1, length, f);
+            assert(sz == length);
+            buffer[sz] = '\0';
         } else {
             printf("Failed to open buffer from file: %s\n", *filename);
             buffer = String_empty();
