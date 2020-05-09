@@ -438,17 +438,25 @@ primitiveMetaSet _ ctx [target, _, _] =
   argumentErr ctx "meta-set!" "a symbol" "first" target
 
 retroactivelyRegisterInterfaceFunctions :: Context -> String -> SymPath -> IO Context
-retroactivelyRegisterInterfaceFunctions ctx name interface = do
+retroactivelyRegisterInterfaceFunctions ctx name interface@(SymPath _ inter) = do
   let env = contextGlobalEnv ctx
-      found = multiLookupALL name env
-      binders = map snd found
+      bindings = map snd $ Map.toList (envBindings env)
+      impls = filter isImpl bindings
       resultCtx = foldl' (\maybeCtx binder -> case maybeCtx of
-                                                Right ok -> registerDefnOrDefInInterfaceIfNeeded ok (binderXObj binder) interface
+                                                Right ok ->
+                                                  registerDefnOrDefInInterfaceIfNeeded ok (binderXObj binder) interface
                                                 Left err -> Left err)
-                         (Right ctx) binders
+                         (Right ctx) impls
   case resultCtx of
     Left err -> error err
     Right ctx' -> return ctx'
+  where isImpl (Binder meta _) =
+          case Map.lookup "implements" (getMeta meta) of
+            Just x ->
+              case (getPath x) of
+                (SymPath _ i) -> i == inter
+                _ -> False
+            _ -> False
 
 primitiveDefinterface :: Primitive
 primitiveDefinterface xobj ctx [nameXObj@(XObj (Sym path@(SymPath [] name) _) _ _), ty] = do
@@ -465,9 +473,8 @@ primitiveDefinterface xobj ctx [nameXObj@(XObj (Sym path@(SymPath [] name) _) _ 
         Nothing ->
           let interface = defineInterface name t [] (info nameXObj)
               typeEnv' = TypeEnv (envInsertAt typeEnv (SymPath [] name) (Binder emptyMeta interface))
-          in  do
-                 -- TODO: Retroactively register functions with an implements meta for this interface.
-                 return (ctx { contextTypeEnv = typeEnv' }, dynamicNil)
+          in  do newCtx <- retroactivelyRegisterInterfaceFunctions (ctx { contextTypeEnv = typeEnv' }) name path
+                 return (newCtx, dynamicNil)
     Nothing ->
       return (evalError ctx ("Invalid type for interface `" ++ name ++ "`: " ++ pretty ty) (info ty))
 primitiveDefinterface _ ctx [name, _] = do
