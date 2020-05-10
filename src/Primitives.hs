@@ -440,8 +440,7 @@ primitiveMetaSet _ ctx [target, _, _] =
 retroactivelyRegisterInterfaceFunctions :: Context -> String -> SymPath -> IO Context
 retroactivelyRegisterInterfaceFunctions ctx name interface@(SymPath _ inter) = do
   let env = contextGlobalEnv ctx
-      bindings = map snd $ Map.toList (envBindings env)
-      impls = filter isImpl bindings
+      impls = recursiveLookupAll interface lookupImplementations env
       resultCtx = foldl' (\maybeCtx binder -> case maybeCtx of
                                                 Right ok ->
                                                   registerDefnOrDefInInterfaceIfNeeded ok (binderXObj binder) interface
@@ -450,13 +449,6 @@ retroactivelyRegisterInterfaceFunctions ctx name interface@(SymPath _ inter) = d
   case resultCtx of
     Left err -> error err
     Right ctx' -> return ctx'
-  where isImpl (Binder meta _) =
-          case Map.lookup "implements" (getMeta meta) of
-            Just x ->
-              case (getPath x) of
-                (SymPath _ i) -> i == inter
-                _ -> False
-            _ -> False
 
 primitiveDefinterface :: Primitive
 primitiveDefinterface xobj ctx [nameXObj@(XObj (Sym path@(SymPath [] name) _) _ _), ty] = do
