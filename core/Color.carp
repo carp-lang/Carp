@@ -27,8 +27,10 @@
   (use Id)
   (defn hash [k]
     (get-tag k))
+  (implements hash Color.hash)
   (defn = [a b]
     (= (hash (the (Ref Id) a)) (hash b)))
+  (implements = Color.=)
 
   (def table
     {(Black) @"30"

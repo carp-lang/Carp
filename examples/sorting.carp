@@ -9,7 +9,12 @@
   (defn > [a b]
     (> (Age.x a) (Age.x b)))
   (defn < [a b]
-    (< (Age.x a) (Age.x b))))
+    (< (Age.x a) (Age.x b)))
+
+  (implements = Age.=)
+  (implements > Age.>)
+  (implements < Age.<)
+  )
 
 (defn main []
   (let-do [ints (Array.sort [10 3 75 40])

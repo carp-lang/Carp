@@ -58,11 +58,15 @@
 (defmodule CharRef
   (defn = [a b]
     (Char.= @a @b))
+  (implements = CharRef.=)
   (defn < [a b]
     (Char.< @a @b))
+  (implements < CharRef.<)
   (defn > [a b]
     (Char.> @a @b))
+  (implements > CharRef.>)
 )
 
 (defmodule PtrChar
-  (register str (Fn [(Ptr Char)] String)))
+  (register str (Fn [(Ptr Char)] String))
+  (implements str PtrChar.str))

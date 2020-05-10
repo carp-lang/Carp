@@ -20,6 +20,7 @@
   (register from-chars (Fn [&(Array Char)] String))
   (register tail (λ [(Ref String)] String))
   (register format (Fn [&String &String] String))
+  (implements format String.format)
   (register string-set! (Fn [&String Int Char] ()))
   (register string-set-at! (Fn [&String Int &String] ()))
   (register allocate (Fn [Int Char] String))
@@ -171,14 +172,15 @@
 
   (defn < [a b]
     (String.< &a &b))
-  (implements = StringCopy.<)
+  (implements < StringCopy.<)
 
   (defn > [a b]
     (String.> &a &b))
-  (implements = StringCopy.>)
+  (implements > StringCopy.>)
 
   (defn prn [s]
     (prn &(the String s)))
+  (implements prn StringCopy.prn)
 
   (defn str [s]
     (str &(the String s)))
@@ -187,12 +189,14 @@
 
 (defmodule Bool
   (register str (Fn [Bool] String))
+  (implements str Bool.str)
   (register format (Fn [&String Bool] String))
   (implements format Bool.format)
 )
 
 (defmodule Int
   (register str (Fn [Int] String))
+  (implements str Int.str)
   (register format (Fn [&String Int] String))
   (implements format Int.format)
   (register from-string (λ [&String] Int))
@@ -201,6 +205,7 @@
 
 (defmodule Byte
   (register str (Fn [Byte] String))
+  (implements str Byte.str)
   (register format (Fn [&String Byte] String))
   (implements format Byte.format)
   (register from-string (λ [&String] Byte))
@@ -209,6 +214,7 @@
 
 (defmodule Float
   (register str (Fn [Float] String))
+  (implements str Float.str)
   (register format (Fn [&String Float] String))
   (implements format Float.format)
   (register from-string (λ [&String] Float))
@@ -217,6 +223,7 @@
 
 (defmodule Long
   (register str (Fn [Long] String))
+  (implements str Long.str)
   (register format (Fn [&String Long] String))
   (implements format Long.format)
   (register from-string (λ [&String] Long))
@@ -225,6 +232,7 @@
 
 (defmodule Double
   (register str (Fn [Double] String))
+  (implements str Double.str)
   (register format (Fn [&String Double] String))
   (implements format Double.format)
   (register from-string (λ [&String] Double))
@@ -233,6 +241,7 @@
 
 (defmodule Char
   (register str (Fn [Char] String))
+  (implements str Char.str)
   (register prn (Fn [Char] String))
   (implements prn Char.prn)
   (register format (Fn [&String Char] String))
@@ -245,17 +254,21 @@
   (defn prn [x] (Int.str @x))
   (implements prn IntRef.prn)
   (defn str [x] (Int.str @x))
+  (implements str IntRef.str)
   )
 
 (defmodule BoolRef
   (defn prn [x] (Bool.str @x))
   (implements prn BoolRef.prn)
-  (defn str [x] (Bool.str @x)))
+  (defn str [x] (Bool.str @x))
+  (implements str BoolRef.str)
+  )
 
 (defmodule ByteRef
   (defn prn [x] (Byte.str @x))
   (implements prn ByteRef.prn)
   (defn str [x] (Byte.str @x))
+  (implements str ByteRef.str)
   )
 
 (defmodule Long (defn prn [x] (Long.str x)) (implements prn Long.prn))

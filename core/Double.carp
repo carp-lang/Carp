@@ -68,7 +68,8 @@
   (implements floor Double.floor)
   (implements frexp Double.frexp)
   (implements ldexp Double.ldexp)
-  (implements log Double.log10)
+  (implements log Double.log)
+  (implements log10 Double.log10)
   (implements mod Double.mod)
   (implements modf Double.modf)
   (implements pow Double.pow)
@@ -95,7 +96,7 @@ The margin of error is `0.00001`.")
 
   (defn dec [x]
     (- x 1.0))
-  (implements inc Double.dec)
+  (implements dec Double.dec)
 
   (defn add-ref [x y]
     (Double.+ @x @y))
@@ -105,10 +106,13 @@ The margin of error is `0.00001`.")
 (defmodule DoubleRef
   (defn = [a b]
     (Double.= @a @b))
+  (implements = DoubleRef.=)
 
   (defn < [a b]
     (Double.< @a @b))
+  (implements < DoubleRef.<)
 
   (defn > [a b]
     (Double.> @a @b))
+  (implements > DoubleRef.>)
 )

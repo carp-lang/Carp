@@ -95,10 +95,13 @@
 (defmodule IntRef
   (defn = [a b]
     (Int.= @a @b))
+  (implements = IntRef.=)
 
   (defn < [a b]
     (Int.< @a @b))
+  (implements < IntRef.<)
 
   (defn > [a b]
     (Int.> @a @b))
+  (implements > IntRef.>)
 )

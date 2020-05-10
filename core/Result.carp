@@ -106,6 +106,7 @@ It is the inverse of [`success?`](#success?).")
         (match-ref b
           (Success _) false
           (Error y) (= x y))))
+  (implements = Result.=)
 )
 
 (defmodule Maybe

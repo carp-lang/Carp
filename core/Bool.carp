@@ -13,6 +13,8 @@
 
 (defmodule RefBool
   (defn = [a b]
-    (Bool.= @a @b)))
+    (Bool.= @a @b))
+  (implements = RefBool.=)
+  )
 
 (defn not [a] (Bool.not a))

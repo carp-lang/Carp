@@ -1,5 +1,9 @@
 (definterface unsafe-nth (Fn [(Ref (a b) c) Int] &b))
+(implements unsafe-nth Array.unsafe-nth)
+(implements unsafe-nth StaticArray.unsafe-nth)
 (definterface length (Fn [(Ref (a b))] Int))
+(implements unsafe-nth Array.length)
+(implements unsafe-nth StaticArray.length)
 
 (defmodule Collections
   (defn empty? [a] 
