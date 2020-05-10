@@ -143,7 +143,7 @@ primitiveImplements x@(XObj _ i t) ctx args =
     ctx ("`implements` expected 2 arguments, but got " ++ show (length args)) (info x)
 
 registerInInterfaceIfNeeded :: Context -> SymPath -> SymPath -> Ty -> Either String Context
-registerInInterfaceIfNeeded ctx path@(SymPath _ name) interface@(SymPath [] inter) definitionSignature =
+registerInInterfaceIfNeeded ctx path@(SymPath _ _) interface@(SymPath [] name) definitionSignature =
   let typeEnv = getTypeEnv (contextTypeEnv ctx)
   in case lookupInEnv interface typeEnv of
        Just (_, Binder _ (XObj (Lst [XObj (Interface interfaceSignature paths) ii it, isym]) i t)) ->
@@ -155,7 +155,7 @@ registerInInterfaceIfNeeded ctx path@(SymPath _ name) interface@(SymPath [] inte
                            " doesn't match the interface signature " ++ show interfaceSignature)
            else Left ("[INTERFACE ERROR] " ++ show path ++ ":" ++ " One or more types in the interface implementation " ++ show definitionSignature ++ " have kinds that do not match the kinds of the types in the interface signature " ++ show interfaceSignature ++ "\n" ++ "Types of the form (f a) must be matched by constructor types such as (Maybe a)")
        Just (_, Binder _ x) ->
-         error ("Can't implement the non-interface '" ++ inter ++ "' in the type environment: " ++ show x)
+         error ("Can't implement the non-interface '" ++ name ++ "' in the type environment: " ++ show x)
        Nothing -> return ctx
 
 -- | Given an XObj and an interface path, ensure that a 'def' / 'defn' is
@@ -437,8 +437,8 @@ primitiveMetaSet _ ctx [XObj (Sym _ _) _ _, key, _] =
 primitiveMetaSet _ ctx [target, _, _] =
   argumentErr ctx "meta-set!" "a symbol" "first" target
 
-retroactivelyRegisterInterfaceFunctions :: Context -> String -> SymPath -> IO Context
-retroactivelyRegisterInterfaceFunctions ctx name interface@(SymPath _ inter) = do
+retroactivelyRegisterInterfaceFunctions :: Context -> SymPath -> IO Context
+retroactivelyRegisterInterfaceFunctions ctx interface@(SymPath _ inter) = do
   let env = contextGlobalEnv ctx
       impls = recursiveLookupAll interface lookupImplementations env
       resultCtx = foldl' (\maybeCtx binder -> case maybeCtx of
@@ -465,7 +465,7 @@ primitiveDefinterface xobj ctx [nameXObj@(XObj (Sym path@(SymPath [] name) _) _ 
         Nothing ->
           let interface = defineInterface name t [] (info nameXObj)
               typeEnv' = TypeEnv (envInsertAt typeEnv (SymPath [] name) (Binder emptyMeta interface))
-          in  do newCtx <- retroactivelyRegisterInterfaceFunctions (ctx { contextTypeEnv = typeEnv' }) name path
+          in  do newCtx <- retroactivelyRegisterInterfaceFunctions (ctx { contextTypeEnv = typeEnv' }) path
                  return (newCtx, dynamicNil)
     Nothing ->
       return (evalError ctx ("Invalid type for interface `" ++ name ++ "`: " ++ pretty ty) (info ty))
