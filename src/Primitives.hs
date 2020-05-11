@@ -119,23 +119,41 @@ primitiveImplements xobj ctx [x@(XObj (Sym interface@(SymPath _ _) _) _ _), i@(X
   let tyEnv = getTypeEnv . contextTypeEnv $ ctx
       global = contextGlobalEnv ctx
       def = lookupInEnv impl global
+      inter = lookupInEnv interface tyEnv
   in case def of
      Just (_, Binder meta defobj) ->
-       case registerDefnOrDefInInterfaceIfNeeded ctx defobj interface of
-         Left err ->
-           do case contextExecMode ctx of
-                Check -> let fppl = projectFilePathPrintLength (contextProj ctx)
-                         in  putStrLn (machineReadableInfoFromXObj fppl defobj ++ " " ++ err)
-                _ -> putStrLnWithColor Red err
-              return $ evalError ctx err (info x)
-         Right ctx' ->
-           let adjustedMeta = meta {getMeta = Map.insert "implements" x (getMeta meta)}
-           in  return (ctx' {contextGlobalEnv = envInsertAt global (getPath defobj) (Binder adjustedMeta defobj)},
-                             dynamicNil)
+       do
+         case inter of
+           Just _ -> return ()
+           Nothing ->
+             do putStrWithColor Blue ("[WARNING] The interface " ++ show interface ++ " implemented by " ++ show impl ++
+                                      " at " ++ prettyInfoFromXObj xobj ++ " is not defined." ++
+                                      " Did you define it using `definterface`?")
+                putStrLnWithColor White "" -- To restore color for sure.
+         case registerDefnOrDefInInterfaceIfNeeded ctx defobj interface of
+           Left err ->
+             do case contextExecMode ctx of
+                  Check -> let fppl = projectFilePathPrintLength (contextProj ctx)
+                           in  putStrLn (machineReadableInfoFromXObj fppl defobj ++ " " ++ err)
+                  _ -> putStrLnWithColor Red err
+                return $ evalError ctx err (info x)
+           Right ctx' ->
+             let adjustedMeta = meta {getMeta = Map.insert "implements" x (getMeta meta)}
+             in  return (ctx' {contextGlobalEnv = envInsertAt global (getPath defobj) (Binder adjustedMeta defobj)},
+                               dynamicNil)
      -- If the implementation binding doesn't exist yet, set the implements
      -- meta. This enables specifying a function as an implementation before
      -- defining it.
-     Nothing -> primitiveMetaSet xobj ctx [i, XObj (Str "implements") (Just dummyInfo) (Just StringTy), x]
+     Nothing ->
+       do
+         case inter of
+           Just _ -> return ()
+           Nothing ->
+             do putStrWithColor Blue ("[WARNING] The interface " ++ show interface ++ " implemented by " ++ show impl ++
+                                      " at " ++ prettyInfoFromXObj xobj ++ " is not defined." ++
+                                      " Did you define it using `definterface`?")
+                putStrLnWithColor White "" -- To restore color for sure.
+         primitiveMetaSet xobj ctx [i, XObj (Str "implements") (Just dummyInfo) (Just StringTy), x]
 primitiveImplements xobj ctx [x, y] =
   return $ evalError ctx ("`implements` expects symbol arguments.") (info x)
 primitiveImplements x@(XObj _ i t) ctx args =
