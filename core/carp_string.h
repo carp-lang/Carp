@@ -190,7 +190,7 @@ String Bool_format(const String *str, bool b) {
 
 String Char_str(int c) {
     char buf[16];
-    int sz = snprintf(buf, sizeof(buf), "%lc", c);
+    int sz = snprintf(buf, sizeof(buf), "%lc", (wint_t)c);
     size_t nsz = sz + 1;
     String buffer = CARP_MALLOC(nsz);
     assert(sz > 0);
