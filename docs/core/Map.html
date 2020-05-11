@@ -166,7 +166,7 @@
                     defn
                 </div>
                 <p class="sig">
-                    (λ [(Ref (Map a b) c), (Ref (Map a b) c)] Bool)
+                    (Fn [(Ref (Map a b) c), (Ref (Map a b) c)] Bool)
                 </p>
                 <pre class="args">
                     (= m1 m2)
@@ -185,7 +185,7 @@
                     defn
                 </div>
                 <p class="sig">
-                    (λ [(Ref (λ [(Ref a b), (Ref c b)] Bool d) e), (Ref (Map a c) b)] Bool)
+                    (Fn [(Ref (Fn [(Ref a b), (Ref c b)] Bool d) e), (Ref (Map a c) b)] Bool)
                 </p>
                 <pre class="args">
                     (all? pred m)
@@ -205,7 +205,7 @@
                     instantiate
                 </div>
                 <p class="sig">
-                    (λ [(Ref (Map a b) c)] (Ref (Array (Bucket a b)) c))
+                    (Fn [(Ref (Map a b) c)] (Ref (Array (Bucket a b)) c))
                 </p>
                 <span>
                     
@@ -225,7 +225,7 @@
                     defn
                 </div>
                 <p class="sig">
-                    (λ [(Ref (Map a b) c), (Ref a c)] Bool)
+                    (Fn [(Ref (Map a b) c), (Ref a c)] Bool)
                 </p>
                 <pre class="args">
                     (contains? m k)
@@ -245,7 +245,7 @@
                     template
                 </div>
                 <p class="sig">
-                    (λ [(Ref (Map a b) c)] (Map a b))
+                    (Fn [(Ref (Map a b) c)] (Map a b))
                 </p>
                 <span>
                     
@@ -265,7 +265,7 @@
                     defn
                 </div>
                 <p class="sig">
-                    (λ [] (Map a b))
+                    (Fn [] (Map a b))
                 </p>
                 <pre class="args">
                     (create)
@@ -285,7 +285,7 @@
                     defn
                 </div>
                 <p class="sig">
-                    (λ [Int] (Map a b))
+                    (Fn [Int] (Map a b))
                 </p>
                 <pre class="args">
                     (create-with-len len)
@@ -305,7 +305,7 @@
                     template
                 </div>
                 <p class="sig">
-                    (λ [(Map a b)] ())
+                    (Fn [(Map a b)] ())
                 </p>
                 <span>
                     
@@ -325,7 +325,7 @@
                     defn
                 </div>
                 <p class="sig">
-                    (λ [a] Bool)
+                    (Fn [a] Bool)
                 </p>
                 <pre class="args">
                     (empty? m)
@@ -345,7 +345,7 @@
                     defn
                 </div>
                 <p class="sig">
-                    (λ [(Ref (λ [(Ref a b), (Ref c b)] c d) e), (Map a c)] (Map a c))
+                    (Fn [(Ref (Fn [(Ref a b), (Ref c b)] c d) e), (Map a c)] (Map a c))
                 </p>
                 <pre class="args">
                     (endo-map f m)
@@ -365,7 +365,7 @@
                     defn
                 </div>
                 <p class="sig">
-                    (λ [(Ref (Map a b) c), (Ref (λ [(Ref a c), (Ref b c)] () d) e)] ())
+                    (Fn [(Ref (Map a b) c), (Ref (Fn [(Ref a c), (Ref b c)] () d) e)] ())
                 </p>
                 <pre class="args">
                     (for-each m f)
@@ -385,7 +385,7 @@
                     defn
                 </div>
                 <p class="sig">
-                    (λ [(Ref (Array (Pair a b)) c)] (Map a b))
+                    (Fn [(Ref (Array (Pair a b)) c)] (Map a b))
                 </p>
                 <pre class="args">
                     (from-array a)
@@ -405,7 +405,7 @@
                     defn
                 </div>
                 <p class="sig">
-                    (λ [(Ref (Map a b) c), (Ref a c)] b)
+                    (Fn [(Ref (Map a b) c), (Ref a c)] b)
                 </p>
                 <pre class="args">
                     (get m k)
@@ -425,7 +425,7 @@
                     defn
                 </div>
                 <p class="sig">
-                    (λ [(Ref (Map a b) c), (Ref a c)] (Maybe b))
+                    (Fn [(Ref (Map a b) c), (Ref a c)] (Maybe b))
                 </p>
                 <pre class="args">
                     (get-maybe m k)
@@ -445,7 +445,7 @@
                     defn
                 </div>
                 <p class="sig">
-                    (λ [(Ref (Map a b) c), (Ref a c), (Ref b d)] b)
+                    (Fn [(Ref (Map a b) c), (Ref a c), (Ref b d)] b)
                 </p>
                 <pre class="args">
                     (get-with-default m k default-value)
@@ -465,7 +465,7 @@
                     template
                 </div>
                 <p class="sig">
-                    (λ [Int, (Array (Bucket a b))] (Map a b))
+                    (Fn [Int, (Array (Bucket a b))] (Map a b))
                 </p>
                 <span>
                     
@@ -485,7 +485,7 @@
                     defn
                 </div>
                 <p class="sig">
-                    (λ [(Ref (Map a b) c)] (Array a))
+                    (Fn [(Ref (Map a b) c)] (Array a))
                 </p>
                 <pre class="args">
                     (keys m)
@@ -505,7 +505,7 @@
                     defn
                 </div>
                 <p class="sig">
-                    (λ [(Ref (λ [a, (Ref b c), (Ref d c)] a e) f), a, (Ref (Map b d) c)] a)
+                    (Fn [(Ref (Fn [a, (Ref b c), (Ref d c)] a e) f), a, (Ref (Map b d) c)] a)
                 </p>
                 <pre class="args">
                     (kv-reduce f init m)
@@ -525,7 +525,7 @@
                     defn
                 </div>
                 <p class="sig">
-                    (λ [(Ref (Map a b) c)] Int)
+                    (Fn [(Ref (Map a b) c)] Int)
                 </p>
                 <pre class="args">
                     (length m)
@@ -545,7 +545,7 @@
                     instantiate
                 </div>
                 <p class="sig">
-                    (λ [(Ref (Map a b) c)] (Ref Int c))
+                    (Fn [(Ref (Map a b) c)] (Ref Int c))
                 </p>
                 <span>
                     
@@ -565,7 +565,7 @@
                     template
                 </div>
                 <p class="sig">
-                    (λ [(Ref (Map a b) c)] String)
+                    (Fn [(Ref (Map a b) c)] String)
                 </p>
                 <span>
                     
@@ -585,7 +585,7 @@
                     defn
                 </div>
                 <p class="sig">
-                    (λ [(Map a b), (Ref a c), (Ref b c)] (Map a b))
+                    (Fn [(Map a b), (Ref a c), (Ref b c)] (Map a b))
                 </p>
                 <pre class="args">
                     (put m k v)
@@ -605,7 +605,7 @@
                     defn
                 </div>
                 <p class="sig">
-                    (λ [(Ref (Map a b) c), (Ref a c), (Ref b d)] ())
+                    (Fn [(Ref (Map a b) c), (Ref a c), (Ref b d)] ())
                 </p>
                 <pre class="args">
                     (put! m k v)
@@ -625,7 +625,7 @@
                     defn
                 </div>
                 <p class="sig">
-                    (λ [(Map a b), (Ref a c)] (Map a b))
+                    (Fn [(Map a b), (Ref a c)] (Map a b))
                 </p>
                 <pre class="args">
                     (remove m k)
@@ -645,7 +645,7 @@
                     defn
                 </div>
                 <p class="sig">
-                    (λ [(Ref (Map a b) c)] (Map b a))
+                    (Fn [(Ref (Map a b) c)] (Map b a))
                 </p>
                 <pre class="args">
                     (reverse m)
@@ -665,7 +665,7 @@
                     template
                 </div>
                 <p class="sig">
-                    (λ [(Map a b), (Array (Bucket a b))] (Map a b))
+                    (Fn [(Map a b), (Array (Bucket a b))] (Map a b))
                 </p>
                 <span>
                     
@@ -685,7 +685,7 @@
                     template
                 </div>
                 <p class="sig">
-                    (λ [(Ref (Map a b) c), (Array (Bucket a b))] ())
+                    (Fn [(Ref (Map a b) c), (Array (Bucket a b))] ())
                 </p>
                 <span>
                     
@@ -705,7 +705,7 @@
                     instantiate
                 </div>
                 <p class="sig">
-                    (λ [(Map a b), Int] (Map a b))
+                    (Fn [(Map a b), Int] (Map a b))
                 </p>
                 <span>
                     
@@ -725,7 +725,7 @@
                     instantiate
                 </div>
                 <p class="sig">
-                    (λ [(Ref (Map a b) c), Int] ())
+                    (Fn [(Ref (Map a b) c), Int] ())
                 </p>
                 <span>
                     
@@ -745,7 +745,7 @@
                     defn
                 </div>
                 <p class="sig">
-                    (λ [(Ref (Map a b) c)] String)
+                    (Fn [(Ref (Map a b) c)] String)
                 </p>
                 <pre class="args">
                     (str m)
@@ -765,7 +765,7 @@
                     defn
                 </div>
                 <p class="sig">
-                    (λ [(Ref (Map a b) c)] (Array (Pair a b)))
+                    (Fn [(Ref (Map a b) c)] (Array (Pair a b)))
                 </p>
                 <pre class="args">
                     (to-array m)
@@ -785,7 +785,7 @@
                     defn
                 </div>
                 <p class="sig">
-                    (λ [(Map a b), (Ref a c), (Ref (λ [b] b d) c)] (Map a b))
+                    (Fn [(Map a b), (Ref a c), (Ref (Fn [b] b d) c)] (Map a b))
                 </p>
                 <pre class="args">
                     (update m k f)
@@ -805,7 +805,7 @@
                     instantiate
                 </div>
                 <p class="sig">
-                    (λ [(Map a b), (Ref (λ [(Array (Bucket a b))] (Array (Bucket a b)) c) d)] (Map a b))
+                    (Fn [(Map a b), (Ref (Fn [(Array (Bucket a b))] (Array (Bucket a b)) c) d)] (Map a b))
                 </p>
                 <span>
                     
@@ -825,7 +825,7 @@
                     instantiate
                 </div>
                 <p class="sig">
-                    (λ [(Map a b), (Ref (λ [Int] Int c) d)] (Map a b))
+                    (Fn [(Map a b), (Ref (Fn [Int] Int c) d)] (Map a b))
                 </p>
                 <span>
                     
@@ -845,7 +845,7 @@
                     defn
                 </div>
                 <p class="sig">
-                    (λ [(Map a b), (Ref a c), (Ref (λ [b] b d) c), b] (Map a b))
+                    (Fn [(Map a b), (Ref a c), (Ref (Fn [b] b d) c), b] (Map a b))
                 </p>
                 <pre class="args">
                     (update-with-default m k f v)
@@ -865,7 +865,7 @@
                     defn
                 </div>
                 <p class="sig">
-                    (λ [(Ref (Map a b) c)] (Array b))
+                    (Fn [(Ref (Map a b) c)] (Array b))
                 </p>
                 <pre class="args">
                     (vals m)

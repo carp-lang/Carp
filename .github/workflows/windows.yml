@@ -2,8 +2,9 @@ name: Windows CI
 
 on:
   push:
-    branches-ignore:
-      - '**'
+    branches: [ master ]
+  pull_request:
+    branches: [ master ]
 
 jobs:
   build:
@@ -50,4 +51,5 @@ jobs:
         run: stack test
 
       - name: Run Carp Tests
-        run: ./run_carp_tests.ps1
+        shell: bash
+        run: ./run_carp_tests.sh --no_sdl

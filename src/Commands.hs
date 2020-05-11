@@ -9,6 +9,7 @@ import Data.Maybe (fromMaybe)
 import System.Exit (exitSuccess, exitFailure, exitWith, ExitCode(..))
 import System.Info (os)
 import System.Process (callCommand, spawnCommand, waitForProcess)
+import System.IO (openFile, hPutStr, hClose, utf8, hSetEncoding, IOMode(..))
 import qualified Data.Map as Map
 
 import Parsing
@@ -225,7 +226,10 @@ commandBuild shutUp ctx args = do
              outLib = outDir </> projectTitle proj
              generateOnly = projectGenerateOnly proj
          liftIO $ createDirectoryIfMissing False outDir
-         liftIO $ writeFile outMain (incl ++ okSrc)
+         outputHandle <- openFile outMain WriteMode
+         hSetEncoding outputHandle utf8
+         hPutStr outputHandle (incl ++ okSrc)
+         hClose outputHandle
          if generateOnly then return (ctx, dynamicNil) else
              case Map.lookup "main" (envBindings env) of
                              Just _ -> do let cmd = compiler ++ " " ++ outMain ++ " -o \"" ++ outExe ++ "\" " ++ flags

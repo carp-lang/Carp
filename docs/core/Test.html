@@ -185,7 +185,7 @@
                     defn
                 </div>
                 <p class="sig">
-                    (λ [(Ref State a), b, b, (Ref c d)] State)
+                    (Fn [(Ref State a), b, b, (Ref c d)] State)
                 </p>
                 <pre class="args">
                     (assert-equal state x y descr)
@@ -205,7 +205,7 @@
                     defn
                 </div>
                 <p class="sig">
-                    (λ [(Ref State a), Int, (λ [] () b), (Ref c d)] State)
+                    (Fn [(Ref State a), Int, (Fn [] () b), (Ref c d)] State)
                 </p>
                 <pre class="args">
                     (assert-exit state exit-code f descr)
@@ -225,7 +225,7 @@
                     defn
                 </div>
                 <p class="sig">
-                    (λ [(Ref State a), Bool, (Ref b c)] State)
+                    (Fn [(Ref State a), Bool, (Ref b c)] State)
                 </p>
                 <pre class="args">
                     (assert-false state x descr)
@@ -245,7 +245,7 @@
                     defn
                 </div>
                 <p class="sig">
-                    (λ [(Ref State a), b, b, (Ref c d)] State)
+                    (Fn [(Ref State a), b, b, (Ref c d)] State)
                 </p>
                 <pre class="args">
                     (assert-not-equal state x y descr)
@@ -265,7 +265,7 @@
                     defn
                 </div>
                 <p class="sig">
-                    (λ [(Ref State a), b, c, (Ref d e), (λ [b, c] Bool f)] State)
+                    (Fn [(Ref State a), b, c, (Ref d e), (Fn [b, c] Bool f)] State)
                 </p>
                 <pre class="args">
                     (assert-op state x y descr op)
@@ -285,7 +285,7 @@
                     defn
                 </div>
                 <p class="sig">
-                    (λ [(Ref State a), Int, (λ [] () b), (Ref c d)] State)
+                    (Fn [(Ref State a), Int, (Fn [] () b), (Ref c d)] State)
                 </p>
                 <pre class="args">
                     (assert-signal state signal x descr)
@@ -305,7 +305,7 @@
                     defn
                 </div>
                 <p class="sig">
-                    (λ [(Ref State a), Bool, (Ref b c)] State)
+                    (Fn [(Ref State a), Bool, (Ref b c)] State)
                 </p>
                 <pre class="args">
                     (assert-true state x descr)
@@ -325,7 +325,7 @@
                     defn
                 </div>
                 <p class="sig">
-                    (λ [(Ref State a)] ())
+                    (Fn [(Ref State a)] ())
                 </p>
                 <pre class="args">
                     (print-test-results state)
@@ -345,7 +345,7 @@
                     defn
                 </div>
                 <p class="sig">
-                    (λ [State] State)
+                    (Fn [State] State)
                 </p>
                 <pre class="args">
                     (reset state)

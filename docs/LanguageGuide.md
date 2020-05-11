@@ -35,6 +35,7 @@ true    ;; Bool
 ### Type Literals
 ```clojure
 t ;; Type variables begin with a lowercase letter
+(f t) ;; Type constructor variables; matches `(Maybe Int)` but not `Int`
 Int
 Long
 Float
