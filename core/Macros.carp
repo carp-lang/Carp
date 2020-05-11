@@ -711,5 +711,5 @@ The expression must be evaluable at compile time.")
     (list 'fn [x] (comp-internal x fns))))
 
 (doc inline-c "inlines some custom C code.")
-(defmacro inline-c [name def decl]
-  (list 'deftemplate name (list) (eval def) (eval decl)))
+(defmacro inline-c [name defcode declcode]
+  (list 'deftemplate name (list) (eval defcode) (eval declcode)))
