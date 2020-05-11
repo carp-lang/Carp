@@ -202,16 +202,17 @@
                     </h3>
                 </a>
                 <div class="description">
-                    dynamic
+                    defn
                 </div>
                 <p class="sig">
-                    Dynamic
+                    (Fn [(Ref State a), Int, (Fn [] () b), (Ref c d)] State)
                 </p>
                 <pre class="args">
                     (assert-exit state exit-code f descr)
                 </pre>
                 <p class="doc">
-                    
+                    <p>Assert that function f exits with exit code exit-code.</p>
+
                 </p>
             </div>
             <div class="binder">
@@ -281,16 +282,17 @@
                     </h3>
                 </a>
                 <div class="description">
-                    dynamic
+                    defn
                 </div>
                 <p class="sig">
-                    Dynamic
+                    (Fn [(Ref State a), Int, (Fn [] () b), (Ref c d)] State)
                 </p>
                 <pre class="args">
                     (assert-signal state signal x descr)
                 </pre>
                 <p class="doc">
-                    
+                    <p>Assert that function f aborts with OS signal signal.</p>
+
                 </p>
             </div>
             <div class="binder">

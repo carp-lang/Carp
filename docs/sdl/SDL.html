@@ -180,7 +180,7 @@
                     defn
                 </div>
                 <p class="sig">
-                    (λ [(Ptr SDL_Renderer), (Ref SDL_Color a)] ())
+                    (Fn [(Ptr SDL_Renderer), (Ref SDL_Color a)] ())
                 </p>
                 <pre class="args">
                     (bg rend color)
@@ -275,7 +275,7 @@
                     external
                 </div>
                 <p class="sig">
-                    (λ [(Ptr SDL_Surface), (Ptr SDL_Rect), (Ptr SDL_Surface), (Ptr SDL_Rect)] ())
+                    (Fn [(Ptr SDL_Surface), (Ptr SDL_Rect), (Ptr SDL_Surface), (Ptr SDL_Rect)] ())
                 </p>
                 <span>
                     
@@ -294,7 +294,7 @@
                     external
                 </div>
                 <p class="sig">
-                    (λ [Int, Int, Int, Int, Int, Int, Int, Int] (Ptr SDL_Surface))
+                    (Fn [Int, Int, Int, Int, Int, Int, Int, Int] (Ptr SDL_Surface))
                 </p>
                 <span>
                     
@@ -313,7 +313,7 @@
                     external
                 </div>
                 <p class="sig">
-                    (λ [(Ptr SDL_Renderer), (Ptr SDL_Surface)] (Ptr SDL_Texture))
+                    (Fn [(Ptr SDL_Renderer), (Ptr SDL_Surface)] (Ptr SDL_Texture))
                 </p>
                 <span>
                     
@@ -332,7 +332,7 @@
                     external
                 </div>
                 <p class="sig">
-                    (λ [Int, Int, Int, (Ptr (Ptr SDL_Window)), (Ptr (Ptr SDL_Renderer))] ())
+                    (Fn [Int, Int, Int, (Ptr (Ptr SDL_Window)), (Ptr (Ptr SDL_Renderer))] ())
                 </p>
                 <span>
                     
@@ -351,7 +351,7 @@
                     external
                 </div>
                 <p class="sig">
-                    (λ [Int] ())
+                    (Fn [Int] ())
                 </p>
                 <span>
                     
@@ -370,7 +370,7 @@
                     external
                 </div>
                 <p class="sig">
-                    (λ [(Ptr SDL_Texture)] ())
+                    (Fn [(Ptr SDL_Texture)] ())
                 </p>
                 <span>
                     
@@ -389,7 +389,7 @@
                     external
                 </div>
                 <p class="sig">
-                    (λ [(Ptr SDL_Window)] ())
+                    (Fn [(Ptr SDL_Window)] ())
                 </p>
                 <span>
                     
@@ -408,7 +408,7 @@
                     defn
                 </div>
                 <p class="sig">
-                    (λ [(Ptr SDL_Texture)] SDL_Rect)
+                    (Fn [(Ptr SDL_Texture)] SDL_Rect)
                 </p>
                 <pre class="args">
                     (dimensions texture)
@@ -427,7 +427,7 @@
                     defn
                 </div>
                 <p class="sig">
-                    (λ [(Ptr SDL_Renderer), (Ptr SDL_Texture), (Ref SDL_Point a)] ())
+                    (Fn [(Ptr SDL_Renderer), (Ptr SDL_Texture), (Ref SDL_Point a)] ())
                 </p>
                 <pre class="args">
                     (draw-texture rend texture point)
@@ -446,7 +446,7 @@
                     defn
                 </div>
                 <p class="sig">
-                    (λ [(Ptr SDL_Renderer), (Ptr SDL_Texture), (Ref SDL_Point a)] ())
+                    (Fn [(Ptr SDL_Renderer), (Ptr SDL_Texture), (Ref SDL_Point a)] ())
                 </p>
                 <pre class="args">
                     (draw-texture-centered rend texture point)
@@ -522,7 +522,7 @@
                     external
                 </div>
                 <p class="sig">
-                    (λ [(Ptr SDL_Surface)] ())
+                    (Fn [(Ptr SDL_Surface)] ())
                 </p>
                 <span>
                     
@@ -541,7 +541,7 @@
                     external
                 </div>
                 <p class="sig">
-                    (λ [] Int)
+                    (Fn [] Int)
                 </p>
                 <span>
                     
@@ -560,7 +560,7 @@
                     external
                 </div>
                 <p class="sig">
-                    (λ [(Ptr SDL_Window)] Int)
+                    (Fn [(Ptr SDL_Window)] Int)
                 </p>
                 <span>
                     
@@ -579,7 +579,7 @@
                     external
                 </div>
                 <p class="sig">
-                    (λ [Int] ())
+                    (Fn [Int] ())
                 </p>
                 <span>
                     
@@ -598,7 +598,7 @@
                     external
                 </div>
                 <p class="sig">
-                    (λ [Int, Int] SDL_Point)
+                    (Fn [Int, Int] SDL_Point)
                 </p>
                 <span>
                     
@@ -617,7 +617,7 @@
                     external
                 </div>
                 <p class="sig">
-                    (λ [(Ptr SDL_Texture), (Ptr Int), (Ptr Int), (Ptr Int), (Ptr Int)] ())
+                    (Fn [(Ptr SDL_Texture), (Ptr Int), (Ptr Int), (Ptr Int), (Ptr Int)] ())
                 </p>
                 <span>
                     
@@ -636,7 +636,7 @@
                     external
                 </div>
                 <p class="sig">
-                    (λ [] ())
+                    (Fn [] ())
                 </p>
                 <span>
                     
@@ -655,7 +655,7 @@
                     external
                 </div>
                 <p class="sig">
-                    (λ [Int, Int, Int, Int] SDL_Rect)
+                    (Fn [Int, Int, Int, Int] SDL_Rect)
                 </p>
                 <span>
                     
@@ -674,7 +674,7 @@
                     external
                 </div>
                 <p class="sig">
-                    (λ [(Ptr SDL_Renderer)] ())
+                    (Fn [(Ptr SDL_Renderer)] ())
                 </p>
                 <span>
                     
@@ -693,7 +693,7 @@
                     external
                 </div>
                 <p class="sig">
-                    (λ [(Ptr SDL_Renderer), (Ptr SDL_Texture), (Ptr SDL_Rect), (Ptr SDL_Rect)] ())
+                    (Fn [(Ptr SDL_Renderer), (Ptr SDL_Texture), (Ptr SDL_Rect), (Ptr SDL_Rect)] ())
                 </p>
                 <span>
                     
@@ -712,7 +712,7 @@
                     external
                 </div>
                 <p class="sig">
-                    (λ [(Ptr SDL_Renderer), (Ptr SDL_Texture), (Ptr SDL_Rect), (Ptr SDL_Rect), Double, (Ptr SDL_Point), SDL_RendererFlip] ())
+                    (Fn [(Ptr SDL_Renderer), (Ptr SDL_Texture), (Ptr SDL_Rect), (Ptr SDL_Rect), Double, (Ptr SDL_Point), SDL_RendererFlip] ())
                 </p>
                 <span>
                     
@@ -731,7 +731,7 @@
                     external
                 </div>
                 <p class="sig">
-                    (λ [(Ptr SDL_Renderer), Int, Int, Int, Int] ())
+                    (Fn [(Ptr SDL_Renderer), Int, Int, Int, Int] ())
                 </p>
                 <span>
                     
@@ -750,7 +750,7 @@
                     external
                 </div>
                 <p class="sig">
-                    (λ [(Ptr SDL_Renderer), (Ptr SDL_Point), Int] ())
+                    (Fn [(Ptr SDL_Renderer), (Ptr SDL_Point), Int] ())
                 </p>
                 <span>
                     
@@ -769,7 +769,7 @@
                     external
                 </div>
                 <p class="sig">
-                    (λ [(Ptr SDL_Renderer), Int, Int] ())
+                    (Fn [(Ptr SDL_Renderer), Int, Int] ())
                 </p>
                 <span>
                     
@@ -788,7 +788,7 @@
                     external
                 </div>
                 <p class="sig">
-                    (λ [(Ptr SDL_Renderer), (Ptr SDL_Rect)] ())
+                    (Fn [(Ptr SDL_Renderer), (Ptr SDL_Rect)] ())
                 </p>
                 <span>
                     
@@ -807,7 +807,7 @@
                     external
                 </div>
                 <p class="sig">
-                    (λ [(Ptr SDL_Renderer), (Ptr SDL_Rect), Int] ())
+                    (Fn [(Ptr SDL_Renderer), (Ptr SDL_Rect), Int] ())
                 </p>
                 <span>
                     
@@ -826,7 +826,7 @@
                     external
                 </div>
                 <p class="sig">
-                    (λ [(Ptr SDL_Renderer)] ())
+                    (Fn [(Ptr SDL_Renderer)] ())
                 </p>
                 <span>
                     
@@ -845,7 +845,7 @@
                     external
                 </div>
                 <p class="sig">
-                    (λ [(Ptr SDL_Renderer), (Ptr SDL_Rect), Int, (Ptr ()), Int] Int)
+                    (Fn [(Ptr SDL_Renderer), (Ptr SDL_Rect), Int, (Ptr ()), Int] Int)
                 </p>
                 <span>
                     
@@ -864,7 +864,7 @@
                     external
                 </div>
                 <p class="sig">
-                    (λ [Int, Int, Int] SDL_Color)
+                    (Fn [Int, Int, Int] SDL_Color)
                 </p>
                 <span>
                     
@@ -883,7 +883,7 @@
                     external
                 </div>
                 <p class="sig">
-                    (λ [Int, Int, Int] SDL_Color)
+                    (Fn [Int, Int, Int] SDL_Color)
                 </p>
                 <span>
                     
@@ -902,7 +902,7 @@
                     external
                 </div>
                 <p class="sig">
-                    (λ [(Ptr SDL_Surface), String] Int)
+                    (Fn [(Ptr SDL_Surface), String] Int)
                 </p>
                 <span>
                     
@@ -921,7 +921,7 @@
                     external
                 </div>
                 <p class="sig">
-                    (λ [(Ptr SDL_Renderer), SDL_BlendMode] ())
+                    (Fn [(Ptr SDL_Renderer), SDL_BlendMode] ())
                 </p>
                 <span>
                     
@@ -940,7 +940,7 @@
                     external
                 </div>
                 <p class="sig">
-                    (λ [(Ptr SDL_Renderer), Int, Int, Int, Int] ())
+                    (Fn [(Ptr SDL_Renderer), Int, Int, Int, Int] ())
                 </p>
                 <span>
                     
@@ -959,7 +959,7 @@
                     external
                 </div>
                 <p class="sig">
-                    (λ [(Ptr SDL_Window), (Ptr Char)] ())
+                    (Fn [(Ptr SDL_Window), (Ptr Char)] ())
                 </p>
                 <span>
                     
@@ -978,7 +978,7 @@
                     external
                 </div>
                 <p class="sig">
-                    (λ [(Ptr SDL_Surface)] Int)
+                    (Fn [(Ptr SDL_Surface)] Int)
                 </p>
                 <span>
                     
@@ -997,7 +997,7 @@
                     external
                 </div>
                 <p class="sig">
-                    (λ [(Ptr SDL_Surface)] (Ptr ()))
+                    (Fn [(Ptr SDL_Surface)] (Ptr ()))
                 </p>
                 <span>
                     
