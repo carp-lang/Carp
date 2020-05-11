@@ -166,7 +166,7 @@
                     external
                 </div>
                 <p class="sig">
-                    (λ [(Ref Pattern a), (Ref Pattern b)] Bool)
+                    (Fn [(Ref Pattern a), (Ref Pattern b)] Bool)
                 </p>
                 <span>
                     
@@ -185,7 +185,7 @@
                     external
                 </div>
                 <p class="sig">
-                    (λ [(Ref Pattern a)] Pattern)
+                    (Fn [(Ref Pattern a)] Pattern)
                 </p>
                 <span>
                     
@@ -204,7 +204,7 @@
                     external
                 </div>
                 <p class="sig">
-                    (λ [(Ref Pattern a), (Ref String b)] Int)
+                    (Fn [(Ref Pattern a), (Ref String b)] Int)
                 </p>
                 <span>
                     
@@ -225,7 +225,7 @@
                     external
                 </div>
                 <p class="sig">
-                    (λ [(Ref Pattern a), (Ref String b)] (Array Int))
+                    (Fn [(Ref Pattern a), (Ref String b)] (Array Int))
                 </p>
                 <span>
                     
@@ -246,7 +246,7 @@
                     defn
                 </div>
                 <p class="sig">
-                    (λ [(Ref (Array Char) a)] Pattern)
+                    (Fn [(Ref (Array Char) a)] Pattern)
                 </p>
                 <pre class="args">
                     (from-chars chars)
@@ -266,7 +266,7 @@
                     external
                 </div>
                 <p class="sig">
-                    (λ [(Ref Pattern a), (Ref String b)] (Array (Array String)))
+                    (Fn [(Ref Pattern a), (Ref String b)] (Array (Array String)))
                 </p>
                 <span>
                     
@@ -287,7 +287,7 @@
                     defn
                 </div>
                 <p class="sig">
-                    (λ [(Ref Pattern a), (Ref String b)] (Array String))
+                    (Fn [(Ref Pattern a), (Ref String b)] (Array String))
                 </p>
                 <pre class="args">
                     (global-match-str p s)
@@ -306,7 +306,7 @@
                     external
                 </div>
                 <p class="sig">
-                    (λ [(Ref String a)] Pattern)
+                    (Fn [(Ref String a)] Pattern)
                 </p>
                 <span>
                     
@@ -325,7 +325,7 @@
                     external
                 </div>
                 <p class="sig">
-                    (λ [(Ref Pattern a), (Ref String b)] (Array String))
+                    (Fn [(Ref Pattern a), (Ref String b)] (Array String))
                 </p>
                 <span>
                     
@@ -346,7 +346,7 @@
                     external
                 </div>
                 <p class="sig">
-                    (λ [(Ref Pattern a), (Ref String b)] String)
+                    (Fn [(Ref Pattern a), (Ref String b)] String)
                 </p>
                 <span>
                     
@@ -367,7 +367,7 @@
                     defn
                 </div>
                 <p class="sig">
-                    (λ [(Ref Pattern a), (Ref String b)] Bool)
+                    (Fn [(Ref Pattern a), (Ref String b)] Bool)
                 </p>
                 <pre class="args">
                     (matches? pat s)
@@ -387,7 +387,7 @@
                     external
                 </div>
                 <p class="sig">
-                    (λ [(Ref Pattern a)] String)
+                    (Fn [(Ref Pattern a)] String)
                 </p>
                 <span>
                     
@@ -406,7 +406,7 @@
                     defn
                 </div>
                 <p class="sig">
-                    (λ [(Ref Pattern a), (Ref String b)] (Array String))
+                    (Fn [(Ref Pattern a), (Ref String b)] (Array String))
                 </p>
                 <pre class="args">
                     (split p s)
@@ -426,7 +426,7 @@
                     external
                 </div>
                 <p class="sig">
-                    (λ [(Ref Pattern a)] String)
+                    (Fn [(Ref Pattern a)] String)
                 </p>
                 <span>
                     
@@ -445,7 +445,7 @@
                     external
                 </div>
                 <p class="sig">
-                    (λ [(Ref Pattern a), (Ref String b), (Ref String c), Int] String)
+                    (Fn [(Ref Pattern a), (Ref String b), (Ref String c), Int] String)
                 </p>
                 <span>
                     

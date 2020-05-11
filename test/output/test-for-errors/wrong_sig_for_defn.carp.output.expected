@@ -1,2 +1,2 @@
- Inferred Macro, can't unify with (λ [] Bool).
-wrong_sig_for_defn.carp:4:1 Inferred (λ [] Bool), can't unify with (λ [Int] Float).
+ Inferred Macro, can't unify with (Fn [] Bool).
+wrong_sig_for_defn.carp:4:1 Inferred (Fn [] Bool), can't unify with (Fn [Int] Float).

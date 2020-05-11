@@ -166,7 +166,7 @@
                     defn
                 </div>
                 <p class="sig">
-                    (λ [(Ref (Result a b) c), (Ref (Result a b) c)] Bool)
+                    (Fn [(Ref (Result a b) c), (Ref (Result a b) c)] Bool)
                 </p>
                 <pre class="args">
                     (= a b)
@@ -186,7 +186,7 @@
                     template
                 </div>
                 <p class="sig">
-                    (λ [a] (Result b a))
+                    (Fn [a] (Result b a))
                 </p>
                 <span>
                     
@@ -206,7 +206,7 @@
                     template
                 </div>
                 <p class="sig">
-                    (λ [a] (Result a b))
+                    (Fn [a] (Result a b))
                 </p>
                 <span>
                     
@@ -226,7 +226,7 @@
                     defn
                 </div>
                 <p class="sig">
-                    (λ [(Result a b), (Ref (λ [a] (Result c b) d) e)] (Result c b))
+                    (Fn [(Result a b), (Ref (Fn [a] (Result c b) d) e)] (Result c b))
                 </p>
                 <pre class="args">
                     (and-then a f)
@@ -247,7 +247,7 @@
                     defn
                 </div>
                 <p class="sig">
-                    (λ [(Result a b), (Ref (λ [a] c d) e), (Ref (λ [b] f d) g)] (Result c f))
+                    (Fn [(Result a b), (Ref (Fn [a] c d) e), (Ref (Fn [b] f d) g)] (Result c f))
                 </p>
                 <pre class="args">
                     (apply a success-f error-f)
@@ -267,7 +267,7 @@
                     template
                 </div>
                 <p class="sig">
-                    (λ [(Ref (Result a b) c)] (Result a b))
+                    (Fn [(Ref (Result a b) c)] (Result a b))
                 </p>
                 <span>
                     
@@ -287,7 +287,7 @@
                     template
                 </div>
                 <p class="sig">
-                    (λ [(Result a b)] ())
+                    (Fn [(Result a b)] ())
                 </p>
                 <span>
                     
@@ -307,7 +307,7 @@
                     defn
                 </div>
                 <p class="sig">
-                    (λ [(Ref (Result a b) c)] Bool)
+                    (Fn [(Ref (Result a b) c)] Bool)
                 </p>
                 <pre class="args">
                     (error? a)
@@ -326,7 +326,7 @@
                     defn
                 </div>
                 <p class="sig">
-                    (λ [(Result a b), b] b)
+                    (Fn [(Result a b), b] b)
                 </p>
                 <pre class="args">
                     (from-error a dflt)
@@ -346,7 +346,7 @@
                     defn
                 </div>
                 <p class="sig">
-                    (λ [(Result a b), a] a)
+                    (Fn [(Result a b), a] a)
                 </p>
                 <pre class="args">
                     (from-success a dflt)
@@ -366,7 +366,7 @@
                     instantiate
                 </div>
                 <p class="sig">
-                    (λ [(Ref (Result a b) c)] Int)
+                    (Fn [(Ref (Result a b) c)] Int)
                 </p>
                 <span>
                     
@@ -386,7 +386,7 @@
                     defn
                 </div>
                 <p class="sig">
-                    (λ [(Result a b), (Ref (λ [a] c d) e)] (Result c b))
+                    (Fn [(Result a b), (Ref (Fn [a] c d) e)] (Result c b))
                 </p>
                 <pre class="args">
                     (map a f)
@@ -406,7 +406,7 @@
                     defn
                 </div>
                 <p class="sig">
-                    (λ [(Result a b), (Ref (λ [b] c d) e)] (Result a c))
+                    (Fn [(Result a b), (Ref (Fn [b] c d) e)] (Result a c))
                 </p>
                 <pre class="args">
                     (map-error a f)
@@ -426,7 +426,7 @@
                     defn
                 </div>
                 <p class="sig">
-                    (λ [(Result a b), (Ref (λ [b] (Result a c) d) e)] (Result a c))
+                    (Fn [(Result a b), (Ref (Fn [b] (Result a c) d) e)] (Result a c))
                 </p>
                 <pre class="args">
                     (or-else a f)
@@ -447,7 +447,7 @@
                     template
                 </div>
                 <p class="sig">
-                    (λ [(Ref (Result a b) c)] String)
+                    (Fn [(Ref (Result a b) c)] String)
                 </p>
                 <span>
                     
@@ -467,7 +467,7 @@
                     template
                 </div>
                 <p class="sig">
-                    (λ [(Ref (Result a b) c)] String)
+                    (Fn [(Ref (Result a b) c)] String)
                 </p>
                 <span>
                     
@@ -487,7 +487,7 @@
                     defn
                 </div>
                 <p class="sig">
-                    (λ [(Ref (Result a b) c)] Bool)
+                    (Fn [(Ref (Result a b) c)] Bool)
                 </p>
                 <pre class="args">
                     (success? a)
@@ -508,7 +508,7 @@
                     defn
                 </div>
                 <p class="sig">
-                    (λ [(Result a b)] (Maybe a))
+                    (Fn [(Result a b)] (Maybe a))
                 </p>
                 <pre class="args">
                     (to-maybe a)
@@ -529,7 +529,7 @@
                     defn
                 </div>
                 <p class="sig">
-                    (λ [(Result a b)] b)
+                    (Fn [(Result a b)] b)
                 </p>
                 <pre class="args">
                     (unsafe-from-error a)
@@ -549,7 +549,7 @@
                     defn
                 </div>
                 <p class="sig">
-                    (λ [(Result a b)] a)
+                    (Fn [(Result a b)] a)
                 </p>
                 <pre class="args">
                     (unsafe-from-success a)
@@ -569,7 +569,7 @@
                     defn
                 </div>
                 <p class="sig">
-                    (λ [(Result a b), (Ref (λ [b] a c) d)] a)
+                    (Fn [(Result a b), (Ref (Fn [b] a c) d)] a)
                 </p>
                 <pre class="args">
                     (unwrap-or-else a f)
@@ -589,7 +589,7 @@
                     defn
                 </div>
                 <p class="sig">
-                    (λ [(Result a b)] a)
+                    (Fn [(Result a b)] a)
                 </p>
                 <pre class="args">
                     (unwrap-or-zero a)

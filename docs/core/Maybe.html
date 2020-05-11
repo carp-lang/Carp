@@ -166,7 +166,7 @@
                     defn
                 </div>
                 <p class="sig">
-                    (λ [(Ref (Maybe a) b), (Ref (Maybe a) b)] Bool)
+                    (Fn [(Ref (Maybe a) b), (Ref (Maybe a) b)] Bool)
                 </p>
                 <pre class="args">
                     (= a b)
@@ -186,7 +186,7 @@
                     template
                 </div>
                 <p class="sig">
-                    (λ [a] (Maybe a))
+                    (Fn [a] (Maybe a))
                 </p>
                 <span>
                     
@@ -206,7 +206,7 @@
                     template
                 </div>
                 <p class="sig">
-                    (λ [] (Maybe a))
+                    (Fn [] (Maybe a))
                 </p>
                 <span>
                     
@@ -226,7 +226,7 @@
                     defn
                 </div>
                 <p class="sig">
-                    (λ [(Maybe a), (Ref (λ [a] b c) d)] (Maybe b))
+                    (Fn [(Maybe a), (Ref (Fn [a] b c) d)] (Maybe b))
                 </p>
                 <pre class="args">
                     (apply a f)
@@ -246,7 +246,7 @@
                     template
                 </div>
                 <p class="sig">
-                    (λ [(Ref (Maybe a) b)] (Maybe a))
+                    (Fn [(Ref (Maybe a) b)] (Maybe a))
                 </p>
                 <span>
                     
@@ -266,7 +266,7 @@
                     template
                 </div>
                 <p class="sig">
-                    (λ [(Maybe a)] ())
+                    (Fn [(Maybe a)] ())
                 </p>
                 <span>
                     
@@ -286,7 +286,7 @@
                     defn
                 </div>
                 <p class="sig">
-                    (λ [(Maybe a), a] a)
+                    (Fn [(Maybe a), a] a)
                 </p>
                 <pre class="args">
                     (from a dflt)
@@ -306,7 +306,7 @@
                     defn
                 </div>
                 <p class="sig">
-                    (λ [(Ptr a)] (Maybe a))
+                    (Fn [(Ptr a)] (Maybe a))
                 </p>
                 <pre class="args">
                     (from-ptr a)
@@ -327,7 +327,7 @@
                     instantiate
                 </div>
                 <p class="sig">
-                    (λ [(Ref (Maybe a) b)] Int)
+                    (Fn [(Ref (Maybe a) b)] Int)
                 </p>
                 <span>
                     
@@ -347,7 +347,7 @@
                     defn
                 </div>
                 <p class="sig">
-                    (λ [(Ref (Maybe a) b)] Bool)
+                    (Fn [(Ref (Maybe a) b)] Bool)
                 </p>
                 <pre class="args">
                     (just? a)
@@ -368,7 +368,7 @@
                     defn
                 </div>
                 <p class="sig">
-                    (λ [(Ref (Maybe a) b)] Bool)
+                    (Fn [(Ref (Maybe a) b)] Bool)
                 </p>
                 <pre class="args">
                     (nothing? a)
@@ -389,7 +389,7 @@
                     defn
                 </div>
                 <p class="sig">
-                    (λ [(Maybe a)] a)
+                    (Fn [(Maybe a)] a)
                 </p>
                 <pre class="args">
                     (or-zero a)
@@ -410,7 +410,7 @@ a value using <code>zero</code> if a <code>Nothing</code> is passed.</p>
                     template
                 </div>
                 <p class="sig">
-                    (λ [(Ref (Maybe a) b)] String)
+                    (Fn [(Ref (Maybe a) b)] String)
                 </p>
                 <span>
                     
@@ -430,7 +430,7 @@ a value using <code>zero</code> if a <code>Nothing</code> is passed.</p>
                     template
                 </div>
                 <p class="sig">
-                    (λ [(Ref (Maybe a) b)] String)
+                    (Fn [(Ref (Maybe a) b)] String)
                 </p>
                 <span>
                     
@@ -450,7 +450,7 @@ a value using <code>zero</code> if a <code>Nothing</code> is passed.</p>
                     defn
                 </div>
                 <p class="sig">
-                    (λ [(Maybe a), b] (Result a b))
+                    (Fn [(Maybe a), b] (Result a b))
                 </p>
                 <pre class="args">
                     (to-result a error)
@@ -471,7 +471,7 @@ a value using <code>zero</code> if a <code>Nothing</code> is passed.</p>
                     defn
                 </div>
                 <p class="sig">
-                    (λ [(Maybe a)] a)
+                    (Fn [(Maybe a)] a)
                 </p>
                 <pre class="args">
                     (unsafe-from a)
@@ -491,7 +491,7 @@ a value using <code>zero</code> if a <code>Nothing</code> is passed.</p>
                     defn
                 </div>
                 <p class="sig">
-                    (λ [(Ref (Maybe a) b)] (Ptr a))
+                    (Fn [(Ref (Maybe a) b)] (Ptr a))
                 </p>
                 <pre class="args">
                     (unsafe-ptr a)
@@ -512,7 +512,7 @@ a value using <code>zero</code> if a <code>Nothing</code> is passed.</p>
                     defn
                 </div>
                 <p class="sig">
-                    (λ [] (Maybe a))
+                    (Fn [] (Maybe a))
                 </p>
                 <pre class="args">
                     (zero)
@@ -532,7 +532,7 @@ a value using <code>zero</code> if a <code>Nothing</code> is passed.</p>
                     defn
                 </div>
                 <p class="sig">
-                    (λ [(Ref (λ [a, b] c d) e), (Maybe a), (Maybe b)] (Maybe c))
+                    (Fn [(Ref (Fn [a, b] c d) e), (Maybe a), (Maybe b)] (Maybe c))
                 </p>
                 <pre class="args">
                     (zip f a b)
@@ -551,7 +551,7 @@ a value using <code>zero</code> if a <code>Nothing</code> is passed.</p>
                     defn
                 </div>
                 <p class="sig">
-                    (λ [(Ref (λ [a, b, c, d] e f) g), (Maybe a), (Maybe b), (Maybe c), (Maybe d)] (Maybe e))
+                    (Fn [(Ref (Fn [a, b, c, d] e f) g), (Maybe a), (Maybe b), (Maybe c), (Maybe d)] (Maybe e))
                 </p>
                 <pre class="args">
                     (zip4 f a b c d)
@@ -570,7 +570,7 @@ a value using <code>zero</code> if a <code>Nothing</code> is passed.</p>
                     defn
                 </div>
                 <p class="sig">
-                    (λ [(Ref (λ [a, b, c, d, e, f, g, h] i j) k), (Maybe a), (Maybe b), (Maybe c), (Maybe d), (Maybe e), (Maybe f), (Maybe g), (Maybe h)] (Maybe i))
+                    (Fn [(Ref (Fn [a, b, c, d, e, f, g, h] i j) k), (Maybe a), (Maybe b), (Maybe c), (Maybe d), (Maybe e), (Maybe f), (Maybe g), (Maybe h)] (Maybe i))
                 </p>
                 <pre class="args">
                     (zip8 f a b c d e a1 b1 c1)
