@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/usr/bin/env bash
 
 set -e; # will make the script stop if there are any errors
 set -u; # will make the script stop if there is use of undefined
@@ -56,6 +56,10 @@ fi
 
 # Generate docs
 ./carp.sh ./docs/core/generate_core_docs.carp
-./carp.sh ./docs/sdl/generate_sdl_docs.carp
+
+# Generate SDL docs unless the `--no_sdl` argument was passed in
+if [[ ${NO_SDL} -eq 0 ]]; then
+  ./carp.sh ./docs/sdl/generate_sdl_docs.carp
+fi
 
 echo "ALL TESTS DONE."

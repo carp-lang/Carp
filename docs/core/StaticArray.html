@@ -166,7 +166,7 @@
                     defn
                 </div>
                 <p class="sig">
-                    (λ [(Ref (StaticArray a) b), (Ref (StaticArray a) b)] Bool)
+                    (Fn [(Ref (StaticArray a) b), (Ref (StaticArray a) b)] Bool)
                 </p>
                 <pre class="args">
                     (= a b)
@@ -186,7 +186,7 @@
                     defn
                 </div>
                 <p class="sig">
-                    (λ [(Ref (λ [(Ref a b)] Bool c) d), (Ref (StaticArray a) b)] Bool)
+                    (Fn [(Ref (Fn [(Ref a b)] Bool c) d), (Ref (StaticArray a) b)] Bool)
                 </p>
                 <pre class="args">
                     (all? f a)
@@ -206,7 +206,7 @@
                     defn
                 </div>
                 <p class="sig">
-                    (λ [(Ref (λ [(Ref a b)] Bool c) d), (Ref (StaticArray a) b)] Bool)
+                    (Fn [(Ref (Fn [(Ref a b)] Bool c) d), (Ref (StaticArray a) b)] Bool)
                 </p>
                 <pre class="args">
                     (any? f a)
@@ -226,7 +226,7 @@
                     template
                 </div>
                 <p class="sig">
-                    (λ [(Ref (StaticArray a) b), Int, a] ())
+                    (Fn [(Ref (StaticArray a) b), Int, a] ())
                 </p>
                 <span>
                     
@@ -246,7 +246,7 @@
                     defn
                 </div>
                 <p class="sig">
-                    (λ [(Ref (StaticArray a) b), Int, (Ref (λ [(Ref a b)] a c) d)] ())
+                    (Fn [(Ref (StaticArray a) b), Int, (Ref (Fn [(Ref a b)] a c) d)] ())
                 </p>
                 <pre class="args">
                     (aupdate! a i f)
@@ -266,7 +266,7 @@
                     defn
                 </div>
                 <p class="sig">
-                    (λ [(Ref (StaticArray a) b), (Ref a b)] Bool)
+                    (Fn [(Ref (StaticArray a) b), (Ref a b)] Bool)
                 </p>
                 <pre class="args">
                     (contains? arr el)
@@ -286,7 +286,7 @@
                     template
                 </div>
                 <p class="sig">
-                    (λ [(StaticArray a)] ())
+                    (Fn [(StaticArray a)] ())
                 </p>
                 <span>
                     
@@ -306,7 +306,7 @@
                     defn
                 </div>
                 <p class="sig">
-                    (λ [(Ref (StaticArray a) b), (Ref a b)] Int)
+                    (Fn [(Ref (StaticArray a) b), (Ref a b)] Int)
                 </p>
                 <pre class="args">
                     (element-count a e)
@@ -326,7 +326,7 @@
                     defn
                 </div>
                 <p class="sig">
-                    (λ [(Ref (StaticArray a) b)] Bool)
+                    (Fn [(Ref (StaticArray a) b)] Bool)
                 </p>
                 <pre class="args">
                     (empty? a)
@@ -346,7 +346,7 @@
                     defn
                 </div>
                 <p class="sig">
-                    (λ [(Ref (λ [(Ref a b)] Bool c) d), (Ref (StaticArray a) b)] (Maybe a))
+                    (Fn [(Ref (Fn [(Ref a b)] Bool c) d), (Ref (StaticArray a) b)] (Maybe a))
                 </p>
                 <pre class="args">
                     (find f a)
@@ -367,7 +367,7 @@
                     defn
                 </div>
                 <p class="sig">
-                    (λ [(Ref (λ [(Ref a b)] Bool c) d), (Ref (StaticArray a) b)] (Maybe Int))
+                    (Fn [(Ref (Fn [(Ref a b)] Bool c) d), (Ref (StaticArray a) b)] (Maybe Int))
                 </p>
                 <pre class="args">
                     (find-index f a)
@@ -388,7 +388,7 @@
                     defn
                 </div>
                 <p class="sig">
-                    (λ [(Ref (StaticArray a) b)] (Maybe a))
+                    (Fn [(Ref (StaticArray a) b)] (Maybe a))
                 </p>
                 <pre class="args">
                     (first a)
@@ -447,7 +447,7 @@
                     defn
                 </div>
                 <p class="sig">
-                    (λ [(Ref (StaticArray a) b), (Ref a b)] (Maybe Int))
+                    (Fn [(Ref (StaticArray a) b), (Ref a b)] (Maybe Int))
                 </p>
                 <pre class="args">
                     (index-of a e)
@@ -468,7 +468,7 @@
                     defn
                 </div>
                 <p class="sig">
-                    (λ [(Ref (StaticArray a) b)] (Maybe a))
+                    (Fn [(Ref (StaticArray a) b)] (Maybe a))
                 </p>
                 <pre class="args">
                     (last a)
@@ -489,7 +489,7 @@
                     template
                 </div>
                 <p class="sig">
-                    (λ [(Ref (StaticArray a) b)] Int)
+                    (Fn [(Ref (StaticArray a) b)] Int)
                 </p>
                 <span>
                     
@@ -509,7 +509,7 @@
                     defn
                 </div>
                 <p class="sig">
-                    (λ [(Ref (StaticArray a) b), (Ref (λ [(Ref a b)] a c) d)] ())
+                    (Fn [(Ref (StaticArray a) b), (Ref (Fn [(Ref a b)] a c) d)] ())
                 </p>
                 <pre class="args">
                     (map! xs f)
@@ -529,7 +529,7 @@
                     defn
                 </div>
                 <p class="sig">
-                    (λ [(Ref (StaticArray a) b)] (Maybe a))
+                    (Fn [(Ref (StaticArray a) b)] (Maybe a))
                 </p>
                 <pre class="args">
                     (maximum xs)
@@ -550,7 +550,7 @@
                     defn
                 </div>
                 <p class="sig">
-                    (λ [(Ref (StaticArray a) b)] (Maybe a))
+                    (Fn [(Ref (StaticArray a) b)] (Maybe a))
                 </p>
                 <pre class="args">
                     (minimum xs)
@@ -571,7 +571,7 @@
                     defn
                 </div>
                 <p class="sig">
-                    (λ [(Ref (StaticArray a) b), Int] (Maybe a))
+                    (Fn [(Ref (StaticArray a) b), Int] (Maybe a))
                 </p>
                 <pre class="args">
                     (nth xs index)
@@ -592,7 +592,7 @@
                     defn
                 </div>
                 <p class="sig">
-                    (λ [(Ref (StaticArray a) b), (Ref (λ [(Ref a b)] Bool c) d)] Int)
+                    (Fn [(Ref (StaticArray a) b), (Ref (Fn [(Ref a b)] Bool c) d)] Int)
                 </p>
                 <pre class="args">
                     (predicate-count a pred)
@@ -612,7 +612,7 @@
                     defn
                 </div>
                 <p class="sig">
-                    (λ [(Ref (λ [a, (Ref b c)] a d) e), a, (Ref (StaticArray b) c)] a)
+                    (Fn [(Ref (Fn [a, (Ref b c)] a d) e), a, (Ref (StaticArray b) c)] a)
                 </p>
                 <pre class="args">
                     (reduce f x xs)
@@ -631,7 +631,7 @@
                     defn
                 </div>
                 <p class="sig">
-                    (λ [(Ref (StaticArray a) b)] ())
+                    (Fn [(Ref (StaticArray a) b)] ())
                 </p>
                 <pre class="args">
                     (reverse! a)
@@ -651,7 +651,7 @@
                     template
                 </div>
                 <p class="sig">
-                    (λ [(Ref (StaticArray a) b)] String)
+                    (Fn [(Ref (StaticArray a) b)] String)
                 </p>
                 <span>
                     
@@ -671,7 +671,7 @@
                     defn
                 </div>
                 <p class="sig">
-                    (λ [(Ref (StaticArray a) b)] a)
+                    (Fn [(Ref (StaticArray a) b)] a)
                 </p>
                 <pre class="args">
                     (sum xs)
@@ -691,7 +691,7 @@
                     defn
                 </div>
                 <p class="sig">
-                    (λ [(Ref (StaticArray a) b), Int, Int] ())
+                    (Fn [(Ref (StaticArray a) b), Int, Int] ())
                 </p>
                 <pre class="args">
                     (swap! a i j)
@@ -711,7 +711,7 @@
                     defn
                 </div>
                 <p class="sig">
-                    (λ [(Ref (StaticArray a) b)] a)
+                    (Fn [(Ref (StaticArray a) b)] a)
                 </p>
                 <pre class="args">
                     (unsafe-first a)
@@ -732,7 +732,7 @@
                     defn
                 </div>
                 <p class="sig">
-                    (λ [(Ref (StaticArray a) b)] a)
+                    (Fn [(Ref (StaticArray a) b)] a)
                 </p>
                 <pre class="args">
                     (unsafe-last a)
@@ -753,7 +753,7 @@
                     template
                 </div>
                 <p class="sig">
-                    (λ [(Ref (StaticArray a) b), Int] (Ref a b))
+                    (Fn [(Ref (StaticArray a) b), Int] (Ref a b))
                 </p>
                 <span>
                     

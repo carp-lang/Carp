@@ -166,7 +166,7 @@
                     defn
                 </div>
                 <p class="sig">
-                    (λ [(Ref (VectorN a) b), (Ref (VectorN a) b)] Bool)
+                    (Fn [(Ref (VectorN a) b), (Ref (VectorN a) b)] Bool)
                 </p>
                 <pre class="args">
                     (= a b)
@@ -185,7 +185,7 @@
                     defn
                 </div>
                 <p class="sig">
-                    (λ [(Ref (VectorN a) b), (Ref (VectorN a) c)] (Maybe (VectorN a)))
+                    (Fn [(Ref (VectorN a) b), (Ref (VectorN a) c)] (Maybe (VectorN a)))
                 </p>
                 <pre class="args">
                     (add a b)
@@ -204,7 +204,7 @@
                     defn
                 </div>
                 <p class="sig">
-                    (λ [(Ref (VectorN a) b), (Ref (VectorN a) b)] (Maybe a))
+                    (Fn [(Ref (VectorN a) b), (Ref (VectorN a) b)] (Maybe a))
                 </p>
                 <pre class="args">
                     (angle-between a b)
@@ -224,7 +224,7 @@
                     defn
                 </div>
                 <p class="sig">
-                    (λ [(Ref (VectorN a) b), (Ref (VectorN a) b)] (Maybe Bool))
+                    (Fn [(Ref (VectorN a) b), (Ref (VectorN a) b)] (Maybe Bool))
                 </p>
                 <pre class="args">
                     (anti-parallel? a b)
@@ -244,7 +244,7 @@
                     template
                 </div>
                 <p class="sig">
-                    (λ [(Ref (VectorN a) b)] (VectorN a))
+                    (Fn [(Ref (VectorN a) b)] (VectorN a))
                 </p>
                 <span>
                     
@@ -264,7 +264,7 @@
                     template
                 </div>
                 <p class="sig">
-                    (λ [(VectorN a)] ())
+                    (Fn [(VectorN a)] ())
                 </p>
                 <span>
                     
@@ -284,7 +284,7 @@
                     defn
                 </div>
                 <p class="sig">
-                    (λ [(Ref (VectorN a) b), (Ref (VectorN a) c)] (Maybe a))
+                    (Fn [(Ref (VectorN a) b), (Ref (VectorN a) c)] (Maybe a))
                 </p>
                 <pre class="args">
                     (dist a b)
@@ -304,7 +304,7 @@
                     defn
                 </div>
                 <p class="sig">
-                    (λ [(Ref (VectorN a) b), a] (VectorN a))
+                    (Fn [(Ref (VectorN a) b), a] (VectorN a))
                 </p>
                 <pre class="args">
                     (div a n)
@@ -323,7 +323,7 @@
                     defn
                 </div>
                 <p class="sig">
-                    (λ [(Ref (VectorN a) b), (Ref (VectorN a) c)] (Maybe a))
+                    (Fn [(Ref (VectorN a) b), (Ref (VectorN a) c)] (Maybe a))
                 </p>
                 <pre class="args">
                     (dot x y)
@@ -343,7 +343,7 @@
                     template
                 </div>
                 <p class="sig">
-                    (λ [Int, (Array a)] (VectorN a))
+                    (Fn [Int, (Array a)] (VectorN a))
                 </p>
                 <span>
                     
@@ -363,7 +363,7 @@
                     defn
                 </div>
                 <p class="sig">
-                    (λ [(Ref (VectorN a) b)] a)
+                    (Fn [(Ref (VectorN a) b)] a)
                 </p>
                 <pre class="args">
                     (mag o)
@@ -383,7 +383,7 @@
                     defn
                 </div>
                 <p class="sig">
-                    (λ [(Ref (VectorN a) b)] a)
+                    (Fn [(Ref (VectorN a) b)] a)
                 </p>
                 <pre class="args">
                     (mag-sq o)
@@ -403,7 +403,7 @@
                     defn
                 </div>
                 <p class="sig">
-                    (λ [(Ref (VectorN a) b), a] (VectorN a))
+                    (Fn [(Ref (VectorN a) b), a] (VectorN a))
                 </p>
                 <pre class="args">
                     (mul a n)
@@ -422,7 +422,7 @@
                     instantiate
                 </div>
                 <p class="sig">
-                    (λ [(Ref (VectorN a) b)] (Ref Int b))
+                    (Fn [(Ref (VectorN a) b)] (Ref Int b))
                 </p>
                 <span>
                     
@@ -442,7 +442,7 @@
                     defn
                 </div>
                 <p class="sig">
-                    (λ [(Ref (VectorN a) b)] (VectorN a))
+                    (Fn [(Ref (VectorN a) b)] (VectorN a))
                 </p>
                 <pre class="args">
                     (normalize o)
@@ -462,7 +462,7 @@
                     defn
                 </div>
                 <p class="sig">
-                    (λ [(Ref (VectorN a) b), (Ref (VectorN a) b)] (Maybe Bool))
+                    (Fn [(Ref (VectorN a) b), (Ref (VectorN a) b)] (Maybe Bool))
                 </p>
                 <pre class="args">
                     (parallel? a b)
@@ -482,7 +482,7 @@
                     defn
                 </div>
                 <p class="sig">
-                    (λ [(Ref (VectorN a) b), (Ref (VectorN a) b)] (Maybe Bool))
+                    (Fn [(Ref (VectorN a) b), (Ref (VectorN a) b)] (Maybe Bool))
                 </p>
                 <pre class="args">
                     (perpendicular? a b)
@@ -502,7 +502,7 @@
                     template
                 </div>
                 <p class="sig">
-                    (λ [(Ref (VectorN a) b)] String)
+                    (Fn [(Ref (VectorN a) b)] String)
                 </p>
                 <span>
                     
@@ -522,7 +522,7 @@
                     defn
                 </div>
                 <p class="sig">
-                    (λ [Int] (VectorN a))
+                    (Fn [Int] (VectorN a))
                 </p>
                 <pre class="args">
                     (random-sized n)
@@ -541,7 +541,7 @@
                     instantiate
                 </div>
                 <p class="sig">
-                    (λ [(VectorN a), Int] (VectorN a))
+                    (Fn [(VectorN a), Int] (VectorN a))
                 </p>
                 <span>
                     
@@ -561,7 +561,7 @@
                     instantiate
                 </div>
                 <p class="sig">
-                    (λ [(Ref (VectorN a) b), Int] ())
+                    (Fn [(Ref (VectorN a) b), Int] ())
                 </p>
                 <span>
                     
@@ -581,7 +581,7 @@
                     template
                 </div>
                 <p class="sig">
-                    (λ [(VectorN a), (Array a)] (VectorN a))
+                    (Fn [(VectorN a), (Array a)] (VectorN a))
                 </p>
                 <span>
                     
@@ -601,7 +601,7 @@
                     template
                 </div>
                 <p class="sig">
-                    (λ [(Ref (VectorN a) b), (Array a)] ())
+                    (Fn [(Ref (VectorN a) b), (Array a)] ())
                 </p>
                 <span>
                     
@@ -621,7 +621,7 @@
                     template
                 </div>
                 <p class="sig">
-                    (λ [(Ref (VectorN a) b)] String)
+                    (Fn [(Ref (VectorN a) b)] String)
                 </p>
                 <span>
                     
@@ -641,7 +641,7 @@
                     defn
                 </div>
                 <p class="sig">
-                    (λ [(Ref (VectorN a) b), (Ref (VectorN a) c)] (Maybe (VectorN a)))
+                    (Fn [(Ref (VectorN a) b), (Ref (VectorN a) c)] (Maybe (VectorN a)))
                 </p>
                 <pre class="args">
                     (sub a b)
@@ -660,7 +660,7 @@
                     instantiate
                 </div>
                 <p class="sig">
-                    (λ [(VectorN a), (Ref (λ [Int] Int b) c)] (VectorN a))
+                    (Fn [(VectorN a), (Ref (Fn [Int] Int b) c)] (VectorN a))
                 </p>
                 <span>
                     
@@ -680,7 +680,7 @@
                     instantiate
                 </div>
                 <p class="sig">
-                    (λ [(VectorN a), (Ref (λ [(Array a)] (Array a) b) c)] (VectorN a))
+                    (Fn [(VectorN a), (Ref (Fn [(Array a)] (Array a) b) c)] (VectorN a))
                 </p>
                 <span>
                     
@@ -700,7 +700,7 @@
                     instantiate
                 </div>
                 <p class="sig">
-                    (λ [(Ref (VectorN a) b)] (Ref (Array a) b))
+                    (Fn [(Ref (VectorN a) b)] (Ref (Array a) b))
                 </p>
                 <span>
                     
@@ -720,7 +720,7 @@
                     defn
                 </div>
                 <p class="sig">
-                    (λ [(Ref (VectorN a) b), (Ref (VectorN a) c), a] (Maybe (VectorN a)))
+                    (Fn [(Ref (VectorN a) b), (Ref (VectorN a) c), a] (Maybe (VectorN a)))
                 </p>
                 <pre class="args">
                     (vlerp a b amnt)
@@ -740,7 +740,7 @@
                     defn
                 </div>
                 <p class="sig">
-                    (λ [Int] (VectorN a))
+                    (Fn [Int] (VectorN a))
                 </p>
                 <pre class="args">
                     (zero-sized n)
@@ -759,7 +759,7 @@
                     defn
                 </div>
                 <p class="sig">
-                    (λ [(λ [a, b] c d), (Ref (VectorN a) e), (Ref (VectorN b) f)] (Maybe (VectorN c)))
+                    (Fn [(Fn [a, b] c d), (Ref (VectorN a) e), (Ref (VectorN b) f)] (Maybe (VectorN c)))
                 </p>
                 <pre class="args">
                     (zip f a b)
@@ -778,7 +778,7 @@
                     defn
                 </div>
                 <p class="sig">
-                    (λ [(λ [a, b] c d), (Ref (Array a) e), (Ref (Array b) f)] (VectorN c))
+                    (Fn [(Fn [a, b] c d), (Ref (Array a) e), (Ref (Array b) f)] (VectorN c))
                 </p>
                 <pre class="args">
                     (zip- f a b)
