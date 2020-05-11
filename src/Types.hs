@@ -84,7 +84,7 @@ data SumTyCase = SumTyCase { caseName :: String
 fnOrLambda =
   case platform of
     Windows -> "Fn"
-    _ -> "λ"
+    _ -> "Fn" -- "λ"
 
 instance Show Ty where
   show IntTy                 = "Int"
