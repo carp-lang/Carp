@@ -76,6 +76,8 @@
           (set! events (Array.push-back events e)))
         events))
 
+    (implements = SDL.Event.=)
+    (implements copy SDL.Event.copy)
     )
 
   ;; Rendering
@@ -117,10 +119,14 @@
     (defn = [a b]
       (Int.= (enum-to-int (the SDL_Keycode a))
              (enum-to-int (the SDL_Keycode b))))
+    (implements = SDL.Keycode.=)
     (register copy (Fn [(Ref SDL_Keycode)] SDL_Keycode))
+    (implements copy SDL.Keycode.copy)
     (register str (Fn [SDL_Keycode] String))
+    (implements str SDL.Keycode.str)
     (defn prn [x]
       (SDL.Keycode.str x))
+    (implements prn SDL.Keycode.prn)
 
     (register return SDL_Keycode "SDLK_RETURN")
     (register space SDL_Keycode "SDLK_SPACE")

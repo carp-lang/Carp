@@ -47,6 +47,7 @@
               (set! eq false)
               (break))))
         eq)))
+  (implements = StaticArray.=)
 
   (doc empty? "checks whether the array `a` is empty.")
   (defn empty? [a]
