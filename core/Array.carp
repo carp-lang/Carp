@@ -315,9 +315,11 @@ The trailing elements of the longer array will be discarded.")
 
   (doc enumerated "creates a new array of `Pair`s where the first position is the index and the second position is the element from the original array `xs`.")
   (defn enumerated [xs]
-    (zip &Pair.init-from-refs
-         &(range 0 (length xs) 1) ; Inefficient, creates a temporary array.
-         xs))
+    (if (Array.empty? xs) ; Only there because range will crash with a length of 0
+      []
+      (zip &Pair.init-from-refs
+           &(range 0 (length xs) 1) ; Inefficient, creates a temporary array.
+           xs)))
 
   (doc nth "gets a reference to the `n`th element from an array `arr` wrapped on a `Maybe`.
 
