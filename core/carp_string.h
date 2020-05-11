@@ -1,3 +1,5 @@
+#include "carp_utf8.h"
+
 String String_allocate(int len, char byte) {
     /* Allocate a string of length 'len + 1'
      * setting the first len bytes to byte
@@ -120,40 +122,36 @@ String String_format(const String *str, const String *s) {
     return buffer;
 }
 
-static size_t utf8len(const char *s) {
-    size_t l = 0;
-    for (size_t i = 0; s[i]; i++) l += (s[i] & 0xC0) != 0x80;
-    return l;
-}
-
-static size_t wutf8len(const wchar_t *s, size_t cnt) {
-    size_t l = 0;
-    for (size_t i = 0; i < cnt; i++) l += snprintf(0, 0, "%lc", s[i]);
-    return l;
-}
-
-Array String_chars(const String *s) {
-    int r;
+Array String_chars(const String *ps) {
     Char *data;
     Array chars;
-    chars.len = utf8len(*s);
-    chars.capacity = chars.len + 1;
+    const char *s = *ps;
+    const uint8_t *us = (const uint8_t *)s;
+    uint32_t state = 0;
+    uint32_t cp = 0;
+    size_t l = utf8len(s);
+    chars.len = l;
+    chars.capacity = l;
     data = CARP_MALLOC(chars.capacity * sizeof(*data));
-    r = sscanf(*s, "%l[^￿]", (wchar_t *)data);
+    for (size_t si = 0, di = 0; di < l; si++) {
+        if (!utf8decode(&state, &cp, us[si])) {
+            data[di++] = cp;
+            cp = 0;
+        }
+    }
     chars.data = data;
-    assert(r == 1 || chars.len == 0);
     return chars;
 }
 
 String String_from_MINUS_chars(const Array *a) {
-    wchar_t *data = (wchar_t *)a->data;
+    Char *data = (Char *)a->data;
     size_t cnt = a->len;
     size_t sz = wutf8len(data, cnt) + 1;
     String s = CARP_MALLOC(sz);
     size_t sofar = 0;
-    for (size_t i = 0; i < cnt; i++)
-        sofar += snprintf(s + sofar, sz - sofar, "%lc", data[i]);
-    s[sofar] = 0;
+    for (size_t i = 0; i < cnt; i++) sofar += utf8encode(s + sofar, data[i]);
+    s[sofar++] = 0;
+    assert(sofar == sz);
     return s;
 }
 
@@ -188,19 +186,24 @@ String Bool_format(const String *str, bool b) {
     return buffer;
 }
 
-String Char_str(int c) {
+String Char_str(Char c) {
     char buf[16];
-    int sz = snprintf(buf, sizeof(buf), "%lc", (wint_t)c);
+    size_t sz = utf8encode(buf, c);
     size_t nsz = sz + 1;
     String buffer = CARP_MALLOC(nsz);
-    assert(sz > 0);
     memcpy(buffer, buf, nsz);
+    buffer[nsz - 1] = 0;
     return buffer;
 }
 
-String Char_prn(char c) {
-    String buffer = CARP_MALLOC(3);
-    sprintf(buffer, "\\%c", c);
+String Char_prn(Char c) {
+    char buf[16];
+    size_t sz = utf8encode(buf, c);
+    size_t nsz = sz + 1 + 1;
+    String buffer = CARP_MALLOC(nsz);
+    buffer[0] = '\\';
+    memcpy(buffer + 1, buf, sz);
+    buffer[nsz - 1] = 0;
     return buffer;
 }
 
@@ -306,7 +309,7 @@ int String_index_MINUS_of_MINUS_from(const String *s, char c, int i) {
      * Returns -1 if not found
      */
     ++i;  // skip first character as we want AFTER i
-    int len = strlen(*s);
+    size_t len = strlen(*s);
     for (; i < len; ++i) {
         if (c == (*s)[i]) {
             return i;

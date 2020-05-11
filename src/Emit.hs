@@ -15,6 +15,7 @@ import qualified Data.Map as Map
 import qualified Data.Set as Set
 import Data.Maybe (fromMaybe)
 import Debug.Trace
+import Data.Char (ord)
 
 import Obj
 import Types
@@ -110,7 +111,7 @@ toC toCMode (Binder meta root) = emitterSrc (execState (visit startingIndent roo
                                 '\t' -> "'\\t'"
                                 '\n' -> "'\\n'"
                                 '\\' -> "'\\\\'"
-                                x -> ['U', '\'', x, '\'']
+                                x -> show (ord x) ++ "/*" ++ show x ++ "*/" -- ['U', '\'', x, '\'']
             Closure elem _ -> visit indent elem
             Sym _ _ -> visitSymbol indent xobj
             (Defn _) -> error (show (DontVisitObj xobj))
@@ -917,7 +918,9 @@ wrapInInitFunction with_core src =
   (if with_core
     then
       "  System_args.len = argc;\n  System_args.data = argv;\n" ++
-      "  setlocale(LC_CTYPE, \"\");\n"
+      "#if defined _WIN32\n" ++
+      "  SetConsoleOutputCP(CP_UTF8);\n" ++
+      "#endif"
     else "")
   ++ src ++
   "}"
