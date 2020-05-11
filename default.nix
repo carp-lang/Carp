@@ -10,7 +10,7 @@ let
       , darwin, glfw3, SDL2, SDL2_image, SDL2_gfx, SDL2_mixer, SDL2_ttf
       , clang , makeWrapper
 
-      , libXext, libXcursor, libXinerama, libXi, libXrandr, libXScrnSaver, libXxf86vm
+      , libXext, libXcursor, libXinerama, libXi, libXrandr, libXScrnSaver, libXxf86vm, libpthreadstubs, libXdmcp, libGL
       }:
       mkDerivation {
         pname = "CarpHask";
@@ -29,7 +29,7 @@ let
         ];
         pkgconfigDepends =
           [ glfw3 SDL2 SDL2_image SDL2_gfx SDL2_mixer SDL2_ttf ]
-          ++ stdenv.lib.optionals stdenv.isLinux [ libXext libXcursor libXinerama libXi libXrandr libXScrnSaver libXxf86vm ];
+          ++ stdenv.lib.optionals stdenv.isLinux [ libXext libXcursor libXinerama libXi libXrandr libXScrnSaver libXxf86vm libpthreadstubs libXdmcp libGL];
         executableHaskellDepends = [
           base cmdargs containers directory haskeline parsec process
           clang

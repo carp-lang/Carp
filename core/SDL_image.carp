@@ -8,6 +8,6 @@
   (add-lib (str sdl-windows-library-path "SDL2_image.lib ")))
 
 (defmodule IMG
-  (register load-texture (Fn [(Ptr SDL_Renderer) (Ptr Char)] (Ptr SDL_Texture)) "IMG_LoadTexture")
-  (register load (Fn [(Ptr Char)] (Ptr SDL_Surface)) "IMG_Load")
+  (register load-texture (Fn [(Ptr SDL_Renderer) (Ptr CChar)] (Ptr SDL_Texture)) "IMG_LoadTexture")
+  (register load (Fn [(Ptr CChar)] (Ptr SDL_Surface)) "IMG_Load")
   )

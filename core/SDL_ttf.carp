@@ -7,10 +7,10 @@
 (defmodule TTF
   (register init (Fn [] Int) "TTF_Init")
   (register quit (Fn [] ()) "TTF_Quit")
-  (register get-error (Fn [] (Ptr Char)) "TTF_GetError")
+  (register get-error (Fn [] (Ptr CChar)) "TTF_GetError")
 
   ;; Loading / unloading
-  (register open-font (Fn [(Ptr Char) Int] (Ptr TTF_Font)) "TTF_OpenFont")
+  (register open-font (Fn [(Ptr CChar) Int] (Ptr TTF_Font)) "TTF_OpenFont")
   (register close-font (Fn [(Ptr TTF_Font)] ()) "TTF_CloseFont")
 
   ;; Styles
@@ -23,19 +23,19 @@
 
   ;; Render
   (register render-text-solid
-            (Fn [(Ptr TTF_Font) (Ptr Char) SDL_Color] (Ptr SDL_Surface))
+            (Fn [(Ptr TTF_Font) (Ptr CChar) SDL_Color] (Ptr SDL_Surface))
             "TTF_RenderText_Solid")
 
   (register render-text-shaded
-            (Fn [(Ptr TTF_Font) (Ptr Char) SDL_Color SDL_Color] (Ptr SDL_Surface))
+            (Fn [(Ptr TTF_Font) (Ptr CChar) SDL_Color SDL_Color] (Ptr SDL_Surface))
             "TTF_RenderText_Shaded")
 
   (register render-text-blended
-            (Fn [(Ptr TTF_Font) (Ptr Char) SDL_Color] (Ptr SDL_Surface))
+            (Fn [(Ptr TTF_Font) (Ptr CChar) SDL_Color] (Ptr SDL_Surface))
             "TTF_RenderText_Blended")
 
   (register render-text-blended-wrapped
-            (Fn [(Ptr TTF_Font) (Ptr Char) SDL_Color Int] (Ptr SDL_Surface))
+            (Fn [(Ptr TTF_Font) (Ptr CChar) SDL_Color Int] (Ptr SDL_Surface))
             "TTF_RenderText_Blended_Wrapped")
 
   ;; Helpers to make everything a bit nicer

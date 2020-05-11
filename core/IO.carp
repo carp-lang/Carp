@@ -74,7 +74,7 @@
 
   (private getenv-)
   (hidden getenv-)
-  (register getenv- (Fn [String] (Ptr Char)) "getenv")
+  (register getenv- (Fn [String] (Ptr CChar)) "getenv")
   (defn getenv [s]
     (let [e (getenv- s)]
       (if (null? e)

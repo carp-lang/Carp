@@ -1,24 +1,24 @@
-bool Char__EQ_(char a, char b) {
+bool Char__EQ_(Char a, Char b) {
     return a == b;
 }
 
-bool Char__LT_(char a, char b) {
+bool Char__LT_(Char a, Char b) {
     return a < b;
 }
 
-bool Char__GT_(char a, char b) {
+bool Char__GT_(Char a, Char b) {
     return a > b;
 }
 
-int Char_to_MINUS_int(char c) {
-    return (int)(unsigned char)c;
+int Char_to_MINUS_int(Char c) {
+    return (int)c;
 }
 
-char Char_from_MINUS_int(int i) {
-    return (char)i;
+Char Char_from_MINUS_int(int i) {
+    return (Char)i;
 }
 
-char Char_copy(const char *c) {
+Char Char_copy(const Char *c) {
     return *c;
 }
 

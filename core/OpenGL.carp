@@ -1,5 +1,7 @@
 (mac-only
  (add-lib "-framework OpenGL"))
+(linux-only
+ (add-lib "-lGL"))
 
 (defmodule GL
 

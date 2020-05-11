@@ -13,8 +13,8 @@
 ; these tests are sadly a little unsafe
 (deftest test
   (assert-equal test
-                1l
-                ; we assume that the width of a char is 1
+                4l
+                ; we assume that the width of a char is 4
                 (width (Array.raw (the (Array Char) [])))
                 "Pointer.width works as expected"
   )

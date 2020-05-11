@@ -120,23 +120,45 @@ String String_format(const String *str, const String *s) {
     return buffer;
 }
 
+static size_t utf8len(const char *s) {
+    size_t l = 0;
+    for (size_t i = 0; s[i]; i++) l += (s[i] & 0xC0) != 0x80;
+    return l;
+}
+
+static size_t wutf8len(const wchar_t *s, size_t cnt) {
+    size_t l = 0;
+    for (size_t i = 0; i < cnt; i++) l += snprintf(0, 0, "%lc", s[i]);
+    return l;
+}
+
 Array String_chars(const String *s) {
+    int r;
+    Char *data;
     Array chars;
-    chars.len = strlen(*s);
-    chars.capacity = chars.len;
-    chars.data = String_copy(s);
+    chars.len = utf8len(*s);
+    chars.capacity = chars.len + 1;
+    data = CARP_MALLOC(chars.capacity * sizeof(*data));
+    r = sscanf(*s, "%l[^￿]", (wchar_t *)data);
+    chars.data = data;
+    assert(r == 1 || chars.len == 0);
     return chars;
 }
 
 String String_from_MINUS_chars(const Array *a) {
-    String s = CARP_MALLOC(a->len + 1);
-    memcpy(s, a->data, a->len);
-    s[a->len] = '\0';
+    wchar_t *data = (wchar_t *)a->data;
+    size_t cnt = a->len;
+    size_t sz = wutf8len(data, cnt) + 1;
+    String s = CARP_MALLOC(sz);
+    size_t sofar = 0;
+    for (size_t i = 0; i < cnt; i++)
+        sofar += snprintf(s + sofar, sz - sofar, "%lc", data[i]);
+    s[sofar] = 0;
     return s;
 }
 
 String String_tail(const String *s) {
-    int len = strlen(*s);
+    size_t len = strlen(*s);
     String news = CARP_MALLOC(len);
     memcpy(news, (*s) + 1, len - 1);
     news[len - 1] = '\0';
