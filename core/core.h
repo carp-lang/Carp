@@ -1,6 +1,5 @@
-#if defined(WIN32) || defined(_WIN32) || \
-    defined(__WIN32) && !defined(__CYGWIN__)
-#include <BaseTsd.h>
+#if (defined WIN32 || defined _WIN32 || defined __WIN32) && \
+    !defined __CYGWIN__ && !defined __MINGW32__
 #include <windows.h>
 typedef SSIZE_T ssize_t;
 #endif
