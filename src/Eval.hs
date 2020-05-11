@@ -152,8 +152,10 @@ eval ctx xobj@(XObj o i t) =
                    Left err -> return (ctx, Left err)
                    Right newCtx -> do
                           (finalCtx, evaledBody) <- eval newCtx body
-                          return (finalCtx{contextInternalEnv=i}, do okBody <- evaledBody
-                                                                     Right okBody)
+                          let Just e = contextInternalEnv finalCtx
+                          return (finalCtx{contextInternalEnv=envParent e},
+                                  do okBody <- evaledBody
+                                     Right okBody)
          where unwrapVar [] acc = acc
                unwrapVar ((XObj (Sym (SymPath [] x) _) _ _,y):xs) acc = unwrapVar xs ((x,y):acc)
                successiveEval (n, x) =
@@ -247,6 +249,8 @@ eval ctx xobj@(XObj o i t) =
                case acc of
                  err@(Left _) -> return (ctx, err)
                  Right _ -> eval ctx x
+       [XObj While _ _, cond, body] ->
+         specialCommandWhile ctx cond body
        [] -> return (ctx, dynamicNil)
        x -> do
         return (evalError ctx ("I did not understand the form `" ++ pretty xobj ++ "`") (info xobj))
@@ -471,6 +475,23 @@ specialCommandDefine ctx xobj =
        Left err ->
          return (ctx, Left err)
 
+specialCommandWhile :: Context -> XObj -> XObj -> IO (Context, Either EvalError XObj)
+specialCommandWhile ctx cond body = do
+  (newCtx, evd) <- eval ctx cond
+  case evd of
+    Right c ->
+      case obj c of
+        Bol b -> if b
+          then do
+            (newCtx, _) <- eval newCtx body
+            specialCommandWhile newCtx cond body
+          else
+            return (newCtx, dynamicNil)
+        _ ->
+          return (evalError ctx ("This `while` condition contains the non-boolean value '" ++
+                  pretty c ++ "`") (info c))
+    Left e -> return (newCtx, Left e)
+
 getSigFromDefnOrDef :: Context -> Env -> FilePathPrintLength -> XObj -> (Either EvalError (Maybe (Ty, XObj)))
 getSigFromDefnOrDef ctx globalEnv fppl xobj =
   let metaData = existingMeta globalEnv xobj
@@ -553,6 +574,10 @@ primitiveDefmodule xobj ctx@(Context env i typeEnv pathStrings proj lastInput ex
                  case result of
                    Left err -> return (newCtx, Left err)
                    Right _ -> return (newCtx, r)
+primitiveDefmodule _ ctx (x:_) =
+  return (evalError ctx ("`defmodule` expects a symbol, got '" ++ pretty x ++ "' instead.") (info x))
+primitiveDefmodule _ ctx [] =
+  return (evalError ctx "`defmodule` requires at least a symbol, received none." (Just dummyInfo))
 
 -- | "NORMAL" COMMANDS (just like the ones in Command.hs, but these need access to 'eval', etc.)
 
@@ -820,7 +845,7 @@ specialCommandSet ctx [x@(XObj (Sym path@(SymPath mod n) _) _ _), value] = do
         Nothing -> return (nctx, dynamicNil)
         Just env ->
           if contextPath nctx == mod
-          then return (nctx{contextInternalEnv=Just (envInsertAt env (SymPath [] n) binder)}, dynamicNil)
+          then return (nctx{contextInternalEnv=Just (envReplaceBinding (SymPath [] n) binder env)}, dynamicNil)
           else return (nctx, dynamicNil)
 specialCommandSet ctx [notName, body] =
   return (evalError ctx ("`set!` expected a name as first argument, but got " ++ pretty notName) (info notName))
