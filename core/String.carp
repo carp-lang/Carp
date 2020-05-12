@@ -249,30 +249,50 @@
 )
 
 (defmodule Int (defn prn [x] (Int.str x))  (implements prn Int.prn))
-(defmodule Byte (defn prn [x] (Byte.str x)) (implements prn Byte.prn))
 (defmodule IntRef
   (defn prn [x] (Int.str @x))
   (implements prn IntRef.prn)
   (defn str [x] (Int.str @x))
   (implements str IntRef.str)
-  )
+)
 
 (defmodule BoolRef
   (defn prn [x] (Bool.str @x))
   (implements prn BoolRef.prn)
   (defn str [x] (Bool.str @x))
   (implements str BoolRef.str)
-  )
+)
 
+(defmodule Byte (defn prn [x] (Byte.str x)) (implements prn Byte.prn))
 (defmodule ByteRef
   (defn prn [x] (Byte.str @x))
   (implements prn ByteRef.prn)
   (defn str [x] (Byte.str @x))
   (implements str ByteRef.str)
-  )
+)
 
 (defmodule Long (defn prn [x] (Long.str x)) (implements prn Long.prn))
+(defmodule LongRef
+  (defn prn [x] (Long.str @x))
+  (defn str [x] (Long.str @x))
+)
+
 (defmodule Float (defn prn [x] (Float.str x)) (implements prn Float.prn))
+(defmodule FloatRef
+  (defn prn [x] (Float.str @x))
+  (defn str [x] (Float.str @x))
+)
+
 (defmodule Double (defn prn [x] (Double.str x)) (implements prn Double.prn))
+(defmodule DoubleRef
+  (defn prn [x] (Double.str @x))
+  (defn str [x] (Double.str @x))
+)
+
 (defmodule Bool (defn prn [x] (Bool.str x)) (implements prn Bool.prn))
+(defmodule BoolRef
+  (defn prn [x] (Bool.str @x))
+  (defn str [x] (Bool.str @x))
+)
+
 (defmodule Array (defn prn [x] (Array.str x)) (implements prn Array.prn))
