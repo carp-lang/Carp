@@ -4,7 +4,9 @@
 (definterface some-interface (Fn [a] Bool))
 
 ;; A module implements it, accepting Int:s
-(defmodule A (defn some-interface [x] (Int.= x 1)))
+(defmodule A 
+  (defn some-interface [x] (Int.= x 1))
+  (implements some-interface A.some-interface))
 
 ;; The function 'f' uses the interface, should still have a generic type though.
 (defn f [x] (some-interface x))

@@ -4,14 +4,17 @@
   (defn = [p1 p2]
     (and (= (Pair.a p1) (Pair.a p2))
          (= (Pair.b p1) (Pair.b p2))))
+  (implements = PairRef.=)
 
   (defn < [p1 p2]
     (if (= (Pair.a p1) (Pair.a p2))
       (< (Pair.b p1) (Pair.b p2))
       (< (Pair.a p1) (Pair.a p2))))
+  (implements < PairRef.<)
 
   (defn > [p1 p2]
     (PairRef.< p2 p1)))
+  (implements > PairRef.=)
 
 (defmodule Pair
   (defn init-from-refs [r1 r2]
@@ -20,12 +23,15 @@
   (defn = [p1 p2]
     (and (= (Pair.a &p1) (Pair.a &p2))
          (= (Pair.b &p1) (Pair.b &p2))))
+  (implements = Pair.=)
 
   (defn < [p1 p2]
     (PairRef.< &p1 &p2))
+  (implements < Pair.<)
 
   (defn > [p1 p2]
     (PairRef.> &p1 &p2))
+  (implements > Pair.>)
 
   (doc reverse "reverses a `Pair` `p` such that its first member is its second member and vice versa.")
   (defn reverse [p]

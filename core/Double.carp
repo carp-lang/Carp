@@ -2,6 +2,7 @@
 
 (defmodule Double
   (def pi 3.141592653589793)
+  (implements pi Double.pi)
   (def e 2.718281828459045)
   (register MAX Double "CARP_DBL_MAX")
   (register = (Fn [Double Double] Bool))
@@ -20,6 +21,18 @@
   (register from-long (Fn [Long] Double))
   (register to-bytes (Fn [Double] Long))
   (register copy (Fn [(Ref Double)] Double))
+
+  (implements + Double.+)
+  (implements - Double.-)
+  (implements * Double.*)
+  (implements / Double./)
+  (implements < Double.<)
+  (implements > Double.>)
+  (implements = Double.=)
+  (implements copy Double.copy)
+  (implements neg Double.neg)
+  (implements to-int Double.to-int)
+  (implements from-int Double.from-int)
 
   (register abs (Fn [Double] Double))
   (register acos (Fn [Double] Double))
@@ -44,6 +57,29 @@
   (register tan (Fn [Double] Double))
   (register tanh (Fn [Double] Double))
 
+  (implements abs Double.abs)
+  (implements acos Double.acos)
+  (implements asin Double.asin)
+  (implements atan Double.atan)
+  (implements atan2 Double.atan2)
+  (implements ceil Double.ceil)
+  (implements cos Double.cos)
+  (implements cosh Double.cosh)
+  (implements exp Double.exp)
+  (implements floor Double.floor)
+  (implements frexp Double.frexp)
+  (implements ldexp Double.ldexp)
+  (implements log Double.log)
+  (implements log10 Double.log10)
+  (implements mod Double.mod)
+  (implements modf Double.modf)
+  (implements pow Double.pow)
+  (implements sin Double.sin)
+  (implements sinh Double.sinh)
+  (implements sqrt Double.sqrt)
+  (implements tan Double.tan)
+  (implements tanh Double.tanh)
+
   (doc approx "checks whether `x` and `y` are approximately equal.
 
 The margin of error is `0.00001`.")
@@ -53,24 +89,31 @@ The margin of error is `0.00001`.")
   (doc zero "returns the value `0.0`.")
   (defn zero []
     0.0)
+  (implements zero Double.zero)
 
   (defn inc [x]
     (+ 1.0 x))
+  (implements inc Double.inc)
 
   (defn dec [x]
     (- x 1.0))
+  (implements dec Double.dec)
 
   (defn add-ref [x y]
     (Double.+ @x @y))
+  (implements add-ref Double.add-ref)
 )
 
 (defmodule DoubleRef
   (defn = [a b]
     (Double.= @a @b))
+  (implements = DoubleRef.=)
 
   (defn < [a b]
     (Double.< @a @b))
+  (implements < DoubleRef.<)
 
   (defn > [a b]
     (Double.> @a @b))
+  (implements > DoubleRef.>)
 )
