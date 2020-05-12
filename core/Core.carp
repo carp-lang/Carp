@@ -18,6 +18,7 @@
 (load-once "Interfaces.carp")
 (load-once "Bool.carp")
 (load-once "Macros.carp")
+(load-once "Templates.carp")
 (load-once "Generics.carp")
 (load-once "Maybe.carp")
 (load-once "Result.carp")

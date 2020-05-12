@@ -72,7 +72,6 @@ pointerModule = Env { envBindings = bindings
                     , envMode = ExternalEnv
                     , envFunctionNestingLevel = 0 }
   where bindings = Map.fromList [ templatePointerCopy
-                                , templatePointerEqual
                                 , templatePointerToRef
                                 , templatePointerToValue
                                 , templatePointerAdd
@@ -91,16 +90,6 @@ templatePointerCopy = defineTemplate
   (toTemplate "$p* $NAME ($p** ptrRef)")
   (toTemplate $ unlines ["$DECL {"
                         ,"    return *ptrRef;"
-                        ,"}"])
-  (const [])
-
-templatePointerEqual = defineTemplate
-  (SymPath ["Pointer"] "eq")
-  (FuncTy [PointerTy (VarTy "p"), PointerTy (VarTy "p")] BoolTy StaticLifetimeTy)
-  "checks two pointers for equality."
-  (toTemplate "bool $NAME ($p *p1, $p *p2)")
-  (toTemplate $ unlines ["$DECL {"
-                        ,"    return p1 == p2;"
                         ,"}"])
   (const [])
 
