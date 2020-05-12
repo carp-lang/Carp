@@ -2,7 +2,7 @@
 
 This doc contains various tips and tricks, notes, explanations and examples
 that can help you make changes to the Carp compiler. Be forewarned that it's
-not an exhuasitve guide book, and likely will remain a hodgepodge of
+not an exhaustive guide book, and likely will remain a hodgepodge of
 accumulated remarks, observations and hints contributed by people that have
 modified the compiler in the past.
 
@@ -12,17 +12,17 @@ modified the compiler in the past.
 ## Structure
 
 The Carp compiler source lives in the `src/` directory. Carp is, roughly
-speaking, oragnized into four primary passes or components:
+speaking, organized into four primary passes or components:
 
 ![carp compiler phases](../compiler-passes.svg)
 
 Each source file plays a part in one or more components/phases in the compiler.
-The sections below breifly describe the purpose of each stage and list
+The sections below briefly describe the purpose of each stage and list
 important source files. You can use these sections to get a rough idea of what
 files you might need to edit in order to alter the functionality of a
 particular phase.
  
-> Note: Some sources contain defintions that are important or used in pretty
+> Note: Some sources contain definitions that are important or used in pretty
 > much every phase of the compiler, in result some files may appear more than
 > once in the sections below.
 
@@ -30,7 +30,7 @@ particular phase.
 
 The parsing phase translates `.carp` source files into abstract syntax trees
 (AST). In carp, AST nodes are represented using an abstract data type called
-`XObj`. `XObj`s are ubiquitous across the compiler and are used in serveral
+`XObj`. `XObj`s are ubiquitous across the compiler and are used in several
 different phases and contexts. Every `XObj` consists of:
 
 - An `Obj` which is the representation of some carp source code as an abstract
@@ -59,10 +59,10 @@ evaluates parsed carp code (`XObjs`) and prepares it for
 - Requesting borrow checking for forms
 
 In addition to the `XObjs` corresponding to the source file being compiled, the
-evauator relies on a `Context`--`Context` is a global object that contains
+evaluator relies on a `Context`--`Context` is a global object that contains
 state for the compiler. The compiler's `Context` is comprised of several
 environments, defined by the `Env` type--which hold references to known
-bindings. Different environments are used by different pahses of the compiler
+bindings. Different environments are used by different phases of the compiler
 to evaluate forms, resolve types, and, generally speaking prepare code for
 emission.
 
@@ -74,28 +74,28 @@ the `Context`.
 
 The following sources are important for evaluation:
 
-- `src/Eval.hs` -- this is the entry point for the evalautor.
+- `src/Eval.hs` -- this is the entry point for the evaluator.
 - `src/Obj.hs` -- Defines `Context` which carries compiler state across
   evaluation passes in the form of `Env`s, defines `Env` which holds `Binders`
 from names to `XObjs`.
 - `src/Primitives.hs` -- builtin functions or "keywords" that **do not**
   evaluate their arguments
-- `src/Commands.hs` -- builtin functions or "keywords" that evalaute their
+- `src/Commands.hs` -- builtin functions or "keywords" that evaluate their
   arguments
-- `src/StartingEnv.hs` -- defines the starting environement for the compiler to
+- `src/StartingEnv.hs` -- defines the starting environment for the compiler to
   work with. All commands and primitives are registered here, so that
 evaluation passes can use them.
 - `Lookup.hs` -- Functions for looking up `Binders` in a given environment
   (`Env`).
-- `Expand.hs` -- Fucntions for expanding macro forms.
+- `Expand.hs` -- Functions for expanding macro forms.
 - `Infer.hs` -- Functions for performing type inference--entry point into the
   type system.
 - `Qualify` -- Qualifies symbols with appropriate module names.
 
-Some other peices of the type system and borrow checking mechanisms could be
+Some other pieces of the type system and borrow checking mechanisms could be
 included in this list as well, but this list captures the core functionality
-related to evaluation. Generlaly speaking, the evaluation component is the
-conductor of our compilation smphony and orchestrates all the other parts of
+related to evaluation. Generally speaking, the evaluation component is the
+conductor of our compilation symphony and orchestrates all the other parts of
 the compiler.
 
 > Note: For a more in depth look at the dynamic evaluator, see [the section on
@@ -105,7 +105,7 @@ the compiler.
 
 The type system is responsible for checking the types of Carp forms and
 ensuring programs are type safe. It also supports polymorphism and is
-reponsible for replacing polymorphic types with concrete types.
+responsible for replacing polymorphic types with concrete types.
 
 Carp types are represented by the `Ty` data type.
 
@@ -121,7 +121,7 @@ with valid C identifiers.
   correct valid C identifier for the concrete function.
 - `Validate.hs` -- Checks that user-defined types are valid.
 - `Constraints.hs` --  Determines and solves constraints between types and type
-  variables in an enviornment.
+  variables in an environment.
 - `Concretize.hs` --  Transforms forms that involve polymorphic types into
   concrete types.
 - `InitialTypes.hs` -- determines the initial type of a given `XObj` (AST
@@ -146,10 +146,10 @@ The following sources are important for the code emission system:
   Carp.
 - `StaticArrayTemplates.hs` -- Templates for C code corresponding to
   StaticArray use in Carp.
-- `Deftype.hs` -- Templates for C code correpsonding to user defined structs in
+- `Deftype.hs` -- Templates for C code corresponding to user defined structs in
   Carp (aka product types) (also contains some other logic for registering
 bindings for such types).
-- `Sumtypes.hs` -- Templates for C code correpsonding to user defined sumtypes
+- `Sumtypes.hs` -- Templates for C code corresponding to user defined sumtypes
   in Carp (also contains some other logic for registering bindings for such
 types).
 - `StructUtils.hs` -- Templates for C code corresponding to utility functions
