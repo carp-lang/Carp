@@ -9,7 +9,7 @@
 #endif
 
 /* macro to 'unsign' a character */
-#define uchar(c) ((unsigned char)(c))
+#define uchar(c) ((Char)(c))
 
 /*
 ** Some sizes are better limited to fit in 'int', but must also fit in
@@ -28,7 +28,7 @@ typedef struct PatternMatchState {
     String p_end;    /* end ('\0') of Pattern */
     int matchdepth;  /* control for recursive depth (to avoid C stack overflow)
                       */
-    unsigned char level; /* total number of captures (finished or unfinished) */
+    uint8_t level;   /* total number of captures (finished or unfinished) */
     struct {
         String init;
         ptrdiff_t len;
@@ -87,9 +87,7 @@ String Pattern_internal_classend(PatternMatchState *ms, String p) {
             } while (*p != ']');
             return p + 1;
         }
-        default: {
-            return p;
-        }
+        default: { return p; }
     }
 }
 
@@ -156,7 +154,7 @@ int Pattern_internal_singlematch(PatternMatchState *ms, String s, String p,
     if (s >= ms->src_end) {
         return 0;
     } else {
-        int c = uchar(*s);
+        Char c = uchar(*s);
         switch (*p) {
             case '.':
                 return 1; /* matches any char */
@@ -286,7 +284,7 @@ init:                     /* using goto's to optimize tail recursion */
                     }
                     case 'f': { /* frontier? */
                         String ep;
-                        char previous;
+                        Char previous;
                         p += 2;
                         if (*p != '[')
                             carp_regerror("missing '[' after '%cf' in Pattern",
@@ -307,7 +305,7 @@ init:                     /* using goto's to optimize tail recursion */
                     case 'r':   /* carriage return? */
                     case 'n':   /* newline? */
                     case 't': { /* tab? */
-                        char h = *(p + 1);
+                        Char h = *(p + 1);
                         p += 2;
                         if ((*s == '\r' && h == 'r') ||
                             (*s == '\n' && h == 'n') ||
@@ -665,7 +663,7 @@ Array Pattern_global_MINUS_match(Pattern *p, String *s) {
     return res;
 }
 
-String Pattern_internal_add_char(String a, char b) {
+String Pattern_internal_add_char(String a, Char b) {
     if (!a) {
         String buffer = CARP_MALLOC(2);
         sprintf(buffer, "%c", b);

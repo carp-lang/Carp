@@ -7,8 +7,10 @@ let
   f = { mkDerivation, ansi-terminal, base, blaze-html, blaze-markup
       , cmark, cmdargs, containers, directory, edit-distance, filepath
       , haskeline, HUnit, mtl, parsec, process, split, stdenv, text
-
       , darwin, glfw3, SDL2, SDL2_image, SDL2_gfx, SDL2_mixer, SDL2_ttf
+      , clang , makeWrapper
+
+      , libXext, libXcursor, libXinerama, libXi, libXrandr, libXScrnSaver, libXxf86vm, libpthreadstubs, libXdmcp, libGL
       }:
       mkDerivation {
         pname = "CarpHask";
@@ -25,13 +27,21 @@ let
           directory edit-distance filepath haskeline mtl parsec process split
           text
         ];
-        pkgconfigDepends = [ glfw3 SDL2 SDL2_image SDL2_gfx SDL2_mixer SDL2_ttf ];
+        pkgconfigDepends =
+          [ glfw3 SDL2 SDL2_image SDL2_gfx SDL2_mixer SDL2_ttf ]
+          ++ stdenv.lib.optionals stdenv.isLinux [ libXext libXcursor libXinerama libXi libXrandr libXScrnSaver libXxf86vm libpthreadstubs libXdmcp libGL];
         executableHaskellDepends = [
           base cmdargs containers directory haskeline parsec process
+          clang
         ];
-        executableFrameworkDepends = with darwin.apple_sdk.frameworks; [
+        executableFrameworkDepends = with darwin.apple_sdk.frameworks; stdenv.lib.optionals stdenv.isDarwin [
           Carbon Cocoa IOKit CoreFoundation CoreVideo IOKit ForceFeedback
         ];
+        buildDepends = [ makeWrapper ];
+        postInstall = ''
+            wrapProgram $out/bin/carp --set CARP_DIR $src --prefix PATH : ${clang}/bin
+            wrapProgram $out/bin/carp-header-parse --set CARP_DIR $src --prefix PATH : ${clang}/bin
+        '';
         testHaskellDepends = [ base containers HUnit ];
         testTarget = "CarpHask-test";
         postCheck = ''
@@ -54,6 +64,6 @@ in
 
   if pkgs.lib.inNixShell
   then drv.env.overrideAttrs (o: {
-    buildInputs = o.buildInputs ++ [ haskellPackages.cabal-install ];
+    buildInputs = o.buildInputs ++ [ haskellPackages.cabal-install pkgs.clang ];
   })
   else drv

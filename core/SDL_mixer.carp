@@ -28,11 +28,11 @@
 
   ;; Loading
   (register load-wav
-            (Fn [(Ptr Char)] (Ptr Mix_Chunk))
+            (Fn [(Ptr CChar)] (Ptr Mix_Chunk))
             "Mix_LoadWAV")
 
   (register load-music
-            (Fn [(Ptr Char)] (Ptr Mix_Music))
+            (Fn [(Ptr CChar)] (Ptr Mix_Music))
             "Mix_LoadMUS")
 
   ;; Playing samples (Mix_Chunk:s)
@@ -53,7 +53,7 @@
 
   ;; This function seems flakey, returns NULL?
   (register get-music-decoder
-            (Fn [Int] (Ptr Char))
+            (Fn [Int] (Ptr CChar))
             "Mix_GetMusicDecoder")
 
   (register play-music
@@ -64,7 +64,7 @@
 
   ;; Error handling
   (register get-error
-            (Fn [] (Ptr Char))
+            (Fn [] (Ptr CChar))
             "Mix_GetError")
 
   ;; Helpers

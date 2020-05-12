@@ -1,0 +1,7 @@
+(use IO)
+
+(def 😀 \😀)
+
+(defn main []
+  (println &(str 😀))
+  )

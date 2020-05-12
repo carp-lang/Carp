@@ -47,4 +47,4 @@
         (do (set! font (TTF.open-font (cstr "resources/Hasklig.otf") 20))
             (set! text1 (TTF.render-text-to-texture rend font "Carp!" (SDL.rgb 0 0 0)))
             (SDLApp.run-with-callbacks &app event-handler id draw 0))
-        (println* "Failed to initialize SDL_ttf: " &(str (TTF.get-error)))))))
+        (println* "Failed to initialize SDL_ttf: " &(from-cstr (TTF.get-error)))))))

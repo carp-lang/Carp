@@ -35,8 +35,8 @@ double System_nanotime() {
 }
 #endif
 
-void System_system(const String *command) {
-    system(*command);
+int System_system(const String *command) {
+    return system(*command);
 }
 
 Array System_args;

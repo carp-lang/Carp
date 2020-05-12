@@ -1,0 +1,24 @@
+(use String)
+
+(load "Test.carp")
+(load "Array.carp")
+(use Test)
+
+(deftest test
+  (assert-equal test
+                &[\s \v \e \d \ä \n \g]
+                &(chars "svedäng")
+                "chars works as expected")
+  (assert-equal test
+                "svedäng"
+                &(from-chars &[\s \v \e \d \ä \n \g])
+                "from-chars works as expected")
+  (assert-equal test
+                &[\😀 \😀 \😀]
+                &(chars "😀😀😀")
+                "chars splits emoji")
+  (assert-equal test
+                "😀😀😀"
+                &(from-chars &[\😀 \😀 \😀])
+                "from-chars joins emoji")
+  )

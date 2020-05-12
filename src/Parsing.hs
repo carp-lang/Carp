@@ -8,6 +8,7 @@ import qualified Text.Parsec as Parsec
 -- import Text.Parsec.Pos (newPos)
 import qualified Data.Set as Set
 import qualified Data.Map as Map
+import Data.Char (ord)
 import Obj
 import Types
 import Util
@@ -223,7 +224,8 @@ symbolSegment :: Parsec.Parsec String ParseState String
 symbolSegment = do sym <- Parsec.many1 validInSymbol
                    incColumn (length sym)
                    return sym
-  where validInSymbol = Parsec.choice [Parsec.letter, Parsec.digit, Parsec.oneOf validCharacters]
+  where validInSymbol = Parsec.choice [Parsec.letter, Parsec.digit, Parsec.oneOf validCharacters, highCharacters]
+        highCharacters = Parsec.satisfy ((> 127) . ord)
 
 period :: Parsec.Parsec String ParseState ()
 period = do Parsec.char '.'
