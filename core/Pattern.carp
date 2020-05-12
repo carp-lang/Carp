@@ -9,7 +9,8 @@ Returns `-1` if it doesn’t find a matching pattern.")
 
 Returns `[]` if it doesn’t find a matching pattern.")
   (register find-all (Fn [&Pattern &String] (Array Int)))
-  (doc match-groups "finds the match groups of the first match of a pattern in a string.
+  (doc match-groups "finds the match groups of the first match of a pattern in
+a string.
 
 Returns `[]` if it doesn’t find a matching pattern.")
   (register match-groups (Fn [&Pattern &String] (Array String)))
@@ -17,11 +18,16 @@ Returns `[]` if it doesn’t find a matching pattern.")
 
 Returns `[]` if it doesn’t find a matching pattern.")
   (register match-str (Fn [&Pattern &String] String))
-  (doc global-match "finds all matches of a pattern in a string as a nested array.
+  (doc global-match "finds all matches of a pattern in a string as a nested
+array.
 
 Returns `[]` if it doesn’t find a matching pattern.")
   (register global-match (Fn [&Pattern &String] (Array (Array String))))
-  (doc substitute "finds all matches of a pattern in a string and replaces it by another pattern `n` times.
+  (doc substitute "finds all matches of a pattern in a string and replaces it
+by another pattern `n` times.
+
+The substitute pattern can reference the original pattern by match group
+indices, such as `\1`. This means that backslashes need to be double escaped.
 
 If you want to replace all occurrences of the pattern, use `-1`.")
   (register substitute (Fn [&Pattern &String &String Int] String))
@@ -36,7 +42,8 @@ If you want to replace all occurrences of the pattern, use `-1`.")
   (register delete     (Fn [Pattern] ()))
   (register copy       (Fn [&Pattern] Pattern))
 
-  (doc from-chars "creates a pattern that matches a group of characters from a list of those characters.")
+  (doc from-chars "creates a pattern that matches a group of characters from a
+list of those characters.")
   (defn from-chars [chars]
     (Pattern.init &(str* @"[" (String.from-chars chars) @"]")))
 

@@ -252,7 +252,8 @@
                     (from-chars chars)
                 </pre>
                 <p class="doc">
-                    <p>creates a pattern that matches a group of characters from a list of those characters.</p>
+                    <p>creates a pattern that matches a group of characters from a
+list of those characters.</p>
 
                 </p>
             </div>
@@ -272,7 +273,8 @@
                     
                 </span>
                 <p class="doc">
-                    <p>finds all matches of a pattern in a string as a nested array.</p>
+                    <p>finds all matches of a pattern in a string as a nested
+array.</p>
 <p>Returns <code>[]</code> if it doesn’t find a matching pattern.</p>
 
                 </p>
@@ -331,7 +333,8 @@
                     
                 </span>
                 <p class="doc">
-                    <p>finds the match groups of the first match of a pattern in a string.</p>
+                    <p>finds the match groups of the first match of a pattern in
+a string.</p>
 <p>Returns <code>[]</code> if it doesn’t find a matching pattern.</p>
 
                 </p>
@@ -451,7 +454,10 @@
                     
                 </span>
                 <p class="doc">
-                    <p>finds all matches of a pattern in a string and replaces it by another pattern <code>n</code> times.</p>
+                    <p>finds all matches of a pattern in a string and replaces it
+by another pattern <code>n</code> times.</p>
+<p>The substitute pattern can reference the original pattern by match group
+indices, such as <code>\1</code>. This means that backslashes need to be double escaped.</p>
 <p>If you want to replace all occurrences of the pattern, use <code>-1</code>.</p>
 
                 </p>
