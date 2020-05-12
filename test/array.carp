@@ -191,6 +191,10 @@
                 "[(Pair 0 @\"a\") (Pair 1 @\"b\") (Pair 2 @\"c\")]"
                 &(str &(Array.enumerated &[@"a" @"b" @"c"]))
                 "enumerated works as expected")
+  (assert-equal test
+                &[]
+                &(Array.enumerated &(the (Array Int) []))
+                "enumerated works with empty arrays")
   (let-do [arr [1 2 3 4 5 6]
            exp [1 2 3 4 5 6 7]
            new (Array.push-back arr 7)]

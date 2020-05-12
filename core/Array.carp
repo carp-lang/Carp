@@ -315,9 +315,13 @@ The trailing elements of the longer array will be discarded.")
 
   (doc enumerated "creates a new array of `Pair`s where the first position is the index and the second position is the element from the original array `xs`.")
   (defn enumerated [xs]
-    (zip &Pair.init-from-refs
-         &(range 0 (length xs) 1) ; Inefficient, creates a temporary array.
-         xs))
+    (let-do [arr (allocate (length xs))]
+      (for [i 0 (length xs)]
+        (aset-uninitialized!
+          &arr
+          i
+          (Pair.init-from-refs &i (unsafe-nth xs i))))
+      arr))
 
   (doc nth "gets a reference to the `n`th element from an array `arr` wrapped on a `Maybe`.
 
