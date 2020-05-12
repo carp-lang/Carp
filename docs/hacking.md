@@ -21,7 +21,7 @@ The sections below briefly describe the purpose of each stage and list
 important source files. You can use these sections to get a rough idea of what
 files you might need to edit in order to alter the functionality of a
 particular phase.
- 
+
 > Note: Some sources contain definitions that are important or used in pretty
 > much every phase of the compiler, in result some files may appear more than
 > once in the sections below.
@@ -176,3 +176,150 @@ files that serve different purposes in the compiler:
 - `RenderDocs.hs` -- Functionality for generating documentation from annotated
   carp Code.
 
+## Mini HowTos
+
+Select compiler changes are more frequent than others and have common
+high-level steps. The following sections provide some guidance on making such
+changes.
+
+### Adding a new Primitive
+
+If it doesn't require anything fancy or out of the ordinary, adding a new
+primitive to the compiler entails the following:
+
+1. Define your new primitive in `Primitives.hs`
+2. Add your primitive to the starting environment using `makePrim` in
+  `StartingEnv.hs`
+
+#### Define your Primitive
+
+Primitives are functions of the `Primitive` type:
+
+```
+type Primitive = XObj -> Context -> [XObj] -> IO (Context, Either EvalError XObj)
+```
+
+Every primitive takes an xobj, the form that represents the primitive, a
+compiler context, and a list of XObjs the primitive form's arguments.
+Primitives return a new `Context`, updated based on the logic they performed,
+and either an XObj or evaluation error that's reported to the user.
+
+For example, here's how the `defmodule` primitive maps to the `Primitive` type:
+
+```
+(defmodule Foo (defn bar [] 1))
+ |         |-----------------|
+ XObj      [XObj] (arguments)
+```
+
+> The `Context` argument captures the state of the compiler and doesn't have a
+> corresponding direct representation in Carp forms.
+
+In `Primitives.hs`, you should name your primitive using the naming scheme
+`primitive<name>`, where `<name>` is the name of the symbol that will call your
+primitive in Carp code. For example, `defmodule` is given by the primitive
+`primitiveDefmodule`.
+
+Most of the time, primitives have three core steps:
+
+- Pattern match on their argument XObjs
+- Lookup existing binders in the current `Context`
+- Perform some logic based on the type of argument XObjs, then update the
+  `Context` as needed.
+
+Let's step through each of these core steps by implementing a simple
+`immutable` primitive. The `immutable` primitive will take a variable (the name
+of a form passed to a `def`) and mark it as `immutable`, preventing users from
+calling `set!` on it.
+
+- Step 1. Pattern match on arguments.
+
+  First thing's first, our primitive, in carp code, should look like this:
+
+  ```
+  (immutable my-var)
+  ```
+
+  This means that our primitive should only take a single argument XObj, and
+  that argument should be a `Sym`.
+
+  Let's match some patterns:
+
+  ```
+  primitiveImmutable :: Primitive -- our new primitive
+  primitiveImmutable xobj ctx [XObj (Sym path@(SymPath) _)] =
+    -- TODO: Implement me!
+  primitiveImmutable _ _ xobjs = -- any other number or types of xobj arguments are incorrect! Let's error.
+    return $ evalError ctx ("`immutable` expected a single symbol argument, but got" ++ show xobjs) (info xobj)
+  ```
+
+  And that's all we need to do to pattern match!
+
+- Step 2. Lookup binders in the current context
+
+  Assuming `immutable` gets a correct argument, our next step is to use the
+  `Sym` XObj it received to find out if the symbol is bound to a variable or not.
+
+  `Lookup.hs` defines functions for looking up bindings in the various
+  environments contained in a context. We'll call lookup functions to check
+  whether or not the symbol argument we get is bound to a `def` form (in which
+  case it's a variable). If the symbol isn't bound to a `def` we'll error.
+
+
+  So, we'll get the binding for our argument (a `Binder`), match against the
+  binding's `XObj` and continue working only if it's a `def`.
+
+  ```
+  primitiveImmutable :: Primitive -- our new primitive
+  primitiveImmutable xobj ctx [XObj (Sym path@(SymPath) _)] =
+    let global = contextGlobalEnv ctx
+        binding = lookupInEnv path global
+    in  case binding of
+          Just (_, Binder meta (XObj )) -> -- TODO: This is a def! Great. Do more work here.
+          _ -> -- anything that isn't a def; error
+            return $ evalError ctx ("`immutable` expects a variable as an argument") (info xobj)
+  primitiveImmutable _ _ xobjs = -- any other number or types of xobj arguments are incorrect! Let's error.
+    return $ evalError ctx ("`immutable` expected a single symbol argument, but got" ++ show xobjs) (info xobj)
+  ```
+
+- Step 3. Perform logic; update the `Context`
+
+  Finally, now that we're certain we've got a def, we'll just perform our
+  special logic then update the context with our modified binder.
+
+  To keep things simple, all we'll do in this primitive is update the binder's
+  `MetaData` with a new key called `immutable` set to `true`. We can later use
+  the value of this meta field to prevent calls to `set!`.
+
+  ```
+  primitiveImmutable :: Primitive -- our new primitive
+  primitiveImmutable xobj ctx [XObj (Sym path@(SymPath) _)] =
+    let global = contextGlobalEnv ctx
+        binding = lookupInEnv path global
+    in  case binding of
+          Just (_, Binder meta def@(XObj Def _ _)) ->
+            let oldMeta = getMeta meta
+                newMeta = meta {getMeta = Map.insert "immutable" trueXObj oldMeta}  -- update the binder metadata
+            in  return $ ctx {contextGlobalEnv = Env (envInsertAt global path (Binder newMeta def))} -- update the context with the binder and it's new meta and return
+          _ -> -- anything that isn't a def; error
+            return $ evalError ctx ("`immutable` expects a variable as an argument") (info xobj)
+  primitiveImmutable _ _ xobjs = -- any other number or types of xobj arguments are incorrect! Let's error.
+    return $ evalError ctx ("`immutable` expected a single symbol argument, but got" ++ show xobjs) (info xobj)
+  ```
+
+And that wraps up the core logic of our primitive. To make it available, we
+just need to register it in `StartingEnv.hs`.
+
+
+#### Add your primitive to the starting environment
+
+To add a primitive to the starting environment, call `makePrim`:
+
+```
+, makePrim "immutable" 1 "annotates a variable as immutable" "(immutable my-var)" primitiveImmutable
+```
+
+That's about it. Note that this implementation just adds special metadata to
+bindings--to actually prevent users from calling `set!` on an immutable `def`
+we'd need to update `set!`'s logic to check for the presence of the `immutable`
+metadata.
