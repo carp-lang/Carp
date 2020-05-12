@@ -307,13 +307,19 @@ calling `set!` on it.
     return $ evalError ctx ("`immutable` expected a single symbol argument, but got" ++ show xobjs) (info xobj)
   ```
 
-And that wraps up the core logic of our primitive. To make it available, we just need to register it in `StartingEnv.hs`:
+And that wraps up the core logic of our primitive. To make it available, we
+just need to register it in `StartingEnv.hs`.
+
+
+#### 1. Add your primitive to the starting environment
+
+To add a primitive to the starting environment, call `makePrim`:
 
 ```
 , makePrim "immutable" 1 "annotates a variable as immutable" "(immutable my-var)" primitiveImmutable
+```
 
 That's about it. Note that this implementation just adds special metadata to
 bindings--to actually prevent users from calling `set!` on an immutable `def`
 we'd need to update `set!`'s logic to check for the presence of the `immutable`
 metadata.
-```
