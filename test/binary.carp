@@ -25,10 +25,9 @@
                 &(bytes->int16 (ByteOrder.BigEndian) &[3b 8b])
                 "Unsafe big endian bytes->int16 works as expected.")
 
-  (assert-equal test
-                &(Maybe.Nothing)
-                &(bytes->int16 (ByteOrder.LittleEndian) &[3b])
-                "bytes->int16 returns Nothing on insufficient data.")
+  (assert-nothing test
+                  &(bytes->int16 (ByteOrder.LittleEndian) &[3b])
+                  "bytes->int16 returns Nothing on insufficient data.")
 
   (assert-equal test
                 &[(Uint16.from-long 2051l) (Uint16.from-long 776l)]
@@ -79,10 +78,9 @@
                 &(bytes->int32 (ByteOrder.BigEndian) &[1b 2b 3b 4b])
                 "Unsafe big endian bytes->int32 works as expected.")
 
-  (assert-equal test
-                &(Maybe.Nothing)
-                &(bytes->int32 (ByteOrder.LittleEndian) &[3b])
-                "bytes->int32 returns Nothing on insufficient data.")
+  (assert-nothing test
+                  &(bytes->int32 (ByteOrder.LittleEndian) &[3b])
+                  "bytes->int32 returns Nothing on insufficient data.")
 
   (assert-equal test
                 &[(Uint32.from-long 67305985l) (Uint32.from-long 16909060l)]
@@ -131,10 +129,9 @@
                 &(bytes->int64 (ByteOrder.BigEndian) &[1b 2b 3b 4b 5b 6b 0b 0b])
                 "Unsafe big endian bytes->int64 works as expected.")
 
-  (assert-equal test
-                &(Maybe.Nothing)
-                &(bytes->int64 (ByteOrder.LittleEndian) &[3b])
-                "bytes->int64 returns Nothing on insufficient data.")
+  (assert-nothing test
+                  &(bytes->int64 (ByteOrder.LittleEndian) &[3b])
+                  "bytes->int64 returns Nothing on insufficient data.")
 
   (assert-equal test
                 &[(Uint64.from-long 6618611909121l) (Uint64.from-long 72623859790381056l)]

@@ -38,6 +38,27 @@
   (defn assert-false [state x descr]
     (assert-equal state false x descr))
 
+
+  (doc assert-ref-equal "Assert that x and y are equal by reference. Reference equality needs to be implemented for their type.")
+  (defn assert-ref-equal [state x y descr]
+    (handler state &x &y descr "value" =))
+
+  (doc assert-just "Assert that x is a `Just`.")
+  (defn assert-just [state x descr]
+    (assert-true state (Maybe.just? x) descr))
+
+  (doc assert-nothing "Assert that x is a `Nothing`.")
+  (defn assert-nothing [state x descr]
+    (assert-true state (Maybe.nothing? x) descr))
+
+  (doc assert-success "Assert that x is a `Success`.")
+  (defn assert-success [state x descr]
+    (assert-true state (Result.success? x) descr))
+
+  (doc assert-error "Assert that x is an `Error`.")
+  (defn assert-error [state x descr]
+    (assert-true state (Result.error? x) descr))
+
   (doc reset "Reset test state.")
   (defn reset [state]
     (State.set-failed (State.set-passed state 0) 0))
