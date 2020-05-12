@@ -832,21 +832,32 @@ primitiveDefdynamic _ ctx [notName, body] =
   return (evalError ctx ("`defndynamic` expected a name as first argument, but got " ++ pretty notName) (info notName))
 
 specialCommandSet :: Context -> [XObj] -> IO (Context, Either EvalError XObj)
-specialCommandSet ctx [x@(XObj (Sym path@(SymPath mod n) _) _ _), value] = do
-  (newCtx, result) <- eval ctx value
-  case result of
-    Left err -> return (newCtx, Left err)
-    Right evald -> do
-      let globalEnv = contextGlobalEnv ctx
-          elem = XObj (Lst  [XObj DefDynamic Nothing Nothing, XObj (Sym path Symbol) Nothing Nothing, evald]) (info value) (Just DynamicTy)
-          binder = (Binder emptyMeta elem)
-          nctx = newCtx { contextGlobalEnv=envInsertAt globalEnv path binder }
-      case contextInternalEnv nctx of
-        Nothing -> return (nctx, dynamicNil)
-        Just env ->
-          if contextPath nctx == mod
-          then return (nctx{contextInternalEnv=Just (envReplaceBinding (SymPath [] n) binder env)}, dynamicNil)
-          else return (nctx, dynamicNil)
+specialCommandSet ctx [x@(XObj (Sym path@(SymPath mod n) _) _ _), value] =
+  let globalEnv = contextGlobalEnv ctx
+      existingBinder = lookupInEnv path globalEnv
+  in  case existingBinder of
+       Just (_, Binder meta (XObj (Lst [XObj Def _ _, _, _]) _ _)) ->
+         -- Bug: Normally we'd return (ctx, dynamicNil) here, but currently, this is the only place we can check
+         -- for immutability.
+         let immutable = metaIsTrue meta "immutable"
+             err = "Tried to set " ++ show path ++ " but it was declared immutable."
+         in  if immutable
+             then return $ evalError ctx err (info x)
+             else return (ctx, dynamicNil) -- This isn't dynamic, do nothing. Static defs are handled at emission time.
+       _ ->
+        do (newCtx, result) <- eval ctx value
+           case result of
+             Left err -> return (newCtx, Left err)
+             Right evald ->
+               do let elem = XObj (Lst  [XObj DefDynamic Nothing Nothing, XObj (Sym path Symbol) Nothing Nothing, evald]) (info value) (Just DynamicTy)
+                      binder = (Binder emptyMeta elem)
+                      nctx = newCtx { contextGlobalEnv=envInsertAt globalEnv path binder }
+                  case contextInternalEnv nctx of
+                    Nothing -> return (nctx, dynamicNil)
+                    Just env ->
+                      if contextPath nctx == mod
+                      then return (nctx{contextInternalEnv=Just (envReplaceBinding (SymPath [] n) binder env)}, dynamicNil)
+                      else return (nctx, dynamicNil)
 specialCommandSet ctx [notName, body] =
   return (evalError ctx ("`set!` expected a name as first argument, but got " ++ pretty notName) (info notName))
 specialCommandSet ctx args =
