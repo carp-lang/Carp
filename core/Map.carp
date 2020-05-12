@@ -11,66 +11,82 @@
           (set! a (* a b))
           (set! x (Int.inc x))))
       (Int.abs vh)))
+   (implements hash String.hash)
 )
 
 (defmodule Int
   (defn hash [k] (the Int @k))
+   (implements hash Int.hash)
 )
 
 (defmodule Long
   (defn hash [k] (to-int (the Long @k)))
+   (implements hash Long.hash)
 )
 
 (defmodule Bool
   (defn hash [k] (if (the Bool @k) 1 0))
+  (implements hash Bool.hash)
 )
 
 (defmodule Char
   (defn hash [k] (to-int (the Char @k)))
+  (implements hash Char.hash)
 )
 
 (defmodule Byte
   (defn hash [k] (to-int (the Byte @k)))
+  (implements hash Byte.hash)
 )
 
 (defmodule Float
   (defn hash [k] (Float.to-bytes @k))
+  (implements hash Float.hash)
 )
 
 (defmodule Double
   (defn hash [k] (Long.to-int (Double.to-bytes @k)))
+  (implements hash Double.hash)
 )
 
 (defmodule Int8
   (defn hash [k] (Long.to-int (Int8.to-long @k)))
+  (implements hash Int8.hash)
 )
 
 (defmodule Int16
   (defn hash [k] (Long.to-int (Int16.to-long @k)))
+  (implements hash Int16.hash)
 )
 
 (defmodule Int32
   (defn hash [k] (Long.to-int (Int32.to-long @k)))
+  (implements hash Int32.hash)
 )
 
 (defmodule Int64
   (defn hash [k] (Long.to-int (Int64.to-long @k)))
+  (implements hash Int64.hash)
 )
 
 (defmodule Uint8
   (defn hash [k] (Long.to-int (Uint8.to-long @k)))
+  (implements hash Uint8.hash)
 )
 
 (defmodule Uint16
   (defn hash [k] (Long.to-int (Uint16.to-long @k)))
+  (implements hash Uint16.hash)
 )
 
 (defmodule Uint32
   (defn hash [k] (Long.to-int (Uint32.to-long @k)))
+  (implements hash Uint32.hash)
 )
 
 (defmodule Uint64
   (defn hash [k] (Long.to-int (Uint64.to-long @k)))
+  (implements hash Uint64.hash)
 )
 
 (defmodule Pair
@@ -79,6 +95,7 @@
       (set! code (+ (* 31 code) (hash (Pair.a pair))))
       (set! code (+ (* 31 code) (hash (Pair.b pair))))
       code))
+  (implements hash Pair.hash)
 )
 
 (deftype (Bucket a b) [entries (Array (Pair a b))])
@@ -261,6 +278,7 @@
     (and (= (length m1) (length m2))
          ;; we could use contains? and get-with-default here to avoid requiring a (zero) for the value type
          (all? &(fn [k v] (= v &(get m2 k))) m1)))
+  (implements = Map.=)
 
   (doc for-each "Execute the binary function f for all keys and values in the map m.")
   (defn for-each [m f]
@@ -449,6 +467,7 @@
   (defn = [set-a set-b]
     (and (= (Set.length set-a) (Set.length set-b))
          (subset? set-a set-b)))
+  (implements = Set.=)
 
   (doc for-each "Execute the unary function f for each element in the set s.")
   (defn for-each [s f]
@@ -507,4 +526,5 @@
                       @"{"
                       set)]
       (String.append &res " }")))
+  (implements str Set.str)
 )

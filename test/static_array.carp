@@ -92,15 +92,13 @@
                 &(find &(fn [x] (= 3 @x)) $[0 1 2 3])
                 "find works as expected I")
 
-  (assert-equal test
-                &(Maybe.Nothing)
-                &(find &(fn [x] (= 4 @x)) $[0 1 2 3])
-                "find works as expected II")
+  (assert-nothing test
+                  &(find &(fn [x] (= 4 @x)) $[0 1 2 3])
+                  "find works as expected II")
 
-  (assert-equal test
-                &(Maybe.Nothing)
-                &(find-index &(fn [i] (Int.even? @i)) $[1 3 5])
-                "find-index works I")
+  (assert-nothing test
+                  &(find-index &(fn [i] (Int.even? @i)) $[1 3 5])
+                  "find-index works I")
 
   (assert-equal test
                 &(Maybe.Just 1)
@@ -117,10 +115,9 @@
                 &(first $[1 2 3])
                 "first works as expected")
 
-  (assert-equal test
-                &(the (Maybe Int) (Maybe.Nothing))
-                &(first $[])
-                "first works as expected on empty array")
+  (assert-nothing test
+                  &(first (the (Ref (StaticArray Int)) $[]))
+                  "first works as expected on empty array")
 
   (assert-equal test
                 \c
@@ -132,10 +129,9 @@
                 &(last $[\a \b \c])
                 "last works as expected")
 
-  (assert-equal test
-                &(the (Maybe Char) (Maybe.Nothing))
-                &(last $[])
-                "last works as expected on empty array")
+  (assert-nothing test
+                  &(last (the (Ref (StaticArray Char)) $[]))
+                  "last works as expected on empty array")
 
   (assert-equal test
                 &(Maybe.Just 10)
@@ -167,10 +163,9 @@
                 &(index-of $[1 2 3 4] &4)
                 "index-of works as expected when element is in the array")
 
-  (assert-equal test
-                &(Maybe.Nothing)
-                &(index-of $[1 2 3 4] &7)
-                "index-of works as expected when element is not in the array")
+  (assert-nothing test
+                  &(index-of $[1 2 3 4] &7)
+                  "index-of works as expected when element is not in the array")
 
   (assert-equal test
                 2
@@ -198,10 +193,9 @@
                     arr)
                   "swap! works as expected"))
 
-  (assert-equal test
-                &(Maybe.Nothing)
-                &(nth $[0 1 2] 3)
-                "nth works as expected I")
+  (assert-nothing test
+                  &(nth $[0 1 2] 3)
+                  "nth works as expected I")
 
   (assert-equal test
                 &(Maybe.Just 0)

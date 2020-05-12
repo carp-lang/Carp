@@ -10,6 +10,9 @@ import Obj
 import Util
 import Debug.Trace
 
+-- | The type of generic lookup functions.
+type LookupFunc a = a -> Env -> [Binder]
+
 -- | Find the Binder at a specified path.
 lookupInEnv :: SymPath -> Env -> Maybe (Env, Binder)
 lookupInEnv (SymPath [] name) env =
@@ -48,6 +51,9 @@ multiLookup = multiLookupInternal False
 multiLookupALL :: String -> Env -> [(Env, Binder)]
 multiLookupALL = multiLookupInternal True
 
+
+-- TODO: Many of the local functions defined in the body of multiLookupInternal have been extracted.
+-- Remove the duplication and define this in terms of the more generic/extracted functions.
 {-# ANN multiLookupInternal "HLint: ignore Eta reduce" #-}
 -- | The advanced version of multiLookup that allows for looking into modules that are NOT imported.
 -- | Perhaps this function will become unnecessary when all functions can be found through Interfaces? (even 'delete', etc.)
@@ -89,6 +95,52 @@ multiLookupInternal allowLookupInAllModules name rootEnv = recursiveLookup rootE
                         Nothing -> []
           in --(trace $ "multiLookupInternal '" ++ name ++ "' " ++ show (envModuleName env) ++ ", spine: " ++ show (fmap snd spine) ++ ", leaves: " ++ show (fmap snd leaves) ++ ", above: " ++ show (fmap snd above))
             spine ++ leaves ++ above
+
+
+binderToEnv :: Binder -> Maybe Env
+binderToEnv (Binder _ (XObj (Mod e) _ _)) = Just e
+binderToEnv _ = Nothing
+
+-- | Given an environment, returns the list of all environments of binders from
+-- imported modules `(load "module-file.carp")`
+importedEnvs :: Env -> [Env]
+importedEnvs env =
+  let envs = mapMaybe (binderToEnv . snd) (Map.toList (envBindings env))
+  in  envs ++ concatMap importedEnvs envs
+
+-- | Given an environment, use a lookup function to recursively find all binders
+-- in the environment that satisfy the lookup.
+recursiveLookupAll :: a -> LookupFunc a -> Env -> [Binder]
+recursiveLookupAll input lookf env =
+  let spine = lookf input env
+      leaves = concatMap (lookf input) (importedEnvs env)
+      above = case envParent env of
+                Just parent -> recursiveLookupAll input lookf parent
+                Nothing -> []
+  in spine ++ leaves ++ above
+
+-- | Lookup binders by name.
+lookupByName :: String -> Env -> [Binder]
+lookupByName name env =
+  let filtered = Map.filterWithKey (\k v -> k == name) (envBindings env)
+  in map snd $ Map.toList filtered
+
+-- | Lookup binders that have specified metadata.
+lookupByMeta :: String -> Env -> [Binder]
+lookupByMeta key env =
+  let filtered = Map.filter hasMeta (envBindings env)
+  in  map snd $ Map.toList filtered
+  where hasMeta (Binder meta _)= Map.member key (getMeta meta)
+
+-- | Given an interface, lookup all binders that implement the interface.
+lookupImplementations :: SymPath -> Env -> [Binder]
+lookupImplementations interface env =
+  let binders = lookupByMeta "implements" env
+  in  filter isImpl binders
+  where isImpl (Binder meta _) =
+          case Map.lookup "implements" (getMeta meta) of
+            Just (XObj (Sym i@(SymPath _ _) _) _ _) -> i == interface
+            _ -> False
 
 getEnvFromBinder :: (a, Binder) -> Env
 getEnvFromBinder (_, Binder _ (XObj (Mod foundEnv) _ _)) = foundEnv

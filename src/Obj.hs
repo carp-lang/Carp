@@ -98,6 +98,7 @@ instance Ord Obj where
   compare a b = compare (show a) (show b)
   -- TODO: handle comparison of lists, arrays and dictionaries
 
+-- | The type of primitive functions. See Primitives.hs
 type Primitive = XObj -> Context -> [XObj] -> IO (Context, Either EvalError XObj)
 
 newtype PrimitiveFunctionType = PrimitiveFunction { getPrimitive :: Primitive }

@@ -3,6 +3,7 @@
 (system-include "carp_stdbool.h")
 (load "Interfaces.carp")
 (load "Bool.carp")
+(load "Pointer.carp")
 (load "Generics.carp")
 (load "Int.carp")
 

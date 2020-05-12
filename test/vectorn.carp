@@ -22,17 +22,17 @@
                 &(Maybe.unsafe-from
                   (add &(init 3 [2.0 1.0 2.0]) &(init 3 [1.0 2.0 2.5])))
                 "add operator works")
-  (assert-true test
-               (Maybe.nothing? &(add &(init 1 [2.0]) &(init 2 [1.0 2.0])))
-               "add operator works on wrong magnitudes")
+  (assert-nothing test
+                  &(add &(init 1 [2.0]) &(init 2 [1.0 2.0]))
+                  "add operator works on wrong magnitudes")
   (assert-equal test
                 &(init 3 [1.0 -1.0 -1.5])
                 &(Maybe.unsafe-from
                   (sub &(init 3 [2.0 1.0 2.0]) &(init 3 [1.0 2.0 3.5])))
                 "sub operator works")
-  (assert-true test
-                (Maybe.nothing? &(sub &(init 1 [2.0]) &(init 2 [1.0 2.0])))
-                "sub operator works on wrong magnitudes")
+  (assert-nothing test
+                  &(sub &(init 1 [2.0]) &(init 2 [1.0 2.0]))
+                  "sub operator works on wrong magnitudes")
   (assert-equal test
                 &(init 3 [4.0 2.0 2.2])
                 &(mul &(init 3 [2.0 1.0 1.1]) 2.0)

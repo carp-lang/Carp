@@ -7,13 +7,15 @@
 
 (defmodule ArrayExtension
   (defn fmap [f a] (Array.endo-map f a))
+  (implements fmap ArrayExtension.fmap)
   )
 
 (deftype Box [x Int])
 
 (defmodule Box
   (defn fmap [f box] (let [new-x (~f @(Box.x &box))]
-                       (Box.set-x box new-x))))
+                       (Box.set-x box new-x)))
+  (implements fmap Box.fmap))
 
 (use Box)
 (use ArrayExtension)

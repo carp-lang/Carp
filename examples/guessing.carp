@@ -46,6 +46,9 @@
               guessed-num (from-string &user-input)]
           (if (= &user-input "q\n")
             (exit!)
-            (cond (< guessed-num answer) (guess-again "low")
-                  (> guessed-num answer) (guess-again "high")
-                  (correct!)))))))
+            (match guessed-num
+              (Maybe.Nothing) (print "Invalid input.\nPlease guess again: ")
+              (Maybe.Just n)
+                (cond (< n answer) (guess-again "low")
+                      (> n answer) (guess-again "high")
+                      (correct!))))))))

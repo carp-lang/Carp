@@ -72,14 +72,6 @@ pointerModule = Env { envBindings = bindings
                     , envMode = ExternalEnv
                     , envFunctionNestingLevel = 0 }
   where bindings = Map.fromList [ templatePointerCopy
-                                , templatePointerEqual
-                                , templatePointerToRef
-                                , templatePointerToValue
-                                , templatePointerAdd
-                                , templatePointerSub
-                                , templatePointerWidth
-                                , templatePointerToLong
-                                , templatePointerFromLong
                                 ]
 
 -- | A template function for copying (= deref:ing) any pointer.
@@ -94,111 +86,6 @@ templatePointerCopy = defineTemplate
                         ,"}"])
   (const [])
 
-templatePointerEqual = defineTemplate
-  (SymPath ["Pointer"] "eq")
-  (FuncTy [PointerTy (VarTy "p"), PointerTy (VarTy "p")] BoolTy StaticLifetimeTy)
-  "checks two pointers for equality."
-  (toTemplate "bool $NAME ($p *p1, $p *p2)")
-  (toTemplate $ unlines ["$DECL {"
-                        ,"    return p1 == p2;"
-                        ,"}"])
-  (const [])
-
--- | A template function for converting pointers to ref (it's up to the user of this function to make sure that is a safe operation).
-templatePointerToRef = defineTemplate
-  (SymPath ["Pointer"] "to-ref")
-  (FuncTy [PointerTy (VarTy "p")] (RefTy (VarTy "p") StaticLifetimeTy) StaticLifetimeTy)
-  "converts a pointer to a reference type. The user will have to ensure themselves that this is a safe operation."
-  (toTemplate "$p* $NAME ($p *p)")
-  (toTemplate $ unlines ["$DECL {"
-                        ,"    return p;"
-                        ,"}"])
-  (const [])
-
-
--- | A template function for converting pointers to values (it's up to the user of this function to make sure that is a safe operation).
-templatePointerToValue = defineTemplate
-  (SymPath ["Pointer"] "to-value")
-  (FuncTy [PointerTy (VarTy "p")] (VarTy "p") StaticLifetimeTy)
-  "converts a pointer to a value. The user will have to ensure themselves that this is a safe operation."
-  (toTemplate "$p $NAME ($p *p)")
-  (toTemplate $ unlines ["$DECL {"
-                        ,"    return *p;"
-                        ,"}"])
-  (const [])
-
-templatePointerAdd = defineTemplate
-  (SymPath ["Pointer"] "add")
-  (FuncTy [PointerTy (VarTy "p"), LongTy] (PointerTy (VarTy "p")) StaticLifetimeTy)
-  "adds a long integer value to a pointer."
-  (toTemplate "$p* $NAME ($p *p, Long x)")
-  (toTemplate $ unlines ["$DECL {"
-                        ,"    return p + x;"
-                        ,"}"])
-  (const [])
-
-templatePointerSub = defineTemplate
-  (SymPath ["Pointer"] "sub")
-  (FuncTy [PointerTy (VarTy "p"), LongTy] (PointerTy (VarTy "p")) StaticLifetimeTy)
-  "subtracts a long integer value from a pointer."
-  (toTemplate "$p* $NAME ($p *p, Long x)")
-  (toTemplate $ unlines ["$DECL {"
-                        ,"    return p - x;"
-                        ,"}"])
-  (const [])
-
-templatePointerWidth = defineTemplate
-  (SymPath ["Pointer"] "width")
-  (FuncTy [PointerTy (VarTy "p")] LongTy StaticLifetimeTy)
-  "gets the byte size of a pointer."
-  (toTemplate "Long $NAME ($p *p)")
-  (toTemplate $ unlines ["$DECL {"
-                        ,"    return sizeof(*p);"
-                        ,"}"])
-  (const [])
-
-templatePointerToLong = defineTemplate
-  (SymPath ["Pointer"] "to-long")
-  (FuncTy [PointerTy (VarTy "p")] LongTy StaticLifetimeTy)
-  "converts a pointer to a long integer."
-  (toTemplate "Long $NAME ($p *p)")
-  (toTemplate $ unlines ["$DECL {"
-                        ,"    return (Long)p;"
-                        ,"}"])
-  (const [])
-
-templatePointerFromLong = defineTemplate
-  (SymPath ["Pointer"] "from-long")
-  (FuncTy [LongTy] (PointerTy (VarTy "p")) StaticLifetimeTy)
-  "converts a long integer to a pointer."
-  (toTemplate "$p* $NAME (Long p)")
-  (toTemplate $ unlines ["$DECL {"
-                        ,"    return ($p*)p;"
-                        ,"}"])
-  (const [])
-
--- | The System module contains functions for various OS related things like timing and process control.
-systemModule :: Env
-systemModule = Env { envBindings = bindings
-                   , envParent = Nothing
-                   , envModuleName = Just "System"
-                   , envUseModules = []
-                   , envMode = ExternalEnv
-                   , envFunctionNestingLevel = 0 }
-  where bindings = Map.fromList [ templateExit ]
-
-
--- | A template function for exiting.
-templateExit :: (String, Binder)
-templateExit = defineTemplate
-  (SymPath ["System"] "exit")
-  (FuncTy [IntTy] (VarTy "a") StaticLifetimeTy)
-  "exits the program."
-  (toTemplate "$a $NAME (int code)")
-  (toTemplate $ unlines ["$DECL {"
-                        ,"    exit(code);"
-                        ,"}"])
-  (const [])
 
 maxArity :: Int
 maxArity = 9
@@ -361,6 +248,7 @@ dynamicModule = Env { envBindings = bindings
                     , makePrim "defined?" 1 "checks whether a symbol is defined." "(defined? mysymbol)" primitiveDefined
                     , makePrim "deftemplate" 4 "defines a new C template." "(deftemplate symbol Type declString defString)" primitiveDeftemplate
                     , makePrim "immutable" 1 "Annotates a variable as immutable." "(immutable my-var)" primitiveImmutable
+                    , makePrim "implements" 2 "designates a function as an implementation of an interface." "(implements zero Maybe.zero)" primitiveImplements
                     ]
                     ++ [("String", Binder emptyMeta (XObj (Mod dynamicStringModule) Nothing Nothing))
                        ,("Symbol", Binder emptyMeta (XObj (Mod dynamicSymModule) Nothing Nothing))
@@ -412,51 +300,6 @@ dynamicProjectModule = Env { envBindings = bindings
                                 , addCommand (SymPath path "get-config") 1 commandProjectGetConfig "gets a project config value under a key." "(Project.get-config \"paren-balance-hints\")"
                                 ]
 
--- | A hack-ish function for converting any enum to an int.
-templateEnumToInt :: (String, Binder)
-templateEnumToInt = defineTemplate
-  (SymPath [] "enum-to-int")
-  (FuncTy [VarTy "a"] IntTy StaticLifetimeTy)
-  "converts an enum `e` to an integer."
-  (toTemplate "int $NAME ($a e)")
-  (toTemplate $ unlines ["$DECL {"
-                        ,"    return (int)e;"
-                        ,"}"])
-  (const [])
-
--- | The Unsafe module contains dangerous functions
-unsafeModule :: Env
-unsafeModule = Env { envBindings = bindings
-                   , envParent = Nothing
-                   , envModuleName = Just "Unsafe"
-                   , envUseModules = []
-                   , envMode = ExternalEnv
-                   , envFunctionNestingLevel = 0 }
-  where bindings = Map.fromList [ templateCoerce, templateLeak ]
-
--- | A template for coercing (casting) a type to another type
-templateCoerce :: (String, Binder)
-templateCoerce = defineTemplate
-  (SymPath ["Unsafe"] "coerce")
-  (FuncTy [VarTy "b"] (VarTy "a") StaticLifetimeTy)
-  "coerces a value of type b to a value of type a."
-  (toTemplate "$a $NAME ($b b)")
-  (toTemplate $ unlines ["$DECL {"
-                        ,"   return ($a)b;"
-                        ,"}"])
-  (const [])
-
--- | A template function for preventing destructor from being run on a value (it's up to the user of this function to make sure that memory is freed).
-templateLeak = defineTemplate
-  (SymPath ["Unsafe"] "leak")
-  (FuncTy [(VarTy "a")] UnitTy StaticLifetimeTy)
-  "prevents a destructor from being run on a value a."
-  (toTemplate "void $NAME ($a a)")
-  (toTemplate $ unlines ["$DECL {"
-                        ,"    // Leak"
-                        ,"}"])
-  (const [])
-
 -- | The global environment before any code is run.
 startingGlobalEnv :: Bool -> Env
 startingGlobalEnv noArray =
@@ -468,15 +311,12 @@ startingGlobalEnv noArray =
       , envFunctionNestingLevel = 0
       }
   where bindings = Map.fromList $ [ register "NULL" (VarTy "a")
-                                  , templateEnumToInt
                                   ]
                    ++ (if noArray then [] else [("Array", Binder emptyMeta (XObj (Mod arrayModule) Nothing Nothing))])
                    ++ [("StaticArray", Binder emptyMeta (XObj (Mod staticArrayModule) Nothing Nothing))]
                    ++ [("Pointer",  Binder emptyMeta (XObj (Mod pointerModule) Nothing Nothing))]
-                   ++ [("System",   Binder emptyMeta (XObj (Mod systemModule) Nothing Nothing))]
                    ++ [("Dynamic",  Binder emptyMeta (XObj (Mod dynamicModule) Nothing Nothing))]
                    ++ [("Function", Binder emptyMeta (XObj (Mod functionModule) Nothing Nothing))]
-                   ++ [("Unsafe",   Binder emptyMeta (XObj (Mod unsafeModule) Nothing Nothing))]
 
 -- | The type environment (containing deftypes and interfaces) before any code is run.
 startingTypeEnv :: Env

@@ -17,6 +17,18 @@
   (register < (Fn [Float Float] Bool))
   (register > (Fn [Float Float] Bool))
 
+  (implements + Float.+)
+  (implements - Float.-)
+  (implements * Float.*)
+  (implements / Float./)
+  (implements < Float.<)
+  (implements > Float.>)
+  (implements = Float.=)
+  (implements copy Float.copy)
+  (implements neg Float.neg)
+  (implements to-int Float.to-int)
+  (implements from-int Float.from-int)
+
   (defn clamp [min, max, val]
     (if (> val max)
       max
@@ -55,27 +67,57 @@ The margin of error is 0.00001.")
   (register tan (Fn [Float] Float))
   (register tanh (Fn [Float] Float))
 
+  (implements abs Float.abs)
+  (implements acos Float.acos)
+  (implements asin Float.asin)
+  (implements atan Float.atan)
+  (implements atan2 Float.atan2)
+  (implements ceil Float.ceil)
+  (implements cos Float.cos)
+  (implements cosh Float.cosh)
+  (implements exp Float.exp)
+  (implements floor Float.floor)
+  (implements frexp Float.frexp)
+  (implements ldexp Float.ldexp)
+  (implements log Float.log)
+  (implements log10 Float.log10)
+  (implements mod Float.mod)
+  (implements modf Float.modf)
+  (implements pow Float.pow)
+  (implements sin Float.sin)
+  (implements sinh Float.sinh)
+  (implements sqrt Float.sqrt)
+  (implements tan Float.tan)
+  (implements tanh Float.tanh)
+
   (doc zero "returns `0.0f`.")
   (defn zero []
     0.0f)
+  (implements zero Float.zero)
 
   (defn inc [x]
     (+ 1.0f x))
+  (implements inc Float.inc)
 
   (defn dec [x]
     (- x 1.0f))
+  (implements dec Float.dec)
 
   (defn add-ref [x y]
     (Float.+ @x @y))
+  (implements add-ref Float.add-ref)
 )
 
 (defmodule FloatRef
   (defn = [a b]
     (Float.= @a @b))
+  (implements = FloatRef.=)
 
   (defn < [a b]
     (Float.< @a @b))
+  (implements < FloatRef.<)
 
   (defn > [a b]
     (Float.> @a @b))
+  (implements > FloatRef.>)
 )

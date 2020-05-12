@@ -105,6 +105,7 @@ Returns `Nothing` if the array is empty.")
               (set! eq false)
               (break))))
         eq)))
+   (implements = Array.=)
 
   (doc maximum "gets the maximum in an array (elements must support `<`) and wraps it in a `Just`.
 
@@ -144,6 +145,7 @@ If the array is empty, returns `Nothing`")
       (for [i start-index end-index]
         (set! result (push-back result @(unsafe-nth xs i))))
       result))
+  (implements slice Array.slice)
 
   (doc prefix "gets a prefix array to `end-index`.")
   (defn prefix [xs end-index]
@@ -295,6 +297,7 @@ The trailing elements of the longer array will be discarded.")
 
   (doc zero "returns the empty array.")
   (defn zero [] [])
+  (implements zero Array.zero)
 
   (doc concat "returns a new array which is the concatenation of the provided nested array `xs`.")
   (defn concat [xs]

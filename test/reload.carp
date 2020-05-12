@@ -9,7 +9,8 @@
 
 (defmodule Foo
   (defn = [a b]
-    (= (Foo.x a) (Foo.x b))))
+    (= (Foo.x a) (Foo.x b)))
+  (implements = Foo.=))
 
 ;;(deftype (Foo t) [x t]) ;; <- this was the bug, simulate a reload of deftype
 

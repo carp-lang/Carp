@@ -51,6 +51,7 @@ It is the inverse of [`just?`](#just?).")
         (match-ref b
           (Nothing) false
           (Just y) (= x y))))
+  (implements = Maybe.=)
 
   (doc unsafe-ptr "Creates a `(Ptr a)` from a `(Maybe a)`. If the `Maybe` was
 `Nothing`, this function will return a `NULL` value.")
@@ -69,4 +70,5 @@ It is the inverse of [`just?`](#just?).")
 
   (doc zero "returns `Nothing`.")
   (defn zero [] (Nothing))
+  (implements zero Maybe.zero)
 )

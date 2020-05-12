@@ -8,6 +8,13 @@
   (register from-int (Fn [Int] Char))
   (register copy (Fn [&Char] Char))
 
+  (implements < Char.<)
+  (implements > Char.>)
+  (implements = Char.=)
+  (implements copy Char.copy)
+  (implements to-int Char.to-int)
+  (implements from-int Char.from-int)
+
   (doc meaning "converts a numerical char into the appropriate number (e.g. from `\1` to `1`).")
   (defn meaning [char-ref]
     (let [c @char-ref]
@@ -45,16 +52,21 @@
     (or (alpha? c) (num? c)))
 
   (defn zero [] (the Char (from-int 0)))
+  (implements zero Char.zero)
 )
 
 (defmodule CharRef
   (defn = [a b]
     (Char.= @a @b))
+  (implements = CharRef.=)
   (defn < [a b]
     (Char.< @a @b))
+  (implements < CharRef.<)
   (defn > [a b]
     (Char.> @a @b))
+  (implements > CharRef.>)
 )
 
 (defmodule PtrChar
-  (register str (Fn [(Ptr Char)] String)))
+  (register str (Fn [(Ptr Char)] String))
+  (implements str PtrChar.str))

@@ -35,12 +35,16 @@ If you want to replace all occurrences of the pattern, use `-1`.")
   (defn matches? [pat s] (/= (find pat s) -1))
 
   (register str (Fn [&Pattern] String))
+  (implements str Pattern.str)
   (register prn (Fn [&Pattern] String))
+  (implements prn Pattern.prn)
 
   (register init (Fn [&String] Pattern))
   (register =    (Fn [&Pattern &Pattern] Bool))
+  (implements = Pattern.=)
   (register delete     (Fn [Pattern] ()))
   (register copy       (Fn [&Pattern] Pattern))
+  (implements copy Pattern.copy)
 
   (doc from-chars "creates a pattern that matches a group of characters from a
 list of those characters.")

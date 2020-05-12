@@ -291,9 +291,11 @@
   (defn < [a b]
     (< (Array.length a)
        (Array.length b)))
+  (implements < ArrayCompareExtension.<)
   (defn > [a b]
     (> (Array.length a)
        (Array.length b))))
+  (implements > ArrayCompareExtension.>)
 (defn array-sort-1 []
   (let [xs [[0 0] [0 0 0] [0 0 0 0] [0]]
         ys (Array.sort xs)]

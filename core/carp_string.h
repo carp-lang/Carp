@@ -228,8 +228,10 @@ String Double_format(const String *s, double x) {
     return buffer;
 }
 
-double Double_from_MINUS_string(const String *s) {
-    return strtod(*s, NULL);
+bool Double_from_MINUS_string_MINUS_internal(const String *s, double *target) {
+    char *err;
+    *target = strtod(*s, &err);
+    return *err == 0;
 }
 
 String Float_str(float x) {
@@ -246,8 +248,10 @@ String Float_format(const String *str, float x) {
     return buffer;
 }
 
-float Float_from_MINUS_string(const String *s) {
-    return strtof(*s, NULL);
+bool Float_from_MINUS_string_MINUS_internal(const String *s, float *target) {
+    char *err;
+    *target = strtof(*s, &err);
+    return *err == 0;
 }
 
 String Int_str(int x) {
@@ -264,8 +268,10 @@ String Int_format(const String *str, int x) {
     return buffer;
 }
 
-int Int_from_MINUS_string(const String *s) {
-    return atoi(*s);
+bool Int_from_MINUS_string_MINUS_internal(const String *s, int *target) {
+    char *err;
+    *target = (int)strtol(*s, &err, 10);
+    return *err == 0;
 }
 
 String Long_str(Long x) {
@@ -282,8 +288,10 @@ String Long_format(const String *str, Long x) {
     return buffer;
 }
 
-Long Long_from_MINUS_string(const String *s) {
-    return atol(*s);
+bool Long_from_MINUS_string_MINUS_internal(const String *s, Long *target) {
+    char *err;
+    *target = strtol(*s, &err, 10);
+    return *err == 0;
 }
 
 String Byte_str(uint8_t x) {
@@ -300,8 +308,10 @@ String Byte_format(const String *str, uint8_t x) {
     return buffer;
 }
 
-uint8_t Byte_from_MINUS_string(const String *s) {
-    return atoi(*s);
+uint8_t Byte_from_MINUS_string_MINUS_internal(const String *s, byte *target) {
+    char *err;
+    *target = (uint8_t)strtol(*s, &err, 10);
+    return *err == 0;
 }
 
 int String_index_MINUS_of_MINUS_from(const String *s, char c, int i) {

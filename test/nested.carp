@@ -15,11 +15,13 @@
 ;; A function with correct nr of args but just generic types used to really confuse the type checker:
 (defmodule Confuse
   (defn = [a b]
-    true))
+    true)
+  (implements = Confuse.=))
 
 (defmodule Young
   (defn = [y1 y2]
-    (Int.= @(age y1) @(age y2))))
+    (Int.= @(age y1) @(age y2)))
+  (implements = Young.=))
 
 ;; Now I want to use 'Young.=' in with 'Ur.compare'
 (defn f []
