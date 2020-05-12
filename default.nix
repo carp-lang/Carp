@@ -4,6 +4,9 @@ let
 
   inherit (nixpkgs) pkgs;
 
+  optionals = nixpkgs.stdenv.lib.optionals;
+  linuxOnly = optionals nixpkgs.stdenv.isLinux;
+
   f = { mkDerivation, ansi-terminal, base, blaze-html, blaze-markup
       , cmark, cmdargs, containers, directory, edit-distance, filepath
       , haskeline, HUnit, mtl, parsec, process, split, stdenv, text
@@ -29,12 +32,12 @@ let
         ];
         pkgconfigDepends =
           [ glfw3 SDL2 SDL2_image SDL2_gfx SDL2_mixer SDL2_ttf ]
-          ++ stdenv.lib.optionals stdenv.isLinux [ libXext libXcursor libXinerama libXi libXrandr libXScrnSaver libXxf86vm libpthreadstubs libXdmcp libGL];
+          ++ linuxOnly [ libXext libXcursor libXinerama libXi libXrandr libXScrnSaver libXxf86vm libpthreadstubs libXdmcp libGL];
         executableHaskellDepends = [
           base cmdargs containers directory haskeline parsec process
           clang
         ];
-        executableFrameworkDepends = with darwin.apple_sdk.frameworks; stdenv.lib.optionals stdenv.isDarwin [
+        executableFrameworkDepends = with darwin.apple_sdk.frameworks; optionals stdenv.isDarwin [
           Carbon Cocoa IOKit CoreFoundation CoreVideo IOKit ForceFeedback
         ];
         buildDepends = [ makeWrapper ];
@@ -64,6 +67,7 @@ in
 
   if pkgs.lib.inNixShell
   then drv.env.overrideAttrs (o: {
-    buildInputs = o.buildInputs ++ [ haskellPackages.cabal-install pkgs.clang ];
+    buildInputs = with pkgs; o.buildInputs ++ [ haskellPackages.cabal-install clang gdb ]
+                  ++ linuxOnly [ flamegraph linuxPackages.perf ];
   })
   else drv
