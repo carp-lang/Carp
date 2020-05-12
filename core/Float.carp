@@ -111,10 +111,13 @@ The margin of error is 0.00001.")
 (defmodule FloatRef
   (defn = [a b]
     (Float.= @a @b))
+  (implements = FloatRef.=)
 
   (defn < [a b]
     (Float.< @a @b))
+  (implements < FloatRef.<)
 
   (defn > [a b]
     (Float.> @a @b))
+  (implements > FloatRef.>)
 )

@@ -109,8 +109,13 @@
                 "to-bytes works as expected II"
   )
   (assert-equal test
-                10.3f
-                (from-string "10.3")
-                "from-string works as expected"
+                &(Maybe.Just 10.3f)
+                &(from-string "10.3")
+                "from-string works as expected I"
+  )
+  (assert-equal test
+                &(Maybe.Nothing)
+                &(Float.from-string "abcd")
+                "from-string works as expected II"
   )
 )
