@@ -1,4 +1,8 @@
-{ nixpkgs ? import <nixpkgs> {}, compiler ? "default", doBenchmark ? false }:
+{ nixpkgs ? import <nixpkgs> {}
+, compiler ? "default"
+, doBenchmark ? false
+, profiling ? false
+}:
 
 let
 
@@ -11,6 +15,7 @@ let
       , cmark, cmdargs, containers, directory, edit-distance, filepath
       , haskeline, HUnit, mtl, parsec, process, split, stdenv, text
       , darwin, glfw3, SDL2, SDL2_image, SDL2_gfx, SDL2_mixer, SDL2_ttf
+      , ghc-prof-flamegraph
       , clang , makeWrapper
 
       , libXext, libXcursor, libXinerama, libXi, libXrandr, libXScrnSaver, libXxf86vm, libpthreadstubs, libXdmcp, libGL
@@ -23,13 +28,13 @@ let
         isExecutable = true;
         enableSharedLibraries = false;
         enableSharedExecutables = false;
-        enableLibraryProfiling = false;
-        enableExecutableProfiling = false;
+        enableLibraryProfiling = profiling;
+        enableExecutableProfiling = profiling;
         libraryHaskellDepends = [
           ansi-terminal base blaze-html blaze-markup cmark containers
           directory edit-distance filepath haskeline mtl parsec process split
           text
-        ];
+        ] ++ optionals profiling [ ghc-prof-flamegraph ];
         pkgconfigDepends =
           [ glfw3 SDL2 SDL2_image SDL2_gfx SDL2_mixer SDL2_ttf ]
           ++ linuxOnly [ libXext libXcursor libXinerama libXi libXrandr libXScrnSaver libXxf86vm libpthreadstubs libXdmcp libGL];
