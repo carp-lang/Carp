@@ -87,7 +87,9 @@ from names to `XObjs`.
 evaluation passes can use them.
 - `Lookup.hs` -- Functions for looking up `Binders` in a given environment
   (`Env`).
-- `Expand.hs` -- Functions for expanding macro forms.
+- `Expand.hs` -- Functions for traversing forms and doing syntactic analysis.´
+   Historically also expanded macros (that functionality was moved into
+   `Eval.macroExpand`).
 - `Infer.hs` -- Functions for performing type inference--entry point into the
   type system.
 - `Qualify` -- Qualifies symbols with appropriate module names.
