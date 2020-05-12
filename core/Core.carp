@@ -51,8 +51,7 @@
 (load-once "Control.carp")
 (load-once "Opaque.carp")
 
-(not-on-windows
-  (system-include "sys/wait.h")
-  (system-include "unistd.h"))
-(freebsd-only
-  (system-include "signal.h"))
+(posix-only
+ (system-include "sys/wait.h")
+ (system-include "unistd.h")
+ (system-include "signal.h"))

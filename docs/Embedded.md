@@ -42,21 +42,46 @@ Here is a list of them:
 (add-pkg "mypkg")
 ```
 
+### Cross-compiling
+
+On embedded systems it's quite usual to use cross-compilers. See the
+cross-compiling section of the Manual for details on how to use a
+cross-compiler.
+
 ### Compile-time conditional code
 
 There are some macros to help you find out stuff about the host system you are
-compiling on. This is not useful if you are trying to cross-compile, but can be
-helpful otherwise, and at least telling you about them is in order.
+compiling on.
 
 Here are a few helpful functions to get you started:
 
 ```clojure
 ; will return the host OS
-(os)
+(host-os)
 
-; will return the architecture bit width (e.g. 32 or 64 bit)
-(bit-width)
+; will return the host architecture bit width (e.g. 32 or 64 bit)
+(host-bit-width)
 ```
+
+Most of the time you'll be interested in the target platform details
+instead.
+
+```clojure
+; will return the target architecture
+(target-arch)
+
+; will return the target OS
+(target-os)
+
+; will return the target ABI
+(target-abi)
+
+```
+
+There're some macros for conditional code in `Macros.carp`. If your
+target doesn't have an underlying OS you'll probably want to roll your
+own macros for a `freestanding` target.
+
 
 ### The Way Out
 

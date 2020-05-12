@@ -7,5 +7,6 @@ then
     else
 	CARP="cabal -v0 run carp"
     fi
+    CARP="$CARP $BUILD_OPTS --"
 fi
-$CARP $BUILD_OPTS -- $CARP_OPTS "$@"
+$CARP $CARP_OPTS "$@"

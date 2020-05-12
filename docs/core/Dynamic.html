@@ -585,29 +585,6 @@ in the list as an argument to the function.</p>
                 </p>
             </div>
             <div class="binder">
-                <a class="anchor" href="#bit-width">
-                    <h3 id="bit-width">
-                        bit-width
-                    </h3>
-                </a>
-                <div class="description">
-                    command
-                </div>
-                <p class="sig">
-                    Dynamic
-                </p>
-                <span>
-                    
-                </span>
-                <p class="doc">
-                    <p>gets the bit width of the platform.</p>
-<p>Example Usage:</p>
-<pre><code>(bit-width) ; =&gt; your host machine’s bit width, e.g. 32 or 64
-</code></pre>
-
-                </p>
-            </div>
-            <div class="binder">
                 <a class="anchor" href="#build">
                     <h3 id="build">
                         build
@@ -1987,6 +1964,75 @@ predicate <code>p</code>.</p>
                 </p>
             </div>
             <div class="binder">
+                <a class="anchor" href="#host-arch">
+                    <h3 id="host-arch">
+                        host-arch
+                    </h3>
+                </a>
+                <div class="description">
+                    command
+                </div>
+                <p class="sig">
+                    Dynamic
+                </p>
+                <span>
+                    
+                </span>
+                <p class="doc">
+                    <p>prints the host architecture (as returned by the Haskell function <code>System.Info.arch</code>).</p>
+<p>Example Usage:</p>
+<pre><code>(host-arch)
+</code></pre>
+
+                </p>
+            </div>
+            <div class="binder">
+                <a class="anchor" href="#host-bit-width">
+                    <h3 id="host-bit-width">
+                        host-bit-width
+                    </h3>
+                </a>
+                <div class="description">
+                    command
+                </div>
+                <p class="sig">
+                    Dynamic
+                </p>
+                <span>
+                    
+                </span>
+                <p class="doc">
+                    <p>gets the bit width of the host platform.</p>
+<p>Example Usage:</p>
+<pre><code>(host-bit-width) ; =&gt; your host machine’s bit width, e.g. 32 or 64
+</code></pre>
+
+                </p>
+            </div>
+            <div class="binder">
+                <a class="anchor" href="#host-os">
+                    <h3 id="host-os">
+                        host-os
+                    </h3>
+                </a>
+                <div class="description">
+                    command
+                </div>
+                <p class="sig">
+                    Dynamic
+                </p>
+                <span>
+                    
+                </span>
+                <p class="doc">
+                    <p>prints the host operating system (as returned by the Haskell function <code>System.Info.os</code>).</p>
+<p>Example Usage:</p>
+<pre><code>(host-os)
+</code></pre>
+
+                </p>
+            </div>
+            <div class="binder">
                 <a class="anchor" href="#implements">
                     <h3 id="implements">
                         implements
@@ -2456,29 +2502,6 @@ applications.</p>
                 </pre>
                 <p class="doc">
                     
-                </p>
-            </div>
-            <div class="binder">
-                <a class="anchor" href="#os">
-                    <h3 id="os">
-                        os
-                    </h3>
-                </a>
-                <div class="description">
-                    command
-                </div>
-                <p class="sig">
-                    Dynamic
-                </p>
-                <span>
-                    
-                </span>
-                <p class="doc">
-                    <p>prints the operating system (as returned by the Haskell function <code>System.Info.os</code>).</p>
-<p>Example Usage:</p>
-<pre><code>(os)
-</code></pre>
-
                 </p>
             </div>
             <div class="binder">

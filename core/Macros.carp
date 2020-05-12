@@ -575,31 +575,6 @@
 (defmacro update! [x f]
   (list 'set! x (list f x)))
 
-(defmacro freebsd-only [:rest forms]
-  (if (= "freebsd" (os))
-    (eval (cons (quote do) forms))
-    ()))
-
-(defmacro mac-only [:rest forms]
-  (if (= "darwin" (os))
-    (eval (cons (quote do) forms))
-    ()))
-
-(defmacro linux-only [:rest forms]
-  (if (= "linux" (os))
-    (eval (cons (quote do) forms))
-    ()))
-
-(defmacro windows-only [:rest forms]
-  (if (or (= "windows" (os)) (= "mingw32" (os)))
-    (eval (cons (quote do) forms))
-    ()))
-
-(defmacro not-on-windows [:rest forms]
-  (if (not (or (= "windows" (os)) (= "mingw32" (os))))
-    (eval (cons (quote do) forms))
-    ()))
-
 (defndynamic use-all-fn [names]
   (if (= (length names) 0)
     (macro-error "Trying to call use-all without arguments")
@@ -750,6 +725,7 @@
 (defmacro inline-c [name defcode declcode]
   (list 'deftemplate name (list) (eval defcode) (eval declcode)))
 
+
 (deftemplate bottom (Fn [] a) "$a $NAME()" "$DECL { abort(); }")
 
 (doc unreachable
@@ -805,3 +781,70 @@
         (cons 'do
           (map (fn [expr] (cons (car expr) (cons (list 'ref s) (cdr expr))))
           expressions))))))
+
+(doc native-triple "triple describing the native platform.")
+
+(defdynamic native-triple [(host-arch) (host-os) "unknown"])
+
+(doc target-triple "triple describing the target platform.")
+(defndynamic target-triple []
+  (let [t (Project.get-config "target")]
+    (case t
+      "native" native-triple
+      (Dynamic.String.split-on "-" t))))
+
+(doc target-arch "target architecture.")
+(defdynamic target-arch (car (target-triple)))
+
+(doc target-os "target operating system.")
+(defdynamic target-os (cadr (target-triple)))
+
+(doc target-abi "target ABI.")
+(defdynamic target-abi (caddr (target-triple)))
+
+(doc target-os? "are we targeting a certain OS?")
+(defndynamic target-os? [t]
+  (= target-os t))
+
+(doc windows-target? "are we targeting Windows?")
+(defdynamic windows-target?
+  (if (target-os? "windows")
+    true
+    (target-os? "mingw32")))
+
+(doc linux-target? "are we targeting Linux?")
+(defdynamic linux-target? (target-os? "linux"))
+
+(doc mac-target? "are we targeting Mac?")
+(defdynamic mac-target? (target-os? "darwin"))
+
+(doc freebsd-target? "are we targeting FreeBSD?")
+(defdynamic freebsd-target? (target-os? "freebsd"))
+
+(doc posix-target? "are we targeting a POSIX platform?")
+(defdynamic posix-target? (= false windows-target?))
+
+(doc target-only "conditionally compile forms when b is true.")
+(defndynamic target-only [b forms]
+  (when b
+    (eval (cons 'do forms))))
+
+(doc mac-only "compile forms only on Mac.")
+(defmacro mac-only [:rest forms]
+  (target-only mac-target? forms))
+
+(doc linux-only "compile forms only on Linux.")
+(defmacro linux-only [:rest forms]
+  (target-only linux-target? forms))
+
+(doc freebsd-only "compile forms only on FreeBSD.")
+(defmacro freebsd-only [:rest forms]
+  (target-only freebsd-target? forms))
+
+(doc windows-only "compile forms only on Windows.")
+(defmacro windows-only [:rest forms]
+ (target-only windows-target? forms))
+
+(doc posix-only "compile forms only on POSIX targets.")
+(defmacro posix-only [:rest forms]
+ (target-only posix-target? forms))

@@ -63,6 +63,7 @@ defaultProject =
           , projectCompiler = case platform of
                                 Windows -> "clang-cl.exe"
                                 _ ->       "clang"
+          , projectTarget = Native
           , projectCore = True
           , projectEchoCompilationCommand = False
           , projectCanExecute = False
@@ -116,11 +117,13 @@ main = do setLocaleEncoding utf8
               preloads = optPreload fullOpts
               postloads = optPostload fullOpts
               load = flip loadFiles
+              loadOnce = flip loadFilesOnce
           carpProfile <- configPath "profile.carp"
           hasProfile <- doesFileExist carpProfile
-          _ <- loadFilesOnce startingContext coreModulesToLoad
+          _ <- pure startingContext
             >>= load [carpProfile | hasProfile]
             >>= execStrs "Preload" preloads
+            >>= loadOnce coreModulesToLoad
             >>= load argFilesToLoad
             >>= execStrs "Postload" postloads
             >>= \ctx -> case execMode of
