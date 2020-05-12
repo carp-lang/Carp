@@ -648,11 +648,11 @@ primitiveDefined _ ctx [arg] =
 
 primitiveDeftemplate :: Primitive
 -- deftemplate can't receive a dependency function, as Ty aren't exposed in Carp
-primitiveDeftemplate _ ctx [XObj (Sym p@(SymPath _ name) _) pinfo _, ty, XObj (Str declTempl) _ _, XObj (Str defTempl) _ _] = do
+primitiveDeftemplate _ ctx [XObj (Sym (SymPath [] name) _) pinfo _, ty, XObj (Str declTempl) _ _, XObj (Str defTempl) _ _] = do
   let pathStrings = contextPath ctx
       typeEnv = contextTypeEnv ctx
       globalEnv = contextGlobalEnv ctx
-      path = SymPath pathStrings name
+      p = SymPath pathStrings name
   case xobjToTy ty of
     Just t ->
       case defineTemplate p t "" (toTemplate declTempl) (toTemplate defTempl) (const []) of
@@ -661,19 +661,21 @@ primitiveDeftemplate _ ctx [XObj (Sym p@(SymPath _ name) _) pinfo _, ty, XObj (S
           then
             let (Binder _ registration) = b
                 meta = existingMeta globalEnv registration
-                env' = envInsertAt globalEnv path (Binder meta registration)
+                env' = envInsertAt globalEnv p (Binder meta registration)
             in return (ctx { contextGlobalEnv = env' }, dynamicNil)
           else
             let templateCreator = getTemplateCreator template
-                (registration, _) = instantiateTemplate path t (templateCreator typeEnv globalEnv)
+                (registration, _) = instantiateTemplate p t (templateCreator typeEnv globalEnv)
                 meta = existingMeta globalEnv registration
-                env' = envInsertAt globalEnv path (Binder meta registration)
+                env' = envInsertAt globalEnv p (Binder meta registration)
             in return (ctx { contextGlobalEnv = env' }, dynamicNil)
     Nothing ->
       return (evalError ctx ("I do not understand the type form in " ++ pretty ty) (info ty))
-primitiveDeftemplate _ ctx [XObj (Sym _ _) _ _, _, XObj (Str _) _ _, x] =
+primitiveDeftemplate _ ctx [XObj (Sym (SymPath [] _) _) _ _, _, XObj (Str _) _ _, x] =
   argumentErr ctx "deftemplate" "a string" "fourth" x
-primitiveDeftemplate _ ctx [XObj (Sym _ _) _ _, _, x, _] =
+primitiveDeftemplate _ ctx [XObj (Sym (SymPath [] _) _) _ _, _, x, _] =
   argumentErr ctx "deftemplate" "a string" "third" x
+primitiveDeftemplate _ ctx [s@(XObj (Sym (SymPath _ _) _) _ _), _, _, _] = do
+  argumentErr ctx "deftemplate" "a symbol without prefix" "first" s
 primitiveDeftemplate _ ctx [x, _, _, _] =
   argumentErr ctx "deftemplate" "a symbol" "first" x

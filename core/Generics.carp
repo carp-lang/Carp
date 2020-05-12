@@ -108,3 +108,6 @@ The margin of error is 0.00001.")
   (not (= a b)))
 
 )
+
+(doc enum-to-int "converts an enum `e` to an integer.")
+(deftemplate enum-to-int (Fn [a] Int) "int $NAME($a e)" "$DECL { return (int)e; }")
