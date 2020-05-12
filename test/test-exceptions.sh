@@ -1,4 +1,4 @@
-#!/bin/sh
+#!/usr/bin/env bash
 RES=$1
 run() {
     trap echo SIGFPE
