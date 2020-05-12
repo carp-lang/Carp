@@ -274,25 +274,33 @@
 (defmodule Long (defn prn [x] (Long.str x)) (implements prn Long.prn))
 (defmodule LongRef
   (defn prn [x] (Long.str @x))
+  (implements prn LongRef.prn)
   (defn str [x] (Long.str @x))
+  (implements str LongRef.str)
 )
 
 (defmodule Float (defn prn [x] (Float.str x)) (implements prn Float.prn))
 (defmodule FloatRef
   (defn prn [x] (Float.str @x))
+  (implements prn FloatRef.prn)
   (defn str [x] (Float.str @x))
+  (implements str FloatRef.str)
 )
 
 (defmodule Double (defn prn [x] (Double.str x)) (implements prn Double.prn))
 (defmodule DoubleRef
   (defn prn [x] (Double.str @x))
+  (implements prn DoubleRef.prn)
   (defn str [x] (Double.str @x))
+  (implements str DoubleRef.str)
 )
 
 (defmodule Bool (defn prn [x] (Bool.str x)) (implements prn Bool.prn))
 (defmodule BoolRef
   (defn prn [x] (Bool.str @x))
+  (implements prn BoolRef.prn)
   (defn str [x] (Bool.str @x))
+  (implements str BoolRef.str)
 )
 
 (defmodule Array (defn prn [x] (Array.str x)) (implements prn Array.prn))
