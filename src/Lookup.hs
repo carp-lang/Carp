@@ -51,6 +51,9 @@ multiLookup = multiLookupInternal False
 multiLookupALL :: String -> Env -> [(Env, Binder)]
 multiLookupALL = multiLookupInternal True
 
+
+-- TODO: Many of the local functions defined in the body of multiLookupInternal have been extracted.
+-- Remove the duplication and define this in terms of the more generic/extracted functions.
 {-# ANN multiLookupInternal "HLint: ignore Eta reduce" #-}
 -- | The advanced version of multiLookup that allows for looking into modules that are NOT imported.
 -- | Perhaps this function will become unnecessary when all functions can be found through Interfaces? (even 'delete', etc.)
@@ -92,6 +95,7 @@ multiLookupInternal allowLookupInAllModules name rootEnv = recursiveLookup rootE
                         Nothing -> []
           in --(trace $ "multiLookupInternal '" ++ name ++ "' " ++ show (envModuleName env) ++ ", spine: " ++ show (fmap snd spine) ++ ", leaves: " ++ show (fmap snd leaves) ++ ", above: " ++ show (fmap snd above))
             spine ++ leaves ++ above
+
 
 binderToEnv :: Binder -> Maybe Env
 binderToEnv (Binder _ (XObj (Mod e) _ _)) = Just e
