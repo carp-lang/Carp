@@ -199,7 +199,15 @@
   (implements str Int.str)
   (register format (Fn [&String Int] String))
   (implements format Int.format)
-  (register from-string (λ [&String] Int))
+  (private from-string-internal)
+  (hidden from-string-internal)
+  (register from-string-internal (λ [&String &Int] Bool))
+
+  (defn from-string [s]
+    (let [res 0]
+      (if (from-string-internal s &res)
+        (Maybe.Just res)
+        (Maybe.Nothing))))
   (implements from-string Int.from-string)
 )
 
@@ -208,7 +216,15 @@
   (implements str Byte.str)
   (register format (Fn [&String Byte] String))
   (implements format Byte.format)
-  (register from-string (λ [&String] Byte))
+  (private from-string-internal)
+  (hidden from-string-internal)
+  (register from-string-internal (λ [&String &Byte] Bool))
+
+  (defn from-string [s]
+    (let [res 0b]
+      (if (from-string-internal s &res)
+        (Maybe.Just res)
+        (Maybe.Nothing))))
   (implements from-string Byte.from-string)
 )
 
@@ -217,7 +233,15 @@
   (implements str Float.str)
   (register format (Fn [&String Float] String))
   (implements format Float.format)
-  (register from-string (λ [&String] Float))
+  (private from-string-internal)
+  (hidden from-string-internal)
+  (register from-string-internal (λ [&String &Float] Bool))
+
+  (defn from-string [s]
+    (let [res 0.0f]
+      (if (from-string-internal s &res)
+        (Maybe.Just res)
+        (Maybe.Nothing))))
   (implements from-string Float.from-string)
 )
 
@@ -226,7 +250,15 @@
   (implements str Long.str)
   (register format (Fn [&String Long] String))
   (implements format Long.format)
-  (register from-string (λ [&String] Long))
+  (private from-string-internal)
+  (hidden from-string-internal)
+  (register from-string-internal (λ [&String &Long] Bool))
+
+  (defn from-string [s]
+    (let [res 0l]
+      (if (from-string-internal s &res)
+        (Maybe.Just res)
+        (Maybe.Nothing))))
   (implements from-string Long.from-string)
 )
 
@@ -235,7 +267,15 @@
   (implements str Double.str)
   (register format (Fn [&String Double] String))
   (implements format Double.format)
-  (register from-string (λ [&String] Double))
+  (private from-string-internal)
+  (hidden from-string-internal)
+  (register from-string-internal (λ [&String &Double] Bool))
+
+  (defn from-string [s]
+    (let [res 0.0]
+      (if (from-string-internal s &res)
+        (Maybe.Just res)
+        (Maybe.Nothing))))
   (implements from-string Double.from-string)
 )
 
