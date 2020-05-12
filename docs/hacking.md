@@ -74,20 +74,22 @@ the `Context`.
 
 The following sources are important for evaluation:
 
-- `src/Eval.hs` -- this is the entry point for the evaluator.
-- `src/Obj.hs` -- Defines `Context` which carries compiler state across
+- `Eval.hs` -- this is the entry point for the evaluator.
+- `Obj.hs` -- Defines `Context` which carries compiler state across
   evaluation passes in the form of `Env`s, defines `Env` which holds `Binders`
 from names to `XObjs`.
-- `src/Primitives.hs` -- builtin functions or "keywords" that **do not**
+- `Primitives.hs` -- builtin functions or "keywords" that **do not**
   evaluate their arguments
-- `src/Commands.hs` -- builtin functions or "keywords" that evaluate their
+- `Commands.hs` -- builtin functions or "keywords" that evaluate their
   arguments
-- `src/StartingEnv.hs` -- defines the starting environment for the compiler to
+- `StartingEnv.hs` -- defines the starting environment for the compiler to
   work with. All commands and primitives are registered here, so that
 evaluation passes can use them.
 - `Lookup.hs` -- Functions for looking up `Binders` in a given environment
   (`Env`).
-- `Expand.hs` -- Functions for expanding macro forms.
+- `Expand.hs` -- Functions for traversing forms and doing syntactic analysis.´
+   Historically also expanded macros (that functionality was moved into
+   `Eval.macroExpand`).
 - `Infer.hs` -- Functions for performing type inference--entry point into the
   type system.
 - `Qualify` -- Qualifies symbols with appropriate module names.
