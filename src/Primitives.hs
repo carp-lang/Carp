@@ -626,3 +626,27 @@ primitiveDeftemplate _ ctx [XObj (Sym _ _) _ _, _, x, _] =
   argumentErr ctx "deftemplate" "a string" "third" x
 primitiveDeftemplate _ ctx [x, _, _, _] =
   argumentErr ctx "deftemplate" "a symbol" "first" x
+
+primitiveImmutable :: Primitive
+primitiveImmutable xobj ctx [arg] =
+  case arg of
+    XObj (Sym path@(SymPath _ _) _) _ _ ->
+      let global  = contextGlobalEnv ctx
+          binding = lookupInEnv path global
+      in  case binding of
+            Just (_, Binder meta x@(XObj (Lst [XObj Def _ _, _, _]) _ _)) ->
+              let oldMeta = getMeta meta
+                  newMeta = meta {getMeta = Map.insert "immutable" trueXObj oldMeta}
+                  newCtx  = ctx {contextGlobalEnv = envReplaceBinding path (Binder newMeta x) global}
+              in  return (newCtx, dynamicNil)
+            Just (_, Binder _ x) ->
+                 let err = "`immutable` expects a variable as an argument but got: " ++ pretty x
+                 in  return $ evalError ctx err (info xobj)
+            -- If the binding doesn't exist yet, go ahead and annotate it.
+            Nothing -> primitiveMetaSet xobj ctx [arg, XObj (Str "immutable") (Just dummyInfo) (Just StringTy), trueXObj]
+    _ -> let err = "`immutable` expects a name as an argument, but got: " ++ pretty arg
+         in  return $ evalError ctx err (info xobj)
+primitiveImmutable xobj ctx args =
+  let err = "`immutable` expects 1 argument but got: " ++ show (length args)
+  in  return $ evalError ctx err (info xobj)
+

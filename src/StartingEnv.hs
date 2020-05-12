@@ -360,6 +360,7 @@ dynamicModule = Env { envBindings = bindings
                     , makePrim "eval" 1 "evaluates a list." "(eval mycode)" primitiveEval
                     , makePrim "defined?" 1 "checks whether a symbol is defined." "(defined? mysymbol)" primitiveDefined
                     , makePrim "deftemplate" 4 "defines a new C template." "(deftemplate symbol Type declString defString)" primitiveDeftemplate
+                    , makePrim "immutable" 1 "Annotates a variable as immutable." "(immutable my-var)" primitiveImmutable
                     ]
                     ++ [("String", Binder emptyMeta (XObj (Mod dynamicStringModule) Nothing Nothing))
                        ,("Symbol", Binder emptyMeta (XObj (Mod dynamicSymModule) Nothing Nothing))
