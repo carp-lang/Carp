@@ -188,10 +188,10 @@ If it doesn't require anything fancy or out of the ordinary, adding a new
 primitive to the compiler entails the following:
 
 1. Define your new primitive in `Primitives.hs`
-2. Add your primitive to the staring environment using `makePrim` in
+2. Add your primitive to the starting environment using `makePrim` in
   `StartingEnv.hs`
 
-#### 1. Define your Primitive
+#### Define your Primitive
 
 Primitives are functions of the `Primitive` type:
 
@@ -201,8 +201,8 @@ type Primitive = XObj -> Context -> [XObj] -> IO (Context, Either EvalError XObj
 
 Every primitive takes an xobj, the form that represents the primitive, a
 compiler context, and a list of XObjs the primitive form's arguments.
-Primitives return either a new `Context` updated based on the logic they
-performed, or an evaluation error that's reported to the user.
+Primitives return a new `Context`, updated based on the logic they performed,
+and either an XObj or evaluation error that's reported to the user.
 
 For example, here's how the `defmodule` primitive maps to the `Primitive` type:
 
@@ -212,8 +212,8 @@ For example, here's how the `defmodule` primitive maps to the `Primitive` type:
  XObj      [XObj] (arguments)
 ```
 
-> The `Context` argument is a compiler concept and doesn't have a corresponding
-> direct representation in Carp forms.
+> The `Context` argument captures the state of the compiler and doesn't have a
+> corresponding direct representation in Carp forms.
 
 In `Primitives.hs`, you should name your primitive using the naming scheme
 `primitive<name>`, where `<name>` is the name of the symbol that will call your
@@ -311,7 +311,7 @@ And that wraps up the core logic of our primitive. To make it available, we
 just need to register it in `StartingEnv.hs`.
 
 
-#### 1. Add your primitive to the starting environment
+#### Add your primitive to the starting environment
 
 To add a primitive to the starting environment, call `makePrim`:
 
