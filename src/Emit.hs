@@ -432,19 +432,22 @@ toC toCMode (Binder meta root) = emitterSrc (execState (visit startingIndent roo
 
             -- Set!
             [XObj SetBang _ _, variable, value] ->
-              do valueVar <- visit indent value
-                 let properVariableName =
-                       case variable of
-                         (XObj (Lst (XObj (Sym (SymPath _ "copy") _) _ _ : symObj@(XObj (Sym sym _) _ _) : _)) _ _) -> "*" ++ pathToC sym
-                         (XObj (Sym sym _) _ _) -> pathToC sym
-                         v -> error (show (CannotSet variable))
-                     Just varInfo = info variable
-                 --appendToSrc (addIndent indent ++ "// " ++ show (length (infoDelete varInfo)) ++ " deleters for " ++ properVariableName ++ ":\n")
-                 delete indent varInfo
-                 appendToSrc (addIndent indent ++ properVariableName ++ " = " ++ valueVar ++ "; "
-                              ++ " // " ++ show (fromMaybe (VarTy "?") (ty variable)) ++ " = " ++ show (fromMaybe (VarTy "?") (ty value))
-                              ++ "\n")
-                 return ""
+              let immutable = metaIsTrue meta "immutable"
+              in  if immutable
+                  then error (show (CannotSet variable))
+                  else do valueVar <- visit indent value
+                          let properVariableName =
+                                case variable of
+                                  (XObj (Lst (XObj (Sym (SymPath _ "copy") _) _ _ : symObj@(XObj (Sym sym _) _ _) : _)) _ _) -> "*" ++ pathToC sym
+                                  (XObj (Sym sym _) _ _) -> pathToC sym
+                                  v -> error (show (CannotSet variable))
+                              Just varInfo = info variable
+                          --appendToSrc (addIndent indent ++ "// " ++ show (length (infoDelete varInfo)) ++ " deleters for " ++ properVariableName ++ ":\n")
+                          delete indent varInfo
+                          appendToSrc (addIndent indent ++ properVariableName ++ " = " ++ valueVar ++ "; "
+                                       ++ " // " ++ show (fromMaybe (VarTy "?") (ty variable)) ++ " = " ++ show (fromMaybe (VarTy "?") (ty value))
+                                       ++ "\n")
+                          return ""
 
             -- The
             [XObj The _ _, _, value] ->
