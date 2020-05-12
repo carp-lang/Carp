@@ -431,6 +431,7 @@ commandHelp ctx [] =
               putStrLn "--optimize                       - Removes safety checks and runs the C-compiler with the '-O3' flag."
               putStrLn "--check                          - Report all errors found in a machine readable way."
               putStrLn "--generate-only                  - Don't compile the C source."
+              putStrLn "--cross <target>                 - Cross-compile for target."
               return (ctx, dynamicNil)
 
 commandHelp ctx args =
@@ -446,6 +447,11 @@ commandProject ctx args = do
 commandOS :: CommandCallback
 commandOS ctx _ =
   return (ctx, (Right (XObj (Str os) (Just dummyInfo) (Just StringTy))))
+
+-- | Command for getting the name of the operating system you're on.
+commandTarget :: CommandCallback
+commandTarget ctx _ =
+  return (ctx, (Right (XObj (Str $ show $ projectTarget $ contextProj ctx) (Just dummyInfo) (Just StringTy))))
 
 -- | Command for adding a header file include to the project.
 commandAddInclude :: (String -> Includer) -> CommandCallback

@@ -46,6 +46,7 @@ defaultProject =
           , projectFilePathPrintLength = FullPath
           , projectGenerateOnly = False
           , projectForceReload = False
+          , projectTarget = Native
           }
 
 -- | Starting point of the application.
@@ -70,12 +71,13 @@ main = do setLocaleEncoding utf8
                                      Just carpDir -> projectWithFiles { projectCarpDir = carpDir }
                                      Nothing -> projectWithFiles
               projectWithCustomPrompt = setCustomPromptFromOptions projectWithCarpDir otherOptions
+              projectWithCrossCompiler = setCrossCompilerFromOptions projectWithCustomPrompt otherOptions
               startingContext = Context
                                  (startingGlobalEnv noArray)
                                  Nothing
                                  (TypeEnv startingTypeEnv)
                                  []
-                                 projectWithCustomPrompt
+                                 projectWithCrossCompiler
                                  ""
                                  execMode
                                  []
@@ -111,6 +113,7 @@ data OtherOptions = NoCore
                   | Optimize
                   | GenerateOnly
                   | SetPrompt String
+                  | Cross String
                   deriving (Show, Eq)
 
 -- | Parse the arguments sent to the compiler from the terminal.
@@ -135,6 +138,10 @@ parseArgs args = parseArgsInternal [] Repl [] args
                                parseArgsInternal filesToLoad execMode (SetPrompt newPrompt : otherOptions) restRestArgs
                              _ ->
                                error "No prompt given after --prompt"
+            "--cross" -> case restArgs of
+                           target : restRestArgs ->
+                             parseArgsInternal filesToLoad execMode (Cross target : otherOptions) restRestArgs
+                           _ -> error "Missing target after --cross"
             file -> parseArgsInternal (filesToLoad ++ [file]) execMode otherOptions restArgs
 
 setCustomPromptFromOptions :: Project -> [OtherOptions] -> Project
@@ -144,3 +151,11 @@ setCustomPromptFromOptions project (o:os) =
     _ -> setCustomPromptFromOptions project os
 setCustomPromptFromOptions project _ =
   project
+setCrossCompilerFromOptions :: Project -> [OtherOptions] -> Project
+setCrossCompilerFromOptions project (o:os) =
+  case o of
+    Cross target -> setCrossCompilerFromOptions (project { projectCompiler = "zig cc --target=" ++ target
+                                                         , projectTarget = Target target
+                                                         }) os
+    _ -> setCrossCompilerFromOptions project os
+setCrossCompilerFromOptions project _ = project

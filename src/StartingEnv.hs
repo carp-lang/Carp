@@ -333,6 +333,7 @@ dynamicModule = Env { envBindings = bindings
                     , addCommand (SymPath path "load-once") 1 commandLoadOnce "loads a file and prevents it from being reloaded (see `reload`)." "(load-once \"myfile.carp\")"
                     , addCommand (SymPath path "expand") 1 commandExpand "expands a macro and prints the result." "(expand '(when true 1)) ; => (if true 1 ())"
                     , addCommand (SymPath path "os") 0 commandOS "prints the operating system (as returned by the Haskell function `System.Info.os`)." "(os)"
+                    , addCommand (SymPath path "target") 0 commandTarget "prints the target platform." "(target)"
                     , addCommand (SymPath path "system-include") 1 commandAddSystemInclude "adds a system include, i.e. a C `#include` with angle brackets (`<>`)." "(system-include \"stdint.h\")"
                     , addCommand (SymPath path "relative-include") 1 commandAddRelativeInclude "adds a relative include, i.e. a C `include` with quotes. It also prepends the current directory." "(relative-include \"myheader.h\")"
                     , addCommand (SymPath path "save-docs-internal") 1 commandSaveDocsInternal "is the internal companion command to `save-docs`. `save-docs` should be called instead." "(save-docs-internal 'Module)"

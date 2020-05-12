@@ -548,26 +548,6 @@
 (defmacro update! [x f]
   (list 'set! x (list f x)))
 
-(defmacro mac-only [:rest forms]
-  (if (= "darwin" (os))
-    (eval (cons (quote do) forms))
-    ()))
-
-(defmacro linux-only [:rest forms]
-  (if (= "linux" (os))
-    (eval (cons (quote do) forms))
-    ()))
-
-(defmacro windows-only [:rest forms]
-  (if (or (= "windows" (os)) (= "mingw32" (os)))
-    (eval (cons (quote do) forms))
-    ()))
-
-(defmacro not-on-windows [:rest forms]
-  (if (not (or (= "windows" (os)) (= "mingw32" (os))))
-    (eval (cons (quote do) forms))
-    ()))
-
 (defndynamic use-all-fn [names]
   (if (= (length names) 0)
     (macro-error "Trying to call use-all without arguments")
@@ -713,3 +693,78 @@ The expression must be evaluable at compile time.")
 (doc inline-c "inlines some custom C code.")
 (defmacro inline-c [name defcode declcode]
   (list 'deftemplate name (list) (eval defcode) (eval declcode)))
+
+(defndynamic windows-target? []
+  (case (target)
+    "native" (or (= "windows" (os)) (= "mingw32" (os)))
+    "aarch64_be-windows-gnu" true
+    "aarch64-windows-gnu" true
+    "armeb-windows-gnu" true
+    "arm-windows-gnu" true
+    "i386-windows-gnu" true
+    "x86_64-windows-gnu" true
+    false))
+
+(defndynamic linux-target? []
+  (case (target)
+    "native" (= "linux" (os))
+    "aarch64_be-linux-gnu" true
+    "aarch64_be-linux-musl" true
+    "aarch64-linux-gnu" true
+    "aarch64-linux-musl" true
+    "armeb-linux-gnueabi" true
+    "armeb-linux-gnueabihf" true
+    "armeb-linux-musleabi" true
+    "armeb-linux-musleabihf" true
+    "arm-linux-gnueabi" true
+    "arm-linux-gnueabihf" true
+    "arm-linux-musleabi" true
+    "arm-linux-musleabihf" true
+    "i386-linux-gnu" true
+    "i386-linux-musl" true
+    "mips64el-linux-gnuabi64" true
+    "mips64el-linux-gnuabin32" true
+    "mips64el-linux-musl" true
+    "mips64-linux-gnuabi64" true
+    "mips64-linux-gnuabin32" true
+    "mips64-linux-musl" true
+    "mipsel-linux-gnu" true
+    "mipsel-linux-musl" true
+    "mips-linux-gnu" true
+    "mips-linux-musl" true
+    "powerpc64le-linux-gnu" true
+    "powerpc64le-linux-musl" true
+    "powerpc64-linux-gnu" true
+    "powerpc64-linux-musl" true
+    "powerpc-linux-gnu" true
+    "powerpc-linux-musl" true
+    "riscv64-linux-gnu" true
+    "riscv64-linux-musl" true
+    "s390x-linux-gnu" true
+    "s390x-linux-musl" true
+    "sparc-linux-gnu" true
+    "sparcv9-linux-gnu" true
+    "wasm32-freestanding-musl" true
+    "x86_64-linux-gnu" true
+    "x86_64-linux-gnux32" true
+    "x86_64-linux-musl" true
+    false))
+
+(defndynamic mac-target? []
+  (= "darwin" (os)))
+
+(defmacro mac-only [:rest forms]
+  (when (mac-target?)
+    (eval (cons (quote do) forms))))
+
+(defmacro linux-only [:rest forms]
+  (when (linux-target?)
+    (eval (cons (quote do) forms))))
+
+(defmacro windows-only [:rest forms]
+  (when (windows-target?)
+    (eval (cons (quote do) forms))))
+
+(defmacro not-on-windows [:rest forms]
+  (unless (windows-target?)
+    (eval (cons (quote do) forms))))

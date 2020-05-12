@@ -67,7 +67,7 @@ in
 
   if pkgs.lib.inNixShell
   then drv.env.overrideAttrs (o: {
-    buildInputs = with pkgs; o.buildInputs ++ [ haskellPackages.cabal-install clang gdb ]
+    buildInputs = with pkgs; o.buildInputs ++ [ haskellPackages.cabal-install clang gdb zig ]
                   ++ linuxOnly [ flamegraph linuxPackages.perf ];
   })
   else drv

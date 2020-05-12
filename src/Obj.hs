@@ -625,7 +625,10 @@ showLoader :: (FilePath, ReloadMode) -> String
 showLoader (fp, DoesReload) = fp
 showLoader (fp, Frozen) = fp ++ " (frozen)"
 
-
+data Target = Native | Target String
+instance Show Target where
+  show Native = "native"
+  show (Target x) = x
 
 -- | Project (represents a lot of useful information for working at the REPL and building executables)
 data Project = Project { projectTitle :: String
@@ -648,6 +651,7 @@ data Project = Project { projectTitle :: String
                        , projectCarpSearchPaths :: [FilePath]
                        , projectPrintTypedAST :: Bool
                        , projectCompiler :: String
+                       , projectTarget :: Target
                        , projectCore :: Bool
                        , projectEchoCompilationCommand :: Bool
                        , projectCanExecute :: Bool
@@ -682,6 +686,7 @@ instance Show Project where
         searchPaths
         printTypedAST
         compiler
+        target
         core
         echoCompilationCommand
         canExecute
@@ -692,6 +697,7 @@ instance Show Project where
        ) =
     unlines [ "Title: " ++ title
             , "Compiler: " ++ compiler
+            , "Target: " ++ show target
             , "Includes:\n    " ++ joinWith "\n    " (map show incl)
             , "Cflags:\n    " ++ joinWith "\n    " cFlags
             , "Library flags:\n    " ++ joinWith "\n    " libFlags
