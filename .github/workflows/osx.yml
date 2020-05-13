@@ -14,7 +14,7 @@ jobs:
       - name: Check out
         uses: actions/checkout@v2
 
-      - uses: actions/setup-haskell@v1
+      - uses: actions/setup-haskell@v1.1
 
       - run:   echo ::set-env name=GITHUB_SHA::$GITHUB_SHA
         shell: bash
