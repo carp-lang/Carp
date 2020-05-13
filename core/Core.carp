@@ -51,3 +51,5 @@
 (not-on-windows
   (system-include "sys/wait.h")
   (system-include "unistd.h"))
+(freebsd-only
+  (system-include "signal.h"))

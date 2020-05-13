@@ -61,7 +61,7 @@ enumerate 5 = "sixth"
 enumerate 6 = "seventh"
 enumerate n = show n ++ ":th"
 
-data Platform = Linux | MacOS | Windows deriving (Show, Eq)
+data Platform = Linux | MacOS | Windows | FreeBSD deriving (Show, Eq)
 
 platform :: Platform
 platform =
@@ -69,6 +69,7 @@ platform =
       "linux" -> Linux
       "darwin" -> MacOS
       "mingw32" -> Windows
+      "freebsd" -> FreeBSD
 
 unionOfSetsInList (x:xs) =
   foldl' Set.union x xs
