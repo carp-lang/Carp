@@ -1,0 +1,36 @@
+name: MacOS CI
+
+on:
+  push:
+    branches: [ master ]
+  pull_request:
+    branches: [ master ]
+
+jobs:
+  build:
+    runs-on: macos-latest
+
+    steps:
+      - name: Check out
+        uses: actions/checkout@v2
+
+      - uses: actions/setup-haskell@v1
+
+      - run:   echo ::set-env name=GITHUB_SHA::$GITHUB_SHA
+        shell: bash
+
+      - uses: actions/cache@v1
+        name: Cache ~/.stack
+        with:
+          path: ~/.stack
+          key: ${{ runner.os }}-stack-${{ env.GITHUB_SHA }}
+          restore-keys: ${{ runner.os }}-stack-
+
+      - name: Build
+        run: stack build
+
+      - name: Run Compiler Tests
+        run: stack test
+
+      - name: Run Carp Tests
+        run: ./run_carp_tests.sh --no_sdl
