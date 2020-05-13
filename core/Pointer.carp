@@ -8,7 +8,7 @@ The user will have to ensure themselves that this is a safe operation.")
   (doc to-value "converts a pointer to a value.
 
 The user will have to ensure themselves that this is a safe operation.")
-  (deftemplate to-value (Fn [(Ptr p)] p) "$p* $NAME($p* p)" " $DECL { return *p; }")
+  (deftemplate to-value (Fn [(Ptr p)] p) "$p $NAME($p* p)" " $DECL { return *p; }")
   (doc add "adds a long integer value to a pointer.")
   (deftemplate add (Fn [(Ptr p) Long] (Ptr p)) "$p* $NAME($p* p, Long x)" " $DECL { return p + x; }")
   (doc sub "subtracts a long integer value from a pointer.")

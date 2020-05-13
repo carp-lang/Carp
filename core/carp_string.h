@@ -169,6 +169,17 @@ String String_empty() {
     return s;
 }
 
+Array String_to_MINUS_bytes(const String *s) {
+    Array chars;
+    const uint8_t *us = (const uint8_t *)*s;
+    size_t l = strlen(*s);
+    chars.len = l;
+    chars.capacity = l;
+    chars.data = CARP_MALLOC(chars.capacity);
+    memcpy(chars.data, us, l);
+    return chars;
+}
+
 String Bool_str(bool b) {
     const String true_str = "true";
     const String false_str = "false";
