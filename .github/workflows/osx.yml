@@ -17,6 +17,7 @@ jobs:
       - uses: actions/setup-haskell@v1.1
         with:
           stack-version: 'latest'
+          enable-stack: true
 
       - run:   echo ::set-env name=GITHUB_SHA::$GITHUB_SHA
         shell: bash
