@@ -303,4 +303,8 @@
                 false
                 (contains? "abab" \c)
                 "contains? works correctly II")
+  (assert-ref-equal test
+                    [104b 101b 108b 108b 111b]
+                    (to-bytes "hello")
+                    "to-bytes works correctly")
 )
