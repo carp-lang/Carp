@@ -48,10 +48,6 @@
                 (tanh 0.0)
                 "tanh works as expected")
   (assert-equal test
-                Double.e
-                (exp 1.0)
-                "exp works as expected")
-  (assert-equal test
                 8.0
                 (ldexp 2.0 2)
                 "ldexp works as expected")
@@ -87,6 +83,11 @@
                 1.0
                 (floor 1.9)
                 "floor works as expected")
+  (assert-op test
+             Double.e
+             (exp 1.0)
+             "exp works as expected"
+             Double.approx)
   (assert-op test
              0.3
              (mod 9.3 3.0)
