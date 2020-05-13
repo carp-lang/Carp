@@ -548,6 +548,11 @@
 (defmacro update! [x f]
   (list 'set! x (list f x)))
 
+(defmacro freebsd-only [:rest forms]
+  (if (= "freebsd" (os))
+    (eval (cons (quote do) forms))
+    ()))
+
 (defmacro mac-only [:rest forms]
   (if (= "darwin" (os))
     (eval (cons (quote do) forms))
