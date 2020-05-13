@@ -1,0 +1,14 @@
+image: "freebsd/12.x"
+packages:
+  - hs-stack
+  - bash
+sources:
+  - https://github.com/carp-lang/Carp
+tasks:
+  - carp-build: |
+     cd Carp 
+     stack build
+     stack test
+  - carp-test: |
+     cd Carp
+     bash ./run_carp_tests.sh --no_sdl
