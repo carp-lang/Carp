@@ -59,26 +59,30 @@ main = do setLocaleEncoding utf8
               noProfile = NoProfile `elem` otherOptions
               optimize = Optimize `elem` otherOptions
               generateOnly = GenerateOnly `elem` otherOptions
-              projectWithFiles = defaultProject { projectCFlags = ["-D LOG_MEMORY" | logMemory] ++
-                                                                  ["-O3 -D NDEBUG" | optimize] ++
-                                                                  projectCFlags defaultProject,
-                                                  projectCore = not noCore,
-                                                  projectGenerateOnly = generateOnly}
+              compileFast = CompileFast `elem` otherOptions
+              flagsSettings p = p { projectCFlags = ["-D LOG_MEMORY" | logMemory] ++
+                                                    ["-O3 -D NDEBUG" | optimize] ++
+                                                    projectCFlags p
+                                  , projectCore = not noCore
+                                  , projectGenerateOnly = generateOnly
+                                  , projectCarpDir = case lookup "CARP_DIR" sysEnv of
+                                      Just carpDir -> carpDir
+                                      Nothing -> projectCarpDir p
+                                  , projectCompiler = if compileFast then "tcc -lm" else projectCompiler p
+                                  }
+              applySettings = flagsSettings . setCustomPromptFromOptions otherOptions
+              project = applySettings defaultProject
               noArray = False
-              coreModulesToLoad = if noCore then [] else coreModules (projectCarpDir projectWithCarpDir)
-              projectWithCarpDir = case lookup "CARP_DIR" sysEnv of
-                                     Just carpDir -> projectWithFiles { projectCarpDir = carpDir }
-                                     Nothing -> projectWithFiles
-              projectWithCustomPrompt = setCustomPromptFromOptions projectWithCarpDir otherOptions
               startingContext = Context
-                                 (startingGlobalEnv noArray)
-                                 Nothing
-                                 (TypeEnv startingTypeEnv)
-                                 []
-                                 projectWithCustomPrompt
-                                 ""
-                                 execMode
-                                 []
+                                (startingGlobalEnv noArray)
+                                Nothing
+                                (TypeEnv startingTypeEnv)
+                                []
+                                project
+                                ""
+                                execMode
+                                []
+              coreModulesToLoad = if noCore then [] else coreModules (projectCarpDir project)
           context <- loadFilesOnce startingContext coreModulesToLoad
           carpProfile <- configPath "profile.carp"
           hasProfile <- doesFileExist carpProfile
@@ -110,6 +114,7 @@ data OtherOptions = NoCore
                   | LogMemory
                   | Optimize
                   | GenerateOnly
+                  | CompileFast
                   | SetPrompt String
                   deriving (Show, Eq)
 
@@ -130,6 +135,7 @@ parseArgs args = parseArgsInternal [] Repl [] args
             "--log-memory" -> parseArgsInternal filesToLoad execMode (LogMemory : otherOptions) restArgs
             "--optimize" -> parseArgsInternal filesToLoad execMode (Optimize : otherOptions) restArgs
             "--generate-only" -> parseArgsInternal filesToLoad execMode (GenerateOnly : otherOptions) restArgs
+            "--compile-fast" -> parseArgsInternal filesToLoad execMode (CompileFast : otherOptions) restArgs
             "--prompt" -> case restArgs of
                              newPrompt : restRestArgs ->
                                parseArgsInternal filesToLoad execMode (SetPrompt newPrompt : otherOptions) restRestArgs
@@ -137,10 +143,10 @@ parseArgs args = parseArgsInternal [] Repl [] args
                                error "No prompt given after --prompt"
             file -> parseArgsInternal (filesToLoad ++ [file]) execMode otherOptions restArgs
 
-setCustomPromptFromOptions :: Project -> [OtherOptions] -> Project
-setCustomPromptFromOptions project (o:os) =
+setCustomPromptFromOptions :: [OtherOptions] -> Project -> Project
+setCustomPromptFromOptions (o:os) project =
   case o of
-    SetPrompt newPrompt -> setCustomPromptFromOptions (project { projectPrompt = newPrompt }) os
-    _ -> setCustomPromptFromOptions project os
-setCustomPromptFromOptions project _ =
+    SetPrompt newPrompt -> setCustomPromptFromOptions os (project { projectPrompt = newPrompt })
+    _ -> setCustomPromptFromOptions os project
+setCustomPromptFromOptions _ project =
   project

@@ -234,4 +234,5 @@
       (two-lengths-in-same-func)
       (changing-target-of-ref)
       (resolve-correctly)
+      0
       ))
