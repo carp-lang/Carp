@@ -14,7 +14,7 @@ bool Int_safe_MINUS_sub(int x, int y, int* res) {
 bool Int_safe_MINUS_mul(int x, int y, int* res) {
     int r = x * y;
     *res = r;
-    return (r / y) != x;
+    return y == 0 || (r / y) != x;
 }
 #else
 bool Int_safe_MINUS_add(int x, int y, int* res) {

@@ -24,7 +24,7 @@ bool Long_safe_MINUS_sub(Long x, Long y, Long* res) {
 bool Long_safe_MINUS_mul(Long x, Long y, Long* res) {
     Long r = x * y;
     *res = r;
-    return (r / y) != x;
+    return y == 0 || (r / y) != x;
 }
 #else
 bool Long_safe_MINUS_add(Long x, Long y, Long* res) {
