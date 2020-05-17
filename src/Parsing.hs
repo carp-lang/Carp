@@ -2,6 +2,7 @@
 
 module Parsing (parse, validCharacters, balance) where
 
+import Numeric (readHex)
 import Text.Parsec ((<|>))
 import qualified Text.Parsec as Parsec
 -- import Text.Parsec.Error (newErrorMessage, Message(..))
@@ -186,24 +187,46 @@ escaped =  do
       '\"' -> return "\""
 
 escapedQuoteChar :: Parsec.Parsec String ParseState Char
-escapedQuoteChar = do c <- Parsec.string "\""
+escapedQuoteChar = do _ <- Parsec.string "\""
                       incColumn 2
                       return '\"'
 
 escapedSpaceChar :: Parsec.Parsec String ParseState Char
-escapedSpaceChar = do c <- Parsec.string "space"
+escapedSpaceChar = do _ <- Parsec.string "space"
                       incColumn 5
                       return ' '
 
 escapedNewlineChar :: Parsec.Parsec String ParseState Char
-escapedNewlineChar = do c <- Parsec.string "newline"
+escapedNewlineChar = do _ <- Parsec.string "newline"
                         incColumn 7
                         return '\n'
 
 escapedTabChar :: Parsec.Parsec String ParseState Char
-escapedTabChar = do c <- Parsec.string "tab"
+escapedTabChar = do _ <- Parsec.string "tab"
                     incColumn 3
                     return '\t'
+
+escapedBackspaceChar :: Parsec.Parsec String ParseState Char
+escapedBackspaceChar = do _ <- Parsec.string "backspace"
+                          incColumn 9
+                          return '\b'
+
+escapedReturnChar :: Parsec.Parsec String ParseState Char
+escapedReturnChar = do _ <- Parsec.string "return"
+                       incColumn 6
+                       return '\r'
+
+escapedFormfeedChar :: Parsec.Parsec String ParseState Char
+escapedFormfeedChar = do _ <- Parsec.string "formfeed"
+                         incColumn 8
+                         return '\f'
+
+escapedHexChar :: Parsec.Parsec String ParseState Char
+escapedHexChar = do _ <- Parsec.char 'u'
+                    hex <- Parsec.count 4 (Parsec.oneOf "0123456789abcdefABCDEF")
+                    incColumn 5
+                    let [(parsed, "")] = readHex hex
+                    return (toEnum parsed)
 
 aChar :: Parsec.Parsec String ParseState XObj
 aChar = do i <- createInfo
@@ -212,6 +235,10 @@ aChar = do i <- createInfo
                 Parsec.try escapedNewlineChar <|>
                 Parsec.try escapedTabChar <|>
                 Parsec.try escapedSpaceChar <|>
+                Parsec.try escapedBackspaceChar <|>
+                Parsec.try escapedReturnChar <|>
+                Parsec.try escapedFormfeedChar <|>
+                Parsec.try escapedHexChar <|>
                 Parsec.anyChar
            incColumn 2
            return (XObj (Chr c) i Nothing)

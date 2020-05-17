@@ -5,17 +5,21 @@
 
 (deftest test
   (assert-equal test
-		"a"
-  		&(str \a)
-		"str works with ASCII")
+    "Π"
+    &(str \u03a0)
+    "unicode literals work")
   (assert-equal test
-		"ñ"
-  		&(str \ñ)
-		"str works with Latin1")
+                "a"
+                &(str \a)
+                "str works with ASCII")
   (assert-equal test
-		"😲"
-  		&(str \😲)
-		"str works with Emoji")
+                "ñ"
+                &(str \ñ)
+                "str works with Latin1")
+  (assert-equal test
+                "😲"
+                &(str \😲)
+                "str works with Emoji")
   (assert-true test
                 (= \a \a)
                 "char = works as expected I")
