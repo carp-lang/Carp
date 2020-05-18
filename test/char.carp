@@ -5,6 +5,34 @@
 
 (deftest test
   (assert-equal test
+    (String.head " ")
+    \space
+    "space literal works")
+  (assert-equal test
+    (String.head "\t")
+    \tab
+    "tab literal works")
+  (assert-equal test
+    (String.head "\t")
+    \tab
+    "tab literal works")
+  (assert-equal test
+    (String.head "\n")
+    \newline
+    "newline literal works")
+  (assert-equal test
+    (String.head "\b")
+    \backspace
+    "backspace literal works")
+  (assert-equal test
+    (String.head "\r")
+    \return
+    "return literal work")
+  (assert-equal test
+    (String.head "\f")
+    \formfeed
+    "formfeed literal works")
+  (assert-equal test
     "Π"
     &(str \u03a0)
     "unicode literals work")
