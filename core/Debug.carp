@@ -38,9 +38,19 @@ immediately, raising a `SIGABRT` if it fails.")
 
   (doc trace "prints the value of an expression to `stdout`, then returns its value.")
   (defmacro trace [x]
-    (list 'let-do (array 'tmp x)
-      (list 'IO.println (list 'ref (list 'fmt "%s:%d:%d: %s" (file x) (line x) (column x) '&(str tmp))))
-      'tmp)
+    (let [sym (gensym)]
+      (list 'let-do [sym x]
+        ; we use eval here to ensure we resolve the symbol before putting it
+        ; into file, line, and column
+        (list 'IO.println
+          (list 'ref
+            (list 'fmt "%s:%d:%d: %s"
+              (eval (list 'file x))
+              (eval (list 'line x))
+              (eval (list 'column x))
+              (list 'ref (list 'str sym)))))
+        sym)
+    )
   )
 
   (doc leak-array "leaks some memory. This function is useful for testing tools that detect leaks.")
