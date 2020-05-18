@@ -5,17 +5,49 @@
 
 (deftest test
   (assert-equal test
-		"a"
-  		&(str \a)
-		"str works with ASCII")
+    (String.head " ")
+    \space
+    "space literal works")
   (assert-equal test
-		"ñ"
-  		&(str \ñ)
-		"str works with Latin1")
+    (String.head "\t")
+    \tab
+    "tab literal works")
   (assert-equal test
-		"😲"
-  		&(str \😲)
-		"str works with Emoji")
+    (String.head "\t")
+    \tab
+    "tab literal works")
+  (assert-equal test
+    (String.head "\n")
+    \newline
+    "newline literal works")
+  (assert-equal test
+    (String.head "\b")
+    \backspace
+    "backspace literal works")
+  (assert-equal test
+    (String.head "\r")
+    \return
+    "return literal work")
+  (assert-equal test
+    (String.head "\f")
+    \formfeed
+    "formfeed literal works")
+  (assert-equal test
+    "Π"
+    &(str \u03a0)
+    "unicode literals work")
+  (assert-equal test
+                "a"
+                &(str \a)
+                "str works with ASCII")
+  (assert-equal test
+                "ñ"
+                &(str \ñ)
+                "str works with Latin1")
+  (assert-equal test
+                "😲"
+                &(str \😲)
+                "str works with Emoji")
   (assert-true test
                 (= \a \a)
                 "char = works as expected I")
