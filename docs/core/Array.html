@@ -952,13 +952,24 @@ For example:
                     defn
                 </div>
                 <p class="sig">
-                    (Fn [a, a, a] (Array a))
+                    (Fn [a, a, a] (Result (Array a) Int))
                 </p>
                 <pre class="args">
                     (range start end step)
                 </pre>
                 <p class="doc">
-                    <p>creates an array from <code>start</code> to <code>end</code> with <code>step</code> between them (the elements must support <code>&lt;</code>, <code>&lt;=</code>, <code>&gt;=</code>, and <code>to-int</code>).</p>
+                    <p>creates an array from <code>start</code> to <code>end</code> with <code>step</code> between them
+(the elements must support <code>&lt;</code>, <code>&lt;=</code>, <code>&gt;=</code>, and <code>to-int</code>).</p>
+<p>It returns a <code>Result.Success</code> if the input was right, and a <code>Result.Error</code> if
+the input given was wrong. For boring implementation reasons, it gives you an
+integer rather than a string, and the integers map directly to the following
+messages:</p>
+<ul>
+<li>1: <code>Array.range</code> cannot be called with step size <code>0</code>.</li>
+<li>2: <code>Array.range</code> cannot be called with a step size <code>&lt; 0</code> and <code>start &lt; end</code>.</li>
+<li>3: <code>Array.range</code> cannot be called with a step size <code>&gt; 0</code> and <code>start &gt; end</code>.</li>
+</ul>
+<p>We apologize for the inconvenience.</p>
 
                 </p>
             </div>
