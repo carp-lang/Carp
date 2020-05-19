@@ -62,10 +62,13 @@ to non-refs.")
 (defmodule LongRef
   (defn = [a b]
     (Long.= @a @b))
+  (implements = LongRef.=)
 
   (defn < [a b]
     (Long.< @a @b))
+  (implements < LongRef.<)
 
   (defn > [a b]
     (Long.> @a @b))
+  (implements > LongRef.>)
 )
