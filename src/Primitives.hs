@@ -141,8 +141,10 @@ primitiveImplements xobj ctx [x@(XObj (Sym interface@(SymPath _ _) _) _ _), i@(X
              do currentImplementations <- primitiveMeta xobj ctx [i, XObj (Str "implements") (Just dummyInfo) (Just StringTy)]
                 case snd currentImplementations of
                   Left err  -> return $ (ctx, Left err)
-                  Right (XObj (Lst impls) inf ty) ->
-                    let newImpls = XObj (Lst (x : impls)) inf (Just DynamicTy)
+                  Right old@(XObj (Lst impls) inf ty) ->
+                    let newImpls = if x `elem` impls
+                                   then old
+                                   else XObj (Lst (x : impls)) inf (Just DynamicTy)
                         adjustedMeta = meta {getMeta = Map.insert "implements" newImpls (getMeta meta)}
                     in  return (ctx' {contextGlobalEnv = envInsertAt global (getPath defobj) (Binder adjustedMeta defobj)},
                                dynamicNil)
