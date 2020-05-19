@@ -149,7 +149,7 @@ primitiveImplements xobj ctx [x@(XObj (Sym interface@(SymPath _ _) _) _ _), i@(X
                     in  return (ctx' {contextGlobalEnv = envInsertAt global (getPath defobj) (Binder adjustedMeta defobj)},
                                dynamicNil)
                   _ ->
-                    let impls = XObj (Lst [x]) (Just dummyInfo) (Just UnitTy)
+                    let impls = XObj (Lst [x]) (Just dummyInfo) (Just DynamicTy)
                         adjustedMeta = meta {getMeta = Map.insert "implements" impls (getMeta meta)}
                     in  return (ctx' {contextGlobalEnv = envInsertAt global (getPath defobj) (Binder adjustedMeta defobj)},
                                  dynamicNil)
