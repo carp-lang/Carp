@@ -140,7 +140,7 @@ primitiveImplements xobj ctx [x@(XObj (Sym interface@(SymPath _ _) _) _ _), i@(X
            Right ctx' ->
              do currentImplementations <- primitiveMeta xobj ctx [i, XObj (Str "implements") (Just dummyInfo) (Just StringTy)]
                 case snd currentImplementations of
-                  Left err  -> return $ (ctx, Left err)
+                  Left err -> return $ (ctx, Left err)
                   Right old@(XObj (Lst impls) inf ty) ->
                     let newImpls = if x `elem` impls
                                    then old
@@ -236,16 +236,17 @@ define hidden ctx@(Context globalEnv _ typeEnv _ proj _ _ _) annXObj =
                      putStrLnWithColor White "" -- To restore color for sure.
               Nothing -> return ()
             case Map.lookup "implements" (getMeta previousMeta) of
-              Just (XObj (Sym interface@(SymPath _ _) _) _ _) ->
-                case registerDefnOrDefInInterfaceIfNeeded ctx annXObj interface of
-                  Left err ->
-                    do case contextExecMode ctx of
-                         Check ->
-                           let fppl = projectFilePathPrintLength (contextProj ctx)
-                           in putStrLn (machineReadableInfoFromXObj fppl annXObj ++ " " ++ err)
-                         _ -> putStrLnWithColor Red err
-                       return ctx
-                  Right ctx' -> return (ctx' {contextGlobalEnv = envInsertAt globalEnv (getPath annXObj) (Binder adjustedMeta annXObj)})
+              Just (XObj (Lst interfaces) _ _) ->
+                do let result = foldM (\ctx (xobj, interface) -> registerDefnOrDefInInterfaceIfNeeded ctx xobj interface) ctx (zip (cycle [annXObj]) (map getPath interfaces))
+                   case result of
+                     Left err ->
+                       do case contextExecMode ctx of
+                            Check ->
+                              let fppl = projectFilePathPrintLength (contextProj ctx)
+                              in putStrLn (machineReadableInfoFromXObj fppl annXObj ++ " " ++ err)
+                            _ -> putStrLnWithColor Red err
+                          return ctx
+                     Right ctx' -> return (ctx' {contextGlobalEnv = envInsertAt globalEnv (getPath annXObj) (Binder adjustedMeta annXObj)})
               _ -> return (ctx {contextGlobalEnv = envInsertAt globalEnv (getPath annXObj) (Binder adjustedMeta annXObj)})
 
 primitiveRegisterType :: Primitive
