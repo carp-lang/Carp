@@ -49,6 +49,10 @@
 (defmacro annotate [name annotation]
   (eval (list 'meta-set! name "annotations" (annotate-helper name annotation))))
 
+(doc implements? "Does `function` implement `interface`?")
+(defmacro implements? [interface function]
+  (eval (list 'any? (list 'fn (array 'x) (list '= 'x interface)) (list 'meta function "implements"))))
+
 (defmodule Dynamic
   (defndynamic caar [pair] (car (car pair)))
   (defndynamic cadr [pair] (car (cdr pair)))

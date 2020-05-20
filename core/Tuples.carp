@@ -14,7 +14,7 @@
 
   (defn > [p1 p2]
     (PairRef.< p2 p1)))
-  (implements > PairRef.=)
+  (implements > PairRef.>)
 
 (defmodule Pair
   (defn init-from-refs [r1 r2]

@@ -139,7 +139,7 @@ lookupImplementations interface env =
   in  filter isImpl binders
   where isImpl (Binder meta _) =
           case Map.lookup "implements" (getMeta meta) of
-            Just (XObj (Sym i@(SymPath _ _) _) _ _) -> i == interface
+            Just (XObj (Lst interfaces) _ _) -> interface `elem` (map getPath interfaces)
             _ -> False
 
 getEnvFromBinder :: (a, Binder) -> Env

@@ -138,9 +138,21 @@ primitiveImplements xobj ctx [x@(XObj (Sym interface@(SymPath _ _) _) _ _), i@(X
                   _ -> putStrLnWithColor Red err
                 return $ evalError ctx err (info x)
            Right ctx' ->
-             let adjustedMeta = meta {getMeta = Map.insert "implements" x (getMeta meta)}
-             in  return (ctx' {contextGlobalEnv = envInsertAt global (getPath defobj) (Binder adjustedMeta defobj)},
+             do currentImplementations <- primitiveMeta xobj ctx [i, XObj (Str "implements") (Just dummyInfo) (Just StringTy)]
+                case snd currentImplementations of
+                  Left err -> return $ (ctx, Left err)
+                  Right old@(XObj (Lst impls) inf ty) ->
+                    let newImpls = if x `elem` impls
+                                   then old
+                                   else XObj (Lst (x : impls)) inf (Just DynamicTy)
+                        adjustedMeta = meta {getMeta = Map.insert "implements" newImpls (getMeta meta)}
+                    in  return (ctx' {contextGlobalEnv = envInsertAt global (getPath defobj) (Binder adjustedMeta defobj)},
                                dynamicNil)
+                  _ ->
+                    let impls = XObj (Lst [x]) (Just dummyInfo) (Just DynamicTy)
+                        adjustedMeta = meta {getMeta = Map.insert "implements" impls (getMeta meta)}
+                    in  return (ctx' {contextGlobalEnv = envInsertAt global (getPath defobj) (Binder adjustedMeta defobj)},
+                                 dynamicNil)
      -- If the implementation binding doesn't exist yet, set the implements
      -- meta. This enables specifying a function as an implementation before
      -- defining it.
@@ -153,7 +165,7 @@ primitiveImplements xobj ctx [x@(XObj (Sym interface@(SymPath _ _) _) _ _), i@(X
                                       " at " ++ prettyInfoFromXObj xobj ++ " is not defined." ++
                                       " Did you define it using `definterface`?")
                 putStrLnWithColor White "" -- To restore color for sure.
-         primitiveMetaSet xobj ctx [i, XObj (Str "implements") (Just dummyInfo) (Just StringTy), x]
+         primitiveMetaSet xobj ctx [i, XObj (Str "implements") (Just dummyInfo) (Just StringTy), XObj (Lst [x]) (Just dummyInfo) (Just DynamicTy)]
 primitiveImplements xobj ctx [x, y] =
   return $ evalError ctx ("`implements` expects symbol arguments.") (info x)
 primitiveImplements x@(XObj _ i t) ctx args =
@@ -224,16 +236,17 @@ define hidden ctx@(Context globalEnv _ typeEnv _ proj _ _ _) annXObj =
                      putStrLnWithColor White "" -- To restore color for sure.
               Nothing -> return ()
             case Map.lookup "implements" (getMeta previousMeta) of
-              Just (XObj (Sym interface@(SymPath _ _) _) _ _) ->
-                case registerDefnOrDefInInterfaceIfNeeded ctx annXObj interface of
-                  Left err ->
-                    do case contextExecMode ctx of
-                         Check ->
-                           let fppl = projectFilePathPrintLength (contextProj ctx)
-                           in putStrLn (machineReadableInfoFromXObj fppl annXObj ++ " " ++ err)
-                         _ -> putStrLnWithColor Red err
-                       return ctx
-                  Right ctx' -> return (ctx' {contextGlobalEnv = envInsertAt globalEnv (getPath annXObj) (Binder adjustedMeta annXObj)})
+              Just (XObj (Lst interfaces) _ _) ->
+                do let result = foldM (\ctx (xobj, interface) -> registerDefnOrDefInInterfaceIfNeeded ctx xobj interface) ctx (zip (cycle [annXObj]) (map getPath interfaces))
+                   case result of
+                     Left err ->
+                       do case contextExecMode ctx of
+                            Check ->
+                              let fppl = projectFilePathPrintLength (contextProj ctx)
+                              in putStrLn (machineReadableInfoFromXObj fppl annXObj ++ " " ++ err)
+                            _ -> putStrLnWithColor Red err
+                          return ctx
+                     Right ctx' -> return (ctx' {contextGlobalEnv = envInsertAt globalEnv (getPath annXObj) (Binder adjustedMeta annXObj)})
               _ -> return (ctx {contextGlobalEnv = envInsertAt globalEnv (getPath annXObj) (Binder adjustedMeta annXObj)})
 
 primitiveRegisterType :: Primitive
@@ -618,20 +631,23 @@ primitiveUse xobj ctx [XObj (Sym path _) _ _] = do
 -- | Get meta data for a Binder
 primitiveMeta :: Primitive
 primitiveMeta (XObj _ i _) ctx [XObj (Sym path _) _ _, XObj (Str key) _ _] = do
-  let pathStrings = contextPath ctx
-      fppl = projectFilePathPrintLength (contextProj ctx)
+  let fppl = projectFilePathPrintLength (contextProj ctx)
       globalEnv = contextGlobalEnv ctx
-  case lookupInEnv (consPath pathStrings path) globalEnv of
-    Just (_, Binder metaData _) ->
-        case Map.lookup key (getMeta metaData) of
-          Just foundValue ->
-            return (ctx, Right foundValue)
-          Nothing ->
-            return (ctx, dynamicNil)
-    Nothing ->
-      return (evalError ctx
-                        ("`meta` failed, I can’t find `" ++ show path ++ "`")
-                        i)
+  case path of
+    (SymPath [] _) -> lookup (consPath (contextPath ctx) path) globalEnv
+    (SymPath quals _) -> lookup path globalEnv
+    where lookup p e =
+            case lookupInEnv p e of
+              Just (_, Binder metaData _) ->
+                case Map.lookup key (getMeta metaData) of
+                  Just foundValue ->
+                    return (ctx, Right foundValue)
+                  Nothing ->
+                    return (ctx, dynamicNil)
+              Nothing ->
+                return (evalError ctx
+                     ("`meta` failed, I can’t find `" ++ show path ++ "`")
+                     i)
 primitiveMeta _ ctx [XObj (Sym path _) _ _, key@(XObj _ i _)] =
   argumentErr ctx "meta" "a string" "second" key
 primitiveMeta _ ctx [path@(XObj _ i _), _] =
