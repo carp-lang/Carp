@@ -36,18 +36,18 @@
 
 (doc private? "Is this binding private?")
 (defmacro private? [name]
-  (eval (list 'not (list 'list? (meta name "private")))))
+  (eval (list 'not (list 'list? (list 'meta name "private")))))
 
 (doc hidden? "Is this binding hidden?")
 (defmacro hidden? [name]
-  (eval (list 'not (list 'list? (meta name "hidden")))))
+  (eval (list 'not (list 'list? (list 'meta name "hidden")))))
 
 (defndynamic annotate-helper [name annotation]
-  (cons annotation (meta name "annotations")))
+  (list 'cons annotation (list 'meta name "annotations")))
 
 (doc annotate "Add an annotation to this binding.")
 (defmacro annotate [name annotation]
-  (eval (list 'meta-set! name "annotations" (annotate-helper name annotation))))
+  (eval (list 'meta-set! name "annotations" (eval (annotate-helper name annotation)))))
 
 (defmodule Dynamic
   (defndynamic caar [pair] (car (car pair)))
