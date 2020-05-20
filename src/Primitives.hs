@@ -630,34 +630,24 @@ primitiveUse xobj ctx [XObj (Sym path _) _ _] = do
 
 -- | Get meta data for a Binder
 primitiveMeta :: Primitive
-primitiveMeta (XObj _ i _) ctx [XObj (Sym path@(SymPath [] p) _) _ _, XObj (Str key) _ _] = do
-  let pathStrings = contextPath ctx
-      fppl = projectFilePathPrintLength (contextProj ctx)
-      globalEnv = contextGlobalEnv ctx
-  case lookupInEnv (consPath pathStrings path) globalEnv of
-    Just (_, Binder metaData _) ->
-        case Map.lookup key (getMeta metaData) of
-          Just foundValue ->
-            return (ctx, Right foundValue)
-          Nothing ->
-            return (ctx, dynamicNil)
-    Nothing ->
-      return (evalError ctx
-                        ("`meta` failed, I can’t find `" ++ show path ++ "`")
-                        i)
 primitiveMeta (XObj _ i _) ctx [XObj (Sym path _) _ _, XObj (Str key) _ _] = do
-  let globalEnv = contextGlobalEnv ctx
-  case lookupInEnv path globalEnv of
-    Just (_, Binder metaData _) ->
-        case Map.lookup key (getMeta metaData) of
-          Just foundValue ->
-            return (ctx, Right foundValue)
-          Nothing ->
-            return (ctx, dynamicNil)
-    Nothing ->
-      return (evalError ctx
-                        ("`meta` failed, I can’t find `" ++ show path ++ "`")
-                        i)
+  let fppl = projectFilePathPrintLength (contextProj ctx)
+      globalEnv = contextGlobalEnv ctx
+  case path of
+    (SymPath [] _) -> lookup (consPath (contextPath ctx) path) globalEnv
+    (SymPath quals _) -> lookup path globalEnv
+    where lookup p e =
+            case lookupInEnv p e of
+              Just (_, Binder metaData _) ->
+                case Map.lookup key (getMeta metaData) of
+                  Just foundValue ->
+                    return (ctx, Right foundValue)
+                  Nothing ->
+                    return (ctx, dynamicNil)
+              Nothing ->
+                return (evalError ctx
+                     ("`meta` failed, I can’t find `" ++ show path ++ "`")
+                     i)
 primitiveMeta _ ctx [XObj (Sym path _) _ _, key@(XObj _ i _)] =
   argumentErr ctx "meta" "a string" "second" key
 primitiveMeta _ ctx [path@(XObj _ i _), _] =
