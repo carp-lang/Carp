@@ -493,8 +493,13 @@ specialCommandWhile ctx cond body = do
     Left e -> return (newCtx, Left e)
 
 getSigFromDefnOrDef :: Context -> Env -> FilePathPrintLength -> XObj -> (Either EvalError (Maybe (Ty, XObj)))
-getSigFromDefnOrDef ctx globalEnv fppl xobj =
-  let metaData = existingMeta globalEnv xobj
+getSigFromDefnOrDef ctx globalEnv fppl xobj@(XObj _ i t) =
+  let pathStrings = contextPath ctx
+      path = (getPath xobj)
+      fullPath = case path of
+                   (SymPath [] n) -> consPath pathStrings path
+                   (SymPath quals n) -> path
+      metaData = existingMeta globalEnv (XObj (Sym fullPath Symbol) i t)
   in  case Map.lookup "sig" (getMeta metaData) of
         Just foundSignature ->
           case xobjToTy foundSignature of
