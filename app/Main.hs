@@ -86,7 +86,7 @@ main = do setLocaleEncoding utf8
                                   , projectGenerateOnly = generateOnly
                                   , projectCarpDir = fromMaybe (projectCarpDir p) $ lookup "CARP_DIR" sysEnv
                                   , projectCompiler = fromMaybe (projectCompiler p) compiler
-                                  , projectPrompt = prompt
+                                  , projectPrompt = fromMaybe (projectPrompt p) prompt
                                   }
               project = applySettings defaultProject
               noArray = False
@@ -158,7 +158,7 @@ data OtherOptions = OtherOptions
   , otherLogMemory :: Bool
   , otherOptimize :: Bool
   , otherGenerateOnly :: Bool
-  , otherPrompt :: String
+  , otherPrompt :: Maybe String
   } deriving Show
 
 parseOther :: Parser OtherOptions
@@ -168,7 +168,7 @@ parseOther = OtherOptions
   <*> switch (long "log-memory" <> help "Log memory allocations")
   <*> switch (long "optimize" <> help "Optimized build")
   <*> switch (long "generate-only" <> help "Stop after generating the C code")
-  <*> strOption (long "prompt" <> help "Set REPL prompt")
+  <*> optional (strOption (long "prompt" <> help "Set REPL prompt"))
 
 parseExecMode :: Parser ExecutionMode
 parseExecMode =
