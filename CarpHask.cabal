@@ -62,7 +62,7 @@ library
                      , blaze-html
                      , blaze-markup
                      , text
-                     , ansi-terminal >= 0.9
+                     , ansi-terminal >= 0.10.3
                      , cmark
                      , edit-distance
 
