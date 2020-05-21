@@ -695,3 +695,26 @@ primitiveDeftemplate _ ctx [s@(XObj (Sym (SymPath _ _) _) _ _), _, _, _] = do
   argumentErr ctx "deftemplate" "a symbol without prefix" "first" s
 primitiveDeftemplate _ ctx [x, _, _, _] =
   argumentErr ctx "deftemplate" "a symbol" "first" x
+
+primitiveSexpression :: Primitive
+primitiveSexpression (XObj _ i _) ctx [XObj (Sym path _) _ _] =
+  let env = contextEnv ctx
+      tyEnv = getTypeEnv $ contextTypeEnv ctx
+  in case lookupInEnv path env of
+       Just (_, binder@(Binder _ xobj)) ->
+         case xobj of
+         -- Normally, modules print their names, we actually want the deftype
+         -- form here.
+         (XObj (Mod env) _ _) ->
+           case lookupInEnv path tyEnv of
+             Just (_, Binder _ xobj') ->
+               return (ctx, Right xobj')
+             Nothing -> return (ctx, dynamicNil)
+         _ -> trace (show binder) return (ctx, Right xobj)
+       Nothing ->
+         -- Just to be sure, check the type env--this might be an interface or
+         case lookupInEnv path tyEnv of
+           Just (_, Binder _ xobj'') ->
+             return (ctx, Right xobj'')
+           Nothing -> return (ctx, dynamicNil)
+
