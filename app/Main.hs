@@ -168,7 +168,7 @@ parseOther = OtherOptions
   <*> switch (long "log-memory" <> help "Log memory allocations")
   <*> switch (long "optimize" <> help "Optimized build")
   <*> switch (long "generate-only" <> help "Stop after generating the C code")
-  <*> strOption (long "prompt" <> value "鲤 " <> help "Set REPL prompt")
+  <*> strOption (long "prompt" <> help "Set REPL prompt")
 
 parseExecMode :: Parser ExecutionMode
 parseExecMode =
