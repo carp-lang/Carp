@@ -705,11 +705,13 @@ primitiveSexpression (XObj _ i _) ctx [XObj (Sym path _) _ _] =
          case xobj of
          -- Normally, modules print their names, we actually want the deftype
          -- form here.
-         (XObj (Mod env) _ _) ->
+         mod@(XObj (Mod env) _ _) ->
            case lookupInEnv path tyEnv of
              Just (_, Binder _ xobj') ->
                return (ctx, Right xobj')
-             Nothing -> return (ctx, dynamicNil)
+             -- Okay, this is just a `defmodule` not a type.
+             Nothing ->
+               return (ctx, Right mod)
          _ -> trace (show binder) return (ctx, Right xobj)
        Nothing ->
          -- Just to be sure, check the type env--this might be an interface or
