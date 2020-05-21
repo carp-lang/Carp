@@ -3,6 +3,7 @@ module Main where
 import qualified System.Environment as SystemEnvironment
 import System.Console.Haskeline (runInputT)
 import GHC.IO.Encoding
+import Data.Maybe
 
 import ColorText
 import Obj
@@ -13,12 +14,20 @@ import Eval
 import Util
 import Path
 
+import Options.Applicative
+
 defaultProject :: Project
 defaultProject =
   Project { projectTitle = "Untitled"
           , projectIncludes = []
-          , projectCFlags = [""]
-          , projectLibFlags = [""]
+          , projectCFlags = case platform of
+              Windows -> ["-D_CRT_SECURE_NO_WARNINGS"]
+              _ -> [ "-fPIC"
+                   , "-g"
+                   ]
+          , projectLibFlags = case platform of
+              Windows -> []
+              _ -> [ "-lm" ]
           , projectFiles = []
           , projectAlreadyLoaded = []
           , projectEchoC = False
@@ -38,8 +47,8 @@ defaultProject =
           , projectCarpSearchPaths = []
           , projectPrintTypedAST = False
           , projectCompiler = case platform of
-                                Windows -> "clang-cl.exe -D _CRT_SECURE_NO_WARNINGS"
-                                _ ->       "clang -fPIC -lm -g"
+                                Windows -> "clang-cl.exe"
+                                _ ->       "clang"
           , projectCore = True
           , projectEchoCompilationCommand = False
           , projectCanExecute = False
@@ -47,30 +56,38 @@ defaultProject =
           , projectGenerateOnly = False
           , projectForceReload = False
           }
+  where win = platform == Windows
+
 
 -- | Starting point of the application.
 main :: IO ()
 main = do setLocaleEncoding utf8
           args <- SystemEnvironment.getArgs
           sysEnv <- SystemEnvironment.getEnvironment
-          let (argFilesToLoad, execMode, otherOptions) = parseArgs args
-              logMemory = LogMemory `elem` otherOptions
-              noCore = NoCore `elem` otherOptions
-              noProfile = NoProfile `elem` otherOptions
-              optimize = Optimize `elem` otherOptions
-              generateOnly = GenerateOnly `elem` otherOptions
-              compileFast = CompileFast `elem` otherOptions
-              flagsSettings p = p { projectCFlags = ["-D LOG_MEMORY" | logMemory] ++
+          fullOpts <- execParser $ Options.Applicative.info (parseFull <**> helper) fullDesc
+          let execMode = optExecMode fullOpts
+              compOptions = optComp fullOpts
+              otherOptions = optOthers fullOpts
+              argFilesToLoad = optFiles fullOpts
+              logMemory = otherLogMemory otherOptions
+              core = otherCore otherOptions
+              profile = otherProfile otherOptions
+              optimize = otherOptimize otherOptions
+              generateOnly = otherGenerateOnly otherOptions
+              compiler = compCompiler compOptions
+              cflags = compCompFlags compOptions
+              ldflags = compLinkFlags compOptions
+              prompt = otherPrompt otherOptions
+              applySettings p = p { projectCFlags = ["-D LOG_MEMORY" | logMemory] ++
                                                     ["-O3 -D NDEBUG" | optimize] ++
-                                                    projectCFlags p
-                                  , projectCore = not noCore
+                                                    fromMaybe (projectCFlags p) cflags
+                                  , projectLibFlags = fromMaybe (projectLibFlags p) ldflags
+                                  , projectCore = core
                                   , projectGenerateOnly = generateOnly
-                                  , projectCarpDir = case lookup "CARP_DIR" sysEnv of
-                                      Just carpDir -> carpDir
-                                      Nothing -> projectCarpDir p
-                                  , projectCompiler = if compileFast then "tcc -lm" else projectCompiler p
+                                  , projectCarpDir = fromMaybe (projectCarpDir p) $ lookup "CARP_DIR" sysEnv
+                                  , projectCompiler = fromMaybe (projectCompiler p) compiler
+                                  , projectPrompt = prompt
                                   }
-              applySettings = flagsSettings . setCustomPromptFromOptions otherOptions
               project = applySettings defaultProject
               noArray = False
               startingContext = Context
@@ -82,11 +99,11 @@ main = do setLocaleEncoding utf8
                                 ""
                                 execMode
                                 []
-              coreModulesToLoad = if noCore then [] else coreModules (projectCarpDir project)
+              coreModulesToLoad = if core then coreModules (projectCarpDir project) else []
           context <- loadFilesOnce startingContext coreModulesToLoad
           carpProfile <- configPath "profile.carp"
           hasProfile <- doesFileExist carpProfile
-          context' <- if (not noProfile) && hasProfile
+          context' <- if profile && hasProfile
                       then loadFiles context [carpProfile]
                       else return context
           finalContext <- loadFiles context' argFilesToLoad
@@ -109,44 +126,57 @@ main = do setLocaleEncoding utf8
             Check -> return ()
 
 -- | Options for how to run the compiler.
-data OtherOptions = NoCore
-                  | NoProfile
-                  | LogMemory
-                  | Optimize
-                  | GenerateOnly
-                  | CompileFast
-                  | SetPrompt String
-                  deriving (Show, Eq)
+data FullOptions = FullOptions
+  { optExecMode :: ExecutionMode
+  , optComp :: CompOptions
+  , optOthers :: OtherOptions
+  , optFiles :: [FilePath]
+  } deriving Show
 
--- | Parse the arguments sent to the compiler from the terminal.
--- | TODO: Switch to 'cmdargs' library for parsing these!
-parseArgs :: [String] -> ([FilePath], ExecutionMode, [OtherOptions])
-parseArgs args = parseArgsInternal [] Repl [] args
-  where parseArgsInternal filesToLoad execMode otherOptions [] =
-          (filesToLoad, execMode, otherOptions)
-        parseArgsInternal filesToLoad execMode otherOptions (arg:restArgs) =
-          case arg of
-            "-b" -> parseArgsInternal filesToLoad Build otherOptions restArgs
-            "-x" -> parseArgsInternal filesToLoad BuildAndRun otherOptions restArgs
-            "-i" -> parseArgsInternal filesToLoad (Install (head restArgs)) otherOptions (tail restArgs)
-            "--check" -> parseArgsInternal filesToLoad Check otherOptions restArgs
-            "--no-core" -> parseArgsInternal filesToLoad execMode (NoCore : otherOptions) restArgs
-            "--no-profile" -> parseArgsInternal filesToLoad execMode (NoProfile : otherOptions) restArgs
-            "--log-memory" -> parseArgsInternal filesToLoad execMode (LogMemory : otherOptions) restArgs
-            "--optimize" -> parseArgsInternal filesToLoad execMode (Optimize : otherOptions) restArgs
-            "--generate-only" -> parseArgsInternal filesToLoad execMode (GenerateOnly : otherOptions) restArgs
-            "--compile-fast" -> parseArgsInternal filesToLoad execMode (CompileFast : otherOptions) restArgs
-            "--prompt" -> case restArgs of
-                             newPrompt : restRestArgs ->
-                               parseArgsInternal filesToLoad execMode (SetPrompt newPrompt : otherOptions) restRestArgs
-                             _ ->
-                               error "No prompt given after --prompt"
-            file -> parseArgsInternal (filesToLoad ++ [file]) execMode otherOptions restArgs
+parseFull :: Parser FullOptions
+parseFull = FullOptions
+  <$> parseExecMode
+  <*> parseComp
+  <*> parseOther
+  <*> parseFiles
 
-setCustomPromptFromOptions :: [OtherOptions] -> Project -> Project
-setCustomPromptFromOptions (o:os) project =
-  case o of
-    SetPrompt newPrompt -> setCustomPromptFromOptions os (project { projectPrompt = newPrompt })
-    _ -> setCustomPromptFromOptions os project
-setCustomPromptFromOptions _ project =
-  project
+data CompOptions = CompOptions
+  { compCompiler :: Maybe String
+  , compCompFlags :: Maybe [String]
+  , compLinkFlags :: Maybe [String]
+  } deriving Show
+
+parseComp :: Parser CompOptions
+parseComp = CompOptions
+  <$> optional (strOption (long "cc" <> help "Set C compiler to use"))
+  <*> optional (some (strOption (long "cflag" <> metavar "FLAG" <> help "Add flag to the compiler invocation")))
+  <*> optional (some (strOption (long "ldflag" <> metavar "FLAG" <> help "Add flag to the linker invocation")))
+
+data OtherOptions = OtherOptions
+  { otherCore :: Bool
+  , otherProfile :: Bool
+  , otherLogMemory :: Bool
+  , otherOptimize :: Bool
+  , otherGenerateOnly :: Bool
+  , otherPrompt :: String
+  } deriving Show
+
+parseOther :: Parser OtherOptions
+parseOther = OtherOptions
+  <$> flag True False (long "core")
+  <*> switch (long "profile" <> help "Profiling information")
+  <*> switch (long "log-memory" <> help "Log memory allocations")
+  <*> switch (long "optimize" <> help "Optimized build")
+  <*> switch (long "generate-only" <> help "Stop after generating the C code")
+  <*> strOption (long "prompt" <> value "鲤 " <> help "Set REPL prompt")
+
+parseExecMode :: Parser ExecutionMode
+parseExecMode =
+  flag' Check (long "check" <> help "Check project")
+  <|> flag' Build (short 'b' <> help "Build project")
+  <|> flag' BuildAndRun (short 'x' <> help "Build an run project")
+  <|> Install <$> strOption (short 'i' <> help "Install built product")
+  <|> pure Repl
+
+parseFiles :: Parser [FilePath]
+parseFiles = some (argument str (metavar "FILES...")) <|> pure []

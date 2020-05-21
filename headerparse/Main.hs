@@ -3,7 +3,7 @@
 
 module Main where
 
-import System.Console.CmdArgs
+import Options.Applicative hiding ((<|>))
 import Text.Parsec ((<|>))
 import qualified Text.Parsec as Parsec
 import Data.Char (toLower, isUpper)
@@ -12,16 +12,18 @@ import Types
 import Obj
 import Path
 
-data Args = Args { sourcePath :: String
-                 , prefixToRemove :: String
+data Args = Args { prefixToRemove :: String
                  , kebabCase :: Bool
-                 } deriving (Show, Data, Typeable)
+                 , sourcePath :: String
+                 } deriving Show
 
-main = do parsedArgs <- cmdArgs (Args { sourcePath = def &= argPos 0
-                                      , prefixToRemove = def
-                                      , kebabCase = False
-                                      }
-                                 &= summary "Carp Header Parse 0.0.1")
+parseArgs :: Parser Args
+parseArgs = Args
+  <$> strOption (long "prefixtoremove" <> short 'p' <> metavar "ITEM" <> value "")
+  <*> switch (long "kebabcase" <> short 'f')
+  <*> argument str (metavar "FILE")
+
+main = do parsedArgs <- execParser $ Options.Applicative.info (parseArgs <**> helper) fullDesc
           let path = sourcePath parsedArgs
           if path /= ""
             then do source <- slurp path

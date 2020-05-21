@@ -1,3 +1,4 @@
+#!/usr/bin/env bash
 if [ -z "$CARP" ]
 then
     if [ -z "$NIX_CC" ]
@@ -7,4 +8,4 @@ then
 	CARP="cabal -v0 run carp"
     fi
 fi
-$CARP $BUILD_OPTS $"--" $CARP_OPTS $*
+$CARP $BUILD_OPTS -- $CARP_OPTS "$@"
