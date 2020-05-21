@@ -952,7 +952,7 @@ For example:
                     defn
                 </div>
                 <p class="sig">
-                    (Fn [a, a, a] (Result (Array a) Int))
+                    (Fn [a, a, a] (Result (Array a) String))
                 </p>
                 <pre class="args">
                     (range start end step)
@@ -961,15 +961,7 @@ For example:
                     <p>creates an array from <code>start</code> to <code>end</code> with <code>step</code> between them
 (the elements must support <code>&lt;</code>, <code>&lt;=</code>, <code>&gt;=</code>, and <code>to-int</code>).</p>
 <p>It returns a <code>Result.Success</code> if the input was right, and a <code>Result.Error</code> if
-the input given was wrong. For boring implementation reasons, it gives you an
-integer rather than a string, and the integers map directly to the following
-messages:</p>
-<ul>
-<li>1: <code>Array.range</code> cannot be called with step size <code>0</code>.</li>
-<li>2: <code>Array.range</code> cannot be called with a step size <code>&lt; 0</code> and <code>start &lt; end</code>.</li>
-<li>3: <code>Array.range</code> cannot be called with a step size <code>&gt; 0</code> and <code>start &gt; end</code>.</li>
-</ul>
-<p>We apologize for the inconvenience.</p>
+the input given was wrong, containing an error message.</p>
 
                 </p>
             </div>
@@ -1485,6 +1477,27 @@ no longer satisfy <code>test</code>. The initial value is <code>start</code>.</p
                 </span>
                 <p class="doc">
                     <p>gets a reference to the <code>n</code>th element from an array <code>a</code>.</p>
+
+                </p>
+            </div>
+            <div class="binder">
+                <a class="anchor" href="#unsafe-range">
+                    <h3 id="unsafe-range">
+                        unsafe-range
+                    </h3>
+                </a>
+                <div class="description">
+                    defn
+                </div>
+                <p class="sig">
+                    (Fn [a, a, a] (Array a))
+                </p>
+                <pre class="args">
+                    (unsafe-range start end step)
+                </pre>
+                <p class="doc">
+                    <p>is an unsafe version of <a href="#range">`range</a>. It returns an
+empty array on failure.</p>
 
                 </p>
             </div>

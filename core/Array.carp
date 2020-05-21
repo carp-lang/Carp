@@ -216,36 +216,6 @@ If the element is not found, returns `Nothing`")
       (aset! a i y)
       (aset! a j x)))
 
-  ; cannot use for, because we want also be able to go downwards
-  (doc range "creates an array from `start` to `end` with `step` between them
-(the elements must support `<`, `<=`, `>=`, and `to-int`).
-
-It returns a `Result.Success` if the input was right, and a `Result.Error` if
-the input given was wrong. For boring implementation reasons, it gives you an
-integer rather than a string, and the integers map directly to the following
-messages:
-
-- 1: `Array.range` cannot be called with step size `0`.
-- 2: `Array.range` cannot be called with a step size `< 0` and `start < end`.
-- 3: `Array.range` cannot be called with a step size `> 0` and `start > end`.
-
-We apologize for the inconvenience.")
-  (defn range [start end step]
-    (cond
-      (= step (zero)) (Result.Error 1)
-      (and (< start end) (< step (zero))) (Result.Error 2)
-      (and (> start end) (> step (zero))) (Result.Error 3)
-      (let-do [x (allocate (Int.inc (Int.abs (to-int (/ (- end start) step)))))
-               e start
-               i 0
-               op (if (< start end) <= >=)]
-        (while (op e end)
-          (do
-            (aset! &x i e)
-            (set! i (Int.inc i))
-            (set! e (+ e step))))
-        (Result.Success x))))
-
   (doc repeat "repeats the function `f` `n` times and stores the results in an array.")
   (defn repeat [n f]
     (let-do [a (allocate n)]
