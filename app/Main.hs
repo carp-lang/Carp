@@ -70,8 +70,8 @@ main = do setLocaleEncoding utf8
               otherOptions = optOthers fullOpts
               argFilesToLoad = optFiles fullOpts
               logMemory = otherLogMemory otherOptions
-              core = otherCore otherOptions
-              profile = otherProfile otherOptions
+              core = not $ otherNoCore otherOptions
+              profile = not $ otherNoProfile otherOptions
               optimize = otherOptimize otherOptions
               generateOnly = otherGenerateOnly otherOptions
               compiler = compCompiler compOptions
@@ -153,8 +153,8 @@ parseComp = CompOptions
   <*> optional (some (strOption (long "ldflag" <> metavar "FLAG" <> help "Add flag to the linker invocation")))
 
 data OtherOptions = OtherOptions
-  { otherCore :: Bool
-  , otherProfile :: Bool
+  { otherNoCore :: Bool
+  , otherNoProfile :: Bool
   , otherLogMemory :: Bool
   , otherOptimize :: Bool
   , otherGenerateOnly :: Bool
@@ -163,8 +163,8 @@ data OtherOptions = OtherOptions
 
 parseOther :: Parser OtherOptions
 parseOther = OtherOptions
-  <$> flag True False (long "core")
-  <*> switch (long "profile" <> help "Profiling information")
+  <$> switch (long "no-core" <> help "Don't load Core.carp")
+  <*> switch (long "no-profile" <> help "Don't load profile.carp")
   <*> switch (long "log-memory" <> help "Log memory allocations")
   <*> switch (long "optimize" <> help "Optimized build")
   <*> switch (long "generate-only" <> help "Stop after generating the C code")
