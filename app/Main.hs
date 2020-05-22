@@ -2,6 +2,7 @@ module Main where
 
 import qualified System.Environment as SystemEnvironment
 import System.Console.Haskeline (runInputT)
+import Control.Monad (foldM)
 import GHC.IO.Encoding
 import Data.Maybe
 
@@ -66,7 +67,6 @@ main = do setLocaleEncoding utf8
           sysEnv <- SystemEnvironment.getEnvironment
           fullOpts <- execParser $ Options.Applicative.info (parseFull <**> helper) fullDesc
           let execMode = optExecMode fullOpts
-              compOptions = optComp fullOpts
               otherOptions = optOthers fullOpts
               argFilesToLoad = optFiles fullOpts
               logMemory = otherLogMemory otherOptions
@@ -74,18 +74,13 @@ main = do setLocaleEncoding utf8
               profile = not $ otherNoProfile otherOptions
               optimize = otherOptimize otherOptions
               generateOnly = otherGenerateOnly otherOptions
-              compiler = compCompiler compOptions
-              cflags = compCompFlags compOptions
-              ldflags = compLinkFlags compOptions
               prompt = otherPrompt otherOptions
               applySettings p = p { projectCFlags = ["-D LOG_MEMORY" | logMemory] ++
-                                                    ["-O3 -D NDEBUG" | optimize] ++
-                                                    fromMaybe (projectCFlags p) cflags
-                                  , projectLibFlags = fromMaybe (projectLibFlags p) ldflags
+                                                    ["-O3 -D NDEBUG" | optimize]
+                                                    ++ projectCFlags p
                                   , projectCore = core
                                   , projectGenerateOnly = generateOnly
                                   , projectCarpDir = fromMaybe (projectCarpDir p) $ lookup "CARP_DIR" sysEnv
-                                  , projectCompiler = fromMaybe (projectCompiler p) compiler
                                   , projectPrompt = fromMaybe (projectPrompt p) prompt
                                   }
               project = applySettings defaultProject
@@ -100,57 +95,47 @@ main = do setLocaleEncoding utf8
                                 execMode
                                 []
               coreModulesToLoad = if core then coreModules (projectCarpDir project) else []
-          context <- loadFilesOnce startingContext coreModulesToLoad
+              execStr :: String -> String -> Context -> IO Context
+              execStr info str ctx = executeString True False ctx str info
+              execStrs :: String -> [String] -> Context -> IO Context
+              execStrs info strs ctx = foldM (\ctx str -> execStr info str ctx) ctx strs
+              preloads = fromMaybe [] (optPreload fullOpts)
+              postloads = fromMaybe [] (optPostload fullOpts)
+              load = flip loadFiles
           carpProfile <- configPath "profile.carp"
           hasProfile <- doesFileExist carpProfile
-          context' <- if profile && hasProfile
-                      then loadFiles context [carpProfile]
-                      else return context
-          finalContext <- loadFiles context' argFilesToLoad
-          case execMode of
-            Repl -> do putStrLn "Welcome to Carp 0.3.0"
-                       putStrLn "This is free software with ABSOLUTELY NO WARRANTY."
-                       putStrLn "Evaluate (help) for more information."
-                       _ <- runRepl finalContext
-                       return ()
-            Build -> do _ <- executeString True False finalContext "(build)" "Compiler (Build)"
-                        return ()
-            Install thing ->
-              do _ <- executeString True False finalContext
-                      ("(load \"" ++ thing ++ "\")")
-                      "Installation"
-                 return ()
-            BuildAndRun -> do _ <- executeString True False finalContext "(do (build) (run))" "Compiler (Build & Run)"
-                              -- TODO: Handle the return value from executeString and return that one to the shell
-                              return ()
-            Check -> return ()
-
+          _ <- loadFilesOnce startingContext coreModulesToLoad
+            >>= load [carpProfile | hasProfile]
+            >>= execStrs "Preload" preloads
+            >>= load argFilesToLoad
+            >>= execStrs "Postload" postloads
+            >>= \ctx -> case execMode of
+                          Repl -> do putStrLn "Welcome to Carp 0.3.0"
+                                     putStrLn "This is free software with ABSOLUTELY NO WARRANTY."
+                                     putStrLn "Evaluate (help) for more information."
+                                     snd <$> runRepl ctx
+                          Build -> execStr "Compiler (Build)" "(build)" ctx
+                          Install thing -> execStr ("(load \"" ++ thing ++ "\")") "Installation" ctx
+                          BuildAndRun -> execStr "(do (build) (run))" "Compiler (Build & Run)" ctx
+                          Check -> execStr "Check" "" ctx
+                          -- TODO: Handle the return value from executeString and return that one to the shell
+          pure ()
 -- | Options for how to run the compiler.
 data FullOptions = FullOptions
   { optExecMode :: ExecutionMode
-  , optComp :: CompOptions
   , optOthers :: OtherOptions
+  , optPreload :: Maybe [String]
+  , optPostload :: Maybe [String]
   , optFiles :: [FilePath]
   } deriving Show
 
 parseFull :: Parser FullOptions
 parseFull = FullOptions
   <$> parseExecMode
-  <*> parseComp
   <*> parseOther
+  <*> optional (some (strOption (long "eval-preload" <> metavar "CODE" <> help "Eval CODE after loading config and before FILES")))
+  <*> optional (some (strOption (long "eval-postload" <> metavar "CODE" <> help "Eval CODE after loading FILES")))
   <*> parseFiles
-
-data CompOptions = CompOptions
-  { compCompiler :: Maybe String
-  , compCompFlags :: Maybe [String]
-  , compLinkFlags :: Maybe [String]
-  } deriving Show
-
-parseComp :: Parser CompOptions
-parseComp = CompOptions
-  <$> optional (strOption (long "cc" <> help "Set C compiler to use"))
-  <*> optional (some (strOption (long "cflag" <> metavar "FLAG" <> help "Add flag to the compiler invocation")))
-  <*> optional (some (strOption (long "ldflag" <> metavar "FLAG" <> help "Add flag to the linker invocation")))
 
 data OtherOptions = OtherOptions
   { otherNoCore :: Bool
