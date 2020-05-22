@@ -707,6 +707,8 @@ primitiveSexpression (XObj _ i _) ctx [XObj (Sym path _) _ _] =
          -- form here.
          mod@(XObj (Mod env) _ _) ->
            case lookupInEnv path tyEnv of
+             Just (_, Binder _ (XObj (Lst forms) i t)) ->
+               return (ctx, Right (XObj (Lst (map toSymbols forms)) i t))
              Just (_, Binder _ xobj') ->
                return (ctx, Right xobj')
              -- Okay, this is just a `defmodule` not a type.
