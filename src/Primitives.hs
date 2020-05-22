@@ -710,7 +710,7 @@ primitiveSexpression (XObj _ i _) ctx [XObj (Sym path _) _ _] =
              Just (_, Binder _ (XObj (Lst forms) i t)) ->
                return (ctx, Right (XObj (Lst (map toSymbols forms)) i t))
              Just (_, Binder _ xobj') ->
-               trace ("not a list") return (ctx, Right xobj')
+               return (ctx, Right xobj')
              -- Okay, this is just a `defmodule` not a type.
              Nothing ->
                return (ctx, Right mod)
@@ -725,7 +725,7 @@ primitiveSexpression (XObj _ i _) ctx [XObj (Sym path _) _ _] =
                return (ctx, Right (XObj (Lst (map toSymbols forms)) i t))
            Just (_, Binder _ xobj'') ->
              return (ctx, Right xobj'')
-           Nothing -> trace ("Nothing found: " ++ show env ++ show path) return (ctx, dynamicNil)
+           Nothing -> return (ctx, dynamicNil)
 primitiveSexpression (XObj _ i _) ctx xobj =
   return $ evalError ctx ("s-exp expected a symbol argument but got: " ++ show xobj) i
 
