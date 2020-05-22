@@ -712,11 +712,20 @@ primitiveSexpression (XObj _ i _) ctx [XObj (Sym path _) _ _] =
              -- Okay, this is just a `defmodule` not a type.
              Nothing ->
                return (ctx, Right mod)
-         _ -> trace (show binder) return (ctx, Right xobj)
+         (XObj (Lst forms) i t) ->
+           return (ctx, Right (XObj (Lst (map toSymbols forms)) i t))
+         _ -> return (ctx, Right xobj)
        Nothing ->
-         -- Just to be sure, check the type env--this might be an interface or
+         -- Just to be sure, check the type env--this might be an interface
          case lookupInEnv path tyEnv of
            Just (_, Binder _ xobj'') ->
              return (ctx, Right xobj'')
            Nothing -> return (ctx, dynamicNil)
 
+toSymbols :: XObj -> XObj
+toSymbols (XObj (Defn _) i t) = (XObj (Sym (SymPath [] "defn") Symbol) i t)
+toSymbols (XObj Def i t) = (XObj (Sym (SymPath [] "def") Symbol) i t)
+toSymbols (XObj (Deftype _) i t) = (XObj (Sym (SymPath [] "deftype") Symbol) i t)
+toSymbols (XObj (DefSumtype _) i t) = (XObj (Sym (SymPath [] "deftype") Symbol) i t)
+toSymbols (XObj (Interface _ _) i t) = (XObj (Sym (SymPath [] "definterface") Symbol) i t)
+toSymbols x = x
