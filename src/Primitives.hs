@@ -725,7 +725,7 @@ primitiveSexpression (XObj _ i _) ctx [XObj (Sym path _) _ _] =
                return (ctx, Right (XObj (Lst (map toSymbols forms)) i t))
            Just (_, Binder _ xobj'') ->
              return (ctx, Right xobj'')
-           Nothing -> return (ctx, dynamicNil)
+           Nothing -> return (ctx, Right (XObj (Lst []) (Just dummyInfo) (Just DynamicTy)))
 primitiveSexpression (XObj _ i _) ctx xobj =
   return $ evalError ctx ("s-exp expected a symbol argument but got: " ++ unwords (map pretty xobj)) i
 
