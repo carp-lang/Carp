@@ -49,8 +49,8 @@
     (eval (list 'cond
         (list 'Introspect.function? binding) (length (caddr (eval (list 's-exp binding))))
         (list 'Introspect.struct? binding) (/ (length (caddr (eval (list 's-exp binding)))) 2)
-        (list 'Introspect.sumtype? binding) (quote (map (fn [arr] (/
-        (length arr) 2)) (cddr (eval (list 's-exp binding)))))
+        (list 'Introspect.sumtype? binding) (quote (map (fn [arr]
+        (length (cadr arr))) (cddr (eval (list 's-exp binding)))))
         0))))
   (doc macro?
     "Is this binding a macro?")
