@@ -727,7 +727,7 @@ primitiveSexpression (XObj _ i _) ctx [XObj (Sym path _) _ _] =
              return (ctx, Right xobj'')
            Nothing -> return (ctx, dynamicNil)
 primitiveSexpression (XObj _ i _) ctx xobj =
-  return $ evalError ctx ("s-exp expected a symbol argument but got: " ++ show xobj) i
+  return $ evalError ctx ("s-exp expected a symbol argument but got: " ++ unwords (map pretty xobj)) i
 
 toSymbols :: XObj -> XObj
 toSymbols (XObj (Defn _) i t) = (XObj (Sym (SymPath [] "defn") Symbol) i t)
