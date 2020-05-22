@@ -698,7 +698,7 @@ primitiveDeftemplate _ ctx [x, _, _, _] =
 
 primitiveSexpression :: Primitive
 primitiveSexpression (XObj _ i _) ctx [XObj (Sym path _) _ _] =
-  let env = contextEnv ctx
+  let env = contextGlobalEnv ctx
       tyEnv = getTypeEnv $ contextTypeEnv ctx
   in case lookupInEnv path env of
        Just (_, binder@(Binder _ xobj)) ->
@@ -710,7 +710,7 @@ primitiveSexpression (XObj _ i _) ctx [XObj (Sym path _) _ _] =
              Just (_, Binder _ (XObj (Lst forms) i t)) ->
                return (ctx, Right (XObj (Lst (map toSymbols forms)) i t))
              Just (_, Binder _ xobj') ->
-               return (ctx, Right xobj')
+               trace ("not a list") return (ctx, Right xobj')
              -- Okay, this is just a `defmodule` not a type.
              Nothing ->
                return (ctx, Right mod)
@@ -718,11 +718,16 @@ primitiveSexpression (XObj _ i _) ctx [XObj (Sym path _) _ _] =
            return (ctx, Right (XObj (Lst (map toSymbols forms)) i t))
          _ -> return (ctx, Right xobj)
        Nothing ->
-         -- Just to be sure, check the type env--this might be an interface
+         -- Just to be sure, check the type env--this might be an interface or
+         -- type
          case lookupInEnv path tyEnv of
+           Just (_, Binder _ (XObj (Lst forms) i t)) ->
+               return (ctx, Right (XObj (Lst (map toSymbols forms)) i t))
            Just (_, Binder _ xobj'') ->
              return (ctx, Right xobj'')
-           Nothing -> return (ctx, dynamicNil)
+           Nothing -> trace ("Nothing found: " ++ show env ++ show path) return (ctx, dynamicNil)
+primitiveSexpression (XObj _ i _) ctx xobj =
+  return $ evalError ctx ("s-exp expected a symbol argument but got: " ++ show xobj) i
 
 toSymbols :: XObj -> XObj
 toSymbols (XObj (Defn _) i t) = (XObj (Sym (SymPath [] "defn") Symbol) i t)
@@ -730,4 +735,5 @@ toSymbols (XObj Def i t) = (XObj (Sym (SymPath [] "def") Symbol) i t)
 toSymbols (XObj (Deftype _) i t) = (XObj (Sym (SymPath [] "deftype") Symbol) i t)
 toSymbols (XObj (DefSumtype _) i t) = (XObj (Sym (SymPath [] "deftype") Symbol) i t)
 toSymbols (XObj (Interface _ _) i t) = (XObj (Sym (SymPath [] "definterface") Symbol) i t)
+toSymbols (XObj Macro i t) = (XObj (Sym (SymPath [] "defmacro") Symbol) i t)
 toSymbols x = x
