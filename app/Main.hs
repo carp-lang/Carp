@@ -115,8 +115,8 @@ main = do setLocaleEncoding utf8
                                      putStrLn "Evaluate (help) for more information."
                                      snd <$> runRepl ctx
                           Build -> execStr "Compiler (Build)" "(build)" ctx
-                          Install thing -> execStr ("(load \"" ++ thing ++ "\")") "Installation" ctx
-                          BuildAndRun -> execStr "(do (build) (run))" "Compiler (Build & Run)" ctx
+                          Install thing -> execStr "Installation" ("(load \"" ++ thing ++ "\")") ctx
+                          BuildAndRun -> execStr "Compiler (Build & Run)" "(do (build) (run))" ctx
                           Check -> execStr "Check" "" ctx
                           -- TODO: Handle the return value from executeString and return that one to the shell
           pure ()
