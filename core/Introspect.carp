@@ -1,0 +1,76 @@
+(doc Introspect
+  "Dynamic functions that return information about the s-expressions associated
+  to a binding.")
+(defmodule Introspect
+  (doc module?
+    "Is this binding a module?")
+  (defmacro module? [binding]
+    (not (list? (eval (list 's-exp binding)))))
+  (doc function? 
+    "Is this binding a function?")
+  (defmacro function? [binding]
+    (if (empty? (eval (list 's-exp binding)))
+        false
+      (Dynamic.= (Symbol.from "defn") (car (eval (list 's-exp binding))))))
+  (doc variable?
+    "Is this binding a variable?")
+  (defmacro variable? [binding]
+    (if (empty? (eval (list 's-exp binding)))
+        false
+      (Dynamic.= (Symbol.from "def") (car (eval (list 's-exp binding))))))
+  (doc type?
+    "Is this binding a type?")
+  (defmacro type? [binding]
+    (if (empty? (eval (list 's-exp binding)))
+        false
+        (Dynamic.= (Symbol.from "deftype") (car (eval (list 's-exp binding))))))
+  (doc struct? 
+    "Is this binding a struct?")
+  (defmacro struct? [binding]
+    (if (empty? (eval (list 's-exp binding)))
+        false
+        (array? (caddr (eval (list 's-exp binding))))))
+  (doc sumtype?
+    "Is this binding a sumtype?")
+  (defmacro sumtype? [binding]
+    (if (empty? (eval (list 's-exp binding)))
+        false
+        (list? (caddr (eval (list 's-exp binding))))))
+  (doc arity 
+    "What's the arity of this binding?
+
+    - When `binding` is a function, returns the number of arguments.
+    - When `binding` is a struct, returns the number of fields.
+    - When `binding` is a sumtype, returns a list of the number of type
+      arguments of each constructor.")
+  (defmacro arity [binding]
+    (if (empty? (eval (list 's-exp binding)))
+        0
+    (eval (list 'cond
+        (list 'Introspect.function? binding) (length (caddr (eval (list 's-exp binding))))
+        (list 'Introspect.struct? binding) (/ (length (caddr (eval (list 's-exp binding)))) 2)
+        (list 'Introspect.sumtype? binding) (quote (map (fn [arr] (/
+        (length arr) 2)) (cddr (eval (list 's-exp binding)))))
+        0))))
+  (doc macro?
+    "Is this binding a macro?")
+  (defmacro macro? [binding]
+    (if (empty? (eval (list 's-exp binding)))
+        false
+        (Dynamic.= (Symbol.from "defmacro") (car (eval (list 's-exp binding))))))
+  (doc dynamic?
+    "Is this binding a dynamic binding?")
+  (defmacro dynamic? [binding]
+    (if (empty? (eval (list 's-exp binding)))
+        false
+        (or (Dynamic.= (Symbol.from "defdynamic") (car (eval (list 's-exp
+        binding))))
+            (Dynamic.= (Symbol.from "dynamic") (car (eval (list 's-exp
+        binding)))))))
+  (doc interface? 
+    "Is this binding an interface?")
+  (defmacro interface? [binding]
+    (if (empty? (eval (list 's-exp binding)))
+        false
+        (Dynamic.= (Symbol.from "definterface") (car (eval (list 's-exp binding))))))
+)
