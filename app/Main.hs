@@ -57,8 +57,6 @@ defaultProject =
           , projectGenerateOnly = False
           , projectForceReload = False
           }
-  where win = platform == Windows
-
 
 -- | Starting point of the application.
 main :: IO ()
