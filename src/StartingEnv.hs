@@ -248,6 +248,7 @@ dynamicModule = Env { envBindings = bindings
                     , makePrim "defined?" 1 "checks whether a symbol is defined." "(defined? mysymbol)" primitiveDefined
                     , makePrim "deftemplate" 4 "defines a new C template." "(deftemplate symbol Type declString defString)" primitiveDeftemplate
                     , makePrim "implements" 2 "designates a function as an implementation of an interface." "(implements zero Maybe.zero)" primitiveImplements
+                    , makePrim "s-expr" 1 "returns the s-expression associated with a binding. When the binding is a type, the deftype form is returned instead of the type's module." "(s-expr foo)" primitiveSexpression
                     ]
                     ++ [("String", Binder emptyMeta (XObj (Mod dynamicStringModule) Nothing Nothing))
                        ,("Symbol", Binder emptyMeta (XObj (Mod dynamicSymModule) Nothing Nothing))
