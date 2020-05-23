@@ -99,8 +99,8 @@ main = do setLocaleEncoding utf8
               execStr info str ctx = executeString True False ctx str info
               execStrs :: String -> [String] -> Context -> IO Context
               execStrs info strs ctx = foldM (\ctx str -> execStr info str ctx) ctx strs
-              preloads = fromMaybe [] (optPreload fullOpts)
-              postloads = fromMaybe [] (optPostload fullOpts)
+              preloads = optPreload fullOpts
+              postloads = optPostload fullOpts
               load = flip loadFiles
           carpProfile <- configPath "profile.carp"
           hasProfile <- doesFileExist carpProfile
@@ -124,8 +124,8 @@ main = do setLocaleEncoding utf8
 data FullOptions = FullOptions
   { optExecMode :: ExecutionMode
   , optOthers :: OtherOptions
-  , optPreload :: Maybe [String]
-  , optPostload :: Maybe [String]
+  , optPreload :: [String]
+  , optPostload :: [String]
   , optFiles :: [FilePath]
   } deriving Show
 
@@ -133,8 +133,8 @@ parseFull :: Parser FullOptions
 parseFull = FullOptions
   <$> parseExecMode
   <*> parseOther
-  <*> optional (some (strOption (long "eval-preload" <> metavar "CODE" <> help "Eval CODE after loading config and before FILES")))
-  <*> optional (some (strOption (long "eval-postload" <> metavar "CODE" <> help "Eval CODE after loading FILES")))
+  <*> many (strOption (long "eval-preload" <> metavar "CODE" <> help "Eval CODE after loading config and before FILES"))
+  <*> many (strOption (long "eval-postload" <> metavar "CODE" <> help "Eval CODE after loading FILES"))
   <*> parseFiles
 
 data OtherOptions = OtherOptions
@@ -164,4 +164,4 @@ parseExecMode =
   <|> pure Repl
 
 parseFiles :: Parser [FilePath]
-parseFiles = some (argument str (metavar "FILES...")) <|> pure []
+parseFiles = many (argument str (metavar "FILES..."))
