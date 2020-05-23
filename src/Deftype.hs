@@ -19,6 +19,7 @@ import Lookup
 import StructUtils
 import TypeError
 import Validate
+import Info
 
 {-# ANN module "HLint: ignore Reduce duplication" #-}
 -- | This function creates a "Type Module" with the same name as the type being defined.

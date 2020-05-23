@@ -21,6 +21,7 @@ import Lookup
 import ToTemplate
 import Validate
 import SumtypeCase
+import Info
 
 data Level = Toplevel | Inside
 

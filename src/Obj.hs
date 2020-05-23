@@ -8,7 +8,7 @@ import Control.Monad.State
 import Data.Char
 import Types
 import Util
-import Path (takeFileName)
+import Info
 import Debug.Trace
 
 -- | Will the lookup look at other Carp code or at C code. This matters when calling functions, should they assume it's a lambda or a normal C function?
@@ -130,73 +130,16 @@ instance Show TemplateCreator where
 instance Eq TemplateCreator where
   _ == _ = True
 
--- | Information about where the Obj originated from.
-data Info = Info { infoLine :: Int
-                 , infoColumn :: Int
-                 , infoFile :: String
-                 , infoDelete :: Set.Set Deleter
-                 , infoIdentifier :: Int
-                 } deriving (Show, Eq, Ord)
-
-dummyInfo :: Info
-dummyInfo = Info 0 0 "dummy-file" Set.empty (-1)
-
--- TODO: The name 'deleter' for these things are really confusing!
-data Deleter = ProperDeleter { deleterPath :: SymPath
-                             , deleterVariable :: String
-                             }
-             | FakeDeleter { deleterVariable :: String -- used for external types with no delete function
-                           }
-             | PrimDeleter { aliveVariable :: String -- used by primitive types (i.e. Int) to signify that the variable is alive
-                           }
-             | RefDeleter { refVariable :: String
-                          }
-             deriving (Eq, Ord)
-
-instance Show Deleter where
-  show (ProperDeleter path var) = "(ProperDel " ++ show path ++ " " ++ show var ++ ")"
-  show (FakeDeleter var) = "(FakeDel " ++ show var ++ ")"
-  show (PrimDeleter var) = "(PrimDel " ++ show var ++ ")"
-  show (RefDeleter var) = "(RefDel " ++ show var ++ ")"
-
-getInfo i = (infoLine i, infoColumn i, infoFile i)
-
-prettyInfo :: Info -> String
-prettyInfo i =
-  let (line, column, file) = getInfo i
-  in  (if line > -1 then "line " ++ show line else "unkown line") ++ ", " ++
-      (if column > -1 then "column " ++ show column else "unknown column") ++
-      " in '" ++ file ++ "'"
-
 prettyInfoFromXObj :: XObj -> String
 prettyInfoFromXObj xobj = case info xobj of
                             Just i -> prettyInfo i
                             Nothing -> "no info"
-
-data FilePathPrintLength = FullPath
-                         | ShortPath deriving Eq
-
-instance Show FilePathPrintLength where
-  show FullPath = "full"
-  show ShortPath = "short"
-
-machineReadableInfo :: FilePathPrintLength -> Info -> String
-machineReadableInfo filePathPrintLength i =
-  let (line, column, file) = getInfo i
-      file' = case filePathPrintLength of
-                FullPath -> file
-                ShortPath -> takeFileName file
-  in  file' ++ ":" ++ show line ++ ":" ++ show column
 
 machineReadableInfoFromXObj :: FilePathPrintLength -> XObj -> String
 machineReadableInfoFromXObj fppl xobj =
   case info xobj of
     Just i -> machineReadableInfo fppl i
     Nothing -> ""
-
--- TODO: change name of this function
-freshVar :: Info -> String
-freshVar i = "_" ++ show (infoIdentifier i)
 
 -- | Obj with eXtra information.
 data XObj = XObj { obj :: Obj
@@ -783,12 +726,6 @@ xobjToTy (XObj (Lst (x:xs)) _ _) =
        v@(VarTy n) -> return (StructTy v okXS) -- Struct type with type variable as a name, i.e. "(a b)"
        _ -> Nothing
 xobjToTy _ = Nothing
-
-makeTypeVariableNameFromInfo :: Maybe Info -> String
-makeTypeVariableNameFromInfo (Just i) =
-  "tyvar-from-info-" ++ show (infoIdentifier i) ++ "_" ++ show (infoLine i) ++ "_" ++ show (infoColumn i)
-makeTypeVariableNameFromInfo Nothing =
-  error "unnamed-typevariable"
 
 -- | Generates the suffix added to polymorphic functions when they are instantiated.
 --   For example                (defn id [x] x) : t -> t

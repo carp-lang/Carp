@@ -11,6 +11,7 @@ import Parsing
 import Infer
 import Concretize
 import ToTemplate
+import Info
 
 -- | Create a binding pair used for adding a template instantiation to an environment.
 instanceBinder :: SymPath -> Ty -> Template -> String -> (String, Binder)

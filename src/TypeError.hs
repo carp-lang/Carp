@@ -7,6 +7,7 @@ import Obj
 import Constraints
 import Util
 import Lookup
+import Info
 
 data TypeError = SymbolMissingType XObj Env
                | DefnMissingType XObj

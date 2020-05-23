@@ -24,6 +24,7 @@ import Template
 import Scoring
 import Lookup
 import Concretize
+import Info
 
 addIndent :: Int -> String
 addIndent n = replicate n ' '

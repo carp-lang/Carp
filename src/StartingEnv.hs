@@ -15,6 +15,7 @@ import Parsing
 import Eval
 import Concretize
 import Primitives
+import Info
 import Debug.Trace (trace)
 
 -- | These modules will be loaded in order before any other code is evaluated.

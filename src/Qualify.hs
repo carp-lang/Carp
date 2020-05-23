@@ -9,6 +9,7 @@ import Types
 import Obj
 import Lookup
 import Util
+import Info
 
 -- | Changes the symbol part of a defn (the name) to a new symbol path
 -- | Example: (defn foo () 123) => (defn GreatModule.foo () 123)

@@ -32,6 +32,7 @@ import TypeError
 import Concretize
 import Path
 import Primitives
+import Info
 
 import Debug.Trace
 
