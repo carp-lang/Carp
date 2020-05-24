@@ -24,8 +24,8 @@ the input given was wrong, containing an error message.")
             (set! e (+ e step))))
         (Result.Success x))))
 
-  (doc range-or-default "is an unsafe version of [`range](#range). It returns
-an empty array on failure.")
+  (doc range-or-default "is a version of [`range`](#range) that returns an empty
+array on failure.")
   (defn range-or-default [start end step]
     (Result.from-success (range start end step) []))
 )
