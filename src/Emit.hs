@@ -19,6 +19,7 @@ import Data.Char (ord)
 
 import Obj
 import Types
+import TypesToC
 import Util
 import Template
 import Scoring

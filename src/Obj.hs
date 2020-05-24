@@ -6,7 +6,9 @@ import Data.List (intercalate, foldl')
 import Data.Maybe (mapMaybe, fromMaybe, fromJust)
 import Control.Monad.State
 import Data.Char
+import SymPath
 import Types
+import TypesToC
 import Util
 import Info
 import Debug.Trace
