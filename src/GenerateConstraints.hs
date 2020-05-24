@@ -15,6 +15,7 @@ import Constraints
 import Util
 import TypeError
 import Lookup
+import Info
 
 -- | Will create a list of type constraints for a form.
 genConstraints :: Env -> XObj -> Maybe (Ty, XObj) -> Either TypeError [Constraint]

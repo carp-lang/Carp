@@ -13,6 +13,7 @@ import Data.Char (ord)
 import Obj
 import Types
 import Util
+import Info
 import Control.Monad.Error.Class (throwError)
 
 import Debug.Trace

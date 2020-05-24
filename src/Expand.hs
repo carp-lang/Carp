@@ -9,6 +9,7 @@ import Obj
 import Util
 import Lookup
 import TypeError
+import Info
 
 -- | Used for calling back to the 'eval' function in Eval.hs
 type DynamicEvaluator = Context -> XObj -> IO (Context, Either EvalError XObj)

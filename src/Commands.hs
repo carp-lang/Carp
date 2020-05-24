@@ -25,6 +25,7 @@ import Lookup
 import RenderDocs
 import TypeError
 import Path
+import Info
 
 data CarpException =
     ShellOutException { shellOutMessage :: String, returnCode :: Int }

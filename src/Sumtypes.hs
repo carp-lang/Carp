@@ -17,6 +17,7 @@ import StructUtils
 import TypeError
 import Validate
 import SumtypeCase
+import Info
 
 getCase :: [SumtypeCase] -> String -> Maybe SumtypeCase
 getCase cases caseNameToFind =

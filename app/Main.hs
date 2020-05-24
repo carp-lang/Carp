@@ -12,6 +12,7 @@ import StartingEnv
 import Eval
 import Util
 import Path
+import Info
 
 defaultProject :: Project
 defaultProject =

@@ -18,6 +18,7 @@ import Types
 import Util
 import Template
 import ToTemplate
+import Info
 
 import Debug.Trace
 
