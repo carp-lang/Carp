@@ -73,12 +73,32 @@ foo ; symbol
 The cond statement executes a block of code if a specified condition is true. If the condition is false, another block of code can be executed. Examples are given below:
 
 ```clojure
-(cond
-          (<condition_1>) (<code_1>) ;; code_1 executed if condition_1 is true
-          (<condition_2>) (<code_2>) ;; code_2 executed if condition_2 is true
-          (<code_3>) ;; code_3 executed if condition_1 and condition_2 are false
-```
+(defndynamic cond-internal [xs]
+  (if (= (length xs) 0)
+    (list)
+    (if (= (length xs) 2)
+      (macro-error "cond has even number of branches; add an else branch")
+      (if (= (length xs) 1)
+        (car xs)
+        (list
+         'if
+         (car xs)
+         (cadr xs)
+         (cond-internal (cddr xs)))))))
 
+(defmacro cond [:rest xs]
+  (cond-internal xs))
+
+```
+Here's an example to print a statement depending on whether it is < or > 10
+
+```clojure
+(cond
+          (< 10 1) (println "Don't print!")
+          (> 10 1) (println msg)
+          (println "Don't print!"))
+``` 
+         
 ### Special Forms
 The following forms can be used in Carp source code and will be compiled to C after type checking
 and other static analysis. The first three of them are also available in dynamic functions.
