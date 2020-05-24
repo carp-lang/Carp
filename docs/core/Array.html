@@ -966,6 +966,27 @@ the input given was wrong, containing an error message.</p>
                 </p>
             </div>
             <div class="binder">
+                <a class="anchor" href="#range-or-default">
+                    <h3 id="range-or-default">
+                        range-or-default
+                    </h3>
+                </a>
+                <div class="description">
+                    defn
+                </div>
+                <p class="sig">
+                    (Fn [a, a, a] (Array a))
+                </p>
+                <pre class="args">
+                    (range-or-default start end step)
+                </pre>
+                <p class="doc">
+                    <p>is an unsafe version of <a href="#range">`range</a>. It returns
+an empty array on failure.</p>
+
+                </p>
+            </div>
+            <div class="binder">
                 <a class="anchor" href="#raw">
                     <h3 id="raw">
                         raw
@@ -1477,27 +1498,6 @@ no longer satisfy <code>test</code>. The initial value is <code>start</code>.</p
                 </span>
                 <p class="doc">
                     <p>gets a reference to the <code>n</code>th element from an array <code>a</code>.</p>
-
-                </p>
-            </div>
-            <div class="binder">
-                <a class="anchor" href="#unsafe-range">
-                    <h3 id="unsafe-range">
-                        unsafe-range
-                    </h3>
-                </a>
-                <div class="description">
-                    defn
-                </div>
-                <p class="sig">
-                    (Fn [a, a, a] (Array a))
-                </p>
-                <pre class="args">
-                    (unsafe-range start end step)
-                </pre>
-                <p class="doc">
-                    <p>is an unsafe version of <a href="#range">`range</a>. It returns an
-empty array on failure.</p>
 
                 </p>
             </div>
