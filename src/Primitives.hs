@@ -722,6 +722,8 @@ primitiveSexpression (XObj _ i _) ctx [XObj (Sym path _) _ _] =
          -- Just to be sure, check the type env--this might be an interface or
          -- type
          case lookupInEnv path tyEnv of
+           Just (_, Binder _ (XObj (Lst [inter@(XObj (Interface ty _) _ _), path]) i t)) ->
+             return (ctx, Right (XObj (Lst [(toSymbols inter), path, (tyToXObj ty)]) i t))
            Just (_, Binder _ (XObj (Lst forms) i t)) ->
                return (ctx, Right (XObj (Lst (map toSymbols forms)) i t))
            Just (_, Binder _ xobj'') ->
