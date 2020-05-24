@@ -70,7 +70,12 @@ foo ; symbol
 ```
 
 ### Conditional statements with 'cond'
-The ```cond``` statement executes a block of code if a specified condition is true. If the condition is false, another block of code can be executed. Examples are given below:
+```(doc cond "this is the documentation for cond")```
+The ```cond``` statement executes a block of code if a specified condition is true. If the condition is false, another block of code can be executed. 
+
+```(doc cond "this is the documentation for cond")```
+
+Examples are given below:
 
 ```clojure
 (defndynamic cond-internal [xs]
