@@ -151,6 +151,7 @@ resetAlreadyLoadedFiles context =
       proj' = proj { projectAlreadyLoaded = [] }
   in  context { contextProj = proj' }
 
+runRepl :: Context -> IO ((), Context)
 runRepl context = do
   historyFile <- configPath "history"
   createDirectoryIfMissing True (takeDirectory historyFile)

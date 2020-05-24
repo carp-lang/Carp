@@ -11,9 +11,10 @@ let
   optionals = nixpkgs.stdenv.lib.optionals;
   linuxOnly = optionals nixpkgs.stdenv.isLinux;
 
-  f = { mkDerivation, ansi-terminal, base, blaze-html, blaze-markup
-      , cmark, cmdargs, containers, directory, edit-distance, filepath
-      , haskeline, HUnit, mtl, parsec, process, split, stdenv, text
+  f = { mkDerivation, stdenv
+      , ansi-terminal, base, blaze-html, blaze-markup
+      , cmark, containers, directory, edit-distance, filepath
+      , haskeline, HUnit, mtl, optparse-applicative, parsec, process, split, text
       , darwin, glfw3, SDL2, SDL2_image, SDL2_gfx, SDL2_mixer, SDL2_ttf
       , ghc-prof-flamegraph
       , clang , makeWrapper
@@ -39,7 +40,7 @@ let
           [ glfw3 SDL2 SDL2_image SDL2_gfx SDL2_mixer SDL2_ttf ]
           ++ linuxOnly [ libXext libXcursor libXinerama libXi libXrandr libXScrnSaver libXxf86vm libpthreadstubs libXdmcp libGL];
         executableHaskellDepends = [
-          base cmdargs containers directory haskeline parsec process
+          base containers directory haskeline optparse-applicative parsec process
           clang
         ];
         executableFrameworkDepends = with darwin.apple_sdk.frameworks; optionals stdenv.isDarwin [
@@ -73,6 +74,6 @@ in
   if pkgs.lib.inNixShell
   then drv.env.overrideAttrs (o: {
     buildInputs = with pkgs; o.buildInputs ++ [ haskellPackages.cabal-install clang gdb ]
-                  ++ linuxOnly [ flamegraph linuxPackages.perf ];
+                  ++ linuxOnly [ flamegraph linuxPackages.perf tinycc ];
   })
   else drv

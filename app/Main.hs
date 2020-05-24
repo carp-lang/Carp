@@ -2,7 +2,9 @@ module Main where
 
 import qualified System.Environment as SystemEnvironment
 import System.Console.Haskeline (runInputT)
+import Control.Monad (foldM)
 import GHC.IO.Encoding
+import Data.Maybe
 
 import ColorText
 import Obj
@@ -14,12 +16,20 @@ import Util
 import Path
 import Info
 
+import Options.Applicative
+
 defaultProject :: Project
 defaultProject =
   Project { projectTitle = "Untitled"
           , projectIncludes = []
-          , projectCFlags = [""]
-          , projectLibFlags = [""]
+          , projectCFlags = case platform of
+              Windows -> ["-D_CRT_SECURE_NO_WARNINGS"]
+              _ -> [ "-fPIC"
+                   , "-g"
+                   ]
+          , projectLibFlags = case platform of
+              Windows -> []
+              _ -> [ "-lm" ]
           , projectFiles = []
           , projectAlreadyLoaded = []
           , projectEchoC = False
@@ -39,8 +49,8 @@ defaultProject =
           , projectCarpSearchPaths = []
           , projectPrintTypedAST = False
           , projectCompiler = case platform of
-                                Windows -> "clang-cl.exe -D _CRT_SECURE_NO_WARNINGS"
-                                _ ->       "clang -fPIC -lm -g"
+                                Windows -> "clang-cl.exe"
+                                _ ->       "clang"
           , projectCore = True
           , projectEchoCompilationCommand = False
           , projectCanExecute = False
@@ -54,94 +64,103 @@ main :: IO ()
 main = do setLocaleEncoding utf8
           args <- SystemEnvironment.getArgs
           sysEnv <- SystemEnvironment.getEnvironment
-          let (argFilesToLoad, execMode, otherOptions) = parseArgs args
-              logMemory = LogMemory `elem` otherOptions
-              noCore = NoCore `elem` otherOptions
-              noProfile = NoProfile `elem` otherOptions
-              optimize = Optimize `elem` otherOptions
-              generateOnly = GenerateOnly `elem` otherOptions
-              projectWithFiles = defaultProject { projectCFlags = ["-D LOG_MEMORY" | logMemory] ++
-                                                                  ["-O3 -D NDEBUG" | optimize] ++
-                                                                  projectCFlags defaultProject,
-                                                  projectCore = not noCore,
-                                                  projectGenerateOnly = generateOnly}
+          fullOpts <- execParser $ Options.Applicative.info (parseFull <**> helper) fullDesc
+          let execMode = optExecMode fullOpts
+              otherOptions = optOthers fullOpts
+              argFilesToLoad = optFiles fullOpts
+              logMemory = otherLogMemory otherOptions
+              core = not $ otherNoCore otherOptions
+              profile = not $ otherNoProfile otherOptions
+              optimize = otherOptimize otherOptions
+              generateOnly = otherGenerateOnly otherOptions
+              prompt = otherPrompt otherOptions
+              applySettings p = p { projectCFlags = ["-D LOG_MEMORY" | logMemory] ++
+                                                    ["-O3 -D NDEBUG" | optimize]
+                                                    ++ projectCFlags p
+                                  , projectCore = core
+                                  , projectGenerateOnly = generateOnly
+                                  , projectCarpDir = fromMaybe (projectCarpDir p) $ lookup "CARP_DIR" sysEnv
+                                  , projectPrompt = fromMaybe (projectPrompt p) prompt
+                                  }
+              project = applySettings defaultProject
               noArray = False
-              coreModulesToLoad = if noCore then [] else coreModules (projectCarpDir projectWithCarpDir)
-              projectWithCarpDir = case lookup "CARP_DIR" sysEnv of
-                                     Just carpDir -> projectWithFiles { projectCarpDir = carpDir }
-                                     Nothing -> projectWithFiles
-              projectWithCustomPrompt = setCustomPromptFromOptions projectWithCarpDir otherOptions
               startingContext = Context
-                                 (startingGlobalEnv noArray)
-                                 Nothing
-                                 (TypeEnv startingTypeEnv)
-                                 []
-                                 projectWithCustomPrompt
-                                 ""
-                                 execMode
-                                 []
-          context <- loadFilesOnce startingContext coreModulesToLoad
+                                (startingGlobalEnv noArray)
+                                Nothing
+                                (TypeEnv startingTypeEnv)
+                                []
+                                project
+                                ""
+                                execMode
+                                []
+              coreModulesToLoad = if core then coreModules (projectCarpDir project) else []
+              execStr :: String -> String -> Context -> IO Context
+              execStr info str ctx = executeString True False ctx str info
+              execStrs :: String -> [String] -> Context -> IO Context
+              execStrs info strs ctx = foldM (\ctx str -> execStr info str ctx) ctx strs
+              preloads = optPreload fullOpts
+              postloads = optPostload fullOpts
+              load = flip loadFiles
           carpProfile <- configPath "profile.carp"
           hasProfile <- doesFileExist carpProfile
-          context' <- if (not noProfile) && hasProfile
-                      then loadFiles context [carpProfile]
-                      else return context
-          finalContext <- loadFiles context' argFilesToLoad
-          case execMode of
-            Repl -> do putStrLn "Welcome to Carp 0.3.0"
-                       putStrLn "This is free software with ABSOLUTELY NO WARRANTY."
-                       putStrLn "Evaluate (help) for more information."
-                       _ <- runRepl finalContext
-                       return ()
-            Build -> do _ <- executeString True False finalContext "(build)" "Compiler (Build)"
-                        return ()
-            Install thing ->
-              do _ <- executeString True False finalContext
-                      ("(load \"" ++ thing ++ "\")")
-                      "Installation"
-                 return ()
-            BuildAndRun -> do _ <- executeString True False finalContext "(do (build) (run))" "Compiler (Build & Run)"
-                              -- TODO: Handle the return value from executeString and return that one to the shell
-                              return ()
-            Check -> return ()
-
+          _ <- loadFilesOnce startingContext coreModulesToLoad
+            >>= load [carpProfile | hasProfile]
+            >>= execStrs "Preload" preloads
+            >>= load argFilesToLoad
+            >>= execStrs "Postload" postloads
+            >>= \ctx -> case execMode of
+                          Repl -> do putStrLn "Welcome to Carp 0.3.0"
+                                     putStrLn "This is free software with ABSOLUTELY NO WARRANTY."
+                                     putStrLn "Evaluate (help) for more information."
+                                     snd <$> runRepl ctx
+                          Build -> execStr "Compiler (Build)" "(build)" ctx
+                          Install thing -> execStr "Installation" ("(load \"" ++ thing ++ "\")") ctx
+                          BuildAndRun -> execStr "Compiler (Build & Run)" "(do (build) (run))" ctx
+                          Check -> execStr "Check" "" ctx
+                          -- TODO: Handle the return value from executeString and return that one to the shell
+          pure ()
 -- | Options for how to run the compiler.
-data OtherOptions = NoCore
-                  | NoProfile
-                  | LogMemory
-                  | Optimize
-                  | GenerateOnly
-                  | SetPrompt String
-                  deriving (Show, Eq)
+data FullOptions = FullOptions
+  { optExecMode :: ExecutionMode
+  , optOthers :: OtherOptions
+  , optPreload :: [String]
+  , optPostload :: [String]
+  , optFiles :: [FilePath]
+  } deriving Show
 
--- | Parse the arguments sent to the compiler from the terminal.
--- | TODO: Switch to 'cmdargs' library for parsing these!
-parseArgs :: [String] -> ([FilePath], ExecutionMode, [OtherOptions])
-parseArgs args = parseArgsInternal [] Repl [] args
-  where parseArgsInternal filesToLoad execMode otherOptions [] =
-          (filesToLoad, execMode, otherOptions)
-        parseArgsInternal filesToLoad execMode otherOptions (arg:restArgs) =
-          case arg of
-            "-b" -> parseArgsInternal filesToLoad Build otherOptions restArgs
-            "-x" -> parseArgsInternal filesToLoad BuildAndRun otherOptions restArgs
-            "-i" -> parseArgsInternal filesToLoad (Install (head restArgs)) otherOptions (tail restArgs)
-            "--check" -> parseArgsInternal filesToLoad Check otherOptions restArgs
-            "--no-core" -> parseArgsInternal filesToLoad execMode (NoCore : otherOptions) restArgs
-            "--no-profile" -> parseArgsInternal filesToLoad execMode (NoProfile : otherOptions) restArgs
-            "--log-memory" -> parseArgsInternal filesToLoad execMode (LogMemory : otherOptions) restArgs
-            "--optimize" -> parseArgsInternal filesToLoad execMode (Optimize : otherOptions) restArgs
-            "--generate-only" -> parseArgsInternal filesToLoad execMode (GenerateOnly : otherOptions) restArgs
-            "--prompt" -> case restArgs of
-                             newPrompt : restRestArgs ->
-                               parseArgsInternal filesToLoad execMode (SetPrompt newPrompt : otherOptions) restRestArgs
-                             _ ->
-                               error "No prompt given after --prompt"
-            file -> parseArgsInternal (filesToLoad ++ [file]) execMode otherOptions restArgs
+parseFull :: Parser FullOptions
+parseFull = FullOptions
+  <$> parseExecMode
+  <*> parseOther
+  <*> many (strOption (long "eval-preload" <> metavar "CODE" <> help "Eval CODE after loading config and before FILES"))
+  <*> many (strOption (long "eval-postload" <> metavar "CODE" <> help "Eval CODE after loading FILES"))
+  <*> parseFiles
 
-setCustomPromptFromOptions :: Project -> [OtherOptions] -> Project
-setCustomPromptFromOptions project (o:os) =
-  case o of
-    SetPrompt newPrompt -> setCustomPromptFromOptions (project { projectPrompt = newPrompt }) os
-    _ -> setCustomPromptFromOptions project os
-setCustomPromptFromOptions project _ =
-  project
+data OtherOptions = OtherOptions
+  { otherNoCore :: Bool
+  , otherNoProfile :: Bool
+  , otherLogMemory :: Bool
+  , otherOptimize :: Bool
+  , otherGenerateOnly :: Bool
+  , otherPrompt :: Maybe String
+  } deriving Show
+
+parseOther :: Parser OtherOptions
+parseOther = OtherOptions
+  <$> switch (long "no-core" <> help "Don't load Core.carp")
+  <*> switch (long "no-profile" <> help "Don't load profile.carp")
+  <*> switch (long "log-memory" <> help "Log memory allocations")
+  <*> switch (long "optimize" <> help "Optimized build")
+  <*> switch (long "generate-only" <> help "Stop after generating the C code")
+  <*> optional (strOption (long "prompt" <> help "Set REPL prompt"))
+
+parseExecMode :: Parser ExecutionMode
+parseExecMode =
+  flag' Check (long "check" <> help "Check project")
+  <|> flag' Build (short 'b' <> help "Build project")
+  <|> flag' BuildAndRun (short 'x' <> help "Build an run project")
+  <|> Install <$> strOption (short 'i' <> help "Install built product")
+  <|> pure Repl
+
+parseFiles :: Parser [FilePath]
+parseFiles = many (argument str (metavar "FILES..."))

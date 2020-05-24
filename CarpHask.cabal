@@ -63,7 +63,7 @@ library
                      , blaze-html
                      , blaze-markup
                      , text
-                     , ansi-terminal >= 0.9
+                     , ansi-terminal >= 0.10.3
                      , cmark
                      , edit-distance
 
@@ -80,6 +80,7 @@ executable carp
                      , filepath
                      , haskeline
                      , process
+                     , optparse-applicative
   default-language:    Haskell2010
 
 executable carp-header-parse
@@ -90,8 +91,8 @@ executable carp-header-parse
                      , CarpHask
                      , containers
                      , directory
-                     , cmdargs
                      , parsec
+                     , optparse-applicative
   default-language:    Haskell2010
 
 test-suite CarpHask-test

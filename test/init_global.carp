@@ -6,4 +6,6 @@
 
 ;; The one allocation left after 'carp_init_globals' should be 'g' itself:
 (defn main []
-  (assert (= 1l (Debug.memory-balance))))
+  (do
+    (assert (= 1l (Debug.memory-balance)))
+    0))

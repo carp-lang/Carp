@@ -702,10 +702,12 @@ memberToDecl indent (memberName, memberType) =
 
 defStructToDeclaration :: Ty -> SymPath -> [XObj] -> String
 defStructToDeclaration structTy@(StructTy typeName typeVariables) path rest =
-  let indent' = indentAmount
+  let indent = indentAmount
 
       typedefCaseToMemberDecl :: XObj -> State EmitterState [()]
-      typedefCaseToMemberDecl (XObj (Arr members) _ _) = mapM (memberToDecl indent') (pairwise members)
+      -- ANSI C doesn't allow empty structs, insert a dummy member to keep the compiler happy.
+      typedefCaseToMemberDecl (XObj (Arr []) _ _) = sequence $ pure $ appendToSrc (addIndent indent ++ "char __dummy;\n")
+      typedefCaseToMemberDecl (XObj (Arr members) _ _) = mapM (memberToDecl indent) (pairwise members)
       typedefCaseToMemberDecl _ = error "Invalid case in typedef."
 
       -- Note: the names of types are not namespaced

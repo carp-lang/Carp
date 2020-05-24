@@ -1,12 +1,10 @@
 (system-include "carp_safe_int.h")
 
 (defmodule Int
-  (not-on-windows ; this seems to generate invalid code on some windows machines
-    (doc safe-add "Performs an addition and checks whether it overflowed.")
-    (register safe-add (λ [Int Int (Ref Int)] Bool))
-    (doc safe-sub "Performs an substraction and checks whether it overflowed.")
-    (register safe-sub (λ [Int Int (Ref Int)] Bool))
-    (doc safe-mul "Performs an multiplication and checks whether it overflowed.")
-    (register safe-mul (λ [Int Int (Ref Int)] Bool))
-  )
+  (doc safe-add "Performs an addition and checks whether it overflowed.")
+  (register safe-add (λ [Int Int (Ref Int)] Bool))
+  (doc safe-sub "Performs an substraction and checks whether it overflowed.")
+  (register safe-sub (λ [Int Int (Ref Int)] Bool))
+  (doc safe-mul "Performs an multiplication and checks whether it overflowed.")
+  (register safe-mul (λ [Int Int (Ref Int)] Bool))
 )

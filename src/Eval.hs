@@ -814,18 +814,21 @@ printC xobj =
 
 buildMainFunction :: XObj -> XObj
 buildMainFunction xobj =
-  XObj (Lst [ XObj (Defn Nothing) (Just dummyInfo) Nothing
-            , XObj (Sym (SymPath [] "main") Symbol) (Just dummyInfo) Nothing
-            , XObj (Arr []) (Just dummyInfo) Nothing
-            , case ty xobj of
-                Just UnitTy -> xobj
-                Just (RefTy _ _) -> XObj (Lst [XObj (Sym (SymPath [] "println*") Symbol) (Just dummyInfo) Nothing, xobj])
-                                       (Just dummyInfo) (Just UnitTy)
-                Just _ -> XObj (Lst [XObj (Sym (SymPath [] "println*") Symbol) (Just dummyInfo) Nothing,
-                                     XObj (Lst [XObj Ref (Just dummyInfo) Nothing, xobj])
-                                           (Just dummyInfo) (Just UnitTy)])
-                               (Just dummyInfo) (Just UnitTy)
-            ]) (Just dummyInfo) (Just (FuncTy [] UnitTy StaticLifetimeTy))
+  XObj (Lst [ XObj (Defn Nothing) di Nothing
+            , XObj (Sym (SymPath [] "main") Symbol) di Nothing
+            , XObj (Arr []) di Nothing
+            , XObj (Lst [ XObj Do di Nothing
+                        , case ty xobj of
+                            Just UnitTy -> xobj
+                            Just (RefTy _ _) -> XObj (Lst [XObj (Sym (SymPath [] "println*") Symbol) di Nothing, xobj])
+                                                di (Just UnitTy)
+                            Just _ -> XObj (Lst [XObj (Sym (SymPath [] "println*") Symbol) di Nothing,
+                                                 XObj (Lst [XObj Ref di Nothing, xobj])
+                                                 di (Just UnitTy)])
+                                      di (Just UnitTy)
+                        , XObj (Num IntTy 0) di Nothing
+                        ]) di Nothing]) di (Just (FuncTy [] UnitTy StaticLifetimeTy))
+  where di = Just dummyInfo
 
 primitiveDefdynamic :: Primitive
 primitiveDefdynamic _ ctx [XObj (Sym (SymPath [] name) _) _ _, value] = do

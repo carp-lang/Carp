@@ -10,7 +10,7 @@ Long Long__MUL_(Long x, Long y) {
 Long Long__DIV_(Long x, Long y) {
     return x / y;
 }
-#ifndef _WIN32
+#if defined __GNUC__
 bool Long_safe_MINUS_add(Long x, Long y, Long* res) {
     return __builtin_add_overflow(x, y, res);
 }
@@ -19,6 +19,22 @@ bool Long_safe_MINUS_sub(Long x, Long y, Long* res) {
 }
 bool Long_safe_MINUS_mul(Long x, Long y, Long* res) {
     return __builtin_mul_overflow(x, y, res);
+}
+#else
+bool Long_safe_MINUS_add(Long x, Long y, Long* res) {
+    Long r = x + y;
+    *res = r;
+    return (y > 0) && (x > (INT64_MAX - y)) || (y < 0) && (x < (INT64_MIN - y));
+}
+bool Long_safe_MINUS_sub(Long x, Long y, Long* res) {
+    Long r = x - y;
+    *res = r;
+    return (y > 0 && x < (INT64_MIN + y)) || (y < 0 && x > (INT64_MAX + y));
+}
+bool Long_safe_MINUS_mul(Long x, Long y, Long* res) {
+    Long r = x * y;
+    *res = r;
+    return y == 0 || (r / y) != x;
 }
 #endif
 bool Long__EQ_(Long x, Long y) {
