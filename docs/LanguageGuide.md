@@ -70,7 +70,7 @@ foo ; symbol
 ```
 
 ### Conditional statements with 'cond'
-The cond statement executes a block of code if a specified condition is true. If the condition is false, another block of code can be executed. Examples are given below:
+The ```cond``` statement executes a block of code if a specified condition is true. If the condition is false, another block of code can be executed. Examples are given below:
 
 ```clojure
 (defndynamic cond-internal [xs]
@@ -90,13 +90,30 @@ The cond statement executes a block of code if a specified condition is true. If
   (cond-internal xs))
 
 ```
-Here's an example to print a statement depending on whether it is < or > 10
+Sample Example:
+
+```clojure
+(cond
+          (<condition_1>) (<code_1>) ;; code_1 gets executed if condition_1 is true
+          (<condition_2>) (<code_2>) ;; code_2 gets executed if condition_2 is true
+          (<code_3>) ;; code_3 gets executed if condition_1 and condition_2 are false
+``` 
+
+Example 1. Printing a statement depending on whether it is < or > 10:
 
 ```clojure
 (cond
           (< 10 1) (println "Don't print!")
           (> 10 1) (println msg)
           (println "Don't print!"))
+``` 
+
+Example 2. Condition for a guess-the-number game:
+
+```clojure
+(cond (< n answer) (guess-again "low")
+                      (> n answer) (guess-again "high")
+                      (correct!))
 ``` 
          
 ### Special Forms
