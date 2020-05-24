@@ -166,86 +166,11 @@
                 </div>
             </div>
             <h1>
-                Long
+                Triple
             </h1>
             <div class="module-description">
-                
-            </div>
-            <div class="binder">
-                <a class="anchor" href="#*">
-                    <h3 id="*">
-                        *
-                    </h3>
-                </a>
-                <div class="description">
-                    external
-                </div>
-                <p class="sig">
-                    (Fn [Long, Long] Long)
-                </p>
-                <span>
-                    
-                </span>
-                <p class="doc">
-                    
-                </p>
-            </div>
-            <div class="binder">
-                <a class="anchor" href="#+">
-                    <h3 id="+">
-                        +
-                    </h3>
-                </a>
-                <div class="description">
-                    external
-                </div>
-                <p class="sig">
-                    (Fn [Long, Long] Long)
-                </p>
-                <span>
-                    
-                </span>
-                <p class="doc">
-                    
-                </p>
-            </div>
-            <div class="binder">
-                <a class="anchor" href="#-">
-                    <h3 id="-">
-                        -
-                    </h3>
-                </a>
-                <div class="description">
-                    external
-                </div>
-                <p class="sig">
-                    (Fn [Long, Long] Long)
-                </p>
-                <span>
-                    
-                </span>
-                <p class="doc">
-                    
-                </p>
-            </div>
-            <div class="binder">
-                <a class="anchor" href="#/">
-                    <h3 id="/">
-                        /
-                    </h3>
-                </a>
-                <div class="description">
-                    external
-                </div>
-                <p class="sig">
-                    (Fn [Long, Long] Long)
-                </p>
-                <span>
-                    
-                </span>
-                <p class="doc">
-                    
-                </p>
+                <p>is a 3-tuple, i.e. a datatype with three members.</p>
+
             </div>
             <div class="binder">
                 <a class="anchor" href="#&lt;">
@@ -254,14 +179,14 @@
                     </h3>
                 </a>
                 <div class="description">
-                    external
+                    defn
                 </div>
                 <p class="sig">
-                    (Fn [Long, Long] Bool)
+                    (Fn [(Triple a b c), (Triple a b c)] Bool)
                 </p>
-                <span>
-                    
-                </span>
+                <pre class="args">
+                    (&lt; t1 t2)
+                </pre>
                 <p class="doc">
                     
                 </p>
@@ -273,14 +198,14 @@
                     </h3>
                 </a>
                 <div class="description">
-                    external
+                    defn
                 </div>
                 <p class="sig">
-                    (Fn [Long, Long] Bool)
+                    (Fn [(Triple a b c), (Triple a b c)] Bool)
                 </p>
-                <span>
-                    
-                </span>
+                <pre class="args">
+                    (= t1 t2)
+                </pre>
                 <p class="doc">
                     
                 </p>
@@ -292,187 +217,76 @@
                     </h3>
                 </a>
                 <div class="description">
-                    external
+                    defn
                 </div>
                 <p class="sig">
-                    (Fn [Long, Long] Bool)
+                    (Fn [(Triple a b c), (Triple a b c)] Bool)
                 </p>
-                <span>
-                    
-                </span>
+                <pre class="args">
+                    (&gt; t1 t2)
+                </pre>
                 <p class="doc">
                     
                 </p>
             </div>
             <div class="binder">
-                <a class="anchor" href="#MAX">
-                    <h3 id="MAX">
-                        MAX
+                <a class="anchor" href="#a">
+                    <h3 id="a">
+                        a
                     </h3>
                 </a>
                 <div class="description">
-                    external
+                    instantiate
                 </div>
                 <p class="sig">
-                    Long
+                    (Fn [(Ref (Triple a b c) d)] (Ref a d))
                 </p>
                 <span>
                     
                 </span>
                 <p class="doc">
-                    
+                    <p>gets the <code>a</code> property of a <code>Triple</code>.</p>
+
                 </p>
             </div>
             <div class="binder">
-                <a class="anchor" href="#MIN">
-                    <h3 id="MIN">
-                        MIN
+                <a class="anchor" href="#b">
+                    <h3 id="b">
+                        b
                     </h3>
                 </a>
                 <div class="description">
-                    external
+                    instantiate
                 </div>
                 <p class="sig">
-                    Long
+                    (Fn [(Ref (Triple a b c) d)] (Ref b d))
                 </p>
                 <span>
                     
                 </span>
                 <p class="doc">
-                    
+                    <p>gets the <code>b</code> property of a <code>Triple</code>.</p>
+
                 </p>
             </div>
             <div class="binder">
-                <a class="anchor" href="#abs">
-                    <h3 id="abs">
-                        abs
+                <a class="anchor" href="#c">
+                    <h3 id="c">
+                        c
                     </h3>
                 </a>
                 <div class="description">
-                    external
+                    instantiate
                 </div>
                 <p class="sig">
-                    (Fn [Long] Long)
+                    (Fn [(Ref (Triple a b c) d)] (Ref c d))
                 </p>
                 <span>
                     
                 </span>
                 <p class="doc">
-                    
-                </p>
-            </div>
-            <div class="binder">
-                <a class="anchor" href="#bit-and">
-                    <h3 id="bit-and">
-                        bit-and
-                    </h3>
-                </a>
-                <div class="description">
-                    external
-                </div>
-                <p class="sig">
-                    (Fn [Long, Long] Long)
-                </p>
-                <span>
-                    
-                </span>
-                <p class="doc">
-                    
-                </p>
-            </div>
-            <div class="binder">
-                <a class="anchor" href="#bit-not">
-                    <h3 id="bit-not">
-                        bit-not
-                    </h3>
-                </a>
-                <div class="description">
-                    external
-                </div>
-                <p class="sig">
-                    (Fn [Long] Long)
-                </p>
-                <span>
-                    
-                </span>
-                <p class="doc">
-                    
-                </p>
-            </div>
-            <div class="binder">
-                <a class="anchor" href="#bit-or">
-                    <h3 id="bit-or">
-                        bit-or
-                    </h3>
-                </a>
-                <div class="description">
-                    external
-                </div>
-                <p class="sig">
-                    (Fn [Long, Long] Long)
-                </p>
-                <span>
-                    
-                </span>
-                <p class="doc">
-                    
-                </p>
-            </div>
-            <div class="binder">
-                <a class="anchor" href="#bit-shift-left">
-                    <h3 id="bit-shift-left">
-                        bit-shift-left
-                    </h3>
-                </a>
-                <div class="description">
-                    external
-                </div>
-                <p class="sig">
-                    (Fn [Long, Long] Long)
-                </p>
-                <span>
-                    
-                </span>
-                <p class="doc">
-                    
-                </p>
-            </div>
-            <div class="binder">
-                <a class="anchor" href="#bit-shift-right">
-                    <h3 id="bit-shift-right">
-                        bit-shift-right
-                    </h3>
-                </a>
-                <div class="description">
-                    external
-                </div>
-                <p class="sig">
-                    (Fn [Long, Long] Long)
-                </p>
-                <span>
-                    
-                </span>
-                <p class="doc">
-                    
-                </p>
-            </div>
-            <div class="binder">
-                <a class="anchor" href="#bit-xor">
-                    <h3 id="bit-xor">
-                        bit-xor
-                    </h3>
-                </a>
-                <div class="description">
-                    external
-                </div>
-                <p class="sig">
-                    (Fn [Long, Long] Long)
-                </p>
-                <span>
-                    
-                </span>
-                <p class="doc">
-                    
+                    <p>gets the <code>c</code> property of a <code>Triple</code>.</p>
+
                 </p>
             </div>
             <div class="binder">
@@ -482,206 +296,77 @@
                     </h3>
                 </a>
                 <div class="description">
-                    external
+                    template
                 </div>
                 <p class="sig">
-                    (Fn [(Ref Long a)] Long)
+                    (Fn [(Ref (Triple a b c) d)] (Triple a b c))
                 </p>
                 <span>
                     
                 </span>
                 <p class="doc">
-                    
+                    <p>copies the <code>Triple</code>.</p>
+
                 </p>
             </div>
             <div class="binder">
-                <a class="anchor" href="#dec">
-                    <h3 id="dec">
-                        dec
+                <a class="anchor" href="#delete">
+                    <h3 id="delete">
+                        delete
                     </h3>
                 </a>
                 <div class="description">
-                    external
+                    template
                 </div>
                 <p class="sig">
-                    (Fn [Long] Long)
+                    (Fn [(Triple a b c)] ())
                 </p>
                 <span>
                     
                 </span>
                 <p class="doc">
-                    
+                    <p>deletes a <code>Triple</code>. Should usually not be called manually.</p>
+
                 </p>
             </div>
             <div class="binder">
-                <a class="anchor" href="#even?">
-                    <h3 id="even?">
-                        even?
+                <a class="anchor" href="#init">
+                    <h3 id="init">
+                        init
+                    </h3>
+                </a>
+                <div class="description">
+                    template
+                </div>
+                <p class="sig">
+                    (Fn [a, b, c] (Triple a b c))
+                </p>
+                <span>
+                    
+                </span>
+                <p class="doc">
+                    <p>creates a <code>Triple</code>.</p>
+
+                </p>
+            </div>
+            <div class="binder">
+                <a class="anchor" href="#init-from-refs">
+                    <h3 id="init-from-refs">
+                        init-from-refs
                     </h3>
                 </a>
                 <div class="description">
                     defn
                 </div>
                 <p class="sig">
-                    (Fn [Long] Bool)
+                    (Fn [(Ref a b), (Ref c d), (Ref e f)] (Triple a c e))
                 </p>
                 <pre class="args">
-                    (even? a)
+                    (init-from-refs a-val b-val c-val)
                 </pre>
                 <p class="doc">
-                    
-                </p>
-            </div>
-            <div class="binder">
-                <a class="anchor" href="#format">
-                    <h3 id="format">
-                        format
-                    </h3>
-                </a>
-                <div class="description">
-                    external
-                </div>
-                <p class="sig">
-                    (Fn [(Ref String a), Long] String)
-                </p>
-                <span>
-                    
-                </span>
-                <p class="doc">
-                    
-                </p>
-            </div>
-            <div class="binder">
-                <a class="anchor" href="#from-int">
-                    <h3 id="from-int">
-                        from-int
-                    </h3>
-                </a>
-                <div class="description">
-                    external
-                </div>
-                <p class="sig">
-                    (Fn [Int] Long)
-                </p>
-                <span>
-                    
-                </span>
-                <p class="doc">
-                    
-                </p>
-            </div>
-            <div class="binder">
-                <a class="anchor" href="#from-string">
-                    <h3 id="from-string">
-                        from-string
-                    </h3>
-                </a>
-                <div class="description">
-                    defn
-                </div>
-                <p class="sig">
-                    (Fn [(Ref String a)] (Maybe Long))
-                </p>
-                <pre class="args">
-                    (from-string s)
-                </pre>
-                <p class="doc">
-                    
-                </p>
-            </div>
-            <div class="binder">
-                <a class="anchor" href="#hash">
-                    <h3 id="hash">
-                        hash
-                    </h3>
-                </a>
-                <div class="description">
-                    defn
-                </div>
-                <p class="sig">
-                    (Fn [(Ref Long a)] Int)
-                </p>
-                <pre class="args">
-                    (hash k)
-                </pre>
-                <p class="doc">
-                    
-                </p>
-            </div>
-            <div class="binder">
-                <a class="anchor" href="#inc">
-                    <h3 id="inc">
-                        inc
-                    </h3>
-                </a>
-                <div class="description">
-                    external
-                </div>
-                <p class="sig">
-                    (Fn [Long] Long)
-                </p>
-                <span>
-                    
-                </span>
-                <p class="doc">
-                    
-                </p>
-            </div>
-            <div class="binder">
-                <a class="anchor" href="#mod">
-                    <h3 id="mod">
-                        mod
-                    </h3>
-                </a>
-                <div class="description">
-                    external
-                </div>
-                <p class="sig">
-                    (Fn [Long, Long] Long)
-                </p>
-                <span>
-                    
-                </span>
-                <p class="doc">
-                    
-                </p>
-            </div>
-            <div class="binder">
-                <a class="anchor" href="#neg">
-                    <h3 id="neg">
-                        neg
-                    </h3>
-                </a>
-                <div class="description">
-                    external
-                </div>
-                <p class="sig">
-                    (Fn [Long] Long)
-                </p>
-                <span>
-                    
-                </span>
-                <p class="doc">
-                    
-                </p>
-            </div>
-            <div class="binder">
-                <a class="anchor" href="#odd?">
-                    <h3 id="odd?">
-                        odd?
-                    </h3>
-                </a>
-                <div class="description">
-                    defn
-                </div>
-                <p class="sig">
-                    (Fn [Long] Bool)
-                </p>
-                <pre class="args">
-                    (odd? a)
-                </pre>
-                <p class="doc">
-                    
+                    <p>initializes a <code>Pair</code> from member references.</p>
+
                 </p>
             </div>
             <div class="binder">
@@ -691,130 +376,156 @@
                     </h3>
                 </a>
                 <div class="description">
-                    defn
+                    template
                 </div>
                 <p class="sig">
-                    (Fn [Long] String)
+                    (Fn [(Ref (Triple a b c) d)] String)
                 </p>
-                <pre class="args">
-                    (prn x)
-                </pre>
-                <p class="doc">
+                <span>
                     
+                </span>
+                <p class="doc">
+                    <p>converts a <code>Triple</code> to a string.</p>
+
                 </p>
             </div>
             <div class="binder">
-                <a class="anchor" href="#random">
-                    <h3 id="random">
-                        random
-                    </h3>
-                </a>
-                <div class="description">
-                    defn
-                </div>
-                <p class="sig">
-                    (Fn [] Long)
-                </p>
-                <pre class="args">
-                    (random)
-                </pre>
-                <p class="doc">
-                    
-                </p>
-            </div>
-            <div class="binder">
-                <a class="anchor" href="#random-between">
-                    <h3 id="random-between">
-                        random-between
+                <a class="anchor" href="#reverse">
+                    <h3 id="reverse">
+                        reverse
                     </h3>
                 </a>
                 <div class="description">
                     defn
                 </div>
                 <p class="sig">
-                    (Fn [Long, Long] Long)
+                    (Fn [(Ref (Triple a b c) d)] (Triple c b a))
                 </p>
                 <pre class="args">
-                    (random-between lower upper)
+                    (reverse t)
                 </pre>
                 <p class="doc">
                     
                 </p>
             </div>
             <div class="binder">
-                <a class="anchor" href="#safe-add">
-                    <h3 id="safe-add">
-                        safe-add
+                <a class="anchor" href="#set-a">
+                    <h3 id="set-a">
+                        set-a
                     </h3>
                 </a>
                 <div class="description">
-                    external
+                    template
                 </div>
                 <p class="sig">
-                    (Fn [Long, Long, (Ref Long a)] Bool)
+                    (Fn [(Triple a b c), a] (Triple a b c))
                 </p>
                 <span>
                     
                 </span>
                 <p class="doc">
-                    
+                    <p>sets the <code>a</code> property of a <code>Triple</code>.</p>
+
                 </p>
             </div>
             <div class="binder">
-                <a class="anchor" href="#safe-mul">
-                    <h3 id="safe-mul">
-                        safe-mul
+                <a class="anchor" href="#set-a!">
+                    <h3 id="set-a!">
+                        set-a!
                     </h3>
                 </a>
                 <div class="description">
-                    external
+                    template
                 </div>
                 <p class="sig">
-                    (Fn [Long, Long, (Ref Long a)] Bool)
+                    (Fn [(Ref (Triple a b c) d), a] ())
                 </p>
                 <span>
                     
                 </span>
                 <p class="doc">
-                    
+                    <p>sets the <code>a</code> property of a <code>Triple</code> in place.</p>
+
                 </p>
             </div>
             <div class="binder">
-                <a class="anchor" href="#safe-sub">
-                    <h3 id="safe-sub">
-                        safe-sub
+                <a class="anchor" href="#set-b">
+                    <h3 id="set-b">
+                        set-b
                     </h3>
                 </a>
                 <div class="description">
-                    external
+                    template
                 </div>
                 <p class="sig">
-                    (Fn [Long, Long, (Ref Long a)] Bool)
+                    (Fn [(Triple a b c), b] (Triple a b c))
                 </p>
                 <span>
                     
                 </span>
                 <p class="doc">
-                    
+                    <p>sets the <code>b</code> property of a <code>Triple</code>.</p>
+
                 </p>
             </div>
             <div class="binder">
-                <a class="anchor" href="#seed">
-                    <h3 id="seed">
-                        seed
+                <a class="anchor" href="#set-b!">
+                    <h3 id="set-b!">
+                        set-b!
                     </h3>
                 </a>
                 <div class="description">
-                    external
+                    template
                 </div>
                 <p class="sig">
-                    (Fn [Long] ())
+                    (Fn [(Ref (Triple a b c) d), b] ())
                 </p>
                 <span>
                     
                 </span>
                 <p class="doc">
+                    <p>sets the <code>b</code> property of a <code>Triple</code> in place.</p>
+
+                </p>
+            </div>
+            <div class="binder">
+                <a class="anchor" href="#set-c">
+                    <h3 id="set-c">
+                        set-c
+                    </h3>
+                </a>
+                <div class="description">
+                    template
+                </div>
+                <p class="sig">
+                    (Fn [(Triple a b c), c] (Triple a b c))
+                </p>
+                <span>
                     
+                </span>
+                <p class="doc">
+                    <p>sets the <code>c</code> property of a <code>Triple</code>.</p>
+
+                </p>
+            </div>
+            <div class="binder">
+                <a class="anchor" href="#set-c!">
+                    <h3 id="set-c!">
+                        set-c!
+                    </h3>
+                </a>
+                <div class="description">
+                    template
+                </div>
+                <p class="sig">
+                    (Fn [(Ref (Triple a b c) d), c] ())
+                </p>
+                <span>
+                    
+                </span>
+                <p class="doc">
+                    <p>sets the <code>c</code> property of a <code>Triple</code> in place.</p>
+
                 </p>
             </div>
             <div class="binder">
@@ -824,35 +535,77 @@
                     </h3>
                 </a>
                 <div class="description">
-                    external
+                    template
                 </div>
                 <p class="sig">
-                    (Fn [Long] String)
+                    (Fn [(Ref (Triple a b c) d)] String)
                 </p>
                 <span>
                     
                 </span>
                 <p class="doc">
-                    
+                    <p>converts a <code>Triple</code> to a string.</p>
+
                 </p>
             </div>
             <div class="binder">
-                <a class="anchor" href="#to-int">
-                    <h3 id="to-int">
-                        to-int
+                <a class="anchor" href="#update-a">
+                    <h3 id="update-a">
+                        update-a
                     </h3>
                 </a>
                 <div class="description">
-                    external
+                    instantiate
                 </div>
                 <p class="sig">
-                    (Fn [Long] Int)
+                    (Fn [(Triple a b c), (Ref (Fn [a] a d) e)] (Triple a b c))
                 </p>
                 <span>
                     
                 </span>
                 <p class="doc">
+                    <p>updates the <code>a</code> property of a <code>Triple</code> using a function <code>f</code>.</p>
+
+                </p>
+            </div>
+            <div class="binder">
+                <a class="anchor" href="#update-b">
+                    <h3 id="update-b">
+                        update-b
+                    </h3>
+                </a>
+                <div class="description">
+                    instantiate
+                </div>
+                <p class="sig">
+                    (Fn [(Triple a b c), (Ref (Fn [b] b d) e)] (Triple a b c))
+                </p>
+                <span>
                     
+                </span>
+                <p class="doc">
+                    <p>updates the <code>b</code> property of a <code>Triple</code> using a function <code>f</code>.</p>
+
+                </p>
+            </div>
+            <div class="binder">
+                <a class="anchor" href="#update-c">
+                    <h3 id="update-c">
+                        update-c
+                    </h3>
+                </a>
+                <div class="description">
+                    instantiate
+                </div>
+                <p class="sig">
+                    (Fn [(Triple a b c), (Ref (Fn [c] c d) e)] (Triple a b c))
+                </p>
+                <span>
+                    
+                </span>
+                <p class="doc">
+                    <p>updates the <code>c</code> property of a <code>Triple</code> using a function <code>f</code>.</p>
+
                 </p>
             </div>
             <div class="binder">
@@ -865,7 +618,7 @@
                     defn
                 </div>
                 <p class="sig">
-                    (Fn [] Long)
+                    (Fn [] (Triple a b c))
                 </p>
                 <pre class="args">
                     (zero)
