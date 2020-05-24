@@ -12,6 +12,7 @@ import Debug.Trace
 import Obj
 import Constraints
 import Types
+import TypesToC
 import Util
 import TypeError
 import AssignTypes

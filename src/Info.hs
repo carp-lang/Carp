@@ -12,6 +12,7 @@ module Info (Info(..),
 
 import qualified Data.Set as Set
 import Path (takeFileName)
+import SymPath
 import Types
 import Util
 

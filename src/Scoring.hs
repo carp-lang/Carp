@@ -5,6 +5,7 @@ import qualified Data.Set as Set
 import Data.Maybe (fromJust)
 
 import Types
+import TypesToC
 import Obj
 import Lookup
 
