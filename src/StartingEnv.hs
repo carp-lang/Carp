@@ -232,7 +232,7 @@ dynamicModule = Env { envBindings = bindings
                     , makeVarPrim "line" "returns the line a symbol was defined on." "(line mysymbol)" primitiveLine
                     , makeVarPrim "column" "returns the column a symbol was defined on." "(column mysymbol)" primitiveColumn
                     , makePrim "info" 1 "prints all information associated with a symbol." "(info mysymbol)" primitiveInfo
-                    , makeVarPrim "register-type" "registers a new type from C." "(register-type Name <optional: members>)" primitiveRegisterType
+                    , makeVarPrim "register-type" "registers a new type from C." "(register-type Name <optional: c-name> <optional: members>)" primitiveRegisterType
                     , makePrim "defmacro" 3 "defines a new macro." "(defmacro name [args :rest restargs] body)" primitiveDefmacro
                     , makePrim "defndynamic" 3 "defines a new dynamic function, i.e. a function available at compile time." "(defndynamic name [args] body)" primitiveDefndynamic
                     , makePrim "defdynamic" 2 "defines a new dynamic value, i.e. a value available at compile time." "(defdynamic name value)" primitiveDefdynamic
