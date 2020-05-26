@@ -70,32 +70,11 @@ foo ; symbol
 ```
 
 ### Conditional statements with 'cond'
-```(doc cond "this is the documentation for cond")```
 The ```cond``` statement executes a block of code if a specified condition is true. If the condition is false, another block of code can be executed. 
 
 ```(doc cond "this is the documentation for cond")```
 
-Examples are given below:
-
-```clojure
-(defndynamic cond-internal [xs]
-  (if (= (length xs) 0)
-    (list)
-    (if (= (length xs) 2)
-      (macro-error "cond has even number of branches; add an else branch")
-      (if (= (length xs) 1)
-        (car xs)
-        (list
-         'if
-         (car xs)
-         (cadr xs)
-         (cond-internal (cddr xs)))))))
-
-(defmacro cond [:rest xs]
-  (cond-internal xs))
-
-```
-Sample Example:
+Usage:
 
 ```clojure
 (cond
@@ -104,21 +83,13 @@ Sample Example:
           (<code_3>) ;; code_3 gets executed if condition_1 and condition_2 are false
 ``` 
 
-Example 1. Printing a statement depending on whether it is < or > 10:
+Here's an example about printing a statement depending on whether it is < or > 10:
 
 ```clojure
 (cond
           (< 10 1) (println "Don't print!")
           (> 10 1) (println msg)
           (println "Don't print!"))
-``` 
-
-Example 2. Condition for a guess-the-number game:
-
-```clojure
-(cond (< n answer) (guess-again "low")
-                      (> n answer) (guess-again "high")
-                      (correct!))
 ``` 
          
 ### Special Forms
