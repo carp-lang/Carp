@@ -47,6 +47,8 @@
     (if (empty? (eval (list 's-expr binding)))
         0
     (eval (list 'cond
+        (list 'Introspect.interface? binding) (length (car (cdaddr (eval (list
+        's-expr binding)))))
         (list 'Introspect.function? binding) (length (caddr (eval (list 's-expr binding))))
         (list 'Introspect.struct? binding) (/ (length (caddr (eval (list 's-expr binding)))) 2)
         (list 'Introspect.sumtype? binding) (quote (map (fn [arr]
