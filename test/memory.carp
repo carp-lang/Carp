@@ -284,7 +284,7 @@
       (assert (= &[@"c" @"b" @"a"] &xs)))))
 
 (defn array-range []
-  (let [xs (Array.range 0 5 1)]
+  (let [xs (Array.range-or-default 0 5 1)]
     (assert (= &[0 1 2 3 4 5] &xs))))
 
 (defmodule ArrayCompareExtension

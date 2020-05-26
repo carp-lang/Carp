@@ -1,0 +1,31 @@
+; we extend the array module, now that we have strings
+(defmodule Array
+  (doc range "creates an array from `start` to `end` with `step` between them
+(the elements must support `<`, `<=`, `>=`, and `to-int`).
+
+It returns a `Result.Success` if the input was right, and a `Result.Error` if
+the input given was wrong, containing an error message.")
+  (defn range [start end step]
+    (cond
+      (= step (zero))
+        (Result.Error @"`Array.range` cannot be called with step size `0`.")
+      (and (< start end) (< step (zero)))
+        (Result.Error @"`Array.range` cannot be called with a step size `< 0` and `start < end`.")
+      (and (> start end) (> step (zero)))
+        (Result.Error @"`Array.range` cannot be called with a step size `> 0` and `start > end`.")
+      (let-do [x (allocate (Int.inc (Int.abs (to-int (/ (- end start) step)))))
+               e start
+               i 0
+               op (if (< start end) <= >=)]
+        (while (op e end)
+          (do
+            (aset! &x i e)
+            (set! i (Int.inc i))
+            (set! e (+ e step))))
+        (Result.Success x))))
+
+  (doc range-or-default "is a version of [`range`](#range) that returns an empty
+array on failure.")
+  (defn range-or-default [start end step]
+    (Result.from-success (range start end step) []))
+)

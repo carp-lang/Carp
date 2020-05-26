@@ -1,7 +1,5 @@
-(use Array)
-
 (load "Test.carp")
-(use Test)
+(use-all Array Test Result)
 
 (defn nested []
   [[1 2 3]
@@ -16,7 +14,7 @@
 (defn make-zero [] 0)
 (defn make-idx [i] i)
 
-(def a (range 0 9 1))
+(def a (range-or-default 0 9 1))
 (def b (Array.replicate 5 "Hi"))
 
 (deftest test
@@ -75,11 +73,11 @@
                     "reverse works as expected")
   (assert-ref-equal test
                     (Maybe.Just 10)
-                    (maximum &(range 1 10 1))
+                    (maximum &(unsafe-from-success (range 1 10 1)))
                     "maximum works as expected")
   (assert-ref-equal test
                     (Maybe.Just 1)
-                    (minimum &(range 1 10 1))
+                    (minimum &(range-or-default 1 10 1))
                     "minimum works as expected")
   (assert-ref-equal test
                     (Maybe.Just (Pair.init 2 1))
@@ -98,19 +96,19 @@
                   "index-of works as expected when element is not in the array")
   (assert-equal test
                 55
-                (sum &(range 1 10 1))
+                (sum &(range-or-default 1 10 1))
                 "sum works as expected")
   (assert-ref-equal test
                     [2 3]
-                    (slice &(range 1 10 1) 1 3)
+                    (slice &(range-or-default 1 10 1) 1 3)
                     "slice works as expected")
   (assert-ref-equal test
                     [1 2 3]
-                    (prefix &(range 1 10 1) 3)
+                    (prefix &(range-or-default 1 10 1) 3)
                     "prefix works as expected")
   (assert-ref-equal test
                     [8 9 10]
-                    (suffix &(range 1 10 1) 7)
+                    (suffix &(range-or-default 1 10 1) 7)
                     "suffix works as expected")
   (assert-nothing test
                   &(nth &a 100)
@@ -128,25 +126,34 @@
                 (unsafe-nth &(nested) 0)
                 "unsafe-nth works as expected")
   (assert-ref-equal test
-                    [10 11 12 13 14 15]
+                    (Success [10 11 12 13 14 15])
                     (range 10 15 1)
                     "range works as expected")
   (assert-ref-equal test
-                    [10.0 10.5 11.0 11.5 12.0]
+                    (Success [10.0 10.5 11.0 11.5 12.0])
                     (range 10.0 12.0 0.5)
                     "range works as expected on non-integers")
   (assert-ref-equal test
-                    [10 9 8 7 6 5 4 3 2 1 0]
+                    (Success [10 9 8 7 6 5 4 3 2 1 0])
                     (range 10 0 -1)
                     "range backwards works as expected")
   (assert-ref-equal test
-                    [1 3 5 7 9]
+                    (Success [1 3 5 7 9])
                     (range 1 10 2)
                     "range works as expected if we dont exactly hit")
   (assert-ref-equal test
-                    [10 8 6 4 2]
+                    (Success [10 8 6 4 2])
                     (range 10 1 -2)
                     "range backwards works as expected if we dont exactly hit")
+  (assert-error test
+                &(range 10 1 2)
+                "range backwards works as expected if we go forwards instead")
+  (assert-error test
+                &(range 1 10 -2)
+                "range forwards works as expected if we go backwarss instead")
+  (assert-error test
+                &(range 10 1 0)
+                "range works as expected if we use a step size of 0")
   (assert-ref-equal test
                     [@"Hi!" @"Hi!" @"Hi!" @"Hi!" @"Hi!"]
                     (copy-map &excl-ref &b)
@@ -237,7 +244,7 @@
                  "Array.pop-back! works as expected"))
   (assert-ref-equal test
                     [1 2 3 4 5 6 7 8 9]
-                    (sort (range 9 1 -1))
+                    (sort (range-or-default 9 1 -1))
                     "sort works as expected")
   (let-do [arr [3 2 5]
            exp [2 3 5]]
@@ -257,23 +264,23 @@
                 (empty? &[1])
                 "empty? works as expected II")
   (assert-true test
-               (any? &(fn [x] (= 0 @x)) &(range 0 10 1))
+               (any? &(fn [x] (= 0 @x)) &(range-or-default 0 10 1))
                "any? works as expected I")
   (assert-false test
-                (any? &(fn [x] (= 0 @x)) &(range 1 10 1))
+                (any? &(fn [x] (= 0 @x)) &(range-or-default 1 10 1))
                 "any? works as expected II")
   (assert-true test
-               (all? &(fn [x] (< 0 @x)) &(range 1 10 1))
+               (all? &(fn [x] (< 0 @x)) &(range-or-default 1 10 1))
                "all? works as expected I")
   (assert-false test
-                (all? &(fn [x] (= 0 @x)) &(range 10 1 -1))
+                (all? &(fn [x] (= 0 @x)) &(range-or-default 10 1 -1))
                 "all? works as expected II")
   (assert-ref-equal test
                     (Maybe.Just 3)
-                    (find &(fn [x] (= 3 @x)) &(range 1 10 1))
+                    (find &(fn [x] (= 3 @x)) &(range-or-default 1 10 1))
                     "find works as expected I")
   (assert-nothing test
-                  &(find &(fn [x] (= 0 @x)) &(range 1 10 1))
+                  &(find &(fn [x] (= 0 @x)) &(range-or-default 1 10 1))
                   "find works as expected II")
   (assert-nothing test
                   &(find-index &(fn [i] (Int.even? @i)) &[1 3 5])

@@ -967,13 +967,37 @@ For example:
                     defn
                 </div>
                 <p class="sig">
-                    (Fn [a, a, a] (Array a))
+                    (Fn [a, a, a] (Result (Array a) String))
                 </p>
                 <pre class="args">
                     (range start end step)
                 </pre>
                 <p class="doc">
-                    <p>creates an array from <code>start</code> to <code>end</code> with <code>step</code> between them (the elements must support <code>&lt;</code>, <code>&lt;=</code>, <code>&gt;=</code>, and <code>to-int</code>).</p>
+                    <p>creates an array from <code>start</code> to <code>end</code> with <code>step</code> between them
+(the elements must support <code>&lt;</code>, <code>&lt;=</code>, <code>&gt;=</code>, and <code>to-int</code>).</p>
+<p>It returns a <code>Result.Success</code> if the input was right, and a <code>Result.Error</code> if
+the input given was wrong, containing an error message.</p>
+
+                </p>
+            </div>
+            <div class="binder">
+                <a class="anchor" href="#range-or-default">
+                    <h3 id="range-or-default">
+                        range-or-default
+                    </h3>
+                </a>
+                <div class="description">
+                    defn
+                </div>
+                <p class="sig">
+                    (Fn [a, a, a] (Array a))
+                </p>
+                <pre class="args">
+                    (range-or-default start end step)
+                </pre>
+                <p class="doc">
+                    <p>is a version of <a href="#range"><code>range</code></a> that returns an empty
+array on failure.</p>
 
                 </p>
             </div>

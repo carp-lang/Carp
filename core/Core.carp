@@ -36,6 +36,7 @@
 (load-once "Array.carp")
 (load-once "Char.carp")
 (load-once "String.carp")
+(load-once "ArrayExt.carp")
 (load-once "StdInt.carp")
 (load-once "System.carp")
 (load-once "IO.carp")

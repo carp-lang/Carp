@@ -224,7 +224,7 @@
 
   ; minimal case from bug #343
   (let-do [arr [20 0 10 21 11 1 2 22 12 24 23 13 3 14 4 25 5 15 16 6 17 7 8 18 19 9]
-           exp (Array.range 0 25 1)]
+           exp (Array.range-or-default 0 25 1)]
           (Array.sort! &arr)
           (assert-equal test
                         &exp
