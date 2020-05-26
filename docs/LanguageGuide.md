@@ -69,6 +69,29 @@ foo ; symbol
 (defmodule <name> <definition1> <definition2> ...) ;; The main way to organize your program into smaller parts
 ```
 
+### Conditional statements with 'cond'
+The ```cond``` statement executes a block of code if a specified condition is true. If the condition is false, another block of code can be executed. 
+
+```(doc cond "this is the documentation for cond")```
+
+Usage:
+
+```clojure
+(cond
+          (<condition_1>) (<code_1>) ;; code_1 gets executed if condition_1 is true
+          (<condition_2>) (<code_2>) ;; code_2 gets executed if condition_2 is true
+          (<code_3>) ;; code_3 gets executed if condition_1 and condition_2 are false
+``` 
+
+Here's an example about printing a statement depending on whether it is < or > 10:
+
+```clojure
+(cond
+          (< 10 1) (println "Don't print!")
+          (> 10 1) (println msg)
+          (println "Don't print!"))
+``` 
+         
 ### Special Forms
 The following forms can be used in Carp source code and will be compiled to C after type checking
 and other static analysis. The first three of them are also available in dynamic functions.
