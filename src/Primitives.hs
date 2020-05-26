@@ -266,7 +266,9 @@ primitiveRegisterType _ ctx _ =
     "I don't understand this usage of `register-type`.\n\n" ++
     "Valid usages :\n" ++
     "  (register-type Name)\n" ++
-    "  (register-type Name [field0 Type, ...])") Nothing)
+    "  (register-type Name [field0 Type, ...])\n" ++
+    "  (register-type Name c-name)\n" ++
+    "  (register-type Name c-name [field0 Type, ...]") Nothing)
 
 
 primitiveRegisterTypeWithoutFields :: Context -> String -> (Maybe String) -> IO (Context, Either EvalError XObj)
