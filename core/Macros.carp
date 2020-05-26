@@ -489,6 +489,17 @@ of those interfaces.")
          (cadr xs)
          (cond-internal (cddr xs)))))))
 
+(doc cond "executes a block of code if a specified condition is true. Multiple
+such blocks can be chained.
+
+For example:
+
+```
+(cond
+  (< 10 1) (println \"Condition 1 is true\")
+  (> 10 1) (println \"Condition 2 is true\")
+  (println \"Else branch\"))
+```")
 (defmacro cond [:rest xs]
   (cond-internal xs))
 
