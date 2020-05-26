@@ -1,43 +1,95 @@
-(deftype (Pair a b) [a a b b])
+(defmodule Dynamic
+  (private deftuple-type-)
+  (hidden deftuple-type-)
+  (defndynamic deftuple-type- [name props]
+    (list 'deftype (cons name props)
+      (collect-into (flatten (map (fn [x] (list x x)) props)) array)))
 
-(defmodule PairRef
-  (defn = [p1 p2]
-    (and (= (Pair.a p1) (Pair.a p2))
-         (= (Pair.b p1) (Pair.b p2))))
-  (implements = PairRef.=)
+  (private deftuple-lt-)
+  (hidden deftuple-lt-)
+  (defndynamic deftuple-lt- [name props]
+    (if (empty? props)
+      'false
+      (let [fst (Symbol.prefix name (car props))]
+        (if (= (length props) 1)
+          (list '< (list fst 't1) (list fst 't2))
+          (list 'if (list '= (list fst 't1) (list fst 't2))
+            (deftuple-lt- name (cdr props))
+            (list '< (list fst 't1) (list fst 't2)))))))
 
-  (defn < [p1 p2]
-    (if (= (Pair.a p1) (Pair.a p2))
-      (< (Pair.b p1) (Pair.b p2))
-      (< (Pair.a p1) (Pair.a p2))))
-  (implements < PairRef.<)
+  ; this is basically just a giant template
+  (private deftuple-module-)
+  (hidden deftuple-module-)
+  (defndynamic deftuple-module- [name props]
+    (let [sname (Symbol.str name)
+          module-name (Symbol.concat [name 'Ref])]
+      (list 'do
+        (list 'defmodule module-name
+          (list 'defn '= ['t1 't2]
+            (cons 'and*
+              (map (fn [p]
+                    (list '=
+                      (list (Symbol.prefix name p) 't1)
+                      (list (Symbol.prefix name p) 't2)))
+                   props)))
+          (list 'implements '= (Symbol.prefix module-name '=))
 
-  (defn > [p1 p2]
-    (PairRef.< p2 p1)))
-  (implements > PairRef.>)
+          (list 'defn '< ['t1 't2] (deftuple-lt- name props))
+          (list 'implements '< (Symbol.prefix module-name '<))
 
-(defmodule Pair
-  (defn init-from-refs [r1 r2]
-    (Pair.init @r1 @r2))
+          (list 'defn '> ['t1 't2] (list (Symbol.prefix module-name '<) 't2 't1))
+          (list 'implements '> (Symbol.prefix module-name '>)))
 
-  (defn = [p1 p2]
-    (and (= (Pair.a &p1) (Pair.a &p2))
-         (= (Pair.b &p1) (Pair.b &p2))))
-  (implements = Pair.=)
+        (list 'defmodule name
+          (list 'doc 'init-from-refs
+            (String.concat ["initializes a `" sname "` from member references."]))
+          (let [prop-vars (map (fn [x] (Symbol.concat [x '-val])) props)]
+            (list 'defn 'init-from-refs (collect-into prop-vars array)
+              (cons 'init (map (fn [x] (list 'copy x)) prop-vars))))
 
-  (defn < [p1 p2]
-    (PairRef.< &p1 &p2))
-  (implements < Pair.<)
+          (list 'defn '= ['t1 't2]
+            (cons 'and*
+              (map (fn [p] (list '= (list p '(ref t1)) (list p '(ref t2)))) props)))
+          (list 'implements '= (Symbol.prefix name '=))
 
-  (defn > [p1 p2]
-    (PairRef.> &p1 &p2))
-  (implements > Pair.>)
+          (list 'defn '< ['t1 't2]
+            (list (Symbol.prefix module-name '<) '(ref t1) '(ref t2)))
+          (list 'implements '< (Symbol.prefix name '<))
 
-  (doc reverse "reverses a `Pair` `p` such that its first member is its second member and vice versa.")
-  (defn reverse [p]
-    (Pair.init @(Pair.b p) @(Pair.a p)))
+          (list 'defn '> ['t1 't2]
+            (list (Symbol.prefix module-name '>) '(ref t1) '(ref t2)))
+          (list 'implements '> (Symbol.prefix name '>))
 
-  (doc zero "return default values of the type inside `Pair`")
-  (defn zero []
-      (Pair.init (zero) (zero)))
+          (list 'doc 'reverse
+            (String.concat ["reverses a `" sname "` by reversing its member positions."]))
+          (list 'defn 'reverse ['t]
+            (cons 'init (map (fn [x] (list 'copy (list x 't))) (reverse props))))
+
+          (list 'defn 'zero [] (cons 'init (map (fn [_] '(zero)) props))))
+          (list 'implements 'zero (Symbol.prefix name 'zero))
+          ;(list 'doc 'zero
+          ;  (String.concat [
+          ;    "initializes a `" sname
+          ;    "` by calling `zero` for all its members. `zero` must be defined for all member types."]))
+    )))
+
+  (doc deftuple "defines a tuple type.
+
+For example:
+```
+; is the definition of Pair in the stdlib
+(deftuple Pair a b)
+```")
+  (defmacro deftuple [name :rest props]
+    (do
+      (eval (deftuple-type- name props))
+      (eval (deftuple-module- name props))
+    ))
 )
+
+(doc Pair "is a 2-tuple, i.e. a datatype with two members.")
+(deftuple Pair a b)
+(doc Triple "is a 3-tuple, i.e. a datatype with three members.")
+(deftuple Triple a b c)
+(doc Quadruple "is a 4-tuple, i.e. a datatype with three members.")
+(deftuple Quadruple a b c d)
