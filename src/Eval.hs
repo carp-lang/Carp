@@ -221,6 +221,7 @@ eval ctx xobj@(XObj o i t) =
        XObj (Lst (XObj (Deftemplate _) _ _:_)) _ _:_ -> return (ctx, Right xobj)
        XObj (Lst (XObj (External _) _ _:_)) _ _:_ -> return (ctx, Right xobj)
        XObj (Match _) _ _:_ -> return (ctx, Right xobj)
+       [XObj Ref _ _, _] -> return (ctx, Right xobj)
 
        l@(XObj (Lst _) i t):args -> do
          (newCtx, f) <- eval ctx l
@@ -254,7 +255,7 @@ eval ctx xobj@(XObj o i t) =
          specialCommandWhile ctx cond body
        [] -> return (ctx, dynamicNil)
        x -> do
-        return (evalError ctx ("I did not understand the form `" ++ pretty xobj ++ "`") (info xobj))
+        return (evalError ctx ("I did not understand the form `" ++ pretty xobj ++ "`") (trace (show xobj) (info xobj)))
     checkArity params args =
       let la = length args
           withRest = any ((":rest" ==) . getName) params
@@ -391,20 +392,23 @@ executeCommand ctx@(Context env _ _ _ _ _ _ _) xobj =
        -- special case: calling something static at the repl
        Right (XObj (Lst (XObj (Lst (XObj (Defn _) _ _:(XObj (Sym (SymPath [] "main") _) _ _):_)) _ _:_)) _ _) ->
         executeCommand newCtx (withBuildAndRun (XObj (Lst []) (Just dummyInfo) Nothing))
-       Right (XObj (Lst (XObj (Lst (XObj (Defn _) _ _:name:_)) _ _:args)) i _) -> do
+       Right (XObj (Lst (XObj (Lst (XObj (Defn _) _ _:name:_)) _ _:args)) i _) ->
          callFromRepl newCtx (XObj (Lst (name:args)) i Nothing)
-       Right (XObj (Lst (XObj (Lst (XObj (Interface _ _) _ _:name:_)) _ _:args)) i _) -> do
+       Right (XObj (Lst (XObj (Lst (XObj (Interface _ _) _ _:name:_)) _ _:args)) i _) ->
          callFromRepl newCtx (XObj (Lst (name:args)) i Nothing)
-       Right (XObj (Lst (XObj (Lst (XObj (Instantiate _) _ _:name:_)) _ _:args)) i _) -> do
+       Right (XObj (Lst (XObj (Lst (XObj (Instantiate _) _ _:name:_)) _ _:args)) i _) ->
          callFromRepl newCtx (XObj (Lst (name:args)) i Nothing)
-       Right (XObj (Lst (XObj (Lst (XObj (Deftemplate _) _ _:name:_)) _ _:args)) i _) -> do
+       Right (XObj (Lst (XObj (Lst (XObj (Deftemplate _) _ _:name:_)) _ _:args)) i _) ->
          callFromRepl newCtx (XObj (Lst (name:args)) i Nothing)
-       Right (XObj (Lst (XObj (Lst (XObj (External _) _ _:name:_)) _ _:args)) i _) -> do
+       Right (XObj (Lst (XObj (Lst (XObj (External _) _ _:name:_)) _ _:args)) i _) ->
          callFromRepl newCtx (XObj (Lst (name:args)) i Nothing)
-       Right x@(XObj (Lst (XObj (Match _) _ _ : _)) i _) -> do
+       Right x@(XObj (Lst (XObj (Match _) _ _ : _)) _ _) ->
          callFromRepl newCtx x
-       Right x@(XObj (Lst (XObj The _ _ : _)) i _) -> do
+       Right x@(XObj (Lst (XObj The _ _ : _)) _ _) ->
          callFromRepl newCtx x
+       Right (XObj (Lst [XObj Ref _ _, arg]) _ _) ->
+         -- we can ignore the ref; `callFromRepl` will insert one if needed
+         callFromRepl newCtx arg
        Right result -> return (result, newCtx)
   where callFromRepl newCtx xobj = do
           (nc, r) <- annotateWithinContext False newCtx xobj
