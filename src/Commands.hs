@@ -1,7 +1,7 @@
 module Commands where
 
 import Control.Exception
-import Control.Monad (join, when)
+import Control.Monad (join, when, foldM)
 import Control.Monad.IO.Class (liftIO, MonadIO)
 import Data.Bits (finiteBitSize)
 import Data.List (elemIndex)
@@ -858,3 +858,61 @@ saveDocs :: Context -> [(SymPath, Binder)] -> IO (Context, Either a XObj)
 saveDocs ctx pathsAndEnvBinders = do
      liftIO (saveDocsForEnvs (contextProj ctx) pathsAndEnvBinders)
      return (ctx, dynamicNil)
+
+commandSexpression :: CommandCallback
+commandSexpression ctx [xobj, (XObj (Bol b) _ _)] =
+  commandSexpressionInternal ctx [xobj] b
+commandSexpression ctx [xobj] =
+  commandSexpressionInternal ctx [xobj] False
+commandSexpression ctx xobj =
+  return $ evalError ctx ("s-exp expects a symbol argument and an optional bool, but got: " ++ unwords (map pretty xobj)) (Just dummyInfo)
+
+commandSexpressionInternal :: Context -> [XObj] -> Bool -> IO (Context, Either EvalError XObj)
+commandSexpressionInternal ctx [xobj] bol =
+  let env = contextGlobalEnv ctx
+      tyEnv = getTypeEnv $ contextTypeEnv ctx
+  in case xobj of
+       (XObj (Lst [inter@(XObj (Interface ty _) _ _), path]) i t) ->
+         return (ctx, Right (XObj (Lst [(toSymbols inter), path, (tyToXObj ty)]) i t))
+       (XObj (Lst forms) i t) ->
+         return (ctx, Right (XObj (Lst (map toSymbols forms)) i t))
+       mod@(XObj (Mod e) i t) ->
+         if bol
+         then getMod
+         else
+           case lookupInEnv (SymPath [] (fromMaybe "" (envModuleName e))) tyEnv of
+             Just (_, Binder _ (XObj (Lst forms) i t)) ->
+               return (ctx, Right (XObj (Lst (map toSymbols forms)) i t))
+             Just (_, Binder _ xobj') ->
+               return (ctx, Right (toSymbols xobj'))
+             Nothing ->
+               getMod
+         where getMod =
+                 case (toSymbols mod) of
+                   x@(XObj (Lst xs) i t) ->
+                     bindingSyms e (ctx, Right x)
+                 where bindingSyms env start =
+                         (mapM (\x -> commandSexpression ctx [x]) $
+                         map snd $
+                         Map.toList $ Map.map binderXObj (envBindings env))
+                         >>= return . foldl combine start
+                       combine (c, (Right (XObj (Lst xs) i t))) (_ , (Right y@(XObj (Lst ys) _ _))) =
+                         (c, Right (XObj (Lst (xs ++ [y])) i t))
+                       combine _ (c, (Left err)) =
+                         (c, Left err)
+                       combine (c, Left err) _ =
+                         (c, Left err)
+       _ ->
+         return (ctx, Right (XObj (Lst []) (Just dummyInfo) (Just DynamicTy)))
+
+toSymbols :: XObj -> XObj
+toSymbols (XObj (Mod e) i t) =
+  (XObj (Lst [XObj (Sym (SymPath [] "defmodule") Symbol) i t,
+              XObj (Sym (SymPath [] (fromMaybe "" (envModuleName e))) Symbol) i t]) i t)
+toSymbols (XObj (Defn _) i t) = (XObj (Sym (SymPath [] "defn") Symbol) i t)
+toSymbols (XObj Def i t) = (XObj (Sym (SymPath [] "def") Symbol) i t)
+toSymbols (XObj (Deftype _) i t) = (XObj (Sym (SymPath [] "deftype") Symbol) i t)
+toSymbols (XObj (DefSumtype _) i t) = (XObj (Sym (SymPath [] "deftype") Symbol) i t)
+toSymbols (XObj (Interface _ _) i t) = (XObj (Sym (SymPath [] "definterface") Symbol) i t)
+toSymbols (XObj Macro i t) = (XObj (Sym (SymPath [] "defmacro") Symbol) i t)
+toSymbols x = x

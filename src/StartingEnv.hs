@@ -227,6 +227,7 @@ dynamicModule = Env { envBindings = bindings
                     , addCommand (SymPath path "read-file") 1 commandReadFile "reads a file into a string." "(read-file \"myfile.txt\")"
                     , addCommand (SymPath path "write-file") 2 commandWriteFile "writes a string to a file." "(write-file \"myfile\" \"hello there!\")"
                     , addCommand (SymPath path "bit-width") 0 commandBitWidth "gets the bit width of the platform." "(bit-width) ; => your host machine’s bit width, e.g. 32 or 64"
+                    , addCommandConfigurable (SymPath path "s-expr") Nothing commandSexpression "returns the s-expression associated with a binding. When the binding is a type, the deftype form is returned instead of the type's module by default. Pass an optional bool argument to explicitly request the module for a type instead of its definition form. If the bool is true, the module for the type will be returned. Returns the empty list when no definition is found for the binding." "(s-expr foo), (s-expr foo true)" 
                     , makePrim "quote" 1 "quotes any value." "(quote x) ; where x is an actual symbol" (\_ ctx [x] -> return (ctx, Right x))
                     , makeVarPrim "file" "returns the file a symbol was defined in." "(file mysymbol)" primitiveFile
                     , makeVarPrim "line" "returns the line a symbol was defined on." "(line mysymbol)" primitiveLine
@@ -249,7 +250,6 @@ dynamicModule = Env { envBindings = bindings
                     , makePrim "defined?" 1 "checks whether a symbol is defined." "(defined? mysymbol)" primitiveDefined
                     , makePrim "deftemplate" 4 "defines a new C template." "(deftemplate symbol Type declString defString)" primitiveDeftemplate
                     , makePrim "implements" 2 "designates a function as an implementation of an interface." "(implements zero Maybe.zero)" primitiveImplements
-                    , makePrim "s-expr" 1 "returns the s-expression associated with a binding. When the binding is a type, the deftype form is returned instead of the type's module." "(s-expr foo)" primitiveSexpression
                     ]
                     ++ [("String", Binder emptyMeta (XObj (Mod dynamicStringModule) Nothing Nothing))
                        ,("Symbol", Binder emptyMeta (XObj (Mod dynamicSymModule) Nothing Nothing))
