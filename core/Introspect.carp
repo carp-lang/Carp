@@ -40,7 +40,9 @@
     (let [s (s-expr binding)]
       (if (empty? s)
           false
-          (array? (caddr s)))))
+          (if (< (length s) 2)
+            false
+           (array? (caddr s))))))
 
   (doc sumtype?
     "Is this binding a sumtype?")
@@ -48,7 +50,9 @@
     (let [s (s-expr binding)]
       (if (empty? s)
           false
-          (list? (caddr s)))))
+          (if (< (length s) 2)
+              false
+              (list? (caddr s))))))
 
   (doc arity
     "What's the arity of this binding?
