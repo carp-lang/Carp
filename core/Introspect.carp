@@ -38,21 +38,17 @@
     "Is this binding a struct?")
   (defndynamic struct? [binding]
     (let [s (s-expr binding)]
-      (if (empty? s)
+      (if (or (empty? s) (< (length s) 3))
           false
-          (if (< (length s) 2)
-            false
-           (array? (caddr s))))))
+          (array? (caddr s)))))
 
   (doc sumtype?
     "Is this binding a sumtype?")
   (defndynamic sumtype? [binding]
     (let [s (s-expr binding)]
-      (if (empty? s)
+      (if (or (empty? s) (< (length s) 3))
           false
-          (if (< (length s) 2)
-              false
-              (list? (caddr s))))))
+          (list? (caddr s)))))
 
   (doc arity
     "What's the arity of this binding?
