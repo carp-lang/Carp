@@ -186,7 +186,10 @@
   (defn str [s]
     (str &(the String s)))
   (implements str StringCopy.str)
-)
+  )
+
+(defmodule CString
+  (implements str String.from-cstr))
 
 (defmodule Bool
   (register str (Fn [Bool] String))
