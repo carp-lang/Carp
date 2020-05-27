@@ -2,6 +2,7 @@
 
 module Parsing (parse, validCharacters, balance) where
 
+import Data.Bits (shift)
 import Numeric (readHex)
 import Text.Parsec ((<|>))
 import qualified Text.Parsec as Parsec
@@ -32,6 +33,30 @@ maybeSigned = do i <- createInfo
                  incColumn (length num)
                  return (i, num)
 
+otherBases :: Parsec.Parsec String ParseState (Maybe Info, String)
+otherBases = do i <- createInfo
+                digits <- Parsec.try base2 <|> base16
+                return (i, digits)
+  where base16 = do
+          _ <- Parsec.string "0x"
+          digits <- Parsec.many1 Parsec.hexDigit
+          incColumn (length digits)
+          -- TODO: there must be a better way...
+          return (show (read ("0x" ++ digits) :: Int))
+        base2 = do
+          _ <- Parsec.string "0b"
+          digits <- Parsec.many1 (Parsec.oneOf "01")
+          incColumn (length digits)
+          return (binToDec digits)
+        binToDec = show . foldl f 0
+          where f :: Int -> Char -> Int
+                f x '0' = shift x 1
+                f x '1' = shift x 1 + 1
+                f x _   = error "Not a valid binary literal (this should not happen)."
+
+withBases :: Parsec.Parsec String ParseState (Maybe Info, String)
+withBases = Parsec.try otherBases <|> maybeSigned
+
 double :: Parsec.Parsec String ParseState XObj
 double = do (i, num) <- maybeSigned
             _ <- Parsec.char '.'
@@ -52,23 +77,23 @@ float = do (i, num) <- maybeSigned
 
 floatNoPeriod :: Parsec.Parsec String ParseState XObj
 floatNoPeriod =
-  do (i, num) <- maybeSigned
+  do (i, num) <- withBases
      _ <- Parsec.char 'f'
      incColumn 1
      return (XObj (Num FloatTy (read num)) i Nothing)
 
 integer :: Parsec.Parsec String ParseState XObj
-integer = do (i, num) <- maybeSigned
+integer = do (i, num) <- withBases
              return (XObj (Num IntTy (read num)) i Nothing)
 
 byte :: Parsec.Parsec String ParseState XObj
-byte = do (i, num) <- maybeSigned
+byte = do (i, num) <- withBases
           _ <- Parsec.char 'b'
           incColumn 1
           return (XObj (Num ByteTy (read num)) i Nothing)
 
 long :: Parsec.Parsec String ParseState XObj
-long = do (i, num) <- maybeSigned
+long = do (i, num) <- withBases
           _ <- Parsec.char 'l'
           incColumn 1
           return (XObj (Num LongTy (read num)) i Nothing)
