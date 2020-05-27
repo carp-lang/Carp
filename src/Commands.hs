@@ -865,7 +865,7 @@ commandSexpression ctx [xobj, (XObj (Bol b) _ _)] =
 commandSexpression ctx [xobj] =
   commandSexpressionInternal ctx [xobj] False
 commandSexpression ctx xobj =
-  return $ evalError ctx ("s-exp expects a symbol argument and an optional bool, but got: " ++ unwords (map pretty xobj)) (Just dummyInfo)
+  return $ evalError ctx ("s-expr expects a symbol argument and an optional bool, but got: " ++ unwords (map pretty xobj)) (Just dummyInfo)
 
 commandSexpressionInternal :: Context -> [XObj] -> Bool -> IO (Context, Either EvalError XObj)
 commandSexpressionInternal ctx [xobj] bol =
@@ -903,7 +903,7 @@ commandSexpressionInternal ctx [xobj] bol =
                        combine (c, Left err) _ =
                          (c, Left err)
        _ ->
-         return (ctx, Right (XObj (Lst []) (Just dummyInfo) (Just DynamicTy)))
+         return $ evalError ctx ("can't get an s-expression for: " ++ pretty xobj ++ " is it a bound symbol or literal s-expression?") (Just dummyInfo)
 
 toSymbols :: XObj -> XObj
 toSymbols (XObj (Mod e) i t) =
