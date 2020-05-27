@@ -1,0 +1,55 @@
+(load "Test.carp")
+(use-all Test Introspect)
+
+(defn foo [x] x)
+(def bar 2)
+(deftype Foo [x Int])
+(deftype Bar (Of [Int]))
+(definterface baz (Fn [a] a))
+(defmodule Qux (defn id [x] x))
+
+(defmacro test-function? [x]
+  (eval (list 'Introspect.function? x)))
+
+(defmacro test-variable? [x]
+  (eval (list 'Introspect.variable? x)))
+
+(defmacro test-module? [x]
+  (eval (list 'Introspect.module? x)))
+
+(defmacro test-struct? [x]
+  (eval (list 'Introspect.struct? x)))
+
+(defmacro test-sumtype? [x]
+  (eval (list 'Introspect.sumtype? x)))
+
+(defmacro test-interface? [x]
+  (eval (list 'Introspect.interface? x)))
+
+(defmacro test-arity [x]
+  (eval (list 'Introspect.arity x)))
+
+(deftest test
+  (assert-true test
+    (test-function? foo)
+    "function? works as expected")
+  (assert-true test
+    (test-variable? bar)
+    "variable? works as expected")
+  (assert-true test
+    (test-struct? Foo)
+    "struct? works as expected")
+  (assert-true test
+    (test-sumtype? Bar)
+    "sumtype? works as expected")
+  (assert-true test
+    (test-interface? baz)
+    "interface? works as expected")
+  (assert-true test
+    (test-module? Qux)
+    "module? works as expected")
+  (assert-equal test
+    1
+    (test-arity foo)
+    "arity works as expected")
+)
