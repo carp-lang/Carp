@@ -1,0 +1,2 @@
+(defn my-curry [f] (fn [x] (fn [y] (f x y))))
+(defn double-curry [f] (fn [x] (fn [y] (fn [z] (f x y z)))))
