@@ -43,6 +43,7 @@ done
 ./carp.sh ./examples/guessing.carp -b
 ./carp.sh ./examples/no_core.carp --no-core --no-profile -b
 ./carp.sh ./examples/check_malloc.carp -b
+./carp.sh ./examples/nested_lambdas.carp -b
 
 # Run tests which rely on SDL unless the `--no_sdl` argument was passed in
 if [[ ${NO_SDL} -eq 0 ]]; then
