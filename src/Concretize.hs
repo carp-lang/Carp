@@ -284,7 +284,7 @@ concretizeXObj allowAmbiguityRoot typeEnv rootEnv visitedDefinitions root =
               tys = map (typeFromPath env) interfacePaths
               tysToPathsDict = zip tys interfacePaths
           in  case filter (matchingSignature actualType) tysToPathsDict of
-                [] -> return $ --(trace ("No matching signatures for interface lookup of " ++ name ++ " of type " ++ show actualType ++ " " ++ prettyInfoFromXObj xobj ++ ", options are:\n" ++ joinWith "\n" (map show tysToPathsDict))) $
+                [] -> return $ --(trace ("No matching signatures for interface lookup of " ++ name ++ " of type " ++ show actualType ++ " " ++ prettyInfoFromXObj xobj ++ ", options are:\n" ++ unlines (map show tysToPathsDict))) $
                                  if allowAmbig
                                  then Right xobj -- No exact match of types
                                  else Left (NoMatchingSignature xobj name actualType tysToPathsDict)
@@ -293,7 +293,7 @@ concretizeXObj allowAmbiguityRoot typeEnv rootEnv visitedDefinitions root =
                   let Just tt = t
                   in  if isTypeGeneric tt then return (Right xobj) else replace theType singlePath
                 severalPaths ->
-                    --(trace ("Several matching signatures for interface lookup of '" ++ name ++ "' of type " ++ show actualType ++ " " ++ prettyInfoFromXObj xobj ++ ", options are:\n" ++ joinWith "\n" (map show tysToPathsDict) ++ "\n  Filtered paths are:\n" ++ (joinWith "\n" (map show severalPaths)))) $
+                    --(trace ("Several matching signatures for interface lookup of '" ++ name ++ "' of type " ++ show actualType ++ " " ++ prettyInfoFromXObj xobj ++ ", options are:\n" ++ unlines (map show tysToPathsDict) ++ "\n  Filtered paths are:\n" ++ (unlines (map show severalPaths)))) $
                     case filter (\(tt, _) -> typeEqIgnoreLifetimes actualType tt) severalPaths of
                       []      -> --trace ("No exact matches for '" ++ show actualType ++ "'") $
                                  return (Right xobj) -- No exact match of types
@@ -666,7 +666,7 @@ data MemState = MemState
 
 prettyLifetimeMappings :: Map.Map String LifetimeMode -> String
 prettyLifetimeMappings mappings =
-  joinWith "\n" (map prettyMapping (Map.toList mappings))
+  unlines (map prettyMapping (Map.toList mappings))
   where prettyMapping (key, value) = "  " ++ key ++ " => " ++ show value
 
 -- | Find out what deleters are needed and where in an XObj.
@@ -1333,7 +1333,7 @@ concreteDelete typeEnv env members =
    (FuncTy [VarTy "p"] UnitTy StaticLifetimeTy)
    (const (toTemplate "void $NAME($p p)"))
    (const (toTemplate $ unlines [ "$DECL {"
-                                , joinWith "\n" (map (memberDeletion typeEnv env) members)
+                                , unlines (map (memberDeletion typeEnv env) members)
                                 , "}"]))
    (\_ -> concatMap (depsOfPolymorphicFunction typeEnv env [] "delete" . typesDeleterFunctionType)
                     (filter (isManaged typeEnv) (map snd members)))
@@ -1345,7 +1345,7 @@ concreteDeleteTakePtr typeEnv env members =
    (FuncTy [PointerTy (VarTy "p")] UnitTy StaticLifetimeTy)
    (const (toTemplate "void $NAME($p* p)"))
    (const (toTemplate $ unlines [ "$DECL {"
-                                , joinWith "\n" (map (memberDeletionGeneral "->" typeEnv env) members)
+                                , unlines (map (memberDeletionGeneral "->" typeEnv env) members)
                                 , "}"]))
    (\_ -> concatMap (depsOfPolymorphicFunction typeEnv env [] "delete" . typesDeleterFunctionType)
                     (filter (isManaged typeEnv) (map snd members)))
@@ -1376,7 +1376,7 @@ tokensForCopy :: TypeEnv -> Env -> [(String, Ty)] -> [Token]
 tokensForCopy typeEnv env memberPairs=
   toTemplate $ unlines [ "$DECL {"
                        , "    $p copy = *pRef;"
-                       , joinWith "\n" (map (memberCopy typeEnv env) memberPairs)
+                       , unlines (map (memberCopy typeEnv env) memberPairs)
                        , "    return copy;"
                        , "}"]
 
@@ -1405,7 +1405,7 @@ tokensForCopyPtr typeEnv env memberPairs=
   toTemplate $ unlines [ "$DECL {"
                        , "    $p* copy = CARP_MALLOC(sizeof(*pRef));"
                        , "    *copy = *pRef;"
-                       , joinWith "\n" (map (memberCopyPtr typeEnv env) memberPairs)
+                       , unlines (map (memberCopyPtr typeEnv env) memberPairs)
                        , "    return copy;"
                        , "}"]
 

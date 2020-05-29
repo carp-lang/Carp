@@ -255,7 +255,7 @@ tokensForInit allocationMode typeName membersXObjs =
                        , case allocationMode of
                            StackAlloc -> "    $p instance;"
                            HeapAlloc ->  "    $p instance = CARP_MALLOC(sizeof(" ++ typeName ++ "));"
-                       , joinWith "\n" (map (memberAssignment allocationMode) (memberXObjsToPairs membersXObjs))
+                       , unlines (map (memberAssignment allocationMode) (memberXObjsToPairs membersXObjs))
                        , "    return instance;"
                        , "}"]
 
@@ -340,7 +340,7 @@ tokensForStr typeEnv env typeName memberPairs concreteStructTy  =
                         , ""
                         , "  sprintf(bufferPtr, \"(%s \", \"" ++ typeName ++ "\");"
                         , "  bufferPtr += strlen(\"" ++ typeName ++ "\") + 2;\n"
-                        , joinWith "\n" (map (memberPrn typeEnv env) memberPairs)
+                        , unlines (map (memberPrn typeEnv env) memberPairs)
                         , "  bufferPtr--;"
                         , "  sprintf(bufferPtr, \")\");"
                         , "  return buffer;"
@@ -387,7 +387,7 @@ genericDelete pathStrings originalStructTy@(StructTy (ConcreteNameTy typeName) _
                    correctedMembers = replaceGenericTypeSymbolsOnMembers mappings membersXObjs
                    memberPairs = memberXObjsToPairs correctedMembers
                in  (toTemplate $ unlines [ "$DECL {"
-                                         , joinWith "\n" (map (memberDeletion typeEnv env) memberPairs)
+                                         , unlines (map (memberDeletion typeEnv env) memberPairs)
                                          , "}"]))
             (\(FuncTy [concreteStructTy] UnitTy _) ->
                let mappings = unifySignatures originalStructTy concreteStructTy
