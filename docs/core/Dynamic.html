@@ -2621,7 +2621,7 @@ value through successive applications of <code>f</code>.</p>
                 <p class="doc">
                     <p>registers a new type from C.</p>
 <p>Example Usage:</p>
-<pre><code>(register-type Name &lt;optional: members&gt;)
+<pre><code>(register-type Name &lt;optional: c-name&gt; &lt;optional: members&gt;)
 </code></pre>
 
                 </p>
@@ -2711,6 +2711,29 @@ value through successive applications of <code>f</code>.</p>
                     <p>runs the built executable.</p>
 <p>Example Usage:</p>
 <pre><code>(run)
+</code></pre>
+
+                </p>
+            </div>
+            <div class="binder">
+                <a class="anchor" href="#s-expr">
+                    <h3 id="s-expr">
+                        s-expr
+                    </h3>
+                </a>
+                <div class="description">
+                    command
+                </div>
+                <p class="sig">
+                    Dynamic
+                </p>
+                <span>
+                    
+                </span>
+                <p class="doc">
+                    <p>returns the s-expression associated with a binding. When the binding is a type, the deftype form is returned instead of the type's module by default. Pass an optional bool argument to explicitly request the module for a type instead of its definition form. If the bool is true, the module for the type will be returned. Returns an error when no definition is found for the binding.</p>
+<p>Example Usage:</p>
+<pre><code>(s-expr foo), (s-expr foo true)
 </code></pre>
 
                 </p>

@@ -105,19 +105,18 @@ tokensForCaseInit allocationMode sumTy@(StructTy (ConcreteNameTy typeName) typeV
                        , case allocationMode of
                            StackAlloc -> "    $p instance;"
                            HeapAlloc ->  "    $p instance = CARP_MALLOC(sizeof(" ++ typeName ++ "));"
-                       , joinLines (map (caseMemberAssignment allocationMode correctedName)
-                                        (zip anonMemberNames (caseTys sumtypeCase)))
+                       , joinLines $ caseMemberAssignment allocationMode correctedName . fst <$> zip anonMemberNames (caseTys sumtypeCase)
                        , "    instance._tag = " ++ tagName sumTy correctedName ++ ";"
                        , "    return instance;"
                        , "}"]
   where correctedName = caseName sumtypeCase
 
-caseMemberAssignment :: AllocationMode -> String -> (String, Ty) -> String
-caseMemberAssignment allocationMode caseName (memberName, _) =
-  "    instance." ++ caseName ++ sep ++ memberName ++ " = " ++ memberName ++ ";"
+caseMemberAssignment :: AllocationMode -> String -> String -> String
+caseMemberAssignment allocationMode caseName memberName =
+  "    instance" ++ sep ++ caseName ++ "." ++ memberName ++ " = " ++ memberName ++ ";"
   where sep = case allocationMode of
-                StackAlloc -> "."
-                HeapAlloc -> "->"
+                StackAlloc -> ".u."
+                HeapAlloc -> "->u."
 
 binderForTag :: [String] -> Ty -> Either TypeError (String, Binder)
 binderForTag insidePath originalStructTy@(StructTy (ConcreteNameTy typeName) _) =
@@ -206,8 +205,7 @@ strCase typeEnv env concreteStructTy@(StructTy _ typeVariables) theCase =
      [ "  if(p->_tag == " ++ correctedTagName ++ ") {"
      , "    sprintf(bufferPtr, \"(%s \", \"" ++ name ++ "\");"
      , "    bufferPtr += strlen(\"" ++ name ++ "\") + 2;\n"
-     , joinLines (map (memberPrn typeEnv env) (zip (map (\anon -> name ++ "." ++ anon)
-                                                       anonMemberNames) tys))
+     , joinLines $ memberPrn typeEnv env <$> unionMembers name tys
      , "    bufferPtr--;"
      , "    sprintf(bufferPtr, \")\");"
      , "  }"
@@ -225,10 +223,7 @@ strSizeCase typeEnv env concreteStructTy@(StructTy _ typeVariables) theCase =
   in unlines
      [ "  if(p->_tag == " ++ correctedTagName ++ ") {"
      , "    size += snprintf(NULL, 0, \"(%s \", \"" ++ name ++ "\");"
-     , joinLines (map
-                      (memberPrnSize typeEnv env)
-                      (zip (map (\anon -> name ++ "." ++ anon) anonMemberNames)
-                           tys))
+     , joinLines $ memberPrnSize typeEnv env <$> unionMembers name tys
      , "  }"
      ]
 
@@ -284,8 +279,7 @@ deleteCase typeEnv env concreteStructTy@(StructTy _ typeVariables) (theCase, isF
   let (name, tys, correctedTagName) = namesFromCase theCase concreteStructTy
   in unlines
      [ "  " ++ (if isFirstCase then "" else "else ") ++ "if(p._tag == " ++ correctedTagName ++ ") {"
-     , joinLines (map (memberDeletion typeEnv env) (zip (map (\anon -> name ++ "." ++ anon)
-                                                                 anonMemberNames) tys))
+     , joinLines $ memberDeletion typeEnv env <$> unionMembers name tys
      , "  }"
      ]
 
@@ -336,7 +330,7 @@ tokensForSumtypeCopy :: TypeEnv -> Env -> Ty -> [SumtypeCase] -> [Token]
 tokensForSumtypeCopy typeEnv env concreteStructTy cases =
   toTemplate $ unlines [ "$DECL {"
                        , "    $p copy = *pRef;"
-                       , joinLines (map (copyCase typeEnv env concreteStructTy) (zip cases (True : repeat False)))
+                       , joinLines $ map (copyCase typeEnv env concreteStructTy) (zip cases (True : repeat False))
                        , "    return copy;"
                        , "}"]
 
@@ -345,6 +339,15 @@ copyCase typeEnv env concreteStructTy@(StructTy _ typeVariables) (theCase, isFir
   let (name, tys, correctedTagName) = namesFromCase theCase concreteStructTy
   in unlines
      [ "    " ++ (if isFirstCase then "" else "else ") ++ "if(pRef->_tag == " ++ correctedTagName ++ ") {"
-     , joinLines (map (memberCopy typeEnv env) (zip (map (\anon -> name ++ "." ++ anon) anonMemberNames) tys))
+     , joinLines $ memberCopy typeEnv env <$> unionMembers name tys
      , "    }"
      ]
+
+anonMemberName :: String -> String -> String
+anonMemberName name anon = "u." ++ name ++ "." ++ anon
+
+infiniteUnionMembers :: String -> [String]
+infiniteUnionMembers name = anonMemberName name <$> anonMemberNames
+
+unionMembers :: String -> [Ty] -> [(String, Ty)]
+unionMembers name = zip (infiniteUnionMembers name)

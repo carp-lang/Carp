@@ -22,11 +22,22 @@ defaultProject :: Project
 defaultProject =
   Project { projectTitle = "Untitled"
           , projectIncludes = []
-          , projectCFlags = case platform of
-              Windows -> ["-D_CRT_SECURE_NO_WARNINGS"]
-              _ -> [ "-fPIC"
-                   , "-g"
-                   ]
+          , projectCFlags =
+              case platform of
+                Windows ->
+                  [ "-D_CRT_SECURE_NO_WARNINGS"
+                  ]
+                _ ->
+                  [ "-fPIC"
+                  , "-g"
+                  , "-std=c99"
+                  -- , "-pedantic"
+                  , "-D_DEFAULT_SOURCE"
+                  , "-Wall"
+                  , "-Werror"
+                  , "-Wno-unused-variable"
+                  , "-Wno-self-assign"
+                  ]
           , projectLibFlags = case platform of
               Windows -> []
               _ -> [ "-lm" ]

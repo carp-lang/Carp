@@ -255,9 +255,12 @@ tokensForInit allocationMode typeName membersXObjs =
                        , case allocationMode of
                            StackAlloc -> "    $p instance;"
                            HeapAlloc ->  "    $p instance = CARP_MALLOC(sizeof(" ++ typeName ++ "));"
-                       , joinLines (map (memberAssignment allocationMode) (memberXObjsToPairs membersXObjs))
+                       , assignments membersXObjs
                        , "    return instance;"
                        , "}"]
+  where assignments [] =  "    instance.__dummy = 0;"
+        assignments xobjs = joinLines $ memberAssignment allocationMode . fst <$> memberXObjsToPairs xobjs
+
 
 -- | Creates the C code for an arg to the init function.
 -- | i.e. "(deftype A [x Int])" will generate "int x" which
@@ -354,8 +357,8 @@ calculateStructStrSize typeEnv env members structTy@(StructTy (ConcreteNameTy na
 
 -- | Generate C code for assigning to a member variable.
 -- | Needs to know if the instance is a pointer or stack variable.
-memberAssignment :: AllocationMode -> (String, Ty) -> String
-memberAssignment allocationMode (memberName, _) = "    instance" ++ sep ++ memberName ++ " = " ++ memberName ++ ";"
+memberAssignment :: AllocationMode -> String -> String
+memberAssignment allocationMode memberName = "    instance" ++ sep ++ memberName ++ " = " ++ memberName ++ ";"
   where sep = case allocationMode of
                 StackAlloc -> "."
                 HeapAlloc -> "->"
