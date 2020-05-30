@@ -524,7 +524,7 @@ prettyEnvironment = prettyEnvironmentIndented 0
 
 prettyEnvironmentIndented :: Int -> Env -> String
 prettyEnvironmentIndented indent env =
-  joinWith "\n" $ filter (/= "") (map (showBinderIndented indent) (Map.toList (envBindings env))) ++
+  joinLines $ filter (/= "") (map (showBinderIndented indent) (Map.toList (envBindings env))) ++
                   let modules = envUseModules env
                   in  if null modules
                       then []
@@ -537,7 +537,7 @@ prettyEnvironmentChain env =
       name = fromMaybe "<env has no name>" (envModuleName env)
       otherInfo = "(" ++ show (envMode env) ++ ", lvl " ++ show (envFunctionNestingLevel env) ++ ")"
   in  (if length bs < 20
-       then "'" ++ name ++ "' " ++ otherInfo ++ ":\n" ++ joinWith "\n" (filter (/= "")
+       then "'" ++ name ++ "' " ++ otherInfo ++ ":\n" ++ joinLines (filter (/= "")
                                                  (map (showBinderIndented 4) (Map.toList (envBindings env))))
        else "'" ++ name ++ "' " ++ otherInfo ++ ":\n    Too big to show bindings.")
       ++

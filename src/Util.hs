@@ -9,17 +9,20 @@ import System.Info (os)
 joinWith :: String -> [String] -> String
 joinWith = intercalate
 
+joinLines :: [String] -> String
+joinLines = joinWith "\n"
+
 joinWithSpace :: [String] -> String
 joinWithSpace = unwords
 
 joinWithComma :: [String] -> String
-joinWithComma = intercalate", "
+joinWithComma = intercalate ", "
 
 joinWithUnderscore :: [String] -> String
-joinWithUnderscore = intercalate"_"
+joinWithUnderscore = intercalate "_"
 
 joinWithPeriod :: [String] -> String
-joinWithPeriod = intercalate"."
+joinWithPeriod = intercalate "."
 
 pairwise :: Show a => [a] -> [(a, a)]
 pairwise [] = []
