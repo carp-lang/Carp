@@ -537,7 +537,7 @@ annotateWithinContext qualifyDefn ctx xobj = do
                     case contextExecMode ctx of
                       Check ->
                         let fppl = projectFilePathPrintLength (contextProj ctx)
-                        in  return (evalError ctx (joinWith "\n" (machineReadableErrorStrings fppl err)) Nothing)
+                        in  return (evalError ctx (joinLines (machineReadableErrorStrings fppl err)) Nothing)
                       _ ->
                         return (evalError ctx (show err) (info xobj))
                   Right ok -> return (ctx, Right ok)
