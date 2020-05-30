@@ -12,6 +12,7 @@ import Deftype
 import Emit
 import Lookup
 import Obj
+import Project
 import Sumtypes
 import TypeError
 import Types
@@ -698,4 +699,3 @@ primitiveDeftemplate _ ctx [s@(XObj (Sym (SymPath _ _) _) _ _), _, _, _] = do
   argumentErr ctx "deftemplate" "a symbol without prefix" "first" s
 primitiveDeftemplate _ ctx [x, _, _, _] =
   argumentErr ctx "deftemplate" "a symbol" "first" x
-

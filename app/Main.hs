@@ -8,6 +8,7 @@ import Data.Maybe
 
 import ColorText
 import Obj
+import Project
 import Types
 import Repl
 import StartingEnv
@@ -57,6 +58,7 @@ defaultProject =
           , projectFilePathPrintLength = FullPath
           , projectGenerateOnly = False
           , projectForceReload = False
+          , projectPkgConfigFlags = []
           }
 
 -- | Starting point of the application.

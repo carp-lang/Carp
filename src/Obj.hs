@@ -11,6 +11,7 @@ import Types
 import TypesToC
 import Util
 import Info
+import Project
 import Debug.Trace
 
 -- | Will the lookup look at other Carp code or at C code. This matters when calling functions, should they assume it's a lambda or a normal C function?
@@ -563,117 +564,6 @@ showImportIndented indent path = replicate indent ' ' ++ " * " ++ show path
 incrementEnvNestLevel :: Env -> Env
 incrementEnvNestLevel env = let current = envFunctionNestingLevel env
                             in env { envFunctionNestingLevel = current + 1 }
-
--- | This flag is used on Carp source files to decide wether to reload them or not when calling `(reload)` / `:r`
-data ReloadMode = DoesReload | Frozen deriving Show
-
-showLoader :: (FilePath, ReloadMode) -> String
-showLoader (fp, DoesReload) = fp
-showLoader (fp, Frozen) = fp ++ " (frozen)"
-
-
-
--- | Project (represents a lot of useful information for working at the REPL and building executables)
-data Project = Project { projectTitle :: String
-                       , projectIncludes :: [Includer]
-                       , projectCFlags :: [FilePath]
-                       , projectLibFlags :: [FilePath]
-                       , projectFiles :: [(FilePath, ReloadMode)]
-                       , projectAlreadyLoaded :: [FilePath]
-                       , projectEchoC :: Bool
-                       , projectLibDir :: FilePath
-                       , projectCarpDir :: FilePath
-                       , projectOutDir :: FilePath
-                       , projectDocsDir :: FilePath
-                       , projectDocsLogo :: FilePath
-                       , projectDocsPrelude :: String
-                       , projectDocsURL :: String
-                       , projectDocsGenerateIndex :: Bool
-                       , projectDocsStyling :: String
-                       , projectPrompt :: String
-                       , projectCarpSearchPaths :: [FilePath]
-                       , projectPrintTypedAST :: Bool
-                       , projectCompiler :: String
-                       , projectCore :: Bool
-                       , projectEchoCompilationCommand :: Bool
-                       , projectCanExecute :: Bool
-                       , projectFilePathPrintLength :: FilePathPrintLength
-                       , projectGenerateOnly :: Bool
-                       , projectBalanceHints :: Bool
-                       , projectForceReload :: Bool -- Setting this to true will make the `load-once` command work just like `load`.
-                       }
-
-projectFlags :: Project -> String
-projectFlags proj = joinWithSpace (projectCFlags proj ++ projectLibFlags proj)
-
-instance Show Project where
-  show (Project
-        title
-        incl
-        cFlags
-        libFlags
-        srcFiles
-        alreadyLoaded
-        echoC
-        libDir
-        carpDir
-        outDir
-        docsDir
-        docsLogo
-        docsPrelude
-        docsURL
-        docsGenerateIndex
-        docsStyling
-        prompt
-        searchPaths
-        printTypedAST
-        compiler
-        core
-        echoCompilationCommand
-        canExecute
-        filePathPrintLength
-        generateOnly
-        balanceHints
-        forceReload
-       ) =
-    unlines [ "Title: " ++ title
-            , "Compiler: " ++ compiler
-            , "Includes:\n    " ++ joinWith "\n    " (map show incl)
-            , "Cflags:\n    " ++ joinWith "\n    " cFlags
-            , "Library flags:\n    " ++ joinWith "\n    " libFlags
-            , "Carp source files:\n    " ++ joinWith "\n    " (map showLoader srcFiles)
-            , "Already loaded:\n    " ++ joinWith "\n    " alreadyLoaded
-            , "Echo C: " ++ showB echoC
-            , "Echo compilation command: " ++ showB echoCompilationCommand
-            , "Can execute: " ++ showB canExecute
-            , "Output directory: " ++ outDir
-            , "Docs directory: " ++ docsDir
-            , "Docs logo: " ++ docsLogo
-            , "Docs prelude: " ++ docsPrelude
-            , "Docs Project URL: " ++ docsURL
-            , "Docs generate index: " ++ showB docsGenerateIndex
-            , "Docs CSS URL: " ++ docsStyling
-            , "Library directory: " ++ libDir
-            , "CARP_DIR: " ++ carpDir
-            , "Prompt: " ++ prompt
-            , "Using Core: " ++ showB core
-            , "Search paths for 'load' command:\n    " ++ joinWith  "\n    " searchPaths
-            , "Print AST (with 'info' command): " ++ showB printTypedAST
-            , "File path print length (when using --check): " ++ show filePathPrintLength
-            , "Generate Only: " ++ showB generateOnly
-            , "Balance Hints: " ++ showB balanceHints
-            , "Force Reload: " ++ showB forceReload
-            ]
-    where showB b = if b then "true" else "false"
-
--- | Represent the inclusion of a C header file, either like <string.h> or "string.h"
-data Includer = SystemInclude String
-              | RelativeInclude String
-              deriving Eq
-
-instance Show Includer where
-  show (SystemInclude file) = "<" ++ file ++ ">"
-  show (RelativeInclude file) = "\"" ++ file ++ "\""
 
 -- | Converts an S-expression to one of the Carp types.
 xobjToTy :: XObj -> Maybe Ty

@@ -18,6 +18,7 @@ import Debug.Trace
 import Data.Char (ord)
 
 import Obj
+import Project
 import Types
 import TypesToC
 import Util

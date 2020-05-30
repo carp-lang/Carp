@@ -17,6 +17,7 @@ library
   hs-source-dirs:      src
   exposed-modules:     Info,
                        Obj,
+                       Project,
                        Parsing,
                        Infer,
                        Emit,
