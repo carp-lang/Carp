@@ -186,6 +186,17 @@ eval ctx xobj@(XObj o i t) =
                     return (newCtx, res)
                   Left err -> return (newCtx, Left err)
 
+       XObj (Lst [XObj (Defn _) _ _, name, (XObj (Arr params) _ _), body]) _ _:args ->
+         case checkArity params args of
+           Left err -> return (evalError ctx err (info xobj))
+           Right () ->
+             do (newCtx, evaledArgs) <- foldlM successiveEval (ctx, Right []) args
+                case evaledArgs of
+                  Right okArgs -> do
+                    (_, res) <- apply ctx body params okArgs
+                    return (newCtx, res)
+                  Left err -> return (newCtx, Left err)
+
        XObj (Lst [XObj Dynamic _ _, _, XObj (Arr params) _ _, body]) i _:args ->
          case checkArity params args of
            Left err ->
@@ -215,7 +226,6 @@ eval ctx xobj@(XObj o i t) =
 
        x@(XObj (Lst [XObj (Primitive prim) _ _, _]) _ _):args -> (getPrimitive prim) x ctx args
 
-       XObj (Lst (XObj (Defn _) _ _:_)) _ _:_ -> return (ctx, Right xobj)
        XObj (Lst (XObj (Interface _ _) _ _:_)) _ _:_ -> return (ctx, Right xobj)
        XObj (Lst (XObj (Instantiate _) _ _:_)) _ _:_ -> return (ctx, Right xobj)
        XObj (Lst (XObj (Deftemplate _) _ _:_)) _ _:_ -> return (ctx, Right xobj)
