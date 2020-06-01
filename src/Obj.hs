@@ -25,7 +25,7 @@ data DefinitionMode = AVariable
 
 -- | For local lookups, does the variable live in the current function or is it captured from outside it's body?
 data CaptureMode = NoCapture
-                 | Capture
+                 | Capture Int
                  deriving (Eq, Show, Ord)
 
 -- | A symbol knows a bit about what it refers to - is it a local scope or a global one? (the latter include modules).

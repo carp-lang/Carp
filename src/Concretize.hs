@@ -110,8 +110,7 @@ concretizeXObj allowAmbiguityRoot typeEnv rootEnv visitedDefinitions root =
              let -- Analyse the body of the lambda to find what variables it captures
                  capturedVarsRaw = collectCapturedVars okBody
                  -- and then remove the captures that are actually our arguments
-                 capturedVars = filter (\xobj -> obj xobj `notElem` argObjs)
-                                capturedVarsRaw
+                 capturedVars = filter (\xobj -> obj (toGeneralSymbol xobj) `notElem` argObjs) capturedVarsRaw
 
                  -- Create a new (top-level) function that will be used when the lambda is called.
                  -- Its name will contain the name of the (normal, non-lambda) function it's contained within,
@@ -307,16 +306,25 @@ concretizeXObj allowAmbiguityRoot typeEnv rootEnv visitedDefinitions root =
         Nothing ->
           error ("No interface named '" ++ name ++ "' found.")
 
+toGeneralSymbol :: XObj -> XObj
+toGeneralSymbol (XObj (Sym path _) _ t) = XObj (Sym path Symbol) (Just dummyInfo) t
+toGeneralSymbol x = error ("Can't convert this to a general symbol: " ++ show x)
+
 -- | Find all lookups in a lambda body that should be captured by its environment
 collectCapturedVars :: XObj -> [XObj]
-collectCapturedVars root = removeDuplicates (map toGeneralSymbol (visit root))
+collectCapturedVars root = removeDuplicates (map decreaseCaptureLevel (visit root))
   where
     removeDuplicates :: Ord a => [a] -> [a]
     removeDuplicates = Set.toList . Set.fromList
 
-    toGeneralSymbol :: XObj -> XObj
-    toGeneralSymbol (XObj (Sym path _) _ t) = XObj (Sym path Symbol) (Just dummyInfo) t
-    toGeneralSymbol x = error ("Can't convert this to a general symbol: " ++ show x)
+    decreaseCaptureLevel :: XObj -> XObj
+    decreaseCaptureLevel (XObj (Sym path lookup) _ ty) =
+      XObj (Sym path (case lookup of
+                         Symbol -> Symbol
+                         LookupLocal NoCapture -> Symbol
+                         LookupLocal (Capture n) -> if n <= 1 then Symbol
+                                                    else LookupLocal (Capture (n-1))))
+      (Just dummyInfo) ty
 
     visit xobj =
       case obj xobj of
@@ -325,7 +333,7 @@ collectCapturedVars root = removeDuplicates (map toGeneralSymbol (visit root))
         (Lst _) -> visitList xobj
         (Arr _) -> visitArray xobj
         -- TODO: Static Arrays!
-        (Sym path (LookupLocal Capture)) -> [xobj]
+        (Sym path (LookupLocal (Capture _))) -> [xobj]
         _ -> []
 
     visitList :: XObj -> [XObj]
@@ -506,7 +514,7 @@ modeFromPath env p =
         RecursionEnv -> LookupRecursive
         _ ->  LookupLocal
                 (if envFunctionNestingLevel e < envFunctionNestingLevel env
-                            then Capture
+                            then Capture (envFunctionNestingLevel e - envFunctionNestingLevel env)
                             else NoCapture)
     Nothing -> error ("Couldn't find " ++ show p ++ " in env:\n" ++ prettyEnvironmentChain env)
 
@@ -865,7 +873,7 @@ manageMemory typeEnv globalEnv root =
                           LookupGlobal _ _ -> return ()
 
                         case okMode of
-                          LookupLocal Capture ->
+                          LookupLocal (Capture _) ->
                             return (Left (CannotSetVariableFromLambda variable setbangExpr))
                           _ ->
                             return $ do okValue <- visitedValue
@@ -1252,7 +1260,7 @@ manageMemory typeEnv globalEnv root =
         isSymbolThatCaptures :: XObj -> Bool
         isSymbolThatCaptures xobj =
           case xobj of
-            XObj (Sym _ (LookupLocal Capture)) _ _ -> True
+            XObj (Sym _ (LookupLocal (Capture _))) _ _ -> True
             _ -> False
 
         unmanage :: XObj -> State MemState (Either TypeError ())

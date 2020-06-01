@@ -131,7 +131,7 @@ setFullyQualifiedSymbols typeEnv globalEnv localEnv xobj@(XObj (Sym path _) i t)
       XObj (InterfaceSym name) i t
 
     captureOrNot foundEnv = if envFunctionNestingLevel foundEnv < envFunctionNestingLevel localEnv
-                            then Capture
+                            then Capture (envFunctionNestingLevel localEnv - envFunctionNestingLevel foundEnv)
                             else NoCapture
 
     doesNotBelongToAnInterface :: Bool -> Env -> XObj

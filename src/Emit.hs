@@ -177,7 +177,7 @@ toC toCMode (Binder meta root) = emitterSrc (execState (visit startingIndent roo
                           appendToSrc (addIndent indent ++ "Lambda " ++ var ++ " = { .callback = " ++ pathToC path ++ ", .env = NULL, .delete = NULL, .copy = NULL }; //" ++ show sym ++ "\n")
                           return var
                   else case lookupMode of
-                         LookupLocal Capture -> return ("_env->" ++ pathToC path)
+                         LookupLocal (Capture _) -> return ("_env->" ++ pathToC path)
                          _ -> return (pathToC path)
 
         visitSymbol _ xobj@(XObj (Sym path _) Nothing _) = error ("Symbol missing info: " ++ show xobj)
@@ -221,9 +221,12 @@ toC toCMode (Binder meta root) = emitterSrc (execState (visit startingIndent roo
                  when needEnv $
                    do appendToSrc (addIndent indent ++ tyToC lambdaEnvType ++ " *" ++ lambdaEnvName ++
                                    " = CARP_MALLOC(sizeof(" ++ tyToC lambdaEnvType ++ "));\n")
-                      mapM_ (\(XObj (Sym path _) _ _) ->
-                               appendToSrc (addIndent indent ++ lambdaEnvName ++ "->" ++
-                                            pathToC path ++ " = " ++ pathToC path ++ ";\n"))
+                      mapM_ (\(XObj (Sym path lookupMode) _ _) ->
+                                appendToSrc (addIndent indent ++ lambdaEnvName ++ "->" ++
+                                             pathToC path ++ " = " ++
+                                             (case lookupMode of
+                                                LookupLocal (Capture _) -> "_env->" ++ pathToC path
+                                                _ -> pathToC path) ++ ";\n"))
                         capturedVars
                  appendToSrc (addIndent indent ++ "Lambda " ++ retVar ++ " = {\n")
                  appendToSrc (addIndent indent ++ "  .callback = " ++ callbackMangled ++ ",\n")
