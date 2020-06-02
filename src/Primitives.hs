@@ -183,7 +183,7 @@ registerInInterfaceIfNeeded ctx path@(SymPath _ _) interface@(SymPath [] name) d
          if checkKinds interfaceSignature definitionSignature
            -- N.B. the xobjs aren't important here--we only care about types,
            -- thus we pass inter to all three xobj positions.
-           then if isRight $ solve [Constraint interfaceSignature definitionSignature inter inter inter OrdInterfaceSym]
+           then if isRight $ solve [Constraint interfaceSignature definitionSignature inter inter inter OrdInterfaceImpl]
                 then let updatedInterface = XObj (Lst [XObj (Interface interfaceSignature (addIfNotPresent path paths)) ii it, isym]) i t
                      in  return $ ctx { contextTypeEnv = TypeEnv (extendEnv typeEnv name updatedInterface) }
                 else Left ("[INTERFACE ERROR] " ++ show path ++ " : " ++ show definitionSignature ++

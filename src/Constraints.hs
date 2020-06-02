@@ -45,6 +45,7 @@ data ConstraintOrder = OrdNo
                      | OrdArrBetween
                      | OrdMultiSym
                      | OrdInterfaceSym
+                     | OrdInterfaceImpl
                      | OrdSignatureAnnotation
                      deriving (Show, Ord, Eq)
 
@@ -158,25 +159,36 @@ mkConstraint :: ConstraintOrder -> XObj -> XObj -> XObj -> Ty -> Ty -> Constrain
 mkConstraint order xobj1 xobj2 ctx t1 t2 = Constraint t1 t2 xobj1 xobj2 ctx order
 
 checkForConflict :: TypeMappings -> Constraint -> String -> Ty -> Either UnificationFailure TypeMappings
+-- For interface/implementation resolution, it's quite common to implement an interface using a function that's
+-- generic, i.e. implementing `a -> a` as `(Ref a) -> (Ref a)` For such cases the doesTypeContainTyVarWithName check
+-- is problematic, so we circumvent it as a special case.
+checkForConflict mappings constraint@(Constraint _ _ _ _ _ OrdInterfaceImpl) name otherTy =
+  checkConflictInternal mappings constraint name otherTy
 checkForConflict mappings constraint name otherTy =
+  if doesTypeContainTyVarWithName name otherTy
+  then Left (UnificationFailure constraint mappings)
+  else checkConflictInternal mappings constraint name otherTy
+
+checkConflictInternal :: TypeMappings -> Constraint -> String -> Ty -> Either UnificationFailure TypeMappings
+checkConflictInternal mappings constraint name otherTy =
   let (Constraint _ _ xobj1 xobj2 ctx  _) = constraint
       found = recursiveLookup mappings name
-  in case found of --trace ("CHECK CONFLICT " ++ show constraint ++ " with name " ++ name ++ ", replaced: " ++ show replaced ++ ", found: " ++ show found) found of
+  in  case found of --trace ("CHECK CONFLICT " ++ show constraint ++ " with name " ++ name ++ ", otherTy: " ++ show otherTy ++ ", found: " ++ show found) found of
         Just (VarTy _) -> ok
         Just (StructTy (VarTy _) structTyVars) ->
-          case replaced of
+          case otherTy of
             StructTy otherStructName otherTyVars -> foldM solveOneInternal mappings (zipWith (mkConstraint OrdStruct xobj1 xobj2 ctx) structTyVars otherTyVars)
             VarTy _ -> Right mappings
             _ -> Left (UnificationFailure constraint mappings)
         Just (StructTy (ConcreteNameTy structName) structTyVars) ->
-          case replaced of
+          case otherTy of
             StructTy (ConcreteNameTy otherStructName) otherTyVars
               | structName == otherStructName -> foldM solveOneInternal mappings (zipWith (mkConstraint OrdStruct xobj1 xobj2 ctx) structTyVars otherTyVars)
             StructTy (VarTy _) otherTyVars -> foldM solveOneInternal mappings (zipWith (mkConstraint OrdStruct xobj1 xobj2 ctx) structTyVars otherTyVars)
             VarTy _ -> Right mappings
             _ -> Left (UnificationFailure constraint mappings)
         Just (FuncTy argTys retTy lifetimeTy) ->
-          case replaced of
+          case otherTy of
             FuncTy otherArgTys otherRetTy otherLifetimeTy ->
               do m <- foldM solveOneInternal mappings (zipWith (mkConstraint OrdFunc xobj1 xobj2 ctx) argTys otherArgTys)
                  case solveOneInternal m (mkConstraint OrdFunc xobj1 xobj2 ctx retTy otherRetTy) of
@@ -185,35 +197,32 @@ checkForConflict mappings constraint name otherTy =
             VarTy _ -> Right mappings
             _ -> Left (UnificationFailure constraint mappings)
         Just (PointerTy innerTy) ->
-          case replaced of
+          case otherTy of
             PointerTy otherInnerTy -> solveOneInternal mappings (mkConstraint OrdPtr xobj1 xobj2 ctx innerTy otherInnerTy)
             VarTy _ -> Right mappings
             _ -> Left (UnificationFailure constraint mappings)
         Just (RefTy innerTy lifetimeTy) ->
-          case replaced of
+          case otherTy of
             RefTy otherInnerTy otherLifetimeTy ->
               case solveOneInternal mappings (mkConstraint OrdRef xobj1 xobj2 ctx innerTy otherInnerTy) of
                 Left err -> Left err
                 Right ok -> solveOneInternal ok (mkConstraint OrdRef xobj1 xobj2 ctx lifetimeTy otherLifetimeTy)
             VarTy _ -> Right mappings
             _ -> Left (UnificationFailure constraint mappings)
-        Just foundNonVar -> case replaced of
+        Just foundNonVar -> case otherTy of
                               (VarTy v) -> case recursiveLookup mappings v of
                                              Just (VarTy _) -> Right mappings
                                              Just otherNonVar -> if foundNonVar == otherNonVar
                                                                  then Right mappings
                                                                  else Left (UnificationFailure constraint mappings)
                                              Nothing -> Right mappings
-                              _ -> if replaced == foundNonVar
+                              _ -> if otherTy == foundNonVar
                                    then ok
                                    else Left (UnificationFailure constraint mappings)
         -- Not found, no risk for conflict:
         Nothing -> ok
       where
-        ok = Right (Map.insert name replaced mappings)
-        replaced = if doesTypeContainTyVarWithName name otherTy
-                   then replaceConflicted name otherTy
-                   else otherTy
+        ok = Right (Map.insert name otherTy mappings)
 
 debugResolveFully :: TypeMappings -> String -> Either UnificationFailure TypeMappings
 debugResolveFully mappings var = trace ("Mappings: " ++ show mappings ++ ", will resolve " ++ show var) (resolveFully mappings var)
