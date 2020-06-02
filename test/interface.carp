@@ -19,6 +19,7 @@
 
 ;; Interfaces may be implemented retroactively
 ;; global functions can also implement interfaces.
+(sig gojira (Fn [&String] String))
 (defn gojira [s] @s)
 (implements monster gojira)
 
