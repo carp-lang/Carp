@@ -179,6 +179,11 @@ registerInInterfaceIfNeeded ctx path@(SymPath _ _) interface@(SymPath [] name) d
   in case lookupInEnv interface typeEnv of
        Just (_, Binder _ (XObj (Lst [XObj (Interface interfaceSignature paths) ii it, isym]) i t)) ->
          if checkKinds interfaceSignature definitionSignature
+           -- TODO: Constrain interfaces and implementations.
+           -- The areUnifiable check alone is not sufficient. It will allow almost any
+           -- function to implement an interface of (Fn [a] a), even a function
+           -- such as ([String] Int) where the assignments clearly are not
+           -- correct.
            then if areUnifiable interfaceSignature definitionSignature
                 then let updatedInterface = XObj (Lst [XObj (Interface interfaceSignature (addIfNotPresent path paths)) ii it, isym]) i t
                      in  return $ ctx { contextTypeEnv = TypeEnv (extendEnv typeEnv name updatedInterface) }
@@ -205,6 +210,9 @@ registerDefnOrDefInInterfaceIfNeeded ctx xobj interface =
       registerInInterfaceIfNeeded ctx path interface t
       -- So can externals!
     XObj (Lst [XObj (External _) _ _, XObj (Sym path _) _ _]) _ (Just t) ->
+      registerInInterfaceIfNeeded ctx path interface t
+      -- And instantiated/auto-derived type functions! (e.g. Pair.a)
+    XObj (Lst [XObj (Instantiate _) _ _, XObj (Sym path _) _ _]) _ (Just t) ->
       registerInInterfaceIfNeeded ctx path interface t
     _ -> return ctx
 
