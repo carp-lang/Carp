@@ -5,9 +5,11 @@ import Control.Monad.IO.Class (liftIO)
 import Data.List (foldl')
 import qualified Data.Map as Map
 import Data.Maybe (fromMaybe)
+import Data.Either (isRight)
 
 import ColorText
 import Commands
+import Constraints
 import Deftype
 import Emit
 import Lookup
@@ -177,9 +179,11 @@ registerInInterfaceIfNeeded :: Context -> SymPath -> SymPath -> Ty -> Either Str
 registerInInterfaceIfNeeded ctx path@(SymPath _ _) interface@(SymPath [] name) definitionSignature =
   let typeEnv = getTypeEnv (contextTypeEnv ctx)
   in case lookupInEnv interface typeEnv of
-       Just (_, Binder _ (XObj (Lst [XObj (Interface interfaceSignature paths) ii it, isym]) i t)) ->
+       Just (_, Binder _ (XObj (Lst [inter@(XObj (Interface interfaceSignature paths) ii it), isym]) i t)) ->
          if checkKinds interfaceSignature definitionSignature
-           then if areUnifiable interfaceSignature definitionSignature
+           -- N.B. the xobjs aren't important here--we only care about types,
+           -- thus we pass inter to all three xobj positions.
+           then if isRight $ solve [Constraint interfaceSignature definitionSignature inter inter inter OrdInterfaceSym]
                 then let updatedInterface = XObj (Lst [XObj (Interface interfaceSignature (addIfNotPresent path paths)) ii it, isym]) i t
                      in  return $ ctx { contextTypeEnv = TypeEnv (extendEnv typeEnv name updatedInterface) }
                 else Left ("[INTERFACE ERROR] " ++ show path ++ " : " ++ show definitionSignature ++
