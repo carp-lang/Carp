@@ -3,14 +3,14 @@
 (use Array)
 (Project.no-echo)
 
-(definterface fmap (λ [(Ref (λ [a] a)) b] b))
+(definterface fmap (λ [(Ref (λ [a] b)) (f a)] (f b)))
 
 (defmodule ArrayExtension
   (defn fmap [f a] (Array.endo-map f a))
   (implements fmap ArrayExtension.fmap)
   )
 
-(deftype Box [x Int])
+(deftype (Box a) [x a])
 
 (defmodule Box
   (defn fmap [f box] (let [new-x (~f @(Box.x &box))]
@@ -20,7 +20,12 @@
 (use Box)
 (use ArrayExtension)
 
-(defn higherOrder [x] (fmap &Int.inc x))
+;; TODO: This function currently concretizes to the type of the first (f *) it
+;; receives. Is there a way for us to ensure it remains generic?
+;; N.B. the only reason it worked previously was because it was ill-typed as
+;; (a -> a) which erroneously served as a universal type.
+;(sig higherOrder (Fn [(f a)] (f b)))
+;(defn higherOrder [x] (fmap &Int.inc x))
 
 (defn main []
   (do
@@ -30,6 +35,6 @@
     (println &(str &(fmap &Int.inc [10 20 30 40 50])))
     (println &(Array.str &(fmap &Int.inc [10 20 30 40 50])))
     (println &(Array.str &(ArrayExtension.fmap &Int.inc [10 20 30 40 50])))
-    (println &(str &(higherOrder (Box.init 999))))
-    (println &(str &(higherOrder [9 99 999 9999])))
+    ;(println &(str &(higherOrder (Box.init 999))))
+    ;(println &(str &(higherOrder [9 99 999 9999])))
     ))

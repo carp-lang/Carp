@@ -45,6 +45,7 @@ data ConstraintOrder = OrdNo
                      | OrdArrBetween
                      | OrdMultiSym
                      | OrdInterfaceSym
+                     | OrdInterfaceImpl
                      | OrdSignatureAnnotation
                      deriving (Show, Ord, Eq)
 
@@ -158,14 +159,22 @@ mkConstraint :: ConstraintOrder -> XObj -> XObj -> XObj -> Ty -> Ty -> Constrain
 mkConstraint order xobj1 xobj2 ctx t1 t2 = Constraint t1 t2 xobj1 xobj2 ctx order
 
 checkForConflict :: TypeMappings -> Constraint -> String -> Ty -> Either UnificationFailure TypeMappings
+-- For interface/implementation resolution, it's quite common to implement an interface using a function that's
+-- generic, i.e. implementing `a -> a` as `(Ref a) -> (Ref a)` For such cases the doesTypeContainTyVarWithName check
+-- is problematic, so we circumvent it as a special case.
+-- Once issue [#521](https://github.com/carp-lang/Carp/issues/521) is solved we might be able to remove this.
+checkForConflict mappings constraint@(Constraint _ _ _ _ _ OrdInterfaceImpl) name otherTy =
+  checkConflictInternal mappings constraint name otherTy
 checkForConflict mappings constraint name otherTy =
+  if doesTypeContainTyVarWithName name otherTy
+  then Left (UnificationFailure constraint mappings)
+  else checkConflictInternal mappings constraint name otherTy
+
+checkConflictInternal :: TypeMappings -> Constraint -> String -> Ty -> Either UnificationFailure TypeMappings
+checkConflictInternal mappings constraint name otherTy =
   let (Constraint _ _ xobj1 xobj2 ctx  _) = constraint
       found = recursiveLookup mappings name
-  in
-    if doesTypeContainTyVarWithName name otherTy
-    then Left (UnificationFailure constraint mappings)
-    else
-      case found of --trace ("CHECK CONFLICT " ++ show constraint ++ " with name " ++ name ++ ", otherTy: " ++ show otherTy ++ ", found: " ++ show found) found of
+  in  case found of --trace ("CHECK CONFLICT " ++ show constraint ++ " with name " ++ name ++ ", otherTy: " ++ show otherTy ++ ", found: " ++ show found) found of
         Just (VarTy _) -> ok
         Just (StructTy (VarTy _) structTyVars) ->
           case otherTy of

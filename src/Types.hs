@@ -9,6 +9,7 @@ module Types ( TypeMappings
              , typesCopyFunctionType
              , isFullyGenericType
              , doesTypeContainTyVarWithName
+             , replaceConflicted
              , lambdaEnvTy
              , typeEqIgnoreLifetimes
              , checkKinds
@@ -141,6 +142,21 @@ doesTypeContainTyVarWithName name (PointerTy p) = doesTypeContainTyVarWithName n
 doesTypeContainTyVarWithName name (RefTy r lt) = doesTypeContainTyVarWithName name r ||
                                                  doesTypeContainTyVarWithName name lt
 doesTypeContainTyVarWithName _ _ = False
+
+replaceConflicted :: String -> Ty -> Ty
+replaceConflicted name (VarTy n) = if n == name
+                                   then (VarTy (n ++ "conflicted"))
+                                   else (VarTy n)
+replaceConflicted name (FuncTy argTys retTy lt) =
+  FuncTy (map (replaceConflicted name) argTys)
+         (replaceConflicted name retTy)
+         (replaceConflicted name lt)
+replaceConflicted name (StructTy n tyArgs) = StructTy (replaceConflicted name n) (map (replaceConflicted name) tyArgs)
+replaceConflicted name (PointerTy p) = PointerTy (replaceConflicted name p)
+replaceConflicted name (RefTy r lt) = RefTy (replaceConflicted name r)
+                                            (replaceConflicted name lt)
+replaceConflicted name t = t
+
 
 -- | Map type variable names to actual types, eg. t0 => Int, t1 => Float
 type TypeMappings = Map.Map String Ty
