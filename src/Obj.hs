@@ -343,9 +343,12 @@ prettyCaptures :: Set.Set XObj -> String
 prettyCaptures captures =
   joinWithComma (map (\x -> getName x ++ " : " ++ fromMaybe "" (fmap show (ty x))) (Set.toList captures))
 
-data EvalError = EvalError String [XObj] FilePathPrintLength (Maybe Info) deriving (Eq)
+data EvalError = EvalError String [XObj] FilePathPrintLength (Maybe Info)
+               | HasStaticCall
+               deriving (Eq)
 
 instance Show EvalError where
+  show HasStaticCall = "HasStaticCall"
   show (EvalError msg t fppl i) = msg ++ getInfo i ++ getTrace
     where getInfo (Just i) = " at " ++ machineReadableInfo fppl i ++ "."
           getInfo Nothing = ""

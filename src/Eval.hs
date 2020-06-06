@@ -215,13 +215,13 @@ eval ctx xobj@(XObj o i t) =
 
        x@(XObj (Lst [XObj (Primitive prim) _ _, _]) _ _):args -> (getPrimitive prim) x ctx args
 
-       XObj (Lst (XObj (Defn _) _ _:_)) _ _:_ -> return (ctx, Right xobj)
-       XObj (Lst (XObj (Interface _ _) _ _:_)) _ _:_ -> return (ctx, Right xobj)
-       XObj (Lst (XObj (Instantiate _) _ _:_)) _ _:_ -> return (ctx, Right xobj)
-       XObj (Lst (XObj (Deftemplate _) _ _:_)) _ _:_ -> return (ctx, Right xobj)
-       XObj (Lst (XObj (External _) _ _:_)) _ _:_ -> return (ctx, Right xobj)
-       XObj (Match _) _ _:_ -> return (ctx, Right xobj)
-       [XObj Ref _ _, _] -> return (ctx, Right xobj)
+       XObj (Lst (XObj (Defn _) _ _:_)) _ _:_ -> return (ctx, Left HasStaticCall)
+       XObj (Lst (XObj (Interface _ _) _ _:_)) _ _:_ -> return (ctx, Left HasStaticCall)
+       XObj (Lst (XObj (Instantiate _) _ _:_)) _ _:_ -> return (ctx, Left HasStaticCall)
+       XObj (Lst (XObj (Deftemplate _) _ _:_)) _ _:_ -> return (ctx, Left HasStaticCall)
+       XObj (Lst (XObj (External _) _ _:_)) _ _:_ -> return (ctx, Left HasStaticCall)
+       XObj (Match _) _ _:_ -> return (ctx, Left HasStaticCall)
+       [XObj Ref _ _, _] -> return (ctx, Left HasStaticCall)
 
        l@(XObj (Lst _) i t):args -> do
          (newCtx, f) <- eval ctx l
@@ -386,29 +386,16 @@ executeCommand ctx@(Context env _ _ _ _ _ _ _) xobj =
        error ("Global env module name is " ++ fromJust (envModuleName env) ++ " (should be Nothing).")
      (newCtx, result) <- eval ctx xobj
      case result of
-       Left e -> do
+       Left e@(EvalError _ _ _ _) -> do
          reportExecutionError newCtx (show e)
          return (xobj, newCtx)
+
        -- special case: calling something static at the repl
        Right (XObj (Lst (XObj (Lst (XObj (Defn _) _ _:(XObj (Sym (SymPath [] "main") _) _ _):_)) _ _:_)) _ _) ->
         executeCommand newCtx (withBuildAndRun (XObj (Lst []) (Just dummyInfo) Nothing))
-       Right (XObj (Lst (XObj (Lst (XObj (Defn _) _ _:name:_)) _ _:args)) i _) ->
-         callFromRepl newCtx (XObj (Lst (name:args)) i Nothing)
-       Right (XObj (Lst (XObj (Lst (XObj (Interface _ _) _ _:name:_)) _ _:args)) i _) ->
-         callFromRepl newCtx (XObj (Lst (name:args)) i Nothing)
-       Right (XObj (Lst (XObj (Lst (XObj (Instantiate _) _ _:name:_)) _ _:args)) i _) ->
-         callFromRepl newCtx (XObj (Lst (name:args)) i Nothing)
-       Right (XObj (Lst (XObj (Lst (XObj (Deftemplate _) _ _:name:_)) _ _:args)) i _) ->
-         callFromRepl newCtx (XObj (Lst (name:args)) i Nothing)
-       Right (XObj (Lst (XObj (Lst (XObj (External _) _ _:name:_)) _ _:args)) i _) ->
-         callFromRepl newCtx (XObj (Lst (name:args)) i Nothing)
-       Right x@(XObj (Lst (XObj (Match _) _ _ : _)) _ _) ->
-         callFromRepl newCtx x
-       Right x@(XObj (Lst (XObj The _ _ : _)) _ _) ->
-         callFromRepl newCtx x
-       Right (XObj (Lst [XObj Ref _ _, arg]) _ _) ->
-         -- we can ignore the ref; `callFromRepl` will insert one if needed
-         callFromRepl newCtx arg
+       Left HasStaticCall ->
+        callFromRepl newCtx xobj
+
        Right result -> return (result, newCtx)
   where callFromRepl newCtx xobj = do
           (nc, r) <- annotateWithinContext False newCtx xobj
