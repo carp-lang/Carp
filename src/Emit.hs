@@ -175,7 +175,7 @@ toC toCMode (Binder meta root) = emitterSrc (execState (visit startingIndent roo
                          show path ++ " : " ++ show t' ++ " at " ++ prettyInfoFromXObj xobj)
              else if isFunctionType t' && not (isLookupLocal lookupMode) && not (isGlobalVariableLookup lookupMode)
                   then do let var = freshVar i
-                          appendToSrc (addIndent indent ++ "Lambda " ++ var ++ " = { .callback = " ++ pathToC path ++ ", .env = NULL, .delete = NULL, .copy = NULL }; //" ++ show sym ++ "\n")
+                          appendToSrc (addIndent indent ++ "Lambda " ++ var ++ " = { .callback = (void*)" ++ pathToC path ++ ", .env = NULL, .delete = NULL, .copy = NULL }; //" ++ show sym ++ "\n")
                           return var
                   else case lookupMode of
                          LookupLocal (Capture _) -> return ("_env->" ++ pathToC path)
@@ -230,10 +230,10 @@ toC toCMode (Binder meta root) = emitterSrc (execState (visit startingIndent roo
                                                 _ -> pathToC path) ++ ";\n"))
                         capturedVars
                  appendToSrc (addIndent indent ++ "Lambda " ++ retVar ++ " = {\n")
-                 appendToSrc (addIndent indent ++ "  .callback = " ++ callbackMangled ++ ",\n")
+                 appendToSrc (addIndent indent ++ "  .callback = (void*)" ++ callbackMangled ++ ",\n")
                  appendToSrc (addIndent indent ++ "  .env = " ++ (if needEnv then lambdaEnvName else "NULL")  ++ ",\n")
-                 appendToSrc (addIndent indent ++ "  .delete = " ++ (if needEnv then "" ++ lambdaEnvTypeName ++ "_delete" else "NULL")  ++ ",\n")
-                 appendToSrc (addIndent indent ++ "  .copy = " ++ (if needEnv then "" ++ lambdaEnvTypeName ++ "_copy" else "NULL")  ++ "\n")
+                 appendToSrc (addIndent indent ++ "  .delete = (void*)" ++ (if needEnv then "" ++ lambdaEnvTypeName ++ "_delete" else "NULL")  ++ ",\n")
+                 appendToSrc (addIndent indent ++ "  .copy = (void*)" ++ (if needEnv then "" ++ lambdaEnvTypeName ++ "_copy" else "NULL")  ++ "\n")
                  appendToSrc (addIndent indent ++ "};\n")
                  return retVar
 
@@ -312,7 +312,7 @@ toC toCMode (Binder meta root) = emitterSrc (execState (visit startingIndent roo
                     -- A better idea is to not specialise the names, which happens when calling 'concretize' on the lhs
                     -- This requires a bunch of extra machinery though, so this will do for now...
                     [var ++ periodOrArrow ++ "_tag == " ++ tagName caseTy (removeSuffix caseName)] ++
-                      concat (zipWith (\c i -> tagCondition (var ++ periodOrArrow ++ (removeSuffix caseName) ++ ".member" ++ show i) "." (forceTy c) c) caseMatchers [0..])
+                      concat (zipWith (\c i -> tagCondition (var ++ periodOrArrow ++ "u." ++ removeSuffix caseName ++ ".member" ++ show i) "." (forceTy c) c) caseMatchers [0..])
                   tagCondition _ _ _ x =
                     []
                     --error ("tagCondition fell through: " ++ show x)
@@ -323,9 +323,9 @@ toC toCMode (Binder meta root) = emitterSrc (execState (visit startingIndent roo
                   emitCaseMatcher (periodOrArrow, ampersandOrNot) caseName (XObj (Sym path _) i t) index =
                     let Just tt = t
                     in  appendToSrc (addIndent indent' ++ tyToCLambdaFix tt ++ " " ++ pathToC path ++ " = "
-                                    ++ ampersandOrNot ++ tempVarToAvoidClash ++ periodOrArrow ++ mangle caseName ++ ".member" ++ show index ++ ";\n")
+                                    ++ ampersandOrNot ++ tempVarToAvoidClash ++ periodOrArrow ++ "u." ++ mangle caseName ++ ".member" ++ show index ++ ";\n")
                   emitCaseMatcher periodOrArrow caseName xobj@(XObj (Lst (XObj (Sym (SymPath _ innerCaseName) _) _ _ : xs)) i t) index =
-                    zipWithM_ (\x i -> emitCaseMatcher periodOrArrow (caseName ++ ".member" ++ show i ++ "." ++ (removeSuffix innerCaseName)) x index) xs [0..]
+                    zipWithM_ (\x i -> emitCaseMatcher periodOrArrow (caseName ++ ".member" ++ show i ++ ".u." ++ removeSuffix innerCaseName) x index) xs [0..]
                   emitCaseMatcher _ _ xobj _ =
                     error ("Failed to emit case matcher for: " ++ pretty xobj)
 
@@ -730,7 +730,8 @@ defSumtypeToDeclaration sumTy@(StructTy typeName typeVariables) path rest =
       visit = do appendToSrc "typedef struct {\n"
                  appendToSrc (addIndent indent ++ "union {\n")
                  mapM_ (emitSumtypeCase indent) rest
-                 appendToSrc (addIndent indent ++ "};\n")
+                 appendToSrc (addIndent indent ++ "char __dummy;\n")
+                 appendToSrc (addIndent indent ++ "} u;\n")
                  appendToSrc (addIndent indent ++ "char _tag;\n")
                  appendToSrc ("} " ++ tyToC sumTy ++ ";\n")
                  --appendToSrc ("// " ++ show typeVariables ++ "\n")
