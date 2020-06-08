@@ -15,6 +15,7 @@ import qualified Data.Map as Map
 import Parsing
 import Emit
 import Obj
+import Project
 import Types
 import Infer
 import Deftype
@@ -86,6 +87,8 @@ commandProjectConfig ctx [xobj@(XObj (Str key) _ _), value] = do
                                 return (proj { projectCFlags = addIfNotPresent cflag (projectCFlags proj) })
                   "libflag" -> do libflag <- unwrapStringXObj value
                                   return (proj { projectLibFlags = addIfNotPresent libflag (projectLibFlags proj) })
+                  "pkgconfigflag" -> do pkgconfigflag <- unwrapStringXObj value
+                                        return (proj { projectPkgConfigFlags = addIfNotPresent pkgconfigflag (projectPkgConfigFlags proj) })
                   "prompt" -> do prompt <- unwrapStringXObj value
                                  return (proj { projectPrompt = prompt })
                   "search-path" -> do searchPath <- unwrapStringXObj value
@@ -136,15 +139,14 @@ commandProjectConfig ctx [faultyKey, _] =
 
 -- | Command for changing various project settings.
 commandProjectGetConfig :: CommandCallback
-commandProjectGetConfig ctx [xobj@(XObj (Str key) _ _)] = do
+commandProjectGetConfig ctx [xobj@(XObj (Str key) _ _)] =
   let proj = contextProj ctx
       env = contextGlobalEnv ctx
-  case getVal ctx proj of
-   Right val -> return (ctx, Right $ XObj val (Just dummyInfo) (Just StringTy))
-   Left key -> return (evalError ctx ("[CONFIG ERROR] Project.get-config can't understand the key '" ++ key) (info xobj))
-  where getVal ctx proj = case key of
+      xstr s = XObj s (Just dummyInfo) (Just StringTy)
+      getVal ctx proj = case key of
           "cflag" -> Right $ Str $ show $ projectCFlags proj
           "libflag" -> Right $ Str $ show $ projectLibFlags proj
+          "pkgconfigflag" -> Right $ Arr $ xstr . Str <$> projectPkgConfigFlags proj
           "prompt" -> Right $ Str $ projectPrompt proj
           "search-path" -> Right $ Str $ show $ projectCarpSearchPaths proj
           "print-ast" -> Right $ Bol $ projectPrintTypedAST proj
@@ -163,6 +165,10 @@ commandProjectGetConfig ctx [xobj@(XObj (Str key) _ _)] = do
           "generate-only" -> Right $ Bol $ projectGenerateOnly proj
           "paren-balance-hints" -> Right $ Bol $ projectBalanceHints proj
           _ -> Left key
+  in case getVal ctx proj of
+       Right val -> return (ctx, Right $ xstr val)
+       Left key -> return (evalError ctx ("[CONFIG ERROR] Project.get-config can't understand the key '" ++ key) (info xobj))
+
 commandProjectGetConfig ctx [faultyKey] =
   presentError ("First argument to 'Project.config' must be a string: " ++ pretty faultyKey) (ctx, dynamicNil)
 
@@ -381,6 +387,7 @@ commandHelp ctx [XObj(Str "project") _ _] =
               putStrLn ""
               putStrLn "'cflag'                - Add a flag to the compiler."
               putStrLn "'libflag'              - Add a library flag to the compiler."
+              putStrLn "'pkgconfigflag'        - Add a flag to pkg-config invocations."
               putStrLn "'compiler'             - Set what compiler should be run with the 'build' command."
               putStrLn "'title'                - Set the title of the current project, will affect the name of the binary produced."
               putStrLn "'output-directory'     - Where to put compiler artifacts, etc."

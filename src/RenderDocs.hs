@@ -16,6 +16,7 @@ import qualified Data.List as List
 import Debug.Trace
 
 import Obj
+import Project
 import Types
 import Util
 import Path

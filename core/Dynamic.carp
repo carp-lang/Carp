@@ -38,9 +38,14 @@
   (eval (list 'Project.config "libflag" lib)))
 
 (defndynamic pkg-config [pkg flags]
-  (Dynamic.String.concat ["`pkg-config " pkg " " flags "`"]))
+  (Dynamic.String.concat (Dynamic.append
+                          (Dynamic.append
+                           ["`pkg-config " pkg " "]
+                           (Project.get-config "pkgconfigflag")
+                           )
+                          [flags "`"])))
 
 (defndynamic add-pkg [pkg]
   (do
-    (add-cflag (pkg-config pkg "--cflags --static"))
-    (add-lib (pkg-config pkg "--libs --static"))))
+    (add-cflag (pkg-config pkg "--cflags"))
+    (add-lib (pkg-config pkg "--libs"))))

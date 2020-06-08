@@ -17,6 +17,7 @@ import qualified Data.Map as Map
 
 import Types
 import Obj
+import Project
 import Util
 import ColorText
 import Eval

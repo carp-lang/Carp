@@ -17,6 +17,7 @@ import qualified Text.Parsec.Error as ParsecError
 import Parsing
 import Emit
 import Obj
+import Project
 import Types
 import Infer
 import Deftype

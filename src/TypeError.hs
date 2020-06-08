@@ -4,6 +4,7 @@ import Data.Maybe (fromMaybe)
 
 import Types
 import Obj
+import Project
 import Constraints
 import Util
 import Lookup

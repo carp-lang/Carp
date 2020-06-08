@@ -80,6 +80,7 @@ The current session in the repl is called a "project" and can be configured usin
 
 * ```"cflag"```              - Add a flag to the compiler.
 * ```"libflag"```            - Add a library flag to the compiler.
+* ```"pkgconfigflag"```      - Add a flag to pkg-config invocations.
 * ```"compiler"```           - Set what compiler should be run with the 'build' command.
 * ```"title"```              - Set the title of the current project, will affect the name of the binary produced.
 * ```"prompt"```             - Set the prompt in the repl.
