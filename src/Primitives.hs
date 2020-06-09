@@ -68,55 +68,37 @@ makePrim' name maybeArity docString example callback =
         exampleUsage = "Example Usage:\n```\n" ++ example ++ "\n```\n"
 
 primitiveFile :: Primitive
-primitiveFile x@(XObj _ i t) ctx [] =
-  case i of
-    Just info -> return (ctx, Right (XObj (Str (infoFile info)) i t))
-    Nothing ->
-      return (evalError ctx ("No information about object " ++ pretty x) (info x))
-primitiveFile x@(XObj _ i t) ctx [XObj _ mi _] =
-  case mi of
-    Just info -> return (ctx, Right (XObj (Str (infoFile info)) i t))
-    Nothing ->
-      return (evalError ctx ("No information about object " ++ pretty x) (info x))
 primitiveFile x@(XObj _ i t) ctx args =
-  return (
-    evalError ctx
-      ("`file` expected 0 or 1 arguments, but got " ++ show (length args))
-      (info x))
+  return $ case args of
+             [] -> go i
+             [XObj _ mi _] -> go mi
+             _ -> evalError ctx
+                            ("`file` expected 0 or 1 arguments, but got " ++ show (length args))
+                            (info x)
+  where err = evalError ctx ("No information about object " ++ pretty x) (info x)
+        go  = maybe err (\info -> (ctx, Right (XObj (Str (infoFile info)) i t)))
 
 primitiveLine :: Primitive
-primitiveLine x@(XObj _ i t) ctx [] =
-  case i of
-    Just info -> return (ctx, Right (XObj (Num IntTy (fromIntegral (infoLine info))) i t))
-    Nothing ->
-      return (evalError ctx ("No information about object " ++ pretty x) (info x))
-primitiveLine x@(XObj _ i t) ctx [XObj _ mi _] =
-  case mi of
-    Just info -> return (ctx, Right (XObj (Num IntTy (fromIntegral (infoLine info))) i t))
-    Nothing ->
-      return (evalError ctx ("No information about object " ++ pretty x) (info x))
 primitiveLine x@(XObj _ i t) ctx args =
-  return (
-    evalError ctx
-      ("`line` expected 0 or 1 arguments, but got " ++ show (length args))
-      (info x))
+  return $ case args of
+             [] ->  go i
+             [XObj _ mi _] -> go mi
+             _ -> evalError ctx
+                            ("`line` expected 0 or 1 arguments, but got " ++ show (length args))
+                            (info x)
+  where err = evalError ctx ("No information about object " ++ pretty x) (info x)
+        go  = maybe err (\info -> (ctx, Right (XObj (Num IntTy (fromIntegral (infoLine info))) i t)))
 
 primitiveColumn :: Primitive
-primitiveColumn x@(XObj _ i t) ctx [] =
-  case i of
-    Just info -> return (ctx, Right (XObj (Num IntTy (fromIntegral (infoColumn info))) i t))
-    Nothing ->
-      return (evalError ctx ("No information about object " ++ pretty x) (info x))
-primitiveColumn x@(XObj _ i t) ctx [XObj _ mi _] =
-  case mi of
-    Just info -> return (ctx, Right (XObj (Num IntTy (fromIntegral (infoColumn info))) i t))
-    Nothing ->
-      return (evalError ctx ("No information about object " ++ pretty x) (info x))
 primitiveColumn x@(XObj _ i t) ctx args =
-  return (
-    evalError ctx
-      ("`column` expected 0 or 1 arguments, but got " ++ show (length args))
-      (info x))
+  return $ case args of
+             [] -> go i
+             [XObj _ mi _] -> go mi
+             _ -> evalError ctx
+                 ("`column` expected 0 or 1 arguments, but got " ++ show (length args))
+                 (info x)
+  where err = evalError ctx ("No information about object " ++ pretty x) (info x)
+        go  = maybe err (\info -> (ctx, Right (XObj (Num IntTy (fromIntegral (infoColumn info))) i t)))
 
 primitiveImplements :: Primitive
 primitiveImplements xobj ctx [x@(XObj (Sym interface@(SymPath _ _) _) _ _), i@(XObj (Sym impl@(SymPath _ _) _) _ _)] =
