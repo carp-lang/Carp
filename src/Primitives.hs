@@ -102,56 +102,41 @@ primitiveColumn x@(XObj _ i t) ctx args =
 
 primitiveImplements :: Primitive
 primitiveImplements xobj ctx [x@(XObj (Sym interface@(SymPath _ _) _) _ _), i@(XObj (Sym impl@(SymPath _ _) _) _ _)] =
-  let tyEnv = getTypeEnv . contextTypeEnv $ ctx
-      global = contextGlobalEnv ctx
+  let global = contextGlobalEnv ctx
       def = lookupInEnv impl global
-      inter = lookupInEnv interface tyEnv
-  in case def of
-     Just (_, Binder meta defobj) ->
-       do
-         case inter of
-           Just _ -> return ()
-           Nothing ->
-             do putStrWithColor Blue ("[WARNING] The interface " ++ show interface ++ " implemented by " ++ show impl ++
-                                      " at " ++ prettyInfoFromXObj xobj ++ " is not defined." ++
-                                      " Did you define it using `definterface`?")
-                putStrLnWithColor White "" -- To restore color for sure.
-         case registerDefnOrDefInInterfaceIfNeeded ctx defobj interface of
-           Left err ->
-             do case contextExecMode ctx of
-                  Check -> let fppl = projectFilePathPrintLength (contextProj ctx)
-                           in  putStrLn (machineReadableInfoFromXObj fppl defobj ++ " " ++ err)
-                  _ -> putStrLnWithColor Red err
-                return $ evalError ctx err (info x)
-           Right ctx' ->
-             do currentImplementations <- primitiveMeta xobj ctx [i, XObj (Str "implements") (Just dummyInfo) (Just StringTy)]
-                case snd currentImplementations of
-                  Left err -> return $ (ctx, Left err)
-                  Right old@(XObj (Lst impls) inf ty) ->
-                    let newImpls = if x `elem` impls
-                                   then old
-                                   else XObj (Lst (x : impls)) inf (Just DynamicTy)
-                        adjustedMeta = Meta.set "implements" newImpls meta
-                    in  return (ctx' {contextGlobalEnv = envInsertAt global (getPath defobj) (Binder adjustedMeta defobj)},
-                               dynamicNil)
-                  _ ->
-                    let impls = XObj (Lst [x]) (Just dummyInfo) (Just DynamicTy)
-                        adjustedMeta = Meta.set "implements" impls meta
-                    in  return (ctx' {contextGlobalEnv = envInsertAt global (getPath defobj) (Binder adjustedMeta defobj)},
-                                 dynamicNil)
-     -- If the implementation binding doesn't exist yet, set the implements
-     -- meta. This enables specifying a function as an implementation before
-     -- defining it.
-     Nothing ->
-       do
-         case inter of
-           Just _ -> return ()
-           Nothing ->
-             do putStrWithColor Blue ("[WARNING] The interface " ++ show interface ++ " implemented by " ++ show impl ++
-                                      " at " ++ prettyInfoFromXObj xobj ++ " is not defined." ++
-                                      " Did you define it using `definterface`?")
-                putStrLnWithColor White "" -- To restore color for sure.
-         primitiveMetaSet xobj ctx [i, XObj (Str "implements") (Just dummyInfo) (Just StringTy), XObj (Lst [x]) (Just dummyInfo) (Just DynamicTy)]
+  in  maybe notFound found def
+  where checkInterface = let warn = do putStrWithColor Blue ("[WARNING] The interface " ++ show interface ++ " implemented by " ++ show impl ++
+                                                              " at " ++ prettyInfoFromXObj xobj ++ " is not defined." ++
+                                                              " Did you define it using `definterface`?")
+                                       putStrLnWithColor White "" -- To restore color for sure.
+                             tyEnv = getTypeEnv . contextTypeEnv $ ctx
+                         in maybe warn (\_ -> return ()) (lookupInEnv interface tyEnv)
+        -- If the implementation binding doesn't exist yet, set the implements
+        -- meta. This enables specifying a function as an implementation before
+        -- defining it.
+        notFound = checkInterface >>
+                   primitiveMetaSet xobj ctx [i, XObj (Str "implements") (Just dummyInfo) (Just StringTy), XObj (Lst [x]) (Just dummyInfo) (Just DynamicTy)]
+        found (_, Binder meta defobj) = checkInterface >>
+                                        either registerError updateImpls (registerDefnOrDefInInterfaceIfNeeded ctx defobj interface)
+              where registerError e = do case contextExecMode ctx of
+                                           Check -> let fppl = projectFilePathPrintLength (contextProj ctx)
+                                                    in  putStrLn (machineReadableInfoFromXObj fppl defobj ++ " " ++ e)
+                                           _ -> putStrLnWithColor Red e
+                                         return $ evalError ctx e (info x)
+                    updateImpls ctx' = do currentImplementations <- primitiveMeta xobj ctx [i, XObj (Str "implements") (Just dummyInfo) (Just StringTy)]
+                                          return $ either metaError existingImpls (snd currentImplementations)
+                      where metaError e = (ctx, Left e)
+                            existingImpls is = case is of
+                                                 old@(XObj (Lst impls) inf ty) ->
+                                                   let newImpls = if x `elem` impls
+                                                                  then old
+                                                                  else XObj (Lst (x : impls)) inf ty
+                                                       newMeta = Meta.set "implements" newImpls meta
+                                                   in (ctx' {contextGlobalEnv = envInsertAt global (getPath defobj) (Binder newMeta defobj)}, dynamicNil)
+                                                 _ -> let impls = XObj (Lst [x]) (Just dummyInfo) (Just DynamicTy)
+                                                          newMeta = Meta.set "implements" impls meta
+                                                      in (ctx' {contextGlobalEnv = envInsertAt global (getPath defobj) (Binder newMeta defobj)}, dynamicNil)
+                            global = contextGlobalEnv ctx
 primitiveImplements xobj ctx [x, y] =
   return $ evalError ctx ("`implements` expects symbol arguments.") (info x)
 primitiveImplements x@(XObj _ i t) ctx args =
