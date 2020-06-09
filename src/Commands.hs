@@ -27,6 +27,7 @@ import RenderDocs
 import TypeError
 import Path
 import Info
+import qualified Meta
 
 data CarpException =
     ShellOutException { shellOutMessage :: String, returnCode :: Int }
@@ -59,7 +60,7 @@ addCommandConfigurable path maybeArity callback doc example =
                       ])
             (Just dummyInfo) (Just DynamicTy)
       SymPath _ name = path
-      meta = MetaData (Map.insert "doc" (XObj (Str docString) Nothing Nothing) Map.empty)
+      meta = Meta.set "doc" (XObj (Str docString) Nothing Nothing) emptyMeta
   in (name, Binder meta cmd)
   where f = case maybeArity of
               Just arity -> withArity arity

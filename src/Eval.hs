@@ -34,6 +34,7 @@ import Concretize
 import Path
 import Primitives
 import Info
+import qualified Meta
 
 import Debug.Trace
 
@@ -506,7 +507,7 @@ getSigFromDefnOrDef ctx globalEnv fppl xobj@(XObj _ i t) =
                    (SymPath [] n) -> consPath pathStrings path
                    (SymPath quals n) -> path
       metaData = existingMeta globalEnv (XObj (Sym fullPath Symbol) i t)
-  in  case Map.lookup "sig" (getMeta metaData) of
+  in  case Meta.get "sig" metaData of
         Just foundSignature ->
           case xobjToTy foundSignature of
             Just t -> let sigToken = XObj (Sym (SymPath [] "sig") Symbol) Nothing Nothing

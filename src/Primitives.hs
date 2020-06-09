@@ -3,7 +3,6 @@ module Primitives where
 import Control.Monad (unless, when, foldM)
 import Control.Monad.IO.Class (liftIO)
 import Data.List (foldl')
-import qualified Data.Map as Map
 import Data.Maybe (fromMaybe)
 import Data.Either (isRight)
 
@@ -22,6 +21,7 @@ import Util
 import Template
 import ToTemplate
 import Info
+import qualified Meta as Meta
 
 import Debug.Trace
 
@@ -50,7 +50,7 @@ makePrim' name maybeArity docString example callback =
                        , XObj (Sym path Symbol) Nothing Nothing
                        ])
             (Just dummyInfo) (Just DynamicTy)
-      meta = MetaData (Map.insert "doc" (XObj (Str doc) Nothing Nothing) Map.empty)
+      meta = Meta.set "doc" (XObj (Str doc) Nothing Nothing) emptyMeta
   in (name, Binder meta prim)
   where wrapped =
           case maybeArity of
@@ -149,12 +149,12 @@ primitiveImplements xobj ctx [x@(XObj (Sym interface@(SymPath _ _) _) _ _), i@(X
                     let newImpls = if x `elem` impls
                                    then old
                                    else XObj (Lst (x : impls)) inf (Just DynamicTy)
-                        adjustedMeta = meta {getMeta = Map.insert "implements" newImpls (getMeta meta)}
+                        adjustedMeta = Meta.set "implements" newImpls meta
                     in  return (ctx' {contextGlobalEnv = envInsertAt global (getPath defobj) (Binder adjustedMeta defobj)},
                                dynamicNil)
                   _ ->
                     let impls = XObj (Lst [x]) (Just dummyInfo) (Just DynamicTy)
-                        adjustedMeta = meta {getMeta = Map.insert "implements" impls (getMeta meta)}
+                        adjustedMeta = Meta.set "implements" impls meta
                     in  return (ctx' {contextGlobalEnv = envInsertAt global (getPath defobj) (Binder adjustedMeta defobj)},
                                  dynamicNil)
      -- If the implementation binding doesn't exist yet, set the implements
@@ -224,7 +224,7 @@ define hidden ctx@(Context globalEnv _ typeEnv _ proj _ _ _) annXObj =
           Nothing -> Nothing
       previousMeta = existingMeta globalEnv annXObj
       adjustedMeta = if hidden
-                     then previousMeta { getMeta = Map.insert "hidden" trueXObj (getMeta previousMeta) }
+                     then Meta.set "hidden" trueXObj previousMeta
                      else previousMeta
       fppl = projectFilePathPrintLength proj
   in case annXObj of
@@ -244,7 +244,7 @@ define hidden ctx@(Context globalEnv _ typeEnv _ proj _ _ _) annXObj =
                                            "' from " ++ show previousTypeUnwrapped ++ " to " ++ show (forceTy annXObj))
                      putStrLnWithColor White "" -- To restore color for sure.
               Nothing -> return ()
-            case Map.lookup "implements" (getMeta previousMeta) of
+            case Meta.get "implements" previousMeta of
               Just (XObj (Lst interfaces) _ _) ->
                 do let result = foldM (\ctx (xobj, interface) -> registerDefnOrDefInInterfaceIfNeeded ctx xobj interface) ctx (zip (cycle [annXObj]) (map getPath interfaces))
                    case result of
@@ -353,7 +353,7 @@ primitiveInfo _ ctx [target@(XObj (Sym path@(SymPath _ name) _) _ _)] = do
                    | errNotFound -> notFound ctx target path
                    | otherwise -> return (ctx, dynamicNil)
         printDoc metaData proj x = do
-          case Map.lookup "doc" (getMeta metaData) of
+          case Meta.get "doc" metaData of
             Just (XObj (Str val) _ _) -> liftIO $ putStrLn ("Documentation: " ++ val)
             Nothing -> return ()
           liftIO $ when (projectPrintTypedAST proj) $ putStrLnWithColor Yellow (prettyTyped x)
@@ -465,7 +465,7 @@ primitiveMetaSet _ ctx [target@(XObj (Sym path@(SymPath _ name) _) _ _), XObj (S
       setMetaOn :: Context -> Maybe Env -> Binder -> IO (Context, Either EvalError XObj)
       setMetaOn ctx foundEnv binder@(Binder metaData xobj) =
         do let globalEnv = contextGlobalEnv ctx
-               newMetaData = MetaData (Map.insert key value (getMeta metaData))
+               newMetaData = Meta.set key value metaData
                xobjPath = getPath xobj
                prefixPath = fromMaybe [] (fmap pathToEnv foundEnv)
                fullPath = case xobjPath of
@@ -645,20 +645,15 @@ primitiveMeta (XObj _ i _) ctx [XObj (Sym path _) _ _, XObj (Str key) _ _] = do
   let fppl = projectFilePathPrintLength (contextProj ctx)
       globalEnv = contextGlobalEnv ctx
   case path of
-    (SymPath [] _) -> lookup (consPath (contextPath ctx) path) globalEnv
-    (SymPath quals _) -> lookup path globalEnv
+    (SymPath [] _) -> return $ lookup (consPath (contextPath ctx) path) globalEnv
+    (SymPath quals _) -> return $ lookup path globalEnv
     where lookup p e =
-            case lookupInEnv p e of
-              Just (_, Binder metaData _) ->
-                case Map.lookup key (getMeta metaData) of
-                  Just foundValue ->
-                    return (ctx, Right foundValue)
-                  Nothing ->
-                    return (ctx, dynamicNil)
-              Nothing ->
-                return (evalError ctx
-                     ("`meta` failed, I can’t find `" ++ show path ++ "`")
-                     i)
+            maybe err
+                  (\binder -> (ctx, maybe dynamicNil Right (Meta.getBinderMetaValue key binder)))
+                  (fmap snd $ lookupInEnv p e)
+            where err = (evalError ctx
+                    ("`meta` failed, I can’t find `" ++ show path ++ "`")
+                    i)
 primitiveMeta _ ctx [XObj (Sym path _) _ _, key@(XObj _ i _)] =
   argumentErr ctx "meta" "a string" "second" key
 primitiveMeta _ ctx [path@(XObj _ i _), _] =
@@ -667,9 +662,7 @@ primitiveMeta _ ctx [path@(XObj _ i _), _] =
 primitiveDefined :: Primitive
 primitiveDefined _ ctx [XObj (Sym path _) _ _] = do
   let env = contextEnv ctx
-  case lookupInEnv path env of
-    Just found -> return (ctx, Right trueXObj)
-    Nothing -> return (ctx, Right falseXObj)
+  return $ maybe (ctx, Right falseXObj) (\_ -> (ctx, Right trueXObj)) (lookupInEnv path env)
 primitiveDefined _ ctx [arg] =
   argumentErr ctx "defined" "a symbol" "first" arg
 

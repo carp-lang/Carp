@@ -1,6 +1,5 @@
 module Template where
 
-import qualified Data.Map as Map
 import qualified Data.Set as Set
 import Debug.Trace
 
@@ -12,13 +11,14 @@ import Infer
 import Concretize
 import ToTemplate
 import Info
+import qualified Meta
 
 -- | Create a binding pair used for adding a template instantiation to an environment.
 instanceBinder :: SymPath -> Ty -> Template -> String -> (String, Binder)
 instanceBinder path@(SymPath _ name) actualType template docs =
   let (x, _) = instantiateTemplate path actualType template
       docObj = XObj (Str docs) (Just dummyInfo) Nothing
-      meta = MetaData (Map.insert "doc" docObj Map.empty)
+      meta = Meta.set "doc" docObj emptyMeta
   in  (name, Binder meta x)
 
 -- | Create a binding pair and don't discard the dependencies
@@ -26,7 +26,7 @@ instanceBinderWithDeps :: SymPath -> Ty -> Template -> String -> ((String, Binde
 instanceBinderWithDeps path@(SymPath _ name) actualType template docs =
   let (x, deps) = instantiateTemplate path actualType template
       docObj = XObj (Str docs) (Just dummyInfo) Nothing
-      meta = MetaData (Map.insert "doc" docObj Map.empty)
+      meta = Meta.set "doc" docObj emptyMeta
   in  ((name, Binder meta x), deps)
 
 -- | Templates are instructions for the compiler to generate some C-code
@@ -47,7 +47,7 @@ defineTemplate path t docs declaration definition depsFunc =
       i = Info 0 0 (show path ++ ".template") Set.empty 0
       defLst = [XObj (Deftemplate (TemplateCreator (\_ _ -> template))) Nothing Nothing, XObj (Sym path Symbol) Nothing Nothing]
       docObj = XObj (Str docs) (Just dummyInfo) Nothing
-      meta = MetaData (Map.insert "doc" docObj Map.empty)
+      meta = Meta.set "doc" docObj emptyMeta
   in  (name, Binder meta (XObj (Lst defLst) (Just i) (Just t)))
 
 -- | The more advanced version of a template, where the code can vary depending on the type.
@@ -57,7 +57,7 @@ defineTypeParameterizedTemplate templateCreator path t docs =
       i = Info 0 0 (show path ++ ".parameterizedTemplate") Set.empty 0
       defLst = [XObj (Deftemplate templateCreator) Nothing Nothing, XObj (Sym path Symbol) Nothing Nothing]
       docObj = XObj (Str docs) (Just dummyInfo) Nothing
-      meta = MetaData (Map.insert "doc" docObj Map.empty)
+      meta = Meta.set "doc" docObj emptyMeta
   in  (name, Binder meta (XObj (Lst defLst) (Just i) (Just t)))
 
 -- | Concretizes the types used in @token

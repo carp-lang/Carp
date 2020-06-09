@@ -3,6 +3,8 @@ module Meta (get,
              fromBinder,
              getBinderMetaValue,
              updateBinderMeta,
+             Meta.member,
+             binderMember
             ) where
 
 import Data.Map as Map
@@ -25,4 +27,8 @@ updateBinderMeta :: Binder -> String -> XObj -> Binder
 updateBinderMeta binder key value = 
   binder { binderMeta = set key value $ fromBinder binder }
 
+member :: String -> MetaData -> Bool
+member key meta = Map.member key $ getMeta meta
 
+binderMember :: String -> Binder -> Bool
+binderMember key binder = Meta.member key $ fromBinder binder
