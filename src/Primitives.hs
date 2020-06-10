@@ -22,6 +22,7 @@ import Template
 import ToTemplate
 import Info
 import qualified Meta as Meta
+import Interfaces
 
 import Debug.Trace
 
@@ -117,7 +118,7 @@ primitiveImplements xobj ctx [x@(XObj (Sym interface@(SymPath _ _) _) _ _), i@(X
         notFound = checkInterface >>
                    primitiveMetaSet xobj ctx [i, XObj (Str "implements") (Just dummyInfo) (Just StringTy), XObj (Lst [x]) (Just dummyInfo) (Just DynamicTy)]
         found (_, Binder meta defobj) = checkInterface >>
-                                        either registerError updateImpls (registerDefnOrDefInInterfaceIfNeeded ctx defobj interface)
+                                        either registerError updateImpls (registerInInterface ctx defobj interface)
               where registerError e = do case contextExecMode ctx of
                                            Check -> let fppl = projectFilePathPrintLength (contextProj ctx)
                                                     in  putStrLn (machineReadableInfoFromXObj fppl defobj ++ " " ++ e)
@@ -143,45 +144,6 @@ primitiveImplements x@(XObj _ i t) ctx args =
   return $ evalError
     ctx ("`implements` expected 2 arguments, but got " ++ show (length args)) (info x)
 
-registerInInterfaceIfNeeded :: Context -> SymPath -> SymPath -> Ty -> Either String Context
-registerInInterfaceIfNeeded ctx path@(SymPath _ _) interface@(SymPath [] name) definitionSignature =
-  let typeEnv = getTypeEnv (contextTypeEnv ctx)
-  in case lookupInEnv interface typeEnv of
-       Just (_, Binder _ (XObj (Lst [inter@(XObj (Interface interfaceSignature paths) ii it), isym]) i t)) ->
-         if checkKinds interfaceSignature definitionSignature
-           -- N.B. the xobjs aren't important here--we only care about types,
-           -- thus we pass inter to all three xobj positions.
-           then if isRight $ solve [Constraint interfaceSignature definitionSignature inter inter inter OrdInterfaceImpl]
-                then let updatedInterface = XObj (Lst [XObj (Interface interfaceSignature (addIfNotPresent path paths)) ii it, isym]) i t
-                     in  return $ ctx { contextTypeEnv = TypeEnv (extendEnv typeEnv name updatedInterface) }
-                else Left ("[INTERFACE ERROR] " ++ show path ++ " : " ++ show definitionSignature ++
-                           " doesn't match the interface signature " ++ show interfaceSignature)
-           else Left ("[INTERFACE ERROR] " ++ show path ++ ":" ++ " One or more types in the interface implementation " ++ show definitionSignature ++ " have kinds that do not match the kinds of the types in the interface signature " ++ show interfaceSignature ++ "\n" ++ "Types of the form (f a) must be matched by constructor types such as (Maybe a)")
-       Just (_, Binder _ x) ->
-         error ("Can't implement the non-interface '" ++ name ++ "' in the type environment: " ++ show x)
-       Nothing -> return ctx
-
--- | Given an XObj and an interface path, ensure that a 'def' / 'defn' is
--- registered with the interface.
-registerDefnOrDefInInterfaceIfNeeded :: Context -> XObj -> SymPath -> Either String Context
-registerDefnOrDefInInterfaceIfNeeded ctx xobj interface =
-  case xobj of
-    XObj (Lst [XObj (Defn _) _ _, XObj (Sym path _) _ _, _, _]) _ (Just t) ->
-      -- This is a function, does it belong to an interface?
-      registerInInterfaceIfNeeded ctx path interface t
-    XObj (Lst [XObj (Deftemplate _) _ _, XObj (Sym path _) _ _]) _ (Just t) ->
-      -- Templates should also be registered.
-      registerInInterfaceIfNeeded ctx path interface t
-    XObj (Lst [XObj Def _ _, XObj (Sym path _) _ _, _]) _ (Just t) ->
-      -- Global variables can also be part of an interface
-      registerInInterfaceIfNeeded ctx path interface t
-      -- So can externals!
-    XObj (Lst [XObj (External _) _ _, XObj (Sym path _) _ _]) _ (Just t) ->
-      registerInInterfaceIfNeeded ctx path interface t
-      -- And instantiated/auto-derived type functions! (e.g. Pair.a)
-    XObj (Lst [XObj (Instantiate _) _ _, XObj (Sym path _) _ _]) _ (Just t) ->
-      registerInInterfaceIfNeeded ctx path interface t
-    _ -> return ctx
 
 define :: Bool -> Context -> XObj -> IO Context
 define hidden ctx@(Context globalEnv _ typeEnv _ proj _ _ _) annXObj =
@@ -213,7 +175,7 @@ define hidden ctx@(Context globalEnv _ typeEnv _ proj _ _ _) annXObj =
               Nothing -> return ()
             case Meta.get "implements" previousMeta of
               Just (XObj (Lst interfaces) _ _) ->
-                do let result = foldM (\ctx (xobj, interface) -> registerDefnOrDefInInterfaceIfNeeded ctx xobj interface) ctx (zip (cycle [annXObj]) (map getPath interfaces))
+                do let result = foldM (\ctx (xobj, interface) -> registerInInterface ctx xobj interface) ctx (zip (cycle [annXObj]) (map getPath interfaces))
                    case result of
                      Left err ->
                        do case contextExecMode ctx of
@@ -434,15 +396,6 @@ primitiveMetaSet _ ctx [XObj (Sym _ _) _ _, key, _] =
 primitiveMetaSet _ ctx [target, _, _] =
   argumentErr ctx "meta-set!" "a symbol" "first" target
 
-retroactivelyRegisterInterfaceFunctions :: Context -> SymPath -> Context
-retroactivelyRegisterInterfaceFunctions ctx interface@(SymPath _ inter) =
-  -- TODO: Don't use error here?
-  either (\e -> error e) id resultCtx
-  where env = contextGlobalEnv ctx
-        impls = recursiveLookupAll interface lookupImplementations env
-        resultCtx = foldl' folder (Right ctx) impls
-        folder ctx' binder = either Left register ctx'
-          where register ok = registerDefnOrDefInInterfaceIfNeeded ok (binderXObj binder) interface
 
 primitiveDefinterface :: Primitive
 primitiveDefinterface xobj ctx [nameXObj@(XObj (Sym path@(SymPath [] name) _) _ _), ty] =
@@ -453,7 +406,7 @@ primitiveDefinterface xobj ctx [nameXObj@(XObj (Sym path@(SymPath [] name) _) _ 
         validType t = maybe defInterface (updateInterface . snd) (lookupInEnv path typeEnv)
           where defInterface = let interface = defineInterface name t [] (info nameXObj)
                                    typeEnv' = TypeEnv (envInsertAt typeEnv (SymPath [] name) (Binder emptyMeta interface))
-                                   newCtx = retroactivelyRegisterInterfaceFunctions (ctx { contextTypeEnv = typeEnv' }) path
+                                   newCtx = retroactivelyRegisterInInterface (ctx { contextTypeEnv = typeEnv' }) path
                                in  (newCtx, dynamicNil)
                 updateInterface binder = case binder of
                                            Binder _ (XObj (Lst (XObj (Interface foundType _) _ _ : _)) _ _) ->

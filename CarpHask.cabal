@@ -52,6 +52,7 @@ library
                        RenderDocs,
                        StructUtils,
                        Path,
+                       Interfaces,
                        Primitives,
                        Validate
 
