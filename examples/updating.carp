@@ -39,5 +39,6 @@
     (let [monsters (Array.copy-map &Monster.init-random &[@"Pegasus" @"Dragon" @"Devil"])]
       (do
         (println (ref (Array.str &monsters)))
-        (let [new-monsters (Array.endo-map &Monster.move monsters)]
-          (println (ref (Array.str &new-monsters))))))))
+        (let-do [new-monsters (Array.endo-map &Monster.move monsters)]
+          (println (ref (Array.str &new-monsters))))
+        0))))

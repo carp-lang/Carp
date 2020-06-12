@@ -20,7 +20,7 @@
      ;;(IO.println &(A.str &a))
      (IO.println &(str &q))
      (IO.println &(str &stuff))
-     )
+     0)
      ;;)
      )
 

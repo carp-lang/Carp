@@ -42,4 +42,4 @@
     (IO.println &(str &(Pair.set-b (Pair.init 100 100) 200)))
     (IO.println &(str @(Pair.a &(Pair.init 100 100))))
     (try-dictionary)
-    ))
+    0))

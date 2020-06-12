@@ -37,4 +37,4 @@
     (println &(Array.str &(ArrayExtension.fmap &Int.inc [10 20 30 40 50])))
     ;(println &(str &(higherOrder (Box.init 999))))
     ;(println &(str &(higherOrder [9 99 999 9999])))
-    ))
+    0))

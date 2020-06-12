@@ -27,4 +27,4 @@
   (changing-target-of-ref)
   ;;(set-derefed)
   ;;(set-in-parameter)
-  )
+  0)

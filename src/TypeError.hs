@@ -38,7 +38,7 @@ data TypeError = SymbolMissingType XObj Env
                | UsingUnownedValue XObj
                | UsingCapturedValue XObj
                | ArraysCannotContainRefs XObj
-               | MainCanOnlyReturnUnitOrInt XObj Ty
+               | MainCanOnlyReturnInt XObj Ty
                | MainCannotHaveArguments XObj Int
                | CannotConcretize XObj
                | TooManyAnnotateCalls XObj
@@ -185,8 +185,8 @@ instance Show TypeError where
   show (ArraysCannotContainRefs xobj) =
     "Arrays can’t contain references: `" ++ pretty xobj ++ "` at " ++
     prettyInfoFromXObj xobj ++ ".\n\nYou’ll have to make a copy using `@`."
-  show (MainCanOnlyReturnUnitOrInt xobj t) =
-    "The main function can only return an `Int` or a unit type (`()`), but it got `" ++
+  show (MainCanOnlyReturnInt xobj t) =
+    "The main function can only return an `Int`, but it got `" ++
     show t ++ "`."
   show (MainCannotHaveArguments xobj c) =
     "The main function may not receive arguments, but it got " ++ show c ++ "."
@@ -323,8 +323,8 @@ machineReadableErrorStrings fppl err =
     (ArraysCannotContainRefs xobj) ->
       [machineReadableInfoFromXObj fppl xobj ++ " Arrays can't contain references: '" ++ pretty xobj ++ "'."]
 
-    (MainCanOnlyReturnUnitOrInt xobj t) ->
-      [machineReadableInfoFromXObj fppl xobj ++ " Main function can only return Int or (), got " ++ show t ++ "."]
+    (MainCanOnlyReturnInt xobj t) ->
+      [machineReadableInfoFromXObj fppl xobj ++ " Main function can only return Int, got " ++ show t ++ "."]
     (MainCannotHaveArguments xobj c) ->
       [machineReadableInfoFromXObj fppl xobj ++ " Main function can not have arguments, got " ++ show c ++ "."]
 

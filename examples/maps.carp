@@ -24,7 +24,8 @@
       (println* (Map.contains? &char-map &\b))
       (println* (Map.contains? &char-map &\c)))))
 
-(defn main []
-  (do (simple)
-      (start-with-empty)
-      (checking)))
+(defn-do main []
+  (simple)
+  (start-with-empty)
+  (checking)
+  0)

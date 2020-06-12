@@ -37,18 +37,19 @@
   (do (println &(str* @"Too " @low-or-high @"."))
       (print "\nPlease guess again: ")))
 
-(defn main []
-  (do (println "Seeding random number generator...\n")
-      (Random.seed-from (Double.from-int (System.time)))
-      (start-new-game!)
-      (while guessing
-        (let [user-input (get-line)
-              guessed-num (from-string &user-input)]
-          (if (= &user-input "q\n")
-            (exit!)
-            (match guessed-num
-              (Maybe.Nothing) (print "Invalid input.\nPlease guess again: ")
-              (Maybe.Just n)
-                (cond (< n answer) (guess-again "low")
-                      (> n answer) (guess-again "high")
-                      (correct!))))))))
+(defn-do main []
+  (println "Seeding random number generator...\n")
+  (Random.seed-from (Double.from-int (System.time)))
+  (start-new-game!)
+  (while guessing
+    (let [user-input (get-line)
+          guessed-num (from-string &user-input)]
+      (if (= &user-input "q\n")
+        (exit!)
+        (match guessed-num
+               (Maybe.Nothing) (print "Invalid input.\nPlease guess again: ")
+               (Maybe.Just n)
+               (cond (< n answer) (guess-again "low")
+                     (> n answer) (guess-again "high")
+                     (correct!))))))
+  0)

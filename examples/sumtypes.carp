@@ -71,12 +71,12 @@
 ;;   (Arr [(Array JSON)])
 ;;   (Obj [(Map String JSON)]))
 
-(defn main []
-  (do
-    (println* (generic-sumtypes (Maybe.Just 123)))
-    (println* (generic-sumtypes (the (Maybe Int) (Maybe.Nothing))))
-    (println* &(figure-out-sumtype (Elements.Fire)))
-    (println* "Grade.B has value " (grade-value (Grade.B)))
-    (println* (confusion (Just @"Yo")))
-    (println* (wildcard (Just @"Woop")))
-    (println* (wildcards-inside (Simple @"Erik" @"Svedäng")))))
+(defn-do main []
+  (println* (generic-sumtypes (Maybe.Just 123)))
+  (println* (generic-sumtypes (the (Maybe Int) (Maybe.Nothing))))
+  (println* &(figure-out-sumtype (Elements.Fire)))
+  (println* "Grade.B has value " (grade-value (Grade.B)))
+  (println* (confusion (Just @"Yo")))
+  (println* (wildcard (Just @"Woop")))
+  (println* (wildcards-inside (Simple @"Erik" @"Svedäng")))
+  0)

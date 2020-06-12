@@ -20,4 +20,5 @@
   (let-do [ints (Array.sort [10 3 75 40])
            ages (Array.sort [(Age.init 10) (Age.init 3) (Age.init 75) (Age.init 40)])]
     (IO.println &(Array.str &ints))
-    (IO.println &(Array.str &ages))))
+    (IO.println &(Array.str &ages))
+    0))

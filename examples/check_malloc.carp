@@ -1,4 +1,5 @@
 (Debug.check-allocations)
 
-(defn main []
-  (println* &(Array.repeat 10000000 &Int.zero)))
+(defn-do main []
+  (println* &(Array.repeat 10000000 &Int.zero))
+  0)

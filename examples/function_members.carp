@@ -28,4 +28,4 @@
     (println* &(attack &enemy hero))
     (println* &(change-self selfer))
     (println* &gen)
-    ))
+    0))
