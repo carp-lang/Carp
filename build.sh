@@ -1,3 +1,4 @@
+#!/usr/bin/env bash
 if [ -z "$CARP" ]
 then
     if [ -z "$NIX_CC" ]
@@ -7,7 +8,4 @@ then
 	cabal build
     fi
 fi
-if which clang-format > /dev/null
-then
-  clang-format -i core/*.h
-fi
+command -v clang-format >/dev/null && clang-format -i core/*.h
