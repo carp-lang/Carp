@@ -8,4 +8,4 @@ then
 	cabal build
     fi
 fi
-command -v clang-format >/dev/null && clang-format -i core/*.h
+command -v clang-format >/dev/null && clang-format -i core/*.h || true
