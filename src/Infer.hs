@@ -1,29 +1,30 @@
-module Infer (annotate
-             ,initialTypes
-             ,genConstraints
-             ,assignTypes
-             ,concretizeXObj
-             ,manageMemory
-             ,depsOfPolymorphicFunction
-             ) where
+module Infer
+  ( annotate,
+    initialTypes,
+    genConstraints,
+    assignTypes,
+    concretizeXObj,
+    manageMemory,
+    depsOfPolymorphicFunction,
+  )
+where
 
-import Control.Monad.State
-import Control.Monad (replicateM)
-import qualified Data.Map as Map
-import qualified Data.Set as Set
-import Data.List (foldl', sort)
-import Data.Maybe (mapMaybe)
-import Debug.Trace
-
-import Obj
+import AssignTypes
+import Concretize
 import Constraints
+import Control.Monad (replicateM)
+import Control.Monad.State
+import Data.List (foldl', sort)
+import qualified Data.Map as Map
+import Data.Maybe (mapMaybe)
+import qualified Data.Set as Set
+import Debug.Trace
+import GenerateConstraints
+import InitialTypes
+import Obj
+import TypeError
 import Types
 import Util
-import TypeError
-import InitialTypes
-import AssignTypes
-import GenerateConstraints
-import Concretize
 
 -- | Performs all the steps of creating initial types, solving constraints and assigning the types.
 -- | Returns a list of all the bindings that need to be added for the new form to work.
@@ -31,22 +32,24 @@ import Concretize
 -- | makes it possible to solve more types so let's do it several times.
 annotate :: TypeEnv -> Env -> XObj -> Maybe (Ty, XObj) -> Either TypeError (XObj, [XObj])
 annotate typeEnv globalEnv xobj rootSig =
-  do initiated <- initialTypes typeEnv globalEnv xobj
-     (annotated, dependencies) <- annotateUntilDone typeEnv globalEnv initiated rootSig [] 100
-     (final, deleteDeps) <- manageMemory typeEnv globalEnv annotated
-     finalWithNiceTypes <- beautifyTypeVariables final
-     return (finalWithNiceTypes, dependencies ++ deleteDeps)
+  do
+    initiated <- initialTypes typeEnv globalEnv xobj
+    (annotated, dependencies) <- annotateUntilDone typeEnv globalEnv initiated rootSig [] 100
+    (final, deleteDeps) <- manageMemory typeEnv globalEnv annotated
+    finalWithNiceTypes <- beautifyTypeVariables final
+    return (finalWithNiceTypes, dependencies ++ deleteDeps)
 
 -- | Call the 'annotateOne' function until nothing changes
 annotateUntilDone :: TypeEnv -> Env -> XObj -> Maybe (Ty, XObj) -> [XObj] -> Int -> Either TypeError (XObj, [XObj])
 annotateUntilDone typeEnv globalEnv xobj rootSig deps limiter =
   if limiter <= 0
-  then Left (TooManyAnnotateCalls xobj)
-  else do (xobj', deps') <- annotateOne typeEnv globalEnv xobj rootSig True
-          let newDeps = deps ++ deps'
-          if xobj == xobj' -- Is it the same?
-            then return (xobj', newDeps)
-            else annotateUntilDone typeEnv globalEnv xobj' rootSig newDeps (limiter - 1)
+    then Left (TooManyAnnotateCalls xobj)
+    else do
+      (xobj', deps') <- annotateOne typeEnv globalEnv xobj rootSig True
+      let newDeps = deps ++ deps'
+      if xobj == xobj' -- Is it the same?
+        then return (xobj', newDeps)
+        else annotateUntilDone typeEnv globalEnv xobj' rootSig newDeps (limiter - 1)
 
 -- | Performs ONE step of annotation. The 'annotate' function will call this function several times.
 -- | TODO: Remove the allowAmbiguity flag?
@@ -61,9 +64,12 @@ annotateOne typeEnv env xobj rootSig allowAmbiguity = do
 solveConstraintsAndConvertErrorIfNeeded :: [Constraint] -> Either TypeError TypeMappings
 solveConstraintsAndConvertErrorIfNeeded constraints =
   case solve constraints of
-    Left failure@(UnificationFailure _ _) -> Left (UnificationFailed
-                                                   (unificationFailure failure)
-                                                   (unificationMappings failure)
-                                                   constraints)
+    Left failure@(UnificationFailure _ _) ->
+      Left
+        ( UnificationFailed
+            (unificationFailure failure)
+            (unificationMappings failure)
+            constraints
+        )
     Left (Holes holes) -> Left (HolesFound holes)
     Right ok -> Right ok
