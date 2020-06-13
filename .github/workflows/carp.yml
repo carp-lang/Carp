@@ -32,7 +32,7 @@ jobs:
       run: stack install ormolu
 
     - name: Lint
-      run: ormolu --mode check $(find src -name '*.hs')
+      run: stack exec ormolu -- --mode check $(find src -name '*.hs')
 
     - name: Run Compiler Tests
       run: stack test
