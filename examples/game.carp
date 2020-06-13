@@ -83,10 +83,10 @@
 (defn tick [state] state)
 
 (defn main []
-  (let [app (SDLApp.create "~ CARP ~" 512 512)
+  (let-do [app (SDLApp.create "~ CARP ~" 512 512)
         rend @(SDLApp.renderer &app)
         initial-state 0]
-    (do
-      (set! images (Images.init (IMG.load-texture rend (cstr "./img/square.png"))
-                                (IMG.load-texture rend (cstr "./img/carp_logo_969_no_texture.png"))))
-      (SDLApp.run-with-callbacks &app event-handler tick draw initial-state))))
+    (set! images (Images.init (IMG.load-texture rend (cstr "./img/square.png"))
+                              (IMG.load-texture rend (cstr "./img/carp_logo_969_no_texture.png"))))
+    (SDLApp.run-with-callbacks &app event-handler tick draw initial-state)
+    0))

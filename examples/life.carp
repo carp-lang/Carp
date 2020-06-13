@@ -105,7 +105,7 @@
 (defn main []
   (do
     (Random.seed)
-    (let [app (create "~ Game of Life ~" 800 600)
+    (let-do [app (create "~ Game of Life ~" 800 600)
           rend @(renderer &app)
           world (repeat (* height width) &flip)
           play false]
@@ -122,4 +122,5 @@
                     (delay 50)))
                 ())))
           (draw rend (ref world) play)
-          (delay 30))))))
+          (delay 30)))
+      0)))

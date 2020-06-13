@@ -167,20 +167,20 @@
   ))
 
 (defn main []
-  (let [app (SDLApp.create "R E P T I L E" 832 640)
+  (let-do [app (SDLApp.create "R E P T I L E" 832 640)
         rend @(SDLApp.renderer &app)
         world (create-world)]
-    (do
-      (while (not @(World.dead &world))
-        (if reset
-          (do
-            (set! input-dir SDL.Keycode.right)
-            (set! world (create-world))
-            (set! reset false))
-          (do
-            (let [new-world (tick &world)]
-              (set! world new-world))
-            (handle-events &app rend &world)
-            (draw rend &world)
-            (SDL.delay 50))))
-       (render-dead rend))))
+    (while (not @(World.dead &world))
+      (if reset
+        (do
+          (set! input-dir SDL.Keycode.right)
+          (set! world (create-world))
+          (set! reset false))
+        (do
+          (let [new-world (tick &world)]
+            (set! world new-world))
+          (handle-events &app rend &world)
+          (draw rend &world)
+          (SDL.delay 50))))
+    (render-dead rend)
+    0))

@@ -28,23 +28,23 @@
       state)))
 
 (defn main []
-  (let [app (SDLApp.create "Sound Effects with SDL_mixer" 400 300)
-        rend @(SDLApp.renderer &app)]
-    (do
-      (let [flags Mixer.mp3-support]
-        (when (/= flags (Mixer.init flags))
-          (println* "Mixer.init error: " &(from-cstr (Mixer.get-error)))))
-      (if (Mixer.ok? (Mixer.open-audio 22050 Mixer.default-format 2 4096))
-        ()
-        (println* "Mixer.open-audio error: " &(from-cstr (Mixer.get-error))))
-      (set! fx1 (Mixer.load-wav (cstr "resources/fx1.wav")))
-      (assert (not-null? fx1))
-      (let-do [n (Mixer.nr-of-music-decoders)]
-        (println* "Nr of music decoders: " n)
-        (for [i 0 n]
-          (println* " - " &(from-cstr (Mixer.get-music-decoder i)))))
-      (let-do [music (Mixer.load-music (cstr "resources/song.mp3"))]
-        (println* "Music is " (if (null? music) "null." "not null."))
-        (println* "Play result: " (Mixer.play-music music -1))
-        )
-      (SDLApp.run-with-callbacks &app event-handler id SDLApp.default-draw 0))))
+  (let-do [app (SDLApp.create "Sound Effects with SDL_mixer" 400 300)
+           rend @(SDLApp.renderer &app)]
+    (let [flags Mixer.mp3-support]
+      (when (/= flags (Mixer.init flags))
+        (println* "Mixer.init error: " &(from-cstr (Mixer.get-error)))))
+    (if (Mixer.ok? (Mixer.open-audio 22050 Mixer.default-format 2 4096))
+      ()
+      (println* "Mixer.open-audio error: " &(from-cstr (Mixer.get-error))))
+    (set! fx1 (Mixer.load-wav (cstr "resources/fx1.wav")))
+    (assert (not-null? fx1))
+    (let-do [n (Mixer.nr-of-music-decoders)]
+      (println* "Nr of music decoders: " n)
+      (for [i 0 n]
+        (println* " - " &(from-cstr (Mixer.get-music-decoder i)))))
+    (let-do [music (Mixer.load-music (cstr "resources/song.mp3"))]
+      (println* "Music is " (if (null? music) "null." "not null."))
+      (println* "Play result: " (Mixer.play-music music -1))
+      )
+    (SDLApp.run-with-callbacks &app event-handler id SDLApp.default-draw 0)
+    0))

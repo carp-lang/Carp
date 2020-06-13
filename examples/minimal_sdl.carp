@@ -9,6 +9,7 @@
   (bg rend &(rgb (/ @state 2) (/ @state 3) (/ @state 4))))
 
 (defn main []
-  (let [app (SDLApp.create "The Minimalistic Color Generator" 400 300)
-        state 0]
-    (SDLApp.run-with-callbacks &app SDLApp.quit-on-esc tick draw state)))
+  (let-do [app (SDLApp.create "The Minimalistic Color Generator" 400 300)
+           state 0]
+    (SDLApp.run-with-callbacks &app SDLApp.quit-on-esc tick draw state)
+    0))
