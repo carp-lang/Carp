@@ -29,7 +29,7 @@ jobs:
       run: stack build
 
     - name: Build Lint
-      run: cabal install ormolu
+      run: stack install ormolu
 
     - name: Lint
       run: ormolu --mode check $(find src -name '*.hs')
