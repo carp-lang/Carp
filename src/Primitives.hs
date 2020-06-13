@@ -592,18 +592,6 @@ primitiveDeftype xobj ctx (name:rest) =
                           ("Type members must be unqualified symbols, but got `" ++
                            concatMap pretty rest ++ "`")
                           (info xobj)
-            
-
-  {-
-              return $
-                makeEvalError
-                  ctx
-                  Nothing
-                  ("All fields must have a name and a type." ++
-                   "example:\n" ++
-                   "```(deftype [field1 Type1, field2 Type2, field3 Type3])```")
-                  (info xobj)
--}
     _ -> deftype name
   where deftype name@(XObj (Sym (SymPath _ ty) _) _ _) = deftype' name ty []
         deftype (XObj (Lst (name@(XObj (Sym (SymPath _ ty) _) _ _) : tyvars)) _ _) =
