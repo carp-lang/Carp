@@ -936,12 +936,6 @@ wrapInInitFunction with_core src =
   ++ src ++
   "}"
 
-isNumericLiteral :: XObj -> Bool
-isNumericLiteral (XObj (Num _ _) _ _) = True
-isNumericLiteral (XObj (Bol _) _ _) = True
-isNumericLiteral (XObj (Chr _) _ _) = True
-isNumericLiteral _ = False
-
 removeSuffix :: String -> String
 removeSuffix [] = []
 removeSuffix [c] = [c]

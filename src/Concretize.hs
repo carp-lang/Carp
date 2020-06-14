@@ -1321,15 +1321,6 @@ suffixTyVars suffix t =
     RefTy x lt -> RefTy (suffixTyVars suffix x) (suffixTyVars suffix lt)
     _ -> t
 
-isGlobalFunc :: XObj -> Bool
-isGlobalFunc xobj =
-  case xobj of
-    XObj (InterfaceSym _) _ (Just FuncTy{}) -> True
-    XObj (MultiSym _ _) _ (Just FuncTy{}) -> True
-    XObj (Sym _ (LookupGlobal _ _)) _ (Just FuncTy{}) -> True
-    XObj (Sym _ (LookupGlobalOverride _)) _ (Just FuncTy{}) -> True
-    _ -> False
-
 -- | The following functions will generate deleters and copy:ing methods for structs, they are shared with the Deftype module
 
 data AllocationMode = StackAlloc | HeapAlloc

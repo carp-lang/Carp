@@ -194,7 +194,3 @@ setFullyQualifiedSymbols typeEnv globalEnv env xobj@(XObj (StaticArr array) i t)
   in  XObj (StaticArr array') i t
 
 setFullyQualifiedSymbols _ _ _ xobj = xobj
-
-isExternalFunction :: XObj -> Bool
-isExternalFunction (XObj (Lst (XObj (External _) _ _ : _)) _ _) = True
-isExternalFunction _ = False

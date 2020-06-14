@@ -94,6 +94,44 @@ data Obj = Sym SymPath SymbolMode
          | Interface Ty [SymPath]
          deriving (Show, Eq)
 
+isGlobalFunc :: XObj -> Bool
+isGlobalFunc xobj =
+  case xobj of
+    XObj (InterfaceSym _) _ (Just FuncTy{}) -> True
+    XObj (MultiSym _ _) _ (Just FuncTy{}) -> True
+    XObj (Sym _ (LookupGlobal _ _)) _ (Just FuncTy{}) -> True
+    XObj (Sym _ (LookupGlobalOverride _)) _ (Just FuncTy{}) -> True
+    _ -> False
+
+isNumericLiteral :: XObj -> Bool
+isNumericLiteral (XObj (Num _ _) _ _) = True
+isNumericLiteral (XObj (Bol _) _ _) = True
+isNumericLiteral (XObj (Chr _) _ _) = True
+isNumericLiteral _ = False
+
+-- | Is the given XObj an unqualified symbol.
+isUnqualifiedSym :: XObj -> Bool
+isUnqualifiedSym (XObj (Sym (SymPath [] _) _) _ _) = True
+isUnqualifiedSym _ = False
+
+isSym :: XObj -> Bool
+isSym (XObj (Sym (SymPath _ _) _) _ _) = True
+isSym _ = False
+
+isArray :: XObj -> Bool
+isArray (XObj (Arr _) _ _) = True
+isArray _ = False
+
+isLiteral :: XObj -> Bool
+isLiteral (XObj (Num _ _) _ _) = True
+isLiteral (XObj (Chr _) _ _) = True
+isLiteral (XObj (Bol _) _ _) = True
+isLiteral _ = False
+
+isExternalFunction :: XObj -> Bool
+isExternalFunction (XObj (Lst (XObj (External _) _ _ : _)) _ _) = True
+isExternalFunction _ = False
+
 -- | This instance is needed for the dynamic Dictionary
 instance Ord Obj where
   compare (Str a) (Str b) = compare a b
@@ -788,25 +826,6 @@ wrapInParens xobj@(XObj _ i t) =
 isVarName :: String -> Bool
 isVarName (firstLetter:_) =
   not (isUpper firstLetter) -- This allows names beginning with special chars etc. to be OK for vars
-
--- | Is the given XObj an unqualified symbol.
-isUnqualifiedSym :: XObj -> Bool
-isUnqualifiedSym (XObj (Sym (SymPath [] _) _) _ _) = True
-isUnqualifiedSym _ = False
-
-isSym :: XObj -> Bool
-isSym (XObj (Sym (SymPath _ _) _) _ _) = True
-isSym _ = False
-
-isArray :: XObj -> Bool
-isArray (XObj (Arr _) _ _) = True
-isArray _ = False
-
-isLiteral :: XObj -> Bool
-isLiteral (XObj (Num _ _) _ _) = True
-isLiteral (XObj (Chr _) _ _) = True
-isLiteral (XObj (Bol _) _ _) = True
-isLiteral _ = False
 
 -- construct an empty list xobj
 emptyList :: XObj
