@@ -286,6 +286,12 @@ primitiveInfo _ ctx [target@(XObj (Sym path@(SymPath _ name) _) _ _)] = do
           case Meta.get "doc" metaData of
             Just (XObj (Str val) _ _) -> liftIO $ putStrLn ("Documentation: " ++ val)
             Nothing -> return ()
+          case Meta.get "implements" metaData of
+            Just xobj@(XObj object info _) -> do
+              case info of
+                Just info' -> putStrLn $ "Implementing: " ++ getName xobj
+                Nothing -> pure ()
+            Nothing -> pure ()
           liftIO $ when (projectPrintTypedAST proj) $ putStrLnWithColor Yellow (prettyTyped x)
           return (ctx, dynamicNil)
 primitiveInfo _ ctx [notName] =
