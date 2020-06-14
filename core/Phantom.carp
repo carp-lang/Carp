@@ -1,0 +1,6 @@
+(deftype (Phantom a) [])
+
+(defmodule Phantom
+  (sig ensure (Fn [a (Phantom a)] a))
+  (defn ensure [a p] a)
+)
