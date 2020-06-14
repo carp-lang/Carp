@@ -29,11 +29,10 @@
   (Puff [String]))
 
 (defn match-ref-1 []
-  (let-do [xs [(StrangeThings.Piff @"ABCD")]]
+  (let [xs [(StrangeThings.Puff @"ABCD")]]
     (match-ref (Array.unsafe-nth &xs 0)
-      (StrangeThings.Piff x) (println* x)
-      _ ())
-    1))
+      (StrangeThings.Piff x) false
+      _ true)))
 
 (use-all Test Vector2 Foo)
 
@@ -65,8 +64,7 @@
   (assert-true test
                (let-and-set)
                "test that nested let bindings and set! interplay nicely")
-  (assert-equal test
-                1
-                (match-ref-1)
-                "test that match-ref doesn't delete references")
+  (assert-true test
+               (match-ref-1)
+               "test that match-ref doesn't delete references")
 )
