@@ -458,16 +458,42 @@ primitiveRegister x ctx _ =
      "`.\n\nIs it valid? Every `register` needs to follow the form `(register name <signature> <optional: override>)`.")
     (info x))
 
+
+
 primitiveDeftype :: Primitive
 primitiveDeftype xobj ctx (name:rest) =
   case rest of
-    (XObj (Arr a) _ _ : _) -> if all isUnqualifiedSym (map fst (members a))
-                             then deftype name
-                             else return (makeEvalError ctx Nothing (
-                                  "Type members must be unqualified symbols, but got `" ++
-                                  concatMap pretty rest ++ "`") (info xobj))
-                             where members (binding:val:xs) = (binding, val):members xs
-                                   members [] = []
+    (XObj (Arr a) _ _ : _) -> 
+      case members a of
+        Nothing ->
+          return $                                                                     
+                makeEvalError                                                              
+                  ctx                                                                      
+                  Nothing                                                                  
+                  ("All fields must have a name and a type." ++                            
+                   "Example:\n" ++
+                   "```(deftype Name [field1 Type1, field2 Type2, field3 Type3])```\n")
+                  (info xobj)
+        Just a ->
+          ensureUnqualified $ map fst a
+      where members :: [XObj] -> Maybe [(XObj, XObj)]
+            members (binding:val:xs) = do
+                xs' <- members xs
+                Just $ (binding, val) : xs'
+            members (x:[]) = Nothing
+            members   [] = Just []
+
+            ensureUnqualified :: [XObj] -> IO (Context, Either EvalError XObj)
+            ensureUnqualified objs =
+              if all isUnqualifiedSym objs
+                then deftype name
+                else return $
+                       makeEvalError
+                          ctx
+                          Nothing
+                          ("Type members must be unqualified symbols, but got `" ++
+                           concatMap pretty rest ++ "`")
+                          (info xobj)
     _ -> deftype name
   where deftype name@(XObj (Sym (SymPath _ ty) _) _ _) = deftype' name ty []
         deftype (XObj (Lst (name@(XObj (Sym (SymPath _ ty) _) _ _) : tyvars)) _ _) =
