@@ -23,6 +23,17 @@
     (let [] (set! x 2))
     (= x 2)))
 
+; make sure that match-ref doesn't delete references (issue #843)
+(deftype StrangeThings
+  (Piff [String])
+  (Puff [String]))
+
+(defn match-ref-1 []
+  (let [xs [(StrangeThings.Puff @"ABCD")]]
+    (match-ref (Array.unsafe-nth &xs 0)
+      (StrangeThings.Piff x) false
+      _ true)))
+
 (use-all Test Vector2 Foo)
 
 (deftest test
@@ -53,4 +64,7 @@
   (assert-true test
                (let-and-set)
                "test that nested let bindings and set! interplay nicely")
+  (assert-true test
+               (match-ref-1)
+               "test that match-ref doesn't delete references")
 )
