@@ -29,10 +29,10 @@ jobs:
       run: stack build
 
     - name: Build Lint
-      run: stack build ormolu
+      run: stack build brittany
 
     - name: Lint
-      run: stack exec ormolu -- --mode check $(find src -name '*.hs')
+      run: stack exec brittany -- -c src/*.hs
 
     - name: Run Compiler Tests
       run: stack test

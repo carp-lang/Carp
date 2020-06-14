@@ -1,10 +1,10 @@
 module Util where
 
-import Data.List
-import qualified Data.Map as Map
-import Data.Maybe (fromMaybe)
-import qualified Data.Set as Set
-import System.Info (os)
+import           Data.List
+import qualified Data.Map                      as Map
+import           Data.Maybe                     ( fromMaybe )
+import qualified Data.Set                      as Set
+import           System.Info                    ( os )
 
 joinWith :: String -> [String] -> String
 joinWith = intercalate
@@ -25,9 +25,10 @@ joinWithPeriod :: [String] -> String
 joinWithPeriod = intercalate "."
 
 pairwise :: Show a => [a] -> [(a, a)]
-pairwise [] = []
+pairwise []           = []
 pairwise (x : y : xs) = (x, y) : pairwise xs
-pairwise leftover = error ("An uneven number of forms sent to pairwise: " ++ show leftover)
+pairwise leftover =
+  error ("An uneven number of forms sent to pairwise: " ++ show leftover)
 
 compilerError :: String -> a
 compilerError msg = error ("Internal compiler error: " ++ msg)
@@ -40,17 +41,13 @@ toEither a b = case a of
 
 replaceChars :: Map.Map Char String -> String -> String
 replaceChars dict = concatMap replacer
-  where
-    replacer c = fromMaybe [c] (Map.lookup c dict)
+  where replacer c = fromMaybe [c] (Map.lookup c dict)
 
 replaceStrings :: Map.Map String String -> String -> String
 replaceStrings dict s = fromMaybe s (Map.lookup s dict)
 
 addIfNotPresent :: Eq a => a -> [a] -> [a]
-addIfNotPresent x xs =
-  if x `elem` xs
-    then xs
-    else xs ++ [x]
+addIfNotPresent x xs = if x `elem` xs then xs else xs ++ [x]
 
 remove :: (a -> Bool) -> [a] -> [a]
 remove f = filter (not . f)
@@ -68,22 +65,17 @@ enumerate n = show n ++ ":th"
 data Platform = Linux | MacOS | Windows | FreeBSD deriving (Show, Eq)
 
 platform :: Platform
-platform =
-  case os of
-    "linux" -> Linux
-    "darwin" -> MacOS
-    "mingw32" -> Windows
-    "freebsd" -> FreeBSD
+platform = case os of
+  "linux"   -> Linux
+  "darwin"  -> MacOS
+  "mingw32" -> Windows
+  "freebsd" -> FreeBSD
 
-unionOfSetsInList (x : xs) =
-  foldl' Set.union x xs
-unionOfSetsInList [] =
-  Set.empty
+unionOfSetsInList (x : xs) = foldl' Set.union x xs
+unionOfSetsInList []       = Set.empty
 
-intersectionOfSetsInList (x : xs) =
-  foldl' Set.intersection x xs
-intersectionOfSetsInList [] =
-  Set.empty
+intersectionOfSetsInList (x : xs) = foldl' Set.intersection x xs
+intersectionOfSetsInList []       = Set.empty
 
 evenIndices :: [a] -> [a]
 evenIndices xs = map snd . filter (even . fst) $ zip [0 ..] xs
@@ -94,7 +86,4 @@ evenIndices xs = map snd . filter (even . fst) $ zip [0 ..] xs
 -- top level it returns a constant string, otherwise it returns the provided
 -- name (usually the name of the function in which the lambda is defined).
 lambdaToCName :: String -> Int -> String
-lambdaToCName name nestLevel =
-  if nestLevel > 0
-    then name
-    else "NAKED_LAMBDA"
+lambdaToCName name nestLevel = if nestLevel > 0 then name else "NAKED_LAMBDA"

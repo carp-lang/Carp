@@ -1,32 +1,33 @@
 module Template where
 
-import Concretize
-import qualified Data.Map as Map
-import qualified Data.Set as Set
-import Debug.Trace
-import Infer
-import Info
-import Obj
-import Parsing
-import ToTemplate
-import Types
-import Util
+import           Concretize
+import qualified Data.Map                      as Map
+import qualified Data.Set                      as Set
+import           Debug.Trace
+import           Infer
+import           Info
+import           Obj
+import           Parsing
+import           ToTemplate
+import           Types
+import           Util
 
 -- | Create a binding pair used for adding a template instantiation to an environment.
 instanceBinder :: SymPath -> Ty -> Template -> String -> (String, Binder)
 instanceBinder path@(SymPath _ name) actualType template docs =
   let (x, _) = instantiateTemplate path actualType template
       docObj = XObj (Str docs) (Just dummyInfo) Nothing
-      meta = MetaData (Map.insert "doc" docObj Map.empty)
-   in (name, Binder meta x)
+      meta   = MetaData (Map.insert "doc" docObj Map.empty)
+  in  (name, Binder meta x)
 
 -- | Create a binding pair and don't discard the dependencies
-instanceBinderWithDeps :: SymPath -> Ty -> Template -> String -> ((String, Binder), [XObj])
+instanceBinderWithDeps
+  :: SymPath -> Ty -> Template -> String -> ((String, Binder), [XObj])
 instanceBinderWithDeps path@(SymPath _ name) actualType template docs =
   let (x, deps) = instantiateTemplate path actualType template
-      docObj = XObj (Str docs) (Just dummyInfo) Nothing
-      meta = MetaData (Map.insert "doc" docObj Map.empty)
-   in ((name, Binder meta x), deps)
+      docObj    = XObj (Str docs) (Just dummyInfo) Nothing
+      meta      = MetaData (Map.insert "doc" docObj Map.empty)
+  in  ((name, Binder meta x), deps)
 
 -- | Templates are instructions for the compiler to generate some C-code
 -- | based on some template and the names and types to fill into the template.
@@ -39,43 +40,60 @@ instanceBinderWithDeps path@(SymPath _ name) actualType template docs =
 -- | "int length__Float(Array__Float xs) { return xs->len; }"
 
 -- | Create a binding pair used for adding a template definition to an environment.
-defineTemplate :: SymPath -> Ty -> String -> [Token] -> [Token] -> (Ty -> [XObj]) -> (String, Binder)
+defineTemplate
+  :: SymPath
+  -> Ty
+  -> String
+  -> [Token]
+  -> [Token]
+  -> (Ty -> [XObj])
+  -> (String, Binder)
 defineTemplate path t docs declaration definition depsFunc =
   let (SymPath _ name) = path
       template = Template t (const declaration) (const definition) depsFunc
       i = Info 0 0 (show path ++ ".template") Set.empty 0
-      defLst = [XObj (Deftemplate (TemplateCreator (\_ _ -> template))) Nothing Nothing, XObj (Sym path Symbol) Nothing Nothing]
+      defLst =
+          [ XObj (Deftemplate (TemplateCreator (\_ _ -> template)))
+                 Nothing
+                 Nothing
+          , XObj (Sym path Symbol) Nothing Nothing
+          ]
       docObj = XObj (Str docs) (Just dummyInfo) Nothing
-      meta = MetaData (Map.insert "doc" docObj Map.empty)
-   in (name, Binder meta (XObj (Lst defLst) (Just i) (Just t)))
+      meta   = MetaData (Map.insert "doc" docObj Map.empty)
+  in  (name, Binder meta (XObj (Lst defLst) (Just i) (Just t)))
 
 -- | The more advanced version of a template, where the code can vary depending on the type.
-defineTypeParameterizedTemplate :: TemplateCreator -> SymPath -> Ty -> String -> (String, Binder)
+defineTypeParameterizedTemplate
+  :: TemplateCreator -> SymPath -> Ty -> String -> (String, Binder)
 defineTypeParameterizedTemplate templateCreator path t docs =
   let (SymPath _ name) = path
       i = Info 0 0 (show path ++ ".parameterizedTemplate") Set.empty 0
-      defLst = [XObj (Deftemplate templateCreator) Nothing Nothing, XObj (Sym path Symbol) Nothing Nothing]
+      defLst =
+          [ XObj (Deftemplate templateCreator) Nothing Nothing
+          , XObj (Sym path Symbol)             Nothing Nothing
+          ]
       docObj = XObj (Str docs) (Just dummyInfo) Nothing
-      meta = MetaData (Map.insert "doc" docObj Map.empty)
-   in (name, Binder meta (XObj (Lst defLst) (Just i) (Just t)))
+      meta   = MetaData (Map.insert "doc" docObj Map.empty)
+  in  (name, Binder meta (XObj (Lst defLst) (Just i) (Just t)))
 
 -- | Concretizes the types used in @token
 --   @cName is the name of the definition, i.e. the "foo" in "void foo() { ... }"
 concretizeTypesInToken :: TypeMappings -> String -> [Token] -> Token -> [Token]
-concretizeTypesInToken mappings cName decl token =
-  case token of
-    TokDecl -> concatMap (concretizeTypesInToken mappings cName (error "Nope.")) decl
-    TokName -> [TokC cName]
-    TokTy t mode -> [TokTy (replaceTyVars mappings t) mode]
-    _ -> [token]
+concretizeTypesInToken mappings cName decl token = case token of
+  TokDecl ->
+    concatMap (concretizeTypesInToken mappings cName (error "Nope.")) decl
+  TokName      -> [TokC cName]
+  TokTy t mode -> [TokTy (replaceTyVars mappings t) mode]
+  _            -> [token]
 
 -- | The code needed to correctly call a lambda from C.
 templateCodeForCallingLambda :: String -> Ty -> [String] -> String
 templateCodeForCallingLambda functionName t args =
   let FuncTy argTys retTy lt = t
-      castToFnWithEnv = tyToCast (FuncTy (lambdaEnvTy : argTys) retTy lt)
-      castToFn = tyToCast t
-   in functionName ++ ".env ? "
+      castToFnWithEnv        = tyToCast (FuncTy (lambdaEnvTy : argTys) retTy lt)
+      castToFn               = tyToCast t
+  in  functionName
+        ++ ".env ? "
         ++ "(("
         ++ castToFnWithEnv
         ++ ")"
@@ -99,18 +117,17 @@ templateCodeForCallingLambda functionName t args =
 tyToCast :: Ty -> String
 tyToCast t =
   let FuncTy argTys retTy _ = t
-   in "§(Fn [" ++ joinWithSpace (map show argTys) ++ "] " ++ show retTy ++ ")" -- Note! The '§' means that the emitted type will be "raw" and not converted to 'Lambda'.
+  in  "§(Fn [" ++ joinWithSpace (map show argTys) ++ "] " ++ show retTy ++ ")" -- Note! The '§' means that the emitted type will be "raw" and not converted to 'Lambda'.
 
 ----------------------------------------------------------------------------------------------------------
 -- ACTUAL TEMPLATES
 
 -- | This function accepts a pointer and will do nothing with it.
 templateNoop :: (String, Binder)
-templateNoop =
-  defineTemplate
-    (SymPath [] "noop")
-    (FuncTy [PointerTy (VarTy "a")] UnitTy StaticLifetimeTy)
-    "accepts a pointer and will do nothing with it."
-    (toTemplate "void $NAME ($a* a)")
-    (toTemplate "$DECL { }")
-    (const [])
+templateNoop = defineTemplate
+  (SymPath [] "noop")
+  (FuncTy [PointerTy (VarTy "a")] UnitTy StaticLifetimeTy)
+  "accepts a pointer and will do nothing with it."
+  (toTemplate "void $NAME ($a* a)")
+  (toTemplate "$DECL { }")
+  (const [])
