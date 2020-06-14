@@ -197,13 +197,15 @@ toC toCMode (Binder meta root) = emitterSrc (execState (visit startingIndent roo
                   do let innerIndent = indent + indentAmount
                          Just (FuncTy _ retTy _) = t
                          defnDecl = defnToDeclaration meta path argList retTy
+                         isMain = name == "main"
                      appendToSrc (defnDecl ++ " {\n")
-                     when (name == "main") $
+                     when isMain $
                        appendToSrc (addIndent innerIndent ++ "carp_init_globals(argc, argv);\n")
                      ret <- visit innerIndent body
                      delete innerIndent i
-                     when (retTy /= UnitTy) $
-                       appendToSrc (addIndent innerIndent ++ "return " ++ ret ++ ";\n")
+                     case retTy of
+                       UnitTy -> when isMain $ appendToSrc (addIndent innerIndent ++ "return 0;\n")
+                       _ -> appendToSrc (addIndent innerIndent ++ "return " ++ ret ++ ";\n")
                      appendToSrc "}\n\n"
                      return ""
 
