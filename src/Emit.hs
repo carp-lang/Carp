@@ -27,6 +27,7 @@ import Scoring
 import Lookup
 import Concretize
 import Info
+import qualified Meta
 
 addIndent :: Int -> String
 addIndent n = replicate n ' '
@@ -669,7 +670,7 @@ delete indent i = mapM_ deleterToC (infoDelete i)
 
 defnToDeclaration :: MetaData -> SymPath -> [XObj] -> Ty -> String
 defnToDeclaration meta path@(SymPath _ name) argList retTy =
-  let (XObj (Lst annotations) _ _) = fromMaybe emptyList (Map.lookup "annotations" (getMeta meta))
+  let (XObj (Lst annotations) _ _) = fromMaybe emptyList (Meta.get "annotations" meta)
       annotationsStr = joinWith " " (map strToC annotations)
       sep = if not (null annotationsStr) then " " else ""
   in annotationsStr ++ sep ++
