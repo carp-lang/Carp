@@ -215,13 +215,13 @@ eval ctx xobj@(XObj o i t) =
 
        x@(XObj (Lst [XObj (Primitive prim) _ _, _]) _ _):args -> (getPrimitive prim) x ctx args
 
-       XObj (Lst (XObj (Defn _) _ _:_)) _ _:_ -> return (ctx, Left HasStaticCall)
-       XObj (Lst (XObj (Interface _ _) _ _:_)) _ _:_ -> return (ctx, Left HasStaticCall)
-       XObj (Lst (XObj (Instantiate _) _ _:_)) _ _:_ -> return (ctx, Left HasStaticCall)
-       XObj (Lst (XObj (Deftemplate _) _ _:_)) _ _:_ -> return (ctx, Left HasStaticCall)
-       XObj (Lst (XObj (External _) _ _:_)) _ _:_ -> return (ctx, Left HasStaticCall)
-       XObj (Match _) _ _:_ -> return (ctx, Left HasStaticCall)
-       [XObj Ref _ _, _] -> return (ctx, Left HasStaticCall)
+       XObj (Lst (XObj (Defn _) _ _:_)) _ _:_ -> return (ctx, Left (HasStaticCall xobj i))
+       XObj (Lst (XObj (Interface _ _) _ _:_)) _ _:_ -> return (ctx, Left (HasStaticCall xobj i))
+       XObj (Lst (XObj (Instantiate _) _ _:_)) _ _:_ -> return (ctx, Left (HasStaticCall xobj i))
+       XObj (Lst (XObj (Deftemplate _) _ _:_)) _ _:_ -> return (ctx, Left (HasStaticCall xobj i))
+       XObj (Lst (XObj (External _) _ _:_)) _ _:_ -> return (ctx, Left (HasStaticCall xobj i))
+       XObj (Match _) _ _:_ -> return (ctx, Left (HasStaticCall xobj i))
+       [XObj Ref _ _, _] -> return (ctx, Left (HasStaticCall xobj i))
 
        l@(XObj (Lst _) i t):args -> do
          (newCtx, f) <- eval ctx l
@@ -393,7 +393,7 @@ executeCommand ctx@(Context env _ _ _ _ _ _ _) xobj =
        -- special case: calling something static at the repl
        Right (XObj (Lst (XObj (Lst (XObj (Defn _) _ _:(XObj (Sym (SymPath [] "main") _) _ _):_)) _ _:_)) _ _) ->
         executeCommand newCtx (withBuildAndRun (XObj (Lst []) (Just dummyInfo) Nothing))
-       Left HasStaticCall ->
+       Left (HasStaticCall _ _) ->
         callFromRepl newCtx xobj
 
        Right result -> return (result, newCtx)
