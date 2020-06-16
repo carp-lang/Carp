@@ -330,10 +330,20 @@ collectCapturedVars root = removeDuplicates (map decreaseCaptureLevel (visit roo
       case obj xobj of
         -- don't peek inside lambdas, trust their capture lists:
         (Lst [XObj (Fn _ captures) _ _, _, _]) -> Set.toList captures
+        -- in the case of lets, we have to remove new bindings from the list of captured variables,
+        -- including the ones captured in later bindings
+        (Lst [XObj Let _ _, XObj (Arr bindings) _ _, body]) ->
+          let (bound, bindingsCaptured) = foldl
+                (\(bound, captured) (XObj sym _ ty, expr) ->
+                   let capt = filter (\x -> Set.notMember x bound) (visit expr) in
+                     (Set.insert (XObj sym (Just dummyInfo) ty) bound, capt++captured))
+                   (Set.empty, []) (pairwise bindings) in
+          let bodyCaptured = filter (\x -> Set.notMember x bound) (visit body) in
+            bindingsCaptured++bodyCaptured
         (Lst _) -> visitList xobj
         (Arr _) -> visitArray xobj
         -- TODO: Static Arrays!
-        (Sym path (LookupLocal (Capture _))) -> [xobj]
+        sym@(Sym path (LookupLocal (Capture _))) -> [XObj sym (Just dummyInfo) (ty xobj)]
         _ -> []
 
     visitList :: XObj -> [XObj]
