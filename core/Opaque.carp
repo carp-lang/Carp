@@ -1,0 +1,41 @@
+(doc Opaque "The opaque type is an uninhabited type with no constructors.
+Opaque can be used to force some abstract type to range over a type constructor
+without concerning oneself with the inhabitant of the constructor--in other
+words, it may be used to enable a type to work for all inhabitants and can
+express relationships between types. It can facillitate generic programming.
+
+Consider an example:
+
+```
+;; The type of indicies over containers of a single type argument
+(deftype (Index (f Opaque) b) [at b])
+
+(definterface tabulate (Fn [(Ref (Fn [(Index (f Opaque) b)] c))] (f c)))
+(definterface positions (f (Index (f Opaque) b)))
+
+(implements tabulate tabulate)
+(defn tabulate [h]
+  (fmap h @&positions))
+
+(deftype (Tuple a) [x a y a])
+
+(defmodule Tuple
+  (sig positions (Tuple (Index (Tuple Opaque) Bool)))
+  (def positions (Tuple.init (Index.init true) (Index.init false)))
+)
+```
+
+In the above example, the Opaque type allows us to define tabulate generically
+defined over Tuples without having to ensure their inhabitants match, allowing
+us to fully determine the resulting values type via tabulate's function
+argument. Without Opaque, Index would contain a generic type which would be
+unreseolved upon the call to `tabulate`. It allows us to ensure the `positions`
+we call are the positions of the correct constructor type `f` wihtout worrying
+having to restrict ourselves to only calling `Indexes` over an `f` of a
+specific type  (e.g. `(f a)`)--in other words, it allows us to constrain
+functions by constructor types only.
+
+Thanks to Opaque, tabulate can generate an `(Array Int)`, `(Array Bool)`,
+`(Array String)` all solely dependent on the return type of `h`.
+")
+(deftype Opaque)
