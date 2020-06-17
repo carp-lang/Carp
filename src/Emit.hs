@@ -27,6 +27,7 @@ import Scoring
 import Lookup
 import Concretize
 import Info
+import qualified Meta
 
 addIndent :: Int -> String
 addIndent n = replicate n ' '
@@ -196,13 +197,15 @@ toC toCMode (Binder meta root) = emitterSrc (execState (visit startingIndent roo
                   do let innerIndent = indent + indentAmount
                          Just (FuncTy _ retTy _) = t
                          defnDecl = defnToDeclaration meta path argList retTy
+                         isMain = name == "main"
                      appendToSrc (defnDecl ++ " {\n")
-                     when (name == "main") $
+                     when isMain $
                        appendToSrc (addIndent innerIndent ++ "carp_init_globals(argc, argv);\n")
                      ret <- visit innerIndent body
                      delete innerIndent i
-                     when (retTy /= UnitTy) $
-                       appendToSrc (addIndent innerIndent ++ "return " ++ ret ++ ";\n")
+                     case retTy of
+                       UnitTy -> when isMain $ appendToSrc (addIndent innerIndent ++ "return 0;\n")
+                       _ -> appendToSrc (addIndent innerIndent ++ "return " ++ ret ++ ";\n")
                      appendToSrc "}\n\n"
                      return ""
 
@@ -371,7 +374,8 @@ toC toCMode (Binder meta root) = emitterSrc (execState (visit startingIndent roo
                        when isNotVoid $
                          appendToSrc (addIndent indent' ++ retVar ++ " = " ++ caseExprRetVal ++ ";\n")
                        let Just caseLhsInfo' = caseLhsInfo
-                       delete indent' caseLhsInfo'
+                       when (matchMode == MatchValue)
+                         (delete indent' caseLhsInfo')
                        appendToSrc (addIndent indent ++ "}\n")
 
               in  do exprVar <- visit indent expr
@@ -669,7 +673,7 @@ delete indent i = mapM_ deleterToC (infoDelete i)
 
 defnToDeclaration :: MetaData -> SymPath -> [XObj] -> Ty -> String
 defnToDeclaration meta path@(SymPath _ name) argList retTy =
-  let (XObj (Lst annotations) _ _) = fromMaybe emptyList (Map.lookup "annotations" (getMeta meta))
+  let (XObj (Lst annotations) _ _) = fromMaybe emptyList (Meta.get "annotations" meta)
       annotationsStr = joinWith " " (map strToC annotations)
       sep = if not (null annotationsStr) then " " else ""
   in annotationsStr ++ sep ++
@@ -933,12 +937,6 @@ wrapInInitFunction with_core src =
     else "")
   ++ src ++
   "}"
-
-isNumericLiteral :: XObj -> Bool
-isNumericLiteral (XObj (Num _ _) _ _) = True
-isNumericLiteral (XObj (Bol _) _ _) = True
-isNumericLiteral (XObj (Chr _) _ _) = True
-isNumericLiteral _ = False
 
 removeSuffix :: String -> String
 removeSuffix [] = []

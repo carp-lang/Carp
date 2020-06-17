@@ -8,6 +8,8 @@ import Text.EditDistance (defaultEditCosts, levenshteinDistance)
 import Types
 import Obj
 import Util
+import qualified Meta
+
 import Debug.Trace
 
 -- | The type of generic lookup functions.
@@ -130,7 +132,7 @@ lookupByMeta :: String -> Env -> [Binder]
 lookupByMeta key env =
   let filtered = Map.filter hasMeta (envBindings env)
   in  map snd $ Map.toList filtered
-  where hasMeta (Binder meta _)= Map.member key (getMeta meta)
+  where hasMeta b = Meta.binderMember key b
 
 -- | Given an interface, lookup all binders that implement the interface.
 lookupImplementations :: SymPath -> Env -> [Binder]
@@ -138,7 +140,7 @@ lookupImplementations interface env =
   let binders = lookupByMeta "implements" env
   in  filter isImpl binders
   where isImpl (Binder meta _) =
-          case Map.lookup "implements" (getMeta meta) of
+          case Meta.get "implements" meta of
             Just (XObj (Lst interfaces) _ _) -> interface `elem` (map getPath interfaces)
             _ -> False
 

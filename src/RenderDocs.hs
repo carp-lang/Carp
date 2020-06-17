@@ -21,6 +21,7 @@ import Types
 import Util
 import Path
 import AssignTypes (typeVariablesInOrderOfAppearance)
+import qualified Meta
 
 -- TODO: Move the beautification to a much earlier place, preferably when the function is defined/concretized-
 -- This might be a duplicate with the work in a PR by @jacereda
@@ -93,7 +94,7 @@ envBinderToHtml envBinder ctx moduleName moduleNames =
   let (env, meta) = getEnvAndMetaFromBinder envBinder
       title = projectTitle ctx
       css = projectDocsStyling ctx
-      moduleDescription = case Map.lookup "doc" (getMeta meta) of
+      moduleDescription = case Meta.get "doc" meta of
                             Just (XObj (Str s) _ _) -> s
                             Nothing -> ""
       moduleDescriptionHtml = commonmarkToHtml [optSafe] $ Text.pack moduleDescription
@@ -133,8 +134,7 @@ binderToHtml (Binder meta xobj) =
       typeSignature = case ty xobj of
                  Just t -> show (beautifyType t) -- NOTE: This destroys user-defined names of type variables!
                  Nothing -> ""
-      metaMap = getMeta meta
-      docString = case Map.lookup "doc" metaMap of
+      docString = case Meta.get "doc" meta of
                     Just (XObj (Str s) _ _) -> s
                     Just found -> pretty found
                     Nothing -> ""
