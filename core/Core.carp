@@ -49,6 +49,7 @@
 (load-once "Sort.carp")
 (load-once "Binary.carp")
 (load-once "Control.carp")
+(load-once "Opaque.carp")
 
 (not-on-windows
   (system-include "sys/wait.h")
