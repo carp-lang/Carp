@@ -44,6 +44,7 @@ defaultProject =
               _ -> [ "-lm" ]
           , projectFiles = []
           , projectAlreadyLoaded = []
+          , projectStaticallyLoaded = []
           , projectEchoC = False
           , projectLibDir = "libs"
           , projectCarpDir = "."
@@ -129,6 +130,7 @@ main = do setLocaleEncoding utf8
                           Build -> execStr "Compiler (Build)" "(build)" ctx
                           Install thing -> execStr "Installation" ("(load \"" ++ thing ++ "\")") ctx
                           BuildAndRun -> execStr "Compiler (Build & Run)" "(do (build) (run))" ctx
+                          BuildAsLib -> execStr "Compiler (Build as lib)" "(build-as-lib)" ctx
                           Check -> execStr "Check" "" ctx
                           -- TODO: Handle the return value from executeString and return that one to the shell
           pure ()
@@ -172,6 +174,7 @@ parseExecMode =
   flag' Check (long "check" <> help "Check project")
   <|> flag' Build (short 'b' <> help "Build project")
   <|> flag' BuildAndRun (short 'x' <> help "Build an run project")
+  <|> flag' BuildAsLib (long "build-as-lib" <> help "Build project as library")
   <|> Install <$> strOption (short 'i' <> help "Install built product")
   <|> pure Repl
 

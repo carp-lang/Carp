@@ -767,6 +767,61 @@ commandReload ctx args = do
   newCtx <- liftIO (foldM f ctx paths)
   return (newCtx, dynamicNil)
 
+-- | Command for statically loading a compiled file
+commandLoadStatic :: CommandCallback
+commandLoadStatic ctx [xobj@(XObj (Str path) i _)] =
+  loadStatic ctx path i
+commandLoadStatic ctx [x] =
+  return $ evalError ctx ("Invalid args to `load-static`: " ++ pretty x) (info x)
+
+loadStatic :: Context -> String -> Maybe Info -> IO (Context, Either EvalError XObj)
+loadStatic ctx path i = do
+  let proj = contextProj ctx
+  libDir <- liftIO $ cachePath $ projectLibDir proj
+  let relativeTo = case i of
+                     Just ii ->
+                       case infoFile ii of
+                         "REPL" -> "."
+                         file -> takeDirectory file
+                     Nothing -> "."
+      carpDir = projectCarpDir proj
+      fullSearchPaths =
+        path :
+        (relativeTo </> path) :                         -- the path from the file that contains the '(load)', or the current directory if not loading from a file (e.g. the repl)
+        map (</> path) (projectCarpSearchPaths proj) ++ -- user defined search paths
+        [carpDir </> "core" </> path] ++
+        [libDir </> path]
+      firstM _ [] = return Nothing
+      firstM p (x:xs) = do
+        q <- p x
+        if q
+          then return $ Just x
+          else firstM p xs
+  existingPath <- liftIO $ firstM doesFileExist fullSearchPaths
+  case existingPath of
+    Nothing ->
+      return $ invalidPath ctx path i
+    Just firstPathFound ->
+      do canonicalPath <- liftIO (canonicalizePath firstPathFound)
+         fileThatLoads <- liftIO (canonicalizePath (case i of
+                                                      Just ii -> infoFile ii
+                                                      Nothing -> ""))
+         if canonicalPath == fileThatLoads
+           then return $ cantLoadSelf ctx path i
+           else do let staticallyLoaded = projectStaticallyLoaded proj
+                   if canonicalPath `elem` staticallyLoaded
+                     then return (ctx, dynamicNil)
+                     else do
+                      contents <- liftIO $ slurp canonicalPath
+                      let proj' = proj { projectStaticallyLoaded = canonicalPath : staticallyLoaded }
+                          newCtx = trace contents (ctx { contextProj = proj' })
+                      return (newCtx, dynamicNil)
+  where
+   invalidPath ctx path =
+     evalError ctx ("I can't find a file named: '" ++ path ++ "'")
+   cantLoadSelf ctx path =
+     evalError ctx ("A file can't load itself: '" ++ path ++ "'")
+
 -- | Command for expanding a form and its macros.
 commandExpand :: CommandCallback
 commandExpand ctx [xobj] = do

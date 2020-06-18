@@ -12,6 +12,7 @@ data Project = Project { projectTitle :: String
                        , projectPkgConfigFlags :: [String]
                        , projectFiles :: [(FilePath, ReloadMode)]
                        , projectAlreadyLoaded :: [FilePath]
+                       , projectStaticallyLoaded :: [FilePath]
                        , projectEchoC :: Bool
                        , projectLibDir :: FilePath
                        , projectCarpDir :: FilePath

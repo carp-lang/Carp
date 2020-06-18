@@ -11,6 +11,7 @@ import System.Info (os)
 import System.Process (callCommand, spawnCommand, waitForProcess)
 import System.IO (openFile, hPutStr, hClose, utf8, hSetEncoding, IOMode(..))
 import qualified Data.Map as Map
+import Debug.Trace
 
 import Parsing
 import Emit
@@ -250,6 +251,47 @@ commandBuild shutUp ctx args = do
                                                        callCommand cmd
                                                        when (execMode == Repl && not shutUp) (putStrLn ("Compiled to '" ++ outLib ++ "' (shared library)"))
                                            return (setProjectCanExecute False ctx, dynamicNil)
+
+commandBuildAsLib :: Context -> [XObj] -> IO (Context, Either EvalError XObj)
+commandBuildAsLib ctx args = do
+  let env = contextGlobalEnv ctx
+      typeEnv = contextTypeEnv ctx
+      proj = contextProj ctx
+      execMode = contextExecMode ctx
+      src = do decl <- envToDeclarations typeEnv env
+               typeDecl <- envToDeclarations typeEnv (getTypeEnv typeEnv)
+               c <- envToC env Functions
+               initGlobals <- fmap (wrapInInitFunction (projectCore proj)) (globalsToC env)
+               return (("//Types:\n" ++ typeDecl ++
+                         "\n\n//Declarations:\n" ++ decl)
+                      ,("\n\n//Init globals:\n" ++ initGlobals ++
+                         "\n\n//Definitions:\n" ++ c))
+  case src of
+    Left err ->
+      return (evalError ctx ("I encountered an error when emitting code:\n\n" ++ show err) Nothing)
+    Right (okH, okC) ->
+      do let -- compiler = projectCompiler proj
+             -- echoCompilationCommand = projectEchoCompilationCommand proj
+             incl = projectIncludesToC proj
+             -- includeCorePath = " -I" ++ projectCarpDir proj ++ "/core/ "
+             -- flags = includeCorePath ++ projectFlags proj
+             outDir = projectOutDir proj
+             outH = outDir </> (projectTitle proj ++ ".h")
+             outC = outDir </> (projectTitle proj ++ ".c")
+             -- outLib = outDir </> projectTitle proj
+             -- generateOnly = projectGenerateOnly proj
+         liftIO $ createDirectoryIfMissing False outDir
+         -- Write h file
+         hHandle <- openFile outH WriteMode
+         hSetEncoding hHandle utf8
+         hPutStr hHandle (incl ++ okH)
+         hClose hHandle
+         -- Write c file
+         cHandle <- openFile outC WriteMode
+         hSetEncoding cHandle utf8
+         hPutStr cHandle okC
+         hClose cHandle
+         return (ctx, dynamicNil)
 
 setProjectCanExecute :: Bool -> Context -> Context
 setProjectCanExecute value ctx =

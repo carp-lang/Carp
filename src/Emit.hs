@@ -877,7 +877,7 @@ envToDeclarations typeEnv env =
 
 sortDeclarationBinders :: TypeEnv -> [Binder] -> [(Int, Binder)]
 sortDeclarationBinders typeEnv binders =
-  --trace ("\nSORTED: " ++ (show (sortOn fst (map (scoreBinder typeEnv) binders))))
+  --trace ("\nSORTED: " ++ (show (sortOn fst (map (scoreTypeBinder typeEnv) binders))))
   sortOn fst (map (scoreTypeBinder typeEnv) binders)
 
 sortGlobalVariableBinders :: Env -> [Binder] -> [(Int, Binder)]

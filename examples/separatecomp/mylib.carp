@@ -1,0 +1,10 @@
+(Project.config "title" "mylib")
+
+(defmodule MyLib
+  (doc add1 "Add 1 to the input")
+  (defn add1 [x] (+ x 1))
+
+  (defmacro macadd1 [x] (list 'add1 x))
+  )
+
+;;(defn main [] (MyLib.ident 1))
