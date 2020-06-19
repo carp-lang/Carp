@@ -80,7 +80,12 @@ canBeUsedAsMemberType typeEnv typeVariables t xobj =
                            else Left (UninhabitedConstructor ty xobj (length tyvar) (length vars))
                          _ -> Left (InvalidMemberType ty xobj)
              _ -> Left (InvalidMemberType t xobj)
-    VarTy _ -> if t `elem` typeVariables
+    VarTy _ -> if foldr (||) False (map (isCaptured t) typeVariables)
                then return ()
                else Left (InvalidMemberType t xobj)
+               where
+                 -- If a variable `a` appears in a higher-order polymorphic form, such as `(f a)`
+                 -- `a` may be used as a member, sans `f`.
+                 isCaptured t v@(VarTy _) = t == v
+                 isCaptured t (StructTy (VarTy v) vars) = any (== t) vars
     _ -> Left (InvalidMemberType t xobj)
