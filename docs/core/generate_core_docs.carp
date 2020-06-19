@@ -10,6 +10,7 @@
 (load "Statistics.carp")
 (load "Test.carp")
 (load "Bench.carp")
+(load "Phantom.carp")
 
 (save-docs Dynamic
            Int
@@ -40,6 +41,7 @@
            Pair
            Triple
            Quadruple
+           Phantom
            )
 
 (quit)

@@ -1,0 +1,2 @@
+wrong-phantom.carp:7:28 Inferred Long, can't unify with Int.
+wrong-phantom.carp:7:26 Inferred Int, can't unify with Long.

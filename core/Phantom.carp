@@ -1,0 +1,22 @@
+(doc Phantom "is a type without inhabitants and a free type variable, which is
+a fancy way of saying that it has no runtime representation.
+
+When trying to mark types programmatically using something like `the` but
+without the need for a special form, `Phantom` comes in handy.
+
+Example:
+
+```
+(defn test [a]
+  (Phantom.ensure a (the (Phantom Int) (Phantom.init))))
+
+(println* (test 123l)) ; this will not compile
+```")
+(deftype (Phantom a) [])
+
+(defmodule Phantom
+  (doc ensure "is a function that takes anything and a `Phantom`, ensuring that
+the type contained by the `Phantom` and the type of the first parameter match.")
+  (sig ensure (Fn [a (Phantom a)] a))
+  (defn ensure [a p] a)
+)

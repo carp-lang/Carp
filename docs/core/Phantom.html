@@ -171,187 +171,139 @@
                 </div>
             </div>
             <h1>
-                Debug
+                Phantom
             </h1>
             <div class="module-description">
-                
-            </div>
-            <div class="binder">
-                <a class="anchor" href="#assert-balanced">
-                    <h3 id="assert-balanced">
-                        assert-balanced
-                    </h3>
-                </a>
-                <div class="description">
-                    macro
-                </div>
-                <p class="sig">
-                    Macro
-                </p>
-                <pre class="args">
-                    (assert-balanced form)
-                </pre>
-                <p class="doc">
-                    <p>raises an error if the memory balance (number of <code>alloc</code>s - number of <code>free</code>s) isn't <code>0</code>. Requires the flag <code>--log-memory</code> to be passed durng compilation.</p>
+                <p>is a type without inhabitants and a free type variable, which is
+a fancy way of saying that it has no runtime representation.</p>
+<p>When trying to mark types programmatically using something like <code>the</code> but
+without the need for a special form, <code>Phantom</code> comes in handy.</p>
+<p>Example:</p>
+<pre><code>(defn test [a]
+  (Phantom.ensure a (the (Phantom Int) (Phantom.init))))
 
-                </p>
-            </div>
-            <div class="binder">
-                <a class="anchor" href="#check-allocations">
-                    <h3 id="check-allocations">
-                        check-allocations
-                    </h3>
-                </a>
-                <div class="description">
-                    dynamic
-                </div>
-                <p class="sig">
-                    Dynamic
-                </p>
-                <pre class="args">
-                    (check-allocations)
-                </pre>
-                <p class="doc">
-                    <p>will check the allocations made by the program
-immediately, raising a <code>SIGABRT</code> if it fails.</p>
+(println* (test 123l)) ; this will not compile
+</code></pre>
 
-                </p>
             </div>
             <div class="binder">
-                <a class="anchor" href="#leak-array">
-                    <h3 id="leak-array">
-                        leak-array
+                <a class="anchor" href="#copy">
+                    <h3 id="copy">
+                        copy
                     </h3>
                 </a>
                 <div class="description">
-                    external
+                    template
                 </div>
                 <p class="sig">
-                    (Fn [a] ())
+                    (Fn [(Ref (Phantom a) b)] (Phantom a))
                 </p>
                 <span>
                     
                 </span>
                 <p class="doc">
-                    <p>leaks some memory. This function is useful for testing tools that detect leaks.</p>
+                    <p>copies the <code>Phantom</code>.</p>
 
                 </p>
             </div>
             <div class="binder">
-                <a class="anchor" href="#log-memory-balance!">
-                    <h3 id="log-memory-balance!">
-                        log-memory-balance!
+                <a class="anchor" href="#delete">
+                    <h3 id="delete">
+                        delete
                     </h3>
                 </a>
                 <div class="description">
-                    external
+                    template
                 </div>
                 <p class="sig">
-                    (Fn [Bool] ())
+                    (Fn [(Phantom a)] ())
                 </p>
                 <span>
                     
                 </span>
                 <p class="doc">
-                    
+                    <p>deletes a <code>Phantom</code>. Should usually not be called manually.</p>
+
                 </p>
             </div>
             <div class="binder">
-                <a class="anchor" href="#memory-balance">
-                    <h3 id="memory-balance">
-                        memory-balance
+                <a class="anchor" href="#ensure">
+                    <h3 id="ensure">
+                        ensure
                     </h3>
                 </a>
                 <div class="description">
-                    external
+                    defn
                 </div>
                 <p class="sig">
-                    (Fn [] Long)
+                    (Fn [a, (Phantom a)] a)
+                </p>
+                <pre class="args">
+                    (ensure a p)
+                </pre>
+                <p class="doc">
+                    <p>is a function that takes anything and a <code>Phantom</code>, ensuring that
+the type contained by the <code>Phantom</code> and the type of the first parameter match.</p>
+
+                </p>
+            </div>
+            <div class="binder">
+                <a class="anchor" href="#init">
+                    <h3 id="init">
+                        init
+                    </h3>
+                </a>
+                <div class="description">
+                    template
+                </div>
+                <p class="sig">
+                    (Fn [] (Phantom a))
                 </p>
                 <span>
                     
                 </span>
                 <p class="doc">
-                    
-                </p>
-            </div>
-            <div class="binder">
-                <a class="anchor" href="#memory-logged">
-                    <h3 id="memory-logged">
-                        memory-logged
-                    </h3>
-                </a>
-                <div class="description">
-                    macro
-                </div>
-                <p class="sig">
-                    Macro
-                </p>
-                <pre class="args">
-                    (memory-logged form)
-                </pre>
-                <p class="doc">
-                    <p>logs all calls to memory allocation within the form. Requires the flag <code>--log-memory</code> to be passed during compilation.</p>
+                    <p>creates a <code>Phantom</code>.</p>
 
                 </p>
             </div>
             <div class="binder">
-                <a class="anchor" href="#reset-memory-balance!">
-                    <h3 id="reset-memory-balance!">
-                        reset-memory-balance!
+                <a class="anchor" href="#prn">
+                    <h3 id="prn">
+                        prn
                     </h3>
                 </a>
                 <div class="description">
-                    external
+                    template
                 </div>
                 <p class="sig">
-                    (Fn [] ())
+                    (Fn [(Ref (Phantom a) b)] String)
                 </p>
                 <span>
                     
                 </span>
                 <p class="doc">
-                    
-                </p>
-            </div>
-            <div class="binder">
-                <a class="anchor" href="#sanitize-addresses">
-                    <h3 id="sanitize-addresses">
-                        sanitize-addresses
-                    </h3>
-                </a>
-                <div class="description">
-                    dynamic
-                </div>
-                <p class="sig">
-                    Dynamic
-                </p>
-                <pre class="args">
-                    (sanitize-addresses)
-                </pre>
-                <p class="doc">
-                    <p>instructs the compiler to sanitize addresses.</p>
-<p>This might not work on all compilers, but reasonably new versions of GCC and Clang are supported.</p>
+                    <p>converts a <code>Phantom</code> to a string.</p>
 
                 </p>
             </div>
             <div class="binder">
-                <a class="anchor" href="#trace">
-                    <h3 id="trace">
-                        trace
+                <a class="anchor" href="#str">
+                    <h3 id="str">
+                        str
                     </h3>
                 </a>
                 <div class="description">
-                    macro
+                    template
                 </div>
                 <p class="sig">
-                    Macro
+                    (Fn [(Ref (Phantom a) b)] String)
                 </p>
-                <pre class="args">
-                    (trace x)
-                </pre>
+                <span>
+                    
+                </span>
                 <p class="doc">
-                    <p>prints the value of an expression to <code>stdout</code>, then returns its value.</p>
+                    <p>converts a <code>Phantom</code> to a string.</p>
 
                 </p>
             </div>
