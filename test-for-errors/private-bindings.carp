@@ -3,6 +3,11 @@
 (deftype Foo [bar Int])
 (private Foo.bar)
 
+(defmodule Foo
+  (defn get [foo]
+    (Foo.bar foo))
+)
+
 (defn boo [] @(Foo.bar &(Foo.init 1)))
 
 (defn main [] (println* (Foo.bar &(Foo.init 1))))
