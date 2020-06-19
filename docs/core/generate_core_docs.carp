@@ -42,6 +42,7 @@
            Triple
            Quadruple
            Phantom
+           Opaque
            )
 
 (quit)
