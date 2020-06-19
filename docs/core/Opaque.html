@@ -163,6 +163,11 @@
                             </a>
                         </li>
                         <li>
+                            <a href="Phantom.html">
+                                Phantom
+                            </a>
+                        </li>
+                        <li>
                             <a href="Opaque.html">
                                 Opaque
                             </a>
@@ -176,9 +181,9 @@
             <div class="module-description">
                 <p>The opaque type is an uninhabited type with no constructors.
 Opaque can be used to force some abstract type to range over a type constructor
-without concerning oneself with the inhabitant of the constructor--in other
-words, it may be used to enable a type to work for all inhabitants and can
-express relationships between types. It can facillitate generic programming.</p>
+without concerning oneself with the inhabitant of the constructor. It may be
+used to enable a type to work for all inhabitants and can facillitate generic
+programming.</p>
 <p>Consider an example:</p>
 <pre><code>;; The type of indicies over containers of a single type argument
 (deftype (Index (f Opaque) b) [at b])
@@ -198,16 +203,20 @@ express relationships between types. It can facillitate generic programming.</p>
 )
 </code></pre>
 <p>In the above example, the Opaque type allows us to define tabulate generically
-defined over Tuples without having to ensure their inhabitants match, allowing
-us to fully determine the resulting values type via tabulate's function
-argument. Without Opaque, Index would contain a generic type which would be
-unreseolved upon the call to <code>tabulate</code>. It allows us to ensure the <code>positions</code>
-we call are the positions of the correct constructor type <code>f</code> wihtout worrying
-having to restrict ourselves to only calling <code>Indexes</code> over an <code>f</code> of a
-specific type  (e.g. <code>(f a)</code>)--in other words, it allows us to constrain
-functions by constructor types only.</p>
+over Tuples without having to ensure their inhabitants match. The result of
+tabulate is fully determined by the Index passed to it, which determines the
+constructor that will be used, and the return type of its function argument.
+Without Opaque, Index would contain a generic type which would be unreseolved
+upon the call to <code>tabulate</code> and Carp would have no means of determining which
+implementation of <code>positions</code> to use (unless we used a <code>the</code> declaration or a
+similar mechanism). Opaque allows us to ensure the <code>positions</code> we call are the
+positions of the correct constructor type <code>f</code> wihtout having to restrict
+ourselves to only calling <code>Indexes</code> over an <code>f</code> with a  specific inhabitant
+type (e.g. <code>(f a)</code>)--in other words, it allows us to constrain functions by
+constructor types only.</p>
 <p>Thanks to Opaque, tabulate can generate an <code>(Array Int)</code>, <code>(Array Bool)</code>,
-<code>(Array String)</code> all solely dependent on the return type of <code>h</code>.</p>
+<code>(Array String)</code>, <code>(Maybe Bool)</code>, etc. all solely dependent on the return type
+of <code>h</code> and the <code>f</code> in the given <code>Index</code>.</p>
 
             </div>
             <div class="binder">
