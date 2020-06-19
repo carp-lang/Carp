@@ -1,0 +1,8 @@
+(Project.config "file-path-print-length" "short")
+
+(deftype Foo [bar Int])
+(private Foo.bar)
+
+(defn boo [] @(Foo.bar &(Foo.init 1)))
+
+(defn main [] (println* (Foo.bar &(Foo.init 1))))
