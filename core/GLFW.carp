@@ -2,6 +2,7 @@
 (add-pkg "glfw3")
 
 (defmodule GLFW
+  ;; Methods
   (register init (λ [] Int) "glfwInit")
   (register terminate (λ [] ()) "glfwTerminate")
   (register get-version (λ [(Ptr Int) (Ptr Int) (Ptr Int)] ()) "glfwGetVersion")
@@ -86,4 +87,76 @@
   (register get-instance-proc-address (λ [VkInstance (Ptr CChar)] GLFWvkproc) "glfwGetInstanceProcAddress")
   (register get-physical-device-presentation-support (λ [VkInstance VkPhysicalDevice uint32_t] Int) "glfwGetPhysicalDevicePresentationSupport")
   (register create-window-surface (λ [VkInstance (Ptr GLFWwindow) (Ptr VkAllocationCallbacks) (Ptr VkSurfaceKHR)] VkResult) "glfwCreateWindowSurface")
+
+  ;; Basic constants
+  (register FALSE Int "GLFW_FALSE")
+  (register TRUE Int "GLFW_TRUE")
+  (register STICKY_KEYS Int "GLFW_STICKY_KEYS")
+
+  ;; Key and button actions
+  (register RELEASE Int "GLFW_RELEASE")
+  (register PRESS Int "GLFW_PRESS")
+  (register REPEAT Int "GLFW_REPEAT")
+
+  ;; Keycodes
+  (defmodule Keycode
+    (register RETURN Int "GLFW_KEY_ENTER")
+    (register SPACE Int "GLFW_KEY_SPACE")
+    (register ESCAPE Int "GLFW_KEY_ESCAPE")
+    (register LEFT Int "GLFW_KEY_LEFT")
+    (register RIGHT Int "GLFW_KEY_RIGHT")
+    (register UP Int "GLFW_KEY_UP")
+    (register DOWN Int "GLFW_KEY_DOWN")
+
+    (register NUM_1 Int "GLFW_KEY_1")
+    (register NUM_2 Int "GLFW_KEY_2")
+    (register NUM_3 Int "GLFW_KEY_3")
+    (register NUM_4 Int "GLFW_KEY_4")
+    (register NUM_5 Int "GLFW_KEY_5")
+    (register NUM_6 Int "GLFW_KEY_6")
+    (register NUM_7 Int "GLFW_KEY_7")
+    (register NUM_8 Int "GLFW_KEY_8")
+    (register NUM_9 Int "GLFW_KEY_9")
+    (register NUM_0 Int "GLFW_KEY_0")
+
+    (register A Int "GLFW_KEY_A")
+    (register B Int "GLFW_KEY_B")
+    (register C Int "GLFW_KEY_C")
+    (register D Int "GLFW_KEY_D")
+    (register E Int "GLFW_KEY_E")
+    (register F Int "GLFW_KEY_F")
+    (register G Int "GLFW_KEY_G")
+    (register H Int "GLFW_KEY_H")
+    (register I Int "GLFW_KEY_I")
+    (register J Int "GLFW_KEY_J")
+    (register K Int "GLFW_KEY_K")
+    (register L Int "GLFW_KEY_L")
+    (register M Int "GLFW_KEY_M")
+    (register N Int "GLFW_KEY_N")
+    (register O Int "GLFW_KEY_O")
+    (register P Int "GLFW_KEY_P")
+    (register Q Int "GLFW_KEY_Q")
+    (register R Int "GLFW_KEY_R")
+    (register S Int "GLFW_KEY_S")
+    (register T Int "GLFW_KEY_T")
+    (register U Int "GLFW_KEY_U")
+    (register V Int "GLFW_KEY_V")
+    (register W Int "GLFW_KEY_W")
+    (register X Int "GLFW_KEY_X")
+    (register Y Int "GLFW_KEY_Y")
+    (register Z Int "GLFW_KEY_Z")
+
+    (register PERIOD Int "GLFW_KEY_PERIOD")
+    (register COMMA Int "GLFW_KEY_COMMA")
+    (register MINUS Int "GLFW_KEY_MINUS")
+    (register TAB Int "GLFW_KEY_TAB")
+    (register BACKSPACE Int "GLFW_KEY_BACKSPACE")
+    )
+
+  ;; Mouse buttons
+  (defmodule Mouse
+    (register BUTTON_LEFT Int "GLFW_MOUSE_BUTTON_LEFT")
+    (register BUTTON_RIGHT Int "GLFW_MOUSE_BUTTON_RIGHT")
+    (register BUTTON_MIDDLE Int "GLFW_MOUSE_BUTTON_MIDDLE")
+    )
   )

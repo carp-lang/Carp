@@ -1,0 +1,7 @@
+(Project.config "file-path-print-length" "short")
+
+(load "Phantom.carp")
+
+(defn m [a] (Phantom.ensure a (the (Phantom Int) (Phantom.init))))
+
+(defn main [] (println* (m 123l)))
