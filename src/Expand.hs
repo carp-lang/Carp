@@ -36,7 +36,7 @@ expand eval ctx xobj =
   --case obj (trace ("Expand: " ++ pretty xobj) xobj) of
     Lst _ -> expandList xobj
     Arr _ -> expandArray xobj
-    Sym _ _ -> return (ctx, expandSymbol xobj)
+    Sym _ _ -> expandSymbol xobj
     _     -> return (ctx, Right xobj)
 
   where
@@ -169,18 +169,22 @@ expand eval ctx xobj =
                             Right (XObj (Arr okXObjs) i t))
     expandArray _ = error "Can't expand non-array in expandArray."
 
-    expandSymbol :: XObj -> Either a XObj
-    expandSymbol (XObj (Sym path _) _ _) =
+    expandSymbol :: XObj -> IO (Context, Either EvalError XObj)
+    expandSymbol sym@(XObj (Sym path _) _ _) =
       case lookupInEnv path (contextEnv ctx) of
-        Just (_, Binder _ (XObj (Lst (XObj (External _) _ _ : _)) _ _)) -> Right xobj
-        Just (_, Binder _ (XObj (Lst (XObj (Instantiate _) _ _ : _)) _ _)) -> Right xobj
-        Just (_, Binder _ (XObj (Lst (XObj (Deftemplate _) _ _ : _)) _ _)) -> Right xobj
-        Just (_, Binder _ (XObj (Lst (XObj (Defn _) _ _ : _)) _ _)) -> Right xobj
-        Just (_, Binder _ (XObj (Lst (XObj Def _ _ : _)) _ _)) -> Right xobj
-        Just (_, Binder _ (XObj (Lst (XObj (Defalias _) _ _ : _)) _ _)) -> Right xobj
-        Just (_, Binder _ found) -> Right found -- use the found value
-        Nothing -> Right xobj -- symbols that are not found are left as-is
-    expandSymbol _ = error "Can't expand non-symbol in expandSymbol."
+        Just (_, Binder meta (XObj (Lst (XObj (External _) _ _ : _)) _ _)) -> isPrivate meta xobj
+        Just (_, Binder meta (XObj (Lst (XObj (Instantiate _) _ _ : _)) _ _)) -> isPrivate meta xobj
+        Just (_, Binder meta (XObj (Lst (XObj (Deftemplate _) _ _ : _)) _ _)) -> isPrivate meta xobj
+        Just (_, Binder meta (XObj (Lst (XObj (Defn _) _ _ : _)) _ _)) -> isPrivate meta xobj
+        Just (_, Binder meta (XObj (Lst (XObj Def _ _ : _)) _ _)) -> isPrivate meta xobj
+        Just (_, Binder meta (XObj (Lst (XObj (Defalias _) _ _ : _)) _ _)) -> isPrivate meta xobj
+        Just (_, Binder meta found) -> isPrivate meta found -- use the found value
+        Nothing -> return (ctx, Right xobj) -- symbols that are not found are left as-is
+        where
+          isPrivate m x = if metaIsTrue m "private"
+                          then return (evalError ctx ("The binding: " ++ pretty sym ++ " is private; it may only be used within the module that defines it.") (info sym))
+                          else return (ctx, Right x)
+    expandSymbol _ = return (evalError ctx "Can't expand non-symbol in expandSymbol." Nothing)
 
     successiveExpand (ctx, acc) e =
       case acc of
