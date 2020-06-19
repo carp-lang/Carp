@@ -1,2 +1,2 @@
-private-bindings.carp:6:16 The binding: Foo.bar is private; it may only be used within the module that defines it.
-private-bindings.carp:8:26 The binding: Foo.bar is private; it may only be used within the module that defines it.
+private-bindings.carp:11:16 The binding: Foo.bar is private; it may only be used within the module that defines it.
+private-bindings.carp:13:26 The binding: Foo.bar is private; it may only be used within the module that defines it.
