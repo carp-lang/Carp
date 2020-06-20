@@ -35,6 +35,7 @@ import Path
 import Primitives
 import Info
 import qualified Meta
+import qualified CarpI
 
 import Debug.Trace
 
@@ -541,14 +542,17 @@ primitiveDefmodule xobj ctx@(Context env i typeEnv pathStrings proj lastInput ex
             innerEnv = Env (Map.fromList []) (Just parentEnv) (Just moduleName) [] ExternalEnv 0
             newModule = XObj (Mod innerEnv) (info xobj) (Just ModuleTy)
             globalEnvWithModuleAdded = envInsertAt env (SymPath pathStrings moduleName) (Binder meta newModule)
-            ctx' = Context globalEnvWithModuleAdded (Just (innerEnv{envParent=i})) typeEnv (pathStrings ++ [moduleName]) proj lastInput execMode history
+            ctx' = ctx { contextGlobalEnv = globalEnvWithModuleAdded,
+                         contextInternalEnv = Just (innerEnv{envParent=i}),
+                         contextPath = (pathStrings ++ [moduleName]) }
         (ctxAfterModuleDef, res) <- liftIO $ foldM folder (ctx', dynamicNil) innerExpressions
         return (popModulePath ctxAfterModuleDef{contextInternalEnv=i}, res)
 
   (newCtx, result) <-
     case lookupInEnv (SymPath pathStrings moduleName) env of
       Just (_, Binder _ (XObj (Mod innerEnv) _ _)) -> do
-        let ctx' = Context env (Just innerEnv) typeEnv (pathStrings ++ [moduleName]) proj lastInput execMode history -- TODO: use { = } syntax instead
+        let ctx' = ctx { contextInternalEnv = Just innerEnv,
+                         contextPath = pathStrings ++ [moduleName] }
         (ctxAfterModuleAdditions, res) <- liftIO $ foldM folder (ctx', dynamicNil) innerExpressions
         return (popModulePath ctxAfterModuleAdditions{contextInternalEnv=i}, res) -- TODO: propagate errors...
       Just (_, Binder existingMeta (XObj (Lst [XObj DocStub _ _, _]) _ _)) ->
@@ -787,8 +791,8 @@ loadStatic ctx path i = do
       carpDir = projectCarpDir proj
       fullSearchPaths =
         path :
-        (relativeTo </> path) :                         -- the path from the file that contains the '(load)', or the current directory if not loading from a file (e.g. the repl)
-        map (</> path) (projectCarpSearchPaths proj) ++ -- user defined search paths
+        (relativeTo </> path) :
+        map (</> path) (projectCarpSearchPaths proj) ++
         [carpDir </> "core" </> path] ++
         [libDir </> path]
       firstM _ [] = return Nothing
@@ -807,20 +811,41 @@ loadStatic ctx path i = do
                                                       Just ii -> infoFile ii
                                                       Nothing -> ""))
          if canonicalPath == fileThatLoads
-           then return $ cantLoadSelf ctx path i
-           else do let staticallyLoaded = projectStaticallyLoaded proj
-                   if canonicalPath `elem` staticallyLoaded
-                     then return (ctx, dynamicNil)
-                     else do
-                      contents <- liftIO $ slurp canonicalPath
-                      let proj' = proj { projectStaticallyLoaded = canonicalPath : staticallyLoaded }
-                          newCtx = trace contents (ctx { contextProj = proj' })
-                      return (newCtx, dynamicNil)
+         then return $ cantLoadSelf ctx path i
+         else let staticallyLoaded = projectStaticallyLoaded proj in
+              if canonicalPath `elem` staticallyLoaded
+              then return (ctx, dynamicNil)
+              else do
+                contents <- liftIO $ slurp canonicalPath
+                let proj' = proj { projectStaticallyLoaded = canonicalPath : staticallyLoaded,
+                                   projectIncludes = (RelativeInclude (replaceExtension canonicalPath "h")) : (projectIncludes proj),
+                                   projectLinks = (replaceExtension canonicalPath "o") : (projectLinks proj) }
+                    newCtx = ctx { contextProj = proj' } in
+                  case CarpI.parseAndLoadInterface newCtx contents path of
+                    Left err ->
+                      let sourcePos = Parsec.errorPos err
+                          parseErrorXObj = XObj (Lst [])
+                                                (Just dummyInfo { infoFile = path
+                                                                  , infoLine = Parsec.sourceLine sourcePos
+                                                                  , infoColumn = Parsec.sourceColumn sourcePos
+                                                                 }) Nothing
+                      in do
+                         liftIO $ treatErr newCtx (replaceChars (Map.fromList [('\n', " ")]) (show err)) parseErrorXObj
+                         return (newCtx, dynamicNil)
+                    Right finalCtx -> return (finalCtx, dynamicNil)
   where
    invalidPath ctx path =
      evalError ctx ("I can't find a file named: '" ++ path ++ "'")
    cantLoadSelf ctx path =
      evalError ctx ("A file can't load itself: '" ++ path ++ "'")
+   treatErr ctx e xobj = do
+     let msg =  "[PARSE ERROR] " ++ e
+         fppl = projectFilePathPrintLength (contextProj ctx)
+     case contextExecMode ctx of
+       Check -> putStrLn (machineReadableInfoFromXObj fppl xobj ++ " " ++ msg)
+       _ -> putStrLnWithColor Red msg
+     throw CancelEvaluationException
+
 
 -- | Command for expanding a form and its macros.
 commandExpand :: CommandCallback

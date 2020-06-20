@@ -23,6 +23,7 @@ defaultProject :: Project
 defaultProject =
   Project { projectTitle = "Untitled"
           , projectIncludes = []
+          , projectLinks = []
           , projectCFlags =
               case platform of
                 Windows ->

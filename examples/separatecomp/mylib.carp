@@ -1,10 +1,18 @@
+(relative-include "my_int.h")
+
 (Project.config "title" "mylib")
 
 (defmodule MyLib
-  (doc add1 "Add 1 to the input")
-  (defn add1 [x] (+ x 1))
+  ;; (deftype DumbEnum
+  ;;   Apple
+  ;;   Banana
+  ;;   Pear)
+
+  (def one 1)
+
+  (register + (λ [Int Int] Int))
+  (defn ident [x] x)
+  (defn add1 [x] (+ x one))
 
   (defmacro macadd1 [x] (list 'add1 x))
   )
-
-;;(defn main [] (MyLib.ident 1))

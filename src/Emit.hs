@@ -1,6 +1,7 @@
 module Emit (toC,
              envToC,
              globalsToC,
+             includerToC,
              projectIncludesToC,
              envToDeclarations,
              checkForUnresolvedSymbols,
@@ -820,9 +821,11 @@ paramListToC xobjs = intercalate ", " (map getParam (filter notUnit xobjs))
 
 projectIncludesToC :: Project -> String
 projectIncludesToC proj = intercalate "\n" (map includerToC includes) ++ "\n\n"
-  where includerToC (SystemInclude file) = "#include <" ++ file ++ ">"
-        includerToC (RelativeInclude file) = "#include \"" ++ file ++ "\""
-        includes = projectIncludes proj
+  where includes = projectIncludes proj
+
+includerToC :: Includer -> String
+includerToC (SystemInclude file) = "#include <" ++ file ++ ">"
+includerToC (RelativeInclude file) = "#include \"" ++ file ++ "\""
 
 binderToC :: ToCMode -> Binder -> Either ToCError String
 binderToC toCMode binder =

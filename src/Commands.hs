@@ -29,6 +29,7 @@ import TypeError
 import Path
 import Info
 import qualified Meta
+import CarpI
 
 data CarpException =
     ShellOutException { shellOutMessage :: String, returnCode :: Int }
@@ -227,6 +228,7 @@ commandBuild shutUp ctx args = do
       do let compiler = projectCompiler proj
              echoCompilationCommand = projectEchoCompilationCommand proj
              incl = projectIncludesToC proj
+             linked = joinWith " " (projectLinks proj)
              includeCorePath = " -I" ++ projectCarpDir proj ++ "/core/ "
              flags = includeCorePath ++ projectFlags proj
              outDir = projectOutDir proj
@@ -241,7 +243,7 @@ commandBuild shutUp ctx args = do
          hClose outputHandle
          if generateOnly then return (ctx, dynamicNil) else
              case Map.lookup "main" (envBindings env) of
-                             Just _ -> do let cmd = compiler ++ " " ++ outMain ++ " -o \"" ++ outExe ++ "\" " ++ flags
+                             Just _ -> do let cmd = compiler ++ " " ++ linked ++ " " ++ outMain ++ " -o \"" ++ outExe ++ "\" " ++ flags
                                           liftIO $ do when echoCompilationCommand (putStrLn cmd)
                                                       callCommand cmd
                                                       when (execMode == Repl && not shutUp) (putStrLn ("Compiled to '" ++ outExe ++ "' (executable)"))
@@ -252,12 +254,16 @@ commandBuild shutUp ctx args = do
                                                        when (execMode == Repl && not shutUp) (putStrLn ("Compiled to '" ++ outLib ++ "' (shared library)"))
                                            return (setProjectCanExecute False ctx, dynamicNil)
 
-commandBuildAsLib :: Context -> [XObj] -> IO (Context, Either EvalError XObj)
-commandBuildAsLib ctx args = do
+commandBuildAsLib :: Bool -> Context -> [XObj] -> IO (Context, Either EvalError XObj)
+commandBuildAsLib shutUp ctx args = do
   let env = contextGlobalEnv ctx
       typeEnv = contextTypeEnv ctx
       proj = contextProj ctx
       execMode = contextExecMode ctx
+      -- Carpi interface
+      typeInterface = envToInterface (getTypeEnv typeEnv)
+      declInterface = envToInterface env
+      interface = typeInterface ++ "\n\n" ++ declInterface
       src = do decl <- envToDeclarations typeEnv env
                typeDecl <- envToDeclarations typeEnv (getTypeEnv typeEnv)
                c <- envToC env Functions
@@ -270,17 +276,24 @@ commandBuildAsLib ctx args = do
     Left err ->
       return (evalError ctx ("I encountered an error when emitting code:\n\n" ++ show err) Nothing)
     Right (okH, okC) ->
-      do let -- compiler = projectCompiler proj
-             -- echoCompilationCommand = projectEchoCompilationCommand proj
+      do let compiler = projectCompiler proj
+             echoCompilationCommand = projectEchoCompilationCommand proj
              incl = projectIncludesToC proj
-             -- includeCorePath = " -I" ++ projectCarpDir proj ++ "/core/ "
-             -- flags = includeCorePath ++ projectFlags proj
+             linked = joinWith " " (projectLinks proj)
+             includeCorePath = " -I" ++ projectCarpDir proj ++ "/core/ "
+             flags = includeCorePath ++ projectFlags proj
              outDir = projectOutDir proj
+             outCarpi = outDir </> (projectTitle proj ++ ".carpi")
              outH = outDir </> (projectTitle proj ++ ".h")
              outC = outDir </> (projectTitle proj ++ ".c")
-             -- outLib = outDir </> projectTitle proj
-             -- generateOnly = projectGenerateOnly proj
+             outLib = outDir </> (projectTitle proj ++ ".o")
+             generateOnly = projectGenerateOnly proj
          liftIO $ createDirectoryIfMissing False outDir
+         -- Write carpi file
+         carpiHandle <- openFile outCarpi WriteMode
+         hSetEncoding carpiHandle utf8
+         hPutStr carpiHandle interface
+         hClose carpiHandle
          -- Write h file
          hHandle <- openFile outH WriteMode
          hSetEncoding hHandle utf8
@@ -289,9 +302,14 @@ commandBuildAsLib ctx args = do
          -- Write c file
          cHandle <- openFile outC WriteMode
          hSetEncoding cHandle utf8
-         hPutStr cHandle okC
+         hPutStr cHandle ((includerToC (RelativeInclude (projectTitle proj ++ ".h"))) ++ okC)
          hClose cHandle
-         return (ctx, dynamicNil)
+         if generateOnly then return (ctx, dynamicNil) else
+           let cmd = compiler ++ " " ++ linked ++ " " ++ outC ++ " -shared -o \"" ++ outLib ++ "\" " ++ flags in
+              liftIO $ do when echoCompilationCommand (putStrLn cmd)
+                          callCommand cmd
+                          when (execMode == Repl && not shutUp) (putStrLn ("Compiled to '" ++ outLib ++ "' (shared library)"))
+                          return (setProjectCanExecute False ctx, dynamicNil)
 
 setProjectCanExecute :: Bool -> Context -> Context
 setProjectCanExecute value ctx =

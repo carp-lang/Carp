@@ -213,7 +213,7 @@ dynamicModule = Env { envBindings = bindings
                     , addCommand (SymPath path "cat") 0 commandCat "spits out the generated C code." "(cat)"
                     , addCommand (SymPath path "run") 0 commandRunExe "runs the built executable." "(run)"
                     , addCommand (SymPath path "build") 0 (commandBuild False) "builds the current code to an executable." "(build)"
-                    , addCommand (SymPath path "build-as-lib") 0 (commandBuildAsLib) "builds the current code as a library." "(build-as-lib)"
+                    , addCommand (SymPath path "build-as-lib") 0 (commandBuildAsLib False) "builds the current code as a library." "(build-as-lib)"
                     , addCommand (SymPath path "reload") 0 commandReload "reloads all currently loaded files that weren’t marked as only loading once (see `load` and `load-once`)." "(reload)"
                     , addCommand (SymPath path "env") 0 commandListBindings "lists all current bindings." "(env)"
                     , addCommandConfigurable (SymPath path "help") Nothing commandHelp "prints help." "(help)"

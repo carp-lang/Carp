@@ -529,7 +529,7 @@ register name t = (name, Binder emptyMeta
                                 XObj (Sym (SymPath [] name) Symbol) Nothing Nothing])
                       (Just dummyInfo) (Just t)))
 
-data EnvMode = ExternalEnv | InternalEnv | RecursionEnv deriving (Show, Eq)
+data EnvMode = StaticEnv | ExternalEnv | InternalEnv | RecursionEnv deriving (Show, Eq)
 
 -- | Environment
 data Env = Env { envBindings :: Map.Map String Binder

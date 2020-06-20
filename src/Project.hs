@@ -7,6 +7,7 @@ import Util
 -- | Project (represents a lot of useful information for working at the REPL and building executables)
 data Project = Project { projectTitle :: String
                        , projectIncludes :: [Includer]
+                       , projectLinks :: [FilePath]
                        , projectCFlags :: [String]
                        , projectLibFlags :: [String]
                        , projectPkgConfigFlags :: [String]
@@ -44,11 +45,13 @@ instance Show Project where
     unlines [ "Title: " ++ projectTitle
             , "Compiler: " ++ projectCompiler
             , "Includes:\n    " ++ joinIndented (map show projectIncludes)
+            , "Links:\n    " ++ joinIndented projectLinks
             , "Cflags:\n    " ++ joinIndented projectCFlags
             , "Library flags:\n    " ++ joinIndented projectLibFlags
             , "Flags for pkg-config:\n    "++ joinIndented projectPkgConfigFlags
             , "Carp source files:\n    " ++ joinIndented (map showLoader projectFiles)
             , "Already loaded:\n    " ++ joinIndented projectAlreadyLoaded
+            , "Statically loaded:\n    " ++ joinIndented projectStaticallyLoaded
             , "Echo C: " ++ showB projectEchoC
             , "Echo compilation command: " ++ showB projectEchoCompilationCommand
             , "Can execute: " ++ showB projectCanExecute

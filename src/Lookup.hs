@@ -191,6 +191,25 @@ envInsertAt env (SymPath (p:ps) name) xobj =
     Just _ -> error ("Can't insert into non-module: " ++ p)
     Nothing -> error ("Can't insert into non-existing module: " ++ p)
 
+moduleEnv :: String -> Env -> Env
+moduleEnv name parent = Env Map.empty (Just parent) (Just name) [] ExternalEnv 0
+
+-- | Add a Binder to an environment at a specific path location,
+-- | and create intermediary modules if necessary
+envInsertAndAddModulesAt :: Env -> SymPath -> Binder -> Env
+envInsertAndAddModulesAt env (SymPath [] name) binder =
+  envAddBinding env name binder
+envInsertAndAddModulesAt env (SymPath (p:ps) name) xobj =
+  case Map.lookup p (envBindings env) of
+    Just (Binder existingMeta (XObj (Mod innerEnv) i t)) ->
+      let newInnerEnv = Binder existingMeta (XObj (Mod (envInsertAndAddModulesAt innerEnv (SymPath ps name) xobj)) i t)
+      in  env { envBindings = Map.insert p newInnerEnv (envBindings env) }
+    Just _ -> error ("Can't insert into non-module: " ++ p)
+    Nothing ->
+      let mod = moduleEnv p env
+          newInnerEnv = Binder emptyMeta (XObj (Mod (envInsertAndAddModulesAt mod (SymPath ps name) xobj)) Nothing Nothing)
+      in env { envBindings = Map.insert p newInnerEnv (envBindings env) }
+
 envReplaceEnvAt :: Env -> [String] -> Env -> Env
 envReplaceEnvAt _ [] replacement = replacement
 envReplaceEnvAt env (p:ps) replacement =

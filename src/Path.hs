@@ -55,3 +55,6 @@ toStandard = if platform == Windows then map (\x -> if x == '\\' then '/' else x
 
 xdgPath :: D.XdgDirectory -> FilePath -> IO FilePath
 xdgPath t = fmap toStandard . D.getXdgDirectory t . (</>) "carp" . toNative
+
+replaceExtension :: FilePath -> String -> FilePath
+replaceExtension = FP.replaceExtension
