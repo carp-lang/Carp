@@ -8,10 +8,11 @@ module Info (Info(..),
              prettyInfo,
              freshVar,
              machineReadableInfo,
-             makeTypeVariableNameFromInfo) where
+             makeTypeVariableNameFromInfo,
+             getInfoFileDirectory) where
 
 import qualified Data.Set as Set
-import Path (takeFileName)
+import Path (takeDirectory, takeFileName)
 import SymPath
 import Types
 import Util
@@ -90,3 +91,13 @@ makeTypeVariableNameFromInfo :: Maybe Info -> String
 makeTypeVariableNameFromInfo (Just i) =
   "tyvar-from-info-" ++ show (infoIdentifier i) ++ "_" ++ show (infoLine i) ++ "_" ++ show (infoColumn i)
 makeTypeVariableNameFromInfo Nothing = error "unnamed-typevariable"
+
+-- | Get an Info file directory or "." in case of Nothing or REPL.
+getInfoFileDirectory :: Maybe Info -> String
+getInfoFileDirectory i =
+  case i of
+    Just ii ->
+      case infoFile ii of
+        "REPL" -> "."
+        file -> takeDirectory file
+    Nothing -> "."

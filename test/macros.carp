@@ -52,7 +52,7 @@
     (list 'let (array x 1) (list '= x 1))))
 
 (defmacro test-read-file []
-  (read-file "test/fixture_file.txt"))
+  (read-file "fixture_file.txt"))
 
 (defmacro test-gensym-with []
   (let [x (gensym-with 'a)]

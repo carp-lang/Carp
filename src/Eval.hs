@@ -600,16 +600,11 @@ loadInternal :: Context -> XObj -> String -> Maybe Info -> ReloadMode -> IO (Con
 loadInternal ctx xobj path i reloadMode = do
   let proj = contextProj ctx
   libDir <- liftIO $ cachePath $ projectLibDir proj
-  let relativeTo = case i of
-                     Just ii ->
-                       case infoFile ii of
-                         "REPL" -> "."
-                         file -> takeDirectory file
-                     Nothing -> "."
+  let currentDir = getInfoFileDirectory i
       carpDir = projectCarpDir proj
       fullSearchPaths =
         path :
-        (relativeTo </> path) :                         -- the path from the file that contains the '(load)', or the current directory if not loading from a file (e.g. the repl)
+        (currentDir </> path) :                         -- the path from the file that contains the '(load)', or the current directory if not loading from a file (e.g. the repl)
         map (</> path) (projectCarpSearchPaths proj) ++ -- user defined search paths
         [carpDir </> "core" </> path] ++
         [libDir </> path]

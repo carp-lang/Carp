@@ -808,8 +808,9 @@ commandNot ctx [x] =
 commandReadFile :: CommandCallback
 commandReadFile ctx [filename] =
   case filename of
-    XObj (Str fname) _ _ -> do
-         exceptional <- liftIO ((try $ slurp fname) :: (IO (Either IOException String)))
+    XObj (Str fname) i _ -> do
+         let currentDir = getInfoFileDirectory i
+         exceptional <- liftIO ((try $ slurp $ currentDir </> fname) :: (IO (Either IOException String)))
          case exceptional of
             Right contents ->
               return (ctx, Right (XObj (Str contents) (Just dummyInfo) (Just StringTy)))
