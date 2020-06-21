@@ -22,6 +22,10 @@ import Debug.Trace (trace)
 coreModules :: String -> [String]
 coreModules carpDir = [carpDir ++ "/core/Core.carp"]
 
+-- | These modules will be statically loaded before any other code is evaluated
+staticCoreModules :: String -> [String]
+staticCoreModules carpDir = [carpDir ++ "/core/out/core.carpi"]
+
 -- | The array module contains functions for working with the Array type.
 arrayModule :: Env
 arrayModule = Env { envBindings = bindings

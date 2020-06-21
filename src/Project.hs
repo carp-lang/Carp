@@ -3,6 +3,7 @@ module Project where
 
 import Info
 import Util
+import Debug.Trace
 
 -- | Project (represents a lot of useful information for working at the REPL and building executables)
 data Project = Project { projectTitle :: String
@@ -92,3 +93,11 @@ data ReloadMode = DoesReload | Frozen deriving Show
 showLoader :: (FilePath, ReloadMode) -> String
 showLoader (fp, DoesReload) = fp
 showLoader (fp, Frozen) = fp ++ " (frozen)"
+
+updateProjectTitleIfMain oldProj newProj =
+  case (projectFiles oldProj) of
+    [] -> newProj
+    (_, Frozen):[] -> newProj { projectTitle = projectTitle oldProj }
+    _:[] -> newProj
+    _ -> newProj { projectTitle = projectTitle oldProj }
+

@@ -286,6 +286,7 @@ commandBuildAsLib shutUp ctx args = do
     Right (okH, okC) ->
       do let compiler = projectCompiler proj
              echoCompilationCommand = projectEchoCompilationCommand proj
+             (startGuard, endGuard) = headerGuards title
              incl = projectIncludesToC proj
              linked = joinWith " " (projectLinks proj)
              includeCorePath = " -I" ++ projectCarpDir proj ++ "/core/ "
@@ -305,7 +306,7 @@ commandBuildAsLib shutUp ctx args = do
          -- Write h file
          hHandle <- openFile outH WriteMode
          hSetEncoding hHandle utf8
-         hPutStr hHandle (incl ++ okH)
+         hPutStr hHandle (startGuard ++ incl ++ okH ++ endGuard)
          hClose hHandle
          -- Write c file
          cHandle <- openFile outC WriteMode

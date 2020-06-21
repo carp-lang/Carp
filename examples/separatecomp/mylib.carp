@@ -12,6 +12,7 @@
   (register + (λ [Int Int] Int))
   (defn ident [x] x)
   (defn add1 [x] (+ x SubLib.one))
+  (defn isodd? [x] (Int.odd? x))
 
   (defmacro macadd1 [x] (list 'add1 x))
   )

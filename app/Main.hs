@@ -84,7 +84,8 @@ main = do setLocaleEncoding utf8
               otherOptions = optOthers fullOpts
               argFilesToLoad = optFiles fullOpts
               logMemory = otherLogMemory otherOptions
-              core = not $ otherNoCore otherOptions
+              staticCore = otherStaticCore otherOptions
+              core = not $ (otherNoCore otherOptions || staticCore)
               profile = not $ otherNoProfile otherOptions
               optimize = otherOptimize otherOptions
               generateOnly = otherGenerateOnly otherOptions
@@ -109,6 +110,8 @@ main = do setLocaleEncoding utf8
                                 execMode
                                 []
               coreModulesToLoad = if core then coreModules (projectCarpDir project) else []
+              staticCoreModulesToLoad = if staticCore
+                                        then staticCoreModules (projectCarpDir project) else []
               execStr :: String -> String -> Context -> IO Context
               execStr info str ctx = executeString True False ctx str info
               execStrs :: String -> [String] -> Context -> IO Context
@@ -118,7 +121,8 @@ main = do setLocaleEncoding utf8
               load = flip loadFiles
           carpProfile <- configPath "profile.carp"
           hasProfile <- doesFileExist carpProfile
-          _ <- loadFilesOnce startingContext coreModulesToLoad
+          ctx <- loadFilesOnce startingContext coreModulesToLoad
+          _ <- loadFilesStatic ctx staticCoreModulesToLoad
             >>= load [carpProfile | hasProfile]
             >>= execStrs "Preload" preloads
             >>= load argFilesToLoad
@@ -154,6 +158,7 @@ parseFull = FullOptions
 
 data OtherOptions = OtherOptions
   { otherNoCore :: Bool
+  , otherStaticCore :: Bool
   , otherNoProfile :: Bool
   , otherLogMemory :: Bool
   , otherOptimize :: Bool
@@ -164,6 +169,7 @@ data OtherOptions = OtherOptions
 parseOther :: Parser OtherOptions
 parseOther = OtherOptions
   <$> switch (long "no-core" <> help "Don't load Core.carp")
+  <*> switch (long "static-core" <> help "Load the core statically")
   <*> switch (long "no-profile" <> help "Don't load profile.carp")
   <*> switch (long "log-memory" <> help "Log memory allocations")
   <*> switch (long "optimize" <> help "Optimized build")

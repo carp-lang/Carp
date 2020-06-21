@@ -644,7 +644,7 @@ loadInternal ctx xobj path i reloadMode = do
                                    else files ++ [(canonicalPath, reloadMode)]
                           proj' = proj { projectFiles = files', projectAlreadyLoaded = canonicalPath : alreadyLoaded }
                       newCtx <- liftIO $ executeString True False (ctx { contextProj = proj' }) contents canonicalPath
-                      return (newCtx, dynamicNil)
+                      return (newCtx{ contextProj = updateProjectTitleIfMain proj' (contextProj newCtx) }, dynamicNil)
   where
     frozenPaths proj =
       if projectForceReload proj
@@ -846,6 +846,9 @@ loadStatic ctx path i = do
        _ -> putStrLnWithColor Red msg
      throw CancelEvaluationException
 
+-- | Statically load several files in order.
+loadFilesStatic :: Context -> [FilePath] -> IO Context
+loadFilesStatic = loadFilesExt commandLoadStatic
 
 -- | Command for expanding a form and its macros.
 commandExpand :: CommandCallback

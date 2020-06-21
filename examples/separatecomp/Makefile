@@ -1,13 +1,13 @@
 all: out/uselib
 
 out/sublib.carpi out/sublib.o: sublib.carp
-	carp --no-core --build-as-lib $^
+	carp --static-core --build-as-lib $^
 
 out/mylib.carpi out/mylib.o: mylib.carp out/sublib.carpi
-	carp --no-core --build-as-lib $<
+	carp --static-core --build-as-lib $<
 
 out/uselib: uselib.carp out/mylib.carpi
-	carp --no-core -b $<
+	carp --static-core -b $<
 
 clean:
 	rm -r out

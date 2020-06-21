@@ -7,7 +7,8 @@ module Emit (toC,
              checkForUnresolvedSymbols,
              ToCMode(..),
              wrapInInitFunction,
-             initFunctionDeclaration
+             initFunctionDeclaration,
+             headerGuards
             ) where
 
 import Data.List (intercalate, sortOn)
@@ -17,7 +18,7 @@ import qualified Data.Map as Map
 import qualified Data.Set as Set
 import Data.Maybe (fromMaybe)
 import Debug.Trace
-import Data.Char (ord)
+import Data.Char (ord, toUpper)
 
 import Obj
 import Project
@@ -951,6 +952,13 @@ wrapInInitFunction with_core projectTitle linked src =
 initFunctionDeclaration :: String -> String
 initFunctionDeclaration projectTitle =
   "void carp_init_globals_" ++ projectTitle ++ "(int argc, char** argv);\n"
+
+headerGuards :: String -> (String, String)
+headerGuards projectTitle =
+  let title = (mangle . (map toUpper)) projectTitle in
+    ("#ifndef _CARP_"++ title ++"_H_\n"++
+     "#define _CARP_"++ title ++ "_H_\n\n",
+      "#endif\n")
 
 removeSuffix :: String -> String
 removeSuffix [] = []

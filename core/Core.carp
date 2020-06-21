@@ -1,3 +1,5 @@
+(Project.config "title" "core")
+
 (system-include "assert.h")
 (system-include "stddef.h")
 (system-include "stdlib.h")
