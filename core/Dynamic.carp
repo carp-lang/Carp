@@ -49,3 +49,6 @@
   (do
     (add-cflag (pkg-config pkg "--cflags"))
     (add-lib (pkg-config pkg "--libs"))))
+
+(defndynamic add-c [relpath]
+  (add-cflag (Dynamic.String.concat [(Dynamic.String.directory (file)) "/" relpath])))
