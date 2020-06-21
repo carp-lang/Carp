@@ -1,4 +1,5 @@
 (relative-include "my_int.h")
+(load-static "out/sublib.carpi")
 
 (Project.config "title" "mylib")
 
@@ -8,11 +9,9 @@
   ;;   Banana
   ;;   Pear)
 
-  (def one 1)
-
   (register + (λ [Int Int] Int))
   (defn ident [x] x)
-  (defn add1 [x] (+ x one))
+  (defn add1 [x] (+ x SubLib.one))
 
   (defmacro macadd1 [x] (list 'add1 x))
   )

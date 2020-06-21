@@ -58,3 +58,6 @@ xdgPath t = fmap toStandard . D.getXdgDirectory t . (</>) "carp" . toNative
 
 replaceExtension :: FilePath -> String -> FilePath
 replaceExtension = FP.replaceExtension
+
+dropExtension :: FilePath -> FilePath
+dropExtension = FP.dropExtension

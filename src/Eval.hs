@@ -863,6 +863,7 @@ commandC :: CommandCallback
 commandC ctx [xobj] = do
   let globalEnv = contextGlobalEnv ctx
       typeEnv = contextTypeEnv ctx
+      title = projectTitle (contextProj ctx)
   (newCtx, result) <- expandAll eval ctx xobj
   case result of
     Left err -> return (newCtx, Left err)
@@ -870,20 +871,20 @@ commandC ctx [xobj] = do
       case annotate typeEnv globalEnv (setFullyQualifiedSymbols typeEnv globalEnv globalEnv expanded) Nothing of
         Left err -> return $ evalError newCtx (show err) (info xobj)
         Right (annXObj, annDeps) ->
-          do let cXObj = printC annXObj
-                 cDeps = concatMap printC annDeps
+          do let cXObj = printC title annXObj
+                 cDeps = concatMap (printC title) annDeps
                  c = cDeps ++ cXObj
              liftIO (putStr c)
              return (newCtx, dynamicNil)
 
 -- | Helper function for commandC
-printC :: XObj -> String
-printC xobj =
+printC :: String -> XObj -> String
+printC projectTitle xobj =
   case checkForUnresolvedSymbols xobj of
     Left e ->
       strWithColor Red (show e ++ ", can't print resulting code.\n")
     Right _ ->
-      strWithColor Green (toC All (Binder emptyMeta xobj))
+      strWithColor Green (toC All projectTitle (Binder emptyMeta xobj))
 
 buildMainFunction :: XObj -> XObj
 buildMainFunction xobj =

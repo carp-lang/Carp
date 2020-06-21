@@ -32,7 +32,7 @@ defaultProject =
                 _ ->
                   [ "-fPIC"
                   , "-g"
-                  , "-std=c99"
+                  , "-std=c11"
                   -- , "-pedantic"
                   , "-D_DEFAULT_SOURCE"
                   , "-Wall"

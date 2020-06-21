@@ -211,11 +211,14 @@ commandBuild shutUp ctx args = do
   let env = contextGlobalEnv ctx
       typeEnv = contextTypeEnv ctx
       proj = contextProj ctx
+      title = projectTitle proj
       execMode = contextExecMode ctx
+      linkedProjects = map (takeFileName . dropExtension) (projectLinks proj)
       src = do decl <- envToDeclarations typeEnv env
                typeDecl <- envToDeclarations typeEnv (getTypeEnv typeEnv)
-               c <- envToC env Functions
-               initGlobals <- fmap (wrapInInitFunction (projectCore proj)) (globalsToC env)
+               c <- envToC env Functions title
+               initGlobals <- fmap (wrapInInitFunction (projectCore proj) title linkedProjects)
+                              (globalsToC env title)
                return ("//Types:\n" ++ typeDecl ++
                        "\n\n//Declarations:\n" ++ decl ++
                        "\n\n//Init globals:\n" ++ initGlobals ++
@@ -259,17 +262,22 @@ commandBuildAsLib shutUp ctx args = do
   let env = contextGlobalEnv ctx
       typeEnv = contextTypeEnv ctx
       proj = contextProj ctx
+      title = projectTitle proj
       execMode = contextExecMode ctx
+      linkedProjects = map (takeFileName . dropExtension) (projectLinks proj)
       -- Carpi interface
       typeInterface = envToInterface (getTypeEnv typeEnv)
       declInterface = envToInterface env
       interface = typeInterface ++ "\n\n" ++ declInterface
       src = do decl <- envToDeclarations typeEnv env
                typeDecl <- envToDeclarations typeEnv (getTypeEnv typeEnv)
-               c <- envToC env Functions
-               initGlobals <- fmap (wrapInInitFunction (projectCore proj)) (globalsToC env)
+               c <- envToC env Functions title
+               initGlobals <- fmap (wrapInInitFunction (projectCore proj) title linkedProjects)
+                              (globalsToC env title)
                return (("//Types:\n" ++ typeDecl ++
-                         "\n\n//Declarations:\n" ++ decl)
+                         "\n\n//Declarations:\n" ++ decl ++
+                         "\n\n//Init globals declaration:\n" ++
+                         initFunctionDeclaration title)
                       ,("\n\n//Init globals:\n" ++ initGlobals ++
                          "\n\n//Definitions:\n" ++ c))
   case src of

@@ -1,0 +1,5 @@
+(Project.config "title" "sublib")
+
+(defmodule SubLib
+  (def one 1)
+  (def fortyone 41))

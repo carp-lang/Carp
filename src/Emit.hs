@@ -6,7 +6,8 @@ module Emit (toC,
              envToDeclarations,
              checkForUnresolvedSymbols,
              ToCMode(..),
-             wrapInInitFunction
+             wrapInInitFunction,
+             initFunctionDeclaration
             ) where
 
 import Data.List (intercalate, sortOn)
@@ -91,8 +92,8 @@ newtype EmitterState = EmitterState { emitterSrc :: String }
 appendToSrc :: String -> State EmitterState ()
 appendToSrc moreSrc = modify (\s -> s { emitterSrc = emitterSrc s ++ moreSrc })
 
-toC :: ToCMode -> Binder -> String
-toC toCMode (Binder meta root) = emitterSrc (execState (visit startingIndent root) (EmitterState ""))
+toC :: ToCMode -> String -> Binder -> String
+toC toCMode projectTitle (Binder meta root) = emitterSrc (execState (visit startingIndent root) (EmitterState ""))
   where startingIndent = case toCMode of
                            Functions -> 0
                            Globals -> 4
@@ -201,7 +202,7 @@ toC toCMode (Binder meta root) = emitterSrc (execState (visit startingIndent roo
                          isMain = name == "main"
                      appendToSrc (defnDecl ++ " {\n")
                      when isMain $
-                       appendToSrc (addIndent innerIndent ++ "carp_init_globals(argc, argv);\n")
+                       appendToSrc (addIndent innerIndent ++ "carp_init_globals_" ++ projectTitle ++ "(argc, argv);\n")
                      ret <- visit innerIndent body
                      delete innerIndent i
                      case retTy of
@@ -827,19 +828,19 @@ includerToC :: Includer -> String
 includerToC (SystemInclude file) = "#include <" ++ file ++ ">"
 includerToC (RelativeInclude file) = "#include \"" ++ file ++ "\""
 
-binderToC :: ToCMode -> Binder -> Either ToCError String
-binderToC toCMode binder =
+binderToC :: ToCMode -> String -> Binder -> Either ToCError String
+binderToC toCMode projectTitle binder =
   let xobj = binderXObj binder
   in  case xobj of
         XObj (External _) _ _ -> Right ""
         XObj (ExternalType _) _ _ -> Right ""
         XObj (Command _) _ _ -> Right ""
-        XObj (Mod env) _ _ -> envToC env toCMode
+        XObj (Mod env) _ _ -> envToC env toCMode projectTitle
         _ -> case ty xobj of
                Just t -> if isTypeGeneric t
                          then Right ""
                          else do checkForUnresolvedSymbols xobj
-                                 return (toC toCMode binder)
+                                 return (toC toCMode projectTitle binder)
                Nothing -> Left (BinderIsMissingType binder)
 
 binderToDeclaration :: TypeEnv -> Binder -> Either ToCError String
@@ -851,18 +852,18 @@ binderToDeclaration typeEnv binder =
                Just t -> if isTypeGeneric t then Right "" else Right (toDeclaration binder ++ "")
                Nothing -> Left (BinderIsMissingType binder)
 
-envToC :: Env -> ToCMode -> Either ToCError String
-envToC env toCMode =
+envToC :: Env -> ToCMode -> String -> Either ToCError String
+envToC env toCMode projectTitle =
   let binders = Map.toList (envBindings env)
-  in  do okCodes <- mapM (binderToC toCMode . snd) binders
+  in  do okCodes <- mapM (binderToC toCMode projectTitle . snd) binders
          return (concat okCodes)
 
-globalsToC :: Env -> Either ToCError String
-globalsToC globalEnv =
+globalsToC :: Env -> String -> Either ToCError String
+globalsToC globalEnv projectTitle =
   let allGlobalBinders = findAllGlobalVariables globalEnv
   in  do okCodes <- mapM (\(score, binder) ->
                             fmap (\s -> if s == "" then "" else ("\n    // Depth " ++ show score ++ "\n") ++ s)
-                           (binderToC Globals binder))
+                           (binderToC Globals projectTitle binder))
                          (sortGlobalVariableBinders globalEnv allGlobalBinders)
          return (concat okCodes)
 
@@ -928,18 +929,28 @@ checkForUnresolvedSymbols = visit
         Right _ -> return ()
     visitStaticArray _ = error "The function 'visitStaticArray' only accepts XObjs with arrays in them."
 
-wrapInInitFunction :: Bool -> String -> String
-wrapInInitFunction with_core src =
-  "void carp_init_globals(int argc, char** argv) {\n" ++
-  (if with_core
-    then
-      "  System_args.len = argc;\n  System_args.data = argv;\n" ++
-      "#if defined _WIN32\n" ++
-      "  SetConsoleOutputCP(CP_UTF8);\n" ++
-      "#endif"
-    else "")
-  ++ src ++
-  "}"
+wrapInInitFunction :: Bool -> String -> [String] -> String -> String
+wrapInInitFunction with_core projectTitle linked src =
+  let staticInitedVar = "carp_globals_" ++ projectTitle ++ "_inited" in
+    "void carp_init_globals_" ++ projectTitle ++ "(int argc, char** argv) {\n" ++
+    "    static int " ++ staticInitedVar ++ " = 0;\n" ++
+    "    if (" ++ staticInitedVar ++ ") return;\n" ++
+    "    " ++ staticInitedVar ++ " = 1;\n\n" ++
+    (if with_core
+     then
+       "  System_args.len = argc;\n  System_args.data = argv;\n" ++
+       "#if defined _WIN32\n" ++
+       "  SetConsoleOutputCP(CP_UTF8);\n" ++
+       "#endif"
+     else "") ++ "    " ++
+    (joinWith "\n" (map callInitFunction linked)) ++
+    "\n" ++ src ++
+    "}"
+  where callInitFunction s = "carp_init_globals_" ++ s ++ "(argc, argv);"
+
+initFunctionDeclaration :: String -> String
+initFunctionDeclaration projectTitle =
+  "void carp_init_globals_" ++ projectTitle ++ "(int argc, char** argv);\n"
 
 removeSuffix :: String -> String
 removeSuffix [] = []

@@ -1,5 +1,6 @@
 (Project.config "title" "uselib")
 
 (load-static "out/mylib.carpi")
+(load-static "out/sublib.carpi")
 
-(defn main [] (MyLib.add1 MyLib.one))
+(defn main [] (MyLib.add1 SubLib.fortyone))

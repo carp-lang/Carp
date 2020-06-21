@@ -165,7 +165,7 @@ define hidden ctx@(Context globalEnv _ typeEnv _ proj _ _ _) annXObj =
          return (ctx { contextTypeEnv = TypeEnv (envInsertAt (getTypeEnv typeEnv) (getPath annXObj) (Binder adjustedMeta annXObj)) })
        _ ->
          do when (projectEchoC proj) $
-              putStrLn (toC All (Binder emptyMeta annXObj))
+              putStrLn (toC All (projectTitle proj) (Binder emptyMeta annXObj))
             case previousType of
               Just previousTypeUnwrapped ->
                 unless (areUnifiable (forceTy annXObj) previousTypeUnwrapped) $
