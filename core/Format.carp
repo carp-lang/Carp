@@ -1,4 +1,3 @@
-(private fmt-internal)
 (hidden fmt-internal)
 (defndynamic fmt-internal [s args]
   (let [idx (String.index-of s \%)

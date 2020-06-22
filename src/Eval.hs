@@ -62,7 +62,10 @@ eval ctx xobj@(XObj o i t) =
                     Nothing -> Nothing
             tryLookup path =
                 case lookupInEnv path (contextGlobalEnv ctx) of
-                  Just (_, Binder _ found) -> return (ctx, Right (resolveDef found))
+                  Just (_, Binder meta found) ->
+                    if metaIsTrue meta "private"
+                    then return (evalError ctx ("The binding: " ++ show (getPath found) ++ " is private; it may only be used within the module that defines it.") i)
+                    else return (ctx, Right (resolveDef found))
                   Nothing ->
                     case lookupInEnv path (getTypeEnv (contextTypeEnv ctx)) of
                       Just (_, Binder _ found) -> return (ctx, Right (resolveDef found))
