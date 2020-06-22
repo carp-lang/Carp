@@ -176,19 +176,47 @@
                 </div>
             </div>
             <h1>
-                Phantom
+                Opaque
             </h1>
             <div class="module-description">
-                <p>is a type without inhabitants and a free type variable, which is
-a fancy way of saying that it has no runtime representation.</p>
-<p>When trying to mark types programmatically using something like <code>the</code> but
-without the need for a special form, <code>Phantom</code> comes in handy.</p>
-<p>Example:</p>
-<pre><code>(defn test [a]
-  (Phantom.ensure a (the (Phantom Int) (Phantom.init))))
+                <p>The opaque type is an uninhabited type with no constructors.
+Opaque can be used to force some abstract type to range over a type constructor
+without concerning oneself with the inhabitant of the constructor. It may be
+used to enable a type to work for all inhabitants and can facillitate generic
+programming.</p>
+<p>Consider an example:</p>
+<pre><code>;; The type of indicies over containers of a single type argument
+(deftype (Index (f Opaque) b) [at b])
 
-(println* (test 123l)) ; this will not compile
+(definterface tabulate (Fn [(Ref (Fn [(Index (f Opaque) b)] c))] (f c)))
+(definterface positions (f (Index (f Opaque) b)))
+
+(implements tabulate tabulate)
+(defn tabulate [h]
+  (fmap h @&amp;positions))
+
+(deftype (Tuple a) [x a y a])
+
+(defmodule Tuple
+  (sig positions (Tuple (Index (Tuple Opaque) Bool)))
+  (def positions (Tuple.init (Index.init true) (Index.init false)))
+)
 </code></pre>
+<p>In the above example, the Opaque type allows us to define tabulate generically
+over Tuples without having to ensure their inhabitants match. The result of
+tabulate is fully determined by the Index passed to it, which determines the
+constructor that will be used, and the return type of its function argument.
+Without Opaque, Index would contain a generic type which would be unreseolved
+upon the call to <code>tabulate</code> and Carp would have no means of determining which
+implementation of <code>positions</code> to use (unless we used a <code>the</code> declaration or a
+similar mechanism). Opaque allows us to ensure the <code>positions</code> we call are the
+positions of the correct constructor type <code>f</code> wihtout having to restrict
+ourselves to only calling <code>Indexes</code> over an <code>f</code> with a  specific inhabitant
+type (e.g. <code>(f a)</code>)--in other words, it allows us to constrain functions by
+constructor types only.</p>
+<p>Thanks to Opaque, tabulate can generate an <code>(Array Int)</code>, <code>(Array Bool)</code>,
+<code>(Array String)</code>, <code>(Maybe Bool)</code>, etc. all solely dependent on the return type
+of <code>h</code> and the <code>f</code> in the given <code>Index</code>.</p>
 
             </div>
             <div class="binder">
@@ -198,16 +226,16 @@ without the need for a special form, <code>Phantom</code> comes in handy.</p>
                     </h3>
                 </a>
                 <div class="description">
-                    template
+                    instantiate
                 </div>
                 <p class="sig">
-                    (Fn [(Ref (Phantom a) b)] (Phantom a))
+                    (Fn [(Ref Opaque a)] Opaque)
                 </p>
                 <span>
                     
                 </span>
                 <p class="doc">
-                    <p>copies the <code>Phantom</code>.</p>
+                    <p>copies a <code>Opaque</code>.</p>
 
                 </p>
             </div>
@@ -218,57 +246,36 @@ without the need for a special form, <code>Phantom</code> comes in handy.</p>
                     </h3>
                 </a>
                 <div class="description">
-                    template
+                    instantiate
                 </div>
                 <p class="sig">
-                    (Fn [(Phantom a)] ())
+                    (Fn [Opaque] ())
                 </p>
                 <span>
                     
                 </span>
                 <p class="doc">
-                    <p>deletes a <code>Phantom</code>. Should usually not be called manually.</p>
+                    <p>deletes a <code>Opaque</code>. This should usually not be called manually.</p>
 
                 </p>
             </div>
             <div class="binder">
-                <a class="anchor" href="#ensure">
-                    <h3 id="ensure">
-                        ensure
+                <a class="anchor" href="#get-tag">
+                    <h3 id="get-tag">
+                        get-tag
                     </h3>
                 </a>
                 <div class="description">
-                    defn
+                    instantiate
                 </div>
                 <p class="sig">
-                    (Fn [a, (Phantom a)] a)
-                </p>
-                <pre class="args">
-                    (ensure a p)
-                </pre>
-                <p class="doc">
-                    <p>is a function that takes anything and a <code>Phantom</code>, ensuring that
-the type contained by the <code>Phantom</code> and the type of the first parameter match.</p>
-
-                </p>
-            </div>
-            <div class="binder">
-                <a class="anchor" href="#init">
-                    <h3 id="init">
-                        init
-                    </h3>
-                </a>
-                <div class="description">
-                    template
-                </div>
-                <p class="sig">
-                    (Fn [] (Phantom a))
+                    (Fn [(Ref Opaque a)] Int)
                 </p>
                 <span>
                     
                 </span>
                 <p class="doc">
-                    <p>creates a <code>Phantom</code>.</p>
+                    <p>Gets the tag from a <code>Opaque</code>.</p>
 
                 </p>
             </div>
@@ -279,16 +286,16 @@ the type contained by the <code>Phantom</code> and the type of the first paramet
                     </h3>
                 </a>
                 <div class="description">
-                    template
+                    instantiate
                 </div>
                 <p class="sig">
-                    (Fn [(Ref (Phantom a) b)] String)
+                    (Fn [(Ref Opaque a)] String)
                 </p>
                 <span>
                     
                 </span>
                 <p class="doc">
-                    <p>converts a <code>Phantom</code> to a string.</p>
+                    <p>converts a <code>Opaque</code> to a string.</p>
 
                 </p>
             </div>
@@ -299,16 +306,16 @@ the type contained by the <code>Phantom</code> and the type of the first paramet
                     </h3>
                 </a>
                 <div class="description">
-                    template
+                    instantiate
                 </div>
                 <p class="sig">
-                    (Fn [(Ref (Phantom a) b)] String)
+                    (Fn [(Ref Opaque a)] String)
                 </p>
                 <span>
                     
                 </span>
                 <p class="doc">
-                    <p>converts a <code>Phantom</code> to a string.</p>
+                    <p>converts a <code>Opaque</code> to a string.</p>
 
                 </p>
             </div>
