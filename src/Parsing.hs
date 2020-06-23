@@ -1,7 +1,7 @@
 {-# LANGUAGE FlexibleContexts #-}
 
 module Parsing (parse, validCharacters, balance,
-                ParseState(..), whitespace, symbol, sexpr) where
+                ParseState(..), whitespace, symbol, sexpr, array) where
 
 import Data.Bits (shift)
 import Numeric (readHex)

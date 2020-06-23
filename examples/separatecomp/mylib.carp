@@ -1,18 +1,15 @@
-(relative-include "my_int.h")
 (load-static "out/sublib.carpi")
 
 (Project.config "title" "mylib")
 
 (defmodule MyLib
-  ;; (deftype DumbEnum
-  ;;   Apple
-  ;;   Banana
-  ;;   Pear)
+  (deftype Vector2 [x Int, y Int])
 
-  (register + (λ [Int Int] Int))
   (defn ident [x] x)
-  (defn add1 [x] (+ x SubLib.one))
+  (defn add1 [x] (Int.+ x SubLib.one))
   (defn isodd? [x] (Int.odd? x))
 
   (defmacro macadd1 [x] (list 'add1 x))
+
+  (def ban (SubLib.DumbEnum.Banana))
   )

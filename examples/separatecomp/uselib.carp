@@ -3,4 +3,15 @@
 (load-static "out/mylib.carpi")
 (load-static "out/sublib.carpi")
 
-(defn main [] (MyLib.add1 SubLib.fortyone))
+(defn match-dumb [x]
+  (match x
+         (SubLib.DumbEnum.Apple x y) (IO.println "Apple!")
+         (SubLib.DumbEnum.Banana) (IO.println "Banana!")
+         (SubLib.DumbEnum.Pear) (IO.println "Berk...")))
+
+(defn main []
+  (let [v (Vector2.init 1 2)]
+    (do
+      (match-dumb MyLib.ban)
+      (IO.println &(Vector2.prn &v))
+      (MyLib.add1 SubLib.fortyone))))

@@ -2,4 +2,9 @@
 
 (defmodule SubLib
   (def one 1)
-  (def fortyone 41))
+  (def fortyone 41)
+
+  (deftype DumbEnum
+    (Apple [Int Bool])
+     Banana
+     Pear))
