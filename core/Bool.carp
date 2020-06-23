@@ -9,6 +9,9 @@
   (register not (Fn [Bool] Bool))
   (register and (Fn [Bool Bool] Bool))
   (register or (Fn [Bool Bool] Bool))
+
+  (defn zero [] false)
+  (implements zero Bool.zero)
 )
 
 (defmodule RefBool

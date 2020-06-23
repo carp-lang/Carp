@@ -37,11 +37,9 @@
 (use-all Test Vector2 Foo)
 
 (defn test-unreachable []
-  (do
-    (match (the (Maybe Int) (Maybe.Nothing))
-      (Maybe.Nothing) ()
-      _ (unreachable "test unreachable"))
-    true))
+  (match (the (Maybe Int) (Maybe.Nothing))
+    (Maybe.Nothing) true
+    _ (unreachable "test unreachable")))
 
 (deftest test
   (assert-equal test
