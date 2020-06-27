@@ -51,4 +51,7 @@
     (add-lib (pkg-config pkg "--libs"))))
 
 (defndynamic add-c [relpath]
-  (add-cflag (Dynamic.String.concat [(Dynamic.String.directory (file)) "/" relpath])))
+  (eval (list 'Project.config "cmod"
+              (Dynamic.String.concat [(Dynamic.String.absolute (Dynamic.String.directory (file)))
+                                      "/"
+                                      relpath]))))

@@ -271,6 +271,7 @@ dynamicStringModule = Env { envBindings = bindings
                                 , addCommand (SymPath path "length") 1 commandStringLength "gets the length of a string." "(String.length \"hi\") ; => 2"
                                 , addCommand (SymPath path "concat") 1 commandStringConcat "concatenates a list of strings together." "(String.concat [\"hi \" \"there\"]) ; => \"hi there\""
                                 , addCommand (SymPath path "directory") 1 commandStringDirectory "takes the basename of a string taken to be a filepath.\n\nHistorical note: this is a command because it used to power one of the `include` macros." "(String.directory \"dir/file\") ; => \"dir\""
+                                , addCommand (SymPath path "absolute") 1 commandStringAbsolute "converts a filepath to absolute." "(String.absolute \"dir/file\") ; => \"/home/foo/dir/file\""
                                 ]
 
 -- | A submodule of the Dynamic module. Contains functions for working with symbols in the repl or during compilation.
