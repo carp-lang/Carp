@@ -71,6 +71,7 @@ defaultProject =
           , projectForceReload = False
           , projectPkgConfigFlags = []
           , projectCModules = []
+          , projectLoadStack = []
           }
 
 -- | Starting point of the application.

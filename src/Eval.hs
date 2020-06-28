@@ -638,9 +638,14 @@ loadInternal ctx xobj path i reloadMode = do
                           files' = if canonicalPath `elem` (map fst files)
                                    then files
                                    else files ++ [(canonicalPath, reloadMode)]
-                          proj' = proj { projectFiles = files', projectAlreadyLoaded = canonicalPath : alreadyLoaded }
+                          prevStack = projectLoadStack proj
+                          proj' = proj { projectFiles = files'
+                                       , projectAlreadyLoaded = canonicalPath : alreadyLoaded
+                                       , projectLoadStack = canonicalPath : prevStack
+                                       }
                       newCtx <- liftIO $ executeString True False (ctx { contextProj = proj' }) contents canonicalPath
-                      return (newCtx, dynamicNil)
+
+                      return (newCtx { contextProj = (contextProj newCtx) { projectLoadStack = prevStack } }, dynamicNil)
   where
     frozenPaths proj =
       if projectForceReload proj
@@ -702,9 +707,7 @@ loadInternal ctx xobj path i reloadMode = do
         _ <- liftIO $ setCurrentDirectory cur
         doGitLoad path fpath
       else do
-        _ <- liftIO $ readProcessWithExitCode "git" ["init"] ""
-        _ <- liftIO $ readProcessWithExitCode "git" ["remote", "add", "origin", path] ""
-        (x0, _, stderr0) <- liftIO $ readProcessWithExitCode "git" ["fetch", "--all", "--tags"] ""
+        (x0, _, stderr0) <- liftIO $ readProcessWithExitCode "git" ["clone", "--recurse-submodules", path, "."] ""
         case x0 of
           ExitFailure _ -> do
             _ <- liftIO $ setCurrentDirectory cur

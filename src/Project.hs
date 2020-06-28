@@ -34,6 +34,7 @@ data Project = Project { projectTitle :: String
                        , projectBalanceHints :: Bool
                        , projectForceReload :: Bool -- Setting this to true will make the `load-once` command work just like `load`.
                        , projectCModules :: [FilePath]
+                       , projectLoadStack :: [FilePath]
                        }
 
 projectFlags :: Project -> String
@@ -70,6 +71,7 @@ instance Show Project where
             , "Balance Hints: " ++ showB projectBalanceHints
             , "Force Reload: " ++ showB projectForceReload
             , "C modules:\n    " ++ joinIndented projectCModules
+            , "Load stack:\n    "++ joinIndented projectLoadStack
             ]
     where showB b = if b then "true" else "false"
           joinIndented = joinWith "\n    "

@@ -151,6 +151,7 @@ commandProjectGetConfig ctx [xobj@(XObj (Str key) _ _)] =
           "cflag" -> Right $ Str $ show $ projectCFlags proj
           "libflag" -> Right $ Str $ show $ projectLibFlags proj
           "pkgconfigflag" -> Right $ Arr $ xstr . Str <$> projectPkgConfigFlags proj
+          "load-stack" -> Right $ Arr $ xstr . Str <$> projectLoadStack proj
           "prompt" -> Right $ Str $ projectPrompt proj
           "search-path" -> Right $ Str $ show $ projectCarpSearchPaths proj
           "print-ast" -> Right $ Bol $ projectPrintTypedAST proj
@@ -752,15 +753,15 @@ simpleFromNum (Num IntTy num) = show (round num :: Int)
 simpleFromNum (Num LongTy num) = show (round num :: Int)
 simpleFromNum (Num _ num) = show num
 
-commandStringDirectory :: CommandCallback
-commandStringDirectory ctx [a] =
+commandPathDirectory :: CommandCallback
+commandPathDirectory ctx [a] =
   return $ case a of
     XObj (Str s) _ _ ->
       (ctx, Right (XObj (Str (takeDirectory s)) (Just dummyInfo) (Just StringTy)))
     _ -> evalError ctx ("Can't call `directory` with " ++ pretty a) (info a)
 
-commandStringAbsolute :: CommandCallback
-commandStringAbsolute ctx [a] =
+commandPathAbsolute :: CommandCallback
+commandPathAbsolute ctx [a] =
   case a of
     XObj (Str s) _ _ -> do
       abs <- makeAbsolute s
