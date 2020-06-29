@@ -1,7 +1,12 @@
 (mac-only
+ (system-include "OpenGL/gl.h")
  (add-lib "-framework OpenGL"))
 (linux-only
+ (system-include "GL/gl.h")
  (add-pkg "gl"))
+(windows-only
+ (system-include "gl.h")
+ (add-lib "-lopengl32"))
 
 (defmodule GL
 
