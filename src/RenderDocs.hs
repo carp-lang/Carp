@@ -94,6 +94,8 @@ envBinderToHtml envBinder ctx moduleName moduleNames =
   let (env, meta) = getEnvAndMetaFromBinder envBinder
       title = projectTitle ctx
       css = projectDocsStyling ctx
+      url = projectDocsURL ctx
+      logo = projectDocsLogo ctx
       moduleDescription = case Meta.get "doc" meta of
                             Just (XObj (Str s) _ _) -> s
                             Nothing -> ""
@@ -103,8 +105,8 @@ envBinderToHtml envBinder ctx moduleName moduleNames =
               H.body $
                 H.div ! A.class_ "content" $
                   do H.div ! A.class_ "logo" $
-                       do H.a ! A.href "http://github.com/carp-lang/Carp" $
-                            H.img ! A.src "logo.png"
+                       do H.a ! A.href (H.stringValue url) $
+                            H.img ! A.src (H.stringValue logo)
                           --span_ "CARP DOCS FOR"
                           H.div  ! A.class_ "title" $ toHtml title
                           moduleIndex moduleNames
