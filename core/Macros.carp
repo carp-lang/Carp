@@ -758,3 +758,19 @@ The expression must be evaluable at compile time.")
 (doc inline-c "inlines some custom C code.")
 (defmacro inline-c [name defcode declcode]
   (list 'deftemplate name (list) (eval defcode) (eval declcode)))
+
+(deftemplate bottom (Fn [] a) "$a $NAME()" "$DECL { abort(); }")
+
+(doc unreachable "asserts that a block of code will never be reached. If it is
+the program will be aborted with an error message.")
+(defmacro unreachable [msg]
+  (list 'do
+    (list 'IO.println
+      (list 'ref
+        (list 'fmt "%s:%d:%d: %s"
+          (eval (list 'file msg))
+          (eval (list 'line msg))
+          (eval (list 'column msg))
+          msg)))
+    (list 'System.abort)
+    (list 'bottom)))

@@ -36,6 +36,11 @@
 
 (use-all Test Vector2 Foo)
 
+(defn test-unreachable []
+  (match (the (Maybe Int) (Maybe.Nothing))
+    (Maybe.Nothing) true
+    _ (unreachable "test unreachable")))
+
 (deftest test
   (assert-equal test
                 1
@@ -67,4 +72,7 @@
   (assert-true test
                (match-ref-1)
                "test that match-ref doesn't delete references")
+  (assert-true test
+               (test-unreachable)
+               "test that unreachable works (as best possible)")
 )

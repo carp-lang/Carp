@@ -13,6 +13,7 @@ import Deftype
 import Emit
 import Lookup
 import Obj
+import Path (takeFileName)
 import Project
 import Sumtypes
 import TypeError
@@ -77,7 +78,13 @@ primitiveFile x@(XObj _ i t) ctx args =
                             ("`file` expected 0 or 1 arguments, but got " ++ show (length args))
                             (info x)
   where err = evalError ctx ("No information about object " ++ pretty x) (info x)
-        go  = maybe err (\info -> (ctx, Right (XObj (Str (infoFile info)) i t)))
+        go  = maybe err (\info ->
+          let fppl = projectFilePathPrintLength (contextProj ctx)
+              file = infoFile info
+              file' = case fppl of
+                        FullPath -> file
+                        ShortPath -> takeFileName file
+          in (ctx, Right (XObj (Str file') i t)))
 
 primitiveLine :: Primitive
 primitiveLine x@(XObj _ i t) ctx args =
@@ -469,14 +476,14 @@ primitiveRegister x ctx _ =
 primitiveDeftype :: Primitive
 primitiveDeftype xobj ctx (name:rest) =
   case rest of
-    (XObj (Arr a) _ _ : _) -> 
+    (XObj (Arr a) _ _ : _) ->
       case members a of
         Nothing ->
-          return $                                                                     
-                makeEvalError                                                              
-                  ctx                                                                      
-                  Nothing                                                                  
-                  ("All fields must have a name and a type." ++                            
+          return $
+                makeEvalError
+                  ctx
+                  Nothing
+                  ("All fields must have a name and a type." ++
                    "Example:\n" ++
                    "```(deftype Name [field1 Type1, field2 Type2, field3 Type3])```\n")
                   (info xobj)
