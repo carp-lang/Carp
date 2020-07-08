@@ -44,6 +44,12 @@
   (implements str Int8.str)
   (implements prn Int8.prn)
   (implements zero Int8.zero)
+  (implements bit-shift-left Int8.bit-shift-left)
+  (implements bit-shift-right Int8.bit-shift-right)
+  (implements bit-and Int8.bit-and)
+  (implements bit-or Int8.bit-or)
+  (implements bit-xor Int8.bit-xor)
+  (implements bit-not Int8.bit-not)
 )
 
 (defmodule Int8Extra
@@ -90,6 +96,12 @@
   (implements str Int16.str)
   (implements prn Int16.prn)
   (implements zero Int16.zero)
+  (implements bit-shift-left Int16.bit-shift-left)
+  (implements bit-shift-right Int16.bit-shift-right)
+  (implements bit-and Int16.bit-and)
+  (implements bit-or Int16.bit-or)
+  (implements bit-xor Int16.bit-xor)
+  (implements bit-not Int16.bit-not)
 )
 
 (defmodule Int16Extra
@@ -136,6 +148,12 @@
   (implements str Int32.str)
   (implements prn Int32.prn)
   (implements zero Int32.zero)
+  (implements bit-shift-left Int32.bit-shift-left)
+  (implements bit-shift-right Int32.bit-shift-right)
+  (implements bit-and Int32.bit-and)
+  (implements bit-or Int32.bit-or)
+  (implements bit-xor Int32.bit-xor)
+  (implements bit-not Int32.bit-not)
 )
 
 (defmodule Int32Extra
@@ -182,6 +200,12 @@
   (implements str Int64.str)
   (implements prn Int64.prn)
   (implements zero Int64.zero)
+  (implements bit-shift-left Int64.bit-shift-left)
+  (implements bit-shift-right Int64.bit-shift-right)
+  (implements bit-and Int64.bit-and)
+  (implements bit-or Int64.bit-or)
+  (implements bit-xor Int64.bit-xor)
+  (implements bit-not Int64.bit-not)
 )
 
 (defmodule Int64Extra
@@ -228,6 +252,12 @@
   (implements str Uint8.str)
   (implements prn Uint8.prn)
   (implements zero Uint8.zero)
+  (implements bit-shift-left Uint8.bit-shift-left)
+  (implements bit-shift-right Uint8.bit-shift-right)
+  (implements bit-and Uint8.bit-and)
+  (implements bit-or Uint8.bit-or)
+  (implements bit-xor Uint8.bit-xor)
+  (implements bit-not Uint8.bit-not)
 )
 
 (defmodule Uint8Extra
@@ -274,6 +304,12 @@
   (implements str Uint16.str)
   (implements prn Uint16.prn)
   (implements zero Uint16.zero)
+  (implements bit-shift-left Uint16.bit-shift-left)
+  (implements bit-shift-right Uint16.bit-shift-right)
+  (implements bit-and Uint16.bit-and)
+  (implements bit-or Uint16.bit-or)
+  (implements bit-xor Uint16.bit-xor)
+  (implements bit-not Uint16.bit-not)
 )
 
 (defmodule Uint16Extra
@@ -320,6 +356,12 @@
   (implements str Uint32.str)
   (implements prn Uint32.prn)
   (implements zero Uint32.zero)
+  (implements bit-shift-left Uint32.bit-shift-left)
+  (implements bit-shift-right Uint32.bit-shift-right)
+  (implements bit-and Uint32.bit-and)
+  (implements bit-or Uint32.bit-or)
+  (implements bit-xor Uint32.bit-xor)
+  (implements bit-not Uint32.bit-not)
 )
 
 (defmodule Uint32Extra
@@ -366,6 +408,12 @@
   (implements str Uint64.str)
   (implements prn Uint64.prn)
   (implements zero Uint64.zero)
+  (implements bit-shift-left Uint64.bit-shift-left)
+  (implements bit-shift-right Uint64.bit-shift-right)
+  (implements bit-and Uint64.bit-and)
+  (implements bit-or Uint64.bit-or)
+  (implements bit-xor Uint64.bit-xor)
+  (implements bit-not Uint64.bit-not)
 )
 
 (defmodule Uint64Extra

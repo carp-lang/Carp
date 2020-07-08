@@ -17,6 +17,13 @@
 (definterface / (λ [a a] a))
 (definterface mod (λ [a a] a))
 
+(definterface bit-and (λ [a a] a))
+(definterface bit-or (λ [a a] a))
+(definterface bit-xor (λ [a a] a))
+(definterface bit-not (λ [a] a))
+(definterface bit-shift-left (λ [a a] a))
+(definterface bit-shift-right (λ [a a] a))
+
 (definterface < (λ [a a] Bool))
 (definterface > (λ [a a] Bool))
 
