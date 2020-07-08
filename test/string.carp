@@ -307,4 +307,8 @@
                     [104b 101b 108b 108b 111b]
                     (to-bytes "hello")
                     "to-bytes works correctly")
+  (assert-equal test
+                "hellö"
+                &(from-bytes &[104b 101b 108b 108b 195b 182b])
+                "from-bytes works correctly")
 )

@@ -180,6 +180,14 @@ Array String_to_MINUS_bytes(const String *s) {
     return chars;
 }
 
+String String_from_MINUS_bytes(Array *a) {
+    String s;
+    const char *us = (const char *)a->data;
+    s = CARP_MALLOC(a->len);
+    memcpy(s, us, a->len);
+    return s;
+}
+
 String Bool_str(bool b) {
     const String true_str = "true";
     const String false_str = "false";
