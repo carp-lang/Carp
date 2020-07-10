@@ -707,7 +707,9 @@ loadInternal ctx xobj path i reloadMode = do
         _ <- liftIO $ setCurrentDirectory cur
         doGitLoad path fpath
       else do
-        (x0, _, stderr0) <- liftIO $ readProcessWithExitCode "git" ["clone", "--recurse-submodules", path, "."] ""
+        _ <- liftIO $ readProcessWithExitCode "git" ["init"] ""
+        _ <- liftIO $ readProcessWithExitCode "git" ["remote", "add", "origin", path] ""
+        (x0, _, stderr0) <- liftIO $ readProcessWithExitCode "git" ["fetch", "--all", "--tags"] ""
         case x0 of
           ExitFailure _ -> do
             _ <- liftIO $ setCurrentDirectory cur
