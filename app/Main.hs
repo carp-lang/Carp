@@ -70,6 +70,8 @@ defaultProject =
           , projectGenerateOnly = False
           , projectForceReload = False
           , projectPkgConfigFlags = []
+          , projectCModules = []
+          , projectLoadStack = []
           }
 
 -- | Starting point of the application.

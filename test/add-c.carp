@@ -1,0 +1,9 @@
+(load "Test.carp")
+(use Test)
+(add-c "csquare.c")
+
+(relative-include "csquare.h")
+(register csquare (Fn [Int] Int))
+
+(deftest test
+    (assert-equal test (csquare 2) 4 "add-c works"))

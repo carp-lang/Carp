@@ -10,6 +10,7 @@ import System.Exit (exitSuccess, exitFailure, exitWith, ExitCode(..))
 import System.Info (os)
 import System.Process (callCommand, spawnCommand, waitForProcess)
 import System.IO (openFile, hPutStr, hClose, utf8, hSetEncoding, IOMode(..))
+import System.Directory (makeAbsolute)
 import qualified Data.Map as Map
 
 import Parsing
@@ -90,6 +91,8 @@ commandProjectConfig ctx [xobj@(XObj (Str key) _ _), value] = do
                                   return (proj { projectLibFlags = addIfNotPresent libflag (projectLibFlags proj) })
                   "pkgconfigflag" -> do pkgconfigflag <- unwrapStringXObj value
                                         return (proj { projectPkgConfigFlags = addIfNotPresent pkgconfigflag (projectPkgConfigFlags proj) })
+                  "cmod" -> do cmod <- unwrapStringXObj value
+                               return (proj { projectCModules = addIfNotPresent cmod (projectCModules proj) })
                   "prompt" -> do prompt <- unwrapStringXObj value
                                  return (proj { projectPrompt = prompt })
                   "search-path" -> do searchPath <- unwrapStringXObj value
@@ -148,6 +151,7 @@ commandProjectGetConfig ctx [xobj@(XObj (Str key) _ _)] =
           "cflag" -> Right $ Str $ show $ projectCFlags proj
           "libflag" -> Right $ Str $ show $ projectLibFlags proj
           "pkgconfigflag" -> Right $ Arr $ xstr . Str <$> projectPkgConfigFlags proj
+          "load-stack" -> Right $ Arr $ xstr . Str <$> projectLoadStack proj
           "prompt" -> Right $ Str $ projectPrompt proj
           "search-path" -> Right $ Str $ show $ projectCarpSearchPaths proj
           "print-ast" -> Right $ Bol $ projectPrintTypedAST proj
@@ -226,8 +230,9 @@ commandBuild shutUp ctx args = do
       do let compiler = projectCompiler proj
              echoCompilationCommand = projectEchoCompilationCommand proj
              incl = projectIncludesToC proj
-             includeCorePath = " -I" ++ projectCarpDir proj ++ "/core/ "
-             flags = includeCorePath ++ projectFlags proj
+             includeCorePath = projectCarpDir proj ++ "/core/ "
+             cModules = projectCModules proj
+             flags = projectFlags proj
              outDir = projectOutDir proj
              outMain = outDir </> "main.c"
              outExe = outDir </> projectTitle proj
@@ -240,7 +245,14 @@ commandBuild shutUp ctx args = do
          hClose outputHandle
          if generateOnly then return (ctx, dynamicNil) else
              case Map.lookup "main" (envBindings env) of
-                             Just _ -> do let cmd = compiler ++ " " ++ outMain ++ " -o \"" ++ outExe ++ "\" " ++ flags
+                             Just _ -> do let cmd = joinWithSpace $ [ compiler
+                                                                    , "-o"
+                                                                    , outExe
+                                                                    , "-I"
+                                                                    , includeCorePath
+                                                                    , flags
+                                                                    , outMain
+                                                                    ] ++ cModules
                                           liftIO $ do when echoCompilationCommand (putStrLn cmd)
                                                       callCommand cmd
                                                       when (execMode == Repl && not shutUp) (putStrLn ("Compiled to '" ++ outExe ++ "' (executable)"))
@@ -381,6 +393,7 @@ commandHelp ctx [XObj(Str "interop") _ _] =
               putStrLn "(local-include <file>)           - Include a local header file."
               putStrLn "(add-cflag <flag>)               - Add a cflag to the compilation step."
               putStrLn "(add-lib <flag>)                 - Add a library flag to the compilation step."
+              putStrLn "(add-c <flag>)                   - Add a C/ObjC/C++ module to the compilation step."
               return (ctx, dynamicNil)
 
 commandHelp ctx [XObj(Str "project") _ _] =
@@ -389,6 +402,7 @@ commandHelp ctx [XObj(Str "project") _ _] =
               putStrLn "'cflag'                - Add a flag to the compiler."
               putStrLn "'libflag'              - Add a library flag to the compiler."
               putStrLn "'pkgconfigflag'        - Add a flag to pkg-config invocations."
+              putStrLn "'cmod'                 - Add a C/ObjC/C++ module to the compiler invocation."
               putStrLn "'compiler'             - Set what compiler should be run with the 'build' command."
               putStrLn "'title'                - Set the title of the current project, will affect the name of the binary produced."
               putStrLn "'output-directory'     - Where to put compiler artifacts, etc."
@@ -739,12 +753,20 @@ simpleFromNum (Num IntTy num) = show (round num :: Int)
 simpleFromNum (Num LongTy num) = show (round num :: Int)
 simpleFromNum (Num _ num) = show num
 
-commandStringDirectory :: CommandCallback
-commandStringDirectory ctx [a] =
+commandPathDirectory :: CommandCallback
+commandPathDirectory ctx [a] =
   return $ case a of
     XObj (Str s) _ _ ->
       (ctx, Right (XObj (Str (takeDirectory s)) (Just dummyInfo) (Just StringTy)))
     _ -> evalError ctx ("Can't call `directory` with " ++ pretty a) (info a)
+
+commandPathAbsolute :: CommandCallback
+commandPathAbsolute ctx [a] =
+  case a of
+    XObj (Str s) _ _ -> do
+      abs <- makeAbsolute s
+      pure $ (ctx, Right (XObj (Str abs) (Just dummyInfo) (Just StringTy)))
+    _ -> pure $ evalError ctx ("Can't call `absolute` with " ++ pretty a) (info a)
 
 commandPlus :: CommandCallback
 commandPlus ctx [a, b] =

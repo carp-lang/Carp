@@ -49,3 +49,14 @@
   (do
     (add-cflag (pkg-config pkg "--cflags"))
     (add-lib (pkg-config pkg "--libs"))))
+
+(defndynamic current-file []
+  (car (Project.get-config "load-stack")))
+
+(defndynamic relative-to [path relpath]
+  (Dynamic.String.concat [(Dynamic.Path.directory path)
+                          "/"
+                          relpath]))
+
+(defndynamic add-c [relpath]
+  (Project.config "cmod" (relative-to (current-file) relpath)))

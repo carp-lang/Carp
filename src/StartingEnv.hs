@@ -254,6 +254,7 @@ dynamicModule = Env { envBindings = bindings
                     ++ [("String", Binder emptyMeta (XObj (Mod dynamicStringModule) Nothing Nothing))
                        ,("Symbol", Binder emptyMeta (XObj (Mod dynamicSymModule) Nothing Nothing))
                        ,("Project", Binder emptyMeta (XObj (Mod dynamicProjectModule) Nothing Nothing))
+                       ,("Path", Binder emptyMeta (XObj (Mod dynamicPathModule) Nothing Nothing))
                        ]
 
 -- | A submodule of the Dynamic module. Contains functions for working with strings in the repl or during compilation.
@@ -270,7 +271,6 @@ dynamicStringModule = Env { envBindings = bindings
                                 , addCommand (SymPath path "slice") 3 commandSubstring "creates a substring from a beginning index to an end index." "(String.slice \"hello\" 1 3) ; => \"ell\""
                                 , addCommand (SymPath path "length") 1 commandStringLength "gets the length of a string." "(String.length \"hi\") ; => 2"
                                 , addCommand (SymPath path "concat") 1 commandStringConcat "concatenates a list of strings together." "(String.concat [\"hi \" \"there\"]) ; => \"hi there\""
-                                , addCommand (SymPath path "directory") 1 commandStringDirectory "takes the basename of a string taken to be a filepath.\n\nHistorical note: this is a command because it used to power one of the `include` macros." "(String.directory \"dir/file\") ; => \"dir\""
                                 ]
 
 -- | A submodule of the Dynamic module. Contains functions for working with symbols in the repl or during compilation.
@@ -299,6 +299,19 @@ dynamicProjectModule = Env { envBindings = bindings
   where path = ["Dynamic", "Project"]
         bindings = Map.fromList [ addCommand (SymPath path "config") 2 commandProjectConfig "sets a project config key." "(Project.config \"paren-balance-hints\" false)"
                                 , addCommand (SymPath path "get-config") 1 commandProjectGetConfig "gets a project config value under a key." "(Project.get-config \"paren-balance-hints\")"
+                                ]
+
+-- | A submodule of the Dynamic module. Contains functions for working with paths.
+dynamicPathModule :: Env
+dynamicPathModule = Env { envBindings = bindings
+                        , envParent = Nothing
+                        , envModuleName = Just "Path"
+                        , envUseModules = []
+                        , envMode = ExternalEnv
+                        , envFunctionNestingLevel = 0 }
+  where path = ["Dynamic", "Path"]
+        bindings = Map.fromList [ addCommand (SymPath path "directory") 1 commandPathDirectory "takes the basename of a string taken to be a filepath.\n\nHistorical note: this is a command because it used to power one of the `include` macros." "(String.directory \"dir/file\") ; => \"dir\""
+                                , addCommand (SymPath path "absolute") 1 commandPathAbsolute "converts a filepath to absolute." "(String.absolute \"dir/file\") ; => \"/home/foo/dir/file\""
                                 ]
 
 -- | The global environment before any code is run.

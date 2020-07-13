@@ -641,9 +641,14 @@ loadInternal ctx xobj path i reloadMode = do
                           files' = if canonicalPath `elem` (map fst files)
                                    then files
                                    else files ++ [(canonicalPath, reloadMode)]
-                          proj' = proj { projectFiles = files', projectAlreadyLoaded = canonicalPath : alreadyLoaded }
+                          prevStack = projectLoadStack proj
+                          proj' = proj { projectFiles = files'
+                                       , projectAlreadyLoaded = canonicalPath : alreadyLoaded
+                                       , projectLoadStack = canonicalPath : prevStack
+                                       }
                       newCtx <- liftIO $ executeString True False (ctx { contextProj = proj' }) contents canonicalPath
-                      return (newCtx, dynamicNil)
+
+                      return (newCtx { contextProj = (contextProj newCtx) { projectLoadStack = prevStack } }, dynamicNil)
   where
     frozenPaths proj =
       if projectForceReload proj
