@@ -47,6 +47,12 @@
   (register bit-or (λ [Int Int] Int))
   (register bit-xor (λ [Int Int] Int))
   (register bit-not (λ [Int] Int))
+  (implements bit-shift-left Int.bit-shift-left)
+  (implements bit-shift-right Int.bit-shift-right)
+  (implements bit-and Int.bit-and)
+  (implements bit-or Int.bit-or)
+  (implements bit-xor Int.bit-xor)
+  (implements bit-not Int.bit-not)
 
   (doc abs "The absolute value (removes the negative sign) of an Int.")
   (register abs (λ [Int] Int))

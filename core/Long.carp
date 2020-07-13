@@ -41,6 +41,12 @@ to non-refs.")
   (implements mod Long.mod)
   (implements to-int Long.to-int)
   (implements from-int Long.from-int)
+  (implements bit-shift-left Long.bit-shift-left)
+  (implements bit-shift-right Long.bit-shift-right)
+  (implements bit-and Long.bit-and)
+  (implements bit-or Long.bit-or)
+  (implements bit-xor Long.bit-xor)
+  (implements bit-not Long.bit-not)
 
   (not-on-windows ; this seems to generate invalid code on some windows machines
     (register safe-add (λ [Long Long (Ref Long)] Bool))

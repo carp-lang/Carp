@@ -40,6 +40,12 @@
   (register bit-or (λ [Byte Byte] Byte))
   (register bit-xor (λ [Byte Byte] Byte))
   (register bit-not (λ [Byte] Byte))
+  (implements bit-shift-left Byte.bit-shift-left)
+  (implements bit-shift-right Byte.bit-shift-right)
+  (implements bit-and Byte.bit-and)
+  (implements bit-or Byte.bit-or)
+  (implements bit-xor Byte.bit-xor)
+  (implements bit-not Byte.bit-not)
 
   (defn even? [a] (= (mod a 2b) 0b))
   (defn odd? [a] (not (even? a)))
