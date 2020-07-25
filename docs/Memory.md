@@ -6,7 +6,7 @@ The goals of the memory management system in Carp are the following:
 * Efficient
 * Safe
 
-This is achieved through a linear type system where memory is owned by the function or let-scope that allocated it. When the scope is exited the memory is deleted, unless it was returned to it's outer scope or handed off to another function (passed as an argument). The other thing that can be done is temporarily lending out some piece of memory to another function using a ref:
+This is achieved through a linear type system where memory is owned by the function or let-scope that allocated it. When the scope is exited the memory is deleted, unless it was returned to its outer scope or handed off to another function (passed as an argument). The other thing that can be done is temporarily lending out some piece of memory to another function using a ref:
 
 ```
 (let [s (make-string)]

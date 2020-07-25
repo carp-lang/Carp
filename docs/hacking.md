@@ -14,7 +14,7 @@ modified the compiler in the past.
 The Carp compiler source lives in the `src/` directory. Carp is, roughly
 speaking, organized into four primary passes or components:
 
-![carp compiler phases](../compiler-passes.svg)
+![carp compiler phases](./compiler-passes.svg)
 
 Each source file plays a part in one or more components/phases in the compiler.
 The sections below briefly describe the purpose of each stage and list
@@ -87,10 +87,10 @@ from names to `XObjs`.
 evaluation passes can use them.
 - `Lookup.hs` -- Functions for looking up `Binders` in a given environment
   (`Env`).
-- `Expand.hs` -- Functions for traversing forms and doing syntactic analysis.´
+- `Expand.hs` -- Functions for traversing forms and doing syntactic analysis.
    Historically also expanded macros (that functionality was moved into
    `Eval.macroExpand`).
-- `Infer.hs` -- Functions for performing type inference--entry point into the
+- `Infer.hs` -- Functions for performing type inference -- entry point into the
   type system.
 - `Qualify` -- Qualifies symbols with appropriate module names.
 

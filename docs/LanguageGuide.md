@@ -197,7 +197,7 @@ Specifying the type solves this error:
   (String.length x))
 ```
 
-When you `use` a module, its declarations are brought into the current scope. If you `use` a module in the global scope, all of its declarations are brought into global scope after the call to `use`. Similarly, if you `use` a module in another module's scope, its declarations can be reffered to without qualifiers within the scope of the module:
+When you `use` a module, its declarations are brought into the current scope. If you `use` a module in the global scope, all of its declarations are brought into global scope after the call to `use`. Similarly, if you `use` a module in another module's scope, its declarations can be referred to without qualifiers within the scope of the module:
 
 ```clojure
 (use String)
@@ -211,7 +211,7 @@ When you `use` a module, its declarations are brought into the current scope. If
   (use Array)
   ;; Since the the `String` module is used in the global scope,
   ;; and the Foo module `use`s `Array`, we again need to qualify calls to `length`
-  ;; to disambiguite which declaration we're referring to.
+  ;; to disambiguate which declaration we're referring to.
   (defn g [xs]
     (Array.length xs)))
 ```
@@ -225,12 +225,11 @@ Sometimes, it's more convenient to bring a module's declarations into scope only
   (defn f [x]
     (String.length x))
 
-    ;; Using the `with` form, we can reference the module's declarations
-    ;; unqualified in all the forms contained in the `with`'s scope.
-    (with String
-      (defn g [x]
-        (length x)))
-)
+  ;; Using the `with` form, we can reference the module's declarations
+  ;; unqualified in all the forms contained in the `with`'s scope.
+  (with String
+    (defn g [x]
+      (length x))))
 ```
 
 ### Structs
@@ -265,7 +264,7 @@ There are two ways to define `sumtypes`:
   (Right [b]))
 ```
 
-A Variant can be created with the same syntax as call expression
+A Variant can be created with the same syntax as call expression:
 ```clojure
 (MyEnum.Kind1)
 (Either.Left 10)
@@ -282,7 +281,7 @@ A Variant can be created with the same syntax as call expression
 (Kind3)
 ```
 
-You can use pattern matching to extract values in a safe way
+You can use pattern matching to extract values in a safe way:
 ```clojure
 (defn get [either]
   (match either
@@ -307,7 +306,7 @@ You can use pattern matching to extract values in a safe way
 (register blah (Fn [Int Int] String) "exit") ;; Will register the function 'blah' but use the name 'exit' in the emitted C code.
 
 (register-type Apple) ;; Register an opaque C type
-(register-type Banana [price Double, size Int]) ;; Register an external C-structs, this will generate getters, setters and updaters.
+(register-type Banana [price Double, size Int]) ;; Register an external C-struct, this will generate getters, setters and updaters.
 ```
 
 Often type names in C are lowercase (e.g. `size_t`) and just registering them will be problematic since Carp thinks that such variables are generic types.

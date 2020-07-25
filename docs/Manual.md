@@ -35,7 +35,7 @@ While powerful, the REPL in Carp currently has some big limitations compared to 
 
 ### Adding annotations
 
-Carp has a flexible meta data system (inspired by the one in Clojure) that lets anyone add and retrieve data on the bindings in the environment. The general way to do that is with `(meta-set! <path> <key> <value>)` and `(meta <path> <key>)`.
+Carp has a flexible metadata system (inspired by the one in Clojure) that lets anyone add and retrieve data on the bindings in the environment. The general way to do that is with `(meta-set! <path> <key> <value>)` and `(meta <path> <key>)`.
 
 A couple of useful macros are implemented on top of this system:
 
