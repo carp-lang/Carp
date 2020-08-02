@@ -9,9 +9,9 @@ This document currently focuses on developer contributions but we welcome all ki
 Community
 ---------
 The best place to start is to join the Carp Gitter channel over at
-[https://gitter.im/carp-lang/Carp](https://gitter.im/carp-lang/Carp)
+[https://gitter.im/carp-lang/Carp](https://gitter.im/carp-lang/Carp).
 
 
 License
 -------
-Carp is currently released under the terms of the the ASL 2.0 license.
+Carp is currently released under the terms of the ASL 2.0 license.

@@ -33,8 +33,8 @@ This document will help us rewrite Carp's dynamic evaluator (defined in Eval.hs)
 ## 0. Terms used in this document
 * form : Any valid Carp data struture as represented in text.
 * top level : Any form that isn't embedded in another form.
-* Static Carp : The compiled version of the Carp langauge
-* Dynamic Carp : The interpreted, functional, GC'ed version of the Carp langauge
+* Static Carp : The compiled version of the Carp language.
+* Dynamic Carp : The interpreted, functional, GC'ed version of the Carp language.
 
 ## 1. Scoping Rules
 Related issues:
