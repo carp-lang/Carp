@@ -724,6 +724,9 @@ The expression must be evaluable at compile time.")
 (doc *gensym-counter* "is a helper counter for `gensym`.")
 (defdynamic *gensym-counter* 1000)
 
+(defndynamic gensym-local [x]
+  (Symbol.concat ['gensym-generated x]))
+
 (doc gensym-with "generates symbols dynamically, based on a symbol name.")
 (defndynamic gensym-with [x]
   (do
