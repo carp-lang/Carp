@@ -149,6 +149,24 @@ solveOneInternal mappings constraint =
             Left err -> Left err
             Right ok -> solveOneInternal ok (Constraint ltA ltB i1 i2 ctx ord)
 
+    -- As a special case, allow Refs to stand for higher-order polymorphic
+    -- structs (f a b) ~ (Ref a b)
+    Constraint (StructTy v@(VarTy _) args) (RefTy b ltB) _ _ _ _ ->
+      let (Constraint _ _ i1 i2 ctx ord) = constraint
+      in  case solveOneInternal mappings (Constraint v (RefTy b ltB) i1 i2 ctx ord) of
+            Left err -> Left err
+            Right ok -> foldM (\m (aa, bb) -> solveOneInternal m (Constraint aa bb i1 i2 ctx ord)) ok (zip args [b, ltB])
+
+    -- TODO: The reverse argument order is necessary here since interface code
+    -- uses the opposite order of most other solving code (abstract, concrete
+    -- vs. concrete, abstract)--we should bring the interface code into
+    -- compliance with this to obviate this stanza
+    Constraint (RefTy b ltB) (StructTy v@(VarTy _) args) _ _ _ _ ->
+      let (Constraint _ _ i1 i2 ctx ord) = constraint
+      in  case solveOneInternal mappings (Constraint v (RefTy b ltB) i1 i2 ctx ord) of
+            Left err -> Left err
+            Right ok -> foldM (\m (aa, bb) -> solveOneInternal m (Constraint aa bb i1 i2 ctx ord)) ok (zip args [b, ltB])
+
     -- Else
     Constraint aTy bTy _ _ _ _ ->
       if aTy == bTy

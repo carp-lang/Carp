@@ -204,6 +204,9 @@ areUnifiable (StructTy a aArgs) (StructTy b bArgs)
 areUnifiable (StructTy (VarTy _) aArgs) (FuncTy bArgs _ _)
   | length aArgs /= length bArgs = False
   | otherwise = all (== True) (zipWith areUnifiable aArgs bArgs)
+areUnifiable (StructTy (VarTy _) args) (RefTy _ _)
+  | length args == 2 = True
+  | otherwise = False
 areUnifiable (StructTy _ _) _ = False
 areUnifiable (PointerTy a) (PointerTy b) = areUnifiable a b
 areUnifiable (PointerTy _) _ = False
@@ -238,7 +241,15 @@ replaceTyVars mappings t =
   case t of
     (VarTy key) -> fromMaybe t (Map.lookup key mappings)
     (FuncTy argTys retTy lt) -> FuncTy (map (replaceTyVars mappings) argTys) (replaceTyVars mappings retTy) (replaceTyVars mappings lt)
-    (StructTy name tyArgs) -> StructTy (replaceTyVars mappings name) (fmap (replaceTyVars mappings) tyArgs)
+    (StructTy name tyArgs) ->
+      case (replaceTyVars mappings name) of
+         -- special case, struct (f a b) mapped to (RefTy a lt)
+         -- We f in such a case to the full (Ref a lt) in constraints; we also still map
+         -- individual members a and b, as these need mappings since they may be
+         -- referred to in other places (e.g. (Fn [(f a b)] a)--without a mapping,
+         -- a would remain generic here.
+        (RefTy a lt) -> (replaceTyVars mappings (RefTy a lt))
+        _ -> StructTy (replaceTyVars mappings name) (fmap (replaceTyVars mappings) tyArgs)
     (PointerTy x) -> PointerTy (replaceTyVars mappings x)
     (RefTy x lt) -> RefTy (replaceTyVars mappings x) (replaceTyVars mappings lt)
     _ -> t
