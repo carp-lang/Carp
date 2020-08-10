@@ -127,42 +127,38 @@
           false
           (Dynamic.= (Symbol.from "definterface") (car s)))))
 
-  (doc proxy
-    "Returns an reference to an anonymous 'proxied' variant of `function` in
+  (doc with-copy
+    "Returns a reference to an anonymous 'proxied' variant of `function` in
   which the argument in position `arg` is *copied* from a reference before being
-  passed to `function`.
-
-  This is most useful when using higher orders that operate over structures that
-  return references to their inhabitants, such as arrays or structs. It allows
-  you to use a function over values without writing a custom anonymous function
-  to handle copying, for example:
+  passed to `function`:
 
   ```
-  (defn add [x y] (+ x y))
   ;; Array.reduce expects a function that takes a *ref* in its second argument:
   ;;   (Fn [a (Ref b c)] ...)
-  ;; so we can't use a function like `add` directly.
-  (reduce (proxy add-one 2) 0 &[1 2 3])
+  ;; so we can't use a function like `+` directly; enter proxy
+  (reduce (with-copy + 2) 0 &[1 2 3])
   => 6
   ;; compare this with an inline anonymous function that achieves the same thing:
-  (reduce &(fn [x y] (+ x @y)) 0 &[1 2 3])
+  (reduce &(fn [x y] (+ x @y)) 0 &[1 2 3]) === (reduce (with-copy + 2) 0 &[1 2 3])
   ```
 
-  Using `proxy` instead of in-situ anonymous functions may enhance readability in
-  some situations.
+  This is useful when using higher-order functions that operate over structures that
+  return *references* to their inhabitants, such as arrays or structs. It allows
+  you to use a function over values without writing a custom anonymous function
+  to handle copying.
 
   Furthermore, one can define bespoke variants for working with particular
-  higher-order functions, for instace, `reduce` always expacts a reference in the
+  higher-order functions. For instace, `reduce` always expacts a reference in the
   second positon:
 
   ```
   (defmacro reducer [function]
-    (eval (list proxy function 2)))
-  (reduce (reducer add) 0 &[1 2 3])
+    (eval (list with-copy function 2)))
+  (reduce (reducer +) 0 &[1 2 3])
   => 6
   ```
   ")
-  (defmacro proxy [function arg]
+  (defmacro with-copy [function arg]
     ;; The calls to `eval` around `function` are necessary to ensure we can execute arity.
     (let [arg-arr (Dynamic.unreduce inc 0 (Introspect.arity (eval function)) (array))
           local-names (list-to-array-internal (map gensym-local (map Symbol.from arg-arr)) [])

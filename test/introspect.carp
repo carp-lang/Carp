@@ -55,6 +55,6 @@
     "arity works as expected")
   (assert-equal test
     6
-    (Array.reduce (Introspect.proxy add 2) 0 &[1 2 3])
-    "proxy works as expected")
+    (Array.reduce (Introspect.with-copy add 2) 0 &[1 2 3])
+    "with-copy works as expected")
 )
