@@ -34,6 +34,14 @@
           false
           (Dynamic.= (Symbol.from "primitive") (car s)))))
 
+(doc external?
+    "Is this binding external?")
+  (defndynamic external? [binding]
+    (let [s (s-expr binding)]
+      (if (empty? s)
+          false
+          (Dynamic.= (Symbol.from "external") (car s)))))
+
   (doc variable?
     "Is this binding a variable?")
   (defndynamic variable? [binding]
@@ -81,6 +89,10 @@
     (if (empty? s)
         0
     (cond
+        (Introspect.external? binding)
+          (if (list? (caddr s))
+              (length (car (cdaddr s)))
+              0)
         (Introspect.command? binding) (length (caddr s))
         (Introspect.primitive? binding) (length (caddr s))
         (Introspect.interface? binding) (length (car (cdaddr s)))

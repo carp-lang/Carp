@@ -554,6 +554,13 @@ concretizeDefinition allowAmbiguity typeEnv globalEnv visitedDefinitions definit
       XObj (Lst (XObj (Deftemplate (TemplateCreator templateCreator)) _ _ : _)) _ _ ->
         let template = templateCreator typeEnv globalEnv
         in  Right (instantiateTemplate newPath concreteType template)
+      XObj (Lst [XObj (External _) _ _, _, _]) _ _ ->
+        if name == "NULL"
+        then Right (definition, []) -- A hack to make all versions of NULL have the same name
+        else let withNewPath = setPath definition newPath
+                 withNewType = withNewPath { ty = Just concreteType }
+             in  Right (withNewType, [])
+      -- TODO: This old form shouldn't be necessary, but somehow, some External xobjs are still registered without a ty xobj position.
       XObj (Lst [XObj (External _) _ _, _]) _ _ ->
         if name == "NULL"
         then Right (definition, []) -- A hack to make all versions of NULL have the same name

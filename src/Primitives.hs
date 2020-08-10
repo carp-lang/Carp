@@ -449,8 +449,10 @@ registerInternal ctx name ty override =
                                  "'") (info ty)
         -- TODO: Retroactively register in interface if implements metadata is present.
         validType t = let path = SymPath pathStrings name
-                          registration = XObj (Lst [XObj (External override) Nothing Nothing,
-                                         XObj (Sym path Symbol) Nothing Nothing]) (info ty) (Just t)
+                          registration = XObj (Lst [XObj (External override) Nothing Nothing
+                                                   ,XObj (Sym path Symbol) Nothing Nothing
+                                                   ,ty
+						   ]) (info ty) (Just t)
                           meta = existingMeta globalEnv registration
                           env' = envInsertAt globalEnv path (Binder meta registration)
                       in  (ctx { contextGlobalEnv = env' }, dynamicNil)

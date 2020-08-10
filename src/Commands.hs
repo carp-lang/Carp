@@ -954,4 +954,5 @@ toSymbols (XObj (Interface _ _) i t) = (XObj (Sym (SymPath [] "definterface") Sy
 toSymbols (XObj Macro i t) = (XObj (Sym (SymPath [] "defmacro") Symbol) i t)
 toSymbols (XObj (Command _) i t) = (XObj (Sym (SymPath [] "command") Symbol) i t)
 toSymbols (XObj (Primitive _) i t) = (XObj (Sym (SymPath [] "primitive") Symbol) i t)
+toSymbols (XObj (External _) i t) = (XObj (Sym (SymPath [] "external") Symbol) i t)
 toSymbols x = x

@@ -63,7 +63,7 @@ registerInInterface ctx xobj interface =
       -- Global variables can also be part of an interface
       registerInInterfaceIfNeeded ctx path interface t
       -- So can externals!
-    XObj (Lst [XObj (External _) _ _, XObj (Sym path _) _ _]) _ (Just t) ->
+    XObj (Lst [XObj (External _) _ _, XObj (Sym path _) _ _, _]) _ (Just t) ->
       registerInInterfaceIfNeeded ctx path interface t
       -- And instantiated/auto-derived type functions! (e.g. Pair.a)
     XObj (Lst [XObj (Instantiate _) _ _, XObj (Sym path _) _ _]) _ (Just t) ->
