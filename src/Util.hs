@@ -96,3 +96,17 @@ lambdaToCName :: String -> Int -> String
 lambdaToCName name nestLevel = if nestLevel > 0
                                then name
                                else "NAKED_LAMBDA"
+
+-- Given an integer, create a dummy argument name for it.
+-- Called by XObj producing functions such as addCommand.
+intToArgName :: Int -> String
+intToArgName 1 = "x"
+intToArgName 2 = "y"
+intToArgName 3 = "z"
+intToArgName 4 = "w"
+intToArgName 5 = "v"
+intToArgName 6 = "u"
+intToArgName 7 = "t"
+intToArgName 8 = "s"
+intToArgName 9 = "r"
+intToArgName n = intToArgName 1 ++ intToArgName (n `div` 10)

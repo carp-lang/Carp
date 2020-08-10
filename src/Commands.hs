@@ -58,7 +58,7 @@ addCommandConfigurable :: SymPath -> Maybe Int -> CommandCallback -> String -> S
 addCommandConfigurable path maybeArity callback doc example =
   let cmd = XObj (Lst [XObj (Command (CommandFunction f)) (Just dummyInfo) Nothing
                       ,XObj (Sym path Symbol) Nothing Nothing
-                      ,unreduceArgList
+                      ,unfoldArgs
                       ])
             (Just dummyInfo) (Just DynamicTy)
       SymPath _ name = path
@@ -74,22 +74,12 @@ addCommandConfigurable path maybeArity callback doc example =
             then callback ctx args
             else
               return (evalError ctx ("Invalid args to '" ++ show path ++ "' command: " ++ joinWithComma (map pretty args) ++ "\n\n" ++ exampleUsage) Nothing)
-        unreduceArgList =
+        unfoldArgs =
           case maybeArity of
             Just arity ->
               let tosym x = (XObj (Sym (SymPath [] x) Symbol) Nothing Nothing)
-              in  XObj (Arr (map (tosym . toArg) [1..arity])) Nothing Nothing
+              in  XObj (Arr (map (tosym . intToArgName) [1..arity])) Nothing Nothing
             Nothing -> XObj (Arr [(XObj (Sym (SymPath [] "") Symbol) Nothing Nothing)]) Nothing Nothing
-            where toArg 1 = "x"
-                  toArg 2 = "y"
-                  toArg 3 = "z"
-                  toArg 4 = "w"
-                  toArg 5 = "v"
-                  toArg 6 = "u"
-                  toArg 7 = "t"
-                  toArg 8 = "s"
-                  toArg 9 = "r"
-                  toArg n = toArg 1 ++ toArg (n `div` 10)
 
 presentError :: MonadIO m => String -> a -> m a
 presentError msg ret =
@@ -963,4 +953,5 @@ toSymbols (XObj (DefSumtype _) i t) = (XObj (Sym (SymPath [] "deftype") Symbol) 
 toSymbols (XObj (Interface _ _) i t) = (XObj (Sym (SymPath [] "definterface") Symbol) i t)
 toSymbols (XObj Macro i t) = (XObj (Sym (SymPath [] "defmacro") Symbol) i t)
 toSymbols (XObj (Command _) i t) = (XObj (Sym (SymPath [] "command") Symbol) i t)
+toSymbols (XObj (Primitive _) i t) = (XObj (Sym (SymPath [] "primitive") Symbol) i t)
 toSymbols x = x

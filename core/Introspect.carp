@@ -26,6 +26,14 @@
           false
           (Dynamic.= (Symbol.from "command") (car s)))))
 
+  (doc primitive?
+    "Is this binding a primitive?")
+  (defndynamic primitive? [binding]
+    (let [s (s-expr binding)]
+      (if (empty? s)
+          false
+          (Dynamic.= (Symbol.from "primitive") (car s)))))
+
   (doc variable?
     "Is this binding a variable?")
   (defndynamic variable? [binding]
@@ -62,6 +70,8 @@
     "What's the arity of this binding?
 
     - When `binding` is a function, returns the number of arguments.
+    - When `binding` is a command, returns the number of arguments.
+    - When `binding` is a primitive, returns the number of arguments.
     - When `binding` is an interface, returns the number of arguments.
     - When `binding` is a struct, returns the number of fields.
     - When `binding` is a sumtype, returns a list of the number of type
@@ -72,6 +82,7 @@
         0
     (cond
         (Introspect.command? binding) (length (caddr s))
+        (Introspect.primitive? binding) (length (caddr s))
         (Introspect.interface? binding) (length (car (cdaddr s)))
         (Introspect.function? binding) (length (caddr s))
         (Introspect.struct? binding) (/ (length (caddr s)) 2)

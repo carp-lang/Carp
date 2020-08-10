@@ -50,6 +50,7 @@ makePrim' name maybeArity docString example callback =
   let path = SymPath [] name
       prim = XObj (Lst [ XObj (Primitive (PrimitiveFunction wrapped)) (Just dummyInfo) Nothing
                        , XObj (Sym path Symbol) Nothing Nothing
+                       , unfoldArgs
                        ])
             (Just dummyInfo) (Just DynamicTy)
       meta = Meta.set "doc" (XObj (Str doc) Nothing Nothing) emptyMeta
@@ -68,6 +69,12 @@ makePrim' name maybeArity docString example callback =
             " arguments, but got " ++ show l ++ ".\n\n" ++ exampleUsage) (info x))
         doc = docString ++ "\n\n" ++ exampleUsage
         exampleUsage = "Example Usage:\n```\n" ++ example ++ "\n```\n"
+        unfoldArgs =
+          case maybeArity of
+            Just arity ->
+              let tosym x = (XObj (Sym (SymPath [] x) Symbol) Nothing Nothing)
+              in  XObj (Arr (map (tosym . intToArgName) [1..arity])) Nothing Nothing
+            Nothing -> XObj (Arr [(XObj (Sym (SymPath [] "") Symbol) Nothing Nothing)]) Nothing Nothing
 
 primitiveFile :: Primitive
 primitiveFile x@(XObj _ i t) ctx args =

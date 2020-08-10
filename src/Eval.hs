@@ -218,7 +218,7 @@ eval ctx xobj@(XObj o i t) =
               Right okArgs -> getCommand callback ctx okArgs
               Left err -> return (ctx, Left err)
 
-       x@(XObj (Lst [XObj (Primitive prim) _ _, _]) _ _):args -> (getPrimitive prim) x ctx args
+       x@(XObj (Lst [XObj (Primitive prim) _ _, _, _]) _ _):args -> (getPrimitive prim) x ctx args
 
        XObj (Lst (XObj (Defn _) _ _:_)) _ _:_ -> return (ctx, Left (HasStaticCall xobj i))
        XObj (Lst (XObj (Interface _ _) _ _:_)) _ _:_ -> return (ctx, Left (HasStaticCall xobj i))
