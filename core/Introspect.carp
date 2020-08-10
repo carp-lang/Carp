@@ -18,6 +18,14 @@
           false
           (Dynamic.= (Symbol.from "defn") (car s)))))
 
+  (doc command?
+    "Is this binding a command?")
+  (defndynamic command? [binding]
+    (let [s (s-expr binding)]
+      (if (empty? s)
+          false
+          (Dynamic.= (Symbol.from "command") (car s)))))
+
   (doc variable?
     "Is this binding a variable?")
   (defndynamic variable? [binding]
@@ -63,6 +71,7 @@
     (if (empty? s)
         0
     (cond
+        (Introspect.command? binding) (length (caddr s))
         (Introspect.interface? binding) (length (car (cdaddr s)))
         (Introspect.function? binding) (length (caddr s))
         (Introspect.struct? binding) (/ (length (caddr s)) 2)

@@ -212,7 +212,7 @@ eval ctx xobj@(XObj o i t) =
               Right xobj -> macroExpand ctx' xobj
               Left err -> return (ctx, res)
 
-       XObj (Lst [XObj (Command callback) _ _, _]) _ _:args ->
+       XObj (Lst [XObj (Command callback) _ _, _, _]) _ _:args ->
          do (newCtx, evaledArgs) <- foldlM successiveEval (ctx, Right []) args
             case evaledArgs of
               Right okArgs -> getCommand callback ctx okArgs
