@@ -310,8 +310,8 @@ dynamicPathModule = Env { envBindings = bindings
                         , envMode = ExternalEnv
                         , envFunctionNestingLevel = 0 }
   where path = ["Dynamic", "Path"]
-        bindings = Map.fromList [ addCommand (SymPath path "directory") 1 commandPathDirectory "takes the basename of a string taken to be a filepath.\n\nHistorical note: this is a command because it used to power one of the `include` macros." "(String.directory \"dir/file\") ; => \"dir\""
-                                , addCommand (SymPath path "absolute") 1 commandPathAbsolute "converts a filepath to absolute." "(String.absolute \"dir/file\") ; => \"/home/foo/dir/file\""
+        bindings = Map.fromList [ addCommand (SymPath path "directory") 1 commandPathDirectory "takes the basename of a string taken to be a filepath.\n\nHistorical note: this is a command because it used to power one of the `include` macros." "(Path.directory \"dir/file\") ; => \"dir\""
+                                , addCommand (SymPath path "absolute") 1 commandPathAbsolute "converts a filepath to absolute." "(Path.absolute \"dir/file\") ; => \"/home/foo/dir/file\""
                                 ]
 
 -- | The global environment before any code is run.
