@@ -55,6 +55,6 @@
     "arity works as expected")
   (assert-equal test
     6
-    (Array.reduce (Introspect.with-copy add 2) 0 &[1 2 3])
+    (Array.reduce (Introspect.with-copy add 1) 0 &[1 2 3])
     "with-copy works as expected")
 )
