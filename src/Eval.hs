@@ -848,19 +848,27 @@ specialCommandSet ctx [x@(XObj (Sym path@(SymPath mod n) _) _ _), value] = do
     Left err -> return (newCtx, Left err)
     Right evald -> do
       let globalEnv = contextGlobalEnv ctx
-          elem = XObj (Lst  [XObj DefDynamic Nothing Nothing, XObj (Sym path Symbol) Nothing Nothing, evald]) (info value) (Just DynamicTy)
-          binder = (Binder emptyMeta elem)
-          nctx = newCtx { contextGlobalEnv=envInsertAt globalEnv path binder }
+          nctx = ctx{ contextGlobalEnv = setStaticOrDynamicVar path evald globalEnv}
       case contextInternalEnv nctx of
         Nothing -> return (nctx, dynamicNil)
         Just env ->
           if contextPath nctx == mod
-          then return (nctx{contextInternalEnv=Just (envReplaceBinding (SymPath [] n) binder env)}, dynamicNil)
+          then return (nctx{contextInternalEnv=Just (setStaticOrDynamicVar (SymPath [] n) evald env)}, dynamicNil)
           else return (nctx, dynamicNil)
 specialCommandSet ctx [notName, body] =
   return (evalError ctx ("`set!` expected a name as first argument, but got " ++ pretty notName) (info notName))
 specialCommandSet ctx args =
   return (evalError ctx ("`set!` takes a name and a value, but got `" ++ intercalate " " (map pretty args)) (if null args then Nothing else info (head args)))
+
+setStaticOrDynamicVar :: SymPath -> XObj -> Env -> Env
+setStaticOrDynamicVar path value env =
+    case lookupInEnv path env of
+      Nothing -> env
+      Just (_, (Binder meta (XObj (Lst (def@(XObj Def Nothing Nothing) : sym : val)) i t))) ->
+        envReplaceBinding path (Binder meta (XObj (Lst [def, sym, value]) (info value) (xobjToTy value))) env
+      Just (_, (Binder meta (XObj (Lst (defdy@(XObj DefDynamic Nothing Nothing) : sym : val)) i t))) ->
+        envReplaceBinding path (Binder meta (XObj (Lst [defdy, sym, value]) (info value) (Just DynamicTy))) env
+      Just (_, other) -> trace (show other) env
 
 primitiveEval :: Primitive
 primitiveEval _ ctx [val] = do
