@@ -847,28 +847,46 @@ specialCommandSet ctx [x@(XObj (Sym path@(SymPath mod n) _) _ _), value] = do
   case result of
     Left err -> return (newCtx, Left err)
     Right evald -> do
-      let globalEnv = contextGlobalEnv ctx
-          nctx = ctx{ contextGlobalEnv = setStaticOrDynamicVar path evald globalEnv}
-      case contextInternalEnv nctx of
-        Nothing -> return (nctx, dynamicNil)
-        Just env ->
-          if contextPath nctx == mod
-          then return (nctx{contextInternalEnv=Just (setStaticOrDynamicVar (SymPath [] n) evald env)}, dynamicNil)
-          else return (nctx, dynamicNil)
+      let typeEnv = contextTypeEnv ctx
+          globalEnv = contextGlobalEnv ctx
+          (newEnv, originalType) = setStaticOrDynamicVar path evald globalEnv
+      -- Annotate to determine the type of the evaluated value.
+      (nctx, r) <- annotateWithinContext False newCtx evald
+      case r of
+        Left err -> return (ctx, Left err) -- type indeterminable
+        Right (annXObj@(XObj _ i t), deps) ->
+          if originalType /= Just DynamicTy && (t /= originalType)
+          then return (evalError ctx ("can't `set!` " ++ show path ++ " to a value of type " ++ show (fromJust t) ++ ", " ++ show path ++ " has type " ++ show (fromJust originalType)) (info x))
+          else case contextInternalEnv nctx of
+                 Nothing ->
+                   -- The variable is global; update the global env; redefine
+                      return (nctx{contextGlobalEnv = newEnv}, dynamicNil)
+                 Just env ->
+                   -- The variable is local; update the local env; redefine
+                   if contextPath nctx == mod
+                   then let (newEnv, _) = setStaticOrDynamicVar (SymPath [] n) evald env
+                        in  return (nctx{contextInternalEnv=Just newEnv}, dynamicNil)
+                   else return (nctx, dynamicNil)
 specialCommandSet ctx [notName, body] =
   return (evalError ctx ("`set!` expected a name as first argument, but got " ++ pretty notName) (info notName))
 specialCommandSet ctx args =
   return (evalError ctx ("`set!` takes a name and a value, but got `" ++ intercalate " " (map pretty args)) (if null args then Nothing else info (head args)))
 
-setStaticOrDynamicVar :: SymPath -> XObj -> Env -> Env
+-- | Sets a variable, checking whether or not it is static or dynamic, and
+-- assigns an appropriate type to the variable.
+-- Returns a new environment containing the assignment as well as the original
+-- type of the variable; calling code can determine whether or not it wants to
+-- enforce type correspondence between the variable's original type and the type
+-- of its new value.
+setStaticOrDynamicVar :: SymPath -> XObj -> Env -> (Env, Maybe Ty)
 setStaticOrDynamicVar path value env =
     case lookupInEnv path env of
-      Nothing -> env
-      Just (_, (Binder meta (XObj (Lst (def@(XObj Def Nothing Nothing) : sym : val)) i t))) ->
-        envReplaceBinding path (Binder meta (XObj (Lst [def, sym, value]) (info value) (xobjToTy value))) env
-      Just (_, (Binder meta (XObj (Lst (defdy@(XObj DefDynamic Nothing Nothing) : sym : val)) i t))) ->
-        envReplaceBinding path (Binder meta (XObj (Lst [defdy, sym, value]) (info value) (Just DynamicTy))) env
-      Just (_, other) -> trace (show other) env
+      Nothing -> (env, Nothing)
+      Just (_, (Binder meta (XObj (Lst (def@(XObj Def _ _) : sym : val)) i t))) ->
+        (envReplaceBinding path (Binder meta (XObj (Lst [def, sym, value]) (info value) t)) env, t)
+      Just (_, (Binder meta (XObj (Lst (defdy@(XObj DefDynamic _ _) : sym : val)) i t))) ->
+        (envReplaceBinding path (Binder meta (XObj (Lst [defdy, sym, value]) (info value) (Just DynamicTy))) env, t)
+      _ -> (env, Nothing)
 
 primitiveEval :: Primitive
 primitiveEval _ ctx [val] = do
