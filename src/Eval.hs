@@ -75,6 +75,10 @@ eval ctx xobj@(XObj o i t) =
       (newCtx, evaled) <- foldlM successiveEval (ctx, Right []) objs
       return (newCtx, do ok <- evaled
                          Right (XObj (Arr ok) i t))
+    StaticArr objs  -> do
+      (newCtx, evaled) <- foldlM successiveEval (ctx, Right []) objs
+      return (newCtx, do ok <- evaled
+                         Right (XObj (StaticArr ok) i t))
     _        -> return (ctx, Right xobj)
   where
     resolveDef (XObj (Lst [XObj DefDynamic _ _, _, value]) _ _) = value
@@ -293,6 +297,10 @@ macroExpand ctx xobj =
       (newCtx, expanded) <- foldlM successiveExpand (ctx, Right []) objs
       return (newCtx, do ok <- expanded
                          Right (XObj (Arr ok) i t))
+    XObj (StaticArr objs) i t -> do
+      (newCtx, expanded) <- foldlM successiveExpand (ctx, Right []) objs
+      return (newCtx, do ok <- expanded
+                         Right (XObj (StaticArr ok) i t))
     XObj (Lst [XObj (Lst (XObj Macro _ _:_)) _ _]) _ _ -> eval ctx xobj
     XObj (Lst (x@(XObj sym@(Sym s _) _ _):args)) i t -> do
       (newCtx, f) <- eval ctx x
