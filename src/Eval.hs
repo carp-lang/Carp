@@ -861,9 +861,13 @@ specialCommandSet ctx [x@(XObj (Sym path@(SymPath mod n) _) _ _), value] = do
           setInternal ctx env value =
             case lookupInEnv path env of
               Just (e, binder) -> do
-                (ctx', typedVal) <- typeCheckValueAgainstBinder ctx value binder
-                return $ if contextPath ctx' == mod
-                         then either (failure ctx) (success ctx') typedVal
+                -- TODO: Type check local bindings.
+                -- At the moment, let bindings are not structured the same as global defs or dynamic defs.
+                -- This makes calls to the type check problematic, as we cannot work against a common binding form.
+                -- Once we better support let bindings, type check them.
+                -- (ctx', typedVal) <- typeCheckValueAgainstBinder ctx value binder
+                return $ if contextPath ctx == mod
+                         then either (failure ctx) (success ctx) (Right value)
                          else (ctx, dynamicNil)
                 where success c xo = (c{contextInternalEnv = Just (setStaticOrDynamicVar (SymPath [] n) env binder xo)}, dynamicNil)
               -- If the def isn't found in the internal environment, check the global environment.
