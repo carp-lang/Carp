@@ -774,3 +774,46 @@ the program will be aborted with an error message.")
           msg)))
     (list 'System.abort)
     (list 'bottom)))
+
+(doc doto "evaluates `thing`, then calls all of the functions on `x` and
+returns it. Useful for chaining mutating, imperative functions, and thus
+similar to `->`. If you need `thing` to be passed as a `ref` into `expressions`
+functions, use [`doto-ref`](#doto-ref) instead.
+
+Example:
+
+```
+(let [x @\"hi\"]
+  @(doto &x
+    (string-set! 0 \o)
+    (string-set! 1 \y)))
+```
+")
+(defmacro doto [thing :rest expressions]
+  (let [s (gensym)]
+    (list 'let [s thing]
+      (cons-last
+        s
+        (cons 'do (map (fn [expr] (cons (car expr) (cons s (cdr expr)))) expressions))))))
+
+(doc doto-ref "evaluates `thing`, then calls all of the functions on `x` and
+returns it. Useful for chaining mutating, imperative functions, and thus
+similar to `->`. If you need `thing` not to be passed as a `ref` into
+`expressions` functions, use [`doto`](#doto) instead.
+
+Example:
+
+```
+(doto-ref @\"hi\"
+  (string-set! 0 \o)
+  (string-set! 1 \y))
+```
+")
+(defmacro doto-ref [thing :rest expressions]
+  (let [s (gensym)]
+    (list 'let [s thing]
+      (cons-last
+        s
+        (cons 'do
+          (map (fn [expr] (cons (car expr) (cons (list 'ref s) (cdr expr))))
+          expressions))))))
