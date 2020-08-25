@@ -39,6 +39,19 @@ import qualified Meta
 import Debug.Trace
 
 -- | Dynamic (REPL) evaluation of XObj:s (s-expressions)
+-- Note: You might find a bunch of code of the following form both here and in
+-- macroExpand:
+--
+-- return (ctx, do res <- <something>
+--                 Right <something else with res>)
+--
+-- This might a little weird to you, and rightfully so. Through the nested do
+-- we ensure that an evaluation is forced where it needs to be, since we depend
+-- on the state here; eval is inherently stateful (because it carries around
+-- the compiler’s context, which might change after each macro expansion), and
+-- it gets real weird with laziness. (Note to the note: this code is mostly a
+-- remnant of us using StateT, and might not be necessary anymore since we
+-- switched to more explicit state-passing.)
 eval :: Context -> XObj -> IO (Context, Either EvalError XObj)
 eval ctx xobj@(XObj o i t) =
   case o of
