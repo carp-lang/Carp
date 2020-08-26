@@ -561,8 +561,8 @@ commandCdr ctx [x] =
 commandLast :: CommandCallback
 commandLast ctx [x] =
   case x of
-    XObj (Lst lst) _ _ -> return (ctx, Right (last lst))
-    XObj (Arr arr) _ _ -> return (ctx, Right (last arr))
+    XObj (Lst lst@(x:xs)) _ _ -> return (ctx, Right (last lst))
+    XObj (Arr arr@(x:xs)) _ _ -> return (ctx, Right (last arr))
     _ ->
       return (evalError ctx "Applying 'last' to non-list or empty list." (info x))
 
