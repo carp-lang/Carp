@@ -775,7 +775,7 @@ the program will be aborted with an error message.")
     (list 'System.abort)
     (list 'bottom)))
 
-(doc doto "evaluates `thing`, then calls all of the functions on `x` and
+(doc doto "evaluates `thing`, then calls all of the functions on it and
 returns it. Useful for chaining mutating, imperative functions, and thus
 similar to `->`. If you need `thing` to be passed as a `ref` into `expressions`
 functions, use [`doto-ref`](#doto-ref) instead.
@@ -796,7 +796,7 @@ Example:
         s
         (cons 'do (map (fn [expr] (cons (car expr) (cons s (cdr expr)))) expressions))))))
 
-(doc doto-ref "evaluates `thing`, then calls all of the functions on `x` and
+(doc doto-ref "evaluates `thing`, then calls all of the functions on it and
 returns it. Useful for chaining mutating, imperative functions, and thus
 similar to `->`. If you need `thing` not to be passed as a `ref` into
 `expressions` functions, use [`doto`](#doto) instead.
