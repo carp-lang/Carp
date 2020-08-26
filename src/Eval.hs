@@ -39,6 +39,19 @@ import qualified Meta
 import Debug.Trace
 
 -- | Dynamic (REPL) evaluation of XObj:s (s-expressions)
+-- Note: You might find a bunch of code of the following form both here and in
+-- macroExpand:
+--
+-- return (ctx, do res <- <something>
+--                 Right <something else with res>)
+--
+-- This might a little weird to you, and rightfully so. Through the nested do
+-- we ensure that an evaluation is forced where it needs to be, since we depend
+-- on the state here; eval is inherently stateful (because it carries around
+-- the compiler’s context, which might change after each macro expansion), and
+-- it gets real weird with laziness. (Note to the note: this code is mostly a
+-- remnant of us using StateT, and might not be necessary anymore since we
+-- switched to more explicit state-passing.)
 eval :: Context -> XObj -> IO (Context, Either EvalError XObj)
 eval ctx xobj@(XObj o i t) =
   case o of
@@ -75,6 +88,10 @@ eval ctx xobj@(XObj o i t) =
       (newCtx, evaled) <- foldlM successiveEval (ctx, Right []) objs
       return (newCtx, do ok <- evaled
                          Right (XObj (Arr ok) i t))
+    StaticArr objs  -> do
+      (newCtx, evaled) <- foldlM successiveEval (ctx, Right []) objs
+      return (newCtx, do ok <- evaled
+                         Right (XObj (StaticArr ok) i t))
     _        -> return (ctx, Right xobj)
   where
     resolveDef (XObj (Lst [XObj DefDynamic _ _, _, value]) _ _) = value
@@ -293,6 +310,10 @@ macroExpand ctx xobj =
       (newCtx, expanded) <- foldlM successiveExpand (ctx, Right []) objs
       return (newCtx, do ok <- expanded
                          Right (XObj (Arr ok) i t))
+    XObj (StaticArr objs) i t -> do
+      (newCtx, expanded) <- foldlM successiveExpand (ctx, Right []) objs
+      return (newCtx, do ok <- expanded
+                         Right (XObj (StaticArr ok) i t))
     XObj (Lst [XObj (Lst (XObj Macro _ _:_)) _ _]) _ _ -> eval ctx xobj
     XObj (Lst (x@(XObj sym@(Sym s _) _ _):args)) i t -> do
       (newCtx, f) <- eval ctx x

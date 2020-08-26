@@ -183,7 +183,7 @@ Array String_to_MINUS_bytes(const String *s) {
 String String_from_MINUS_bytes(Array *a) {
     String s;
     const char *us = (const char *)a->data;
-    s = CARP_MALLOC(a->len+1);
+    s = CARP_MALLOC(a->len + 1);
     memcpy(s, us, a->len);
     s[a->len] = '\0';
     return s;
