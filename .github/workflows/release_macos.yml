@@ -13,22 +13,6 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v2
 
-      - name: Setup Stack
-        uses: actions/setup-haskell@v1.1
-        with:
-          stack-version: 'latest'
-          enable-stack: true
-
-      - run:   echo ::set-env name=GITHUB_SHA::$GITHUB_SHA
-        shell: bash
-
-      - name: Cache ~/.stack
-        uses: actions/cache@v1
-        with:
-          path: ~/.stack
-          key: ${{ runner.os }}-stack-${{ env.GITHUB_SHA }}
-          restore-keys: ${{ runner.os }}-stack-
-
       - name: Build and zip
         run: ./release.sh ${{ github.ref }} --noprompt
 

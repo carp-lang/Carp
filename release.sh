@@ -31,15 +31,6 @@ echo
 echo "Building Haskell Stack project..."
 stack build
 
-carpExePath="$(which carp)"
-
-if [ "$carpExePath" == "" ]; then
-   echo "ERROR: Can't find the carp executable on your system.";
-   exit 1;
-fi
-
-echo "Path of Carp executable = '$carpExePath'"
-
 mkdir "$fullPath/bin"
 echo "Copying executable..."
 cp "$(stack path --local-install-root)/bin/carp" $fullPath/bin/carp
