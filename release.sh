@@ -2,6 +2,7 @@
 set -e;
 
 name=$1
+noprompt=$2
 
 if [ "$name" == "" ]; then
    echo "ERROR: Must pass a name of the release as the first argument to this script.";
@@ -12,19 +13,22 @@ fullPath="$PWD/releases/$name"
 
 echo "Creating release '$name'"
 echo "Full path = '$fullPath'"
-echo "Continue? (y/n)"
 
-read answer
-
-if [ "$answer" != "y" ]; then
-    echo "Bye!"
-    exit 1;
+if [ "$noprompt" == "--noprompt" ]; then
+    echo "No prompt, will continue"
+else
+    echo "Continue? (y/n)"
+    read answer
+    if [ "$answer" != "y" ]; then
+        echo "Bye!"
+        exit 1;
+    fi
 fi
 
 mkdir -p "$fullPath"
 
 echo
-echo "Building Haskell project..."
+echo "Building Haskell Stack project..."
 stack build
 
 carpExePath="$(which carp)"
