@@ -69,6 +69,77 @@ foo ; symbol
 (defmodule <name> <definition1> <definition2> ...) ;; The main way to organize your program into smaller parts
 ```
 
+#### Interfaces
+
+Interfaces specify a generic function signature that multiple concrete
+functions may implement. You can define an interface using
+`definterface`, passing a name and type signature of a function:
+
+```clojure
+(definterface speak (Fn [a] String))
+```
+
+You can declare a function as an implementation of an interface using
+`implements`. For example, the following snippet declares `Dog.bark`
+and `Cat.meow` as an implementation of `speak`:
+
+```clojure
+(definterface speak (Fn [a] String))
+
+(defmodule Dog
+  (defn bark [aggressive?]
+    (if aggressive? @"WOOF!" @"woof!"))
+  (implements speak Dog.bark))
+
+(defmodule Cat
+  (defn meow [times] (String.repeat times "meow!"))
+  (implements speak Cat.meow))
+```
+
+Only functions that satisfy an interface's singature can implement
+it. For exmaple, the following function isn't a valid implementation
+of `speak` because it has the wrong number of arguments and its return
+type does not match the return type of `speak`:
+
+```clojure
+(defmodule Number
+  ;; who knew numbers could talk?
+  (defn holler [] "WOO!")
+  (implements speak Number.holler))
+=> [INTERFACE ERROR] Number.holler : (Fn [] (Ref String a)) doesn't match the interface signature (Fn [a] String)
+```
+
+When you call an interface by name, Carp uses the current context and
+the type signature of each implementation to call an implementation
+that type checks:
+
+```clojure
+(speak 2) ;; Int -> String, Cat.meow
+=> "meow!meow!"
+(speak false) ;; Bool -> String, Dog.bark
+=> "woof!"
+```
+
+If more than one interface implementation satisfies Carp's type
+checker in a given context, Carp will complain about the ambiguity:
+
+```clojure
+(defmodule Pikachu
+  (defn pika [times] (String.repeat times "pika!"))
+  (implements speak Pikachu.pika))
+
+(speak 2) ;; Int -> String, Cat.meow OR Pikachu.pika
+=> There are several exact matches for the interface `speak` of type `(Fn [Int] String)` at line 1, column 2 in 'REPL'
+Possibilities:
+    Cat.meow : (Fn [Int] String)
+    Pikachu.pika : (Fn [Int] String) at REPL:1:1.
+```
+
+In such cases, you'll have to help the Carp compiler disambiguate the
+call by calling the implementing function you need
+directly. It usually isn't useful to provide multiple
+implementations that have the same function signature.
+
 ### Conditional statements with `cond`
 The ```cond``` statement executes a block of code if a specified condition is true. If the condition is false, another block of code can be executed.
 
