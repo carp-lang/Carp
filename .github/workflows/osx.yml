@@ -19,6 +19,9 @@ jobs:
       - run:   echo ::set-env name=GITHUB_SHA::$GITHUB_SHA
         shell: bash
 
+      - run:   echo stack --version 
+        shell: bash
+
       - name: Build
         run: stack build
 
