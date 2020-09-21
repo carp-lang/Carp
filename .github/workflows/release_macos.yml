@@ -30,7 +30,7 @@ jobs:
           restore-keys: ${{ runner.os }}-stack-
 
       - name: Build and zip
-        run: stack build
+        run: ./release.sh ${{ github.ref }} --noprompt
 
       - name: Create Github Release
         id: create_release

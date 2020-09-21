@@ -42,7 +42,7 @@ echo "Path of Carp executable = '$carpExePath'"
 
 mkdir "$fullPath/bin"
 echo "Copying executable..."
-cp $carpExePath "$fullPath/bin/carp"
+cp "$(stack path --local-install-root)/bin/carp" $fullPath/bin/carp
 echo "Copying core..."
 cp -r "./core/" "$fullPath/core/"
 echo "Copying docs..."
