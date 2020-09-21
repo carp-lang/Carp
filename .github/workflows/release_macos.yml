@@ -22,9 +22,8 @@ jobs:
       - run:   echo ::set-env name=GITHUB_SHA::$GITHUB_SHA
         shell: bash
 
-      - name: Setup cache
+      - name: Cache ~/.stack
         uses: actions/cache@v1
-        name: Cache ~/.stack
         with:
           path: ~/.stack
           key: ${{ runner.os }}-stack-${{ env.GITHUB_SHA }}
