@@ -16,9 +16,9 @@ jobs:
 
       - uses: actions/setup-haskell@v1.1
         with:
-	  stack-version: '2.3.1'
-	  ghc-version: '8.8.2'
-	  enable-stack: true
+          stack-version: '2.3.1'
+          ghc-version: '8.8.2'
+          enable-stack: true
 
       - run:   echo ::set-env name=GITHUB_SHA::$GITHUB_SHA
         shell: bash
