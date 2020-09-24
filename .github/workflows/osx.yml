@@ -17,7 +17,7 @@ jobs:
       - uses: actions/setup-haskell@v1.1
         with:
           ghc-version: '8.8.2'
-          stack-version: 'latest'
+          stack-version: '2.3.1'
           enable-stack: true
           stack-no-global: true
           stack-setup-ghc: true
