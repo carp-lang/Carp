@@ -2,7 +2,7 @@ module Main where
 
 import qualified System.Environment as SystemEnvironment
 import System.Console.Haskeline (runInputT)
-import Control.Monad (foldM)
+import Control.Monad (foldM, when)
 import GHC.IO.Encoding
 import Data.Maybe
 
@@ -116,29 +116,34 @@ main = do setLocaleEncoding utf8
               preloads = optPreload fullOpts
               postloads = optPostload fullOpts
               load = flip loadFiles
-              executionModeDoc = "(doc execution-mode \"Returns the mode the Carp compiler is currently executing in.\")"
-              executionModeDynamicDoc = "(doc execution-mode-dynamic \"Returns the mode the Carp compiler is currently executing in as a symbol.\")"
+              executionModeDoc = "(defmodule Introspect (doc execution-mode \"Returns the mode the Carp compiler is currently executing in.\"))"
+              executionModeDynamicDoc = "(defmodule Introspect (doc execution-mode-dynamic \"Returns the mode the Carp compiler is currently executing in as a symbol.\"))"
               setExecutionMode Repl ctx =
-                execStr "Internal" ("(defmodule Introspect " ++ executionModeDynamicDoc ++ " (defdynamic execution-mode-dynamic 'Repl))") ctx
-                >>= execStr "Internal" ("(defmodule Introspect " ++ executionModeDoc ++ " (def execution-mode (ExecutionMode.Repl)))")
+                execStr "Internal" ("(defmodule Introspect (defdynamic execution-mode-dynamic 'Repl))") ctx
+                >>= execStr "Internal" ("(defmodule Introspect (def execution-mode (ExecutionMode.Repl)))")
               setExecutionMode Build ctx =
-                execStr "Internal" ("(defmodule Introspect " ++ executionModeDynamicDoc ++ " (defdynamic execution-mode-dynamic 'Build))") ctx
-                >>= execStr "Internal" ("(defmodule Introspect " ++ executionModeDoc ++ " (def execution-mode (ExecutionMode.Build)))")
+                execStr "Internal" ("(defmodule Introspect (defdynamic execution-mode-dynamic 'Build))") ctx
+                >>= execStr "Internal" ("(defmodule Introspect (def execution-mode (ExecutionMode.Build)))")
               setExecutionMode (Install thing) ctx =
-                execStr "Internal" ("(defmodule Introspect " ++ executionModeDynamicDoc ++ " (defdynamic execution-mode-dynamic 'Install))") ctx
-                >>= execStr "Internal" ("(defmodule Introspect " ++ executionModeDoc ++ " (def execution-mode (ExecutionMode.Install)))")
+                execStr "Internal" ("(defmodule Introspect (defdynamic execution-mode-dynamic 'Install))") ctx
+                >>= execStr "Internal" ("(defmodule Introspect (def execution-mode (ExecutionMode.Install)))")
               setExecutionMode BuildAndRun ctx =
-                execStr "Internal" ("(defmodule Introspect " ++ executionModeDynamicDoc ++ " (defdynamic execution-mode-dynamic 'Run))") ctx
-                >>= execStr "Internal" ("(defmodule Introspect " ++ executionModeDoc ++ " (def execution-mode (ExecutionMode.Run)))")
+                execStr "Internal" ("(defmodule Introspect (defdynamic execution-mode-dynamic 'Run))") ctx
+                >>= execStr "Internal" ("(defmodule Introspect (def execution-mode (ExecutionMode.Run)))")
               setExecutionMode Check ctx =
-                execStr "Internal" ("(defmodule Introspect " ++ executionModeDynamicDoc ++ " (defdynamic execution-mode-dynamic 'Check))") ctx
-                >>= execStr "Internal" ("(defmodule Introspect " ++ executionModeDoc ++ " (def execution-mode (ExecutionMode.Check)))")
+                execStr "Internal" ("(defmodule Introspect (defdynamic execution-mode-dynamic 'Check))") ctx
+                >>= execStr "Internal" ("(defmodule Introspect (def execution-mode (ExecutionMode.Check)))")
+              whenCore f x = if core
+                             then f x
+                             else pure x
           carpProfile <- configPath "profile.carp"
           hasProfile <- doesFileExist carpProfile
           _ <- loadFilesOnce startingContext coreModulesToLoad
-            >>= execStr "Internal" "(deftype ExecutionMode Repl Build Install Run Check)"
-            >>= execStr "" "(doc ExecutionMode \"Represents the mode the Carp compiler is executing in.\")"
-            >>= setExecutionMode execMode
+            >>= whenCore (\ctx -> (execStr "Internal" "(deftype ExecutionMode Repl Build Install Run Check)") ctx
+                         >>= (execStr "" "(doc ExecutionMode \"Represents the mode the Carp compiler is executing in.\")")
+                         >>= setExecutionMode execMode
+                         >>= (execStr "" executionModeDoc)
+                         >>= (execStr "" executionModeDynamicDoc))
             >>= load [carpProfile | hasProfile]
             >>= execStrs "Preload" preloads
             >>= load argFilesToLoad
