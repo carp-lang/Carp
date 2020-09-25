@@ -122,7 +122,7 @@ main = do setLocaleEncoding utf8
                 execStr "Internal" ("(defmodule Introspect " ++ executionModeDynamicDoc ++ " (defdynamic execution-mode-dynamic 'Repl))") ctx
                 >>= execStr "Internal" ("(defmodule Introspect " ++ executionModeDoc ++ " (def execution-mode (ExecutionMode.Repl)))")
               setExecutionMode Build ctx =
-                execStr "Internal" ("(defmodule Introspect " ++ executionModeDynamicDoc ++ " (defdyanmic execution-mode-dynamic 'Build))") ctx
+                execStr "Internal" ("(defmodule Introspect " ++ executionModeDynamicDoc ++ " (defdynamic execution-mode-dynamic 'Build))") ctx
                 >>= execStr "Internal" ("(defmodule Introspect " ++ executionModeDoc ++ " (def execution-mode (ExecutionMode.Build)))")
               setExecutionMode (Install thing) ctx =
                 execStr "Internal" ("(defmodule Introspect " ++ executionModeDynamicDoc ++ " (defdynamic execution-mode-dynamic 'Install))") ctx
