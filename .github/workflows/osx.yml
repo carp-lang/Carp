@@ -13,6 +13,13 @@ jobs:
     steps:
       - name: Check out
         uses: actions/checkout@v2
+      
+      - uses: actions/cache@v1
+        name: Cache ~/.stack
+        with:
+          path: ~/.stack
+          key: ${{ runner.os }}-stack-${{ env.GITHUB_SHA }}
+          restore-keys: ${{ runner.os }}-stack-
 
       - uses: actions/setup-haskell@v1.1
         with:
@@ -22,16 +29,8 @@ jobs:
           stack-no-global: true
           stack-setup-ghc: true
 
-
       - run:   echo ::set-env name=GITHUB_SHA::$GITHUB_SHA
         shell: bash
-
-      - uses: actions/cache@v1
-        name: Cache ~/.stack
-        with:
-          path: ~/.stack
-          key: ${{ runner.os }}-stack-${{ env.GITHUB_SHA }}
-          restore-keys: ${{ runner.os }}-stack-
 
       - name: Build
         run: stack build
