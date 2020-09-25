@@ -119,6 +119,7 @@ main = do setLocaleEncoding utf8
           carpProfile <- configPath "profile.carp"
           hasProfile <- doesFileExist carpProfile
           _ <- loadFilesOnce startingContext coreModulesToLoad
+            >>= execStr "" "(def repl? false)"
             >>= load [carpProfile | hasProfile]
             >>= execStrs "Preload" preloads
             >>= load argFilesToLoad
@@ -127,7 +128,8 @@ main = do setLocaleEncoding utf8
                           Repl -> do putStrLn "Welcome to Carp 0.3.0"
                                      putStrLn "This is free software with ABSOLUTELY NO WARRANTY."
                                      putStrLn "Evaluate (help) for more information."
-                                     snd <$> runRepl ctx
+                                     ctx' <- (execStr "" "(set! repl? true)" ctx)
+                                     snd <$> runRepl ctx'
                           Build -> execStr "Compiler (Build)" "(build)" ctx
                           Install thing -> execStr "Installation" ("(load \"" ++ thing ++ "\")") ctx
                           BuildAndRun -> execStr "Compiler (Build & Run)" "(do (build) (run))" ctx
