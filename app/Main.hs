@@ -116,10 +116,29 @@ main = do setLocaleEncoding utf8
               preloads = optPreload fullOpts
               postloads = optPostload fullOpts
               load = flip loadFiles
+              executionModeDoc = "(doc execution-mode \"Returns the mode the Carp compiler is currently executing in.\")"
+              executionModeDynamicDoc = "(doc execution-mode-dynamic \"Returns the mode the Carp compiler is currently executing in as a symbol.\")"
+              setExecutionMode Repl ctx =
+                execStr "Internal" ("(defmodule Introspect " ++ executionModeDynamicDoc ++ " (defdynamic execution-mode-dynamic 'Repl))") ctx
+                >>= execStr "Internal" ("(defmodule Introspect " ++ executionModeDoc ++ " (def execution-mode (ExecutionMode.Repl)))")
+              setExecutionMode Build ctx =
+                execStr "Internal" ("(defmodule Introspect " ++ executionModeDynamicDoc ++ " (defdyanmic execution-mode-dynamic 'Build))") ctx
+                >>= execStr "Internal" ("(defmodule Introspect " ++ executionModeDoc ++ " (def execution-mode (ExecutionMode.Build)))")
+              setExecutionMode (Install thing) ctx =
+                execStr "Internal" ("(defmodule Introspect " ++ executionModeDynamicDoc ++ " (defdynamic execution-mode-dynamic 'Install))") ctx
+                >>= execStr "Internal" ("(defmodule Introspect " ++ executionModeDoc ++ " (def execution-mode (ExecutionMode.Install)))")
+              setExecutionMode BuildAndRun ctx =
+                execStr "Internal" ("(defmodule Introspect " ++ executionModeDynamicDoc ++ " (defdynamic execution-mode-dynamic 'Run))") ctx
+                >>= execStr "Internal" ("(defmodule Introspect " ++ executionModeDoc ++ " (def execution-mode (ExecutionMode.Run)))")
+              setExecutionMode Check ctx =
+                execStr "Internal" ("(defmodule Introspect " ++ executionModeDynamicDoc ++ " (defdynamic execution-mode-dynamic 'Check))") ctx
+                >>= execStr "Internal" ("(defmodule Introspect " ++ executionModeDoc ++ " (def execution-mode (ExecutionMode.Check)))")
           carpProfile <- configPath "profile.carp"
           hasProfile <- doesFileExist carpProfile
           _ <- loadFilesOnce startingContext coreModulesToLoad
-            >>= execStr "" "(def repl? false)"
+            >>= execStr "Internal" "(deftype ExecutionMode Repl Build Install Run Check)"
+            >>= execStr "" "(doc ExecutionMode \"Represents the mode the Carp compiler is executing in.\")"
+            >>= setExecutionMode execMode
             >>= load [carpProfile | hasProfile]
             >>= execStrs "Preload" preloads
             >>= load argFilesToLoad
@@ -128,8 +147,7 @@ main = do setLocaleEncoding utf8
                           Repl -> do putStrLn "Welcome to Carp 0.3.0"
                                      putStrLn "This is free software with ABSOLUTELY NO WARRANTY."
                                      putStrLn "Evaluate (help) for more information."
-                                     ctx' <- (execStr "" "(set! repl? true)" ctx)
-                                     snd <$> runRepl ctx'
+                                     snd <$> runRepl ctx
                           Build -> execStr "Compiler (Build)" "(build)" ctx
                           Install thing -> execStr "Installation" ("(load \"" ++ thing ++ "\")") ctx
                           BuildAndRun -> execStr "Compiler (Build & Run)" "(do (build) (run))" ctx
@@ -175,7 +193,7 @@ parseExecMode :: Parser ExecutionMode
 parseExecMode =
   flag' Check (long "check" <> help "Check project")
   <|> flag' Build (short 'b' <> help "Build project")
-  <|> flag' BuildAndRun (short 'x' <> help "Build an run project")
+  <|> flag' BuildAndRun (short 'x' <> help "Build and run project")
   <|> Install <$> strOption (short 'i' <> help "Install built product")
   <|> pure Repl
 
