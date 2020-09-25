@@ -14,6 +14,9 @@ jobs:
       - name: Check out
         uses: actions/checkout@v2
       
+      - run:   echo ::set-env name=GITHUB_SHA::$GITHUB_SHA
+        shell: bash
+      
       - uses: actions/cache@v1
         name: Cache ~/.stack
         with:
@@ -28,9 +31,6 @@ jobs:
           enable-stack: true
           stack-no-global: true
           stack-setup-ghc: true
-
-      - run:   echo ::set-env name=GITHUB_SHA::$GITHUB_SHA
-        shell: bash
 
       - name: Build
         run: stack build
