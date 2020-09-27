@@ -1439,11 +1439,11 @@ and then to the following argument.</p>
                     (curry* f :rest args)
                 </pre>
                 <p class="doc">
-                    <p>Curry functions of any airity.</p>
+                    <p>Curry functions of any arity.</p>
 <pre><code>(map (curry* Dynamic.zip + '(1 2 3)) '((4 5) (6)))
 =&gt; (((+ 1 4) (+ 2 5)) ((+ 1 6)))
 
-((curry Dynamic.zip cons '(1 2 3)) '((4 5) (6)))
+((curry* Dynamic.zip cons '(1 2 3)) '((4 5) (6)))
 =&gt; ((cons 1 (4 5)) (cons (2 (6))))
 
 (defndynamic add-em-up [x y z] (+ (+ x y) z))
@@ -2047,29 +2047,6 @@ predicate <code>p</code>.</p>
                     <p>prints all information associated with a symbol.</p>
 <p>Example Usage:</p>
 <pre><code>(info mysymbol)
-</code></pre>
-
-                </p>
-            </div>
-            <div class="binder">
-                <a class="anchor" href="#kind">
-                    <h3 id="kind">
-                        kind
-                    </h3>
-                </a>
-                <div class="description">
-                    primitive
-                </div>
-                <p class="sig">
-                    Dynamic
-                </p>
-                <span>
-                    
-                </span>
-                <p class="doc">
-                    <p>prints the kind of a symbol.</p>
-<p>Example Usage:</p>
-<pre><code>(kind mysymbol)
 </code></pre>
 
                 </p>
