@@ -140,8 +140,9 @@ main = do setLocaleEncoding utf8
             >>= whenCore (\ctx -> (execStr "Internal" "(deftype ExecutionMode Repl Build Install Run Check)") ctx
                          >>= (execStr "" "(doc ExecutionMode \"Represents the mode the Carp compiler is executing in.\")")
                          >>= setExecutionMode execMode
-                         >>= (execStr "" "(defmodule Introspect (doc execution-mode \"Returns the mode the Carp compiler is currently executing in.\"))")
-                         >>= (execStr "" "(defmodule Introspect (doc execution-mode-dynamic \"Returns the mode the Carp compiler is currently executing in as a symbol.\"))"))
+                         >>= (execStr "" "(defmodule Introspect (doc execution-mode \"Returns the mode the Carp compiler is currently executing in.\"))"))
+                         -- TODO: Doc currently doesn't work correctly on defdynamics. After this is fixed, add a call to document execution-mode-dynamic.
+                         -- >>= (execStr "" "(defmodule Introspect (doc execution-mode-dynamic \"Returns the mode the Carp compiler is currently executing in as a symbol.\"))")
             >>= load [carpProfile | hasProfile]
             >>= execStrs "Preload" preloads
             >>= load argFilesToLoad
