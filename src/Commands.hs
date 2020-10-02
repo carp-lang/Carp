@@ -655,10 +655,14 @@ commandEq ctx [a, b] =
     cmp (XObj Deref _ _, XObj Deref _ _) = Right $ True
     cmp (XObj (Lst []) _ _, XObj (Lst []) _ _) = Right True
     cmp (XObj (Lst elemsA) _ _, XObj (Lst elemsB) _ _) =
-      foldr cmp' (Right True) (zip elemsA elemsB)
+      if length elemsA == length elemsB
+      then foldr cmp' (Right True) (zip elemsA elemsB)
+      else Right False
     cmp (XObj (Arr []) _ _, XObj (Arr []) _ _) = Right True
     cmp (XObj (Arr elemsA) _ _, XObj (Arr elemsB) _ _) =
-      foldr cmp' (Right True) (zip elemsA elemsB)
+      if length elemsA == length elemsB
+      then foldr cmp' (Right True) (zip elemsA elemsB)
+      else Right False
     cmp invalid = Left invalid
     cmp' _ invalid@(Left _) = invalid
     cmp' _ (Right False) = Right False
