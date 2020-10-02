@@ -29,6 +29,8 @@ import TypeError
 import Path
 import Info
 import qualified Meta
+import Reify
+
 
 data CarpException =
     ShellOutException { shellOutMessage :: String, returnCode :: Int }
@@ -910,7 +912,7 @@ commandSexpressionInternal ctx [xobj] bol =
       tyEnv = getTypeEnv $ contextTypeEnv ctx
   in case xobj of
        (XObj (Lst [inter@(XObj (Interface ty _) _ _), path]) i t) ->
-         return (ctx, Right (XObj (Lst [(toSymbols inter), path, (tyToXObj ty)]) i t))
+         return (ctx, Right (XObj (Lst [(toSymbols inter), path, (reify ty)]) i t))
        (XObj (Lst forms) i t) ->
          return (ctx, Right (XObj (Lst (map toSymbols forms)) i t))
        mod@(XObj (Mod e) i t) ->

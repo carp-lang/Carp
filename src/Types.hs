@@ -18,6 +18,8 @@ module Types ( TypeMappings
              , mangle
              , pathToC
              , consPath
+             , Kind
+             , tyToKind
              ) where
 
 import qualified Data.Map as Map
@@ -49,6 +51,7 @@ data Ty = IntTy
         | MacroTy
         | DynamicTy -- the type of dynamic functions (used in REPL and macros)
         | InterfaceTy
+        | Universe -- the type of types of types (the type of TypeTy)
         deriving (Eq, Ord)
 
 -- | Kinds checking
