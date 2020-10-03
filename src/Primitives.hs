@@ -635,6 +635,7 @@ primitiveType :: Primitive
 -- A special case, the type of the type of types (type (type (type 1))) => ()
 primitiveType _ ctx [x@(XObj _ _ (Just Universe))] =
   return (ctx, Right (XObj (Lst []) Nothing Nothing))
+primitiveType _ ctx [x@(XObj _ _ (Just TypeTy))] = liftIO $ return (ctx, Right $ reify TypeTy)
 primitiveType _ ctx [x@(XObj (Sym path@(SymPath [] name) _) _ _)] =
   (maybe otherDefs (go ctx . snd) (lookupInEnv path env))
   where env = contextGlobalEnv ctx
@@ -671,7 +672,6 @@ primitiveType any ctx [x@(XObj (Lst (XObj (Sym (SymPath [] "type") _) _ _: rest)
   >>= \result -> case snd result of
                  Right xobj -> primitiveType any (fst result) [xobj]
                  Left e -> return (ctx, Left e)
-primitiveType _ ctx [x@(XObj _ _ (Just TypeTy))] = liftIO $ return (ctx, Right $ reify TypeTy)
 primitiveType _ ctx [x@(XObj _ _ _)] =
   let tenv  = contextTypeEnv ctx
       typed = annotate tenv (contextGlobalEnv ctx) x Nothing
