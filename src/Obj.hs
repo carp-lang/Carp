@@ -494,35 +494,6 @@ fromJustWithErrorMessage :: Maybe Ty -> String -> Ty
 fromJustWithErrorMessage (Just x) _ = x
 fromJustWithErrorMessage Nothing msg = error msg
 
-replaceGenericTypeSymbolsOnMembers :: Map.Map String Ty -> [XObj] -> [XObj]
-replaceGenericTypeSymbolsOnMembers mappings memberXObjs =
-  concatMap (\(v, t) -> [v, replaceGenericTypeSymbols mappings t]) (pairwise memberXObjs)
-
-replaceGenericTypeSymbols :: Map.Map String Ty -> XObj -> XObj
-replaceGenericTypeSymbols mappings xobj@(XObj (Sym (SymPath pathStrings name) _) i t) =
-  let Just perhapsTyVar = xobjToTy xobj
-  in if isFullyGenericType perhapsTyVar
-     then case Map.lookup name mappings of
-            Just found -> tyToXObj found
-            Nothing -> xobj -- error ("Failed to concretize member '" ++ name ++ "' at " ++ prettyInfoFromXObj xobj ++ ", mappings: " ++ show mappings)
-     else xobj
-replaceGenericTypeSymbols mappings (XObj (Lst lst) i t) =
-  XObj (Lst (map (replaceGenericTypeSymbols mappings) lst)) i t
-replaceGenericTypeSymbols mappings (XObj (Arr arr) i t) =
-  XObj (Arr (map (replaceGenericTypeSymbols mappings) arr)) i t
-replaceGenericTypeSymbols _ xobj = xobj
-
--- | Convert a Ty to the s-expression that represents that type.
--- | TODO: Add more cases and write tests for this.
-tyToXObj :: Ty -> XObj
-tyToXObj (StructTy n []) = tyToXObj n
-tyToXObj (StructTy n vs) = XObj (Lst (tyToXObj n : map tyToXObj vs)) Nothing Nothing
-tyToXObj (RefTy t lt) = XObj (Lst [XObj (Sym (SymPath [] "Ref") Symbol) Nothing Nothing, tyToXObj t, tyToXObj lt]) Nothing Nothing
-tyToXObj (PointerTy t) = XObj (Lst [XObj (Sym (SymPath [] "Ptr") Symbol) Nothing Nothing, tyToXObj t]) Nothing Nothing
-tyToXObj (FuncTy argTys returnTy StaticLifetimeTy) = XObj (Lst [XObj (Sym (SymPath [] "Fn") Symbol) Nothing Nothing, XObj (Arr (map tyToXObj argTys)) Nothing Nothing, tyToXObj returnTy]) Nothing Nothing
-tyToXObj (FuncTy argTys returnTy lt) = XObj (Lst [XObj (Sym (SymPath [] "Fn") Symbol) Nothing Nothing, XObj (Arr (map tyToXObj argTys)) Nothing Nothing, tyToXObj returnTy, tyToXObj lt]) Nothing Nothing
-tyToXObj x = XObj (Sym (SymPath [] (show x)) Symbol) Nothing Nothing
-
 -- | Helper function to create binding pairs for registering external functions.
 register :: String -> Ty -> (String, Binder)
 register name t = (name, Binder emptyMeta

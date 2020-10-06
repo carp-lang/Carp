@@ -237,7 +237,6 @@ dynamicModule = Env { envBindings = bindings
                     , makePrim "defmacro" 3 "defines a new macro." "(defmacro name [args :rest restargs] body)" primitiveDefmacro
                     , makePrim "defndynamic" 3 "defines a new dynamic function, i.e. a function available at compile time." "(defndynamic name [args] body)" primitiveDefndynamic
                     , makePrim "defdynamic" 2 "defines a new dynamic value, i.e. a value available at compile time." "(defdynamic name value)" primitiveDefdynamic
-                    , makePrim "type" 1 "prints the type of a symbol." "(type mysymbol)" primitiveType
                     , makePrim "members" 1 "returns the members of a type as an array." "(members MyType)" primitiveMembers
                     , makeVarPrim "defmodule" "defines a new module in which `expressions` are defined." "(defmodule MyModule <expressions>)" primitiveDefmodule
                     , makePrim "meta-set!" 3 "sets a new key and value pair on the meta map associated with a symbol." "(meta-set! mysymbol \"mykey\" \"myval\")" primitiveMetaSet
@@ -250,6 +249,8 @@ dynamicModule = Env { envBindings = bindings
                     , makePrim "defined?" 1 "checks whether a symbol is defined." "(defined? mysymbol)" primitiveDefined
                     , makePrim "deftemplate" 4 "defines a new C template." "(deftemplate symbol Type declString defString)" primitiveDeftemplate
                     , makePrim "implements" 2 "designates a function as an implementation of an interface." "(implements zero Maybe.zero)" primitiveImplements
+                    , makePrim "type" 1 "prints the type of a symbol." "(type mysymbol)" primitiveType
+                    , makePrim "kind" 1 "prints the kind of a symbol." "(kind mysymbol)" primitiveKind
                     ]
                     ++ [("String", Binder emptyMeta (XObj (Mod dynamicStringModule) Nothing Nothing))
                        ,("Symbol", Binder emptyMeta (XObj (Mod dynamicSymModule) Nothing Nothing))

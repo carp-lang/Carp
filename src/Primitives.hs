@@ -4,7 +4,7 @@ import Control.Monad (unless, when, foldM)
 import Control.Monad.IO.Class (liftIO)
 import Data.List (foldl')
 import Data.Maybe (fromMaybe)
-import Data.Either (isRight)
+import Data.Either (isRight, rights)
 
 import ColorText
 import Commands
@@ -24,6 +24,8 @@ import ToTemplate
 import Info
 import qualified Meta as Meta
 import Interfaces
+import Infer
+import Reify
 
 import Debug.Trace
 
@@ -320,22 +322,6 @@ dynamicOrMacroWith ctx producer ty name body = do
       meta = existingMeta globalEnv elem
   return (ctx { contextGlobalEnv = envInsertAt globalEnv path (Binder meta elem) }, dynamicNil)
 
-primitiveType :: Primitive
-primitiveType _ ctx [x@(XObj (Sym path@(SymPath [] name) _) _ _)] =
-  maybe otherDefs (found ctx . snd) (lookupInEnv path env)
-  where env = contextGlobalEnv ctx
-        otherDefs = case multiLookupALL name env of
-                      [] ->
-                        notFound ctx x path
-                      binders ->
-                        liftIO $ do mapM_ (\(env, binder) -> putStrLnWithColor White (show binder)) binders
-                                    return (ctx, dynamicNil)
-primitiveType _ ctx [x@(XObj (Sym qualifiedPath _) _ _)] =
-  maybe (notFound ctx x qualifiedPath) (found ctx . snd) (lookupInEnv qualifiedPath env)
-  where env = contextGlobalEnv ctx
-primitiveType _ ctx [x] =
-  return (evalError ctx ("Can't get the type of non-symbol: " ++ pretty x) (info x))
-
 primitiveMembers :: Primitive
 primitiveMembers _ ctx [target] = do
   let env = contextEnv ctx
@@ -452,7 +438,7 @@ registerInternal ctx name ty override =
                           registration = XObj (Lst [XObj (External override) Nothing Nothing
                                                    ,XObj (Sym path Symbol) Nothing Nothing
                                                    ,ty
-						   ]) (info ty) (Just t)
+                                                   ]) (info ty) (Just t)
                           meta = existingMeta globalEnv registration
                           env' = envInsertAt globalEnv path (Binder meta registration)
                       in  (ctx { contextGlobalEnv = env' }, dynamicNil)
@@ -641,3 +627,64 @@ primitiveDeftemplate _ ctx [s@(XObj (Sym (SymPath _ _) _) _ _), _, _, _] = do
   argumentErr ctx "deftemplate" "a symbol without prefix" "first" s
 primitiveDeftemplate _ ctx [x, _, _, _] =
   argumentErr ctx "deftemplate" "a symbol" "first" x
+
+noTypeError :: Context -> XObj -> IO (Context, Either EvalError XObj)
+noTypeError ctx x = return $ evalError ctx ("Can't get the type of: " ++ pretty x) (info x)
+
+primitiveType :: Primitive
+-- A special case, the type of the type of types (type (type (type 1))) => ()
+primitiveType _ ctx [x@(XObj _ _ (Just Universe))] =
+  return (ctx, Right (XObj (Lst []) Nothing Nothing))
+primitiveType _ ctx [x@(XObj _ _ (Just TypeTy))] = liftIO $ return (ctx, Right $ reify TypeTy)
+primitiveType _ ctx [x@(XObj (Sym path@(SymPath [] name) _) _ _)] =
+  (maybe otherDefs (go ctx . snd) (lookupInEnv path env))
+  where env = contextGlobalEnv ctx
+        otherDefs = case multiLookupALL name env of
+                      [] ->
+                        notFound ctx x path
+                      binders ->
+                        (sequence (map (go ctx . snd) binders))
+                        >>= return . Lst . rights . map snd
+                        >>= \obj -> return (ctx, Right $ (XObj obj Nothing Nothing))
+        go ctx binder =
+          case (ty (binderXObj binder))of
+            Nothing -> noTypeError ctx x
+            Just t -> return (ctx, Right (reify t))
+primitiveType _ ctx [x@(XObj (Sym qualifiedPath _) _ _)] =
+  maybe (notFound ctx x qualifiedPath) (go ctx . snd) (lookupInEnv qualifiedPath env)
+  where env = contextGlobalEnv ctx
+        go ctx binder =
+          case (ty (binderXObj binder)) of
+            Nothing -> noTypeError ctx x
+            Just t -> return (ctx, Right $ reify t)
+-- As a special case, we force evaluation on sequences such as (type (type 1))
+-- Because primitives don't evaluate their arguments, passing (type 1) to type would result in an error
+-- However, such an invocation *is* meaningful, and returns Type (the type of types). (type (type 1)) => Type
+-- Note that simply making type a command as an alternative leads to inconsistent behaviors whereby
+-- (type 1) => Int
+-- (type '1) => Int
+-- (type (Pair.init 1 1)) => Error can't find symbol "type"
+-- (type '(Pair.init 1 1)) => (Pair Int Int)
+-- Contrarily the behavior is far more consistent as a primitive if we simply add this case, and from a user perspective, it makes more sense
+-- that this function would be one that *doesn't* evaluate its arguments.
+primitiveType any ctx [x@(XObj (Lst (XObj (Sym (SymPath [] "type") _) _ _: rest)) _ _)] =
+  primitiveType any ctx rest
+  >>= \result -> case snd result of
+                 Right xobj -> primitiveType any (fst result) [xobj]
+                 Left e -> return (ctx, Left e)
+primitiveType _ ctx [x@(XObj _ _ _)] =
+  let tenv  = contextTypeEnv ctx
+      typed = annotate tenv (contextGlobalEnv ctx) x Nothing
+  in  liftIO $ either fail ok typed
+  where fail e = return (evalError ctx ("Can't get the type of: " ++ pretty x) (info x))
+        ok ((XObj _ _ (Just t)),_) = return (ctx, Right $ reify t)
+        ok (_,_) = return (evalError ctx ("Can't get the type of: " ++ pretty x) (info x))
+
+primitiveKind :: Primitive
+primitiveKind _ ctx [x@(XObj _ _ _)] =
+  let tenv = contextTypeEnv ctx
+      typed = annotate tenv (contextGlobalEnv ctx) x Nothing
+  in  return (either fail ok typed)
+  where fail e = (evalError ctx ("Can't get the kind of: " ++ pretty x) (info x))
+        ok (XObj _ _ (Just t), _) = (ctx, Right $ reify (tyToKind t))
+        ok (_, _) = (evalError ctx ("Can't get the kind of: " ++ pretty x) (info x))
