@@ -1,13 +1,14 @@
 {-# LANGUAGE LambdaCase #-}
 module Eval where
 
+import Control.Applicative
 import Control.Concurrent (forkIO)
 import Control.Exception
 import Control.Monad.State
 import Data.Foldable (foldlM, foldrM)
 import Data.List (foldl', null, isSuffixOf, intercalate)
 import Data.List.Split (splitOn, splitWhen)
-import Data.Maybe (fromJust, mapMaybe, isJust, Maybe(..))
+import Data.Maybe (fromJust, mapMaybe, isJust, Maybe(..), fromMaybe)
 import System.Exit (exitSuccess, exitFailure, exitWith, ExitCode(..))
 import System.Process (readProcessWithExitCode)
 import qualified Data.Map as Map
@@ -57,33 +58,27 @@ eval ctx xobj@(XObj o i t) =
   case o of
     Lst body   -> eval' body
     Sym path@(SymPath p n) _ ->
-      case lookupInEnv (SymPath ("Dynamic" : p) n) (contextGlobalEnv ctx) of
-        Just (_, Binder _ found) -> return (ctx, Right (resolveDef found))
-        Nothing ->
-          if null p
-          then
-            case tryInternalLookup path of
-              Just v -> return v
-              Nothing -> tryLookup path
-          else tryLookup path
-      where tryInternalLookup path =
-              case contextInternalEnv ctx of
-                Nothing -> Nothing
-                Just e  ->
-                  case lookupInEnv path e of
-                    Just (_ , Binder _ found) -> Just (ctx, Right (resolveDef found))
-                    Nothing -> Nothing
+      return
+      $ fromMaybe (evalError ctx ("Can't find symbol '" ++ show n ++ "'") i) -- all else failed, error.
+      (tryDynamicLookup
+      <|> (if null p then tryInternalLookup path else tryLookup path))
+      where tryDynamicLookup =
+              (lookupInEnv (SymPath ("Dynamic" : p) n) (contextGlobalEnv ctx)
+              >>= \(_, Binder _ found) -> return (ctx, Right (resolveDef found)))
+            tryInternalLookup path =
+              (contextInternalEnv ctx
+              >>= lookupInEnv path
+              >>= \(_ , Binder _ found) -> return (ctx, Right (resolveDef found)))
+              <|> tryLookup path -- fallback
             tryLookup path =
-                case lookupInEnv path (contextGlobalEnv ctx) of
-                  Just (_, Binder meta found) ->
-                    if metaIsTrue meta "private"
-                    then return (evalError ctx ("The binding: " ++ show (getPath found) ++ " is private; it may only be used within the module that defines it.") i)
-                    else return (ctx, Right (resolveDef found))
-                  Nothing ->
-                    case lookupInEnv path (getTypeEnv (contextTypeEnv ctx)) of
-                      Just (_, Binder _ found) -> return (ctx, Right (resolveDef found))
-                      Nothing ->
-                        return (evalError ctx ("Can't find symbol '" ++ show path ++ "'") i)
+                (lookupInEnv path (contextGlobalEnv ctx)
+                  >>= \(_, Binder meta found) -> checkPrivate meta found)
+                <|> (lookupInEnv path (getTypeEnv (contextTypeEnv ctx))
+                    >>= \(_, Binder _ found) -> return (ctx, Right (resolveDef found)))
+            checkPrivate meta found =
+              if metaIsTrue meta "private"
+              then return (evalError ctx ("The binding: " ++ show (getPath found) ++ " is private; it may only be used within the module that defines it.") i)
+              else return (ctx, Right (resolveDef found))
     Arr objs  -> do
       (newCtx, evaled) <- foldlM successiveEval (ctx, Right []) objs
       return (newCtx, do ok <- evaled
