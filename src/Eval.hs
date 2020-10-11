@@ -39,11 +39,14 @@ import qualified Meta
 
 import Debug.Trace
 
+data LookupPreference = PreferDynamic
+                      | PreferGlobal
+
 -- Prefer dynamic bindings
-evalDynamic ctx xobj = eval ctx xobj True
+evalDynamic ctx xobj = eval ctx xobj PreferDynamic
 
 -- Prefer global bindings
-evalStatic ctx xobj = eval ctx xobj False
+evalStatic ctx xobj = eval ctx xobj PreferGlobal
 
 -- | Dynamic (REPL) evaluation of XObj:s (s-expressions)
 -- Note: You might find a bunch of code of the following form both here and in
@@ -59,8 +62,8 @@ evalStatic ctx xobj = eval ctx xobj False
 -- it gets real weird with laziness. (Note to the note: this code is mostly a
 -- remnant of us using StateT, and might not be necessary anymore since we
 -- switched to more explicit state-passing.)
-eval :: Context -> XObj -> Bool -> IO (Context, Either EvalError XObj)
-eval ctx xobj@(XObj o i t) preferDynamic =
+eval :: Context -> XObj -> LookupPreference -> IO (Context, Either EvalError XObj)
+eval ctx xobj@(XObj o i t) preference =
   case o of
     Lst body   -> eval' body
     Sym path@(SymPath p n) _ ->
@@ -68,7 +71,9 @@ eval ctx xobj@(XObj o i t) preferDynamic =
       $ fromMaybe (evalError ctx ("Can't find symbol '" ++ show n ++ "'") i) -- all else failed, error.
       -- Certain contexts prefer looking up bindings in the dynamic environment (e.g. defdyanmic) while others
       -- prefer the static global environment.
-      ((if preferDynamic then tryDynamicLookup else (tryLookup path <|> tryDynamicLookup))
+      ((case preference of
+          PreferDynamic -> tryDynamicLookup
+          PreferGlobal -> (tryLookup path <|> tryDynamicLookup))
       <|> (if null p then tryInternalLookup path else tryLookup path))
       where tryDynamicLookup =
               (lookupInEnv (SymPath ("Dynamic" : p) n) (contextGlobalEnv ctx)
@@ -103,11 +108,11 @@ eval ctx xobj@(XObj o i t) preferDynamic =
       case form of
 
        [XObj If _ _, mcond, mtrue, mfalse] -> do
-         (newCtx, evd) <- eval ctx mcond preferDynamic
+         (newCtx, evd) <- eval ctx mcond preference
          case evd of
            Right cond ->
              case obj cond of
-               Bol b -> eval newCtx (if b then mtrue else mfalse) preferDynamic
+               Bol b -> eval newCtx (if b then mtrue else mfalse) preference
                _     ->
                  return (evalError ctx
                           ("This `if` condition contains the non-boolean value `" ++
@@ -177,7 +182,7 @@ eval ctx xobj@(XObj o i t) preferDynamic =
                 case eitherCtx of
                    Left err -> return (ctx, Left err)
                    Right newCtx -> do
-                          (finalCtx, evaledBody) <- eval newCtx body preferDynamic
+                          (finalCtx, evaledBody) <- eval newCtx body preference
                           let Just e = contextInternalEnv finalCtx
                           return (finalCtx{contextInternalEnv=envParent e},
                                   do okBody <- evaledBody
@@ -188,7 +193,7 @@ eval ctx xobj@(XObj o i t) preferDynamic =
                  \case
                    err@(Left _) -> return err
                    Right ctx -> do
-                     (newCtx, res) <- eval ctx x preferDynamic
+                     (newCtx, res) <- eval ctx x preference
                      case res of
                        Right okX -> do
                         let binder = Binder emptyMeta okX
@@ -249,18 +254,18 @@ eval ctx xobj@(XObj o i t) preferDynamic =
        [XObj Ref _ _, _] -> return (ctx, Left (HasStaticCall xobj i))
 
        l@(XObj (Lst _) i t):args -> do
-         (newCtx, f) <- eval ctx l preferDynamic
+         (newCtx, f) <- eval ctx l preference
          case f of
             Right fun -> do
-             (newCtx', res) <- eval (pushFrame newCtx xobj) (XObj (Lst (fun:args)) i t) preferDynamic
+             (newCtx', res) <- eval (pushFrame newCtx xobj) (XObj (Lst (fun:args)) i t) preference
              return (popFrame newCtx', res)
             x -> return (newCtx, x)
 
        x@(XObj sym@(Sym s _) i _):args -> do
-         (newCtx, f) <- eval ctx x preferDynamic
+         (newCtx, f) <- eval ctx x preference
          case f of
            Right fun -> do
-             (newCtx', res) <- eval (pushFrame ctx xobj) (XObj (Lst (fun:args)) i t) preferDynamic
+             (newCtx', res) <- eval (pushFrame ctx xobj) (XObj (Lst (fun:args)) i t) preference
              return (popFrame newCtx', res)
            Left err -> return (newCtx, Left err)
 
@@ -275,7 +280,7 @@ eval ctx xobj@(XObj o i t) preferDynamic =
         where successiveEval (ctx, acc) x =
                case acc of
                  err@(Left _) -> return (ctx, err)
-                 Right _ -> eval ctx x preferDynamic
+                 Right _ -> eval ctx x preference
        [XObj While _ _, cond, body] ->
          specialCommandWhile ctx cond body
        [] -> return (ctx, dynamicNil)
@@ -301,7 +306,7 @@ eval ctx xobj@(XObj o i t) preferDynamic =
      case acc of
        Left _ -> return (ctx, acc)
        Right l -> do
-        (newCtx, evald) <- eval ctx x preferDynamic
+        (newCtx, evald) <- eval ctx x preference
         case evald of
           Right res -> return (newCtx, Right (l ++ [res]))
           Left err -> return (newCtx, Left err)
@@ -446,7 +451,7 @@ executeCommand ctx@(Context env _ _ _ _ _ _ _) xobj =
                            (Just dummyInfo) Nothing
                     ]) (Just dummyInfo) Nothing
         xobjIsSexp (XObj (Lst (XObj (Sym (SymPath [] "s-expr") Symbol) _ _:_)) _ _) = True
-        xobjIsSexp _ = False 
+        xobjIsSexp _ = False
 
 reportExecutionError :: Context -> String -> IO ()
 reportExecutionError ctx errorMessage =
