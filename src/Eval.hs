@@ -798,9 +798,7 @@ commandReload ctx args = do
 
 -- | Command for expanding a form and its macros.
 commandExpand :: CommandCallback
-commandExpand ctx [xobj] = do
-  (newCtx, result) <- macroExpand ctx xobj
-  return (newCtx, result)
+commandExpand ctx [xobj] = macroExpand ctx xobj
 
 -- | This function will show the resulting C code from an expression.
 -- | i.e. (Int.+ 2 3) => "_0 = 2 + 3"
