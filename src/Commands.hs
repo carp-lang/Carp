@@ -5,9 +5,10 @@ import Control.Monad (join, when, foldM)
 import Control.Monad.IO.Class (liftIO, MonadIO)
 import Data.Bits (finiteBitSize)
 import Data.List (elemIndex)
+import Data.List.Split (splitOn)
 import Data.Maybe (fromMaybe)
 import System.Exit (exitSuccess, exitFailure, exitWith, ExitCode(..))
-import System.Info (os)
+import System.Info (os, arch)
 import System.Process (callCommand, spawnCommand, waitForProcess)
 import System.IO (openFile, hPutStr, hClose, utf8, hSetEncoding, IOMode(..))
 import System.Directory (makeAbsolute)
@@ -114,6 +115,8 @@ commandProjectConfig ctx [xobj@(XObj (Str key) _ _), value] = do
                                             return (proj { projectEchoCompilationCommand = echoCompilerCmd })
                   "compiler" -> do compiler <- unwrapStringXObj value
                                    return (proj { projectCompiler = compiler })
+                  "target" -> do target <- unwrapStringXObj value
+                                 return (proj { projectTarget = Target target })
                   "title" -> do title <- unwrapStringXObj value
                                 return (proj { projectTitle = title })
                   "output-directory" -> do outDir <- unwrapStringXObj value
@@ -167,6 +170,7 @@ commandProjectGetConfig ctx [xobj@(XObj (Str key) _ _)] =
           "echo-c" -> Right $ Bol $ projectEchoC proj
           "echo-compiler-cmd" -> Right $ Bol $ projectEchoCompilationCommand proj
           "compiler" -> Right $ Str $ projectCompiler proj
+          "target" -> Right $ Str $ show $ projectTarget proj
           "title" -> Right $ Str $ projectTitle proj
           "output-directory" -> Right $ Str $ projectOutDir proj
           "docs-directory" -> Right $ Str $ projectDocsDir proj
@@ -475,9 +479,14 @@ commandProject ctx args = do
      return (ctx, dynamicNil)
 
 -- | Command for getting the name of the operating system you're on.
-commandOS :: CommandCallback
-commandOS ctx _ =
+commandHostOS :: CommandCallback
+commandHostOS ctx _ =
   return (ctx, (Right (XObj (Str os) (Just dummyInfo) (Just StringTy))))
+
+-- | Command for getting the native architecture.
+commandHostArch :: CommandCallback
+commandHostArch ctx _ =
+  return (ctx, (Right (XObj (Str arch) (Just dummyInfo) (Just StringTy))))
 
 -- | Command for adding a header file include to the project.
 commandAddInclude :: (String -> Includer) -> CommandCallback
@@ -745,6 +754,13 @@ commandStringConcat ctx [a] =
         Right result -> (ctx, Right (XObj (Str (join result)) (Just dummyInfo) (Just StringTy)))
     _ -> evalError ctx ("Can't call concat with " ++ pretty a) (info a)
 
+commandStringSplitOn :: CommandCallback
+commandStringSplitOn ctx [XObj (Str sep) _ _, XObj (Str s) _ _] =
+  pure $ (ctx, Right (XObj (Arr (xstr <$> splitOn sep s)) (Just dummyInfo) Nothing))
+  where xstr o = XObj (Str o) (Just dummyInfo) (Just StringTy)
+commandStringSplitOn ctx [sep, s] =
+  pure $ evalError ctx ("Can't call split-on with " ++ pretty sep ++ ", " ++ pretty s) (info sep)
+
 commandSymConcat :: CommandCallback
 commandSymConcat ctx [a] =
   return $ case a of
@@ -888,8 +904,8 @@ commandWriteFile ctx [filename, contents] =
     _ ->
       return (evalError ctx ("The first argument to `write-file` must be a string, I got `" ++ pretty filename ++ "`") (info filename))
 
-commandBitWidth :: CommandCallback
-commandBitWidth ctx [] =
+commandHostBitWidth :: CommandCallback
+commandHostBitWidth ctx [] =
   let bitSize = fromIntegral (finiteBitSize (undefined :: Int))
   in return (ctx, Right (XObj (Num IntTy bitSize) (Just dummyInfo) (Just IntTy)))
 

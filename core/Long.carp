@@ -48,7 +48,7 @@ to non-refs.")
   (implements bit-xor Long.bit-xor)
   (implements bit-not Long.bit-not)
 
-  (not-on-windows ; this seems to generate invalid code on some windows machines
+  (posix-only ; this seems to generate invalid code on some windows machines
     (register safe-add (λ [Long Long (Ref Long)] Bool))
     (register safe-sub (λ [Long Long (Ref Long)] Bool))
     (register safe-mul (λ [Long Long (Ref Long)] Bool))
