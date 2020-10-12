@@ -215,13 +215,13 @@
      (f x y)))
 
   (doc curry*
-       "Curry functions of any airity."
+       "Curry functions of any arity."
        ""
        "```"
        "(map (curry* Dynamic.zip + '(1 2 3)) '((4 5) (6)))"
        "=> (((+ 1 4) (+ 2 5)) ((+ 1 6)))"
        ""
-       "((curry Dynamic.zip cons '(1 2 3)) '((4 5) (6)))"
+       "((curry* Dynamic.zip cons '(1 2 3)) '((4 5) (6)))"
        "=> ((cons 1 (4 5)) (cons (2 (6))))"
        ""
        "(defndynamic add-em-up [x y z] (+ (+ x y) z))"
