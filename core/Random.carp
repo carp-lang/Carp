@@ -26,6 +26,11 @@
     (do
       (set! s (mod (+ (* s a) c) m))
       (/ s m)))
+
+  (private _)
+  (hidden _)
+  (doc _ "forces reseeding based on the current time at program start")
+  (def _ (do (seed) 0))
 )
 
 (defmodule Int
