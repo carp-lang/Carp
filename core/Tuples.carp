@@ -91,5 +91,5 @@ For example:
 (deftuple Pair a b)
 (doc Triple "is a 3-tuple, i.e. a datatype with three members.")
 (deftuple Triple a b c)
-(doc Quadruple "is a 4-tuple, i.e. a datatype with three members.")
+(doc Quadruple "is a 4-tuple, i.e. a datatype with four members.")
 (deftuple Quadruple a b c d)
