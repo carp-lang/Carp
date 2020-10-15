@@ -1,4 +1,12 @@
+#define Uint8 SDLUint8
+#define Uint16 SDLUint16
+#define Uint32 SDLUint32
+#define Uint64 SDLUint64
 #include <SDL2/SDL.h>
+#undef Uint8
+#undef Uint16
+#undef Uint32
+#undef Uint64
 
 // Event
 SDL_Event SDL_Event_init() {
