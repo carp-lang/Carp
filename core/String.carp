@@ -346,3 +346,116 @@
 )
 
 (defmodule Array (defn prn [x] (Array.str x)) (implements prn Array.prn))
+
+(defmodule Int8
+  (register str (λ [Int8] String))
+  (implements str Int8.str)
+  (defn prn [a] (Int8.str a))
+  (implements prn Int8.prn)
+)
+
+(defmodule Int8Extra
+  (defn str [a] (Int8.str @a))
+  (implements str Int8Extra.str)
+  (defn prn [a] (Int8.prn @a))
+  (implements prn Int8Extra.prn)
+)
+
+(defmodule Int16
+  (register str (λ [Int16] String))
+  (implements str Int16.str)
+  (defn prn [a] (Int16.str a))
+  (implements prn Int16.prn)
+)
+
+(defmodule Int16Extra
+  (defn prn [a] (Int16.prn @a))
+  (implements prn Int16Extra.prn)
+  (defn str [a] (Int16.str @a))
+  (implements str Int16Extra.str)
+)
+
+(defmodule Int32
+  (register str (λ [Int32] String))
+  (implements str Int32.str)
+  (defn prn [a] (Int32.str a))
+  (implements prn Int32.prn)
+)
+
+(defmodule Int32Extra
+  (defn str [a] (Int32.str @a))
+  (implements str Int32Extra.str)
+  (defn prn [a] (Int32.prn @a))
+  (implements prn Int32Extra.prn)
+)
+
+(defmodule Int64
+  (register str (λ [Int64] String))
+  (implements str Int64.str)
+  (defn prn [a] (Int64.str a))
+  (implements prn Int64.prn)
+)
+
+(defmodule Int64Extra
+  (defn str [a] (Int64.str @a))
+  (implements str Int64Extra.str)
+  (defn prn [a] (Int64.prn @a))
+  (implements prn Int64Extra.prn)
+)
+
+(defmodule Uint8
+  (register str (λ [Uint8] String))
+  (implements str Uint8.str)
+  (defn prn [a] (Uint8.str a))
+  (implements prn Uint8.prn)
+)
+
+(defmodule Uint8Extra
+  (defn str [a] (Uint8.str @a))
+  (implements str Uint8Extra.str)
+  (defn prn [a] (Uint8.prn @a))
+  (implements prn Uint8Extra.prn)
+)
+
+(defmodule Uint16
+  (register str (λ [Uint16] String))
+  (implements str Uint16.str)
+  (defn prn [a] (Uint16.str a))
+  (implements prn Uint16.prn)
+)
+
+(defmodule Uint16Extra
+  (defn prn [a] (Uint16.prn @a))
+  (implements prn Uint16Extra.prn)
+  (defn str [a] (Uint16.str @a))
+  (implements str Uint16Extra.str)
+)
+
+(defmodule Uint32
+  (register str (λ [Uint32] String))
+  (implements str Uint32.str)
+  (defn prn [a] (Uint32.str a))
+  (implements prn Uint32.prn)
+)
+
+(defmodule Uint32Extra
+  (defn str [a] (Uint32.str @a))
+  (implements str Uint32Extra.str)
+  (defn prn [a] (Uint32.prn @a))
+  (implements prn Uint32Extra.prn)
+)
+
+(defmodule Uint64
+  (register str (λ [Uint64] String))
+  (implements str Uint64.str)
+  (defn prn [a] (Uint64.str a))
+  (implements prn Uint64.prn)
+)
+
+(defmodule Uint64Extra
+  (defn str [a] (Uint64.str @a))
+  (implements str Uint64Extra.str)
+  (defn prn [a] (Uint64.prn @a))
+  (implements prn Uint64Extra.prn)
+)
+
