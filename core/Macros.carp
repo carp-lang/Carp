@@ -723,8 +723,7 @@
 
 (doc inline-c "Inlines some custom C code.")
 (defmacro inline-c [name defcode declcode]
-  (list 'deftemplate name (list) (eval defcode) (eval declcode)))
-
+  (eval (list 'deftemplate name (list) defcode declcode)))
 
 (deftemplate bottom (Fn [] a) "$a $NAME()" "$DECL { abort(); }")
 
