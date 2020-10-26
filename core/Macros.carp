@@ -722,9 +722,8 @@
     (list 'fn [x] (comp-internal x fns))))
 
 (doc inline-c "Inlines some custom C code.")
-(defmacro inline-c [name defcode declcode]
-  (list 'deftemplate name (list) (eval defcode) (eval declcode)))
-
+(defmacro inline-c [name defcode :rest declcode]
+  (eval (list 'deftemplate name (list) defcode (if (empty? declcode) "" (car declcode)))))
 
 (deftemplate bottom (Fn [] a) "$a $NAME()" "$DECL { abort(); }")
 
