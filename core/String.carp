@@ -459,3 +459,8 @@
   (implements prn Uint64Extra.prn)
 )
 
+(defmodule Pointer
+  (register str (Fn [(Ptr a)] String) "Pointer_str")
+  (implements str Pointer.str)
+  (defn prn [x] (Pointer.str x))
+)
