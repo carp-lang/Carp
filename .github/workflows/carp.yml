@@ -15,14 +15,11 @@ jobs:
 
     - uses: actions/setup-haskell@v1
 
-    - run:   echo ::set-env name=GITHUB_SHA::$GITHUB_SHA
-      shell: bash
-
     - uses: actions/cache@v1
       name: Cache ~/.stack
       with:
         path: ~/.stack
-        key: ${{ runner.os }}-stack-${{ env.GITHUB_SHA }}
+        key: ${{ runner.os }}-stack-${{ github.sha }}
         restore-keys: ${{ runner.os }}-stack-
 
     - name: Build
@@ -33,3 +30,4 @@ jobs:
 
     - name: Run Carp Tests
       run: ./run_carp_tests.sh --no_sdl
+
