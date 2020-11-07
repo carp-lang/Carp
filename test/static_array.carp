@@ -208,4 +208,15 @@
 
   (assert-false test
                 (contains? $[0 1 2] &100)
-                "contains? works as expected II"))
+                "contains? works as expected II")
+
+  (assert-equal test
+                &1
+                (Pointer.to-ref (unsafe-raw $[1 2 3]))
+                "unsafe-raw works as expected")
+
+  (assert-equal test
+                &2
+                (Pointer.to-ref (Pointer.inc (unsafe-raw $[1 2 3])))
+                "unsafe-raw works as expected II"))
+
