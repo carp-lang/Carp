@@ -899,7 +899,11 @@ primitiveEval _ ctx [val] = do
       (newCtx', expanded) <- macroExpand ctx evald
       case expanded of
         Left err -> return (newCtx', Left err)
-        Right ok -> evalDynamic newCtx' ok
+        Right ok -> do
+          (finalCtx, res) <- evalDynamic newCtx' ok
+          case res of
+            Left (HasStaticCall x i) -> return (evalError ctx ("Unexpected static call in " ++ pretty x) i)
+            _ -> return (finalCtx, res)
 
 dynamicOrMacro :: Context -> Obj -> Ty -> String -> XObj -> XObj -> IO (Context, Either EvalError XObj)
 dynamicOrMacro ctx pat ty name params body = do
