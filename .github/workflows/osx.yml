@@ -14,12 +14,12 @@ jobs:
       - name: Check out
         uses: actions/checkout@v2
 
-      - uses: actions/cache@v1
-        name: Cache ~/.stack
-        with:
-          path: ~/.stack
-          key: ${{ runner.os }}-stack-${{ github.sha }}
-          restore-keys: ${{ runner.os }}-stack-
+      # - uses: actions/cache@v1
+      #   name: Cache ~/.stack
+      #   with:
+      #     path: ~/.stack
+      #     key: ${{ runner.os }}-stack-${{ github.sha }}
+      #     restore-keys: ${{ runner.os }}-stack-
 
       - uses: actions/setup-haskell@v1.1
         with:
