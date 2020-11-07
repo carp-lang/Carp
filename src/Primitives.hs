@@ -568,6 +568,8 @@ primitiveUse xobj ctx [XObj (Sym path _) _ _] =
         lookupInGlobal = maybe missing useModule (lookupInEnv path env)
           where missing = evalError ctx ("Can't find a module named '" ++ show path ++ "'") (info xobj)
         useModule _ = (ctx { contextGlobalEnv = envReplaceEnvAt env pathStrings e' }, dynamicNil)
+primitiveUse xobj ctx [x] =
+  argumentErr ctx "use" "a symbol" "first" x
 
 -- | Get meta data for a Binder
 primitiveMeta :: Primitive
@@ -584,9 +586,9 @@ primitiveMeta (XObj _ i _) ctx [XObj (Sym path _) _ _, XObj (Str key) _ _] = do
             where err = (evalError ctx
                     ("`meta` failed, I can’t find `" ++ show path ++ "`")
                     i)
-primitiveMeta _ ctx [XObj (Sym path _) _ _, key@(XObj _ i _)] =
+primitiveMeta _ ctx [XObj (Sym path _) _ _, key] =
   argumentErr ctx "meta" "a string" "second" key
-primitiveMeta _ ctx [path@(XObj _ i _), _] =
+primitiveMeta _ ctx [path, _] =
   argumentErr ctx "meta" "a symbol" "first" path
 
 primitiveDefined :: Primitive
