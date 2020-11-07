@@ -212,4 +212,10 @@ If the array is empty, returns `Nothing`")
           (do
             (set! result true)
             (break))))
-      result)))
+      result))
+
+  (doc unsafe-raw "returns an array a as a raw pointer—useful for interacting with C.")
+  (deftemplate unsafe-raw (Fn [(Ref (StaticArray t))] (Ptr t))
+    "$t* $NAME(Array *a)"
+    "$DECL { return a->data; }"))
+
