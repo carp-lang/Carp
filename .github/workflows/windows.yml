@@ -17,8 +17,8 @@ jobs:
       - name: Install Scoop
         run: |
           iwr -useb get.scoop.sh | iex
-          echo "::add-path::~\scoop\shims"
-          echo "::add-path::C:\ProgramData\scoop\shims"
+          echo "~\scoop\shims" | Out-File -FilePath $env:GITHUB_PATH -Encoding utf8 -Append
+          echo "C:\ProgramData\scoop\shims" | Out-File -FilePath $env:GITHUB_PATH -Encoding utf8 -Append
 
       - name: Install Stack
         run: scoop install stack
