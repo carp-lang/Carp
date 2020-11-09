@@ -15,6 +15,14 @@ jobs:
 
     - uses: actions/setup-haskell@v1
 
+    - name: Install SDL dependency (for SDL tests)
+      run: |
+        sudo apt-get update && sudo apt-get install libsdl2-dev       \
+                                                    libsdl2-gfx-dev   \
+                                                    libsdl2-image-dev \
+                                                    libsdl2-mixer-dev \
+                                                    libsdl2-ttf-dev
+
     - uses: actions/cache@v1
       name: Cache ~/.stack
       with:
@@ -29,5 +37,5 @@ jobs:
       run: stack test
 
     - name: Run Carp Tests
-      run: ./scripts/run_carp_tests.sh --no_sdl
+      run: ./scripts/run_carp_tests.sh
 
