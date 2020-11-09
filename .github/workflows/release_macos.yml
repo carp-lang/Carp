@@ -14,7 +14,7 @@ name: Create Release (macOS)
 #         uses: actions/checkout@v2
 
 #       - name: Build and zip
-#         run: ./release.sh ${{ github.ref }} --noprompt
+#         run: ./scripts/release.sh ${{ github.ref }} --noprompt
 
 #       - name: Create Github Release
 #         id: create_release

@@ -18,7 +18,7 @@ jobs:
         uses: actions/checkout@v2
 
       - name: Build and zip
-        run: ./release.sh ${{ steps.get_tag_name.outputs.VERSION }} --noprompt
+        run: ./scripts/release.sh ${{ steps.get_tag_name.outputs.VERSION }} --noprompt
 
       - name: Create Github Release
         id: create_release

@@ -48,4 +48,4 @@ jobs:
 
       - name: Run Carp Tests
         shell: bash
-        run: ./run_carp_tests.sh --no_sdl
+        run: ./scripts/run_carp_tests.sh --no_sdl

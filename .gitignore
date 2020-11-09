@@ -2,6 +2,7 @@
 *~
 *#
 */.DS_Store
+*.output.actual
 
 .stack-work/
 
@@ -16,3 +17,5 @@ main.obj
 examples/out
 /stack.yaml.lock
 tags
+flamegraph.svg
+

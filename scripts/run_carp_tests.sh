@@ -8,7 +8,7 @@ if [[ $# -gt 0 ]] && [[ "$1" == "--no_sdl" ]]; then
     NO_SDL=1
 fi
 
-./build.sh
+./scripts/build.sh
 
 # Build and run some examples
 ./test/execute.sh ./examples/basics.carp
@@ -27,7 +27,7 @@ fi
 # Actual tests (using the test suite)
 for f in ./test/*.carp; do
     echo $f
-   ./carp.sh -x --log-memory $f
+   ./scripts/carp.sh -x --log-memory $f
     echo
 done
 
@@ -39,28 +39,28 @@ for f in ./test-for-errors/*.carp; do
 done
 
 # Just make sure these compile
-./carp.sh ./examples/mutual_recursion.carp -b
-./carp.sh ./examples/guessing.carp -b
-./carp.sh ./examples/no_core.carp --no-core --no-profile -b
-./carp.sh ./examples/check_malloc.carp -b
-./carp.sh ./examples/nested_lambdas.carp -b
+./scripts/carp.sh ./examples/mutual_recursion.carp -b
+./scripts/carp.sh ./examples/guessing.carp -b
+./scripts/carp.sh ./examples/no_core.carp --no-core --no-profile -b
+./scripts/carp.sh ./examples/check_malloc.carp -b
+./scripts/carp.sh ./examples/nested_lambdas.carp -b
 
 # Run tests which rely on SDL unless the `--no_sdl` argument was passed in
 if [[ ${NO_SDL} -eq 0 ]]; then
-    ./carp.sh ./examples/ant.carp -b
-    ./carp.sh ./examples/reptile.carp -b
-    ./carp.sh ./examples/game.carp -b
-    ./carp.sh ./examples/minimal_sdl.carp -b
-    ./carp.sh examples/sounds.carp -b
-    ./carp.sh examples/fonts.carp -b
+    ./scripts/carp.sh ./examples/ant.carp -b
+    ./scripts/carp.sh ./examples/reptile.carp -b
+    ./scripts/carp.sh ./examples/game.carp -b
+    ./scripts/carp.sh ./examples/minimal_sdl.carp -b
+    ./scripts/carp.sh ./examples/sounds.carp -b
+    ./scripts/carp.sh ./examples/fonts.carp -b
 fi
 
 # Generate docs
-./carp.sh ./docs/core/generate_core_docs.carp
+./scripts/carp.sh ./docs/core/generate_core_docs.carp
 
 # Generate SDL docs unless the `--no_sdl` argument was passed in
 if [[ ${NO_SDL} -eq 0 ]]; then
-  ./carp.sh ./docs/sdl/generate_sdl_docs.carp
+  ./scripts/carp.sh ./docs/sdl/generate_sdl_docs.carp
 fi
 
 echo "ALL TESTS DONE."

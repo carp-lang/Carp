@@ -29,5 +29,5 @@ jobs:
       run: stack test
 
     - name: Run Carp Tests
-      run: ./run_carp_tests.sh --no_sdl
+      run: ./scripts/run_carp_tests.sh --no_sdl
 
