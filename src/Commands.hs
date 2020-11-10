@@ -270,7 +270,15 @@ commandBuild shutUp ctx args = do
                                                       callCommand cmd
                                                       when (execMode == Repl && not shutUp) (putStrLn ("Compiled to '" ++ outExe ++ "' (executable)"))
                                           return (setProjectCanExecute True ctx, dynamicNil)
-                             Nothing -> do let cmd = compiler ++ " " ++ outMain ++ " -shared -o \"" ++ outLib ++ "\" " ++ flags
+                             Nothing -> do let cmd = joinWithSpace $ [ compiler
+                                                                    , "-shared"
+                                                                    , "-o"
+                                                                    , outLib
+                                                                    , "-I"
+                                                                    , includeCorePath
+                                                                    , flags
+                                                                    , outMain
+                                                                    ] ++ cModules
                                            liftIO $ do when echoCompilationCommand (putStrLn cmd)
                                                        callCommand cmd
                                                        when (execMode == Repl && not shutUp) (putStrLn ("Compiled to '" ++ outLib ++ "' (shared library)"))
