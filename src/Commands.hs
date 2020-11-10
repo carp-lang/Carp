@@ -251,6 +251,21 @@ commandBuild shutUp ctx args = do
              outExe = outDir </> projectTitle proj
              outLib = outDir </> projectTitle proj
              generateOnly = projectGenerateOnly proj
+             compile hasMain =
+               do let cmd = joinWithSpace $ [ compiler
+                                            , if hasMain then "" else "-shared"
+                                            , "-o"
+                                            , outExe
+                                            , "-I"
+                                            , includeCorePath
+                                            , flags
+                                            , outMain
+                                            ] ++ cModules
+                    in liftIO $ do when echoCompilationCommand (putStrLn cmd)
+                                   callCommand cmd
+                                   when (execMode == Repl && not shutUp) $
+                                     (putStrLn ("Compiled to '" ++ outExe ++ (if hasMain then "' (executable)" else "' (shared library)")))
+                                   return (setProjectCanExecute hasMain ctx, dynamicNil)
          liftIO $ createDirectoryIfMissing False outDir
          outputHandle <- openFile outMain WriteMode
          hSetEncoding outputHandle utf8
@@ -258,31 +273,8 @@ commandBuild shutUp ctx args = do
          hClose outputHandle
          if generateOnly then return (ctx, dynamicNil) else
              case Map.lookup "main" (envBindings env) of
-                             Just _ -> do let cmd = joinWithSpace $ [ compiler
-                                                                    , "-o"
-                                                                    , outExe
-                                                                    , "-I"
-                                                                    , includeCorePath
-                                                                    , flags
-                                                                    , outMain
-                                                                    ] ++ cModules
-                                          liftIO $ do when echoCompilationCommand (putStrLn cmd)
-                                                      callCommand cmd
-                                                      when (execMode == Repl && not shutUp) (putStrLn ("Compiled to '" ++ outExe ++ "' (executable)"))
-                                          return (setProjectCanExecute True ctx, dynamicNil)
-                             Nothing -> do let cmd = joinWithSpace $ [ compiler
-                                                                    , "-shared"
-                                                                    , "-o"
-                                                                    , outLib
-                                                                    , "-I"
-                                                                    , includeCorePath
-                                                                    , flags
-                                                                    , outMain
-                                                                    ] ++ cModules
-                                           liftIO $ do when echoCompilationCommand (putStrLn cmd)
-                                                       callCommand cmd
-                                                       when (execMode == Repl && not shutUp) (putStrLn ("Compiled to '" ++ outLib ++ "' (shared library)"))
-                                           return (setProjectCanExecute False ctx, dynamicNil)
+               Just _ ->  compile True
+               Nothing -> compile False
 
 setProjectCanExecute :: Bool -> Context -> Context
 setProjectCanExecute value ctx =
