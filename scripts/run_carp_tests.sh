@@ -39,6 +39,7 @@ for f in ./test-for-errors/*.carp; do
 done
 
 # Just make sure these compile
+./scripts/carp.sh ./examples/empty.carp -b
 ./scripts/carp.sh ./examples/mutual_recursion.carp -b
 ./scripts/carp.sh ./examples/guessing.carp -b
 ./scripts/carp.sh ./examples/no_core.carp --no-core --no-profile -b
