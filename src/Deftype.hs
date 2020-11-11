@@ -298,8 +298,7 @@ concreteStr typeEnv env concreteStructTy@(StructTy (ConcreteNameTy typeName) _) 
         tokensForStr typeEnv env typeName memberPairs concreteStructTy)
     (\ft@(FuncTy [RefTy structTy@(StructTy _ concreteMemberTys) (VarTy "q")] StringTy _) ->
        concatMap (depsOfPolymorphicFunction typeEnv env [] "prn" . typesStrFunctionType typeEnv)
-                 (filter (\t -> (not . isFullyGenericType) t)
-                  (map snd memberPairs)))
+                 (remove isFullyGenericType (map snd memberPairs)))
 
 -- | The template for the 'str' function for a generic deftype.
 genericStr :: [String] -> Ty -> [XObj] -> String -> (String, Binder)
@@ -325,8 +324,7 @@ genericStr pathStrings originalStructTy@(StructTy (ConcreteNameTy typeName) varT
                    correctedMembers = replaceGenericTypeSymbolsOnMembers mappings membersXObjs
                    memberPairs = memberXObjsToPairs correctedMembers
                in  concatMap (depsOfPolymorphicFunction typeEnv env [] "prn" . typesStrFunctionType typeEnv)
-                   (filter (\t -> (not . isFullyGenericType) t)
-                    (map snd memberPairs))
+                   (remove isFullyGenericType (map snd memberPairs))
                    ++
                    (if isTypeGeneric concreteStructTy then [] else [defineFunctionTypeAlias ft]))
 
