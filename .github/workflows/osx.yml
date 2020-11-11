@@ -21,6 +21,14 @@ jobs:
       #     key: ${{ runner.os }}-stack-${{ github.sha }}
       #     restore-keys: ${{ runner.os }}-stack-
 
+      - name: Install SDL dependency (for SDL tests)
+        run: |
+          brew install sdl2       \
+                       sdl2_gfx   \
+                       sdl2_image \
+                       sdl2_mixer \
+                       sdl2_ttf
+
       - uses: actions/setup-haskell@v1.1
         with:
           ghc-version: '8.8.2'
@@ -36,5 +44,5 @@ jobs:
         run: stack test
 
       - name: Run Carp Tests
-        run: ./scripts/run_carp_tests.sh --no_sdl
+        run: ./scripts/run_carp_tests.sh
 
