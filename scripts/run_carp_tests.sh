@@ -10,7 +10,7 @@ fi
 
 ./scripts/build.sh
 
-# Build and run some examples
+echo "Build and run some examples"
 ./test/execute.sh ./examples/basics.carp
 ./test/execute.sh ./examples/functor.carp
 ./test/execute.sh ./examples/external_struct.carp
@@ -24,36 +24,48 @@ fi
 ./test/execute.sh ./examples/lambdas.carp
 ./test/execute.sh ./examples/sumtypes.carp
 
-# Actual tests (using the test suite)
+echo "Actual tests (using the test suite)"
 for f in ./test/*.carp; do
     echo $f
    ./scripts/carp.sh -x --log-memory $f
     echo
 done
 
-# Test for correct error messages when doing "carp --check" on the source.
+echo "Test for correct error messages when doing "carp --check" on the source."
 for f in ./test-for-errors/*.carp; do
     echo $f
    ./test/check.sh $f
-    echo
 done
 
-# Just make sure these compile
-./scripts/carp.sh ./examples/empty.carp -b
-./scripts/carp.sh ./examples/mutual_recursion.carp -b
-./scripts/carp.sh ./examples/guessing.carp -b
+echo "Compile-only examples"
+compileOnlyExamples=(./examples/empty.carp
+                     ./examples/mutual_recursion.carp
+                     ./examples/guessing.carp
+                     ./examples/check_malloc.carp
+                     ./examples/nested_lambdas.carp)
+
+for e in "${compileOnlyExamples[@]}"; do
+    echo $e
+    ./scripts/carp.sh $e -b
+done
+
+echo ./examples/no_core.carp
 ./scripts/carp.sh ./examples/no_core.carp --no-core --no-profile -b
-./scripts/carp.sh ./examples/check_malloc.carp -b
-./scripts/carp.sh ./examples/nested_lambdas.carp -b
 
 # Run tests which rely on SDL unless the `--no_sdl` argument was passed in
 if [[ ${NO_SDL} -eq 0 ]]; then
-    ./scripts/carp.sh ./examples/ant.carp -b
-    ./scripts/carp.sh ./examples/reptile.carp -b
-    ./scripts/carp.sh ./examples/game.carp -b
-    ./scripts/carp.sh ./examples/minimal_sdl.carp -b
-    ./scripts/carp.sh ./examples/sounds.carp -b
-    ./scripts/carp.sh ./examples/fonts.carp -b
+    echo "Compile-only SDL examples"
+    compileOnlySdlExamples=(./examples/ant.carp
+                            ./examples/reptile.carp
+                            ./examples/game.carp
+                            ./examples/minimal_sdl.carp
+                            ./examples/sounds.carp
+                            ./examples/fonts.carp)
+
+    for e in "${compileOnlySdlExamples[@]}"; do
+        echo $e
+        ./scripts/carp.sh $e -b
+    done
 fi
 
 # Generate docs
