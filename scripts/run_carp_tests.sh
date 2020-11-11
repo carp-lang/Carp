@@ -38,8 +38,7 @@ for f in ./test-for-errors/*.carp; do
 done
 
 echo "Compile-only examples"
-compileOnlyExamples=(./examples/empty.carp
-                     ./examples/mutual_recursion.carp
+compileOnlyExamples=(./examples/mutual_recursion.carp
                      ./examples/guessing.carp
                      ./examples/check_malloc.carp
                      ./examples/nested_lambdas.carp)
