@@ -38,12 +38,14 @@ for f in ./test-for-errors/*.carp; do
 done
 
 echo "Compile-only examples"
-compileOnlyExamples=(./examples/mutual_recursion.carp
-                     ./examples/guessing.carp
-                     ./examples/check_malloc.carp
-                     ./examples/nested_lambdas.carp)
+compileOnlyExamples="\
+                   examples/mutual_recursion.carp \
+                   examples/guessing.carp \
+                   examples/check_malloc.carp \
+                   examples/nested_lambdas.carp
+"
 
-for e in "${compileOnlyExamples[@]}"; do
+for e in $compileOnlyExamples ; do
     echo $e
     ./scripts/carp.sh $e -b
 done
