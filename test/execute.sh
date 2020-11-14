@@ -1,4 +1,4 @@
-#!/usr/bin/env bash
+#!/usr/bin/env sh
 
 # Runs the executable and compares its output to the .expected file
 ./scripts/carp.sh $1 --log-memory -b && \

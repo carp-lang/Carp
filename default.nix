@@ -19,12 +19,11 @@ let
       , darwin, glfw3, SDL2, SDL2_image, SDL2_gfx, SDL2_mixer, SDL2_ttf
       , ghc-prof-flamegraph
       , clang , makeWrapper
-
       , libXext, libXcursor, libXinerama, libXi, libXrandr, libXScrnSaver, libXxf86vm, libpthreadstubs, libXdmcp, libGL
       }:
       mkDerivation {
         pname = "CarpHask";
-        version = "0.3.0.0";
+        version = "dev";
         src = ./.;
         inherit doCheck doBenchmark;
         isLibrary = false;
@@ -49,14 +48,17 @@ let
           Carbon Cocoa IOKit CoreFoundation CoreVideo IOKit ForceFeedback
         ];
         buildDepends = [ makeWrapper ];
+        postPatch = ''
+          patchShebangs .
+        '';
         postInstall = ''
-            wrapProgram $out/bin/carp --set CARP_DIR $src --prefix PATH : ${clang}/bin
-            wrapProgram $out/bin/carp-header-parse --set CARP_DIR $src --prefix PATH : ${clang}/bin
+          wrapProgram $out/bin/carp --set CARP_DIR $src --prefix PATH : ${clang}/bin
+          wrapProgram $out/bin/carp-header-parse --set CARP_DIR $src --prefix PATH : ${clang}/bin
         '';
         testHaskellDepends = [ base containers HUnit ];
         testTarget = "CarpHask-test";
         postCheck = ''
-          env CARP=dist/build/carp/carp ./run_carp_tests.sh
+          env CARP=dist/build/carp/carp scripts/run_carp_tests.sh
         '';
         enableParallelBuilding = true;
         homepage = "https://github.com/eriksvedang/Carp";

@@ -1,4 +1,4 @@
-#!/usr/bin/env bash
+#!/usr/bin/env sh
 
 set -e; # will make the script stop if there are any errors
 set -u; # will make the script stop if there is use of undefined
