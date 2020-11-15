@@ -12,7 +12,7 @@ jobs:
     steps:
       - name: Get tag name
         id: get_tag_name
-        run: echo ::set-output name=VERSION::${GITHUB_REF/refs\/tags\//}_macOS
+        run: echo ::set-output name=VERSION::${GITHUB_REF/refs\/tags\//}
 
       - name: Checkout code
         uses: actions/checkout@v2
@@ -34,8 +34,8 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
-          tag_name: ${{ steps.get_tag_name.outputs.VERSION }}
-          release_name: Release ${{ steps.get_tag_name.outputs.VERSION }}
+          tag_name: ${{ steps.get_tag_name.outputs.VERSION }}_macOS
+          release_name: Release ${{ steps.get_tag_name.outputs.VERSION }}_macOS
           body: |
             This is a release of the Carp compiler on macOS.
           draft: false
@@ -48,6 +48,6 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
           upload_url: ${{ steps.create_release.outputs.upload_url }}
-          asset_path: ./releases/${{ steps.get_tag_name.outputs.VERSION }}_macOS.zip
-          asset_name: ${{ steps.get_tag_name.outputs.VERSION }}_macOS.zip
+          asset_path: ./releases/${{ steps.get_tag_name.outputs.VERSION }}.zip
+          asset_name: ${{ steps.get_tag_name.outputs.VERSION }}.zip
           asset_content_type: application/zip

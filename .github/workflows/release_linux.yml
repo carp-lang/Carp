@@ -12,13 +12,13 @@ jobs:
     steps:
       - name: Get tag name
         id: get_tag_name
-        run: echo ::set-output name=VERSION::${GITHUB_REF/refs\/tags\//}_Linux
+        run: echo ::set-output name=VERSION::${GITHUB_REF/refs\/tags\//}
 
       - name: Checkout code
         uses: actions/checkout@v2
 
       - name: Build and zip
-        run: ./scripts/release.sh "${{ steps.get_tag_name.outputs.VERSION }}" --noprompt
+        run: "./scripts/release.sh ${{ steps.get_tag_name.outputs.VERSION }} --noprompt"
 
       - name: Create Github Release
         id: create_release
@@ -26,8 +26,8 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
-          tag_name: ${{ steps.get_tag_name.outputs.VERSION }}
-          release_name: Release ${{ steps.get_tag_name.outputs.VERSION }}
+          tag_name: ${{ steps.get_tag_name.outputs.VERSION }}_Linux
+          release_name: Release ${{ steps.get_tag_name.outputs.VERSION }}_Linux
           body: |
             This is a release of the Carp compiler on Linux.
           draft: false
@@ -40,6 +40,6 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
           upload_url: ${{ steps.create_release.outputs.upload_url }}
-          asset_path: ./releases/${{ steps.get_tag_name.outputs.VERSION }}_Linux.zip
-          asset_name: ${{ steps.get_tag_name.outputs.VERSION }}_Linux.zip
+          asset_path: ./releases/${{ steps.get_tag_name.outputs.VERSION }}.zip
+          asset_name: ${{ steps.get_tag_name.outputs.VERSION }}.zip
           asset_content_type: application/zip
