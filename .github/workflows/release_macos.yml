@@ -3,19 +3,27 @@ on:
     tags:
       - 'v*' # Push events to matching v*, i.e. v1.0, v20.15.10
 
-name: Create Release (Linux)
+name: Create Release (macOS)
 
 jobs:
   build:
     name: Create Release
-    runs-on: ubuntu-latest
+    runs-on: macos-latest
     steps:
       - name: Get tag name
         id: get_tag_name
-        run: echo ::set-output name=VERSION::${GITHUB_REF/refs\/tags\//}_Linux
+        run: echo ::set-output name=VERSION::${GITHUB_REF/refs\/tags\//}_macOS
 
       - name: Checkout code
         uses: actions/checkout@v2
+
+      - uses: actions/setup-haskell@v1.1
+        with:
+          ghc-version: '8.8.2'
+          stack-version: '2.3.1'
+          enable-stack: true
+          stack-no-global: true
+          stack-setup-ghc: true
 
       - name: Build and zip
         run: ./scripts/release.sh ${{ steps.get_tag_name.outputs.VERSION }} --noprompt
@@ -29,7 +37,7 @@ jobs:
           tag_name: ${{ steps.get_tag_name.outputs.VERSION }}
           release_name: Release ${{ steps.get_tag_name.outputs.VERSION }}
           body: |
-            This is a release of the Carp compiler on Linux.
+            This is a release of the Carp compiler on macOS.
           draft: false
           prerelease: false
 
@@ -40,6 +48,6 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
           upload_url: ${{ steps.create_release.outputs.upload_url }}
-          asset_path: ./releases/${{ steps.get_tag_name.outputs.VERSION }}_Linux.zip
-          asset_name: ${{ steps.get_tag_name.outputs.VERSION }}_Linux.zip
+          asset_path: ./releases/${{ steps.get_tag_name.outputs.VERSION }}_macOS.zip
+          asset_name: ${{ steps.get_tag_name.outputs.VERSION }}_macOS.zip
           asset_content_type: application/zip
