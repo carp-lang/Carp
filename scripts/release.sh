@@ -1,10 +1,10 @@
-#!/usr/bin/env sh
+#!/usr/bin/env bash
 set -e;
 
 name=$1
 noprompt=$2
 
-if [[ "$name" == "" ]]; then
+if [ "$name" == "" ]; then
    echo "ERROR: Must pass a name of the release as the first argument to this script.";
    exit 1;
 fi
@@ -14,7 +14,7 @@ fullPath="$PWD/releases/$name"
 echo "Creating release '$name'"
 echo "Full path = '$fullPath'"
 
-if [[ "$noprompt" == "--noprompt" ]]; then
+if [ "$noprompt" == "--noprompt" ]; then
     echo "No prompt, will continue"
 else
     echo "Continue? (y/n)"
