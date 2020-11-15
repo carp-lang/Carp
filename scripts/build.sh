@@ -1,4 +1,4 @@
-#!/usr/bin/env bash
+#!/usr/bin/env sh
 if [ -z "$CARP" ]
 then
     if [ -z "$NIX_CC" ]

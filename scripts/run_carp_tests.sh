@@ -1,4 +1,4 @@
-#!/usr/bin/env bash
+#!/usr/bin/env sh
 
 set -e; # will make the script stop if there are any errors
 set -u; # will make the script stop if there is use of undefined
@@ -38,12 +38,14 @@ for f in ./test-for-errors/*.carp; do
 done
 
 echo "Compile-only examples"
-compileOnlyExamples=(./examples/mutual_recursion.carp
-                     ./examples/guessing.carp
-                     ./examples/check_malloc.carp
-                     ./examples/nested_lambdas.carp)
+compileOnlyExamples="\
+                   examples/mutual_recursion.carp \
+                   examples/guessing.carp \
+                   examples/check_malloc.carp \
+                   examples/nested_lambdas.carp
+"
 
-for e in "${compileOnlyExamples[@]}"; do
+for e in $compileOnlyExamples ; do
     echo $e
     ./scripts/carp.sh $e -b
 done
@@ -54,14 +56,16 @@ echo ./examples/no_core.carp
 # Run tests which rely on SDL unless the `--no_sdl` argument was passed in
 if [[ ${NO_SDL} -eq 0 ]]; then
     echo "Compile-only SDL examples"
-    compileOnlySdlExamples=(./examples/ant.carp
-                            ./examples/reptile.carp
-                            ./examples/game.carp
-                            ./examples/minimal_sdl.carp
-                            ./examples/sounds.carp
-                            ./examples/fonts.carp)
+    compileOnlySdlExamples="
+			    examples/ant.carp
+                            examples/reptile.carp
+                            examples/game.carp
+                            examples/minimal_sdl.carp
+                            examples/sounds.carp
+                            examples/fonts.carp
+			    "
 
-    for e in "${compileOnlySdlExamples[@]}"; do
+    for e in $compileOnlySdlExamples ; do
         echo $e
         ./scripts/carp.sh $e -b
     done

@@ -1,4 +1,4 @@
-#!/usr/bin/env bash
+#!/usr/bin/env sh
 
 # Checks the code (using --check) and compares the output to the .expected file
 ./scripts/carp.sh $1 --log-memory --check > test/output/$1.output.actual 2>&1
