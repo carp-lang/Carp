@@ -26,7 +26,7 @@ jobs:
           stack-setup-ghc: true
 
       - name: Build and zip
-        run: ./scripts/release.sh ${{ steps.get_tag_name.outputs.VERSION }}_macOS --noprompt
+        run: ./scripts/release.sh ${{ steps.get_tag_name.outputs.VERSION }} --noprompt
 
       - name: Create Github Release
         id: create_release
