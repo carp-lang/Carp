@@ -175,33 +175,61 @@
       b))
 )
 
-(deftype (Map a b) [n-buckets Int buckets (Array (Bucket a b))])
+(deftype (Map a b) [len Int n-buckets Int buckets (Array (Bucket a b))])
 
 (defmodule Map
   (hidden dflt-len)
   (def dflt-len 256)
 
+  (doc min-load "The load a map needs to reach in order to shrink.")
+  (def min-load 20)
+  (doc max-load "The load a map needs to reach in order to grow.")
+  (def max-load 80)
+
   (doc create "Create an empty map.")
   (defn create []
-    (init dflt-len (Array.repeat dflt-len &Bucket.empty)))
+    (init 0 dflt-len (Array.repeat dflt-len &Bucket.empty)))
 
-  (doc create-with-len "Create an empty map with a given number of buckets. High numbers reduce the possibility of hash collisions while increasing the memory footprint.")
-  (defn create-with-len [len]
-    (init len (Array.repeat len &Bucket.empty)))
-
-  (doc put "Put a a value v into map m, using the key k.")
-  (defn put [m k v]
-    (let [idx (Int.positive-mod (hash k) @(n-buckets &m))]
-      (update-buckets m &(fn [b]
-                           (let [n (Array.unsafe-nth &b idx)]
-                             (Array.aset b idx (Bucket.put @n k v)))))))
-
-  (doc put! "Put a a value v into map m, using the key k, in place.")
-  (defn put! [m k v]
-    (let [idx (Int.positive-mod (hash k) @(n-buckets m))
-          b (buckets m)
-          n (Array.unsafe-nth b idx)]
+  (private put-!)
+  (hidden put-!)
+  (defn put-! [m k v]
+    (let-do [idx (Int.positive-mod (hash k) @(n-buckets m))
+             b (buckets m)
+             n (Array.unsafe-nth b idx)]
+      (set-len! m (Int.inc @(len m)))
       (Bucket.put! n k v)))
+
+  (doc resize "Resize a map `m` to size `s`.")
+  (defn resize [m s]
+    (let-do [n (init 0 s (Array.repeat s &Bucket.empty))]
+      (for [i 0 @(n-buckets m)]
+        (let [bucket (Array.unsafe-nth (buckets m) i)
+              len (Array.length (Bucket.entries bucket))
+              entries (Bucket.entries bucket)]
+          (for [j 0 len]
+            (let [e (Array.unsafe-nth entries j)]
+              (put-! &n (Pair.a e) (Pair.b e))))))
+        n))
+
+  (doc grow "Grow a map `m`. Should usually be handled automatically.")
+  (defn grow [m] (resize m (* @(n-buckets m) 2)))
+  (doc shrink "Shrink a map `m`. Should usually be handled automatically.")
+  (defn shrink [m] (resize m (/ @(n-buckets m) 2)))
+
+  (doc put "Put a value v into map m, using the key k.")
+  (defn put [m k v]
+    (if (> (/ (* @(len &m) 100) @(n-buckets &m)) min-load)
+      (put (grow &m) k v)
+      (let [idx (Int.positive-mod (hash k) @(n-buckets &m))]
+        (update-len
+          (update-buckets m &(fn [b]
+                               (let [n (Array.unsafe-nth &b idx)]
+                                 (Array.aset b idx (Bucket.put @n k v)))))
+           &Int.inc))))
+
+  (doc put! "Put a value v into map m, using the key k, in place.")
+  (defn put! [m k v]
+    (put-! m k v))
 
   (doc get-with-default "Get the value for the key k from map m. If it isn’t found, the default is returned.")
   (defn get-with-default [m k default-value]
@@ -240,14 +268,11 @@
 
   (doc length "Get the length of the map m.")
   (defn length [m]
-    (let-do [c 0]
-      (for [i 0 @(n-buckets m)]
-        (set! c (+ c (Array.length (Bucket.entries (Array.unsafe-nth (buckets m) i))))))
-      c))
+    @(len m))
 
   (doc empty? "Check whether the map m is empty.")
   (defn empty? [m]
-    (= (length m) 0))
+    (= @(len m) 0))
 
   (doc contains? "Check whether the map m contains the key k.")
   (defn contains? [m k]
@@ -256,10 +281,14 @@
 
   (doc remove "Remove the value under the key k from the map m.")
   (defn remove [m k]
-    (let [idx (Int.positive-mod (hash k) @(n-buckets &m))]
-      (update-buckets m &(fn [b]
-                           (let [n (Array.unsafe-nth &b idx)]
-                             (Array.aset b idx (Bucket.shrink @n k)))))))
+    (if (> (/ (* @(len &m) 100) @(n-buckets &m)) min-load)
+      (remove (shrink &m) k)
+      (let [idx (Int.positive-mod (hash k) @(n-buckets &m))]
+        (update-len
+          (update-buckets m &(fn [b]
+                               (let [n (Array.unsafe-nth &b idx)]
+                                 (Array.aset b idx (Bucket.shrink @n k)))))
+          &Int.dec))))
 
   (doc all? "Do all key-value pairs pass the given predicate (of two arguments)?")
   (defn all? [pred m]
