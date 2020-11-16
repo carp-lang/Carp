@@ -20,6 +20,7 @@ module Types ( TypeMappings
              , consPath
              , Kind
              , tyToKind
+             , notUnit
              ) where
 
 import qualified Data.Map as Map
@@ -260,3 +261,7 @@ isFullyGenericType _ = False
 -- | The type of environments sent to Lambdas (used in emitted C code)
 lambdaEnvTy :: Ty
 lambdaEnvTy = StructTy (ConcreteNameTy "LambdaEnv") []
+
+notUnit :: Ty -> Bool
+notUnit UnitTy = False
+notUnit _ = True
