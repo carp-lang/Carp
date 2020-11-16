@@ -315,7 +315,7 @@ tokensForInit allocationMode typeName membersXObjs =
                        , assignments membersXObjs
                        , "    return instance;"
                        , "}"]
-  where assignments [] =  "    instance = {0};"
+  where assignments [] = "    instance.__dummy = 0;"
         assignments xobjs = go $ unitless
           where go [] = ""
                 go xobjs = joinLines $ memberAssignment allocationMode . fst <$> xobjs
