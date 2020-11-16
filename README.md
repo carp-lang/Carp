@@ -1,7 +1,7 @@
 # Carp
 
 [![Join the chat at https://gitter.im/eriksvedang/Carp](https://badges.gitter.im/eriksvedang/Carp.svg)](https://gitter.im/eriksvedang/Carp?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge&utm_content=badge)
-[![CI](https://github.com/carp-lang/Carp/workflows/CI/badge.svg)](https://github.com/carp-lang/Carp/actions?query=workflow%3ACI)
+[![Linux CI](https://github.com/carp-lang/Carp/workflows/Linux%20CI/badge.svg)](https://github.com/carp-lang/Carp/actions?query=workflow%3A%22Linux+CI%22)
 [![MacOS CI](https://github.com/carp-lang/Carp/workflows/MacOS%20CI/badge.svg)](https://github.com/carp-lang/Carp/actions?query=workflow%3A"MacOS+CI")
 [![Windows CI](https://github.com/carp-lang/Carp/workflows/Windows%20CI/badge.svg)](https://github.com/carp-lang/Carp/actions?query=workflow%3A"Windows+CI")
 
@@ -9,7 +9,7 @@
 
 <i>WARNING! This is a research project and a lot of information here might become outdated and misleading without any explanation. Don't use it for anything important just yet!</i>
 
-<i>[Version 0.3.0](https://github.com/carp-lang/Carp/releases/tag/v0.3.0) of the language is out!</i>
+<i>[Version 0.4.0 of the language is out!](https://github.com/carp-lang/Carp/releases/)</i>
 
 ## About
 

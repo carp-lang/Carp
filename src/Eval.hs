@@ -1,6 +1,7 @@
 {-# LANGUAGE LambdaCase #-}
 module Eval where
 
+import Control.Applicative
 import Control.Concurrent (forkIO)
 import Control.Exception
 import Control.Monad.State
@@ -38,43 +39,67 @@ import qualified Meta
 
 import Debug.Trace
 
+data LookupPreference = PreferDynamic
+                      | PreferGlobal
+
+-- Prefer dynamic bindings
+evalDynamic ctx xobj = eval ctx xobj PreferDynamic
+
+-- Prefer global bindings
+evalStatic ctx xobj = eval ctx xobj PreferGlobal
+
 -- | Dynamic (REPL) evaluation of XObj:s (s-expressions)
-eval :: Context -> XObj -> IO (Context, Either EvalError XObj)
-eval ctx xobj@(XObj o i t) =
+-- Note: You might find a bunch of code of the following form both here and in
+-- macroExpand:
+--
+-- return (ctx, do res <- <something>
+--                 Right <something else with res>)
+--
+-- This might a little weird to you, and rightfully so. Through the nested do
+-- we ensure that an evaluation is forced where it needs to be, since we depend
+-- on the state here; eval is inherently stateful (because it carries around
+-- the compiler’s context, which might change after each macro expansion), and
+-- it gets real weird with laziness. (Note to the note: this code is mostly a
+-- remnant of us using StateT, and might not be necessary anymore since we
+-- switched to more explicit state-passing.)
+eval :: Context -> XObj -> LookupPreference -> IO (Context, Either EvalError XObj)
+eval ctx xobj@(XObj o i t) preference =
   case o of
     Lst body   -> eval' body
     Sym path@(SymPath p n) _ ->
-      case lookupInEnv (SymPath ("Dynamic" : p) n) (contextGlobalEnv ctx) of
-        Just (_, Binder _ found) -> return (ctx, Right (resolveDef found))
-        Nothing ->
-          if null p
-          then
-            case tryInternalLookup path of
-              Just v -> return v
-              Nothing -> tryLookup path
-          else tryLookup path
-      where tryInternalLookup path =
-              case contextInternalEnv ctx of
-                Nothing -> Nothing
-                Just e  ->
-                  case lookupInEnv path e of
-                    Just (_ , Binder _ found) -> Just (ctx, Right (resolveDef found))
-                    Nothing -> Nothing
+      return
+      $ fromMaybe (evalError ctx ("Can't find symbol '" ++ show n ++ "'") i) -- all else failed, error.
+      -- Certain contexts prefer looking up bindings in the dynamic environment (e.g. defdyanmic) while others
+      -- prefer the static global environment.
+      ((case preference of
+          PreferDynamic -> tryDynamicLookup
+          PreferGlobal -> (tryLookup path <|> tryDynamicLookup))
+      <|> (if null p then tryInternalLookup path else tryLookup path))
+      where tryDynamicLookup =
+              (lookupInEnv (SymPath ("Dynamic" : p) n) (contextGlobalEnv ctx)
+              >>= \(_, Binder _ found) -> return (ctx, Right (resolveDef found)))
+            tryInternalLookup path =
+              (contextInternalEnv ctx
+              >>= lookupInEnv path
+              >>= \(_ , Binder _ found) -> return (ctx, Right (resolveDef found)))
+              <|> tryLookup path -- fallback
             tryLookup path =
-                case lookupInEnv path (contextGlobalEnv ctx) of
-                  Just (_, Binder meta found) ->
-                    if metaIsTrue meta "private"
-                    then return (evalError ctx ("The binding: " ++ show (getPath found) ++ " is private; it may only be used within the module that defines it.") i)
-                    else return (ctx, Right (resolveDef found))
-                  Nothing ->
-                    case lookupInEnv path (getTypeEnv (contextTypeEnv ctx)) of
-                      Just (_, Binder _ found) -> return (ctx, Right (resolveDef found))
-                      Nothing ->
-                        return (evalError ctx ("Can't find symbol '" ++ show path ++ "'") i)
+                (lookupInEnv path (contextGlobalEnv ctx)
+                  >>= \(_, Binder meta found) -> checkPrivate meta found)
+                <|> (lookupInEnv path (getTypeEnv (contextTypeEnv ctx))
+                    >>= \(_, Binder _ found) -> return (ctx, Right (resolveDef found)))
+            checkPrivate meta found =
+              if metaIsTrue meta "private"
+              then return (evalError ctx ("The binding: " ++ show (getPath found) ++ " is private; it may only be used within the module that defines it.") i)
+              else return (ctx, Right (resolveDef found))
     Arr objs  -> do
       (newCtx, evaled) <- foldlM successiveEval (ctx, Right []) objs
       return (newCtx, do ok <- evaled
                          Right (XObj (Arr ok) i t))
+    StaticArr objs  -> do
+      (newCtx, evaled) <- foldlM successiveEval (ctx, Right []) objs
+      return (newCtx, do ok <- evaled
+                         Right (XObj (StaticArr ok) i t))
     _        -> return (ctx, Right xobj)
   where
     resolveDef (XObj (Lst [XObj DefDynamic _ _, _, value]) _ _) = value
@@ -83,11 +108,11 @@ eval ctx xobj@(XObj o i t) =
       case form of
 
        [XObj If _ _, mcond, mtrue, mfalse] -> do
-         (newCtx, evd) <- eval ctx mcond
+         (newCtx, evd) <- eval ctx mcond preference
          case evd of
            Right cond ->
              case obj cond of
-               Bol b -> eval newCtx (if b then mtrue else mfalse)
+               Bol b -> eval newCtx (if b then mtrue else mfalse) preference
                _     ->
                  return (evalError ctx
                           ("This `if` condition contains the non-boolean value `" ++
@@ -131,7 +156,7 @@ eval ctx xobj@(XObj o i t) =
             pretty name ++ "`") (info xobj))
 
        [the@(XObj The _ _), ty, value] ->
-         do (newCtx, evaledValue) <- expandAll eval ctx value -- TODO: Why expand all here?
+         do (newCtx, evaledValue) <- expandAll evalDynamic ctx value -- TODO: Why expand all here?
             return (newCtx, do okValue <- evaledValue
                                Right (XObj (Lst [the, ty, okValue]) i t))
 
@@ -157,7 +182,7 @@ eval ctx xobj@(XObj o i t) =
                 case eitherCtx of
                    Left err -> return (ctx, Left err)
                    Right newCtx -> do
-                          (finalCtx, evaledBody) <- eval newCtx body
+                          (finalCtx, evaledBody) <- eval newCtx body preference
                           let Just e = contextInternalEnv finalCtx
                           return (finalCtx{contextInternalEnv=envParent e},
                                   do okBody <- evaledBody
@@ -168,7 +193,7 @@ eval ctx xobj@(XObj o i t) =
                  \case
                    err@(Left _) -> return err
                    Right ctx -> do
-                     (newCtx, res) <- eval ctx x
+                     (newCtx, res) <- eval ctx x preference
                      case res of
                        Right okX -> do
                         let binder = Binder emptyMeta okX
@@ -212,13 +237,13 @@ eval ctx xobj@(XObj o i t) =
               Right xobj -> macroExpand ctx' xobj
               Left err -> return (ctx, res)
 
-       XObj (Lst [XObj (Command callback) _ _, _]) _ _:args ->
+       XObj (Lst [XObj (Command callback) _ _, _, _]) _ _:args ->
          do (newCtx, evaledArgs) <- foldlM successiveEval (ctx, Right []) args
             case evaledArgs of
               Right okArgs -> getCommand callback ctx okArgs
               Left err -> return (ctx, Left err)
 
-       x@(XObj (Lst [XObj (Primitive prim) _ _, _]) _ _):args -> (getPrimitive prim) x ctx args
+       x@(XObj (Lst [XObj (Primitive prim) _ _, _, _]) _ _):args -> (getPrimitive prim) x ctx args
 
        XObj (Lst (XObj (Defn _) _ _:_)) _ _:_ -> return (ctx, Left (HasStaticCall xobj i))
        XObj (Lst (XObj (Interface _ _) _ _:_)) _ _:_ -> return (ctx, Left (HasStaticCall xobj i))
@@ -229,18 +254,18 @@ eval ctx xobj@(XObj o i t) =
        [XObj Ref _ _, _] -> return (ctx, Left (HasStaticCall xobj i))
 
        l@(XObj (Lst _) i t):args -> do
-         (newCtx, f) <- eval ctx l
+         (newCtx, f) <- eval ctx l preference
          case f of
             Right fun -> do
-             (newCtx', res) <- eval (pushFrame newCtx xobj) (XObj (Lst (fun:args)) i t)
+             (newCtx', res) <- eval (pushFrame newCtx xobj) (XObj (Lst (fun:args)) i t) preference
              return (popFrame newCtx', res)
             x -> return (newCtx, x)
 
        x@(XObj sym@(Sym s _) i _):args -> do
-         (newCtx, f) <- eval ctx x
+         (newCtx, f) <- eval ctx x preference
          case f of
            Right fun -> do
-             (newCtx', res) <- eval (pushFrame ctx xobj) (XObj (Lst (fun:args)) i t)
+             (newCtx', res) <- eval (pushFrame ctx xobj) (XObj (Lst (fun:args)) i t) preference
              return (popFrame newCtx', res)
            Left err -> return (newCtx, Left err)
 
@@ -255,7 +280,7 @@ eval ctx xobj@(XObj o i t) =
         where successiveEval (ctx, acc) x =
                case acc of
                  err@(Left _) -> return (ctx, err)
-                 Right _ -> eval ctx x
+                 Right _ -> eval ctx x preference
        [XObj While _ _, cond, body] ->
          specialCommandWhile ctx cond body
        [] -> return (ctx, dynamicNil)
@@ -281,7 +306,7 @@ eval ctx xobj@(XObj o i t) =
      case acc of
        Left _ -> return (ctx, acc)
        Right l -> do
-        (newCtx, evald) <- eval ctx x
+        (newCtx, evald) <- eval ctx x preference
         case evald of
           Right res -> return (newCtx, Right (l ++ [res]))
           Left err -> return (newCtx, Left err)
@@ -293,12 +318,16 @@ macroExpand ctx xobj =
       (newCtx, expanded) <- foldlM successiveExpand (ctx, Right []) objs
       return (newCtx, do ok <- expanded
                          Right (XObj (Arr ok) i t))
-    XObj (Lst [XObj (Lst (XObj Macro _ _:_)) _ _]) _ _ -> eval ctx xobj
+    XObj (StaticArr objs) i t -> do
+      (newCtx, expanded) <- foldlM successiveExpand (ctx, Right []) objs
+      return (newCtx, do ok <- expanded
+                         Right (XObj (StaticArr ok) i t))
+    XObj (Lst [XObj (Lst (XObj Macro _ _:_)) _ _]) _ _ -> evalDynamic ctx xobj
     XObj (Lst (x@(XObj sym@(Sym s _) _ _):args)) i t -> do
-      (newCtx, f) <- eval ctx x
+      (newCtx, f) <- evalDynamic ctx x
       case f of
         Right m@(XObj (Lst (XObj Macro _ _:_)) _ _) -> do
-          (newCtx', res) <- eval ctx (XObj (Lst (m:args)) i t)
+          (newCtx', res) <- evalDynamic ctx (XObj (Lst (m:args)) i t)
           return (newCtx', res)
         _ -> do
           (newCtx, expanded) <- foldlM successiveExpand (ctx, Right []) args
@@ -340,7 +369,7 @@ apply ctx@Context{contextInternalEnv=internal} body params args =
                              else extendEnv insideEnv'
                                    (head rest)
                                    (XObj (Lst (drop n args)) Nothing Nothing)
-          (c, r) <- eval (ctx {contextInternalEnv=Just insideEnv''}) body
+          (c, r) <- evalDynamic (ctx {contextInternalEnv=Just insideEnv''}) body
           return (c{contextInternalEnv=internal}, r)
 
 -- | Parses a string and then converts the resulting forms to commands, which are evaluated in order.
@@ -389,7 +418,9 @@ executeCommand ctx s@(XObj (Sym _ _) _ _) =
 executeCommand ctx@(Context env _ _ _ _ _ _ _) xobj =
   do when (isJust (envModuleName env)) $
        error ("Global env module name is " ++ fromJust (envModuleName env) ++ " (should be Nothing).")
-     (newCtx, result) <- eval ctx xobj
+     -- The s-expression command is a special case that prefers global/static bindings over dynamic bindings
+     -- when given a naked binding (no path) as an argument; (s-expr inc)
+     (newCtx, result) <- if (xobjIsSexp xobj) then evalStatic ctx xobj else evalDynamic ctx xobj
      case result of
        Left e@(EvalError _ _ _ _) -> do
          reportExecutionError newCtx (show e)
@@ -419,6 +450,8 @@ executeCommand ctx@(Context env _ _ _ _ _ _ _) xobj =
                     , XObj (Lst [XObj (Sym (SymPath [] "run") Symbol) (Just dummyInfo) Nothing])
                            (Just dummyInfo) Nothing
                     ]) (Just dummyInfo) Nothing
+        xobjIsSexp (XObj (Lst (XObj (Sym (SymPath [] "s-expr") Symbol) _ _:_)) _ _) = True
+        xobjIsSexp _ = False
 
 reportExecutionError :: Context -> String -> IO ()
 reportExecutionError ctx errorMessage =
@@ -474,13 +507,13 @@ specialCommandDefine ctx xobj =
 
 specialCommandWhile :: Context -> XObj -> XObj -> IO (Context, Either EvalError XObj)
 specialCommandWhile ctx cond body = do
-  (newCtx, evd) <- eval ctx cond
+  (newCtx, evd) <- evalDynamic ctx cond
   case evd of
     Right c ->
       case obj c of
         Bol b -> if b
           then do
-            (newCtx, _) <- eval newCtx body
+            (newCtx, _) <- evalDynamic newCtx body
             specialCommandWhile newCtx cond body
           else
             return (newCtx, dynamicNil)
@@ -518,7 +551,7 @@ annotateWithinContext qualifyDefn ctx xobj = do
      case sig of
        Left err -> return (ctx, Left err)
        Right okSig -> do
-         (ctxAfterExpansion, expansionResult) <- expandAll eval ctx xobj
+         (ctxAfterExpansion, expansionResult) <- expandAll evalDynamic ctx xobj
          case expansionResult of
            Left err -> return (evalError ctx (show err) Nothing)
            Right expanded ->
@@ -572,7 +605,7 @@ primitiveDefmodule xobj ctx@(Context env i typeEnv pathStrings proj lastInput ex
              case result of
                Left err -> return (newCtx, Left err)
                Right e -> do
-                 (newCtx, result) <- eval newCtx e
+                 (newCtx, result) <- evalDynamic newCtx e
                  case result of
                    Left err -> return (newCtx, Left err)
                    Right _ -> return (newCtx, r)
@@ -777,13 +810,7 @@ commandReload ctx args = do
 
 -- | Command for expanding a form and its macros.
 commandExpand :: CommandCallback
-commandExpand ctx [xobj] = do
-  (newCtx, result) <- macroExpand ctx xobj
-  case result of
-    Left e -> return (newCtx, Left e)
-    Right expanded ->
-      liftIO $ do putStrLnWithColor Yellow (pretty expanded)
-                  return (newCtx, dynamicNil)
+commandExpand ctx [xobj] = macroExpand ctx xobj
 
 -- | This function will show the resulting C code from an expression.
 -- | i.e. (Int.+ 2 3) => "_0 = 2 + 3"
@@ -791,7 +818,7 @@ commandC :: CommandCallback
 commandC ctx [xobj] = do
   let globalEnv = contextGlobalEnv ctx
       typeEnv = contextTypeEnv ctx
-  (newCtx, result) <- expandAll eval ctx xobj
+  (newCtx, result) <- expandAll evalDynamic ctx xobj
   case result of
     Left err -> return (newCtx, Left err)
     Right expanded ->
@@ -833,7 +860,7 @@ buildMainFunction xobj =
 
 primitiveDefdynamic :: Primitive
 primitiveDefdynamic _ ctx [XObj (Sym (SymPath [] name) _) _ _, value] = do
-  (newCtx, result) <- eval ctx value
+  (newCtx, result) <- evalDynamic ctx value
   case result of
     Left err -> return (newCtx, Left err)
     Right evaledBody ->
@@ -843,7 +870,7 @@ primitiveDefdynamic _ ctx [notName, body] =
 
 specialCommandSet :: Context -> [XObj] -> IO (Context, Either EvalError XObj)
 specialCommandSet ctx [x@(XObj (Sym path@(SymPath mod n) _) _ _), value] = do
-  (newCtx, result) <- eval ctx value
+  (newCtx, result) <- evalDynamic ctx value
   case result of
     Left err -> return (newCtx, Left err)
     Right evald -> do
@@ -910,14 +937,18 @@ setStaticOrDynamicVar path env binder value =
 primitiveEval :: Primitive
 primitiveEval _ ctx [val] = do
   -- primitives don’t evaluate their arguments, so this needs to double-evaluate
-  (newCtx, arg) <- eval ctx val
+  (newCtx, arg) <- evalDynamic ctx val
   case arg of
     Left err -> return (newCtx, Left err)
     Right evald -> do
       (newCtx', expanded) <- macroExpand ctx evald
       case expanded of
         Left err -> return (newCtx', Left err)
-        Right ok -> eval newCtx' ok
+        Right ok -> do
+          (finalCtx, res) <- evalDynamic newCtx' ok
+          case res of
+            Left (HasStaticCall x i) -> return (evalError ctx ("Unexpected static call in " ++ pretty x) i)
+            _ -> return (finalCtx, res)
 
 dynamicOrMacro :: Context -> Obj -> Ty -> String -> XObj -> XObj -> IO (Context, Either EvalError XObj)
 dynamicOrMacro ctx pat ty name params body = do
@@ -941,13 +972,13 @@ primitiveDefmacro _ ctx [notName, params, body] =
 
 primitiveAnd :: Primitive
 primitiveAnd _ ctx [a, b] = do
- (newCtx, evaledA) <- eval ctx a
+ (newCtx, evaledA) <- evalDynamic ctx a
  case evaledA of
    Left e -> return (ctx, Left e)
    Right (XObj (Bol ab) _ _) ->
      if ab
        then do
-         (newCtx', evaledB) <- eval newCtx b
+         (newCtx', evaledB) <- evalDynamic newCtx b
          case evaledB of
            Left e -> return (newCtx, Left e)
            Right (XObj (Bol bb) _ _) ->
@@ -958,14 +989,14 @@ primitiveAnd _ ctx [a, b] = do
 
 primitiveOr :: Primitive
 primitiveOr _ ctx [a, b] = do
- (newCtx, evaledA) <- eval ctx a
+ (newCtx, evaledA) <- evalDynamic ctx a
  case evaledA of
    Left e -> return (ctx, Left e)
    Right (XObj (Bol ab) _ _) ->
      if ab
        then return (newCtx, Right trueXObj)
        else do
-         (newCtx', evaledB) <- eval newCtx b
+         (newCtx', evaledB) <- evalDynamic newCtx b
          case evaledB of
            Left e -> return (newCtx, Left e)
            Right (XObj (Bol bb) _ _) ->

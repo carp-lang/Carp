@@ -14,20 +14,28 @@ jobs:
       - name: Check out
         uses: actions/checkout@v2
 
+      # - uses: actions/cache@v1
+      #   name: Cache ~/.stack
+      #   with:
+      #     path: ~/.stack
+      #     key: ${{ runner.os }}-stack-${{ github.sha }}
+      #     restore-keys: ${{ runner.os }}-stack-
+
+      - name: Install SDL dependency (for SDL tests)
+        run: |
+          brew install sdl2       \
+                       sdl2_gfx   \
+                       sdl2_image \
+                       sdl2_mixer \
+                       sdl2_ttf
+
       - uses: actions/setup-haskell@v1.1
         with:
-          stack-version: 'latest'
+          ghc-version: '8.8.2'
+          stack-version: '2.3.1'
           enable-stack: true
-
-      - run:   echo ::set-env name=GITHUB_SHA::$GITHUB_SHA
-        shell: bash
-
-      - uses: actions/cache@v1
-        name: Cache ~/.stack
-        with:
-          path: ~/.stack
-          key: ${{ runner.os }}-stack-${{ env.GITHUB_SHA }}
-          restore-keys: ${{ runner.os }}-stack-
+          stack-no-global: true
+          stack-setup-ghc: true
 
       - name: Build
         run: stack build
@@ -36,4 +44,5 @@ jobs:
         run: stack test
 
       - name: Run Carp Tests
-        run: ./run_carp_tests.sh --no_sdl
+        run: ./scripts/run_carp_tests.sh
+

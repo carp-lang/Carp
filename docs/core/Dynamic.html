@@ -458,7 +458,14 @@
                     (all? f xs)
                 </pre>
                 <p class="doc">
-                    
+                    <p>Checks whether all of the elements in <code>xs</code> conform to the predicate
+function <code>f</code>.</p>
+<pre><code>(all? (fn [x] (&lt; 1 x)) '(2 3 4))
+=&gt; true
+(all? (fn [x] (&lt; 1 x)) '(-1 0 1))
+=&gt; false
+</code></pre>
+
                 </p>
             </div>
             <div class="binder">
@@ -477,11 +484,12 @@
                     (any? f xs)
                 </pre>
                 <p class="doc">
-                    <p>checks whether all of the elements in <code>xs</code> conform to the predicate
+                    <p>Checks whether any of the elements in <code>xs</code> conforms to the predicate
 function <code>f</code>.</p>
-<p>Example:</p>
-<pre><code>(all? (fn [x] (&lt; 1 x)) '(2 3 4)) ; =&gt; true
-(all? (fn [x] (&lt; 1 x)) '(-1 0 1)) ; =&gt; false
+<pre><code>(any? (fn [x] (= 'a x)) '(a b c))
+=&gt; true
+(any? (fn [x] (= 'a x)) '(e f g))
+=&gt; false
 </code></pre>
 
                 </p>
@@ -572,29 +580,6 @@ in the list as an argument to the function.</p>
                     <p>checks whether the arguments is an array.</p>
 <p>Example Usage:</p>
 <pre><code>(array? []) ; =&gt; true
-</code></pre>
-
-                </p>
-            </div>
-            <div class="binder">
-                <a class="anchor" href="#bit-width">
-                    <h3 id="bit-width">
-                        bit-width
-                    </h3>
-                </a>
-                <div class="description">
-                    command
-                </div>
-                <p class="sig">
-                    Dynamic
-                </p>
-                <span>
-                    
-                </span>
-                <p class="doc">
-                    <p>gets the bit width of the platform.</p>
-<p>Example Usage:</p>
-<pre><code>(bit-width) ; =&gt; your host machine’s bit width, e.g. 32 or 64
 </code></pre>
 
                 </p>
@@ -1331,7 +1316,6 @@ result.</p>
 <p>If you only need to compose functions that take a single argument (unary arity)
 see <code>comp</code>. Comp also generates the form that corresponds to the composition,
 compose contrarily evaluates 'eagerly' and returns a computed symbol.</p>
-<p>For exmaple:</p>
 <pre><code>;; a silly composition
 ((compose empty take) 3 [1 2 3 4 5])
 ;; =&gt; []
@@ -1408,11 +1392,10 @@ compose contrarily evaluates 'eagerly' and returns a computed symbol.</p>
                     (curry f x)
                 </pre>
                 <p class="doc">
-                    <p>Returns a curried function accepting a single argument, that applies f to x
+                    <p>Returns a curried function accepting a single argument, that applies <code>f</code> to <code>x</code>
 and then to the following argument.</p>
-<p>For example,</p>
 <pre><code>(map (curry Symbol.prefix 'Foo) '(bar baz))
-;; =&gt; (Foo.bar Foo.baz)
+=&gt; (Foo.bar Foo.baz)
 </code></pre>
 
                 </p>
@@ -1433,17 +1416,16 @@ and then to the following argument.</p>
                     (curry* f :rest args)
                 </pre>
                 <p class="doc">
-                    <p>Curry functions of any airity.</p>
-<p>For example:</p>
+                    <p>Curry functions of any arity.</p>
 <pre><code>(map (curry* Dynamic.zip + '(1 2 3)) '((4 5) (6)))
-;; =&gt; (((+ 1 4) (+ 2 5)) ((+ 1 6)))
+=&gt; (((+ 1 4) (+ 2 5)) ((+ 1 6)))
 
-((curry Dynamic.zip cons '(1 2 3)) '((4 5) (6)))
-;; =&gt; ((cons 1 (4 5)) (cons (2 (6))))
+((curry* Dynamic.zip cons '(1 2 3)) '((4 5) (6)))
+=&gt; ((cons 1 (4 5)) (cons (2 (6))))
 
 (defndynamic add-em-up [x y z] (+ (+ x y) z))
 (map (curry* add-em-up 1 2) '(1 2 3))
-;; =&gt; (4 5 6)
+=&gt; (4 5 6)
 </code></pre>
 
                 </p>
@@ -1730,11 +1712,10 @@ and then to the following argument.</p>
                 </pre>
                 <p class="doc">
                     <p>Returns the empty form of <code>xs</code>.</p>
-<p>For example:</p>
 <pre><code>(empty '(1 2 3 4))
-;; =&gt; ()
+=&gt; ()
 (empty '[1 2 3 4])
-;; =&gt; []
+=&gt; []
 </code></pre>
 
                 </p>
@@ -1907,9 +1888,8 @@ and then to the following argument.</p>
                 <p class="doc">
                     <p>Returns a list containing only the elements of <code>xs</code> that satisify
 predicate <code>p</code>.</p>
-<p>For example:</p>
 <pre><code>(filter (fn [x] (= 'a x)) '(a b a b a b a b))
-;; =&gt; (a a a a)
+=&gt; (a a a a)
 </code></pre>
 
                 </p>
@@ -1930,10 +1910,9 @@ predicate <code>p</code>.</p>
                     (flatten l)
                 </pre>
                 <p class="doc">
-                    <p>flattens a list recursively.</p>
-<p>For example:</p>
+                    <p>Flattens a list recursively.</p>
 <pre><code>(flatten '(1 2 (3 (4))))
-; =&gt; '(1 2 3 4)
+=&gt; '(1 2 3 4)
 </code></pre>
 
                 </p>
@@ -1955,9 +1934,8 @@ predicate <code>p</code>.</p>
                 </pre>
                 <p class="doc">
                     <p>Flips the arguments of a function <code>f</code>.</p>
-<p>For example,</p>
 <pre><code>((flip Symbol.prefix) 'Bar 'Foo)
-=&gt; ;; (Foo.Bar)
+=&gt; (Foo.Bar)
 </code></pre>
 
                 </p>
@@ -1981,6 +1959,75 @@ predicate <code>p</code>.</p>
                     <p>prints help.</p>
 <p>Example Usage:</p>
 <pre><code>(help)
+</code></pre>
+
+                </p>
+            </div>
+            <div class="binder">
+                <a class="anchor" href="#host-arch">
+                    <h3 id="host-arch">
+                        host-arch
+                    </h3>
+                </a>
+                <div class="description">
+                    command
+                </div>
+                <p class="sig">
+                    Dynamic
+                </p>
+                <span>
+                    
+                </span>
+                <p class="doc">
+                    <p>prints the host architecture (as returned by the Haskell function <code>System.Info.arch</code>).</p>
+<p>Example Usage:</p>
+<pre><code>(host-arch)
+</code></pre>
+
+                </p>
+            </div>
+            <div class="binder">
+                <a class="anchor" href="#host-bit-width">
+                    <h3 id="host-bit-width">
+                        host-bit-width
+                    </h3>
+                </a>
+                <div class="description">
+                    command
+                </div>
+                <p class="sig">
+                    Dynamic
+                </p>
+                <span>
+                    
+                </span>
+                <p class="doc">
+                    <p>gets the bit width of the host platform.</p>
+<p>Example Usage:</p>
+<pre><code>(host-bit-width) ; =&gt; your host machine’s bit width, e.g. 32 or 64
+</code></pre>
+
+                </p>
+            </div>
+            <div class="binder">
+                <a class="anchor" href="#host-os">
+                    <h3 id="host-os">
+                        host-os
+                    </h3>
+                </a>
+                <div class="description">
+                    command
+                </div>
+                <p class="sig">
+                    Dynamic
+                </p>
+                <span>
+                    
+                </span>
+                <p class="doc">
+                    <p>prints the host operating system (as returned by the Haskell function <code>System.Info.os</code>).</p>
+<p>Example Usage:</p>
+<pre><code>(host-os)
 </code></pre>
 
                 </p>
@@ -2046,6 +2093,29 @@ predicate <code>p</code>.</p>
                     <p>prints all information associated with a symbol.</p>
 <p>Example Usage:</p>
 <pre><code>(info mysymbol)
+</code></pre>
+
+                </p>
+            </div>
+            <div class="binder">
+                <a class="anchor" href="#kind">
+                    <h3 id="kind">
+                        kind
+                    </h3>
+                </a>
+                <div class="description">
+                    primitive
+                </div>
+                <p class="sig">
+                    Dynamic
+                </p>
+                <span>
+                    
+                </span>
+                <p class="doc">
+                    <p>prints the kind of a symbol.</p>
+<p>Example Usage:</p>
+<pre><code>(kind mysymbol)
 </code></pre>
 
                 </p>
@@ -2140,25 +2210,6 @@ predicate <code>p</code>.</p>
 <pre><code>(list 1 2 3) ; =&gt; (1 2 3)
 </code></pre>
 
-                </p>
-            </div>
-            <div class="binder">
-                <a class="anchor" href="#list-to-array-internal">
-                    <h3 id="list-to-array-internal">
-                        list-to-array-internal
-                    </h3>
-                </a>
-                <div class="description">
-                    dynamic
-                </div>
-                <p class="sig">
-                    Dynamic
-                </p>
-                <pre class="args">
-                    (list-to-array-internal xs acc)
-                </pre>
-                <p class="doc">
-                    
                 </p>
             </div>
             <div class="binder">
@@ -2295,8 +2346,7 @@ predicate <code>p</code>.</p>
                     <p>Applies a function <code>f</code> to each element in the list or array <code>xs</code> and
 returns a list dynamic data literal containing the result of the function
 applications.</p>
-<p>For example:</p>
-<pre><code class="language-clojure">'(map symbol? '(a b c))
+<pre><code>'(map symbol? '(a b c))
 =&gt; (true true true)
 '(map (curry + 1) '(1 2 3))
 =&gt; (2 3 4)
@@ -2452,29 +2502,6 @@ applications.</p>
                 </pre>
                 <p class="doc">
                     
-                </p>
-            </div>
-            <div class="binder">
-                <a class="anchor" href="#os">
-                    <h3 id="os">
-                        os
-                    </h3>
-                </a>
-                <div class="description">
-                    command
-                </div>
-                <p class="sig">
-                    Dynamic
-                </p>
-                <span>
-                    
-                </span>
-                <p class="doc">
-                    <p>prints the operating system (as returned by the Haskell function <code>System.Info.os</code>).</p>
-<p>Example Usage:</p>
-<pre><code>(os)
-</code></pre>
-
                 </p>
             </div>
             <div class="binder">
@@ -2875,10 +2902,9 @@ value through successive applications of <code>f</code>.</p>
                     (take n xs)
                 </pre>
                 <p class="doc">
-                    <p>Returns a list containing the first <code>n</code> eleements of a list.</p>
-<p>For example:</p>
+                    <p>Returns a list containing the first <code>n</code> elements of a list.</p>
 <pre><code>(take 3 '(1 2 3 4 5))
-;; =&gt; (1 2 3)
+=&gt; (1 2 3)
 </code></pre>
 
                 </p>
@@ -2925,9 +2951,8 @@ value through successive applications of <code>f</code>.</p>
                     <p>Applies <code>f</code> to a starting value <code>x</code>, then generates a sequence of values
 by successively applying <code>f</code> to the result <code>lim-1</code> times.
 Collects results in the structure given by <code>acc</code>.</p>
-<p>For example:</p>
 <pre><code>(unreduce (curry + 1) 0 10 (list))
-;; =&gt; (1 2 3 4 5 6 7 8 9 10)
+=&gt; (1 2 3 4 5 6 7 8 9 10)
 </code></pre>
 
                 </p>
@@ -2995,22 +3020,21 @@ Collects results in the structure given by <code>acc</code>.</p>
                 </pre>
                 <p class="doc">
                     <p>Returns the <em>form</em> that results from applying  a function <code>f</code> to each of
-the values supplied in <code>forms</code>.</p>
-<p>If the members of a single form are exhuasted, the result of the
+the values supplied in <code>forms</code>.
+If the members of a single form are exhuasted, the result of the
 applications thus far is returned, and any remaining members in the other
 forms are ignored.</p>
-<p>For example,</p>
 <pre><code>(zip + '(1 2 3) '(4 5 6))
-;; =&gt; ((+ 1 4) (+ 2 5) (+ 3 6))
+=&gt; ((+ 1 4) (+ 2 5) (+ 3 6))
 </code></pre>
 <p>It's important to note that zip operates on forms, and that the form
 returned by zip may not be evaluable by itself. For instance, to actually
 transform the result in the example above into something Carp can
 evaluate, we need to wrap each member of the list in a <code>do</code>:</p>
 <pre><code>(append (list 'do) (zip + '(1 2 3) '(4 5 6)))
-;; =&gt; (do (+ 1 4) (+ 2 5) (+ 3 6))
+=&gt; (do (+ 1 4) (+ 2 5) (+ 3 6))
 (eval (append (list 'do) (zip + '(1 2 3) '(4 5 6))))
-;; =&gt; 9 ;; do returns the value of the last form in its body
+=&gt; 9 ;; do returns the value of the last form in its body
 </code></pre>
 
                 </p>

@@ -6,9 +6,9 @@ sources:
   - https://github.com/carp-lang/Carp
 tasks:
   - carp-build: |
-     cd Carp 
+     cd Carp
      stack build
      stack test
   - carp-test: |
      cd Carp
-     bash ./run_carp_tests.sh --no_sdl
+     scripts/run_carp_tests.sh --no_sdl

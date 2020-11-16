@@ -63,7 +63,7 @@
   (defn reset [state]
     (State.set-failed (State.set-passed state 0) 0))
 
-  (not-on-windows
+  (posix-only
     (hidden run-child)
     (defn run-child [x]
       (let [pid (System.fork)

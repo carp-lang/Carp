@@ -11,6 +11,7 @@ import Util
 import Types
 import Obj
 import Path
+import Reify
 
 data Args = Args { prefixToRemove :: String
                  , kebabCase :: Bool
@@ -159,7 +160,7 @@ createRegisterForm name tyXObj prefix kebab =
 toFnTypeXObj :: [(String, Int)] -> (String, Int) -> XObj
 toFnTypeXObj argTypeStrings returnTypeString =
   (XObj (Lst [ (XObj (Sym (SymPath [] "λ") Symbol) Nothing Nothing)
-             , (XObj (Arr (map (tyToXObj . cTypeToCarpType) argTypeStrings)) Nothing Nothing)
+             , (XObj (Arr (map (reify . cTypeToCarpType) argTypeStrings)) Nothing Nothing)
              , (XObj (Sym (SymPath [] (show (cTypeToCarpType returnTypeString))) Symbol) Nothing Nothing)
              ]) Nothing Nothing)
 

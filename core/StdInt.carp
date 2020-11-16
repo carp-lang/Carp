@@ -25,10 +25,8 @@
   (register bit-xor (λ [Int8 Int8] Int8))
   (register to-long (λ [Int8] Long))
   (register from-long (λ [Long] Int8))
-  (register str (λ [Int8] String))
   (register copy (Fn [&Int8] Int8))
 
-  (defn prn [a] (Int8.str a))
   (defn zero [] (from-long 0l))
 
   (register from-bytes (Fn [&(Array Byte)] (Array Int8)))
@@ -41,8 +39,6 @@
   (implements > Int8.>)
   (implements = Int8.=)
   (implements copy Int8.copy)
-  (implements str Int8.str)
-  (implements prn Int8.prn)
   (implements zero Int8.zero)
   (implements bit-shift-left Int8.bit-shift-left)
   (implements bit-shift-right Int8.bit-shift-right)
@@ -53,11 +49,7 @@
 )
 
 (defmodule Int8Extra
-  (defn prn [a] (Int8.prn @a))
-  (defn str [a] (Int8.str @a))
   (defn = [a b] (Int8.= @a @b))
-  (implements prn Int8Extra.prn)
-  (implements str Int8Extra.str)
   (implements = Int8Extra.=)
 )
 
@@ -77,10 +69,8 @@
   (register bit-xor (λ [Int16 Int16] Int16))
   (register to-long (λ [Int16] Long))
   (register from-long (λ [Long] Int16))
-  (register str (λ [Int16] String))
   (register copy (Fn [&Int16] Int16))
 
-  (defn prn [a] (Int16.str a))
   (defn zero [] (from-long 0l))
 
   (register from-bytes (Fn [&(Array Byte)] (Array Int16)))
@@ -93,8 +83,6 @@
   (implements > Int16.>)
   (implements = Int16.=)
   (implements copy Int16.copy)
-  (implements str Int16.str)
-  (implements prn Int16.prn)
   (implements zero Int16.zero)
   (implements bit-shift-left Int16.bit-shift-left)
   (implements bit-shift-right Int16.bit-shift-right)
@@ -105,11 +93,7 @@
 )
 
 (defmodule Int16Extra
-  (defn prn [a] (Int16.prn @a))
-  (defn str [a] (Int16.str @a))
   (defn = [a b] (Int16.= @a @b))
-  (implements prn Int16Extra.prn)
-  (implements str Int16Extra.str)
   (implements = Int16Extra.=)
 )
 
@@ -129,10 +113,8 @@
   (register bit-xor (λ [Int32 Int32] Int32))
   (register to-long (λ [Int32] Long))
   (register from-long (λ [Long] Int32))
-  (register str (λ [Int32] String))
   (register copy (Fn [&Int32] Int32))
 
-  (defn prn [a] (Int32.str a))
   (defn zero [] (from-long 0l))
 
   (register from-bytes (Fn [&(Array Byte)] (Array Int32)))
@@ -145,8 +127,6 @@
   (implements > Int32.>)
   (implements = Int32.=)
   (implements copy Int32.copy)
-  (implements str Int32.str)
-  (implements prn Int32.prn)
   (implements zero Int32.zero)
   (implements bit-shift-left Int32.bit-shift-left)
   (implements bit-shift-right Int32.bit-shift-right)
@@ -157,11 +137,7 @@
 )
 
 (defmodule Int32Extra
-  (defn prn [a] (Int32.prn @a))
-  (defn str [a] (Int32.str @a))
   (defn = [a b] (Int32.= @a @b))
-  (implements prn Int32Extra.prn)
-  (implements str Int32Extra.str)
   (implements = Int32Extra.=)
 )
 
@@ -181,10 +157,8 @@
   (register bit-xor (λ [Int64 Int64] Int64))
   (register to-long (λ [Int64] Long))
   (register from-long (λ [Long] Int64))
-  (register str (λ [Int64] String))
   (register copy (Fn [&Int64] Int64))
 
-  (defn prn [a] (Int64.str a))
   (defn zero [] (from-long 0l))
 
   (register from-bytes (Fn [&(Array Byte)] (Array Int64)))
@@ -197,8 +171,6 @@
   (implements > Int64.>)
   (implements = Int64.=)
   (implements copy Int64.copy)
-  (implements str Int64.str)
-  (implements prn Int64.prn)
   (implements zero Int64.zero)
   (implements bit-shift-left Int64.bit-shift-left)
   (implements bit-shift-right Int64.bit-shift-right)
@@ -209,11 +181,7 @@
 )
 
 (defmodule Int64Extra
-  (defn prn [a] (Int64.prn @a))
-  (defn str [a] (Int64.str @a))
   (defn = [a b] (Int64.= @a @b))
-  (implements prn Int64Extra.prn)
-  (implements str Int64Extra.str)
   (implements = Int64Extra.=)
 )
 
@@ -233,10 +201,8 @@
   (register bit-xor (λ [Uint8 Uint8] Uint8))
   (register to-long (λ [Uint8] Long))
   (register from-long (λ [Long] Uint8))
-  (register str (λ [Uint8] String))
   (register copy (Fn [&Uint8] Uint8))
 
-  (defn prn [a] (Uint8.str a))
   (defn zero [] (from-long 0l))
 
   (register from-bytes (Fn [&(Array Byte)] (Array Uint8)))
@@ -249,8 +215,6 @@
   (implements > Uint8.>)
   (implements = Uint8.=)
   (implements copy Uint8.copy)
-  (implements str Uint8.str)
-  (implements prn Uint8.prn)
   (implements zero Uint8.zero)
   (implements bit-shift-left Uint8.bit-shift-left)
   (implements bit-shift-right Uint8.bit-shift-right)
@@ -261,11 +225,7 @@
 )
 
 (defmodule Uint8Extra
-  (defn prn [a] (Uint8.prn @a))
-  (defn str [a] (Uint8.str @a))
   (defn = [a b] (Uint8.= @a @b))
-  (implements prn Uint8Extra.prn)
-  (implements str Uint8Extra.str)
   (implements = Uint8Extra.=)
 )
 
@@ -285,10 +245,8 @@
   (register bit-xor (λ [Uint16 Uint16] Uint16))
   (register to-long (λ [Uint16] Long))
   (register from-long (λ [Long] Uint16))
-  (register str (λ [Uint16] String))
   (register copy (Fn [&Uint16] Uint16))
 
-  (defn prn [a] (Uint16.str a))
   (defn zero [] (from-long 0l))
 
   (register from-bytes (Fn [&(Array Byte)] (Array Uint16)))
@@ -301,8 +259,6 @@
   (implements > Uint16.>)
   (implements = Uint16.=)
   (implements copy Uint16.copy)
-  (implements str Uint16.str)
-  (implements prn Uint16.prn)
   (implements zero Uint16.zero)
   (implements bit-shift-left Uint16.bit-shift-left)
   (implements bit-shift-right Uint16.bit-shift-right)
@@ -313,11 +269,7 @@
 )
 
 (defmodule Uint16Extra
-  (defn prn [a] (Uint16.prn @a))
-  (defn str [a] (Uint16.str @a))
   (defn = [a b] (Uint16.= @a @b))
-  (implements prn Uint16Extra.prn)
-  (implements str Uint16Extra.str)
   (implements = Uint16Extra.=)
 )
 
@@ -337,10 +289,8 @@
   (register bit-xor (λ [Uint32 Uint32] Uint32))
   (register to-long (λ [Uint32] Long))
   (register from-long (λ [Long] Uint32))
-  (register str (λ [Uint32] String))
   (register copy (Fn [&Uint32] Uint32))
 
-  (defn prn [a] (Uint32.str a))
   (defn zero [] (from-long 0l))
 
   (register from-bytes (Fn [&(Array Byte)] (Array Uint32)))
@@ -353,8 +303,6 @@
   (implements > Uint32.>)
   (implements = Uint32.=)
   (implements copy Uint32.copy)
-  (implements str Uint32.str)
-  (implements prn Uint32.prn)
   (implements zero Uint32.zero)
   (implements bit-shift-left Uint32.bit-shift-left)
   (implements bit-shift-right Uint32.bit-shift-right)
@@ -365,11 +313,7 @@
 )
 
 (defmodule Uint32Extra
-  (defn prn [a] (Uint32.prn @a))
-  (defn str [a] (Uint32.str @a))
   (defn = [a b] (Uint32.= @a @b))
-  (implements prn Uint32Extra.prn)
-  (implements str Uint32Extra.str)
   (implements = Uint32Extra.=)
 )
 
@@ -389,10 +333,8 @@
   (register bit-xor (λ [Uint64 Uint64] Uint64))
   (register to-long (λ [Uint64] Long))
   (register from-long (λ [Long] Uint64))
-  (register str (λ [Uint64] String))
   (register copy (Fn [&Uint64] Uint64))
 
-  (defn prn [a] (Uint64.str a))
   (defn zero [] (from-long 0l))
 
   (register from-bytes (Fn [&(Array Byte)] (Array Uint64)))
@@ -405,8 +347,6 @@
   (implements > Uint64.>)
   (implements = Uint64.=)
   (implements copy Uint64.copy)
-  (implements str Uint64.str)
-  (implements prn Uint64.prn)
   (implements zero Uint64.zero)
   (implements bit-shift-left Uint64.bit-shift-left)
   (implements bit-shift-right Uint64.bit-shift-right)
@@ -417,10 +357,7 @@
 )
 
 (defmodule Uint64Extra
-  (defn prn [a] (Uint64.prn @a))
-  (defn str [a] (Uint64.str @a))
   (defn = [a b] (Uint64.= @a @b))
-  (implements prn Uint64Extra.prn)
-  (implements str Uint64Extra.str)
   (implements = Uint64Extra.=)
 )
+

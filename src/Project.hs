@@ -4,6 +4,11 @@ module Project where
 import Info
 import Util
 
+data Target = Native | Target String
+instance Show Target where
+  show Native = "native"
+  show (Target x) = x
+
 -- | Project (represents a lot of useful information for working at the REPL and building executables)
 data Project = Project { projectTitle :: String
                        , projectIncludes :: [Includer]
@@ -26,6 +31,7 @@ data Project = Project { projectTitle :: String
                        , projectCarpSearchPaths :: [FilePath]
                        , projectPrintTypedAST :: Bool
                        , projectCompiler :: String
+                       , projectTarget :: Target
                        , projectCore :: Bool
                        , projectEchoCompilationCommand :: Bool
                        , projectCanExecute :: Bool
@@ -44,6 +50,7 @@ instance Show Project where
   show (Project {..}) =
     unlines [ "Title: " ++ projectTitle
             , "Compiler: " ++ projectCompiler
+            , "Target: " ++ show projectTarget
             , "Includes:\n    " ++ joinIndented (map show projectIncludes)
             , "Cflags:\n    " ++ joinIndented projectCFlags
             , "Library flags:\n    " ++ joinIndented projectLibFlags

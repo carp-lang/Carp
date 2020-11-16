@@ -220,13 +220,14 @@ dynamicModule = Env { envBindings = bindings
                     , addCommand (SymPath path "load") 1 commandLoad "loads a file into the current environment." "(load \"myfile.carp\")"
                     , addCommand (SymPath path "load-once") 1 commandLoadOnce "loads a file and prevents it from being reloaded (see `reload`)." "(load-once \"myfile.carp\")"
                     , addCommand (SymPath path "expand") 1 commandExpand "expands a macro and prints the result." "(expand '(when true 1)) ; => (if true 1 ())"
-                    , addCommand (SymPath path "os") 0 commandOS "prints the operating system (as returned by the Haskell function `System.Info.os`)." "(os)"
+                    , addCommand (SymPath path "host-arch") 0 commandHostArch "prints the host architecture (as returned by the Haskell function `System.Info.arch`)." "(host-arch)"
+                    , addCommand (SymPath path "host-os") 0 commandHostOS "prints the host operating system (as returned by the Haskell function `System.Info.os`)." "(host-os)"
                     , addCommand (SymPath path "system-include") 1 commandAddSystemInclude "adds a system include, i.e. a C `#include` with angle brackets (`<>`)." "(system-include \"stdint.h\")"
                     , addCommand (SymPath path "relative-include") 1 commandAddRelativeInclude "adds a relative include, i.e. a C `include` with quotes. It also prepends the current directory." "(relative-include \"myheader.h\")"
                     , addCommand (SymPath path "save-docs-internal") 1 commandSaveDocsInternal "is the internal companion command to `save-docs`. `save-docs` should be called instead." "(save-docs-internal 'Module)"
                     , addCommand (SymPath path "read-file") 1 commandReadFile "reads a file into a string." "(read-file \"myfile.txt\")"
                     , addCommand (SymPath path "write-file") 2 commandWriteFile "writes a string to a file." "(write-file \"myfile\" \"hello there!\")"
-                    , addCommand (SymPath path "bit-width") 0 commandBitWidth "gets the bit width of the platform." "(bit-width) ; => your host machine’s bit width, e.g. 32 or 64"
+                    , addCommand (SymPath path "host-bit-width") 0 commandHostBitWidth "gets the bit width of the host platform." "(host-bit-width) ; => your host machine’s bit width, e.g. 32 or 64"
                     , addCommandConfigurable (SymPath path "s-expr") Nothing commandSexpression "returns the s-expression associated with a binding. When the binding is a type, the deftype form is returned instead of the type's module by default. Pass an optional bool argument to explicitly request the module for a type instead of its definition form. If the bool is true, the module for the type will be returned. Returns an error when no definition is found for the binding." "(s-expr foo), (s-expr foo true)"
                     , makePrim "quote" 1 "quotes any value." "(quote x) ; where x is an actual symbol" (\_ ctx [x] -> return (ctx, Right x))
                     , makeVarPrim "file" "returns the file a symbol was defined in." "(file mysymbol)" primitiveFile
@@ -237,7 +238,6 @@ dynamicModule = Env { envBindings = bindings
                     , makePrim "defmacro" 3 "defines a new macro." "(defmacro name [args :rest restargs] body)" primitiveDefmacro
                     , makePrim "defndynamic" 3 "defines a new dynamic function, i.e. a function available at compile time." "(defndynamic name [args] body)" primitiveDefndynamic
                     , makePrim "defdynamic" 2 "defines a new dynamic value, i.e. a value available at compile time." "(defdynamic name value)" primitiveDefdynamic
-                    , makePrim "type" 1 "prints the type of a symbol." "(type mysymbol)" primitiveType
                     , makePrim "members" 1 "returns the members of a type as an array." "(members MyType)" primitiveMembers
                     , makeVarPrim "defmodule" "defines a new module in which `expressions` are defined." "(defmodule MyModule <expressions>)" primitiveDefmodule
                     , makePrim "meta-set!" 3 "sets a new key and value pair on the meta map associated with a symbol." "(meta-set! mysymbol \"mykey\" \"myval\")" primitiveMetaSet
@@ -250,6 +250,8 @@ dynamicModule = Env { envBindings = bindings
                     , makePrim "defined?" 1 "checks whether a symbol is defined." "(defined? mysymbol)" primitiveDefined
                     , makePrim "deftemplate" 4 "defines a new C template." "(deftemplate symbol Type declString defString)" primitiveDeftemplate
                     , makePrim "implements" 2 "designates a function as an implementation of an interface." "(implements zero Maybe.zero)" primitiveImplements
+                    , makePrim "type" 1 "prints the type of a symbol." "(type mysymbol)" primitiveType
+                    , makePrim "kind" 1 "prints the kind of a symbol." "(kind mysymbol)" primitiveKind
                     ]
                     ++ [("String", Binder emptyMeta (XObj (Mod dynamicStringModule) Nothing Nothing))
                        ,("Symbol", Binder emptyMeta (XObj (Mod dynamicSymModule) Nothing Nothing))
@@ -271,6 +273,7 @@ dynamicStringModule = Env { envBindings = bindings
                                 , addCommand (SymPath path "slice") 3 commandSubstring "creates a substring from a beginning index to an end index." "(String.slice \"hello\" 1 3) ; => \"ell\""
                                 , addCommand (SymPath path "length") 1 commandStringLength "gets the length of a string." "(String.length \"hi\") ; => 2"
                                 , addCommand (SymPath path "concat") 1 commandStringConcat "concatenates a list of strings together." "(String.concat [\"hi \" \"there\"]) ; => \"hi there\""
+                                , addCommand (SymPath path "split-on") 2 commandStringSplitOn "split a string at separator." "(String.split-on \"-\" \"hi-there\") ; => [\"hi \" \"there\"]"
                                 ]
 
 -- | A submodule of the Dynamic module. Contains functions for working with symbols in the repl or during compilation.

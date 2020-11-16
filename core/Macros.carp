@@ -6,9 +6,29 @@
 (defmacro or [x y]
   (list 'if x true y))
 
+;; Defined early so that `doc` can accept a rest arg
+(defndynamic map-internal [f xs acc]
+    (if (= 0 (length xs))
+        acc
+        (map-internal f (cdr xs) (cons-last (f (car xs)) acc))))
+
+(defndynamic list-to-array-internal [xs acc]
+    (if (= 0 (length xs))
+        acc
+        (list-to-array-internal (cdr xs) (append acc (array (car xs))))))
+
 (meta-set! doc "doc" "Set documentation for a binding.")
-(defmacro doc [name string]
-  (eval (list 'meta-set! name "doc" string)))
+(defmacro doc [name :rest strings]
+  (let [newline "
+" ;; Looks a bit odd but the newline literal is important here! (str \newline) currently results in unwanted escapes
+        separated (map-internal (fn [x] (if (list? x)
+                                            (if (cadr x)
+                                                (Dynamic.String.concat [(car x) newline])
+                                                (car x))
+                                            (Dynamic.String.concat [x newline])))
+                                strings
+                                ())]
+    (eval (list 'meta-set! name "doc" (Dynamic.String.concat (list-to-array-internal separated []))))))
 
 (doc print-doc "Print the documentation for a binding.")
 (defmacro print-doc [name]
@@ -114,63 +134,52 @@
   (defmacro e [form]
     (eval-internal form))
 
-  (defndynamic list-to-array-internal [xs acc]
-    (if (= 0 (length xs))
-        acc
-        (list-to-array-internal (cdr xs) (append acc (array (car xs))))))
-
   (defndynamic collect-into-internal [xs acc f]
     (if (= 0 (length xs))
         acc
         (collect-into-internal (cdr xs) (append acc (f (car xs))) f)))
 
   (doc collect-into
-    "Transforms a dynamic data literal into another, preserving order")
+       "Transforms a dynamic data literal into another, preserving order")
   (defndynamic collect-into [xs f]
     (collect-into-internal xs (f) f))
 
   (doc empty?
-    "Returns true if the provided data literal is empty, false otherwise.")
+       "Returns true if the provided data literal is empty, false otherwise.")
   (defndynamic empty? [xs]
     (= 0 (length xs)))
 
   (doc flip
-    "Flips the arguments of a function `f`.
-
-For example,
-
-```
-((flip Symbol.prefix) 'Bar 'Foo)
-=> ;; (Foo.Bar)
-```")
+       "Flips the arguments of a function `f`."
+       "```"
+       "((flip Symbol.prefix) 'Bar 'Foo)"
+       "=> (Foo.Bar)"
+       "```")
   (defndynamic flip [f]
     (fn [x y]
       (f y x)))
 
   (doc compose
-    "Returns the composition of two functions `f` and `g` for functions of any
-arity; concretely, returns a function accepting the correct number of
-arguments for `g`, applies `g` to those arguments, then applies `f` to the
-result.
-
-If you only need to compose functions that take a single argument (unary arity)
-see `comp`. Comp also generates the form that corresponds to the composition,
-compose contrarily evaluates 'eagerly' and returns a computed symbol.
-
-For exmaple:
-
-```
-;; a silly composition
-((compose empty take) 3 [1 2 3 4 5])
-;; => []
-
-(String.join (collect-into ((compose reverse map) Symbol.str '(p r a c)) array))
-;; => 'carp'
-
-;; comp for comparison
-((comp (curry + 1) (curry + 2)) 4)
-;; => (+ 1 (+ 2 4))
-```")
+       "Returns the composition of two functions `f` and `g` for functions of any"
+       "arity; concretely, returns a function accepting the correct number of"
+       "arguments for `g`, applies `g` to those arguments, then applies `f` to the"
+       "result."
+       ""
+       "If you only need to compose functions that take a single argument (unary arity)"
+       "see `comp`. Comp also generates the form that corresponds to the composition,"
+       "compose contrarily evaluates 'eagerly' and returns a computed symbol."
+       "```"
+       ";; a silly composition"
+       "((compose empty take) 3 [1 2 3 4 5])"
+       ";; => []"
+       ""
+       "(String.join (collect-into ((compose reverse map) Symbol.str '(p r a c)) array))"
+       ";; => 'carp'"
+       ""
+       ";; comp for comparison"
+       "((comp (curry + 1) (curry + 2)) 4)"
+       ";; => (+ 1 (+ 2 4))"
+       "```")
   (defndynamic compose [f g]
     ;; Recall that **unquoted** function names evaluate to their definitions in
     ;; dynamic contexts, e.g. f = (dyanmic f [arg] body)
@@ -194,35 +203,31 @@ For exmaple:
             (list  f-name (list 'eval (list 'apply g-name (list 'quote arguments))))))))
 
   (doc curry
-    "Returns a curried function accepting a single argument, that applies f to x
-and then to the following argument.
-
-For example,
-
-```
-(map (curry Symbol.prefix 'Foo) '(bar baz))
-;; => (Foo.bar Foo.baz)
-```")
+       "Returns a curried function accepting a single argument, that applies `f` to `x`"
+       "and then to the following argument."
+       ""
+       "```"
+       "(map (curry Symbol.prefix 'Foo) '(bar baz))"
+       "=> (Foo.bar Foo.baz)"
+       "```")
   (defndynamic curry [f x]
     (fn [y]
      (f x y)))
 
   (doc curry*
-    "Curry functions of any airity.
-
-For example:
-
-```
-(map (curry* Dynamic.zip + '(1 2 3)) '((4 5) (6)))
-;; => (((+ 1 4) (+ 2 5)) ((+ 1 6)))
-
-((curry Dynamic.zip cons '(1 2 3)) '((4 5) (6)))
-;; => ((cons 1 (4 5)) (cons (2 (6))))
-
-(defndynamic add-em-up [x y z] (+ (+ x y) z))
-(map (curry* add-em-up 1 2) '(1 2 3))
-;; => (4 5 6)
-```")
+       "Curry functions of any arity."
+       ""
+       "```"
+       "(map (curry* Dynamic.zip + '(1 2 3)) '((4 5) (6)))"
+       "=> (((+ 1 4) (+ 2 5)) ((+ 1 6)))"
+       ""
+       "((curry* Dynamic.zip cons '(1 2 3)) '((4 5) (6)))"
+       "=> ((cons 1 (4 5)) (cons (2 (6))))"
+       ""
+       "(defndynamic add-em-up [x y z] (+ (+ x y) z))"
+       "(map (curry* add-em-up 1 2) '(1 2 3))"
+       "=> (4 5 6)"
+       "```")
   (defndynamic curry* [f :rest args]
     (let [f-name (cadr f)
           all-args (caddr f)
@@ -244,8 +249,8 @@ For example:
     (list 'quote x))
 
   (doc reduce
-    "Reduces or 'folds' a data literal, such as a list or array, into a single
-value through successive applications of `f`.")
+    "Reduces or 'folds' a data literal, such as a list or array, into a single"
+    "value through successive applications of `f`.")
   (defndynamic reduce [f x xs]
     (if (empty? xs)
       x
@@ -264,72 +269,62 @@ value through successive applications of `f`.")
         (unreduce-internal f (f x) lim (append acc (cons (eval (f x)) (empty acc))) (+ counter 1)))))
 
   (doc unreduce
-    "Applies `f` to a starting value `x`, then generates a sequence of values
-by successively applying `f` to the result `lim-1` times.
-Collects results in the structure given by `acc`.
-
-For example:
-
-```
-(unreduce (curry + 1) 0 10 (list))
-;; => (1 2 3 4 5 6 7 8 9 10)
-```")
+       "Applies `f` to a starting value `x`, then generates a sequence of values"
+       "by successively applying `f` to the result `lim-1` times."
+       "Collects results in the structure given by `acc`."
+       ""
+       "```"
+       "(unreduce (curry + 1) 0 10 (list))"
+       "=> (1 2 3 4 5 6 7 8 9 10)"
+       "```")
   (defndynamic unreduce [f x lim acc]
     (unreduce-internal f x lim acc 0))
 
   (doc filter
-    "Returns a list containing only the elements of `xs` that satisify
-predicate `p`.
-
-For example:
-
-```
-(filter (fn [x] (= 'a x)) '(a b a b a b a b))
-;; => (a a a a)
-```")
+       "Returns a list containing only the elements of `xs` that satisify"
+       "predicate `p`."
+       ""
+       "```"
+       "(filter (fn [x] (= 'a x)) '(a b a b a b a b))"
+       "=> (a a a a)"
+       "```")
   (defndynamic filter [p xs]
     (let [filter-fn (fn [x y] (if (p y) (append x (list y)) x))]
       (reduce filter-fn (list) xs)))
 
   (doc reverse
-    "Reverses the order of elements in an array or list.
-
-For example:
-
-```
-(reverse [1 2 3 4])
-;; => [4 3 2 1]
-```")
+       "Reverses the order of elements in an array or list."
+       ""
+       "```"
+       "(reverse [1 2 3 4])"
+       "=> [4 3 2 1]"
+       "```")
   (defndynamic reverse [xs]
     (if (array? xs)
       (reduce (flip append) (array) (map array xs))
       (reduce (flip append) (list) (map list xs))))
 
   (doc empty
-    "Returns the empty form of `xs`.
-
-For example:
-
-```
-(empty '(1 2 3 4))
-;; => ()
-(empty '[1 2 3 4])
-;; => []
-```")
+       "Returns the empty form of `xs`."
+       ""
+       "```"
+       "(empty '(1 2 3 4))"
+       "=> ()"
+       "(empty '[1 2 3 4])"
+       "=> []"
+       "```")
   (defndynamic empty [xs]
     (if (array? xs)
         (array)
         (list)))
 
   (doc take
-    "Returns a list containing the first `n` eleements of a list.
-
-For example:
-
-```
-(take 3 '(1 2 3 4 5))
-;; => (1 2 3)
-```")
+       "Returns a list containing the first `n` elements of a list."
+       ""
+       "```"
+       "(take 3 '(1 2 3 4 5))"
+       "=> (1 2 3)"
+       "```")
   (defndynamic take [n xs]
     ;; A more straightforward impl is likely more efficient?
     (let [indicies (unreduce (curry + 1) 0 n (list))
@@ -339,8 +334,8 @@ For example:
           result)))
 
   (doc apply
-    "Applies the function `f` to the provided argument list, passing each value
-in the list as an argument to the function.")
+       "Applies the function `f` to the provided argument list, passing each value"
+       "in the list as an argument to the function.")
   (defndynamic apply [f argument-list]
     ;; The let clause here is a tad mysterious at first glance. When passed a
     ;; standalone function name (i.e. not an application (f x), carp evaluates
@@ -365,35 +360,31 @@ in the list as an argument to the function.")
           (append function-name (collect-into argument-list list))
           (append function-name argument-list)))))
 
-  (hidden map-internal)
-  (defndynamic map-internal [f xs acc]
-    (if (empty? xs)
-        acc
-        (map-internal f (cdr xs) (cons-last (f (car xs)) acc))))
+
 
   (doc any?
-    "checks whether any of the elements in `xs` conforms to the predicate
-function `f`.
-
-Example:
-
-```
-(any? (fn [x] (= 'a x)) '(a b c)) ; => true
-(any? (fn [x] (= 'a x)) '(e f g)) ; => false
-```")
+       "Checks whether any of the elements in `xs` conforms to the predicate"
+       "function `f`."
+       ""
+       "```"
+       "(any? (fn [x] (= 'a x)) '(a b c))"
+       "=> true"
+       "(any? (fn [x] (= 'a x)) '(e f g))"
+       "=> false"
+       "```")
   (defndynamic any? [f xs]
     (reduce (fn [acc x] (or acc (f x))) false xs))
 
-  (doc any?
-    "checks whether all of the elements in `xs` conform to the predicate
-function `f`.
-
-Example:
-
-```
-(all? (fn [x] (< 1 x)) '(2 3 4)) ; => true
-(all? (fn [x] (< 1 x)) '(-1 0 1)) ; => false
-```")
+  (doc all?
+       "Checks whether all of the elements in `xs` conform to the predicate"
+       "function `f`."
+       ""
+       "```"
+       "(all? (fn [x] (< 1 x)) '(2 3 4))"
+       "=> true"
+       "(all? (fn [x] (< 1 x)) '(-1 0 1))"
+       "=> false"
+       "```")
   (defndynamic all? [f xs]
     (reduce (fn [acc x] (and acc (f x))) true xs))
 
@@ -408,56 +399,53 @@ Example:
             (append acc result)))))
 
   (doc zip
-    "Returns the *form* that results from applying  a function `f` to each of
-the values supplied in `forms`.
+       "Returns the *form* that results from applying  a function `f` to each of"
+       "the values supplied in `forms`."
 
-If the members of a single form are exhuasted, the result of the
-applications thus far is returned, and any remaining members in the other
-forms are ignored.
-
-For example,
-
-```
-(zip + '(1 2 3) '(4 5 6))
-;; => ((+ 1 4) (+ 2 5) (+ 3 6))
-```
-
-It's important to note that zip operates on forms, and that the form
-returned by zip may not be evaluable by itself. For instance, to actually
-transform the result in the example above into something Carp can
-evaluate, we need to wrap each member of the list in a `do`:
-
-```
-(append (list 'do) (zip + '(1 2 3) '(4 5 6)))
-;; => (do (+ 1 4) (+ 2 5) (+ 3 6))
-(eval (append (list 'do) (zip + '(1 2 3) '(4 5 6))))
-;; => 9 ;; do returns the value of the last form in its body
-```")
+       "If the members of a single form are exhuasted, the result of the"
+       "applications thus far is returned, and any remaining members in the other"
+       "forms are ignored."
+       ""
+       "```"
+       "(zip + '(1 2 3) '(4 5 6))"
+       "=> ((+ 1 4) (+ 2 5) (+ 3 6))"
+       "```"
+       ""
+       "It's important to note that zip operates on forms, and that the form"
+       "returned by zip may not be evaluable by itself. For instance, to actually"
+       "transform the result in the example above into something Carp can"
+       "evaluate, we need to wrap each member of the list in a `do`:"
+       ""
+       "```"
+       "(append (list 'do) (zip + '(1 2 3) '(4 5 6)))"
+       "=> (do (+ 1 4) (+ 2 5) (+ 3 6))"
+       "(eval (append (list 'do) (zip + '(1 2 3) '(4 5 6))))"
+       "=> 9 ;; do returns the value of the last form in its body"
+       "```")
   (defndynamic zip [f :rest forms]
     (zip-internal f forms (list)))
 
   (doc map
-    "Applies a function `f` to each element in the list or array `xs` and
-returns a list dynamic data literal containing the result of the function
-applications.
-
-For example:
-```clojure
-'(map symbol? '(a b c))
-=> (true true true)
-'(map (curry + 1) '(1 2 3))
-=> (2 3 4)
-```")
+       "Applies a function `f` to each element in the list or array `xs` and"
+       "returns a list dynamic data literal containing the result of the function"
+       "applications."
+       ""
+       "```"
+       "'(map symbol? '(a b c))"
+       "=> (true true true)"
+       "'(map (curry + 1) '(1 2 3))"
+       "=> (2 3 4)"
+       "```")
   (defndynamic map [f xs]
     (map-internal f xs (list)))
 
-  (doc flatten "flattens a list recursively.
-
-For example:
-```
-(flatten '(1 2 (3 (4))))
-; => '(1 2 3 4)
-```")
+  (doc flatten
+       "Flattens a list recursively."
+       ""
+       "```"
+       "(flatten '(1 2 (3 (4))))"
+       "=> '(1 2 3 4)"
+       "```")
   (defndynamic flatten [l]
     (reduce (fn [acc x]
               (if (list? x)
@@ -471,8 +459,8 @@ For example:
   (list 'implements interface (Symbol.prefix mod interface)))
 
 (doc implements-all
-  "Declares functions in mod with names matching `interfaces` as implementations
-of those interfaces.")
+     "Declares functions in mod with names matching `interfaces` as implementations"
+     "of those interfaces.")
 (defmacro implements-all [mod :rest interfaces]
   (cons 'do (map (curry implement-declaration mod) interfaces)))
 
@@ -489,17 +477,16 @@ of those interfaces.")
          (cadr xs)
          (cond-internal (cddr xs)))))))
 
-(doc cond "executes a block of code if a specified condition is true. Multiple
-such blocks can be chained.
-
-For example:
-
-```
-(cond
-  (< 10 1) (println \"Condition 1 is true\")
-  (> 10 1) (println \"Condition 2 is true\")
-  (println \"Else branch\"))
-```")
+(doc cond
+     "Executes a block of code if a specified condition is true. Multiple"
+     "such blocks can be chained."
+     ""
+     "```"
+     "(cond"
+     "  (< 10 1) (println \"Condition 1 is true\")"
+     "  (> 10 1) (println \"Condition 2 is true\")"
+     "  (println \"Else branch\"))"
+     "```")
 (defmacro cond [:rest xs]
   (cond-internal xs))
 
@@ -587,31 +574,6 @@ For example:
 
 (defmacro update! [x f]
   (list 'set! x (list f x)))
-
-(defmacro freebsd-only [:rest forms]
-  (if (= "freebsd" (os))
-    (eval (cons (quote do) forms))
-    ()))
-
-(defmacro mac-only [:rest forms]
-  (if (= "darwin" (os))
-    (eval (cons (quote do) forms))
-    ()))
-
-(defmacro linux-only [:rest forms]
-  (if (= "linux" (os))
-    (eval (cons (quote do) forms))
-    ()))
-
-(defmacro windows-only [:rest forms]
-  (if (or (= "windows" (os)) (= "mingw32" (os)))
-    (eval (cons (quote do) forms))
-    ()))
-
-(defmacro not-on-windows [:rest forms]
-  (if (not (or (= "windows" (os)) (= "mingw32" (os))))
-    (eval (cons (quote do) forms))
-    ()))
 
 (defndynamic use-all-fn [names]
   (if (= (length names) 0)
@@ -714,32 +676,36 @@ For example:
 (defmacro defproject [:rest bindings]
   (project-config bindings))
 
-(doc const-assert "asserts that the expression `expr` is true at compile time.
-Otherwise it will fail with the message `msg`.
-
-The expression must be evaluable at compile time.")
+(doc const-assert
+     "Asserts that the expression `expr` is true at compile time."
+     "Otherwise it will fail with the message `msg`."
+     ""
+     "The expression must be evaluable at compile time.")
 (defndynamic const-assert [expr msg]
   (if expr () (macro-error msg)))
 
-(doc *gensym-counter* "is a helper counter for `gensym`.")
+(doc *gensym-counter* "Is a helper counter for `gensym`.")
 (defdynamic *gensym-counter* 1000)
 
-(doc gensym-with "generates symbols dynamically, based on a symbol name.")
+(defndynamic gensym-local [x]
+  (Symbol.concat ['gensym-generated x]))
+
+(doc gensym-with "Generates symbols dynamically, based on a symbol name.")
 (defndynamic gensym-with [x]
   (do
     (set! *gensym-counter* (inc *gensym-counter*))
     (Symbol.concat [x (Symbol.from *gensym-counter*)])))
 
-(doc gensym "generates symbols dynamically as needed.")
+(doc gensym "Generates symbols dynamically as needed.")
 (defndynamic gensym []
   (gensym-with 'gensym-generated))
 
-(doc until "executes `body` until the condition `cnd` is true.")
+(doc until "Executes `body` until the condition `cnd` is true.")
 (defmacro until [cnd body]
   (list 'while (list 'not cnd)
     body))
 
-(doc defdynamic-once "creates a dynamic variable and sets its value if it's not already defined.")
+(doc defdynamic-once "Creates a dynamic variable and sets its value if it's not already defined.")
 (defmacro defdynamic-once [var expr]
   (list 'if (list 'defined? var)
         ()
@@ -750,19 +716,20 @@ The expression must be evaluable at compile time.")
     sym
     (list (car fns) (comp-internal sym (cdr fns)))))
 
-(doc comp "composes the functions `fns` into one `fn`.")
+(doc comp "Composes the functions `fns` into one `fn`.")
 (defmacro comp [:rest fns]
   (let [x (gensym)]
     (list 'fn [x] (comp-internal x fns))))
 
-(doc inline-c "inlines some custom C code.")
-(defmacro inline-c [name defcode declcode]
-  (list 'deftemplate name (list) (eval defcode) (eval declcode)))
+(doc inline-c "Inlines some custom C code.")
+(defmacro inline-c [name defcode :rest declcode]
+  (eval (list 'deftemplate name (list) defcode (if (empty? declcode) "" (car declcode)))))
 
 (deftemplate bottom (Fn [] a) "$a $NAME()" "$DECL { abort(); }")
 
-(doc unreachable "asserts that a block of code will never be reached. If it is
-the program will be aborted with an error message.")
+(doc unreachable
+     "Asserts that a block of code will never be reached. If it is"
+     "the program will be aborted with an error message.")
 (defmacro unreachable [msg]
   (list 'do
     (list 'IO.println
@@ -774,3 +741,109 @@ the program will be aborted with an error message.")
           msg)))
     (list 'System.abort)
     (list 'bottom)))
+
+(doc doto
+     "Evaluates `thing`, then calls all of the functions on it and"
+     "returns it. Useful for chaining mutating, imperative functions, and thus"
+     "similar to `->`. If you need `thing` to be passed as a `ref` into `expressions`"
+     "functions, use [`doto-ref`](#doto-ref) instead."
+     ""
+     "```"
+     "(let [x @\"hi\"]"
+     "  @(doto &x"
+     "    (string-set! 0 \o)"
+     "    (string-set! 1 \y)))"
+     "```")
+(defmacro doto [thing :rest expressions]
+  (let [s (gensym)]
+    (list 'let [s thing]
+      (cons-last
+        s
+        (cons 'do (map (fn [expr] (cons (car expr) (cons s (cdr expr)))) expressions))))))
+
+(doc doto-ref
+     "Evaluates `thing`, then calls all of the functions on it and"
+     "returns it. Useful for chaining mutating, imperative functions, and thus"
+     "similar to `->`. If you need `thing` not to be passed as a `ref` into"
+     "`expressions` functions, use [`doto`](#doto) instead."
+     ""
+     "```"
+     "(doto-ref @\"hi\""
+     "  (string-set! 0 \o)"
+     "  (string-set! 1 \y))"
+     "```")
+(defmacro doto-ref [thing :rest expressions]
+  (let [s (gensym)]
+    (list 'let [s thing]
+      (cons-last
+        s
+        (cons 'do
+          (map (fn [expr] (cons (car expr) (cons (list 'ref s) (cdr expr))))
+          expressions))))))
+
+(doc native-triple "triple describing the native platform.")
+
+(defdynamic native-triple [(host-arch) (host-os) "unknown"])
+
+(doc target-triple "triple describing the target platform.")
+(defndynamic target-triple []
+  (let [t (Project.get-config "target")]
+    (case t
+      "native" native-triple
+      (Dynamic.String.split-on "-" t))))
+
+(doc target-arch "target architecture.")
+(defdynamic target-arch (car (target-triple)))
+
+(doc target-os "target operating system.")
+(defdynamic target-os (cadr (target-triple)))
+
+(doc target-abi "target ABI.")
+(defdynamic target-abi (caddr (target-triple)))
+
+(doc target-os? "are we targeting a certain OS?")
+(defndynamic target-os? [t]
+  (= target-os t))
+
+(doc windows-target? "are we targeting Windows?")
+(defdynamic windows-target?
+  (if (target-os? "windows")
+    true
+    (target-os? "mingw32")))
+
+(doc linux-target? "are we targeting Linux?")
+(defdynamic linux-target? (target-os? "linux"))
+
+(doc mac-target? "are we targeting Mac?")
+(defdynamic mac-target? (target-os? "darwin"))
+
+(doc freebsd-target? "are we targeting FreeBSD?")
+(defdynamic freebsd-target? (target-os? "freebsd"))
+
+(doc posix-target? "are we targeting a POSIX platform?")
+(defdynamic posix-target? (= false windows-target?))
+
+(doc target-only "conditionally compile forms when b is true.")
+(defndynamic target-only [b forms]
+  (when b
+    (eval (cons 'do forms))))
+
+(doc mac-only "compile forms only on Mac.")
+(defmacro mac-only [:rest forms]
+  (target-only mac-target? forms))
+
+(doc linux-only "compile forms only on Linux.")
+(defmacro linux-only [:rest forms]
+  (target-only linux-target? forms))
+
+(doc freebsd-only "compile forms only on FreeBSD.")
+(defmacro freebsd-only [:rest forms]
+  (target-only freebsd-target? forms))
+
+(doc windows-only "compile forms only on Windows.")
+(defmacro windows-only [:rest forms]
+ (target-only windows-target? forms))
+
+(doc posix-only "compile forms only on POSIX targets.")
+(defmacro posix-only [:rest forms]
+ (target-only posix-target? forms))

@@ -14,15 +14,11 @@ jobs:
       - name: Check out
         uses: actions/checkout@v2
 
-      - name: Save git commit SHA
-        run: echo ::set-env name=GITHUB_SHA::%GITHUB_SHA%
-        shell: cmd
-
       - name: Install Scoop
         run: |
           iwr -useb get.scoop.sh | iex
-          echo "::add-path::~\scoop\shims"
-          echo "::add-path::C:\ProgramData\scoop\shims"
+          echo "~\scoop\shims" | Out-File -FilePath $env:GITHUB_PATH -Encoding utf8 -Append
+          echo "C:\ProgramData\scoop\shims" | Out-File -FilePath $env:GITHUB_PATH -Encoding utf8 -Append
 
       - name: Install Stack
         run: scoop install stack
@@ -31,14 +27,14 @@ jobs:
         name: Cache stack dependencies
         with:
           path: C:\\Users\\runneradmin\\AppData\\Local\\Programs\\stack
-          key: ${{ runner.os }}-stack-deps-${{ env.GITHUB_SHA }}
+          key: ${{ runner.os }}-stack-deps-${{ github.sha }}
           restore-keys: ${{ runner.os }}-stack-deps
 
       - uses: actions/cache@v1
         name: Cache stack build
         with:
           path: C:\\Users\\runneradmin\\AppData\\Roaming\\stack\
-          key: ${{ runner.os }}-stack-build-${{ env.GITHUB_SHA }}
+          key: ${{ runner.os }}-stack-build-${{ github.sha }}
           restore-keys: ${{ runner.os }}-stack-build
 
       - name: Install Clang
@@ -52,4 +48,4 @@ jobs:
 
       - name: Run Carp Tests
         shell: bash
-        run: ./run_carp_tests.sh --no_sdl
+        run: ./scripts/run_carp_tests.sh --no_sdl

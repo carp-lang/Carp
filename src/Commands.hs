@@ -5,9 +5,10 @@ import Control.Monad (join, when, foldM)
 import Control.Monad.IO.Class (liftIO, MonadIO)
 import Data.Bits (finiteBitSize)
 import Data.List (elemIndex)
+import Data.List.Split (splitOn)
 import Data.Maybe (fromMaybe)
 import System.Exit (exitSuccess, exitFailure, exitWith, ExitCode(..))
-import System.Info (os)
+import System.Info (os, arch)
 import System.Process (callCommand, spawnCommand, waitForProcess)
 import System.IO (openFile, hPutStr, hClose, utf8, hSetEncoding, IOMode(..))
 import System.Directory (makeAbsolute)
@@ -29,6 +30,8 @@ import TypeError
 import Path
 import Info
 import qualified Meta
+import Reify
+
 
 data CarpException =
     ShellOutException { shellOutMessage :: String, returnCode :: Int }
@@ -58,6 +61,7 @@ addCommandConfigurable :: SymPath -> Maybe Int -> CommandCallback -> String -> S
 addCommandConfigurable path maybeArity callback doc example =
   let cmd = XObj (Lst [XObj (Command (CommandFunction f)) (Just dummyInfo) Nothing
                       ,XObj (Sym path Symbol) Nothing Nothing
+                      ,unfoldArgs
                       ])
             (Just dummyInfo) (Just DynamicTy)
       SymPath _ name = path
@@ -73,6 +77,12 @@ addCommandConfigurable path maybeArity callback doc example =
             then callback ctx args
             else
               return (evalError ctx ("Invalid args to '" ++ show path ++ "' command: " ++ joinWithComma (map pretty args) ++ "\n\n" ++ exampleUsage) Nothing)
+        unfoldArgs =
+          case maybeArity of
+            Just arity ->
+              let tosym x = (XObj (Sym (SymPath [] x) Symbol) Nothing Nothing)
+              in  XObj (Arr (map (tosym . intToArgName) [1..arity])) Nothing Nothing
+            Nothing -> XObj (Arr [(XObj (Sym (SymPath [] "") Symbol) Nothing Nothing)]) Nothing Nothing
 
 presentError :: MonadIO m => String -> a -> m a
 presentError msg ret =
@@ -105,6 +115,8 @@ commandProjectConfig ctx [xobj@(XObj (Str key) _ _), value] = do
                                             return (proj { projectEchoCompilationCommand = echoCompilerCmd })
                   "compiler" -> do compiler <- unwrapStringXObj value
                                    return (proj { projectCompiler = compiler })
+                  "target" -> do target <- unwrapStringXObj value
+                                 return (proj { projectTarget = Target target })
                   "title" -> do title <- unwrapStringXObj value
                                 return (proj { projectTitle = title })
                   "output-directory" -> do outDir <- unwrapStringXObj value
@@ -158,6 +170,7 @@ commandProjectGetConfig ctx [xobj@(XObj (Str key) _ _)] =
           "echo-c" -> Right $ Bol $ projectEchoC proj
           "echo-compiler-cmd" -> Right $ Bol $ projectEchoCompilationCommand proj
           "compiler" -> Right $ Str $ projectCompiler proj
+          "target" -> Right $ Str $ show $ projectTarget proj
           "title" -> Right $ Str $ projectTitle proj
           "output-directory" -> Right $ Str $ projectOutDir proj
           "docs-directory" -> Right $ Str $ projectDocsDir proj
@@ -238,6 +251,21 @@ commandBuild shutUp ctx args = do
              outExe = outDir </> projectTitle proj
              outLib = outDir </> projectTitle proj
              generateOnly = projectGenerateOnly proj
+             compile hasMain =
+               do let cmd = joinWithSpace $ [ compiler
+                                            , if hasMain then "" else "-shared"
+                                            , "-o"
+                                            , outExe
+                                            , "-I"
+                                            , includeCorePath
+                                            , flags
+                                            , outMain
+                                            ] ++ cModules
+                    in liftIO $ do when echoCompilationCommand (putStrLn cmd)
+                                   callCommand cmd
+                                   when (execMode == Repl && not shutUp) $
+                                     (putStrLn ("Compiled to '" ++ outExe ++ (if hasMain then "' (executable)" else "' (shared library)")))
+                                   return (setProjectCanExecute hasMain ctx, dynamicNil)
          liftIO $ createDirectoryIfMissing False outDir
          outputHandle <- openFile outMain WriteMode
          hSetEncoding outputHandle utf8
@@ -245,23 +273,8 @@ commandBuild shutUp ctx args = do
          hClose outputHandle
          if generateOnly then return (ctx, dynamicNil) else
              case Map.lookup "main" (envBindings env) of
-                             Just _ -> do let cmd = joinWithSpace $ [ compiler
-                                                                    , "-o"
-                                                                    , outExe
-                                                                    , "-I"
-                                                                    , includeCorePath
-                                                                    , flags
-                                                                    , outMain
-                                                                    ] ++ cModules
-                                          liftIO $ do when echoCompilationCommand (putStrLn cmd)
-                                                      callCommand cmd
-                                                      when (execMode == Repl && not shutUp) (putStrLn ("Compiled to '" ++ outExe ++ "' (executable)"))
-                                          return (setProjectCanExecute True ctx, dynamicNil)
-                             Nothing -> do let cmd = compiler ++ " " ++ outMain ++ " -shared -o \"" ++ outLib ++ "\" " ++ flags
-                                           liftIO $ do when echoCompilationCommand (putStrLn cmd)
-                                                       callCommand cmd
-                                                       when (execMode == Repl && not shutUp) (putStrLn ("Compiled to '" ++ outLib ++ "' (shared library)"))
-                                           return (setProjectCanExecute False ctx, dynamicNil)
+               Just _ ->  compile True
+               Nothing -> compile False
 
 setProjectCanExecute :: Bool -> Context -> Context
 setProjectCanExecute value ctx =
@@ -466,9 +479,14 @@ commandProject ctx args = do
      return (ctx, dynamicNil)
 
 -- | Command for getting the name of the operating system you're on.
-commandOS :: CommandCallback
-commandOS ctx _ =
+commandHostOS :: CommandCallback
+commandHostOS ctx _ =
   return (ctx, (Right (XObj (Str os) (Just dummyInfo) (Just StringTy))))
+
+-- | Command for getting the native architecture.
+commandHostArch :: CommandCallback
+commandHostArch ctx _ =
+  return (ctx, (Right (XObj (Str arch) (Just dummyInfo) (Just StringTy))))
 
 -- | Command for adding a header file include to the project.
 commandAddInclude :: (String -> Includer) -> CommandCallback
@@ -554,8 +572,8 @@ commandCdr ctx [x] =
 commandLast :: CommandCallback
 commandLast ctx [x] =
   case x of
-    XObj (Lst lst) _ _ -> return (ctx, Right (last lst))
-    XObj (Arr arr) _ _ -> return (ctx, Right (last arr))
+    XObj (Lst lst@(x:xs)) _ _ -> return (ctx, Right (last lst))
+    XObj (Arr arr@(x:xs)) _ _ -> return (ctx, Right (last arr))
     _ ->
       return (evalError ctx "Applying 'last' to non-list or empty list." (info x))
 
@@ -613,30 +631,53 @@ commandMacroLog ctx msgs = do
 
 commandEq :: CommandCallback
 commandEq ctx [a, b] =
-  return $ case (a, b) of
-    (XObj (Num IntTy aNum) _ _, XObj (Num IntTy bNum) _ _) ->
-      if (round aNum :: Int) == (round bNum :: Int)
-      then (ctx, Right trueXObj) else (ctx, Right falseXObj)
-    (XObj (Num LongTy aNum) _ _, XObj (Num LongTy bNum) _ _) ->
-      if (round aNum :: Int) == (round bNum :: Int)
-      then (ctx, Right trueXObj) else (ctx, Right falseXObj)
-    (XObj (Num FloatTy aNum) _ _, XObj (Num floatTy bNum) _ _) ->
-      if aNum == bNum
-      then (ctx, Right trueXObj) else (ctx, Right falseXObj)
-    (XObj (Num DoubleTy aNum) _ _, XObj (Num DoubleTy bNum) _ _) ->
-      if aNum == bNum
-      then (ctx, Right trueXObj) else (ctx, Right falseXObj)
-    (XObj (Str sa) _ _, XObj (Str sb) _ _) ->
-      if sa == sb then (ctx, Right trueXObj) else (ctx, Right falseXObj)
-    (XObj (Chr ca) _ _, XObj (Chr cb) _ _) ->
-      if ca == cb then (ctx, Right trueXObj) else (ctx, Right falseXObj)
-    (XObj (Sym sa _) _ _, XObj (Sym sb _) _ _) ->
-      if sa == sb then (ctx, Right trueXObj) else (ctx, Right falseXObj)
-    (XObj (Bol xa) _ _, XObj (Bol xb) _ _) ->
-      if xa == xb then (ctx, Right trueXObj) else (ctx, Right falseXObj)
-    (XObj (Lst []) _ _, XObj (Lst []) _ _) ->
-      (ctx, Right trueXObj)
-    _ -> evalError ctx ("Can't compare " ++ pretty a ++ " with " ++ pretty b) (info a)
+  return $ case cmp (a, b) of
+    Left (a, b) -> evalError ctx ("Can't compare " ++ pretty a ++ " with " ++ pretty b) (info a)
+    Right True -> (ctx, Right trueXObj)
+    Right False -> (ctx, Right falseXObj)
+  where
+    cmp (XObj (Num IntTy aNum) _ _, XObj (Num IntTy bNum) _ _) =
+      Right $ (round aNum :: Int) == (round bNum :: Int)
+    cmp (XObj (Num LongTy aNum) _ _, XObj (Num LongTy bNum) _ _) =
+      Right $ (round aNum :: Int) == (round bNum :: Int)
+    cmp (XObj (Num FloatTy aNum) _ _, XObj (Num floatTy bNum) _ _) =
+      Right $ aNum == bNum
+    cmp (XObj (Num DoubleTy aNum) _ _, XObj (Num DoubleTy bNum) _ _) =
+      Right $ aNum == bNum
+    cmp (XObj (Str sa) _ _, XObj (Str sb) _ _) = Right $ sa == sb
+    cmp (XObj (Chr ca) _ _, XObj (Chr cb) _ _) = Right $ ca == cb
+    cmp (XObj (Sym sa _) _ _, XObj (Sym sb _) _ _) = Right $ sa == sb
+    cmp (XObj (Bol xa) _ _, XObj (Bol xb) _ _) = Right $ xa == xb
+    cmp (XObj Def _ _, XObj Def _ _) = Right $ True
+    cmp (XObj Do _ _, XObj Do _ _) = Right $ True
+    cmp (XObj Let _ _, XObj Let _ _) = Right $ True
+    cmp (XObj While _ _, XObj While _ _) = Right $ True
+    cmp (XObj Break _ _, XObj Break _ _) = Right $ True
+    cmp (XObj If _ _, XObj If _ _) = Right $ True
+    cmp (XObj With _ _, XObj With _ _) = Right $ True
+    cmp (XObj DocStub _ _, XObj DocStub _ _) = Right $ True
+    cmp (XObj Address _ _, XObj Address _ _) = Right $ True
+    cmp (XObj SetBang _ _, XObj SetBang _ _) = Right $ True
+    cmp (XObj Macro _ _, XObj Macro _ _) = Right $ True
+    cmp (XObj Dynamic _ _, XObj Dynamic _ _) = Right $ True
+    cmp (XObj DefDynamic _ _, XObj DefDynamic _ _) = Right $ True
+    cmp (XObj The _ _, XObj The _ _) = Right $ True
+    cmp (XObj Ref _ _, XObj Ref _ _) = Right $ True
+    cmp (XObj Deref _ _, XObj Deref _ _) = Right $ True
+    cmp (XObj (Lst []) _ _, XObj (Lst []) _ _) = Right True
+    cmp (XObj (Lst elemsA) _ _, XObj (Lst elemsB) _ _) =
+      if length elemsA == length elemsB
+      then foldr cmp' (Right True) (zip elemsA elemsB)
+      else Right False
+    cmp (XObj (Arr []) _ _, XObj (Arr []) _ _) = Right True
+    cmp (XObj (Arr elemsA) _ _, XObj (Arr elemsB) _ _) =
+      if length elemsA == length elemsB
+      then foldr cmp' (Right True) (zip elemsA elemsB)
+      else Right False
+    cmp invalid = Left invalid
+    cmp' _ invalid@(Left _) = invalid
+    cmp' _ (Right False) = Right False
+    cmp' elem (Right True) = cmp elem
 
 commandLt :: CommandCallback
 commandLt ctx [a, b] =
@@ -712,6 +753,13 @@ commandStringConcat ctx [a] =
         Left err -> evalError ctx err (info a)
         Right result -> (ctx, Right (XObj (Str (join result)) (Just dummyInfo) (Just StringTy)))
     _ -> evalError ctx ("Can't call concat with " ++ pretty a) (info a)
+
+commandStringSplitOn :: CommandCallback
+commandStringSplitOn ctx [XObj (Str sep) _ _, XObj (Str s) _ _] =
+  pure $ (ctx, Right (XObj (Arr (xstr <$> splitOn sep s)) (Just dummyInfo) Nothing))
+  where xstr o = XObj (Str o) (Just dummyInfo) (Just StringTy)
+commandStringSplitOn ctx [sep, s] =
+  pure $ evalError ctx ("Can't call split-on with " ++ pretty sep ++ ", " ++ pretty s) (info sep)
 
 commandSymConcat :: CommandCallback
 commandSymConcat ctx [a] =
@@ -856,8 +904,8 @@ commandWriteFile ctx [filename, contents] =
     _ ->
       return (evalError ctx ("The first argument to `write-file` must be a string, I got `" ++ pretty filename ++ "`") (info filename))
 
-commandBitWidth :: CommandCallback
-commandBitWidth ctx [] =
+commandHostBitWidth :: CommandCallback
+commandHostBitWidth ctx [] =
   let bitSize = fromIntegral (finiteBitSize (undefined :: Int))
   in return (ctx, Right (XObj (Num IntTy bitSize) (Just dummyInfo) (Just IntTy)))
 
@@ -903,7 +951,7 @@ commandSexpressionInternal ctx [xobj] bol =
       tyEnv = getTypeEnv $ contextTypeEnv ctx
   in case xobj of
        (XObj (Lst [inter@(XObj (Interface ty _) _ _), path]) i t) ->
-         return (ctx, Right (XObj (Lst [(toSymbols inter), path, (tyToXObj ty)]) i t))
+         return (ctx, Right (XObj (Lst [(toSymbols inter), path, (reify ty)]) i t))
        (XObj (Lst forms) i t) ->
          return (ctx, Right (XObj (Lst (map toSymbols forms)) i t))
        mod@(XObj (Mod e) i t) ->
@@ -945,4 +993,7 @@ toSymbols (XObj (Deftype _) i t) = (XObj (Sym (SymPath [] "deftype") Symbol) i t
 toSymbols (XObj (DefSumtype _) i t) = (XObj (Sym (SymPath [] "deftype") Symbol) i t)
 toSymbols (XObj (Interface _ _) i t) = (XObj (Sym (SymPath [] "definterface") Symbol) i t)
 toSymbols (XObj Macro i t) = (XObj (Sym (SymPath [] "defmacro") Symbol) i t)
+toSymbols (XObj (Command _) i t) = (XObj (Sym (SymPath [] "command") Symbol) i t)
+toSymbols (XObj (Primitive _) i t) = (XObj (Sym (SymPath [] "primitive") Symbol) i t)
+toSymbols (XObj (External _) i t) = (XObj (Sym (SymPath [] "external") Symbol) i t)
 toSymbols x = x

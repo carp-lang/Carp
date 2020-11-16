@@ -309,4 +309,17 @@
   (assert-true test
                (test-dynamic-while)
                "while works as expected in dynamic code")
+  (assert-ref-equal test
+                    @"oy"
+                    (let [x @"hi"]
+                      @(doto &x
+                        (string-set! 0 \o)
+                        (string-set! 1 \y)))
+                    "doto works as expected")
+  (assert-ref-equal test
+                    @"oy"
+                    (doto-ref @"hi"
+                      (string-set! 0 \o)
+                      (string-set! 1 \y))
+                    "doto-ref works as expected")
 )

@@ -1,4 +1,4 @@
-#!/usr/bin/env bash
+#!/usr/bin/env sh
 # To enable the required permissions, execute the following sequence as root:
 # $ chown root:wheel /proc/modules
 # $ chown root:wheel /proc/kallsyms

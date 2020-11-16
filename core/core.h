@@ -1,7 +1,8 @@
-#if (defined WIN32 || defined _WIN32 || defined __WIN32) && \
-    !defined __CYGWIN__ && !defined __MINGW32__
+#if defined _WIN32
 #include <windows.h>
-typedef SSIZE_T ssize_t;
+#if !defined __CYGWIN__ && !defined __MINGW32__
+typedef intptr_t ssize_t;
+#endif
 #endif
 #ifndef _WIN32
 #include <unistd.h>

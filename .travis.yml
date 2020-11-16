@@ -32,5 +32,4 @@ script:
     - travis_wait stack setup --no-terminal
     - travis_wait stack build --no-terminal
     - travis_wait stack test  --no-terminal
-    - travis_wait ./run_carp_tests.sh --no_sdl
-
+    - travis_wait scripts/run_carp_tests.sh --no_sdl

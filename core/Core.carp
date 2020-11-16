@@ -34,10 +34,10 @@
 (load-once "Tuples.carp")
 (load-once "StaticArray.carp")
 (load-once "Array.carp")
+(load-once "StdInt.carp")
 (load-once "Char.carp")
 (load-once "String.carp")
 (load-once "ArrayExt.carp")
-(load-once "StdInt.carp")
 (load-once "System.carp")
 (load-once "IO.carp")
 (load-once "Pattern.carp")
@@ -51,8 +51,7 @@
 (load-once "Control.carp")
 (load-once "Opaque.carp")
 
-(not-on-windows
-  (system-include "sys/wait.h")
-  (system-include "unistd.h"))
-(freebsd-only
-  (system-include "signal.h"))
+(posix-only
+ (system-include "sys/wait.h")
+ (system-include "unistd.h")
+ (system-include "signal.h"))

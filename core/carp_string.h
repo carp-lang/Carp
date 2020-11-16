@@ -183,7 +183,7 @@ Array String_to_MINUS_bytes(const String *s) {
 String String_from_MINUS_bytes(Array *a) {
     String s;
     const char *us = (const char *)a->data;
-    s = CARP_MALLOC(a->len+1);
+    s = CARP_MALLOC(a->len + 1);
     memcpy(s, us, a->len);
     s[a->len] = '\0';
     return s;
@@ -353,4 +353,11 @@ int String_index_MINUS_of(const String *s, char c) {
      * Returns -1 if not found
      */
     return String_index_MINUS_of_MINUS_from(s, c, -1);
+}
+
+String Pointer_str(void *in) {
+    int size = snprintf(NULL, 0, "%p", in) + 1;
+    String buffer = CARP_MALLOC(size);
+    sprintf(buffer, "%p", in);
+    return buffer;
 }

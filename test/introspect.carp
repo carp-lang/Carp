@@ -2,6 +2,7 @@
 (use-all Test Introspect)
 
 (defn foo [x] x)
+(defn add [x y] (+ x y))
 (def bar 2)
 (deftype Foo [x Int])
 (deftype Bar (Of [Int]))
@@ -52,4 +53,8 @@
     1
     (test-arity foo)
     "arity works as expected")
+  (assert-equal test
+    6
+    (Array.reduce (Introspect.with-copy add 1) 0 &[1 2 3])
+    "with-copy works as expected")
 )
