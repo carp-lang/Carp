@@ -932,6 +932,8 @@ setStaticOrDynamicVar path env binder value =
         envReplaceBinding path (Binder meta (XObj (Lst [def, sym, value]) (info value) t)) env
       (Binder meta (XObj (Lst (defdy@(XObj DefDynamic _ _) : sym : val)) i t)) ->
         envReplaceBinding path (Binder meta (XObj (Lst [defdy, sym, value]) (info value) (Just DynamicTy))) env
+      -- shouldn't happen, errors are thrown at call sites.
+      -- TODO: Return an either here to propagate error.
       _ -> env
 
 primitiveEval :: Primitive
