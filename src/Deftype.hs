@@ -309,7 +309,7 @@ tokensForInit allocationMode typeName membersXObjs =
                                            -- if this is truly a memberless struct, init it to 0;
                                            -- This can happen, e.g. in cases where *all* members of the struct are of type Unit.
                                            -- Since we do not generate members for Unit types.
-                                           [] ->  "    $p instance = {0};"
+                                           [] ->  "    $p instance = {};"
                                            _  -> "    $p instance;"
                            HeapAlloc ->  "    $p instance = CARP_MALLOC(sizeof(" ++ typeName ++ "));"
                        , assignments membersXObjs
