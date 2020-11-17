@@ -100,9 +100,13 @@ eval ctx xobj@(XObj o i t) preference =
       (newCtx, evaled) <- foldlM successiveEval (ctx, Right []) objs
       return (newCtx, do ok <- evaled
                          Right (XObj (StaticArr ok) i t))
-    _        -> return (ctx, Right xobj)
+    _ ->  do (nctx, res) <- annotateWithinContext False ctx xobj
+             case res of
+               Left e -> return (nctx, Left e)
+               Right (val, deps) -> return (nctx, Right val)
   where
     resolveDef (XObj (Lst [XObj DefDynamic _ _, _, value]) _ _) = value
+    resolveDef (XObj (Lst [XObj LetDef _ _, _, value]) _ _) = value
     resolveDef x = x
     eval' form =
       case form of
@@ -196,7 +200,7 @@ eval ctx xobj@(XObj o i t) preference =
                      (newCtx, res) <- eval ctx x preference
                      case res of
                        Right okX -> do
-                        let binder = Binder emptyMeta okX
+                        let binder = Binder emptyMeta (XObj (Lst [(XObj LetDef Nothing Nothing), XObj (Sym (SymPath [] n) Symbol) Nothing Nothing, okX]) Nothing (ty okX))
                             Just e = contextInternalEnv ctx
                         return $ Right (newCtx {contextInternalEnv=Just (envInsertAt e (SymPath [] n) binder)})
                        Left err -> return $ Left err
@@ -884,7 +888,7 @@ specialCommandSet ctx [x@(XObj (Sym path@(SymPath mod n) _) _ _), value] = do
                 (ctx', typedVal) <- typeCheckValueAgainstBinder ctx value binder
                 return $ either (failure ctx) (success ctx') typedVal
                 where success c xo = (c{contextGlobalEnv = setStaticOrDynamicVar path env binder xo}, dynamicNil)
-	      Nothing -> return (ctx, Right value)
+              Nothing -> return (ctx, Right value)
           setInternal ctx env value =
             case lookupInEnv path env of
               Just (e, binder) -> do
@@ -892,10 +896,10 @@ specialCommandSet ctx [x@(XObj (Sym path@(SymPath mod n) _) _ _), value] = do
                 -- At the moment, let bindings are not structured the same as global defs or dynamic defs.
                 -- This makes calls to the type check problematic, as we cannot work against a common binding form.
                 -- Once we better support let bindings, type check them.
-                -- (ctx', typedVal) <- typeCheckValueAgainstBinder ctx value binder
+                (ctx', typedVal) <- typeCheckValueAgainstBinder ctx value binder
                 return $ if contextPath ctx == mod
-                         then either (failure ctx) (success ctx) (Right value)
-                         else (ctx, dynamicNil)
+                         then either (failure ctx) (success ctx') typedVal
+                         else (ctx', dynamicNil)
                 where success c xo = (c{contextInternalEnv = Just (setStaticOrDynamicVar (SymPath [] n) env binder xo)}, dynamicNil)
               -- If the def isn't found in the internal environment, check the global environment.
               Nothing -> setGlobal ctx (contextGlobalEnv ctx) value
@@ -932,6 +936,8 @@ setStaticOrDynamicVar path env binder value =
         envReplaceBinding path (Binder meta (XObj (Lst [def, sym, value]) (info value) t)) env
       (Binder meta (XObj (Lst (defdy@(XObj DefDynamic _ _) : sym : val)) i t)) ->
         envReplaceBinding path (Binder meta (XObj (Lst [defdy, sym, value]) (info value) (Just DynamicTy))) env
+      (Binder meta (XObj (Lst (lett@(XObj LetDef _ _) : sym : val)) i t)) ->
+        envReplaceBinding path (Binder meta (XObj (Lst [lett, sym, value]) (info value) t)) env
       -- shouldn't happen, errors are thrown at call sites.
       -- TODO: Return an either here to propagate error.
       _ -> env
