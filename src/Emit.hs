@@ -13,7 +13,7 @@ import Control.Monad.State
 import Control.Monad (when, zipWithM_)
 import qualified Data.Map as Map
 import qualified Data.Set as Set
-import Data.Maybe (fromMaybe)
+import Data.Maybe (fromMaybe, fromJust)
 import Debug.Trace
 import Data.Char (ord)
 
@@ -316,6 +316,8 @@ toC toCMode (Binder meta root) = emitterSrc (execState (visit startingIndent roo
                     -- This requires a bunch of extra machinery though, so this will do for now...
                     [var ++ periodOrArrow ++ "_tag == " ++ tagName caseTy (removeSuffix caseName)] ++
                       concat (zipWith (\c i -> tagCondition (var ++ periodOrArrow ++ "u." ++ removeSuffix caseName ++ ".member" ++ show i) "." (forceTy c) c) caseMatchers [0..])
+                      where notUnitX (XObj _ _ (Just UnitTy)) = False
+                            notUnitX _ = True
                   tagCondition _ _ _ x =
                     []
                     --error ("tagCondition fell through: " ++ show x)
@@ -354,7 +356,7 @@ toC toCMode (Binder meta root) = emitterSrc (execState (visit startingIndent roo
                                MatchRef -> ("->", "&")
                        appendToSrc ("if(" ++ joinWith " && " (tagCondition exprVar (fst refModifications) (removeOuterRefTyIfMatchRef exprTy) caseLhs) ++ ") {\n")
                        appendToSrc (addIndent indent' ++ tyToCLambdaFix exprTy ++ " " ++ tempVarToAvoidClash ++ " = " ++ exprVar ++ ";\n")
-                       zipWithM_ (emitCaseMatcher refModifications (removeSuffix caseName)) caseMatchers [0..]
+                       zipWithM_ (emitCaseMatcher refModifications (removeSuffix caseName)) (filter (notUnit . forceTy) caseMatchers) [0..]
                        appendToSrc (addIndent indent' ++ "// Case expr:\n")
                        emitCaseEnd caseLhsInfo caseExpr
                   emitCase exprVar isFirst (XObj (Sym firstPath _) caseLhsInfo _, caseExpr) =
@@ -604,11 +606,15 @@ toC toCMode (Binder meta root) = emitterSrc (execState (visit startingIndent roo
 
         createArgList :: Int -> Bool -> [XObj] -> State EmitterState String
         createArgList indent unwrapLambdas args =
-          do argStrings <- mapM (visit indent) args
+          do argStrings <- mapM (visit indent) (filter (notUnit . forceTy) args)
              let argTypes = map forceTy args
-             return $ intercalate ", " $ if unwrapLambdas
-                                         then zipWith unwrapLambda argStrings argTypes
-                                         else argStrings
+                 unitless = filter notUnit argTypes
+                 -- Run side effects
+                 sideEffects = mapM (visit indent) (filter (not . notUnit . forceTy) args) >>= return . intercalate ";\n"
+                 unwrapped = joinWithComma $ if unwrapLambdas
+                                             then zipWith unwrapLambda argStrings unitless
+                                             else argStrings
+             sideEffects >> return unwrapped
 
         unwrapLambda :: String -> Ty -> String
         unwrapLambda variableName ty =
@@ -716,7 +722,7 @@ defStructToDeclaration structTy@(StructTy typeName typeVariables) path rest =
       typedefCaseToMemberDecl :: XObj -> State EmitterState [()]
       -- ANSI C doesn't allow empty structs, insert a dummy member to keep the compiler happy.
       typedefCaseToMemberDecl (XObj (Arr []) _ _) = sequence $ pure $ appendToSrc (addIndent indent ++ "char __dummy;\n")
-      typedefCaseToMemberDecl (XObj (Arr members) _ _) = mapM (memberToDecl indent) (pairwise members)
+      typedefCaseToMemberDecl (XObj (Arr members) _ _) = mapM (memberToDecl indent) (filter (notUnit . fromJust . xobjToTy . snd) (pairwise members))
       typedefCaseToMemberDecl _ = error "Invalid case in typedef."
 
       -- Note: the names of types are not namespaced
@@ -746,7 +752,7 @@ defSumtypeToDeclaration sumTy@(StructTy typeName typeVariables) path rest =
         appendToSrc (addIndent indent ++ "// " ++ caseName ++ "\n")
       emitSumtypeCase indent xobj@(XObj (Lst [XObj (Sym (SymPath [] caseName) _) _ _, XObj (Arr memberTys) _ _]) _ _) =
         do appendToSrc (addIndent indent ++ "struct {\n")
-           let members = zipWith (\anonName tyXObj -> (anonName, tyXObj)) anonMemberSymbols memberTys
+           let members = zipWith (\anonName tyXObj -> (anonName, tyXObj)) anonMemberSymbols (filter (notUnit . fromJust . xobjToTy) memberTys)
            mapM_ (memberToDecl (indent + indentAmount)) members
            appendToSrc (addIndent indent ++ "} " ++ caseName ++ ";\n")
       emitSumtypeCase indent xobj@(XObj (Sym (SymPath [] caseName) _) _ _) =
@@ -766,8 +772,10 @@ defaliasToDeclaration :: Ty -> SymPath -> String
 defaliasToDeclaration t path =
   case t of
     (FuncTy argTys retTy _) -> "typedef " ++ tyToCLambdaFix retTy ++ "(*" ++ pathToC path ++ ")(" ++
-                               intercalate ", " (map tyToCLambdaFix argTys) ++ ");\n"
+                               intercalate ", " (map fixer argTys) ++ ");\n"
     _ ->  "typedef " ++ tyToC t ++ " " ++ pathToC path ++ ";\n"
+    where fixer UnitTy = "void*"
+          fixer x = tyToCLambdaFix x
 
 toDeclaration :: Binder -> String
 toDeclaration (Binder meta xobj@(XObj (Lst xobjs) _ t)) =
@@ -811,12 +819,12 @@ toDeclaration (Binder meta xobj@(XObj (Lst xobjs) _ t)) =
 toDeclaration _ = error "Missing case."
 
 paramListToC :: [XObj] -> String
-paramListToC xobjs = intercalate ", " (map getParam (filter notUnit xobjs))
+paramListToC xobjs = if null $ joinWithComma (map getParam xobjs)
+                     then ""
+                     else joinWithComma (map getParam (filter (notUnit . forceTy) xobjs))
   where getParam :: XObj -> String
         getParam (XObj (Sym (SymPath _ name) _) _ (Just t)) = tyToCLambdaFix t ++ " " ++ mangle name
         getParam invalid = error (show (InvalidParameter invalid))
-        notUnit (XObj _ _ (Just UnitTy)) = False
-        notUnit _ = True
 
 projectIncludesToC :: Project -> String
 projectIncludesToC proj = intercalate "\n" (map includerToC includes) ++ "\n\n"

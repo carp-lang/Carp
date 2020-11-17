@@ -586,6 +586,7 @@ incrementEnvNestLevel env = let current = envFunctionNestingLevel env
 
 -- | Converts an S-expression to one of the Carp types.
 xobjToTy :: XObj -> Maybe Ty
+xobjToTy (XObj (Sym (SymPath _ "Unit") _) _ _) = Just UnitTy
 xobjToTy (XObj (Sym (SymPath _ "Int") _) _ _) = Just IntTy
 xobjToTy (XObj (Sym (SymPath _ "Float") _) _ _) = Just FloatTy
 xobjToTy (XObj (Sym (SymPath _ "Double") _) _ _) = Just DoubleTy

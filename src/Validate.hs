@@ -35,6 +35,7 @@ okXObjForType typeEnv typeVariables xobj =
 canBeUsedAsMemberType :: TypeEnv -> [Ty] -> Ty -> XObj -> Either TypeError ()
 canBeUsedAsMemberType typeEnv typeVariables t xobj =
   case t of
+    UnitTy    -> return ()
     IntTy     -> return ()
     FloatTy   -> return ()
     DoubleTy  -> return ()
