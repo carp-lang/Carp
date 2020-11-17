@@ -311,4 +311,8 @@
                 "hellö"
                 &(from-bytes &[104b 101b 108b 108b 195b 182b])
                 "from-bytes works correctly")
+  (assert-equal test
+                &[\� \�]
+                &(chars &(from-bytes &[255b 255b]))
+                "check for invalid UTF-8 sequences")
 )

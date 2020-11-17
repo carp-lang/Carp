@@ -134,9 +134,16 @@ Array String_chars(const String *ps) {
     chars.capacity = l;
     data = CARP_MALLOC(chars.capacity * sizeof(*data));
     for (size_t si = 0, di = 0; di < l; si++) {
-        if (!utf8decode(&state, &cp, us[si])) {
-            data[di++] = cp;
-            cp = 0;
+        uint32_t r = utf8decode(&state, &cp, us[si]);
+        switch (r) {
+            case UTF8_ACCEPT:
+                data[di++] = cp;
+                cp = 0;
+                break;
+            case UTF8_REJECT:
+                data[di++] = 0xfffd;  // REPLACEMENT CHARACTER
+                cp = 0;
+                break;
         }
     }
     chars.data = data;
