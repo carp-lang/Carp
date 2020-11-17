@@ -100,9 +100,13 @@ eval ctx xobj@(XObj o i t) preference =
       (newCtx, evaled) <- foldlM successiveEval (ctx, Right []) objs
       return (newCtx, do ok <- evaled
                          Right (XObj (StaticArr ok) i t))
-    _        -> return (ctx, Right xobj)
+    _ ->  do (nctx, res) <- annotateWithinContext False ctx xobj
+             case res of
+               Left e -> return (nctx, Left e)
+               Right (val, deps) -> return (nctx, Right val)
   where
     resolveDef (XObj (Lst [XObj DefDynamic _ _, _, value]) _ _) = value
+    resolveDef (XObj (Lst [XObj LetDef _ _, _, value]) _ _) = value
     resolveDef x = x
     eval' form =
       case form of
@@ -196,7 +200,7 @@ eval ctx xobj@(XObj o i t) preference =
                      (newCtx, res) <- eval ctx x preference
                      case res of
                        Right okX -> do
-                        let binder = Binder emptyMeta okX
+                        let binder = Binder emptyMeta (XObj (Lst [(XObj LetDef Nothing Nothing), XObj (Sym (SymPath [] n) Symbol) Nothing Nothing, okX]) Nothing (ty okX))
                             Just e = contextInternalEnv ctx
                         return $ Right (newCtx {contextInternalEnv=Just (envInsertAt e (SymPath [] n) binder)})
                        Left err -> return $ Left err
@@ -875,19 +879,68 @@ specialCommandSet ctx [x@(XObj (Sym path@(SymPath mod n) _) _ _), value] = do
     Left err -> return (newCtx, Left err)
     Right evald -> do
       let globalEnv = contextGlobalEnv ctx
-          elem = XObj (Lst  [XObj DefDynamic Nothing Nothing, XObj (Sym path Symbol) Nothing Nothing, evald]) (info value) (Just DynamicTy)
-          binder = (Binder emptyMeta elem)
-          nctx = newCtx { contextGlobalEnv=envInsertAt globalEnv path binder }
-      case contextInternalEnv nctx of
-        Nothing -> return (nctx, dynamicNil)
-        Just env ->
-          if contextPath nctx == mod
-          then return (nctx{contextInternalEnv=Just (envReplaceBinding (SymPath [] n) binder env)}, dynamicNil)
-          else return (nctx, dynamicNil)
+      case contextInternalEnv ctx of
+        Nothing -> setGlobal newCtx globalEnv evald
+        Just env -> setInternal newCtx env evald
+    where setGlobal ctx env value =
+            case lookupInEnv path env of
+              Just (e, binder) -> do
+                (ctx', typedVal) <- typeCheckValueAgainstBinder ctx value binder
+                return $ either (failure ctx) (success ctx') typedVal
+                where success c xo = (c{contextGlobalEnv = setStaticOrDynamicVar path env binder xo}, dynamicNil)
+              Nothing -> return (ctx, Right value)
+          setInternal ctx env value =
+            case lookupInEnv path env of
+              Just (e, binder) -> do
+                -- TODO: Type check local bindings.
+                -- At the moment, let bindings are not structured the same as global defs or dynamic defs.
+                -- This makes calls to the type check problematic, as we cannot work against a common binding form.
+                -- Once we better support let bindings, type check them.
+                (ctx', typedVal) <- typeCheckValueAgainstBinder ctx value binder
+                return $ if contextPath ctx == mod
+                         then either (failure ctx) (success ctx') typedVal
+                         else (ctx', dynamicNil)
+                where success c xo = (c{contextInternalEnv = Just (setStaticOrDynamicVar (SymPath [] n) env binder xo)}, dynamicNil)
+              -- If the def isn't found in the internal environment, check the global environment.
+              Nothing -> setGlobal ctx (contextGlobalEnv ctx) value
 specialCommandSet ctx [notName, body] =
   return (evalError ctx ("`set!` expected a name as first argument, but got " ++ pretty notName) (info notName))
 specialCommandSet ctx args =
   return (evalError ctx ("`set!` takes a name and a value, but got `" ++ intercalate " " (map pretty args)) (if null args then Nothing else info (head args)))
+
+-- | Convenience method for signifying failure in a given context.
+failure :: Context -> EvalError -> (Context, Either EvalError a)
+failure ctx err = (ctx, Left err)
+
+-- | Given a context, value XObj and an existing binder, check whether or not
+-- the given value has a type matching the binder's in the given context.
+typeCheckValueAgainstBinder :: Context -> XObj -> Binder -> IO (Context, (Either EvalError XObj))
+typeCheckValueAgainstBinder ctx val binder = do
+  (ctx', typedValue) <- annotateWithinContext False ctx val
+  case typedValue of
+    Right (val', deps) -> return (go ctx' binderTy val')
+    Left err -> return (ctx', Left err)
+  where path = (getPath (binderXObj binder))
+        binderTy = ty (binderXObj binder)
+        typeErr x = evalError ctx ("can't `set!` " ++ show path ++ " to a value of type " ++ show (fromJust (ty x)) ++ ", " ++ show path ++ " has type " ++ show (fromJust binderTy)) (info x)
+        go ctx (Just DynamicTy) x = (ctx, Right x)
+        go ctx t x@(XObj _ _ t') = if t == t' then (ctx, Right x) else typeErr x
+
+-- | Sets a variable, checking whether or not it is static or dynamic, and
+-- assigns an appropriate type to the variable.
+-- Returns a new environment containing the assignment.
+setStaticOrDynamicVar :: SymPath -> Env -> Binder -> XObj -> Env
+setStaticOrDynamicVar path env binder value =
+    case binder of
+      (Binder meta (XObj (Lst (def@(XObj Def _ _) : sym : val)) i t)) ->
+        envReplaceBinding path (Binder meta (XObj (Lst [def, sym, value]) (info value) t)) env
+      (Binder meta (XObj (Lst (defdy@(XObj DefDynamic _ _) : sym : val)) i t)) ->
+        envReplaceBinding path (Binder meta (XObj (Lst [defdy, sym, value]) (info value) (Just DynamicTy))) env
+      (Binder meta (XObj (Lst (lett@(XObj LetDef _ _) : sym : val)) i t)) ->
+        envReplaceBinding path (Binder meta (XObj (Lst [lett, sym, value]) (info value) t)) env
+      -- shouldn't happen, errors are thrown at call sites.
+      -- TODO: Return an either here to propagate error.
+      _ -> env
 
 primitiveEval :: Primitive
 primitiveEval _ ctx [val] = do

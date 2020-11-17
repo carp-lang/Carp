@@ -86,6 +86,7 @@ initialTypes typeEnv rootEnv root = evalState (visit rootEnv root) 0
                        (InterfaceSym _)   -> visitInterfaceSym env xobj
                        e@(Defn _)         -> return (Left (InvalidObj e xobj))
                        Def                -> return (Left (InvalidObj Def xobj))
+                       DefDynamic         -> return (Left (InvalidObj DefDynamic xobj))
                        e@(Fn _ _)         -> return (Left (InvalidObj e xobj))
                        Let                -> return (Left (InvalidObj Let xobj))
                        If                 -> return (Left (InvalidObj If xobj))
@@ -106,6 +107,8 @@ initialTypes typeEnv rootEnv root = evalState (visit rootEnv root) 0
                        Ref                -> return (Left (InvalidObj Ref xobj))
                        Deref              -> return (Left (InvalidObj Deref xobj))
                        With               -> return (Left (InvalidObj With xobj))
+                       -- catchall case for exhaustive patterns
+                       unknown            -> return (Left (InvalidObj unknown xobj))
 
     visitSymbol :: Env -> XObj -> SymPath -> State Integer (Either TypeError XObj)
     visitSymbol _ xobj@(XObj (Sym _ LookupRecursive) _ _) _ =
@@ -218,6 +221,11 @@ initialTypes typeEnv rootEnv root = evalState (visit rootEnv root) 0
 
         XObj Def _ _ : _ -> return (Left (InvalidObj Def xobj))
 
+        -- DefDynamic
+        [def@(XObj DefDynamic _ _), nameSymbol, expression] ->
+          return $ return (XObj (Lst [def, nameSymbol, expression]) i (Just DynamicTy))
+        XObj DefDynamic _ _ : _ -> return (Left (InvalidObj Def xobj))
+
         -- Let binding
         [letExpr@(XObj Let _ _), XObj (Arr bindings) bindi bindt, body] ->
           do wholeExprType <- genVarTy
@@ -236,7 +244,6 @@ initialTypes typeEnv rootEnv root = evalState (visit rootEnv root) 0
           where getDuplicate _ [] = Nothing
                 getDuplicate names (o@(XObj (Sym (SymPath _ x) _) _ _):y:xs) =
                   if x `elem` names then Just o else getDuplicate (x:names) xs
-
 
         [XObj Let _ _, XObj (Arr _) _ _] ->
           return (Left (NoFormsInBody xobj))

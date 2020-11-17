@@ -67,6 +67,7 @@ data Obj = Sym SymPath SymbolMode
          | Fn (Maybe SymPath) (Set.Set XObj) -- the name of the lifted function, the set of variables this lambda captures, and a dynamic environment
          | Do
          | Let
+         | LetDef
          | While
          | Break
          | If
@@ -232,6 +233,7 @@ getSimpleNameWithArgs xobj = Nothing
 getPath :: XObj -> SymPath
 getPath (XObj (Lst (XObj (Defn _) _ _ : XObj (Sym path _) _ _ : _)) _ _) = path
 getPath (XObj (Lst (XObj Def _ _ : XObj (Sym path _) _ _ : _)) _ _) = path
+getPath (XObj (Lst (XObj LetDef _ _ : XObj (Sym path _) _ _ : _)) _ _) = path
 getPath (XObj (Lst (XObj Macro _ _ : XObj (Sym path _) _ _ : _)) _ _) = path
 getPath (XObj (Lst (XObj Dynamic _ _ : XObj (Sym path _) _ _ : _)) _ _) = path
 getPath (XObj (Lst (XObj DefDynamic _ _ : XObj (Sym path _) _ _ : _)) _ _) = path
@@ -293,6 +295,7 @@ pretty = visit 0
             While -> "while"
             Do -> "do"
             Let -> "let"
+            LetDef -> "let"
             Mod env -> fromMaybe "module" (envModuleName env)
             Deftype _ -> "deftype"
             DefSumtype _ -> "deftype"
@@ -354,6 +357,7 @@ prettyUpTo max xobj =
             While -> ""
             Do -> ""
             Let -> ""
+            LetDef -> ""
             Mod env -> ""
             Deftype _ -> ""
             DefSumtype _ -> ""
