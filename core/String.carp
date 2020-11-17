@@ -79,11 +79,11 @@
 
   (doc prefix "Return the first `a` characters of the string `s`.")
   (defn prefix [s a]
-    (from-chars &(Array.slice &(chars s) 0 a)))
+    (from-chars &(Array.prefix &(chars s) a)))
 
-  (doc suffix "Return the last `b` characters of the string `s`.")
+  (doc suffix "Returns the suffix string starting at the `b`th character.")
   (defn suffix [s b]
-    (from-chars &(Array.slice &(chars s) b (length s))))
+    (from-chars &(Array.suffix &(chars s) b)))
 
   (doc starts-with? "Check if the string `s` begins with the string `sub`.")
   (defn starts-with? [s sub]
