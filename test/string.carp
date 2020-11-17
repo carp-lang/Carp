@@ -94,6 +94,10 @@
                 "dang"
                 &(suffix "svedang" 3)
                 "suffix works as expected")
+  (assert-equal test
+                "😲😲😲😲"
+                &(suffix "😲😲😲😲😲" 1)
+                "suffix works as expected II")
   (assert-true test
                (ends-with? "heller" "ler")
                "ends-with? works as expected")
