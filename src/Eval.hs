@@ -289,7 +289,7 @@ eval ctx xobj@(XObj o i t) preference =
          specialCommandWhile ctx cond body
        [] -> return (ctx, dynamicNil)
        x -> do
-        return (evalError ctx ("I did not understand the form `" ++ pretty xobj ++ "`") (trace (show xobj) (info xobj)))
+        return (evalError ctx ("I did not understand the form `" ++ pretty xobj ++ "`") (info xobj))
     checkArity params args =
       let la = length args
           withRest = any ((":rest" ==) . getName) params
