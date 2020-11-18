@@ -20,6 +20,8 @@ let
       , ghc-prof-flamegraph
       , clang , makeWrapper
       , libXext, libXcursor, libXinerama, libXi, libXrandr, libXScrnSaver, libXxf86vm, libpthreadstubs, libXdmcp, libGL
+
+      , cabal-install, gdb , flamegraph, linuxPackages, tinycc, zig
       }:
       mkDerivation {
         pname = "CarpHask";
@@ -44,6 +46,10 @@ let
           base containers directory haskeline optparse-applicative parsec process
           clang
         ];
+        executableToolDepends = optionals pkgs.lib.inNixShell (
+          [ cabal-install clang gdb ]
+          ++ optionals stdenv.isLinux [ flamegraph linuxPackages.perf tinycc zig ]
+        );
         executableFrameworkDepends = with darwin.apple_sdk.frameworks; optionals stdenv.isDarwin [
           Carbon Cocoa IOKit CoreFoundation CoreVideo IOKit ForceFeedback
         ];
@@ -66,7 +72,9 @@ let
       };
 
   haskellPackages = if compiler == "default"
-                       then pkgs.haskellPackages
-                       else pkgs.haskell.packages.${compiler};
+                    then pkgs.haskellPackages
+                    else pkgs.haskell.packages.${compiler};
+  drv = haskellPackages.callPackage f {};
 
-in haskellPackages.callPackage f {}
+in
+  if pkgs.lib.inNixShell then drv.env else drv
