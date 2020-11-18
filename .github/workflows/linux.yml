@@ -39,12 +39,15 @@ jobs:
     - name: Run Carp Tests
       run: ./scripts/run_carp_tests.sh
 
+    - name: List Contents of Docs Directory
+      run: ls ./docs/core
+
     - name: Copy Docs to carp-docs Repository
       uses: andstor/copycat-action@v3
       with:
         personal_token: ${{ secrets.PERSONAL_TOKEN }}
-        src_path: /docs/core
-        dst_path: /
+        src_path: ./docs/core
+        dst_path: .
         dst_owner: carp-lang
         dst_repo_name: carp-docs
         clean: true
