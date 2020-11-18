@@ -47,3 +47,5 @@ jobs:
         dst_path: /core
         dst_owner: carp-lang
         dst_repo_name: carp-docs
+        clean: true
+        commit_message: "Docs generated from: ${{ github.event.head_commit.message}}"
