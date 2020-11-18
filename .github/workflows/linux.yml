@@ -44,7 +44,7 @@ jobs:
       with:
         personal_token: ${{ secrets.PERSONAL_TOKEN }}
         src_path: /docs/core
-        dst_path: /core
+        dst_path: /
         dst_owner: carp-lang
         dst_repo_name: carp-docs
         clean: true

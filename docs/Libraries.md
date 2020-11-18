@@ -51,42 +51,42 @@ Please note that for private repos only loading through SSH is supported. For pu
 ### Basics
 * [Macros ⦁](../core/Macros.carp)
 * [Interfaces ⦁](../core/Interfaces.carp)
-* [Dynamic ⦁](http://carp-lang.github.io/Carp/core/Dynamic.html) (only available in the repl and at compile time)
+* [Dynamic ⦁](http://carp-lang.github.io/carp-docs/core/Dynamic.html) (only available in the repl and at compile time)
 
-* [Maybe ⦁](http://carp-lang.github.io/Carp/core/Maybe.html)
-* [Result ⦁](http://carp-lang.github.io/Carp/core/Result.html)
+* [Maybe ⦁](http://carp-lang.github.io/carp-docs/core/Maybe.html)
+* [Result ⦁](http://carp-lang.github.io/carp-docs/core/Result.html)
 
 ### Numerics
-* [Int ⦁](http://carp-lang.github.io/Carp/core/Int.html)
+* [Int ⦁](http://carp-lang.github.io/carp-docs/core/Int.html)
 <!-- * SafeInt -->
-* [Long ⦁](http://carp-lang.github.io/Carp/core/Long.html)
-* [Bool ⦁](http://carp-lang.github.io/Carp/core/Bool.html)
-* [Float ⦁](http://carp-lang.github.io/Carp/core/Float.html)
-* [Double ⦁](http://carp-lang.github.io/Carp/core/Double.html)
-* [Vector2](http://carp-lang.github.io/Carp/core/Vector2.html)
-* [Vector3](http://carp-lang.github.io/Carp/core/Vector3.html)
-* [VectorN](http://carp-lang.github.io/Carp/core/VectorN.html)
-* [Geometry](http://carp-lang.github.io/Carp/core/Geometry.html)
-* [Statistics](http://carp-lang.github.io/Carp/core/Statistics.html)
+* [Long ⦁](http://carp-lang.github.io/carp-docs/core/Long.html)
+* [Bool ⦁](http://carp-lang.github.io/carp-docs/core/Bool.html)
+* [Float ⦁](http://carp-lang.github.io/carp-docs/core/Float.html)
+* [Double ⦁](http://carp-lang.github.io/carp-docs/core/Double.html)
+* [Vector2](http://carp-lang.github.io/carp-docs/core/Vector2.html)
+* [Vector3](http://carp-lang.github.io/carp-docs/core/Vector3.html)
+* [VectorN](http://carp-lang.github.io/carp-docs/core/VectorN.html)
+* [Geometry](http://carp-lang.github.io/carp-docs/core/Geometry.html)
+* [Statistics](http://carp-lang.github.io/carp-docs/core/Statistics.html)
 
 ### Text
-* [String ⦁](http://carp-lang.github.io/Carp/core/String.html)
-* [Char ⦁](http://carp-lang.github.io/Carp/core/Char.html)
+* [String ⦁](http://carp-lang.github.io/carp-docs/core/String.html)
+* [Char ⦁](http://carp-lang.github.io/carp-docs/core/Char.html)
 <!-- * Format ⦁ -->
-* [Pattern ⦁](http://carp-lang.github.io/Carp/core/Pattern.html)
+* [Pattern ⦁](http://carp-lang.github.io/carp-docs/core/Pattern.html)
 
 ### Collections
-* [Array ⦁](http://carp-lang.github.io/Carp/core/Array.html)
-* [Map ⦁](http://carp-lang.github.io/Carp/core/Map.html)
+* [Array ⦁](http://carp-lang.github.io/carp-docs/core/Array.html)
+* [Map ⦁](http://carp-lang.github.io/carp-docs/core/Map.html)
 
 ### System
-* [IO ⦁](http://carp-lang.github.io/Carp/core/IO.html)
-* [System ⦁](http://carp-lang.github.io/Carp/core/System.html)
+* [IO ⦁](http://carp-lang.github.io/carp-docs/core/IO.html)
+* [System ⦁](http://carp-lang.github.io/carp-docs/core/System.html)
 
 ### Development
-* [Bench](http://carp-lang.github.io/Carp/core/Bench.html)
-* [Debug ⦁](http://carp-lang.github.io/Carp/core/Debug.html)
-* [Test ⦁](http://carp-lang.github.io/Carp/core/Test.html)
+* [Bench](http://carp-lang.github.io/carp-docs/core/Bench.html)
+* [Debug ⦁](http://carp-lang.github.io/carp-docs/core/Debug.html)
+* [Test ⦁](http://carp-lang.github.io/carp-docs/core/Test.html)
 
 ### Graphics, sound and interaction
 * [SDL](http://carp-lang.github.io/Carp/sdl/SDL_index.html)
