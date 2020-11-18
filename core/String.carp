@@ -73,6 +73,7 @@
   (defn empty? [s]
     (Int.= (length s) 0))
 
+  (doc slice "Return part of a string, beginning at index `a` and ending at index `b`.")
   (defn slice [s a b]
     (from-chars &(Array.slice &(chars s) a b)))
   (implements slice String.slice)
