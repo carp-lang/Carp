@@ -46,8 +46,8 @@ jobs:
       uses: andstor/copycat-action@v3
       with:
         personal_token: ${{ secrets.PERSONAL_TOKEN }}
-        src_path: /docs/core
-        dst_path: /core
+        src_path: docs/core
+        dst_path: .
         dst_owner: carp-lang
         dst_repo_name: carp-docs
         commit_message: "Docs generated from: ${{ github.event.head_commit.message}}"
