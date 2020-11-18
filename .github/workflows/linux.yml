@@ -13,6 +13,15 @@ jobs:
     steps:
     - uses: actions/checkout@v2
 
+    - name: Copy Docs to carp-docs Repository (MOVE TO BOTTOM WHEN IT WORKS)
+      uses: andstor/copycat-action@v3
+      with:
+        personal_token: ${{ secrets.PERSONAL_TOKEN }}
+        src_path: /docs/core
+        dst_path: /core
+        dst_owner: carp-lang
+        dst_repo_name: carp-docs
+
     - uses: actions/setup-haskell@v1
 
     - name: Install SDL dependency (for SDL tests)
@@ -38,12 +47,3 @@ jobs:
 
     - name: Run Carp Tests
       run: ./scripts/run_carp_tests.sh
-
-    - name: Copy Docs to carp-docs Repository
-      uses: andstor/copycat-action@v3
-      with:
-        personal_token: ${{ secrets.PERSONAL_TOKEN }}
-        src_path: /docs/core
-        dst_path: /core
-        dst_owner: carp-lang
-        dst_repo_name: carp-docs
