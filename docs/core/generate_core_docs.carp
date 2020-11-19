@@ -12,37 +12,36 @@
 (load "Bench.carp")
 (load "Phantom.carp")
 
-(save-docs Dynamic
-           Int
-           Byte
-           Long
-           Bool
-           Float
-           Double
-           Vector2
-           Vector3
-           VectorN
-           Geometry
-           Statistics
-           String
-           Char
-           Pattern
-           Array
-           StaticArray
-           IO
-           System
-           Debug
-           Test
+(save-docs Array
            Bench
+           Bool
+           Byte
+           Char
+           Debug
+           Double
+           Dynamic
+           Float
+           Geometry
+           Int
+           IO
+           Long
            Map
            Maybe
-           Result
-           Pointer
+           Opaque
            Pair
-           Triple
+           Pattern
            Quadruple
            Phantom
-           Opaque
-           )
+           Pointer
+           Result
+           StaticArray
+           System
+           Statistics
+           String
+           Test
+           Triple
+           Vector2
+           Vector3
+           VectorN)
 
 (quit)
