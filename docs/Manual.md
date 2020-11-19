@@ -9,7 +9,7 @@
 * [Embedded](Embedded.md) - tips and tricks for working with Carp on embedded system
 * [Terminology](Terminology.md) - commonly used terms and what we mean with them
 
-To learn more about the Carp language and its syntax and semantics, check out the [Carp Language Guide](docs/LanguageGuide.md).
+To learn more about the Carp language and its syntax and semantics, check out the [Carp Language Guide](LanguageGuide.md).
 
 ### Basics
 
