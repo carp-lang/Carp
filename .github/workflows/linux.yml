@@ -45,7 +45,7 @@ jobs:
     - name: Copy Docs to carp-docs Repository
       uses: cpina/github-action-push-to-another-repository@master
       env:
-        API_TOKEN_GITHUB: ${{ secrets.API_TOKEN_GITHUB }}
+        API_TOKEN_GITHUB: ${{ secrets.PERSONAL_TOKEN }}
       with:
         source-directory: './docs/core'
         destination-github-username: 'carp-lang'
