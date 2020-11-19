@@ -51,4 +51,4 @@ jobs:
         destination-github-username: 'carp-lang'
         destination-repository-name: 'carp-docs'
         user-email: 'bot@carp-lang.github.io'
-        commit_message: "Docs generated from: ${{ github.event.head_commit.message}}"
+        commit-message: "Docs generated from: ${{ github.event.head_commit.message}}"
