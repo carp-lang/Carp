@@ -23,13 +23,9 @@ The key features of Carp are the following:
 * Straightforward integration with existing C code
 
 ## Learn more
-
-* [Installation](docs/Install.md) - how to build and configure the Carp compiler
-* [The Compiler Manual](docs/Manual.md) - how to compile code and configure your projects
+* [The Compiler Manual](docs/Manual.md) - how to install and use the compiler
 * [Carp Language Guide](docs/LanguageGuide.md) - syntax and semantics of the language
 * [Core Docs](http://carp-lang.github.io/carp-docs/core/core_index.html) - documentation for our standard library
-* [Libraries](docs/Libraries.md) - how to work with libraries and modules
-* [Tooling](docs/Tooling.md) - supported editors
 * [Game Example](examples/reptile.carp) - a Snake clone in Carp
 
 The Carp REPL has built-in documentation, run ```(help)``` to access it!
