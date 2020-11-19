@@ -47,8 +47,8 @@ jobs:
       env:
         API_TOKEN_GITHUB: ${{ secrets.PERSONAL_TOKEN }}
       with:
-        source-directory: './docs/core'
+        source-directory: './docs'
         destination-github-username: 'carp-lang'
-        destination-repository-name: 'carp-docs/core'
+        destination-repository-name: 'carp-docs'
         user-email: 'bot@carp-lang.github.io'
         commit-message: "Docs generated from: ${{ github.event.head_commit.message}}"
