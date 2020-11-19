@@ -29,13 +29,7 @@ jobs:
                        sdl2_mixer \
                        sdl2_ttf
 
-      - uses: actions/setup-haskell@v1.1
-        with:
-          ghc-version: '8.8.2'
-          stack-version: '2.3.1'
-          enable-stack: true
-          stack-no-global: true
-          stack-setup-ghc: true
+      - uses: actions/setup-haskell@v1
 
       - name: Build
         run: stack build
