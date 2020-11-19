@@ -43,12 +43,12 @@ jobs:
       run: ls ./docs/core
 
     - name: Copy Docs to carp-docs Repository
-      uses: andstor/copycat-action@v3
+      uses: cpina/github-action-push-to-another-repository@master
+      env:
+        API_TOKEN_GITHUB: ${{ secrets.API_TOKEN_GITHUB }}
       with:
-        personal_token: ${{ secrets.PERSONAL_TOKEN }}
-        src_path: docs/core/.
-        dst_path: core
-        dst_owner: carp-lang
-        dst_repo_name: carp-docs
-        clean: true
+        source-directory: './docs/core'
+        destination-github-username: 'carp-lang'
+        destination-repository-name: 'carp-docs'
+        user-email: 'bot@carp-lang.github.io'
         commit_message: "Docs generated from: ${{ github.event.head_commit.message}}"
