@@ -1,6 +1,6 @@
 ## Working with libraries and modules
 
-Carp comes with a standard library called [Core](../core/) where only certain files are loaded by default (see [Core.carp](../core/Core.carp)). If your `CARP_PATH` environment variable is set properly, these libraries will be easily imported using the `load` command. For example, to get access to the Bench module, do the following:
+Carp comes with a standard library called [Core](../core/) where only certain files are loaded by default (see [Core.carp](../core/Core.carp)). If your `CARP_DIR` environment variable is [set properly](https://github.com/carp-lang/Carp/blob/master/docs/Install.md#setting-the-carp_dir), these libraries will be easily imported using the `load` command. For example, to get access to the Bench module, do the following:
 
 ```clojure
 (load "Bench.carp")
