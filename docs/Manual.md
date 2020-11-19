@@ -2,12 +2,12 @@
 
 ### Related pages
 
-* [Installation](docs/Install.md) - how to acquire and configure the Carp compiler
-* [Tooling](docs/Tooling.md) - supported editors
-* [Libraries](docs/Libraries.md) - how to work with libraries and modules
-* [Macros](docs/Macros.md) - a guide to the Carp macro system
-* [Embedded](docs/Embedded.md) - tips and tricks for working with Carp on embedded system
-* [Terminology](docs/Terminology.md) - commonly used terms and what we mean with them
+* [Installation](Install.md) - how to acquire and configure the Carp compiler
+* [Tooling](Tooling.md) - supported editors
+* [Libraries](Libraries.md) - how to work with libraries and modules
+* [Macros](Macros.md) - a guide to the Carp macro system
+* [Embedded](Embedded.md) - tips and tricks for working with Carp on embedded system
+* [Terminology](Terminology.md) - commonly used terms and what we mean with them
 
 To learn more about the Carp language and its syntax and semantics, check out the [Carp Language Guide](docs/LanguageGuide.md).
 
