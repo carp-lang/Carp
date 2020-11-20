@@ -1,18 +1,19 @@
-(use IO)
+; This is dangerous because you've now told the Carp compiler that `f`
+; _will_ exist. So you won't get a compile error from Carp if you don't
+; implement it or change the signature. You should get a error in the C
+; compiler though.
+(register f (Fn [Int] Int))
 
-(register f a)
+(defn-do g [i]
+  (println* "I'm g")
+  (f (inc i)))
 
-(defn g []
-  (do
-    (println "I'm g")
-    (f)))
-
-(defn f []
-  (do
-    (println "I'm f")
-    (g)))
+(defn-do f [i]
+  (println* "I'm f")
+  (if (> i  10)
+    i
+    (g (inc i))))
 
 (defn main []
-  (do
-    (f)
-    0)) ;; Need a return value to get a concrete type.
+  (println* (fmt "Final result: %i" (g 0))))
+
