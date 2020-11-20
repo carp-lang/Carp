@@ -33,7 +33,7 @@ To use a managed `String` with a C function requiring a `char*` you can use the
 (puts (String.cstr "Hello"))
 ```
 
-It might be a good idea not to expose the C type to the end user directly:
+You may want to hide the C type from the end-user:
 
 ```clojure
 (defmodule MyMod
