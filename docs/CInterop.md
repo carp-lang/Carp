@@ -1,6 +1,16 @@
 # C Interop
 
-This is an extension of what is was covered in the [Language Guide](./LanguageGuide.md#c-interop).
+This is an extension of what is covered in the [Language Guide](./LanguageGuide.md#c-interop).
+
+## Content
+
+- [Managed types](#managed-types)
+  - [String](#string)
+  - [Array](#array)
+- [Embedding C code in Carp](#embedding-c-code-in-carp)
+  - [`deftemplate`](#deftemplate)
+    - [`Basic example`](#basic-example)
+    - [`Generics`](#generics)
 
 ## Managed types
 
@@ -161,5 +171,115 @@ void println_all(char **arr, int len) {
 (let [lines [@"One" @"Two" @"Three"]
       len (Array.length &lines)]
   (println-all (Array.raw lines) len))
+```
+
+## Embedding C code in Carp
+
+When interfacing C libraries it is sometimes beneficial to wrap the libraries
+function with some custom C code. An entirely valid method is the write your
+code in a header file, include it from the Carp side and `register` it:
+
+```c
+// print.h
+// String is a carp core alias for char*
+void print_that_takes_ownership(String str) {
+  printf("%s", str);
+  CARP_FREE(str);
+}
+```
+
+```clojure
+(relative-include "print.h")
+
+(register print (Fn [String] ()) "print_that_takes_ownership")
+
+(print @"Print this!")
+```
+
+However you might prefer to keep your C code close to your Carp code, enter `deftemplate`...
+
+### `deftemplate`
+
+#### Basic example
+We can instead define the previous example like so:
+
+```clojure
+(deftemplate print (Fn [String] ())
+                   "void $NAME(String str)"
+                   "$DECL {
+                     printf(\"%s\", str);
+                     CARP_FREE(str);
+                   }")
+
+(print @"Print this!")
+```
+
+Let's break down what's going on here:  
+The **first** argument to `deftemplate` is the name we'll use to refer to the
+function.  
+The **second** is a type signature and is identical to the one found
+in our previous `register` call.  
+The **third** is our function declaration, it'll be injected at the top of the
+generated C file.  
+The **last** argument represent the function definition.
+
+Two more thing to look at:  
+`$NAME` is a variable that will be derived from the name you've given the
+function plus any module it's defined in, so no need to worry about name
+clashes with other `print` functions in other modules.  
+`$DECL` will be replaced with the declaration passed as a third argument when
+the function is defined
+
+So we've seen how `deftemplate` can be used to keep Carp and C code close to
+each other and help you write less code in general but it's real power lies
+somewhere else...
+
+#### Generics
+
+Let's say one would like to write a function that adds two numbers, it would be
+tedious to write a version for every type of number, let's see how
+`deftemplate` can help us with that.
+
+```clojure
+(deftemplate add (Fn [a a] a)
+                 "$a $NAME($a x, $a y)"
+                 "$DECL {
+                   return x + y;
+                 }")
+
+(add 1 2)
+(add 20l 22l)
+(add 2.0f 5.0f)
+
+; Can't do that as they're different types
+; (add 2.0f 22l)
+```
+
+Carp allows us to use generic type in type signatures, `a` in that example. You
+can use `$` plus the generic name you used in your signature to refer to that
+type in your C code. Carp will then generate a separate function everytime the
+template is used with a different type.
+
+Warning! You'll need to be careful when calling that function as you've lost
+all type safety the Carp compiler guarantees. You will have to hope the C
+compiler will catch it.
+
+``` clojure
+(deftemplate add (Fn [a a] a)
+                 "$a $NAME($a x, $a y)"
+                 "$DECL {
+                   return x + y;
+                 }")
+
+(add @"A string" @" another string")
+```
+
+This thankfully result in this Clang error, but it's probably good not to rely on it.
+
+```
+out/main.c:9153:29: error: invalid operands to binary expression ('String' (aka 'char *') and 'String')
+                   return x + y;
+                          ~ ^ ~
+1 error generated.
 ```
 
