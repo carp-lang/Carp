@@ -37,6 +37,8 @@ It might be a good idea not to expose the C type to the end user directly:
 (MyMod.puts "Hello")
 ```
 
+---
+
 If you are given a `char*` and want to turn it into a managed `String` you can
 use `String.from-cstr`. It will allocate and copy the content of the C string.
 
@@ -55,6 +57,8 @@ char* returns_a_static_str() {
 (let [a-str (String.from-cstr (returns-a-static-str))]
   (println* (String.concat &[a-str @" " @"Carp"])))
 ```
+
+---
 
 The function you're consuming might be allocating the string on the Heap for
 you. In that case you can declare the function as returning a managed `String`.
@@ -90,5 +94,72 @@ char* returns_a_heap_string() {
   strcpy(str, hello);
   return str;
 }
+```
+
+### Array
+
+`Array.unsafe-raw` can be used in case you have a function taking an C array as
+a parameter.
+
+```c
+int sum(int *arr, int len) {
+  int acc = 0;
+  for (int i = 0; i < len; i++) {
+    acc += arr[i];
+  }
+  return acc;
+}
+```
+
+```clojure
+(relative-include "sum.h")
+
+(register sum-c (Fn [(Ptr Int) Int] Int) "sum")
+
+(let [ints [1 2 3]]
+  (println* (sum-c (Array.unsafe-raw &ints) (Array.length &ints))))
+```
+
+Again, you might want to wrap the bare C function in more Carp-esque interface.
+
+```clojure
+(relative-include "sum.h")
+
+(defmodule MyMod
+  (hidden sum-c)
+  (private sum-c)
+  (register sum-c (Fn [(Ptr Int) Int] Int) "sum")
+
+  (sig sum (Fn [(Ref (Array Int))] Int))
+  (defn sum [ints] (sum-c (Array.unsafe-raw ints) (Array.length ints))))
+
+(MyMod.sum &[1 2 3])
+```
+
+---
+
+In cases where the consuming function takes ownership over the data,
+`Array.raw` can be used. It becomes the responsibility of the consuming
+function to call `free` on the pointer and any managed types it contains.
+
+```c
+// printall.h
+void println_all(char **arr, int len) {
+  for (int i = 0; i < len; i++) {
+    printf("%s\n", arr[i]);
+    CARP_FREE(arr[i]);
+  }
+  CARP_FREE(arr);
+}
+```
+
+```clojure
+(relative-include "printall.h")
+
+(register println-all (Fn [(Ptr String) Int] ()) "println_all")
+
+(let [lines [@"One" @"Two" @"Three"]
+      len (Array.length &lines)]
+  (println-all (Array.raw lines) len))
 ```
 
