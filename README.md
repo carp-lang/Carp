@@ -1,9 +1,10 @@
 # Carp
 
-[![Join the chat at https://gitter.im/eriksvedang/Carp](https://badges.gitter.im/eriksvedang/Carp.svg)](https://gitter.im/eriksvedang/Carp?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge&utm_content=badge)
 [![Linux CI](https://github.com/carp-lang/Carp/workflows/Linux%20CI/badge.svg)](https://github.com/carp-lang/Carp/actions?query=workflow%3A%22Linux+CI%22)
 [![MacOS CI](https://github.com/carp-lang/Carp/workflows/MacOS%20CI/badge.svg)](https://github.com/carp-lang/Carp/actions?query=workflow%3A"MacOS+CI")
 [![Windows CI](https://github.com/carp-lang/Carp/workflows/Windows%20CI/badge.svg)](https://github.com/carp-lang/Carp/actions?query=workflow%3A"Windows+CI")
+
+[![Join the chat at https://gitter.im/eriksvedang/Carp](https://badges.gitter.im/eriksvedang/Carp.svg)](https://gitter.im/eriksvedang/Carp?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge&utm_content=badge)
 
 <img src="resources/logo/carp_logo_300_c.png" alt="Logo" align="right"/>
 
