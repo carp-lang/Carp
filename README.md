@@ -6,15 +6,13 @@
 [![MacOS CI](https://github.com/carp-lang/Carp/workflows/MacOS%20CI/badge.svg)](https://github.com/carp-lang/Carp/actions?query=workflow%3A"MacOS+CI")
 [![Windows CI](https://github.com/carp-lang/Carp/workflows/Windows%20CI/badge.svg)](https://github.com/carp-lang/Carp/actions?query=workflow%3A"Windows+CI")
 
-[![Join the chat at https://gitter.im/eriksvedang/Carp](https://badges.gitter.im/eriksvedang/Carp.svg)](https://gitter.im/eriksvedang/Carp?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge&utm_content=badge)
-
 <i>WARNING! This is a research project and a lot of information here might become outdated and misleading without any explanation. Don't use it for anything important just yet!</i>
 
 <i>[Version 0.4 of the language is out!](https://github.com/carp-lang/Carp/releases/)</i>
 
 ## About
 
-Carp is a small programming language designed to work well for interactive and performance sensitive use cases like games, sound synthesis and visualizations.
+Carp is a programming language designed to work well for interactive and performance sensitive use cases like games, sound synthesis and visualizations.
 
 The key features of Carp are the following:
 * Automatic and deterministic memory management (no garbage collector or VM)
@@ -27,9 +25,8 @@ The key features of Carp are the following:
 * [The Compiler Manual](docs/Manual.md) - how to install and use the compiler
 * [Carp Language Guide](docs/LanguageGuide.md) - syntax and semantics of the language
 * [Core Docs](http://carp-lang.github.io/carp-docs/core/core_index.html) - documentation for our standard library
-* [Game Example](examples/reptile.carp) - a Snake clone in Carp
 
-The Carp REPL has built-in documentation, run ```(help)``` to access it!
+[![Join the chat at https://gitter.im/eriksvedang/Carp](https://badges.gitter.im/eriksvedang/Carp.svg)](https://gitter.im/eriksvedang/Carp?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge&utm_content=badge)
 
 ## A Very Small Example
 
@@ -49,6 +46,8 @@ The Carp REPL has built-in documentation, run ```(help)``` to access it!
 ```
 
 To build this example, save it to a file called 'example.carp' and load it with ```(load "example.carp")```, then execute ```(build)``` to build an executable, and ```(run)``` to start. The external dependencies are SDL2 and pkg-config. On macOS Catalina libiconv is also required.
+
+For a slightly longer example, check out [Reptile](examples/reptile.carp) - a Snake clone in Carp.
 
 ### Language Designer & Lead Developer
 [Erik Svedäng](http://www.eriksvedang.com) ([@e_svedang](https://twitter.com/e_svedang))
