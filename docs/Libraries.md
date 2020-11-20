@@ -1,7 +1,6 @@
 ## Working with libraries and modules
 
-Below is a list of 'core' modules that comes included with the Carp compiler.
-Modules marked with the symbol '⦁' are imported by default, other modules must be imported by loading their file. For example, to get access to the Bench module, do the following:
+Carp comes with a standard library called [Core](../core/) where only certain files are loaded by default (see [Core.carp](../core/Core.carp)). If your `CARP_DIR` environment variable is [set properly](https://github.com/carp-lang/Carp/blob/master/docs/Install.md#setting-the-carp_dir), these libraries will be easily imported using the `load` command. For example, to get access to the Bench module, do the following:
 
 ```clojure
 (load "Bench.carp")
@@ -46,62 +45,25 @@ Please note that for private repos only loading through SSH is supported. For pu
 (load "https://github.com/hellerve/anima@master")
 ```
 
-## Core Modules
+## Documentation
 
-### Basics
-* [Macros ⦁](../core/Macros.carp)
-* [Interfaces ⦁](../core/Interfaces.carp)
-* [Dynamic ⦁](http://carp-lang.github.io/carp-docs/core/Dynamic.html) (only available in the repl and at compile time)
+You can generate HTML documentation for a set of modules by running `save-docs` in the REPL:
 
-* [Maybe ⦁](http://carp-lang.github.io/carp-docs/core/Maybe.html)
-* [Result ⦁](http://carp-lang.github.io/carp-docs/core/Result.html)
+```clojure
+> (save-docs Int Float String)
+```
 
-### Numerics
-* [Int ⦁](http://carp-lang.github.io/carp-docs/core/Int.html)
-<!-- * SafeInt -->
-* [Long ⦁](http://carp-lang.github.io/carp-docs/core/Long.html)
-* [Bool ⦁](http://carp-lang.github.io/carp-docs/core/Bool.html)
-* [Float ⦁](http://carp-lang.github.io/carp-docs/core/Float.html)
-* [Double ⦁](http://carp-lang.github.io/carp-docs/core/Double.html)
-* [Vector2](http://carp-lang.github.io/carp-docs/core/Vector2.html)
-* [Vector3](http://carp-lang.github.io/carp-docs/core/Vector3.html)
-* [VectorN](http://carp-lang.github.io/carp-docs/core/VectorN.html)
-* [Geometry](http://carp-lang.github.io/carp-docs/core/Geometry.html)
-* [Statistics](http://carp-lang.github.io/carp-docs/core/Statistics.html)
+See the file [generate_core_docs.carp](./core/generate_core_docs.carp) for an example of how to configure the result.
 
-### Text
-* [String ⦁](http://carp-lang.github.io/carp-docs/core/String.html)
-* [Char ⦁](http://carp-lang.github.io/carp-docs/core/Char.html)
-<!-- * Format ⦁ -->
-* [Pattern ⦁](http://carp-lang.github.io/carp-docs/core/Pattern.html)
 
-### Collections
-* [Array ⦁](http://carp-lang.github.io/carp-docs/core/Array.html)
-* [Map ⦁](http://carp-lang.github.io/carp-docs/core/Map.html)
-
-### System
-* [IO ⦁](http://carp-lang.github.io/carp-docs/core/IO.html)
-* [System ⦁](http://carp-lang.github.io/carp-docs/core/System.html)
-
-### Development
-* [Bench](http://carp-lang.github.io/carp-docs/core/Bench.html)
-* [Debug ⦁](http://carp-lang.github.io/carp-docs/core/Debug.html)
-* [Test ⦁](http://carp-lang.github.io/carp-docs/core/Test.html)
-
-### Graphics, sound and interaction
-* [SDL](http://carp-lang.github.io/Carp/sdl/SDL_index.html)
-* [SDL Image](http://carp-lang.github.io/Carp/sdl/IMG.html)
-* [SDL TTF](http://carp-lang.github.io/Carp/sdl/TTF.html)
-* [SDL Mixer](http://carp-lang.github.io/Carp/sdl/Mixer.html)
-* [GLFW](../core/GLFW.carp)
-* [OpenGL](../core/OpenGL.carp)
-
-## External Libraries
+## Some External Libraries
+* [Anima](https://github.com/hellerve/anima) (A simple drawing and animation framework)
 * [Stdint](https://github.com/hellerve/stdint) (A wrapper around the types defined in stdint.h)
 * [Socket](https://github.com/hellerve/socket) (A wrapper around C sockets)
 * [Physics](https://github.com/hellerve/physics) (A port of phys.js)
 * [NCurses](https://github.com/eriksvedang/carp-ncurses) ([https://www.gnu.org/software/ncurses/](https://www.gnu.org/software/ncurses/))
-* [Anima](https://github.com/hellerve/anima) (A simple drawing and animation framework)
 * [Curl](https://github.com/eriksvedang/carp-curl) (Simple bindings to the Curl library)
 
 For a growing list of Carp packages, see [Carpentry](https://github.com/carpentry-org).
+
+Do you have a library that you want to plug here? Pleas make a PR!

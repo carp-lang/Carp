@@ -10,6 +10,11 @@ p {
 
 a {
     color: #f00;
+    text-decoration: none;
+}
+
+a:hover {
+    text-decoration: underline;
 }
 
 .logo {

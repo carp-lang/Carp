@@ -19,3 +19,6 @@ examples/out
 tags
 flamegraph.svg
 
+/docs/core/*.html
+/docs/sdl/*.html
+/docs/sdl/.DS_Store
