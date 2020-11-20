@@ -16,11 +16,18 @@ memberPrn typeEnv env (memberName, memberTy) =
   let (refOrNotRefType, maybeTakeAddress, strFuncType) = memberInfo typeEnv memberTy
    in case nameOfPolymorphicFunction typeEnv env strFuncType "prn" of
         Just strFunctionPath ->
-          unlines ["  temp = " ++ pathToC strFunctionPath ++ "(" ++ maybeTakeAddress ++ "p->" ++ memberName ++ ");"
-                  , "  sprintf(bufferPtr, \"%s \", temp);"
-                  , "  bufferPtr += strlen(temp) + 1;"
-                  , "  if(temp) { CARP_FREE(temp); temp = NULL; }"
-                  ]
+          case strFuncType of
+            (FuncTy [UnitTy] _ _) ->
+              unlines ["  temp = " ++ pathToC strFunctionPath ++ "();"
+                          , "  sprintf(bufferPtr, \"%s \", temp);"
+                          , "  bufferPtr += strlen(temp) + 1;"
+                          , "  if(temp) { CARP_FREE(temp); temp = NULL; }"
+                          ]
+            _ -> unlines ["  temp = " ++ pathToC strFunctionPath ++ "(" ++ maybeTakeAddress ++ "p->" ++ memberName ++ ");"
+                         , "  sprintf(bufferPtr, \"%s \", temp);"
+                         , "  bufferPtr += strlen(temp) + 1;"
+                         , "  if(temp) { CARP_FREE(temp); temp = NULL; }"
+                         ]
         Nothing ->
           if isExternalType typeEnv memberTy
           then unlines [ "  temp = malloc(11);"
@@ -37,10 +44,16 @@ memberPrnSize typeEnv env (memberName, memberTy) =
   let (refOrNotRefType, maybeTakeAddress, strFuncType) = memberInfo typeEnv memberTy
   in case nameOfPolymorphicFunction typeEnv env strFuncType "prn" of
        Just strFunctionPath ->
-         unlines ["  temp = " ++ pathToC strFunctionPath ++ "(" ++ maybeTakeAddress ++ "p->" ++ memberName ++ "); "
-                 ,"  size += snprintf(NULL, 0, \"%s \", temp);"
-                 ,"  if(temp) { CARP_FREE(temp); temp = NULL; }"
-                 ]
+         case strFuncType of
+           (FuncTy [UnitTy] _ _) ->
+             unlines ["  temp = " ++ pathToC strFunctionPath ++ "(); "
+                     ,"  size += snprintf(NULL, 0, \"%s \", temp);"
+                     ,"  if(temp) { CARP_FREE(temp); temp = NULL; }"
+                     ]
+           _ -> unlines ["  temp = " ++ pathToC strFunctionPath ++ "(" ++ maybeTakeAddress ++ "p->" ++ memberName ++ "); "
+                        ,"  size += snprintf(NULL, 0, \"%s \", temp);"
+                        ,"  if(temp) { CARP_FREE(temp); temp = NULL; }"
+                        ]
        Nothing ->
          if isExternalType typeEnv memberTy
          then unlines ["  size +=  11;"

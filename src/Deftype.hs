@@ -163,10 +163,15 @@ templateGenericSetter pathStrings originalStructTy@(StructTy (ConcreteNameTy typ
           \typeEnv env ->
             Template
             t
-            (const (toTemplate "$p $NAME($p p, $t newValue)"))
+            (\(FuncTy [_, memberTy] _ _) ->
+              case memberTy of
+                UnitTy -> (toTemplate "$p $NAME($p p)")
+                _ -> (toTemplate "$p $NAME($p p, $t newValue)"))
             (\(FuncTy [_, memberTy] _ _) ->
                let callToDelete = memberDeletion typeEnv env (memberName, memberTy)
-               in  toTemplate (unlines ["$DECL {"
+               in  case memberTy of
+                   UnitTy -> toTemplate "$DECL { return p; }\n"
+                   _ -> toTemplate (unlines ["$DECL {"
                                        ,callToDelete
                                        ,"    p." ++ memberName ++ " = newValue;"
                                        ,"    return p;"
@@ -207,10 +212,15 @@ templateGenericMutatingSetter pathStrings originalStructTy@(StructTy (ConcreteNa
           \typeEnv env ->
             Template
             t
-            (const (toTemplate "void $NAME($p* pRef, $t newValue)"))
+            (\(FuncTy [_, memberTy] _ _) ->
+              case memberTy of
+                UnitTy -> (toTemplate "void $NAME($p* pRef)")
+                _ -> (toTemplate "void $NAME($p* pRef, $t newValue)"))
             (\(FuncTy [_, memberTy] _ _) ->
                let callToDelete = memberRefDeletion typeEnv env (memberName, memberTy)
-               in  toTemplate (unlines ["$DECL {"
+               in  case memberTy of
+                     UnitTy -> (toTemplate "$DECL { return; }\n")
+                     _ -> toTemplate (unlines ["$DECL {"
                                        ,callToDelete
                                        ,"    pRef->" ++ memberName ++ " = newValue;"
                                        ,"}\n"]))

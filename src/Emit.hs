@@ -471,12 +471,14 @@ toC toCMode (Binder meta root) = emitterSrc (execState (visit startingIndent roo
               do var <- visit indent value
                  let Just t' = t
                      fresh = mangle (freshVar i)
-                 if isNumericLiteral value
-                   then do let literal = freshVar i ++ "_lit";
-                               Just literalTy = ty value
-                           appendToSrc (addIndent indent ++ "static " ++ tyToCLambdaFix literalTy ++ " " ++ literal ++ " = " ++ var ++ ";\n")
-                           appendToSrc (addIndent indent ++ tyToCLambdaFix t' ++ " " ++ fresh ++ " = &" ++ literal ++ "; // ref\n")
-                   else appendToSrc (addIndent indent ++ tyToCLambdaFix t' ++ " " ++ fresh ++ " = &" ++ var ++ "; // ref\n")
+                 case t' of
+                   (RefTy UnitTy _) -> appendToSrc ""
+                   _ -> if isNumericLiteral value
+                          then do let literal = freshVar i ++ "_lit";
+                                      Just literalTy = ty value
+                                  appendToSrc (addIndent indent ++ "static " ++ tyToCLambdaFix literalTy ++ " " ++ literal ++ " = " ++ var ++ ";\n")
+                                  appendToSrc (addIndent indent ++ tyToCLambdaFix t' ++ " " ++ fresh ++ " = &" ++ literal ++ "; // ref\n")
+                          else appendToSrc (addIndent indent ++ tyToCLambdaFix t' ++ " " ++ fresh ++ " = &" ++ var ++ "; // ref\n")
                  return fresh
 
             -- Deref
