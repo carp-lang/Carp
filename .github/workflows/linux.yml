@@ -44,6 +44,7 @@ jobs:
 
     - name: Copy Docs to carp-docs Repository
       uses: cpina/github-action-push-to-another-repository@master
+      if: github.ref == 'refs/heads/master'
       env:
         API_TOKEN_GITHUB: ${{ secrets.PERSONAL_TOKEN }}
       with:
