@@ -87,6 +87,6 @@
         rend @(SDLApp.renderer &app)
         initial-state 0]
     (do
-      (set! images (Images.init (IMG.load-texture rend (cstr "./img/square.png"))
-                                (IMG.load-texture rend (cstr "./img/carp_logo_969_no_texture.png"))))
+      (set! images (Images.init (IMG.load-texture rend (cstr "./resources/logo/square.png"))
+                                (IMG.load-texture rend (cstr "./resources/logo/carp_logo_969_no_texture.png"))))
       (SDLApp.run-with-callbacks &app event-handler tick draw initial-state))))
