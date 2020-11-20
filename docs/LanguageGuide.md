@@ -391,6 +391,8 @@ To be able to interop wich such types, `register-type` takes an optional string 
 
 This will make the name of the type in Carp code be `SizeT`, while the emitted C code will use `size_t` instead.
 
+[More information on C interop...](./CInterop.md)
+
 ### Patterns
 
 Patterns are similar to, but not the same as, Regular Expressions. They were
