@@ -120,12 +120,14 @@ templateGetter member memberTy =
   Template
     (FuncTy [RefTy (VarTy "p") (VarTy "q")] (VarTy "t") StaticLifetimeTy)
     (const (toTemplate "$t $NAME($(Ref p) p)"))
-    (const $
-     let fixForVoidStarMembers =
-           if isFunctionType memberTy && not (isTypeGeneric memberTy)
-           then "(" ++ tyToCLambdaFix (RefTy memberTy (VarTy "q")) ++ ")"
-           else ""
-     in  toTemplate ("$DECL { return " ++ fixForVoidStarMembers ++ "(&(p->" ++ member ++ ")); }\n"))
+    (\(FuncTy [_] retTy _) ->
+     case retTy of
+       (RefTy UnitTy _) -> toTemplate " $DECL { void* ptr = NULL; return ptr; }\n"
+       _ -> let fixForVoidStarMembers =
+                  if isFunctionType memberTy && not (isTypeGeneric memberTy)
+                  then "(" ++ tyToCLambdaFix (RefTy memberTy (VarTy "q")) ++ ")"
+                  else ""
+            in  toTemplate ("$DECL { return " ++ fixForVoidStarMembers ++ "(&(p->" ++ member ++ ")); }\n"))
     (const [])
 
 -- | The template for setters of a concrete deftype.
