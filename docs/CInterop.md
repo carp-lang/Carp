@@ -23,7 +23,7 @@ To use a managed `String` with a C function requiring a `char*` you can use the
 (puts (String.cstr "Hello"))
 ```
 
-Might be a good idea to not exposed to the end-user the C type directly:
+It might be a good idea not to expose the C type to the end user directly:
 
 ```clojure
 (defmodule MyMod
@@ -37,7 +37,7 @@ Might be a good idea to not exposed to the end-user the C type directly:
 (MyMod.puts "Hello")
 ```
 
-If you are given a `char*` and want to turn it in a managed `String` you can
+If you are given a `char*` and want to turn it into a managed `String` you can
 use `String.from-cstr`. It will allocate and copy the content of the C string.
 
 ```c
