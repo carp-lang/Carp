@@ -5,6 +5,7 @@
 * [Installation](Install.md) - how to acquire and configure the Carp compiler
 * [Tooling](Tooling.md) - supported editors
 * [Libraries](Libraries.md) - how to work with libraries and modules
+* [Multimedia](Multimedia.md) - graphics, sounds, etc
 * [Macros](Macros.md) - a guide to the Carp macro system
 * [Embedded](Embedded.md) - tips and tricks for working with Carp on embedded system
 * [Terminology](Terminology.md) - commonly used terms and what we mean with them

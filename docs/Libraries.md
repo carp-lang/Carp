@@ -56,6 +56,11 @@ You can generate HTML documentation for a set of modules by running `save-docs` 
 See the file [generate_core_docs.carp](./core/generate_core_docs.carp) for an example of how to configure the result.
 
 
+## Auto generated API documentation
+
+* [Core](http://carp-lang.github.io/carp-docs/core/core_index.html)
+* [SDL](http://carp-lang.github.io/carp-docs/sdl/SDL_index.html)
+
 ## Some External Libraries
 * [Anima](https://github.com/hellerve/anima) (A simple drawing and animation framework)
 * [Stdint](https://github.com/hellerve/stdint) (A wrapper around the types defined in stdint.h)
