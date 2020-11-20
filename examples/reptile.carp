@@ -13,8 +13,7 @@
 (deftype Snake
     [body (Array (Vector2 Double))
      dir SDL_Keycode
-     freeze Int
-     ])
+     freeze Int])
 
 (use Snake)
 
@@ -56,8 +55,7 @@
     (SDL.render-clear rend)
     (draw-snake rend (snake world))
     (draw-human rend (World.human world))
-    (SDL.render-present rend)
-    ))
+    (SDL.render-present rend)))
 
 (def input-dir SDL.Keycode.down)
 (def reset false)
@@ -76,8 +74,7 @@
                                             (= key SDL.Keycode.return) (set! reset true)
                                             (= key SDL.Keycode.escape) (SDLApp.stop app)
                                             ()))
-              ()
-              )))))
+              ())))))
 
 (defn move [vec dir]
   (cond
@@ -163,24 +160,22 @@
     (SDL.set-render-draw-color rend 200 90 90 255)
     (SDL.render-clear rend)
     (SDL.render-present rend)
-    (SDL.delay 2000)
-  ))
+    (SDL.delay 2000)))
 
 (defn main []
-  (let [app (SDLApp.create "R E P T I L E" 832 640)
-        rend @(SDLApp.renderer &app)
-        world (create-world)]
-    (do
-      (while (not @(World.dead &world))
-        (if reset
-          (do
-            (set! input-dir SDL.Keycode.right)
-            (set! world (create-world))
-            (set! reset false))
-          (do
-            (let [new-world (tick &world)]
-              (set! world new-world))
-            (handle-events &app rend &world)
-            (draw rend &world)
-            (SDL.delay 50))))
-       (render-dead rend))))
+  (let-do [app (SDLApp.create "R E P T I L E" 832 640)
+           rend @(SDLApp.renderer &app)
+           world (create-world)]
+    (while (not @(World.dead &world))
+      (if reset
+        (do
+          (set! input-dir SDL.Keycode.right)
+          (set! world (create-world))
+          (set! reset false))
+        (do
+          (let [new-world (tick &world)]
+            (set! world new-world))
+          (handle-events &app rend &world)
+          (draw rend &world)
+          (SDL.delay 50))))
+    (render-dead rend)))
