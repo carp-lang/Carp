@@ -582,15 +582,16 @@ toC toCMode (Binder meta root) = emitterSrc (execState (visit startingIndent roo
                                Just actualType -> actualType
                                _ -> error ("No type on func " ++ show func)
                      FuncTy argTys retTy _ = funcTy
+                     voidless = filter notUnit argTys
                      castToFn =
                        if unwrapLambdas
-                       then tyToCLambdaFix retTy ++ "(*)(" ++ joinWithComma (map tyToCRawFunctionPtrFix argTys) ++ ")"
-                       else tyToCLambdaFix retTy ++ "(*)(" ++ joinWithComma (map tyToCLambdaFix argTys) ++ ")"
+                       then tyToCLambdaFix retTy ++ "(*)(" ++ joinWithComma (map tyToCRawFunctionPtrFix voidless) ++ ")"
+                       else tyToCLambdaFix retTy ++ "(*)(" ++ joinWithComma (map tyToCLambdaFix voidless) ++ ")"
                      castToFnWithEnv =
                        if unwrapLambdas
-                       then tyToCLambdaFix retTy ++ "(*)(" ++ joinWithComma (map tyToCRawFunctionPtrFix (StructTy (ConcreteNameTy "LambdaEnv") [] : argTys)) ++ ")"
-                       else tyToCLambdaFix retTy ++ "(*)(" ++ joinWithComma (map tyToCLambdaFix (StructTy (ConcreteNameTy "LambdaEnv") [] : argTys)) ++ ")"
-                     callLambda = funcToCall ++ ".env ? ((" ++ castToFnWithEnv ++ ")" ++ funcToCall ++ ".callback)" ++ "(" ++ funcToCall ++ ".env" ++ (if null args then "" else ", ") ++ argListAsC ++ ") : ((" ++ castToFn ++ ")" ++ funcToCall ++ ".callback)(" ++ argListAsC ++ ");\n"
+                       then tyToCLambdaFix retTy ++ "(*)(" ++ joinWithComma (map tyToCRawFunctionPtrFix (StructTy (ConcreteNameTy "LambdaEnv") [] : voidless)) ++ ")"
+                       else tyToCLambdaFix retTy ++ "(*)(" ++ joinWithComma (map tyToCLambdaFix (StructTy (ConcreteNameTy "LambdaEnv") [] : voidless)) ++ ")"
+                     callLambda = funcToCall ++ ".env ? ((" ++ castToFnWithEnv ++ ")" ++ funcToCall ++ ".callback)" ++ "(" ++ funcToCall ++ ".env" ++ (if null argListAsC then "" else ", ") ++ argListAsC ++ ") : ((" ++ castToFn ++ ")" ++ funcToCall ++ ".callback)(" ++ argListAsC ++ ");\n"
                  if not (notUnit retTy)
                    then do appendToSrc (addIndent indent ++ callLambda)
                            return ""
