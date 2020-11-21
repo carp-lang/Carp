@@ -285,7 +285,7 @@ concreteInit allocationMode originalStructTy@(StructTy (ConcreteNameTy typeName)
           correctedMembers = replaceGenericTypeSymbolsOnMembers mappings membersXObjs
       in (tokensForInit allocationMode typeName correctedMembers))
     (\FuncTy{} -> [])
-  where unitless = filter (notUnit . snd)
+  where unitless = remove (isUnit . snd)
 
 -- | The template for the 'init' and 'new' functions for a generic deftype.
 genericInit :: AllocationMode -> [String] -> Ty -> [XObj] -> (String, Binder)
@@ -302,7 +302,7 @@ genericInit allocationMode pathStrings originalStructTy@(StructTy (ConcreteNameT
                let mappings = unifySignatures originalStructTy concreteStructTy
                    correctedMembers = replaceGenericTypeSymbolsOnMembers mappings membersXObjs
                    memberPairs = memberXObjsToPairs correctedMembers
-               in  (toTemplate $ "$p $NAME(" ++ joinWithComma (map memberArg (filter (notUnit . snd) memberPairs)) ++ ")"))
+               in  (toTemplate $ "$p $NAME(" ++ joinWithComma (map memberArg (remove (isUnit . snd) memberPairs)) ++ ")"))
             (\(FuncTy _ concreteStructTy _) ->
               let mappings = unifySignatures originalStructTy concreteStructTy
                   correctedMembers = replaceGenericTypeSymbolsOnMembers mappings membersXObjs
@@ -331,7 +331,7 @@ tokensForInit allocationMode typeName membersXObjs =
         assignments xobjs = go $ unitless
           where go [] = ""
                 go xobjs = joinLines $ memberAssignment allocationMode . fst <$> xobjs
-        unitless = filter (notUnit . snd) (memberXObjsToPairs membersXObjs)
+        unitless = remove (isUnit . snd) (memberXObjsToPairs membersXObjs)
 
 -- | Creates the C code for an arg to the init function.
 -- | i.e. "(deftype A [x Int])" will generate "int x" which

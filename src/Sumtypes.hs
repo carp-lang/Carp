@@ -73,7 +73,7 @@ concreteCaseInit allocationMode insidePath structTy sumtypeCase =
           (\(FuncTy _ concreteStructTy _) ->
              let mappings = unifySignatures structTy concreteStructTy
                  correctedTys = map (replaceTyVars mappings) (caseTys sumtypeCase)
-             in  (toTemplate $ "$p $NAME(" ++ joinWithComma (zipWith (curry memberArg) anonMemberNames (filter notUnit correctedTys)) ++ ")"))
+             in  (toTemplate $ "$p $NAME(" ++ joinWithComma (zipWith (curry memberArg) anonMemberNames (remove isUnit correctedTys)) ++ ")"))
           (const (tokensForCaseInit allocationMode structTy sumtypeCase))
           (\FuncTy{} -> [])
 
@@ -90,7 +90,7 @@ genericCaseInit allocationMode pathStrings originalStructTy sumtypeCase =
             (\(FuncTy _ concreteStructTy _) ->
                let mappings = unifySignatures originalStructTy concreteStructTy
                    correctedTys = map (replaceTyVars mappings) (caseTys sumtypeCase)
-               in  toTemplate $ "$p $NAME(" ++ joinWithComma (zipWith (curry memberArg) anonMemberNames (filter notUnit correctedTys)) ++ ")")
+               in  toTemplate $ "$p $NAME(" ++ joinWithComma (zipWith (curry memberArg) anonMemberNames (remove isUnit correctedTys)) ++ ")")
             (\(FuncTy _ concreteStructTy _) ->
                let mappings = unifySignatures originalStructTy concreteStructTy
                    correctedTys = map (replaceTyVars mappings) (caseTys sumtypeCase)
@@ -111,7 +111,7 @@ tokensForCaseInit allocationMode sumTy@(StructTy (ConcreteNameTy typeName) typeV
                        , "    return instance;"
                        , "}"]
   where correctedName = caseName sumtypeCase
-        unitless = zip anonMemberNames $ filter notUnit (caseTys sumtypeCase)
+        unitless = zip anonMemberNames $ remove isUnit (caseTys sumtypeCase)
 
 caseMemberAssignment :: AllocationMode -> String -> String -> String
 caseMemberAssignment allocationMode caseName memberName =
@@ -199,7 +199,7 @@ tokensForStr typeEnv env typeName cases concreteStructTy  =
 namesFromCase :: SumtypeCase -> Ty -> (String, [Ty], String)
 namesFromCase theCase concreteStructTy =
   let name = caseName theCase
-  in (name, caseTys theCase {caseTys = (filter notUnit (caseTys theCase))}, tagName concreteStructTy name)
+  in (name, caseTys theCase {caseTys = (remove isUnit (caseTys theCase))}, tagName concreteStructTy name)
 
 strCase :: TypeEnv -> Env -> Ty -> SumtypeCase -> String
 strCase typeEnv env concreteStructTy@(StructTy _ typeVariables) theCase =
