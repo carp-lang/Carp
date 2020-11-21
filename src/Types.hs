@@ -20,7 +20,7 @@ module Types ( TypeMappings
              , consPath
              , Kind
              , tyToKind
-             , notUnit
+             , isUnit
              ) where
 
 import qualified Data.Map as Map
@@ -273,7 +273,7 @@ isFullyGenericType _ = False
 lambdaEnvTy :: Ty
 lambdaEnvTy = StructTy (ConcreteNameTy "LambdaEnv") []
 
-notUnit :: Ty -> Bool
-notUnit UnitTy = False
-notUnit (RefTy UnitTy _) = False
-notUnit _ = True
+isUnit :: Ty -> Bool
+isUnit UnitTy = True
+isUnit (RefTy UnitTy _) = True
+isUnit _ = False

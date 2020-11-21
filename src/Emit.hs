@@ -356,7 +356,7 @@ toC toCMode (Binder meta root) = emitterSrc (execState (visit startingIndent roo
                                MatchRef -> ("->", "&")
                        appendToSrc ("if(" ++ joinWith " && " (tagCondition exprVar (fst refModifications) (removeOuterRefTyIfMatchRef exprTy) caseLhs) ++ ") {\n")
                        appendToSrc (addIndent indent' ++ tyToCLambdaFix exprTy ++ " " ++ tempVarToAvoidClash ++ " = " ++ exprVar ++ ";\n")
-                       zipWithM_ (emitCaseMatcher refModifications (removeSuffix caseName)) (filter (notUnit . forceTy) caseMatchers) [0..]
+                       zipWithM_ (emitCaseMatcher refModifications (removeSuffix caseName)) (remove (isUnit . forceTy) caseMatchers) [0..]
                        appendToSrc (addIndent indent' ++ "// Case expr:\n")
                        emitCaseEnd caseLhsInfo caseExpr
                   emitCase exprVar isFirst (XObj (Sym firstPath _) caseLhsInfo _, caseExpr) =
@@ -552,7 +552,7 @@ toC toCMode (Binder meta root) = emitterSrc (execState (visit startingIndent roo
                                _ -> error ("No type on func " ++ show func)
                      FuncTy argTys retTy _ = funcTy
                      callFunction = overriddenName ++ "(" ++ argListAsC ++ ");\n"
-                 if not (notUnit retTy)
+                 if isUnit retTy
                    then do appendToSrc (addIndent indent ++ callFunction)
                            return ""
                    else do let varName = freshVar i
@@ -564,7 +564,7 @@ toC toCMode (Binder meta root) = emitterSrc (execState (visit startingIndent roo
               do argListAsC <- createArgList indent (mode == ExternalCode) args
                  let Just (FuncTy _ retTy _) = ty func
                      funcToCall = pathToC path
-                 if not (notUnit retTy)
+                 if isUnit retTy
                    then do appendToSrc (addIndent indent ++ funcToCall ++ "(" ++ argListAsC ++ ");\n")
                            return ""
                    else do let varName = freshVar i
@@ -582,7 +582,7 @@ toC toCMode (Binder meta root) = emitterSrc (execState (visit startingIndent roo
                                Just actualType -> actualType
                                _ -> error ("No type on func " ++ show func)
                      FuncTy argTys retTy _ = funcTy
-                     voidless = filter notUnit argTys
+                     voidless = remove isUnit argTys
                      castToFn =
                        if unwrapLambdas
                        then tyToCLambdaFix retTy ++ "(*)(" ++ joinWithComma (map tyToCRawFunctionPtrFix voidless) ++ ")"
@@ -592,7 +592,7 @@ toC toCMode (Binder meta root) = emitterSrc (execState (visit startingIndent roo
                        then tyToCLambdaFix retTy ++ "(*)(" ++ joinWithComma (map tyToCRawFunctionPtrFix (StructTy (ConcreteNameTy "LambdaEnv") [] : voidless)) ++ ")"
                        else tyToCLambdaFix retTy ++ "(*)(" ++ joinWithComma (map tyToCLambdaFix (StructTy (ConcreteNameTy "LambdaEnv") [] : voidless)) ++ ")"
                      callLambda = funcToCall ++ ".env ? ((" ++ castToFnWithEnv ++ ")" ++ funcToCall ++ ".callback)" ++ "(" ++ funcToCall ++ ".env" ++ (if null argListAsC then "" else ", ") ++ argListAsC ++ ") : ((" ++ castToFn ++ ")" ++ funcToCall ++ ".callback)(" ++ argListAsC ++ ");\n"
-                 if not (notUnit retTy)
+                 if isUnit retTy
                    then do appendToSrc (addIndent indent ++ callLambda)
                            return ""
                    else do let varName = freshVar i
@@ -609,11 +609,11 @@ toC toCMode (Binder meta root) = emitterSrc (execState (visit startingIndent roo
 
         createArgList :: Int -> Bool -> [XObj] -> State EmitterState String
         createArgList indent unwrapLambdas args =
-          do argStrings <- mapM (visit indent) (filter (notUnit . forceTy) args)
+          do argStrings <- mapM (visit indent) (remove (isUnit . forceTy) args)
              let argTypes = map forceTy args
-                 unitless = filter notUnit argTypes
+                 unitless = remove isUnit argTypes
                  -- Run side effects
-                 sideEffects = mapM (visit indent) (filter (not . notUnit . forceTy) args) >>= return . intercalate ";\n"
+                 sideEffects = mapM (visit indent) (filter (isUnit . forceTy) args) >>= return . intercalate ";\n"
                  unwrapped = joinWithComma $ if unwrapLambdas
                                              then zipWith unwrapLambda argStrings unitless
                                              else argStrings
@@ -725,7 +725,7 @@ defStructToDeclaration structTy@(StructTy typeName typeVariables) path rest =
       typedefCaseToMemberDecl :: XObj -> State EmitterState [()]
       -- ANSI C doesn't allow empty structs, insert a dummy member to keep the compiler happy.
       typedefCaseToMemberDecl (XObj (Arr []) _ _) = sequence $ pure $ appendToSrc (addIndent indent ++ "char __dummy;\n")
-      typedefCaseToMemberDecl (XObj (Arr members) _ _) = mapM (memberToDecl indent) (filter (notUnit . fromJust . xobjToTy . snd) (pairwise members))
+      typedefCaseToMemberDecl (XObj (Arr members) _ _) = mapM (memberToDecl indent) (remove (isUnit . fromJust . xobjToTy . snd) (pairwise members))
       typedefCaseToMemberDecl _ = error "Invalid case in typedef."
 
       -- Note: the names of types are not namespaced
@@ -755,7 +755,7 @@ defSumtypeToDeclaration sumTy@(StructTy typeName typeVariables) path rest =
         appendToSrc (addIndent indent ++ "// " ++ caseName ++ "\n")
       emitSumtypeCase indent xobj@(XObj (Lst [XObj (Sym (SymPath [] caseName) _) _ _, XObj (Arr memberTys) _ _]) _ _) =
         do appendToSrc (addIndent indent ++ "struct {\n")
-           let members = zipWith (\anonName tyXObj -> (anonName, tyXObj)) anonMemberSymbols (filter (notUnit . fromJust . xobjToTy) memberTys)
+           let members = zipWith (\anonName tyXObj -> (anonName, tyXObj)) anonMemberSymbols (remove (isUnit . fromJust . xobjToTy) memberTys)
            mapM_ (memberToDecl (indent + indentAmount)) members
            appendToSrc (addIndent indent ++ "} " ++ caseName ++ ";\n")
       emitSumtypeCase indent xobj@(XObj (Sym (SymPath [] caseName) _) _ _) =
@@ -824,7 +824,7 @@ toDeclaration _ = error "Missing case."
 paramListToC :: [XObj] -> String
 paramListToC xobjs = if null $ joinWithComma (map getParam xobjs)
                      then ""
-                     else joinWithComma (map getParam (filter (notUnit . forceTy) xobjs))
+                     else joinWithComma (map getParam (remove (isUnit . forceTy) xobjs))
   where getParam :: XObj -> String
         getParam (XObj (Sym (SymPath _ name) _) _ (Just t)) = tyToCLambdaFix t ++ " " ++ mangle name
         getParam invalid = error (show (InvalidParameter invalid))
