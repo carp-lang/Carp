@@ -14,6 +14,8 @@ fullPath="$PWD/releases/$name"
 echo "Creating release '$name'"
 echo "Full path = '$fullPath'"
 
+./scripts/carp.sh ./docs/core/generate_core_docs.carp
+
 if [ "$noprompt" = "--noprompt" ]; then
     echo "No prompt, will continue"
 else
