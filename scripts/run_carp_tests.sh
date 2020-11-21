@@ -44,9 +44,8 @@ compileOnlyExamples="\
                    examples/mutual_recursion.carp \
                    examples/guessing_game.carp \
                    examples/check_malloc.carp \
+                   examples/unicode.carp \
                    examples/nested_lambdas.carp
-                   test/compile-only/unicode.carp \
-                   test/compile-only/expression_problem.carp \
 "
 
 for e in $compileOnlyExamples ; do
