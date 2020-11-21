@@ -14,8 +14,6 @@ fullPath="$PWD/releases/$name"
 echo "Creating release '$name'"
 echo "Full path = '$fullPath'"
 
-./scripts/carp.sh ./docs/core/generate_core_docs.carp
-
 if [ "$noprompt" = "--noprompt" ]; then
     echo "No prompt, will continue"
 else
@@ -26,6 +24,8 @@ else
         exit 1;
     fi
 fi
+
+./scripts/carp.sh ./docs/core/generate_core_docs.carp
 
 mkdir -p "$fullPath"
 
@@ -43,7 +43,7 @@ cp -r "./docs/" "$fullPath/docs/"
 echo "Copying README.md..."
 cp -r "./README.md" "$fullPath/README.md"
 echo "Copying img..."
-cp -r "./img/" "$fullPath/img/"
+cp -r "./resources/" "$fullPath/resources/"
 echo "Copying examples..."
 cp -r "./examples/" "$fullPath/examples/"
 
