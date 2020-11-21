@@ -4,6 +4,7 @@ This is an extension of what is covered in the [Language Guide](./LanguageGuide.
 
 ## Content
 
+- [How Carp generates identifiers]("#how-carp-generates-identifiers")
 - [Managed types](#managed-types)
   - [String](#string)
   - [Array](#array)
@@ -11,6 +12,64 @@ This is an extension of what is covered in the [Language Guide](./LanguageGuide.
   - [`deftemplate`](#deftemplate)
     - [`Basic example`](#basic-example)
     - [`Generics`](#generics)
+
+
+## How Carp generates identifiers
+
+When creating a function or def it might be useful to know what identifier gets
+generated on the C side. Here are some examples:
+
+```clojure
+(def a-def 100)
+; => a_MINUS_def
+
+(defn hello [] (println* "Hello"))
+; => hello
+
+(sig true? (Fn [Bool] Bool))
+(defn true? [b] b)
+; true_QMARK_
+
+(defmodule Reverse
+  (defn hello [] (println* "Goodbye"))
+  ; => Reverse_hello
+  (defmodule ReReverse
+    (defn hello [] (println* "Hello"))))
+    ; => Reverse_ReReverse_hello
+
+; Generic signature
+(sig print-first-and-add (Fn [(Ref (Array a)) b b] b))
+(defn print-first-and-add [arr x y] 
+ (do
+   (println* (Array.unsafe-first arr))
+   (+ x y)))
+; Generates no code until it is called
+
+(print-first-and-add &[1] 1 1)
+; => print_MINUS_first_MINUS_and_MINUS_add__int_int
+(print-first-and-add &[@"hello"] 2l 40l)
+; => print_MINUS_first_MINUS_and_MINUS_add__String_Long
+```
+
+Looking at the examples should be clear enough but let's break it down:  
+Carp will replace illegal characters in C with a string representation of them
+(`- => _MINUS_`, `? => _QMARK_`, etc...)  
+If in modules it will prefix the identifier with the modules name.  
+When the arguments to a function are generic it will suffix the types to the
+identifiers, the identifiers are not able to be generated until it is used. If
+a function is potentially generic but you don't want it to be you can add a
+non-generic signature to it to make Carp generate your function like in our
+`true?` example.
+
+When creating bindings to a library it would be hard to coerce this logic into
+creating the exact identifiers the library uses, this is why `register` and
+`register-type` accepts an optional argument to specify what identifiers to use:
+
+```clojure
+(defmodule CURL
+  (register-type HttpPost "curl_httppost")
+  (register form-free (Fn [(Ref HttpPost)] ()) "curl_formfree"))
+```
 
 ## Managed types
 
@@ -223,7 +282,7 @@ The **third** is our function declaration, it'll be injected at the top of the
 generated C file.  
 The **last** argument represent the function definition.
 
-Two more thing to look at:  
+Two more things to look at:  
 `$NAME` is a variable that will be derived from the name you've given the
 function plus any module it's defined in, so no need to worry about name
 clashes with other `print` functions in other modules.  
