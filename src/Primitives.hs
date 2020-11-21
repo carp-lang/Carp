@@ -5,6 +5,7 @@ import Control.Monad.IO.Class (liftIO)
 import Data.List (foldl')
 import Data.Maybe (fromMaybe)
 import Data.Either (isRight, rights)
+import Web.Browser (openBrowser)
 
 import ColorText
 import Commands
@@ -690,3 +691,78 @@ primitiveKind _ ctx [x@(XObj _ _ _)] =
   where fail e = (evalError ctx ("Can't get the kind of: " ++ pretty x) (info x))
         ok (XObj _ _ (Just t), _) = (ctx, Right $ reify (tyToKind t))
         ok (_, _) = (evalError ctx ("Can't get the kind of: " ++ pretty x) (info x))
+
+-- | Primitive for printing help.
+primitiveHelp :: Primitive
+primitiveHelp _ ctx [XObj (Sym (SymPath [] "about") _) _ _] =
+  liftIO $ do putStrLn "Carp is an ongoing research project by Erik Svedäng, et al."
+              putStrLn ""
+              putStrLn "Licensed under the Apache License, Version 2.0 (the \"License\"); \n\
+                       \you may not use this file except in compliance with the License. \n\
+                       \You may obtain a copy of the License at \n\
+                       \http://www.apache.org/licenses/LICENSE-2.0"
+              putStrLn ""
+              putStrLn "THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS ``AS IS'' AND ANY \n\
+                       \EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE \n\
+                       \IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR \n\
+                       \PURPOSE ARE DISCLAIMED.  IN NO EVENT SHALL THE COPYRIGHT HOLDERS BE \n\
+                       \LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR \n\
+                       \CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF \n\
+                       \SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR \n\
+                       \BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, \n\
+                       \WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE \n\
+                       \OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN\n\
+                       \IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE."
+              putStrLn ""
+              return (ctx, dynamicNil)
+
+primitiveHelp _ ctx [XObj (Sym (SymPath [] "compiler") _) _ _] =
+  openBrowserHelper ctx "https://github.com/carp-lang/Carp/blob/master/docs/Manual.md"
+
+primitiveHelp _ ctx [XObj (Sym (SymPath [] "language") _) _ _] =
+  openBrowserHelper ctx "https://github.com/carp-lang/Carp/blob/master/docs/LanguageGuide.md"
+
+primitiveHelp _ ctx [XObj (Sym (SymPath [] "core") _) _ _] =
+  openBrowserHelper ctx "https://carp-lang.github.io/carp-docs/core/core_index.html"
+
+primitiveHelp _ ctx [XObj (Sym (SymPath [] "gitter") _) _ _] =
+  openBrowserHelper ctx "https://gitter.im/carp-lang/Carp"
+
+primitiveHelp _ ctx [XObj (Sym (SymPath [] "shortcuts") _) _ _] =
+  liftIO $ do putStrLn ""
+              putStrLn "(reload)       :r"
+              putStrLn "(build)        :b"
+              putStrLn "(run)          :x"
+              putStrLn "(cat)          :c"
+              putStrLn "(env)          :e"
+              putStrLn "(help)         :h"
+              putStrLn "(project)      :p"
+              putStrLn "(quit)         :q"
+              putStrLn "(type <arg>)   :t"
+              putStrLn "(expand <arg>) :m"
+              putStrLn "(info <arg>)   :i"
+              putStrLn ""
+              putStrLn "The shortcuts can be combined like this: \":rbx\""
+              putStrLn ""
+              return (ctx, dynamicNil)
+
+primitiveHelp _ ctx [] =
+  liftIO $ do putStrLn "Don't panic - we can solve this!"
+              putStrLn ""
+              putStrLn "Evaluate (help <chapter>) to get to the relevant subchapter:"
+              putStrLn ""
+              putStrLn "compiler  - Learn how to use the compiler / repl        (web)"
+              putStrLn "language  - Syntax and semantics of the language        (web)"
+              putStrLn "core      - Core library API documentation              (web)"
+              putStrLn "gitter    - Get help from the community                 (web)"
+              putStrLn "shortcuts - Useful shortcuts in the REPL                     "
+              putStrLn "about     - Print some information about this program        "
+              putStrLn ""
+              return (ctx, dynamicNil)
+
+primitiveHelp _ ctx args =
+  return (evalError ctx ("Invalid args to `help`: " ++ joinWithComma (map pretty args)) Nothing)
+
+openBrowserHelper ctx url =
+  liftIO $ do openBrowser url
+              return (ctx, dynamicNil)

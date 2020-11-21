@@ -215,7 +215,6 @@ dynamicModule = Env { envBindings = bindings
                     , addCommand (SymPath path "build") 0 (commandBuild False) "builds the current code to an executable." "(build)"
                     , addCommand (SymPath path "reload") 0 commandReload "reloads all currently loaded files that weren’t marked as only loading once (see `load` and `load-once`)." "(reload)"
                     , addCommand (SymPath path "env") 0 commandListBindings "lists all current bindings." "(env)"
-                    , addCommandConfigurable (SymPath path "help") Nothing commandHelp "prints help." "(help)"
                     , addCommand (SymPath path "project") 0 commandProject "prints the current project state." "(project)"
                     , addCommand (SymPath path "load") 1 commandLoad "loads a file into the current environment." "(load \"myfile.carp\")"
                     , addCommand (SymPath path "load-once") 1 commandLoadOnce "loads a file and prevents it from being reloaded (see `reload`)." "(load-once \"myfile.carp\")"
@@ -252,6 +251,7 @@ dynamicModule = Env { envBindings = bindings
                     , makePrim "implements" 2 "designates a function as an implementation of an interface." "(implements zero Maybe.zero)" primitiveImplements
                     , makePrim "type" 1 "prints the type of a symbol." "(type mysymbol)" primitiveType
                     , makePrim "kind" 1 "prints the kind of a symbol." "(kind mysymbol)" primitiveKind
+                    , makeVarPrim "help" "prints help." "(help)" primitiveHelp
                     ]
                     ++ [("String", Binder emptyMeta (XObj (Mod dynamicStringModule) Nothing Nothing))
                        ,("Symbol", Binder emptyMeta (XObj (Mod dynamicSymModule) Nothing Nothing))
