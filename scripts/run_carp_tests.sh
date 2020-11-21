@@ -43,7 +43,6 @@ echo "Compile-only examples"
 compileOnlyExamples="\
                    examples/mutual_recursion.carp \
                    examples/guessing_game.carp \
-                   examples/check_malloc.carp \
                    examples/unicode.carp \
                    examples/nested_lambdas.carp
 "
