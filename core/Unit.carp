@@ -1,0 +1,21 @@
+(defmodule Unit
+  (implements prn prn)
+  (sig prn (Fn [Unit] String))
+  (defn prn [unit]
+    @"()")
+
+  (doc copy 
+    "'copies' a reference to a Unit value."
+    "This function just returns a fresh value of type Unit.")
+  (implements copy copy)
+  (sig copy (Fn [(Ref Unit)] Unit))
+  (defn copy [unit-ref]
+    ())
+
+  (doc zero 
+    "Returns a fresh value of type Unit (this value performs no side-effects).")
+  (implements zero zero)
+  (sig zero (Fn [] Unit))
+  (defn zero []
+    ())
+)

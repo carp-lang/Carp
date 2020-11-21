@@ -50,6 +50,7 @@
 (load-once "Binary.carp")
 (load-once "Control.carp")
 (load-once "Opaque.carp")
+(load-once "Unit.carp")
 
 (posix-only
  (system-include "sys/wait.h")

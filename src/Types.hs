@@ -275,4 +275,5 @@ lambdaEnvTy = StructTy (ConcreteNameTy "LambdaEnv") []
 
 notUnit :: Ty -> Bool
 notUnit UnitTy = False
+notUnit (RefTy UnitTy _) = False
 notUnit _ = True

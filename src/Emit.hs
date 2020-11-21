@@ -471,12 +471,14 @@ toC toCMode (Binder meta root) = emitterSrc (execState (visit startingIndent roo
               do var <- visit indent value
                  let Just t' = t
                      fresh = mangle (freshVar i)
-                 if isNumericLiteral value
-                   then do let literal = freshVar i ++ "_lit";
-                               Just literalTy = ty value
-                           appendToSrc (addIndent indent ++ "static " ++ tyToCLambdaFix literalTy ++ " " ++ literal ++ " = " ++ var ++ ";\n")
-                           appendToSrc (addIndent indent ++ tyToCLambdaFix t' ++ " " ++ fresh ++ " = &" ++ literal ++ "; // ref\n")
-                   else appendToSrc (addIndent indent ++ tyToCLambdaFix t' ++ " " ++ fresh ++ " = &" ++ var ++ "; // ref\n")
+                 case t' of
+                   (RefTy UnitTy _) -> appendToSrc ""
+                   _ -> if isNumericLiteral value
+                          then do let literal = freshVar i ++ "_lit";
+                                      Just literalTy = ty value
+                                  appendToSrc (addIndent indent ++ "static " ++ tyToCLambdaFix literalTy ++ " " ++ literal ++ " = " ++ var ++ ";\n")
+                                  appendToSrc (addIndent indent ++ tyToCLambdaFix t' ++ " " ++ fresh ++ " = &" ++ literal ++ "; // ref\n")
+                          else appendToSrc (addIndent indent ++ tyToCLambdaFix t' ++ " " ++ fresh ++ " = &" ++ var ++ "; // ref\n")
                  return fresh
 
             -- Deref
@@ -550,7 +552,7 @@ toC toCMode (Binder meta root) = emitterSrc (execState (visit startingIndent roo
                                _ -> error ("No type on func " ++ show func)
                      FuncTy argTys retTy _ = funcTy
                      callFunction = overriddenName ++ "(" ++ argListAsC ++ ");\n"
-                 if retTy == UnitTy
+                 if not (notUnit retTy)
                    then do appendToSrc (addIndent indent ++ callFunction)
                            return ""
                    else do let varName = freshVar i
@@ -562,7 +564,7 @@ toC toCMode (Binder meta root) = emitterSrc (execState (visit startingIndent roo
               do argListAsC <- createArgList indent (mode == ExternalCode) args
                  let Just (FuncTy _ retTy _) = ty func
                      funcToCall = pathToC path
-                 if retTy == UnitTy
+                 if not (notUnit retTy)
                    then do appendToSrc (addIndent indent ++ funcToCall ++ "(" ++ argListAsC ++ ");\n")
                            return ""
                    else do let varName = freshVar i
@@ -580,16 +582,17 @@ toC toCMode (Binder meta root) = emitterSrc (execState (visit startingIndent roo
                                Just actualType -> actualType
                                _ -> error ("No type on func " ++ show func)
                      FuncTy argTys retTy _ = funcTy
+                     voidless = filter notUnit argTys
                      castToFn =
                        if unwrapLambdas
-                       then tyToCLambdaFix retTy ++ "(*)(" ++ joinWithComma (map tyToCRawFunctionPtrFix argTys) ++ ")"
-                       else tyToCLambdaFix retTy ++ "(*)(" ++ joinWithComma (map tyToCLambdaFix argTys) ++ ")"
+                       then tyToCLambdaFix retTy ++ "(*)(" ++ joinWithComma (map tyToCRawFunctionPtrFix voidless) ++ ")"
+                       else tyToCLambdaFix retTy ++ "(*)(" ++ joinWithComma (map tyToCLambdaFix voidless) ++ ")"
                      castToFnWithEnv =
                        if unwrapLambdas
-                       then tyToCLambdaFix retTy ++ "(*)(" ++ joinWithComma (map tyToCRawFunctionPtrFix (StructTy (ConcreteNameTy "LambdaEnv") [] : argTys)) ++ ")"
-                       else tyToCLambdaFix retTy ++ "(*)(" ++ joinWithComma (map tyToCLambdaFix (StructTy (ConcreteNameTy "LambdaEnv") [] : argTys)) ++ ")"
-                     callLambda = funcToCall ++ ".env ? ((" ++ castToFnWithEnv ++ ")" ++ funcToCall ++ ".callback)" ++ "(" ++ funcToCall ++ ".env" ++ (if null args then "" else ", ") ++ argListAsC ++ ") : ((" ++ castToFn ++ ")" ++ funcToCall ++ ".callback)(" ++ argListAsC ++ ");\n"
-                 if retTy == UnitTy
+                       then tyToCLambdaFix retTy ++ "(*)(" ++ joinWithComma (map tyToCRawFunctionPtrFix (StructTy (ConcreteNameTy "LambdaEnv") [] : voidless)) ++ ")"
+                       else tyToCLambdaFix retTy ++ "(*)(" ++ joinWithComma (map tyToCLambdaFix (StructTy (ConcreteNameTy "LambdaEnv") [] : voidless)) ++ ")"
+                     callLambda = funcToCall ++ ".env ? ((" ++ castToFnWithEnv ++ ")" ++ funcToCall ++ ".callback)" ++ "(" ++ funcToCall ++ ".env" ++ (if null argListAsC then "" else ", ") ++ argListAsC ++ ") : ((" ++ castToFn ++ ")" ++ funcToCall ++ ".callback)(" ++ argListAsC ++ ");\n"
+                 if not (notUnit retTy)
                    then do appendToSrc (addIndent indent ++ callLambda)
                            return ""
                    else do let varName = freshVar i
