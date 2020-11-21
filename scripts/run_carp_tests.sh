@@ -54,6 +54,7 @@ for e in $compileOnlyExamples ; do
     ./scripts/carp.sh $e -b
 done
 
+# Make sure a no-core build works
 echo ./examples/no_core.carp
 ./scripts/carp.sh ./examples/no_core.carp --no-core --no-profile -b
 
