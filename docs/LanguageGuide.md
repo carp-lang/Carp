@@ -3,12 +3,12 @@
 ### Introduction
 
 Carp borrows its looks from Clojure but the runtime semantics are much closer to those of ML or Rust.
-Types are inferred but can be annotated for readability using the ```the``` keyword (see below).
+Types are inferred but can be annotated for readability using the `the` keyword (see below).
 
 Memory management is handled by static analysis, a value is owned by the function where it was created.
 When a value is returned or passed to another function the initial function will give up ownership of it
 and any subsequent use will lead to a compiler error. To temporarily lend a value to another function
-(for example to print it) a reference must be created, using the ```ref``` special form (or the ```&``` reader macro).
+(for example to print it) a reference must be created, using the `ref` special form (or the `&` reader macro).
 
 To learn more about the details of memory management, check out [Memory.md](https://github.com/carp-lang/Carp/blob/master/docs/Memory.md)
 
@@ -141,9 +141,11 @@ directly. It usually isn't useful to provide multiple
 implementations that have the same function signature.
 
 ### Conditional statements with `cond`
-The ```cond``` statement executes a block of code if a specified condition is true. If the condition is false, another block of code can be executed.
+The `cond` statement executes a block of code if a specified condition is true. If the condition is false, another block of code can be executed.
 
-```(doc cond "this is the documentation for cond")```
+```clojure
+(doc cond "this is the documentation for cond")
+```
 
 Usage:
 
@@ -226,7 +228,7 @@ To see all functions available in the `Dynamic` module, enter `(info Dynamic)` a
 
 ### Modules and Name Lookup
 Functions and variables can be stored in modules which are named and can be nested. To use a symbol inside a module
-you need to qualify it with the module name, like this: ```Float.cos```.
+you need to qualify it with the module name, like this: `Float.cos`.
 
 *Using* a module makes it possible to access its members without qualifying them:
 
@@ -239,7 +241,7 @@ you need to qualify it with the module name, like this: ```Float.cos```.
 
 If there are several used modules that contain symbols with the same name, the type inferer will try to figure
 out which one of the symbols you really mean (based on the types in your code). If it can't, it will display an error.
-For example, both the module ```String``` and ```Array``` contain a function named 'length'. In the following code it's
+For example, both the module `String` and `Array` contain a function named 'length'. In the following code it's
 possible to see that it's the array version that is needed, and that one will be called:
 
 ```clojure
@@ -388,6 +390,8 @@ To be able to interop wich such types, `register-type` takes an optional string 
 ```
 
 This will make the name of the type in Carp code be `SizeT`, while the emitted C code will use `size_t` instead.
+
+[More information on C interop...](./CInterop.md)
 
 ### Patterns
 
