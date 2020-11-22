@@ -287,6 +287,8 @@ eval ctx xobj@(XObj o i t) preference =
                  Right _ -> eval ctx x preference
        [XObj While _ _, cond, body] ->
          specialCommandWhile ctx cond body
+       [XObj Address _ _, value] ->
+         specialCommandAddress ctx value
        [] -> return (ctx, dynamicNil)
        x -> do
         return (evalError ctx ("I did not understand the form `" ++ pretty xobj ++ "`") (info xobj))
@@ -509,6 +511,16 @@ specialCommandDefine ctx xobj =
        Left err ->
          return (ctx, Left err)
 
+specialCommandAddress :: Context -> XObj -> IO (Context, Either EvalError XObj)
+specialCommandAddress ctx xobj =
+  case xobj of 
+    XObj (Sym path _) _ _ ->
+      do (newCtx, result) <- annotateWithinContext False ctx xobj
+         case result of
+           Right (annXObj, annDeps) -> return (newCtx, Right annXObj)
+           Left err ->
+             return (ctx, Left err)
+    _ -> return (evalError ctx ("Can't get the address of non-symbol " ++ pretty xobj) (info xobj))
 specialCommandWhile :: Context -> XObj -> XObj -> IO (Context, Either EvalError XObj)
 specialCommandWhile ctx cond body = do
   (newCtx, evd) <- evalDynamic ctx cond
