@@ -145,7 +145,8 @@ expand eval ctx xobj =
         XObj (Mod modEnv) _ _ : args ->
           --return (evalError ctx ("I can’t evaluate the module `" ++ pretty xobj ++ "`") (info xobj))
           let moduleName = fromMaybe "" (envModuleName modEnv)
-              implicitInit = XObj (Sym (SymPath [moduleName] "init") Symbol) i t
+              pathToModule = pathToEnv modEnv
+              implicitInit = XObj (Sym (SymPath pathToModule "init") Symbol) i t
           in expand eval ctx (XObj (Lst (implicitInit : args)) (info xobj) (ty xobj))
         f:args ->
           do (ctx', expandedF) <- expand eval ctx f
