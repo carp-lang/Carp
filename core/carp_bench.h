@@ -1,4 +1,5 @@
 #if defined _WIN32
+
 // The function 'clock_gettime' is not available on Windows.
 // Our replacement implementation was taken from Stack overflow:
 // https://stackoverflow.com/questions/5404277/porting-clock-gettime-to-windows
