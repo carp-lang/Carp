@@ -110,7 +110,7 @@ setFullyQualifiedSymbols typeEnv globalEnv localEnv xobj@(XObj (Sym path _) i t)
     -- Unqualified:
     SymPath [] name ->
       case lookupInEnv path (getTypeEnv typeEnv) of
-        Just found ->
+        Just found@(_, Binder _ (XObj (Lst (XObj (Interface _ _) _ _ : _)) _ _)) ->
           -- Found an interface with the same path!
           -- Have to ensure it's not a local variable with the same name as the interface
           case lookupInEnv path localEnv of
@@ -121,7 +121,7 @@ setFullyQualifiedSymbols typeEnv globalEnv localEnv xobj@(XObj (Sym path _) i t)
             Nothing ->
               --trace ("Will turn '" ++ show path ++ "' " ++ prettyInfoFromXObj xobj ++ " into an interface symbol.")
                 createInterfaceSym name
-        Nothing ->
+        _ ->
           doesNotBelongToAnInterface False localEnv
     -- Qualified:
     _ ->
