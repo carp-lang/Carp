@@ -63,7 +63,7 @@ double = do (i, num) <- maybeSigned
             incColumn 1
             decimals <- Parsec.many1 Parsec.digit
             incColumn (length decimals)
-            return (XObj (Num DoubleTy (read (num ++ "." ++ decimals))) i Nothing)
+            pure (XObj (Num DoubleTy (Floating (read (num ++ "." ++ decimals)))) i Nothing)
 
 float :: Parsec.Parsec String ParseState XObj
 float = do (i, num) <- maybeSigned
@@ -73,30 +73,30 @@ float = do (i, num) <- maybeSigned
            incColumn (length decimals)
            _ <- Parsec.char 'f'
            incColumn 1
-           return (XObj (Num FloatTy (read (num ++ "." ++ decimals))) i Nothing)
+           pure (XObj (Num FloatTy (Floating (read (num ++ "." ++ decimals)))) i Nothing)
 
 floatNoPeriod :: Parsec.Parsec String ParseState XObj
 floatNoPeriod =
   do (i, num) <- withBases
      _ <- Parsec.char 'f'
      incColumn 1
-     return (XObj (Num FloatTy (read num)) i Nothing)
+     pure (XObj (Num FloatTy (Floating (read num))) i Nothing)
 
 integer :: Parsec.Parsec String ParseState XObj
 integer = do (i, num) <- withBases
-             return (XObj (Num IntTy (read num)) i Nothing)
+             pure (XObj (Num IntTy (Integral (read num))) i Nothing)
 
 byte :: Parsec.Parsec String ParseState XObj
 byte = do (i, num) <- withBases
           _ <- Parsec.char 'b'
           incColumn 1
-          return (XObj (Num ByteTy (read num)) i Nothing)
+          pure (XObj (Num ByteTy (Integral (read num))) i Nothing)
 
 long :: Parsec.Parsec String ParseState XObj
 long = do (i, num) <- withBases
           _ <- Parsec.char 'l'
           incColumn 1
-          return (XObj (Num LongTy (read num)) i Nothing)
+          pure (XObj (Num LongTy (Integral (read num))) i Nothing)
 
 number :: Parsec.Parsec String ParseState XObj
 number = Parsec.try float <|>
