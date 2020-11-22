@@ -104,7 +104,7 @@ primitiveLine x@(XObj _ i t) ctx args =
                             ("`line` expected 0 or 1 arguments, but got " ++ show (length args))
                             (info x)
   where err = evalError ctx ("No information about object " ++ pretty x) (info x)
-        go  = maybe err (\info -> (ctx, Right (XObj (INum IntTy (fromIntegral (infoLine info))) i t)))
+        go  = maybe err (\info -> (ctx, Right (XObj (INum IntTy (infoLine info)) i t)))
 
 primitiveColumn :: Primitive
 primitiveColumn x@(XObj _ i t) ctx args =
@@ -115,7 +115,7 @@ primitiveColumn x@(XObj _ i t) ctx args =
                  ("`column` expected 0 or 1 arguments, but got " ++ show (length args))
                  (info x)
   where err = evalError ctx ("No information about object " ++ pretty x) (info x)
-        go  = maybe err (\info -> (ctx, Right (XObj (INum IntTy (fromIntegral (infoColumn info))) i t)))
+        go  = maybe err (\info -> (ctx, Right (XObj (INum IntTy (infoColumn info)) i t)))
 
 primitiveImplements :: Primitive
 primitiveImplements xobj ctx [x@(XObj (Sym interface@(SymPath _ _) _) _ _), i@(XObj (Sym impl@(SymPath _ _) _) _ _)] =

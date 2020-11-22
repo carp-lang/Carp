@@ -547,9 +547,9 @@ commandLength :: CommandCallback
 commandLength ctx [x] =
   case x of
     XObj (Lst lst) _ _ ->
-      return (ctx, (Right (XObj (INum IntTy (fromIntegral (length lst))) Nothing Nothing)))
+      return (ctx, (Right (XObj (INum IntTy (length lst)) Nothing Nothing)))
     XObj (Arr arr) _ _ ->
-      return (ctx, (Right (XObj (INum IntTy (fromIntegral (length arr))) Nothing Nothing)))
+      return (ctx, (Right (XObj (INum IntTy (length arr)) Nothing Nothing)))
     _ ->
       return (evalError ctx ("Applying 'length' to non-list: " ++ pretty x) (info x))
 
@@ -728,7 +728,7 @@ commandIndexOf ctx [a, b] =
     (XObj (Str s) _ _, XObj (Chr c) _ _) ->
       (ctx, Right (XObj (INum IntTy (getIdx c s)) (Just dummyInfo) (Just IntTy)))
     _ -> evalError ctx ("Can't call index-of with " ++ pretty a ++ " and " ++ pretty b) (info a)
-  where getIdx c s = fromIntegral $ fromMaybe (-1) $ elemIndex c s
+  where getIdx c s = fromMaybe (-1) $ elemIndex c s
 
 commandSubstring :: CommandCallback
 commandSubstring ctx [a, b, c] =
@@ -741,7 +741,7 @@ commandStringLength :: CommandCallback
 commandStringLength ctx [a] =
   return $ case a of
     XObj (Str s) _ _ ->
-      (ctx, Right (XObj (INum IntTy (fromIntegral (length s))) (Just dummyInfo) (Just IntTy)))
+      (ctx, Right (XObj (INum IntTy (length s)) (Just dummyInfo) (Just IntTy)))
     _ -> evalError ctx ("Can't call length with " ++ pretty a) (info a)
 
 commandStringConcat :: CommandCallback
@@ -846,7 +846,7 @@ commandDiv :: CommandCallback
 commandDiv ctx [a, b] =
   return $ case (a, b) of
     (XObj (INum IntTy aNum) _ _, XObj (INum IntTy bNum) _ _) ->
-      (ctx, Right (XObj (INum IntTy (fromIntegral (quot aNum bNum))) (Just dummyInfo) (Just IntTy)))
+      (ctx, Right (XObj (INum IntTy (quot aNum bNum)) (Just dummyInfo) (Just IntTy)))
     (XObj (INum aty aNum) _ _, XObj (INum bty bNum) _ _) ->
       if aty == bty
       then (ctx, Right (XObj (INum aty (aNum `div` bNum)) (Just dummyInfo) (Just aty)))
@@ -922,7 +922,7 @@ commandWriteFile ctx [filename, contents] =
 
 commandHostBitWidth :: CommandCallback
 commandHostBitWidth ctx [] =
-  let bitSize = fromIntegral (finiteBitSize (undefined :: Int))
+  let bitSize = finiteBitSize (undefined :: Int)
   in return (ctx, Right (XObj (INum IntTy bitSize) (Just dummyInfo) (Just IntTy)))
 
 commandSaveDocsInternal :: CommandCallback
