@@ -39,10 +39,17 @@ for f in ./test-for-errors/*.carp; do
    ./test/check.sh $f
 done
 
+echo "Make sure the benchmarks compile."
+for f in ./bench/*.carp; do
+    echo $f
+    ./scripts/carp.sh -b $f
+done
+
 echo "Compile-only examples"
 compileOnlyExamples="\
                    examples/mutual_recursion.carp \
                    examples/guessing_game.carp \
+                   examples/unicode.carp \
                    examples/nested_lambdas.carp
 "
 
