@@ -6,6 +6,8 @@
 
 #include <windows.h>
 
+#define CLOCK_REALTIME 0
+
 LARGE_INTEGER getFILETIMEoffset() {
     SYSTEMTIME s;
     FILETIME f;
