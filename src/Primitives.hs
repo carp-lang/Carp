@@ -515,6 +515,7 @@ primitiveDeftype xobj ctx (name:rest) =
          let pathStrings = contextPath ctx
              fppl = projectFilePathPrintLength (contextProj ctx)
              env = contextGlobalEnv ctx
+             innerEnv = fromMaybe env (contextInternalEnv ctx)
              typeEnv = contextTypeEnv ctx
              typeVariables = mapM xobjToTy typeVariableXObjs
              (preExistingModule, existingMeta) =
@@ -528,7 +529,7 @@ primitiveDeftype xobj ctx (name:rest) =
                 else (moduleForSumtype, DefSumtype)
          case (nameXObj, typeVariables) of
            (XObj (Sym (SymPath _ typeName) _) i _, Just okTypeVariables) ->
-             case creatorFunction typeEnv env pathStrings typeName okTypeVariables rest i preExistingModule of
+             case creatorFunction innerEnv typeEnv env pathStrings typeName okTypeVariables rest i preExistingModule of
                Right (typeModuleName, typeModuleXObj, deps) ->
                  let structTy = StructTy (ConcreteNameTy typeName) okTypeVariables
                      typeDefinition =
