@@ -2,6 +2,7 @@ module Expand (expandAll, replaceSourceInfoOnXObj) where
 
 import Control.Monad.State (evalState, get, put, State)
 import Data.Foldable (foldlM)
+import Data.Maybe (fromMaybe)
 import Debug.Trace
 
 import Types
@@ -141,8 +142,11 @@ expand eval ctx xobj =
             "I encountered multiple forms inside a `with` at " ++
             prettyInfoFromXObj xobj ++
             ".\n\n`with` accepts only one expression, except at the top level.") Nothing)
-        XObj Mod{} _ _ : _ ->
-          return (evalError ctx ("I can’t evaluate the module `" ++ pretty xobj ++ "`") (info xobj))
+        XObj (Mod modEnv) _ _ : args ->
+          --return (evalError ctx ("I can’t evaluate the module `" ++ pretty xobj ++ "`") (info xobj))
+          let moduleName = fromMaybe "" (envModuleName modEnv)
+              implicitInit = XObj (Sym (SymPath [moduleName] "init") Symbol) i t
+          in expand eval ctx (XObj (Lst (implicitInit : args)) (info xobj) (ty xobj))
         f:args ->
           do (ctx', expandedF) <- expand eval ctx f
              (ctx'', expandedArgs) <- foldlM successiveExpand (ctx, Right []) args
