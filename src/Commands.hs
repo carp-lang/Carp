@@ -338,6 +338,8 @@ commandHelp ctx [XObj (Str "language") _ _] =
               putStrLn "Number literals:"
               putStrLn "1      Int"
               putStrLn "1l     Long"
+              putStrLn "1u32   Uint32"
+              putStrLn "1u64   Uint64"
               putStrLn "1.0    Double"
               putStrLn "1.0f   Float"
               putStrLn ""
@@ -640,6 +642,10 @@ commandEq ctx [a, b] =
       Right $ (round aNum :: Int) == (round bNum :: Int)
     cmp (XObj (Num LongTy aNum) _ _, XObj (Num LongTy bNum) _ _) =
       Right $ (round aNum :: Int) == (round bNum :: Int)
+    cmp (XObj (Num UInt32Ty aNum) _ _, XObj (Num UInt32Ty bNum) _ _) =
+      Right $ (round aNum :: Int) == (round bNum :: Int)
+    cmp (XObj (Num UInt64Ty aNum) _ _, XObj (Num UInt64Ty bNum) _ _) =
+      Right $ (round aNum :: Int) == (round bNum :: Int)
     cmp (XObj (Num FloatTy aNum) _ _, XObj (Num floatTy bNum) _ _) =
       Right $ aNum == bNum
     cmp (XObj (Num DoubleTy aNum) _ _, XObj (Num DoubleTy bNum) _ _) =
@@ -688,6 +694,12 @@ commandLt ctx [a, b] =
    (XObj (Num LongTy aNum) _ _, XObj (Num LongTy bNum) _ _) ->
      if (round aNum :: Int) < (round bNum :: Int)
      then (ctx, Right trueXObj) else (ctx, Right falseXObj)
+   (XObj (Num UInt32Ty aNum) _ _, XObj (Num UInt32Ty bNum) _ _) ->
+     if (round aNum :: Int) < (round bNum :: Int)
+     then (ctx, Right trueXObj) else (ctx, Right falseXObj)
+   (XObj (Num UInt64Ty aNum) _ _, XObj (Num UInt64Ty bNum) _ _) ->
+     if (round aNum :: Int) < (round bNum :: Int)
+     then (ctx, Right trueXObj) else (ctx, Right falseXObj)
    (XObj (Num FloatTy aNum) _ _, XObj (Num floatTy bNum) _ _) ->
      if aNum < bNum
      then (ctx, Right trueXObj) else (ctx, Right falseXObj)
@@ -703,6 +715,12 @@ commandGt ctx [a, b] =
       if (round aNum :: Int) > (round bNum :: Int)
       then (ctx, Right trueXObj) else (ctx, Right falseXObj)
     (XObj (Num LongTy aNum) _ _, XObj (Num LongTy bNum) _ _) ->
+      if (round aNum :: Int) > (round bNum :: Int)
+      then (ctx, Right trueXObj) else (ctx, Right falseXObj)
+    (XObj (Num UInt32Ty aNum) _ _, XObj (Num UInt32Ty bNum) _ _) ->
+      if (round aNum :: Int) > (round bNum :: Int)
+      then (ctx, Right trueXObj) else (ctx, Right falseXObj)
+    (XObj (Num UInt64Ty aNum) _ _, XObj (Num UInt64Ty bNum) _ _) ->
       if (round aNum :: Int) > (round bNum :: Int)
       then (ctx, Right trueXObj) else (ctx, Right falseXObj)
     (XObj (Num FloatTy aNum) _ _, XObj (Num floatTy bNum) _ _) ->
@@ -799,6 +817,8 @@ sFrom_ s = Sym (SymPath [] s) (LookupGlobal CarpLand AVariable)
 
 simpleFromNum (Num IntTy num) = show (round num :: Int)
 simpleFromNum (Num LongTy num) = show (round num :: Int)
+simpleFromNum (Num UInt32Ty num) = show (round num :: Int)
+simpleFromNum (Num UInt64Ty num) = show (round num :: Int)
 simpleFromNum (Num _ num) = show num
 
 commandPathDirectory :: CommandCallback

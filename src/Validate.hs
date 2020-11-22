@@ -41,6 +41,8 @@ canBeUsedAsMemberType typeEnv typeVariables t xobj =
     DoubleTy  -> return ()
     ByteTy    -> return ()
     LongTy    -> return ()
+    UInt32Ty  -> return ()
+    UInt64Ty  -> return ()
     BoolTy    -> return ()
     StringTy  -> return ()
     PatternTy -> return ()

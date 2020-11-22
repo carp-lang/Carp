@@ -272,6 +272,8 @@ pretty = visit 0
             Dict dict -> "{" ++ joinWithSpace (map (visit indent) (concatMap (\(a, b) -> [a, b]) (Map.toList dict))) ++ "}"
             Num IntTy num -> show (round num :: Int)
             Num LongTy num -> show num ++ "l"
+            Num UInt32Ty num -> show num ++ "u32"
+            Num UInt64Ty num -> show num ++ "u64"
             Num ByteTy num -> show num ++ "b"
             Num FloatTy num -> show num ++ "f"
             Num DoubleTy num -> show num

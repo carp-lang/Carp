@@ -32,6 +32,8 @@ import SymPath
 -- | Carp types.
 data Ty = IntTy
         | LongTy
+        | UInt32Ty
+        | UInt64Ty
         | ByteTy
         | BoolTy
         | FloatTy
@@ -95,6 +97,8 @@ instance Show Ty where
   show FloatTy               = "Float"
   show DoubleTy              = "Double"
   show LongTy                = "Long"
+  show UInt32Ty              = "Uint32"
+  show UInt64Ty              = "Uint64"
   show ByteTy                = "Byte"
   show BoolTy                = "Bool"
   show StringTy              = "String"

@@ -104,6 +104,8 @@ toC toCMode (Binder meta root) = emitterSrc (execState (visit startingIndent roo
             StaticArr _ -> visitStaticArray indent xobj
             Num IntTy num -> return (show (round num :: Int))
             Num LongTy num -> return (show (round num :: Int) ++ "l")
+            Num UInt32Ty num -> return (show (round num :: Integer) ++ "lu")
+            Num UInt64Ty num -> return (show (round num :: Integer) ++ "llu")
             Num ByteTy num -> return (show (round num :: Int))
             Num FloatTy num -> return (show num ++ "f")
             Num DoubleTy num -> return (show num)

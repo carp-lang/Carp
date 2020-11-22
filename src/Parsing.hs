@@ -98,12 +98,28 @@ long = do (i, num) <- withBases
           incColumn 1
           return (XObj (Num LongTy (read num)) i Nothing)
 
+uint32 :: Parsec.Parsec String ParseState XObj
+uint32 = do
+          (i, num) <- withBases
+          _ <- Parsec.string "u32"
+          incColumn 3
+          return (XObj (Num UInt32Ty (read num)) i Nothing)
+
+uint64 :: Parsec.Parsec String ParseState XObj
+uint64 = do
+          (i, num) <- withBases
+          _ <- Parsec.string "u64"
+          incColumn 3
+          return (XObj (Num UInt64Ty (read num)) i Nothing)
+
 number :: Parsec.Parsec String ParseState XObj
 number = Parsec.try float <|>
          Parsec.try floatNoPeriod <|>
          Parsec.try byte <|>
          Parsec.try double <|>
          Parsec.try long <|>
+         Parsec.try uint32 <|>
+         Parsec.try uint64 <|>
          Parsec.try integer
 
 rawString :: Parsec.Parsec String ParseState XObj
