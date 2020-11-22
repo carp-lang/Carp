@@ -819,27 +819,19 @@ commandPathAbsolute ctx [a] =
 commandPlus :: CommandCallback
 commandPlus ctx [a, b] =
   return $ case (a, b) of
-    (XObj (INum aty aNum) _ _, XObj (INum bty bNum) _ _) ->
-      if aty == bty
-      then (ctx, Right (XObj (INum aty (aNum + bNum)) (Just dummyInfo) (Just aty)))
-      else evalError ctx ("Can't call + with " ++ pretty a ++ " and " ++ pretty b) (info a)
-    (XObj (FNum aty aNum) _ _, XObj (FNum bty bNum) _ _) ->
-      if aty == bty
-      then (ctx, Right (XObj (FNum aty (aNum + bNum)) (Just dummyInfo) (Just aty)))
-      else evalError ctx ("Can't call + with " ++ pretty a ++ " and " ++ pretty b) (info a)
+    (XObj (INum aty aNum) _ _, XObj (INum bty bNum) _ _) | aty == bty ->
+      (ctx, Right (XObj (INum aty (aNum + bNum)) (Just dummyInfo) (Just aty)))
+    (XObj (FNum aty aNum) _ _, XObj (FNum bty bNum) _ _) | aty == bty ->
+      (ctx, Right (XObj (FNum aty (aNum + bNum)) (Just dummyInfo) (Just aty)))
     _ -> evalError ctx ("Can't call + with " ++ pretty a ++ " and " ++ pretty b) (info a)
 
 commandMinus :: CommandCallback
 commandMinus ctx [a, b] =
   return $ case (a, b) of
-    (XObj (INum aty aNum) _ _, XObj (INum bty bNum) _ _) ->
-      if aty == bty
-      then (ctx, Right (XObj (INum aty (aNum - bNum)) (Just dummyInfo) (Just aty)))
-      else evalError ctx ("Can't call - with " ++ pretty a ++ " and " ++ pretty b) (info a)
-    (XObj (FNum aty aNum) _ _, XObj (FNum bty bNum) _ _) ->
-      if aty == bty
-      then (ctx, Right (XObj (FNum aty (aNum - bNum)) (Just dummyInfo) (Just aty)))
-      else evalError ctx ("Can't call - with " ++ pretty a ++ " and " ++ pretty b) (info a)
+    (XObj (INum aty aNum) _ _, XObj (INum bty bNum) _ _) | aty == bty ->
+      (ctx, Right (XObj (INum aty (aNum - bNum)) (Just dummyInfo) (Just aty)))
+    (XObj (FNum aty aNum) _ _, XObj (FNum bty bNum) _ _) | aty == bty ->
+      (ctx, Right (XObj (FNum aty (aNum - bNum)) (Just dummyInfo) (Just aty)))
     _ -> evalError ctx ("Can't call - with " ++ pretty a ++ " and " ++ pretty b) (info a)
 
 commandDiv :: CommandCallback
@@ -847,27 +839,19 @@ commandDiv ctx [a, b] =
   return $ case (a, b) of
     (XObj (INum IntTy aNum) _ _, XObj (INum IntTy bNum) _ _) ->
       (ctx, Right (XObj (INum IntTy (quot aNum bNum)) (Just dummyInfo) (Just IntTy)))
-    (XObj (INum aty aNum) _ _, XObj (INum bty bNum) _ _) ->
-      if aty == bty
-      then (ctx, Right (XObj (INum aty (aNum `div` bNum)) (Just dummyInfo) (Just aty)))
-      else evalError ctx ("Can't call / with " ++ pretty a ++ " and " ++ pretty b) (info a)
-    (XObj (FNum aty aNum) _ _, XObj (FNum bty bNum) _ _) ->
-      if aty == bty
-      then (ctx, Right (XObj (FNum aty (aNum / bNum)) (Just dummyInfo) (Just aty)))
-      else evalError ctx ("Can't call / with " ++ pretty a ++ " and " ++ pretty b) (info a)
+    (XObj (INum aty aNum) _ _, XObj (INum bty bNum) _ _) | aty == bty ->
+      (ctx, Right (XObj (INum aty (aNum `div` bNum)) (Just dummyInfo) (Just aty)))
+    (XObj (FNum aty aNum) _ _, XObj (FNum bty bNum) _ _) | aty == bty ->
+      (ctx, Right (XObj (FNum aty (aNum / bNum)) (Just dummyInfo) (Just aty)))
     _ -> evalError ctx ("Can't call / with " ++ pretty a ++ " and " ++ pretty b) (info a)
 
 commandMul :: CommandCallback
 commandMul ctx [a, b] =
   return $ case (a, b) of
-    (XObj (INum aty aNum) _ _, XObj (INum bty bNum) _ _) ->
-      if aty == bty
-      then (ctx, Right (XObj (INum aty (aNum * bNum)) (Just dummyInfo) (Just aty)))
-      else evalError ctx ("Can't call * with " ++ pretty a ++ " and " ++ pretty b) (info a)
-    (XObj (FNum aty aNum) _ _, XObj (FNum bty bNum) _ _) ->
-      if aty == bty
-      then (ctx, Right (XObj (FNum aty (aNum * bNum)) (Just dummyInfo) (Just aty)))
-      else evalError ctx ("Can't call * with " ++ pretty a ++ " and " ++ pretty b) (info a)
+    (XObj (INum aty aNum) _ _, XObj (INum bty bNum) _ _) | aty == bty ->
+      (ctx, Right (XObj (INum aty (aNum * bNum)) (Just dummyInfo) (Just aty)))
+    (XObj (FNum aty aNum) _ _, XObj (FNum bty bNum) _ _) | aty == bty ->
+      (ctx, Right (XObj (FNum aty (aNum * bNum)) (Just dummyInfo) (Just aty)))
     _ -> evalError ctx ("Can't call * with " ++ pretty a ++ " and " ++ pretty b) (info a)
 
 commandStr :: CommandCallback
