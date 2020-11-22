@@ -215,7 +215,7 @@ commandRunExe ctx args = do
     then liftIO $ do handle <- spawnCommand outExe
                      exitCode <- waitForProcess handle
                      case exitCode of
-                       ExitSuccess -> return (ctx, Right (XObj (Num IntTy 0) (Just dummyInfo) (Just IntTy)))
+                       ExitSuccess -> return (ctx, Right (XObj (INum IntTy 0) (Just dummyInfo) (Just IntTy)))
                        ExitFailure i -> throw (ShellOutException ("'" ++ outExe ++ "' exited with return value " ++ show i ++ ".") i)
     else liftIO $ do putStrLnWithColor Red "Can't call the 'run' command, need to build an executable first (requires a 'main' function)."
                      return (ctx, dynamicNil)
@@ -547,9 +547,9 @@ commandLength :: CommandCallback
 commandLength ctx [x] =
   case x of
     XObj (Lst lst) _ _ ->
-      return (ctx, (Right (XObj (Num IntTy (fromIntegral (length lst))) Nothing Nothing)))
+      return (ctx, (Right (XObj (INum IntTy (fromIntegral (length lst))) Nothing Nothing)))
     XObj (Arr arr) _ _ ->
-      return (ctx, (Right (XObj (Num IntTy (fromIntegral (length arr))) Nothing Nothing)))
+      return (ctx, (Right (XObj (INum IntTy (fromIntegral (length arr))) Nothing Nothing)))
     _ ->
       return (evalError ctx ("Applying 'length' to non-list: " ++ pretty x) (info x))
 
@@ -636,13 +636,13 @@ commandEq ctx [a, b] =
     Right True -> (ctx, Right trueXObj)
     Right False -> (ctx, Right falseXObj)
   where
-    cmp (XObj (Num IntTy aNum) _ _, XObj (Num IntTy bNum) _ _) =
-      Right $ (round aNum :: Int) == (round bNum :: Int)
-    cmp (XObj (Num LongTy aNum) _ _, XObj (Num LongTy bNum) _ _) =
-      Right $ (round aNum :: Int) == (round bNum :: Int)
-    cmp (XObj (Num FloatTy aNum) _ _, XObj (Num floatTy bNum) _ _) =
+    cmp (XObj (INum IntTy aNum) _ _, XObj (INum IntTy bNum) _ _) =
       Right $ aNum == bNum
-    cmp (XObj (Num DoubleTy aNum) _ _, XObj (Num DoubleTy bNum) _ _) =
+    cmp (XObj (INum LongTy aNum) _ _, XObj (INum LongTy bNum) _ _) =
+      Right $ aNum == bNum
+    cmp (XObj (FNum FloatTy aNum) _ _, XObj (FNum FloatTy bNum) _ _) =
+      Right $ aNum == bNum
+    cmp (XObj (FNum DoubleTy aNum) _ _, XObj (FNum DoubleTy bNum) _ _) =
       Right $ aNum == bNum
     cmp (XObj (Str sa) _ _, XObj (Str sb) _ _) = Right $ sa == sb
     cmp (XObj (Chr ca) _ _, XObj (Chr cb) _ _) = Right $ ca == cb
@@ -682,16 +682,16 @@ commandEq ctx [a, b] =
 commandLt :: CommandCallback
 commandLt ctx [a, b] =
  return $ case (a, b) of
-   (XObj (Num IntTy aNum) _ _, XObj (Num IntTy bNum) _ _) ->
-     if (round aNum :: Int) < (round bNum :: Int)
-     then (ctx, Right trueXObj) else (ctx, Right falseXObj)
-   (XObj (Num LongTy aNum) _ _, XObj (Num LongTy bNum) _ _) ->
-     if (round aNum :: Int) < (round bNum :: Int)
-     then (ctx, Right trueXObj) else (ctx, Right falseXObj)
-   (XObj (Num FloatTy aNum) _ _, XObj (Num floatTy bNum) _ _) ->
+   (XObj (INum IntTy aNum) _ _, XObj (INum IntTy bNum) _ _) ->
      if aNum < bNum
      then (ctx, Right trueXObj) else (ctx, Right falseXObj)
-   (XObj (Num DoubleTy aNum) _ _, XObj (Num DoubleTy bNum) _ _) ->
+   (XObj (INum LongTy aNum) _ _, XObj (INum LongTy bNum) _ _) ->
+     if aNum < bNum
+     then (ctx, Right trueXObj) else (ctx, Right falseXObj)
+   (XObj (FNum FloatTy aNum) _ _, XObj (FNum FloatTy bNum) _ _) ->
+     if aNum < bNum
+     then (ctx, Right trueXObj) else (ctx, Right falseXObj)
+   (XObj (FNum DoubleTy aNum) _ _, XObj (FNum DoubleTy bNum) _ _) ->
      if aNum < bNum
      then (ctx, Right trueXObj) else (ctx, Right falseXObj)
    _ -> evalError ctx ("Can't compare (<) " ++ pretty a ++ " with " ++ pretty b) (info a)
@@ -699,16 +699,16 @@ commandLt ctx [a, b] =
 commandGt :: CommandCallback
 commandGt ctx [a, b] =
   return $ case (a, b) of
-    (XObj (Num IntTy aNum) _ _, XObj (Num IntTy bNum) _ _) ->
-      if (round aNum :: Int) > (round bNum :: Int)
-      then (ctx, Right trueXObj) else (ctx, Right falseXObj)
-    (XObj (Num LongTy aNum) _ _, XObj (Num LongTy bNum) _ _) ->
-      if (round aNum :: Int) > (round bNum :: Int)
-      then (ctx, Right trueXObj) else (ctx, Right falseXObj)
-    (XObj (Num FloatTy aNum) _ _, XObj (Num floatTy bNum) _ _) ->
+    (XObj (INum IntTy aNum) _ _, XObj (INum IntTy bNum) _ _) ->
       if aNum > bNum
       then (ctx, Right trueXObj) else (ctx, Right falseXObj)
-    (XObj (Num DoubleTy aNum) _ _, XObj (Num DoubleTy bNum) _ _) ->
+    (XObj (INum LongTy aNum) _ _, XObj (INum LongTy bNum) _ _) ->
+      if aNum > bNum
+      then (ctx, Right trueXObj) else (ctx, Right falseXObj)
+    (XObj (FNum FloatTy aNum) _ _, XObj (FNum FloatTy bNum) _ _) ->
+      if aNum > bNum
+      then (ctx, Right trueXObj) else (ctx, Right falseXObj)
+    (XObj (FNum DoubleTy aNum) _ _, XObj (FNum DoubleTy bNum) _ _) ->
       if aNum > bNum
       then (ctx, Right trueXObj) else (ctx, Right falseXObj)
     _ -> evalError ctx ("Can't compare (>) " ++ pretty a ++ " with " ++ pretty b) (info a)
@@ -716,33 +716,32 @@ commandGt ctx [a, b] =
 commandCharAt :: CommandCallback
 commandCharAt ctx [a, b] =
   return $ case (a, b) of
-    (XObj (Str s) _ _, XObj (Num IntTy n) _ _) ->
-      let i = (round n :: Int)
-      in if length s > i
-         then (ctx, Right (XObj (Chr (s !! i)) (Just dummyInfo) (Just IntTy)))
-         else evalError ctx ("Can't call char-at with " ++ pretty a ++ " and " ++ show i ++ ", index too large") (info a)
+    (XObj (Str s) _ _, XObj (INum IntTy i) _ _) ->
+      if length s > i
+      then (ctx, Right (XObj (Chr (s !! i)) (Just dummyInfo) (Just IntTy)))
+      else evalError ctx ("Can't call char-at with " ++ pretty a ++ " and " ++ show i ++ ", index too large") (info a)
     _ -> evalError ctx ("Can't call char-at with " ++ pretty a ++ " and " ++ pretty b) (info a)
 
 commandIndexOf :: CommandCallback
 commandIndexOf ctx [a, b] =
   return $ case (a, b) of
     (XObj (Str s) _ _, XObj (Chr c) _ _) ->
-      (ctx, Right (XObj (Num IntTy (getIdx c s)) (Just dummyInfo) (Just IntTy)))
+      (ctx, Right (XObj (INum IntTy (getIdx c s)) (Just dummyInfo) (Just IntTy)))
     _ -> evalError ctx ("Can't call index-of with " ++ pretty a ++ " and " ++ pretty b) (info a)
   where getIdx c s = fromIntegral $ fromMaybe (-1) $ elemIndex c s
 
 commandSubstring :: CommandCallback
 commandSubstring ctx [a, b, c] =
   return $ case (a, b, c) of
-    (XObj (Str s) _ _, XObj (Num IntTy f) _ _, XObj (Num IntTy t) _ _) ->
-      (ctx, Right (XObj (Str (take (round t :: Int) (drop (round f :: Int) s))) (Just dummyInfo) (Just StringTy)))
+    (XObj (Str s) _ _, XObj (INum IntTy f) _ _, XObj (INum IntTy t) _ _) ->
+      (ctx, Right (XObj (Str (take t (drop f s))) (Just dummyInfo) (Just StringTy)))
     _ -> evalError ctx ("Can't call substring with " ++ pretty a ++ ", " ++ pretty b ++ " and " ++ pretty c) (info a)
 
 commandStringLength :: CommandCallback
 commandStringLength ctx [a] =
   return $ case a of
     XObj (Str s) _ _ ->
-      (ctx, Right (XObj (Num IntTy (fromIntegral (length s))) (Just dummyInfo) (Just IntTy)))
+      (ctx, Right (XObj (INum IntTy (fromIntegral (length s))) (Just dummyInfo) (Just IntTy)))
     _ -> evalError ctx ("Can't call length with " ++ pretty a) (info a)
 
 commandStringConcat :: CommandCallback
@@ -783,7 +782,9 @@ commandSymFrom ctx [x@(XObj (Sym _ _) _ _)] = return (ctx, Right x)
 commandSymFrom ctx [XObj (Str s) i t] = return (ctx, Right $ XObj (sFrom_ s) i t)
 commandSymFrom ctx [XObj (Pattern s) i t] = return (ctx, Right $ XObj (sFrom_ s) i t)
 commandSymFrom ctx [XObj (Chr c) i t] = return (ctx, Right $ XObj (sFrom_ (show c)) i t)
-commandSymFrom ctx [XObj n@(Num _ _) i t] =
+commandSymFrom ctx [XObj n@(INum _ _) i t] =
+  return (ctx, Right $ XObj (sFrom_ (simpleFromNum n)) i t)
+commandSymFrom ctx [XObj n@(FNum _ _) i t] =
   return (ctx, Right $ XObj (sFrom_ (simpleFromNum n)) i t)
 commandSymFrom ctx [XObj (Bol b) i t] = return (ctx, Right $ XObj (sFrom_ (show b)) i t)
 commandSymFrom ctx [x] =
@@ -797,9 +798,8 @@ commandSymStr ctx [x] =
 
 sFrom_ s = Sym (SymPath [] s) (LookupGlobal CarpLand AVariable)
 
-simpleFromNum (Num IntTy num) = show (round num :: Int)
-simpleFromNum (Num LongTy num) = show (round num :: Int)
-simpleFromNum (Num _ num) = show num
+simpleFromNum (INum _ num) = show num
+simpleFromNum (FNum _ num) = show num
 
 commandPathDirectory :: CommandCallback
 commandPathDirectory ctx [a] =
@@ -819,38 +819,54 @@ commandPathAbsolute ctx [a] =
 commandPlus :: CommandCallback
 commandPlus ctx [a, b] =
   return $ case (a, b) of
-    (XObj (Num aty aNum) _ _, XObj (Num bty bNum) _ _) ->
+    (XObj (INum aty aNum) _ _, XObj (INum bty bNum) _ _) ->
       if aty == bty
-      then (ctx, Right (XObj (Num aty (aNum + bNum)) (Just dummyInfo) (Just aty)))
+      then (ctx, Right (XObj (INum aty (aNum + bNum)) (Just dummyInfo) (Just aty)))
+      else evalError ctx ("Can't call + with " ++ pretty a ++ " and " ++ pretty b) (info a)
+    (XObj (FNum aty aNum) _ _, XObj (FNum bty bNum) _ _) ->
+      if aty == bty
+      then (ctx, Right (XObj (FNum aty (aNum + bNum)) (Just dummyInfo) (Just aty)))
       else evalError ctx ("Can't call + with " ++ pretty a ++ " and " ++ pretty b) (info a)
     _ -> evalError ctx ("Can't call + with " ++ pretty a ++ " and " ++ pretty b) (info a)
 
 commandMinus :: CommandCallback
 commandMinus ctx [a, b] =
   return $ case (a, b) of
-    (XObj (Num aty aNum) _ _, XObj (Num bty bNum) _ _) ->
+    (XObj (INum aty aNum) _ _, XObj (INum bty bNum) _ _) ->
       if aty == bty
-      then (ctx, Right (XObj (Num aty (aNum - bNum)) (Just dummyInfo) (Just aty)))
+      then (ctx, Right (XObj (INum aty (aNum - bNum)) (Just dummyInfo) (Just aty)))
+      else evalError ctx ("Can't call - with " ++ pretty a ++ " and " ++ pretty b) (info a)
+    (XObj (FNum aty aNum) _ _, XObj (FNum bty bNum) _ _) ->
+      if aty == bty
+      then (ctx, Right (XObj (FNum aty (aNum - bNum)) (Just dummyInfo) (Just aty)))
       else evalError ctx ("Can't call - with " ++ pretty a ++ " and " ++ pretty b) (info a)
     _ -> evalError ctx ("Can't call - with " ++ pretty a ++ " and " ++ pretty b) (info a)
 
 commandDiv :: CommandCallback
 commandDiv ctx [a, b] =
   return $ case (a, b) of
-    (XObj (Num IntTy aNum) _ _, XObj (Num IntTy bNum) _ _) ->
-      (ctx, Right (XObj (Num IntTy (fromIntegral (quot (round aNum ::Int) (round bNum :: Int)))) (Just dummyInfo) (Just IntTy)))
-    (XObj (Num aty aNum) _ _, XObj (Num bty bNum) _ _) ->
+    (XObj (INum IntTy aNum) _ _, XObj (INum IntTy bNum) _ _) ->
+      (ctx, Right (XObj (INum IntTy (fromIntegral (quot aNum bNum))) (Just dummyInfo) (Just IntTy)))
+    (XObj (INum aty aNum) _ _, XObj (INum bty bNum) _ _) ->
       if aty == bty
-      then (ctx, Right (XObj (Num aty (aNum / bNum)) (Just dummyInfo) (Just aty)))
+      then (ctx, Right (XObj (INum aty (aNum `div` bNum)) (Just dummyInfo) (Just aty)))
+      else evalError ctx ("Can't call / with " ++ pretty a ++ " and " ++ pretty b) (info a)
+    (XObj (FNum aty aNum) _ _, XObj (FNum bty bNum) _ _) ->
+      if aty == bty
+      then (ctx, Right (XObj (FNum aty (aNum / bNum)) (Just dummyInfo) (Just aty)))
       else evalError ctx ("Can't call / with " ++ pretty a ++ " and " ++ pretty b) (info a)
     _ -> evalError ctx ("Can't call / with " ++ pretty a ++ " and " ++ pretty b) (info a)
 
 commandMul :: CommandCallback
 commandMul ctx [a, b] =
   return $ case (a, b) of
-    (XObj (Num aty aNum) _ _, XObj (Num bty bNum) _ _) ->
+    (XObj (INum aty aNum) _ _, XObj (INum bty bNum) _ _) ->
       if aty == bty
-      then (ctx, Right (XObj (Num aty (aNum * bNum)) (Just dummyInfo) (Just aty)))
+      then (ctx, Right (XObj (INum aty (aNum * bNum)) (Just dummyInfo) (Just aty)))
+      else evalError ctx ("Can't call * with " ++ pretty a ++ " and " ++ pretty b) (info a)
+    (XObj (FNum aty aNum) _ _, XObj (FNum bty bNum) _ _) ->
+      if aty == bty
+      then (ctx, Right (XObj (FNum aty (aNum * bNum)) (Just dummyInfo) (Just aty)))
       else evalError ctx ("Can't call * with " ++ pretty a ++ " and " ++ pretty b) (info a)
     _ -> evalError ctx ("Can't call * with " ++ pretty a ++ " and " ++ pretty b) (info a)
 
@@ -907,7 +923,7 @@ commandWriteFile ctx [filename, contents] =
 commandHostBitWidth :: CommandCallback
 commandHostBitWidth ctx [] =
   let bitSize = fromIntegral (finiteBitSize (undefined :: Int))
-  in return (ctx, Right (XObj (Num IntTy bitSize) (Just dummyInfo) (Just IntTy)))
+  in return (ctx, Right (XObj (INum IntTy bitSize) (Just dummyInfo) (Just IntTy)))
 
 commandSaveDocsInternal :: CommandCallback
 commandSaveDocsInternal ctx [modulePath] = do

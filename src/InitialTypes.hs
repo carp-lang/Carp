@@ -68,7 +68,8 @@ initialTypes typeEnv rootEnv root = evalState (visit rootEnv root) 0
   where
     visit :: Env -> XObj -> State Integer (Either TypeError XObj)
     visit env xobj = case obj xobj of
-                       (Num t _)          -> return (Right (xobj { ty = Just t }))
+                       (INum t _)         -> return (Right (xobj { ty = Just t }))
+                       (FNum t _)         -> return (Right (xobj { ty = Just t }))
                        (Bol _)            -> return (Right (xobj { ty = Just BoolTy }))
                        (Str _)            -> do lt <- genVarTy
                                                 return (Right (xobj { ty = Just (RefTy StringTy lt) }))

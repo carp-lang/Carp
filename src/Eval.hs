@@ -858,7 +858,7 @@ buildMainFunction xobj =
                                                  XObj (Lst [XObj Ref di Nothing, xobj])
                                                  di (Just UnitTy)])
                                       di (Just UnitTy)
-                        , XObj (Num IntTy 0) di Nothing
+                        , XObj (INum IntTy 0) di Nothing
                         ]) di Nothing]) di (Just (FuncTy [] UnitTy StaticLifetimeTy))
   where di = Just dummyInfo
 

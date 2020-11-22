@@ -52,7 +52,8 @@ data MatchMode = MatchValue | MatchRef deriving (Eq, Show)
 data Obj = Sym SymPath SymbolMode
          | MultiSym String [SymPath] -- refering to multiple functions with the same name
          | InterfaceSym String -- refering to an interface. TODO: rename to InterfaceLookupSym?
-         | Num Ty Double
+         | INum Ty Int
+         | FNum Ty Double
          | Str String
          | Pattern String
          | Chr Char
@@ -105,7 +106,8 @@ isGlobalFunc xobj =
     _ -> False
 
 isNumericLiteral :: XObj -> Bool
-isNumericLiteral (XObj (Num _ _) _ _) = True
+isNumericLiteral (XObj (INum _ _) _ _) = True
+isNumericLiteral (XObj (FNum _ _) _ _) = True
 isNumericLiteral (XObj (Bol _) _ _) = True
 isNumericLiteral (XObj (Chr _) _ _) = True
 isNumericLiteral _ = False
@@ -124,7 +126,8 @@ isArray (XObj (Arr _) _ _) = True
 isArray _ = False
 
 isLiteral :: XObj -> Bool
-isLiteral (XObj (Num _ _) _ _) = True
+isLiteral (XObj (INum _ _) _ _) = True
+isLiteral (XObj (FNum _ _) _ _) = True
 isLiteral (XObj (Chr _) _ _) = True
 isLiteral (XObj (Bol _) _ _) = True
 isLiteral _ = False
@@ -136,7 +139,8 @@ isExternalFunction _ = False
 -- | This instance is needed for the dynamic Dictionary
 instance Ord Obj where
   compare (Str a) (Str b) = compare a b
-  compare (Num _ a) (Num _ b) = compare a b
+  compare (INum _ a) (INum _ b) = compare a b
+  compare (FNum _ a) (FNum _ b) = compare a b
   compare a b = compare (show a) (show b)
   -- TODO: handle comparison of lists, arrays and dictionaries
 
@@ -270,12 +274,13 @@ pretty = visit 0
             Arr arr -> "[" ++ joinWithSpace (map (visit indent) arr) ++ "]"
             StaticArr arr -> "$[" ++ joinWithSpace (map (visit indent) arr) ++ "]"
             Dict dict -> "{" ++ joinWithSpace (map (visit indent) (concatMap (\(a, b) -> [a, b]) (Map.toList dict))) ++ "}"
-            Num IntTy num -> show (round num :: Int)
-            Num LongTy num -> show num ++ "l"
-            Num ByteTy num -> show num ++ "b"
-            Num FloatTy num -> show num ++ "f"
-            Num DoubleTy num -> show num
-            Num _ _ -> error "Invalid number type."
+            INum IntTy num -> show num
+            INum LongTy num -> show num ++ "l"
+            INum ByteTy num -> show num ++ "b"
+            INum _ _ -> error "Invalid number type."
+            FNum FloatTy num -> show num ++ "f"
+            FNum DoubleTy num -> show num
+            FNum _ _ -> error "Invalid number type."
             Str str -> show str
             Pattern str -> '#' : show str
             Chr c -> '\\' : c : ""
@@ -332,12 +337,13 @@ prettyUpTo max xobj =
             Lst lst -> ")"
             Arr arr -> "]"
             Dict dict -> "}"
-            Num LongTy num -> "l"
-            Num IntTy num -> ""
-            Num ByteTy num -> "b"
-            Num FloatTy num -> show num ++ "f"
-            Num DoubleTy num -> ""
-            Num _ _ -> error "Invalid number type."
+            INum LongTy num -> "l"
+            INum IntTy num -> ""
+            INum ByteTy num -> "b"
+            INum _ _ -> error "Invalid number type."
+            FNum FloatTy num -> show num ++ "f"
+            FNum DoubleTy num -> ""
+            FNum _ _ -> error "Invalid number type."
             Str str -> ""
             Pattern str -> ""
             Chr c -> ""
