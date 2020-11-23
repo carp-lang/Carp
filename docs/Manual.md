@@ -16,8 +16,6 @@ To learn more about the Carp language and its syntax and semantics, check out th
 
 The Carp language is very tightly integrated with the REPL, everything you want to do to your program can be controlled from here.
 
-To explore the commands available, enter ```(help)``` and press enter.
-
 To load code from disk, use ```(load "filename.carp")```, this will add the source file `filename.carp` to the current 'project'. A project is a light weight concept in the repl that ties together source files and compiler settings much like in an IDE like Eclipse or Visual Studio.
 
 To build your current project, call ```(build)```. This will emit an executable or dynamic library depending on if you have defined a main-function or not. Please note that a project emitting a library will not initialize global variables automatically, the user of the library needs to call the C function `carp_init_globals` or the Carp function `System.carp-init-globals` instead.
