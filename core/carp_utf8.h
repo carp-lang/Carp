@@ -49,8 +49,8 @@ static size_t utf8encode(char *s, uint32_t c) {
 }
 
 // Adapted from: http://bjoern.hoehrmann.de/utf-8/decoder/dfa/
-static const uint32_t UTF8_ACCEPT = 0;
-static const uint32_t UTF8_REJECT = 12;
+#define UTF8_ACCEPT 0
+#define UTF8_REJECT 12
 static uint32_t inline utf8decode(uint32_t *state, uint32_t *codep,
                                   uint32_t byte) {
     static const uint8_t utf8d[] = {

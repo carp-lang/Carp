@@ -4,6 +4,7 @@ module SymPath (SymPath(..)
                , consPath) where
 
 import qualified Data.Map as Map
+import Data.Char (isAscii, ord)
 import Util
 
 -- | The path to a binding
@@ -17,7 +18,7 @@ instance Show SymPath where
 
   -- | Replaces symbols not allowed in C-identifiers.
 mangle :: String -> String
-mangle = sreplace . creplace
+mangle = ureplace . sreplace . creplace
   where creplace = replaceChars (Map.fromList [('+', "_PLUS_")
                                                ,('-', "_MINUS_")
                                                ,('*', "_MUL_")
@@ -59,6 +60,7 @@ mangle = sreplace . creplace
                                                  ,("volatile", "_VOLATILE_")
                                                  ,("void", "_VOID_")
                                                  ,("while", "_WHILE_")])
+        ureplace = concatMap (\c -> if isAscii c then pure c else "_U" ++ show (ord c) ++ "U_")
 
 pathToC :: SymPath -> String
 pathToC (SymPath modulePath name) =
