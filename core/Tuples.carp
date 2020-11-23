@@ -65,12 +65,12 @@
           (list 'defn 'reverse ['t]
             (cons 'init (map (fn [x] (list 'copy (list x 't))) (reverse props))))
 
+          (list 'doc 'zero
+            (String.concat [
+              "initializes a `" sname
+              "` by calling `zero` for all its members. `zero` must be defined for all member types."]))
           (list 'defn 'zero [] (cons 'init (map (fn [_] '(zero)) props))))
           (list 'implements 'zero (Symbol.prefix name 'zero))
-          ;(list 'doc 'zero
-          ;  (String.concat [
-          ;    "initializes a `" sname
-          ;    "` by calling `zero` for all its members. `zero` must be defined for all member types."]))
     )))
 
   (doc deftuple "defines a tuple type.
