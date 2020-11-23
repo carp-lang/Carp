@@ -120,11 +120,11 @@ primitiveColumn x@(XObj _ i t) ctx args =
         go  = maybe err (\info -> (ctx, Right (XObj (Num IntTy (fromIntegral (infoColumn info))) i t)))
 
 primitiveImplements :: Primitive
-primitiveImplements xobj ctx [x@(XObj (Sym interface@(SymPath _ _) _) _ _), i@(XObj (Sym impl@(SymPath prefixes _) _) inf _)] =
+primitiveImplements xobj ctx [x@(XObj (Sym interface@(SymPath _ _) _) _ _), i@(XObj (Sym impl@(SymPath prefixes name) _) inf _)] =
   let global = contextGlobalEnv ctx
       def = lookupInEnv impl global
   in  maybe notFound found def
-  where fullPath@(SymPath modules name) = consPath (union (contextPath ctx) prefixes) impl
+  where fullPath@(SymPath modules name') = consPath (union (contextPath ctx) prefixes) (SymPath [] name)
         checkInterface = let warn = do putStrWithColor Blue ("[WARNING] The interface " ++ show interface ++ " implemented by " ++ show impl ++
                                                               " at " ++ prettyInfoFromXObj xobj ++ " is not defined." ++
                                                               " Did you define it using `definterface`?")

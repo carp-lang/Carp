@@ -28,7 +28,7 @@
                                             (Dynamic.String.concat [x newline])))
                                 strings
                                 ())]
-    (list 'meta-set! name "doc" (Dynamic.String.concat (list-to-array-internal separated [])))))
+    (eval (list 'meta-set! name "doc" (Dynamic.String.concat (list-to-array-internal separated []))))))
 
 (doc print-doc "Print the documentation for a binding.")
 (defmacro print-doc [name]
@@ -36,7 +36,7 @@
 
 (doc sig "Annotate a binding with the desired signature.")
 (defmacro sig [name signature]
-  (list 'meta-set! name "sig" signature))
+  (eval (list 'meta-set! name "sig" signature)))
 
 (doc print-sig "Print the annotated signature for a binding.")
 (defmacro print-sig [name]
@@ -44,11 +44,11 @@
 
 (doc hide "Mark a binding as hidden, this will make it not print with the 'info' command.")
 (defmacro hidden [name]
-  (list 'meta-set! name "hidden" true))
+  (eval (list 'meta-set! name "hidden" true)))
 
 (doc private "Mark a binding as private, this will make it inaccessible from other modules.")
 (defmacro private [name]
-  (list 'meta-set! name "private" true))
+  (eval (list 'meta-set! name "private" true)))
 
 (doc todo "sets the todo property for a binding.")
 (defmacro todo [name value]
@@ -67,7 +67,7 @@
 
 (doc annotate "Add an annotation to this binding.")
 (defmacro annotate [name annotation]
-  (list 'meta-set! name "annotations" (eval (annotate-helper name annotation))))
+  (eval (list 'meta-set! name "annotations" (eval (annotate-helper name annotation)))))
 
 (doc implements? "Does `function` implement `interface`?")
 (defmacro implements? [interface function]

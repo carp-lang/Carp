@@ -65,7 +65,7 @@
           (list 'defn 'reverse ['t]
             (cons 'init (map (fn [x] (list 'copy (list x 't))) (reverse props))))
 
-          (list 'doc 'zero
+          (list 'meta-set! 'zero "doc"
             (String.concat [
               "initializes a `" sname
               "` by calling `zero` for all its members. `zero` must be defined for all member types."]))
