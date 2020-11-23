@@ -312,7 +312,7 @@ toC toCMode (Binder meta root) = emitterSrc (execState (visit startingIndent roo
                     -- A better idea is to not specialise the names, which happens when calling 'concretize' on the lhs
                     -- This requires a bunch of extra machinery though, so this will do for now...
                     [var ++ periodOrArrow ++ "_tag == " ++ tagName caseTy (removeSuffix caseName)] ++
-                      concat (zipWith (\c i -> tagCondition (var ++ periodOrArrow ++ "u." ++ removeSuffix caseName ++ ".member" ++ show i) "." (forceTy c) c) caseMatchers [0..])
+                      concat (zipWith (\c i -> tagCondition (var ++ periodOrArrow ++ "u." ++ removeSuffix caseName ++ ".member" ++ show i) "." (forceTy c) c) caseMatchers ([0..] :: [Int]))
                       where notUnitX (XObj _ _ (Just UnitTy)) = False
                             notUnitX _ = True
                   tagCondition _ _ _ x =
@@ -327,7 +327,7 @@ toC toCMode (Binder meta root) = emitterSrc (execState (visit startingIndent roo
                     in  appendToSrc (addIndent indent' ++ tyToCLambdaFix tt ++ " " ++ pathToC path ++ " = "
                                     ++ ampersandOrNot ++ tempVarToAvoidClash ++ periodOrArrow ++ "u." ++ mangle caseName ++ ".member" ++ show index ++ ";\n")
                   emitCaseMatcher periodOrArrow caseName xobj@(XObj (Lst (XObj (Sym (SymPath _ innerCaseName) _) _ _ : xs)) i t) index =
-                    zipWithM_ (\x i -> emitCaseMatcher periodOrArrow (caseName ++ ".member" ++ show i ++ ".u." ++ removeSuffix innerCaseName) x index) xs [0..]
+                    zipWithM_ (\x i -> emitCaseMatcher periodOrArrow (caseName ++ ".member" ++ show i ++ ".u." ++ removeSuffix innerCaseName) x index) xs ([0..] :: [Int])
                   emitCaseMatcher _ _ xobj _ =
                     error ("Failed to emit case matcher for: " ++ pretty xobj)
 

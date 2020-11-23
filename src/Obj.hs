@@ -827,7 +827,7 @@ isGlobalVariableLookup (LookupGlobal _ AVariable) = True
 isGlobalVariableLookup _ = False
 
 anonMemberNames :: [String]
-anonMemberNames = map (\i -> "member" ++ show i) [0..]
+anonMemberNames = map (\i -> "member" ++ show i) ([0..] :: [Int])
 
 anonMemberSymbols :: [XObj]
 anonMemberSymbols = map (\n -> XObj (Sym (SymPath [] n) Symbol) Nothing Nothing) anonMemberNames
