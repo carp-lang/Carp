@@ -323,6 +323,7 @@ commandAddInclude includerConstructor ctx [x] =
     _ ->
       pure (evalError ctx ("Argument to 'include' must be a string, but was `" ++ pretty x ++ "`") (info x))
 
+commandAddSystemInclude :: CommandCallback
 commandAddSystemInclude = commandAddInclude SystemInclude
 
 commandAddRelativeInclude :: CommandCallback
@@ -572,6 +573,7 @@ commandSymStr ctx [XObj (Sym s _) i _] =
 commandSymStr ctx [x] =
   pure $ evalError ctx ("Can’t call `str` with " ++ pretty x) (info x)
 
+sFrom_ :: String -> Obj
 sFrom_ s = Sym (SymPath [] s) (LookupGlobal CarpLand AVariable)
 
 commandPathDirectory :: CommandCallback

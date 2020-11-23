@@ -74,11 +74,13 @@ platform =
       "mingw32" -> Windows
       "freebsd" -> FreeBSD
 
+unionOfSetsInList :: Ord a => [Set.Set a] -> Set.Set a
 unionOfSetsInList (x:xs) =
   foldl' Set.union x xs
 unionOfSetsInList [] =
   Set.empty
 
+intersectionOfSetsInList :: Ord a => [Set.Set a] -> Set.Set a
 intersectionOfSetsInList (x:xs) =
   foldl' Set.intersection x xs
 intersectionOfSetsInList [] =

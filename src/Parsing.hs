@@ -132,6 +132,7 @@ string = do i <- createInfo
   where simple = do c <- Parsec.noneOf ['"']
                     pure [c]
 
+countLinebreaks :: String -> Int
 countLinebreaks =
   foldr (\x sum -> if x == '\n' then sum+1 else sum) 0
 

@@ -142,6 +142,7 @@ repl readSoFar prompt =
               repl "" (projectPrompt proj)
             _ -> repl concatenated (if projectBalanceHints proj then balanced else "")
 
+resetAlreadyLoadedFiles :: Context -> Context
 resetAlreadyLoadedFiles context =
   let proj = contextProj context
       proj' = proj { projectAlreadyLoaded = [] }

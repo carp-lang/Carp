@@ -1,7 +1,7 @@
 module Primitives where
 
 import Control.Monad (unless, when, foldM)
-import Control.Monad.IO.Class (liftIO)
+import Control.Monad.IO.Class (liftIO, MonadIO)
 import Data.Maybe (fromMaybe)
 import Data.Either (rights)
 import Web.Browser (openBrowser)
@@ -27,9 +27,10 @@ import Infer
 import Reify
 
 
-found ctx binder =
-  liftIO $ do putStrLnWithColor White (show binder)
-              pure (ctx, dynamicNil)
+-- found :: (MonadIO m, Show a1) => a2 -> a1 -> m (a2, Either a3 XObj)
+-- found ctx binder =
+--   liftIO $ do putStrLnWithColor White (show binder)
+--               pure (ctx, dynamicNil)
 
 makePrim :: String -> Int -> String -> String -> Primitive -> (String, Binder)
 makePrim name arity doc example callback =
@@ -761,6 +762,7 @@ primitiveHelp _ ctx [] =
 primitiveHelp _ ctx args =
   return (evalError ctx ("Invalid args to `help`: " ++ joinWithComma (map pretty args)) Nothing)
 
+openBrowserHelper :: MonadIO m => Context -> String -> m (Context, Either EvalError XObj)
 openBrowserHelper ctx url =
   liftIO $ do openBrowser url
               return (ctx, dynamicNil)

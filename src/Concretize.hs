@@ -591,6 +591,7 @@ concretizeDefinition allowAmbiguity typeEnv globalEnv visitedDefinitions definit
         Left $ CannotConcretize definition
 
 -- | Find ALL functions with a certain name, matching a type signature.
+allFunctionsWithNameAndSignature :: Env -> String -> Ty -> [(Env, Binder)]
 allFunctionsWithNameAndSignature env functionName functionType =
   filter (predicate . ty . binderXObj . snd) (multiLookupALL functionName env)
   where
@@ -1393,7 +1394,10 @@ memberDeletionGeneral separator typeEnv env (memberName, memberType) =
     FunctionNotFound msg -> error msg
     FunctionIgnored -> "    /* Ignore non-managed member '" ++ memberName ++ "' : " ++ show memberType ++ " */"
 
+memberDeletion :: TypeEnv -> Env -> (String, Ty) -> String
 memberDeletion = memberDeletionGeneral "."
+
+memberRefDeletion :: TypeEnv -> Env -> (String, Ty) -> String
 memberRefDeletion = memberDeletionGeneral "Ref->"
 
 -- | The template for the 'copy' function of a concrete deftype.

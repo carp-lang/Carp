@@ -734,7 +734,8 @@ defStructToDeclaration structTy@(StructTy typeName typeVariables) path rest =
      then "" -- ("// " ++ show structTy ++ "\n")
      else emitterSrc (execState visit (EmitterState ""))
 
-defSumtypeToDeclaration sumTy@(StructTy typeName typeVariables) path rest =
+defSumtypeToDeclaration :: Ty -> [XObj] -> String
+defSumtypeToDeclaration sumTy@(StructTy typeName typeVariables) rest =
   let indent = indentAmount
 
       visit = do appendToSrc "typedef struct {\n"
@@ -789,7 +790,7 @@ toDeclaration (Binder meta xobj@(XObj (Lst xobjs) _ t)) =
     XObj (Deftype t) _ _ : XObj (Sym path _) _ _ : rest ->
       defStructToDeclaration t path rest
     XObj (DefSumtype t) _ _ : XObj (Sym path _) _ _ : rest ->
-      defSumtypeToDeclaration t path rest
+      defSumtypeToDeclaration t rest
     XObj (Deftemplate _) _ _ : _ ->
       ""
     XObj Macro _ _ : _ ->

@@ -35,9 +35,11 @@ data LookupPreference = PreferDynamic
                       | PreferGlobal
 
 -- Prefer dynamic bindings
+evalDynamic :: Context -> XObj -> IO (Context, Either EvalError XObj)
 evalDynamic ctx xobj = eval ctx xobj PreferDynamic
 
 -- Prefer global bindings
+evalStatic :: Context -> XObj -> IO (Context, Either EvalError XObj)
 evalStatic ctx xobj = eval ctx xobj PreferGlobal
 
 -- | Dynamic (REPL) evaluation of XObj:s (s-expressions)

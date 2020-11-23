@@ -13,6 +13,7 @@ import qualified ArrayTemplates
 -- since there are some small differences here and there I'v decided to not
 -- try to abstract over them and just duplicate the templates instead.
 
+concreteArray :: Ty
 concreteArray = (ConcreteNameTy "StaticArray")
 
 templateUnsafeNth :: (String, Binder)
