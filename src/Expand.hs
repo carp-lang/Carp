@@ -143,7 +143,6 @@ expand eval ctx xobj =
             prettyInfoFromXObj xobj ++
             ".\n\n`with` accepts only one expression, except at the top level.") Nothing)
         XObj (Mod modEnv) _ _ : args ->
-          --return (evalError ctx ("I can’t evaluate the module `" ++ pretty xobj ++ "`") (info xobj))
           let moduleName = fromMaybe "" (envModuleName modEnv)
               pathToModule = pathToEnv modEnv
               implicitInit = XObj (Sym (SymPath pathToModule "init") Symbol) i t
