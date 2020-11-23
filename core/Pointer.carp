@@ -20,6 +20,29 @@ The user will have to ensure themselves that this is a safe operation.")
   (doc from-long "converts a long integer to a pointer.")
   (deftemplate from-long (Fn [Long] (Ptr p)) "$p* $NAME(Long p)" " $DECL { return ($p*)p; }")
 
+  (doc set-unsafe
+    "Sets the value of a pointer."
+    "The user will have to ensure this operation is safe.")
+  (deftemplate set-unsafe (Fn [(Ptr p) (Ref a b)] (Ptr p)) "$p* $NAME($p* p, void* a)" "$DECL { *p = *($p*)a; return p;}")
+
+  (doc cast
+     "Cast a pointer to type p to a pointer to type a."
+     "The value of the `a` argument is ignored.")
+  (deftemplate cast (Fn [(Ptr p) a] (Ptr a)) "$a* $NAME($p* p, $a a)" "$DECL { *($a*)p = CARP_MALLOC(sizeof($a)); return ($a*)p;}")
+
+  (doc leak
+     "Allocate a new pointer that's a copy of the value of `Ref`"
+     "The Carp borrow checker won't delete this pointer. You will need to delete it manually by calling `Pointer.free`.")
+  (deftemplate leak (Fn [(Ref a b)] (Ptr a)) "$a* $NAME($a* r)" "$DECL { void *leak = CARP_MALLOC(sizeof($a)); memcpy(leak, r, sizeof($a)); return ($a*)leak;}")
+
+  (doc free
+     "Free a pointer."
+     "Users need to manually verify that this operation is safe.")
+  (deftemplate free (Fn [(Ptr p)] Unit) "void $NAME($p* p)" "$DECL {CARP_FREE(p);}")
+
+  (doc set "Sets the value of a pointer.")
+  (deftemplate set (Fn [(Ptr p) p] (Ptr p)) "$p* $NAME($p* p, $p a)" "$DECL { *p = a; return p;}")
+
   (defn inc [a] (Pointer.add a 1l))
   (implements inc Pointer.inc)
   (defn dec [a] (Pointer.sub a 1l))
