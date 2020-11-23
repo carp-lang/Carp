@@ -114,7 +114,7 @@ rawString = do
     pure (XObj (Str str) i Nothing)
   where
     continuation = do
-      Parsec.try $ Parsec.count 2 $ Parsec.char '"'
+      _ <- Parsec.try $ Parsec.count 2 $ Parsec.char '"'
       pure ['"']
     simple = do
       c <- Parsec.noneOf ['"']
@@ -278,7 +278,7 @@ symbolSegment = do sym <- Parsec.many1 validInSymbol
         highCharacters = Parsec.satisfy ((> 127) . ord)
 
 period :: Parsec.Parsec String ParseState ()
-period = do Parsec.char '.'
+period = do _ <- Parsec.char '.'
             incColumn 1
             pure ()
 

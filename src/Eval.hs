@@ -384,7 +384,7 @@ executeString doCatch printResult ctx input fileName =
                                                                       , infoColumn = Parsec.sourceColumn sourcePos
                                                                       }) Nothing
                    in do
-                    liftIO $ treatErr ctx (replaceChars (Map.fromList [('\n', " ")]) (show parseError)) parseErrorXObj
+                    _ <- liftIO $ treatErr ctx (replaceChars (Map.fromList [('\n', " ")]) (show parseError)) parseErrorXObj
                     pure ctx
                  Right xobjs -> do
                   (res, ctx) <- foldM interactiveFolder

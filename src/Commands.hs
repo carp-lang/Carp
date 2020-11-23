@@ -192,7 +192,7 @@ commandProjectGetConfig ctx [faultyKey] =
 -- | Command for exiting the REPL/compiler
 commandQuit :: CommandCallback
 commandQuit ctx args =
-  do liftIO exitSuccess
+  do _ <- liftIO exitSuccess
      pure (ctx, dynamicNil)
 
 -- | Command for printing the generated C output (in out/main.c)

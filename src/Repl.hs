@@ -128,7 +128,7 @@ repl readSoFar prompt =
      input <- getInputLine (strWithColor Yellow prompt)
      case input of
         Nothing -> do
-          liftIO exitSuccess
+          _ <- liftIO exitSuccess
           pure ()
         Just i -> do
           let concatenated = readSoFar ++ i ++ "\n"

@@ -264,7 +264,7 @@ primitiveInfo _ ctx [target@(XObj (Sym path@(SymPath _ name) _) _ _)] = do
       -- First look in the type env, then in the global env:
       case lookupInEnv path (getTypeEnv typeEnv) of
         Nothing -> printer env True True (lookupInEnv path env)
-        found -> do printer env True True found -- this will print the interface itself
+        found -> do _ <- printer env True True found -- this will print the interface itself
                     printer env True False (lookupInEnv path env)-- this will print the locations of the implementers of the interface
     qualifiedPath ->
       case lookupInEnv path env of
@@ -764,5 +764,5 @@ primitiveHelp _ ctx args =
 
 openBrowserHelper :: MonadIO m => Context -> String -> m (Context, Either EvalError XObj)
 openBrowserHelper ctx url =
-  liftIO $ do openBrowser url
+  liftIO $ do _ <- openBrowser url
               return (ctx, dynamicNil)
