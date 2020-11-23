@@ -13,7 +13,7 @@ let
   linuxOnly = optionals nixpkgs.stdenv.isLinux;
 
   f = { mkDerivation, stdenv
-      , ansi-terminal, base, blaze-html, blaze-markup
+      , ansi-terminal, open-browser, base, blaze-html, blaze-markup
       , cmark, containers, directory, edit-distance, filepath
       , haskeline, HUnit, mtl, optparse-applicative, parsec, process, split, text
       , darwin, glfw3, SDL2, SDL2_image, SDL2_gfx, SDL2_mixer, SDL2_ttf
@@ -35,7 +35,7 @@ let
         enableLibraryProfiling = profiling;
         enableExecutableProfiling = profiling;
         libraryHaskellDepends = [
-          ansi-terminal base blaze-html blaze-markup cmark containers
+          ansi-terminal open-browser base blaze-html blaze-markup cmark containers
           directory edit-distance filepath haskeline mtl parsec process split
           text
         ] ++ optionals profiling [ ghc-prof-flamegraph ];
