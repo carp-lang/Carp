@@ -22,10 +22,6 @@ import Path
 import Lookup
 import Parsing (balance)
 
-instance MonadState s m => MonadState s (InputT m) where
-    get = lift get
-    put = lift . put
-    state = lift . state
 
 completeKeywordsAnd :: Context -> String -> [Completion]
 completeKeywordsAnd context word =
@@ -124,7 +120,7 @@ treatSpecialInput arg = arg
 
 repl :: String -> String -> InputT (StateT Context IO) ()
 repl readSoFar prompt =
-  do context <- get
+  do context <- lift $ get
      input <- getInputLine (strWithColor Yellow prompt)
      case input of
         Nothing -> do
@@ -138,7 +134,7 @@ repl readSoFar prompt =
             "" -> do
               let input' = if concatenated == "\n" then contextLastInput context else concatenated -- Entering an empty string repeats last input
               context' <- liftIO $ executeString True True (resetAlreadyLoadedFiles context) (treatSpecialInput input') "REPL"
-              put context'
+              lift $ put context'
               repl "" (projectPrompt proj)
             _ -> repl concatenated (if projectBalanceHints proj then balanced else "")
 
