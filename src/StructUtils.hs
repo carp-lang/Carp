@@ -2,7 +2,6 @@ module StructUtils where
 
 import Obj
 import Types
-import Util
 import Lookup
 import Polymorphism
 

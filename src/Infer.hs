@@ -7,18 +7,9 @@ module Infer (annotate
              ,depsOfPolymorphicFunction
              ) where
 
-import Control.Monad.State
-import Control.Monad (replicateM)
-import qualified Data.Map as Map
-import qualified Data.Set as Set
-import Data.List (foldl', sort)
-import Data.Maybe (mapMaybe)
-import Debug.Trace
-
 import Obj
 import Constraints
 import Types
-import Util
 import TypeError
 import InitialTypes
 import AssignTypes

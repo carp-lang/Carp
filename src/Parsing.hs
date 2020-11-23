@@ -9,15 +9,11 @@ import qualified Text.Parsec as Parsec
 -- import Text.Parsec.Error (newErrorMessage, Message(..))
 -- import Text.Parsec.Pos (newPos)
 import qualified Data.Set as Set
-import qualified Data.Map as Map
 import Data.Char (ord)
 import Obj
 import Types
 import Util
 import Info
-import Control.Monad.Error.Class (throwError)
-
-import Debug.Trace
 
 newtype ParseState = ParseState { parseInfo :: Info }
 

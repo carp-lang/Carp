@@ -2,14 +2,12 @@ module Primitives where
 
 import Control.Monad (unless, when, foldM)
 import Control.Monad.IO.Class (liftIO)
-import Data.List (foldl')
 import Data.Maybe (fromMaybe)
-import Data.Either (isRight, rights)
+import Data.Either (rights)
 import Web.Browser (openBrowser)
 
 import ColorText
 import Commands
-import Constraints
 import Deftype
 import Emit
 import Lookup
@@ -28,7 +26,6 @@ import Interfaces
 import Infer
 import Reify
 
-import Debug.Trace
 
 found ctx binder =
   liftIO $ do putStrLnWithColor White (show binder)

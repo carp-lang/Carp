@@ -1,11 +1,7 @@
 module Polymorphism where
 
-import Debug.Trace
-
 import Obj
 import Types
-import Util
-import TypeError
 import Lookup
 
 -- | Calculate the full, mangled name of a concretized polymorphic function.

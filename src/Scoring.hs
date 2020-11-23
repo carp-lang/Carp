@@ -1,6 +1,5 @@
 module Scoring (scoreTypeBinder, scoreValueBinder) where
 
-import Debug.Trace
 import qualified Data.Set as Set
 import Data.Maybe (fromJust)
 

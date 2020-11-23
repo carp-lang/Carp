@@ -10,11 +10,9 @@ module Emit (toC,
 
 import Data.List (intercalate, sortOn)
 import Control.Monad.State
-import Control.Monad (when, zipWithM_)
 import qualified Data.Map as Map
 import qualified Data.Set as Set
 import Data.Maybe (fromMaybe, fromJust)
-import Debug.Trace
 import Data.Char (ord)
 
 import Obj
@@ -25,7 +23,6 @@ import Util
 import Template
 import Scoring
 import Lookup
-import Concretize
 import Info
 import qualified Meta
 

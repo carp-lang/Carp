@@ -7,18 +7,14 @@ import Control.Monad (when)
 import Text.Blaze.Html5 as H
 import Text.Blaze.Html5.Attributes as A
 import Text.Blaze.Html.Renderer.Pretty (renderHtml)
-import Text.Blaze.Internal (stringValue)
 import Data.Maybe (fromMaybe)
-import Data.Text.Lazy as T
 import Data.Text as Text
 import qualified Data.Map as Map
 import qualified Data.List as List
-import Debug.Trace
 
 import Obj
 import Project
 import Types
-import Util
 import Path
 import AssignTypes (typeVariablesInOrderOfAppearance)
 import qualified Meta

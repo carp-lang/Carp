@@ -2,18 +2,16 @@
 module Eval where
 
 import Control.Applicative
-import Control.Concurrent (forkIO)
 import Control.Exception
 import Control.Monad.State
 import Data.Foldable (foldlM, foldrM)
-import Data.List (foldl', null, isSuffixOf, intercalate)
+import Data.List (foldl', isSuffixOf, intercalate)
 import Data.List.Split (splitOn, splitWhen)
-import Data.Maybe (fromJust, mapMaybe, isJust, Maybe(..), fromMaybe)
-import System.Exit (exitSuccess, exitFailure, exitWith, ExitCode(..))
+import Data.Maybe (fromJust, isJust, fromMaybe)
+import System.Exit (exitSuccess, exitWith, ExitCode(..))
 import System.Process (readProcessWithExitCode)
 import qualified Data.Map as Map
 import qualified Text.Parsec as Parsec
-import qualified Text.Parsec.Error as ParsecError
 
 import Parsing
 import Emit
@@ -21,23 +19,17 @@ import Obj
 import Project
 import Types
 import Infer
-import Deftype
-import Sumtypes
 import ColorText
-import Template
 import Util
 import Commands
 import Expand
 import Lookup
 import Qualify
 import TypeError
-import Concretize
 import Path
 import Primitives
 import Info
 import qualified Meta
-
-import Debug.Trace
 
 data LookupPreference = PreferDynamic
                       | PreferGlobal

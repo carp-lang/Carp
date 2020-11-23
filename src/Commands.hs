@@ -1,28 +1,24 @@
 module Commands where
 
 import Control.Exception
-import Control.Monad (join, when, foldM)
+import Control.Monad (join, when)
 import Control.Monad.IO.Class (liftIO, MonadIO)
 import Data.Bits (finiteBitSize)
 import Data.List (elemIndex)
 import Data.List.Split (splitOn)
 import Data.Maybe (fromMaybe)
-import System.Exit (exitSuccess, exitFailure, exitWith, ExitCode(..))
+import System.Exit (exitSuccess, ExitCode(..))
 import System.Info (os, arch)
 import System.Process (callCommand, spawnCommand, waitForProcess)
 import System.IO (openFile, hPutStr, hClose, utf8, hSetEncoding, IOMode(..))
 import System.Directory (makeAbsolute)
 import qualified Data.Map as Map
 
-import Parsing
 import Emit
 import Obj
 import Project
 import Types
-import Infer
-import Deftype
 import ColorText
-import Template
 import Util
 import Lookup
 import RenderDocs

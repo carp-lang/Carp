@@ -10,22 +10,17 @@ import System.Console.Haskeline ( getInputLine
                                 , completeWordWithPrev
                                 )
 import Data.List (isPrefixOf)
-import Control.Monad.IO.Class (liftIO)
 import Control.Monad.State.Strict
 import System.Exit (exitSuccess)
 import qualified Data.Map as Map
 
-import Types
 import Obj
 import Project
-import Util
 import ColorText
 import Eval
 import Path
 import Lookup
 import Parsing (balance)
-
-import Debug.Trace
 
 instance MonadState s m => MonadState s (InputT m) where
     get = lift get

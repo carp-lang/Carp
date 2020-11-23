@@ -2,8 +2,8 @@ module Obj where
 
 import qualified Data.Map as Map
 import qualified Data.Set as Set
-import Data.List (intercalate, foldl')
-import Data.Maybe (mapMaybe, fromMaybe, fromJust)
+import Data.List (intercalate)
+import Data.Maybe (fromMaybe)
 import Control.Monad.State
 import Data.Char
 import SymPath
@@ -12,7 +12,6 @@ import TypesToC
 import Util
 import Info
 import Project
-import Debug.Trace
 
 -- | Will the lookup look at other Carp code or at C code. This matters when calling functions, should they assume it's a lambda or a normal C function?
 data GlobalMode = CarpLand

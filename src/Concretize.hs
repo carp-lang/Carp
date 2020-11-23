@@ -3,7 +3,7 @@ module Concretize where
 
 import Control.Monad.State
 import qualified Data.Map as Map
-import Data.Maybe (fromMaybe, fromJust)
+import Data.Maybe (fromMaybe)
 import qualified Data.Set as Set
 import Data.Set ((\\))
 import Data.List (foldl')
@@ -17,7 +17,6 @@ import Util
 import TypeError
 import AssignTypes
 import Polymorphism
-import InitialTypes
 import Lookup
 import ToTemplate
 import Validate
