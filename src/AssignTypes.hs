@@ -49,7 +49,7 @@ assignTypes mappings root = visit root
         in  if isArrayTypeOK finalType
             then Right (xobj { ty = Just finalType })
             else Left  (ArraysCannotContainRefs xobj)
-      Nothing -> return xobj
+      Nothing -> pure xobj
 
 
 isArrayTypeOK :: Ty -> Bool
