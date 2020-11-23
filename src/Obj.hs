@@ -48,11 +48,51 @@ isLookupLocal _ = False
 
 data MatchMode = MatchValue | MatchRef deriving (Eq, Show)
 
+data Number = Floating Double | Integral Int deriving (Eq, Ord)
+
+instance Num Number where
+    (Floating a) + (Floating b) = Floating (a + b)
+    (Integral a) + (Integral b) = Integral (a + b)
+    _ + _ = error "+"
+    (Floating a) * (Floating b) = Floating (a * b)
+    (Integral a) * (Integral b) = Integral (a * b)
+    _ * _ = error "*"
+    negate (Floating a) = Floating (negate a)
+    negate (Integral a) = Integral (negate a)
+    abs (Floating a) = Floating (abs a)
+    abs (Integral a) = Integral (abs a)
+    signum (Floating a) = Floating (signum a)
+    signum (Integral a) = Integral (signum a)
+    fromInteger a = Integral (fromInteger a)
+
+
+instance Real Number where
+  toRational (Integral a) = toRational a
+  toRational (Floating a) = toRational a
+
+instance Enum Number where
+  toEnum a = Integral (toEnum a)
+  fromEnum (Integral a) = fromEnum a
+
+instance Fractional Number where
+  fromRational a = Floating (fromRational a)
+  recip (Floating a) = Floating (recip a)
+
+instance Integral Number where
+  quotRem (Integral a) (Integral b) = let (q,r) = quotRem a b in (Integral q, Integral r)
+  quotRem _ _ = error "quotRem"
+  toInteger (Integral a) = toInteger a
+  toInteger _ = error "toInteger"
+
+instance Show Number where
+  show (Floating a) = show a
+  show (Integral a) = show a
+
 -- | The canonical Lisp object.
 data Obj = Sym SymPath SymbolMode
          | MultiSym String [SymPath] -- refering to multiple functions with the same name
          | InterfaceSym String -- refering to an interface. TODO: rename to InterfaceLookupSym?
-         | Num Ty Double
+         | Num Ty Number
          | Str String
          | Pattern String
          | Chr Char
@@ -270,7 +310,7 @@ pretty = visit 0
             Arr arr -> "[" ++ joinWithSpace (map (visit indent) arr) ++ "]"
             StaticArr arr -> "$[" ++ joinWithSpace (map (visit indent) arr) ++ "]"
             Dict dict -> "{" ++ joinWithSpace (map (visit indent) (concatMap (\(a, b) -> [a, b]) (Map.toList dict))) ++ "}"
-            Num IntTy num -> show (round num :: Int)
+            Num IntTy num -> show num
             Num LongTy num -> show num ++ "l"
             Num ByteTy num -> show num ++ "b"
             Num FloatTy num -> show num ++ "f"
