@@ -2,6 +2,7 @@
 (use GLFW)
 
 (load "OpenGL.carp")
+(Project.config "cflag" "-DGL_SILENCE_DEPRECATION")
 
 (defn t []
   (Double.to-float (get-time)))

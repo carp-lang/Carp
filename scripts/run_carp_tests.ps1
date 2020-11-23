@@ -22,11 +22,13 @@ Get-ChildItem -Filter test/*.carp | ForEach-Object -Process {
   }
 }
 
+# TODO Add test for empty project (with and without core)
+
 # TODO Add tests for error messages
 
 # Just make sure these compile
 exitOnError { stack exec carp "--" ./examples/mutual_recursion.carp -b }
-exitOnError { stack exec carp "--" ./examples/guessing.carp -b }
+exitOnError { stack exec carp "--" ./examples/guessing_game.carp -b }
 exitOnError { stack exec carp "--" ./examples/no_core.carp --no-core --no-profile -b }
 exitOnError { stack exec carp "--" ./examples/check_malloc.carp -b }
 
