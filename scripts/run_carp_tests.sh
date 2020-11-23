@@ -11,18 +11,20 @@ fi
 ./scripts/build.sh
 
 echo "Build and run some examples"
-./test/execute.sh ./examples/basics.carp
 ./test/execute.sh ./examples/functor.carp
 ./test/execute.sh ./examples/external_struct.carp
 ./test/execute.sh ./examples/updating.carp
 ./test/execute.sh ./examples/sorting.carp
-./test/execute.sh ./examples/globals.carp
 ./test/execute.sh ./examples/generic_structs.carp
-./test/execute.sh ./examples/setting_variables.carp
-./test/execute.sh ./examples/function_members.carp
 ./test/execute.sh ./examples/maps.carp
-./test/execute.sh ./examples/lambdas.carp
 ./test/execute.sh ./examples/sumtypes.carp
+
+echo "Build and run some tests that print (check their output)"
+./test/execute.sh ./test/produces-output/basics.carp
+./test/execute.sh ./test/produces-output/function_members.carp
+./test/execute.sh ./test/produces-output/globals.carp
+./test/execute.sh ./test/produces-output/lambdas.carp
+./test/execute.sh ./test/produces-output/setting_variables.carp
 
 echo "Actual tests (using the test suite)"
 for f in ./test/*.carp; do
@@ -37,11 +39,17 @@ for f in ./test-for-errors/*.carp; do
    ./test/check.sh $f
 done
 
+echo "Make sure the benchmarks compile."
+for f in ./bench/*.carp; do
+    echo $f
+    ./scripts/carp.sh -b $f
+done
+
 echo "Compile-only examples"
 compileOnlyExamples="\
                    examples/mutual_recursion.carp \
-                   examples/guessing.carp \
-                   examples/check_malloc.carp \
+                   examples/guessing_game.carp \
+                   examples/unicode.carp \
                    examples/nested_lambdas.carp
 "
 
@@ -50,6 +58,7 @@ for e in $compileOnlyExamples ; do
     ./scripts/carp.sh $e -b
 done
 
+# Make sure a no-core build works
 echo ./examples/no_core.carp
 ./scripts/carp.sh ./examples/no_core.carp --no-core --no-profile -b
 
@@ -57,13 +66,13 @@ echo ./examples/no_core.carp
 if [ ${NO_SDL} -eq 0 ]; then
     echo "Compile-only SDL examples"
     compileOnlySdlExamples="
-                examples/ant.carp
-                            examples/reptile.carp
-                            examples/game.carp
-                            examples/minimal_sdl.carp
-                            examples/sounds.carp
-                            examples/fonts.carp
-                "
+        examples/langtons_ant.carp
+        examples/reptile.carp
+        examples/carp_demo.carp
+        examples/minimal_sdl.carp
+        examples/sounds.carp
+        examples/fonts.carp
+    "
 
     for e in $compileOnlySdlExamples ; do
         echo $e

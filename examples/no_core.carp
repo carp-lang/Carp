@@ -1,6 +1,8 @@
-; this compiles without needing the core libraries (--no-core flag)
+;; This compiles without needing the core libraries (--no-core flag)
+
 (system-include "limits.h")
 (system-include "carp_stdbool.h")
+
 (load "Interfaces.carp")
 (load "Bool.carp")
 (load "Pointer.carp")

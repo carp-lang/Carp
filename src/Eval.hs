@@ -990,7 +990,7 @@ primitiveAnd _ ctx [a, b] = do
          case evaledB of
            Left e -> return (newCtx, Left e)
            Right (XObj (Bol bb) _ _) ->
-             return (newCtx', if bb then Right trueXObj else Right falseXObj)
+             return (newCtx', Right (boolToXObj bb))
            Right b -> return (evalError ctx ("Can’t call `or` on " ++ pretty b) (info b))
        else return (newCtx, Right falseXObj)
    Right a -> return (evalError ctx ("Can’t call `or` on " ++ pretty a) (info a))
@@ -1008,6 +1008,6 @@ primitiveOr _ ctx [a, b] = do
          case evaledB of
            Left e -> return (newCtx, Left e)
            Right (XObj (Bol bb) _ _) ->
-             return (newCtx', if bb then Right trueXObj else Right falseXObj)
+             return (newCtx', Right (boolToXObj bb))
            Right b -> return (evalError ctx ("Can’t call `or` on " ++ pretty b) (info b))
    Right a -> return (evalError ctx ("Can’t call `or` on " ++ pretty a) (info a))

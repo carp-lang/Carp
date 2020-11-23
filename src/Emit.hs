@@ -102,9 +102,9 @@ toC toCMode (Binder meta root) = emitterSrc (execState (visit startingIndent roo
             Lst _   -> visitList indent xobj
             Arr _   -> visitArray indent xobj
             StaticArr _ -> visitStaticArray indent xobj
-            Num IntTy num -> return (show (round num :: Int))
-            Num LongTy num -> return (show (round num :: Int) ++ "l")
-            Num ByteTy num -> return (show (round num :: Int))
+            Num IntTy num -> return (show num)
+            Num LongTy num -> return (show num ++ "l")
+            Num ByteTy num -> return (show num)
             Num FloatTy num -> return (show num ++ "f")
             Num DoubleTy num -> return (show num)
             Num _ _ -> error "Can't emit invalid number type."
