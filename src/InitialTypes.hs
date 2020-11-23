@@ -140,7 +140,7 @@ initialTypes typeEnv rootEnv root = evalState (visit rootEnv root) 0
     visitInterfaceSym env xobj@(XObj (InterfaceSym name) _ _) =
       do freshTy <- case lookupInEnv (SymPath [] name) (getTypeEnv typeEnv) of
                       Just (_, Binder _ (XObj (Lst [XObj (Interface interfaceSignature _) _ _, _]) _ _)) -> renameVarTys interfaceSignature
-                      Just (_, Binder _ x) -> error ("A non-interface named '" ++ name ++ "' was found in the type environment: " ++ show x)
+                      Just (_, Binder _ x) -> error ("A non-interface named '" ++ name ++ "' was found in the type environment: " ++ pretty x)
                       Nothing -> genVarTy
          return (Right xobj { ty = Just freshTy })
 
