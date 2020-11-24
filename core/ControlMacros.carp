@@ -28,27 +28,6 @@
 (defmacro ==> [:rest forms]
   (thread-last-internal forms))
 
-(defmacro when [condition form]
-  (list 'if condition form (list)))
-
-(defmacro unless [condition form]
-  (list 'if condition (list) form))
-
-(defndynamic case-internal [name xs]
-  (if (= (length xs) 0)
-    (list)
-    (if (= (length xs) 2)
-      (macro-error "case has even number of branches; add an else branch")
-      (if (= (length xs) 1)
-        (car xs)
-        (list 'if
-         (list '= name (car xs))
-          (cadr xs)
-          (case-internal name (cddr xs)))))))
-
-(defmacro case [name :rest forms]
-  (case-internal name forms))
-
 (defndynamic comp-internal [sym fns]
   (if (= (length fns) 0)
     sym
