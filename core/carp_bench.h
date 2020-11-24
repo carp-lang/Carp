@@ -28,27 +28,30 @@ LARGE_INTEGER getFILETIMEoffset() {
 }
 
 int clock_gettime(int X, struct timeval *tv) {
-    LARGE_INTEGER           t;
-    FILETIME            f;
-    double                  microseconds;
-    static LARGE_INTEGER    offset;
-    static double           frequencyToMicroseconds;
-    static int              initialized = 0;
-    static BOOL             usePerformanceCounter = 0;
+    LARGE_INTEGER t;
+    FILETIME f;
+    double microseconds;
+    static LARGE_INTEGER offset;
+    static double frequencyToMicroseconds;
+    static int initialized = 0;
+    static BOOL usePerformanceCounter = 0;
 
     if (!initialized) {
         LARGE_INTEGER performanceFrequency;
         initialized = 1;
-        usePerformanceCounter = QueryPerformanceFrequency(&performanceFrequency);
+        usePerformanceCounter =
+            QueryPerformanceFrequency(&performanceFrequency);
         if (usePerformanceCounter) {
             QueryPerformanceCounter(&offset);
-            frequencyToMicroseconds = (double)performanceFrequency.QuadPart / 1000000.;
+            frequencyToMicroseconds =
+                (double)performanceFrequency.QuadPart / 1000000.;
         } else {
             offset = getFILETIMEoffset();
             frequencyToMicroseconds = 10.;
         }
     }
-    if (usePerformanceCounter) QueryPerformanceCounter(&t);
+    if (usePerformanceCounter)
+        QueryPerformanceCounter(&t);
     else {
         GetSystemTimeAsFileTime(&f);
         t.QuadPart = f.dwHighDateTime;

@@ -20,6 +20,7 @@ The key features of Carp are the following:
 * Ownership tracking enables a functional programming style while still using mutation of cache-friendly data structures under the hood
 * No hidden performance penalties – allocation and copying are explicit
 * Straightforward integration with existing C code
+* Lisp macros, compile time scripting, and REPL
 
 ## Learn more
 * [The Compiler Manual](docs/Manual.md) - how to install and use the compiler
@@ -45,9 +46,9 @@ The key features of Carp are the following:
     (SDLApp.run-with-callbacks &app SDLApp.quit-on-esc tick draw state)))
 ```
 
-To build this example, save it to a file called 'example.carp' and load it with ```(load "example.carp")```, then execute ```(build)``` to build an executable, and ```(run)``` to start. The external dependencies are SDL2 and pkg-config. On macOS Catalina libiconv is also required.
+For instructions on how to run Carp code, see [this document](docs/HowToRunCode.md).
 
-For a slightly longer example, check out [Reptile](examples/reptile.carp) - a Snake clone in Carp.
+For more examples, check out the [examples](examples) directory.
 
 ### Maintainers
 [Erik Svedäng](http://www.eriksvedang.com) ([@e_svedang](https://twitter.com/e_svedang))

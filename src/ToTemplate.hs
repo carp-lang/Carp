@@ -26,22 +26,22 @@ toTemplate text = case Parsec.runParser templateSyntax 0 "(template)" text of
 
     parseTokDecl :: Parsec.Parsec String Int Token
     parseTokDecl = do _ <- Parsec.string "$DECL"
-                      return TokDecl
+                      pure TokDecl
 
     parseTokName :: Parsec.Parsec String Int Token
     parseTokName = do _ <- Parsec.string "$NAME"
-                      return TokName
+                      pure TokName
 
     parseTokC :: Parsec.Parsec String Int Token
     parseTokC = do s <- Parsec.many1 validInSymbol
-                   return (TokC s)
+                   pure (TokC s)
       where validInSymbol = Parsec.choice [Parsec.letter, Parsec.digit, Parsec.oneOf validCharactersInTemplate]
             validCharactersInTemplate = " ><{}()[]|;:.,_-+*#/'^!?€%&=@\"\n\t\\"
 
     parseTokTy :: Parsec.Parsec String Int Token
     parseTokTy = do _ <- Parsec.char '$'
                     s <- Parsec.many1 Parsec.letter
-                    return (toTokTy Normal s)
+                    pure (toTokTy Normal s)
 
     parseTokTyGrouped :: Parsec.Parsec String Int Token
     parseTokTyGrouped = do _ <- Parsec.char '$'
@@ -68,12 +68,12 @@ toTemplate text = case Parsec.runParser templateSyntax 0 "(template)" text of
     openParen :: Parsec.Parsec String Int Char
     openParen = do _ <- Parsec.char '('
                    Parsec.modifyState (+1)
-                   return '('
+                   pure '('
 
     closeParen :: Parsec.Parsec String Int Char
     closeParen = do _ <- Parsec.char ')'
                     Parsec.modifyState (\x -> x - 1)
-                    return ')'
+                    pure ')'
 
 -- | Converts a string containing a type to a template token ('TokTy').
 -- | i.e. the string "(Array Int)" becomes (TokTy (StructTy "Array" IntTy)).

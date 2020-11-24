@@ -42,7 +42,7 @@ moduleForSumtype innerEnv typeEnv env pathStrings typeName typeVariables rest i 
         okMemberDeps <- memberDeps typeEnv cases
         let moduleEnvWithBindings = addListOfBindings typeModuleEnv (okIniters ++ [okStr, okPrn, okDelete, okCopy, okTag])
             typeModuleXObj = XObj (Mod moduleEnvWithBindings) i (Just ModuleTy)
-        return (typeModuleName, typeModuleXObj, okMemberDeps ++ okCopyDeps ++ okStrDeps)
+        pure (typeModuleName, typeModuleXObj, okMemberDeps ++ okCopyDeps ++ okStrDeps)
 
 memberDeps :: TypeEnv -> [SumtypeCase] -> Either TypeError [XObj]
 memberDeps typeEnv cases = fmap concat (mapM (concretizeType typeEnv) (concatMap caseTys cases))

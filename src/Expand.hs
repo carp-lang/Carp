@@ -21,14 +21,14 @@ type DynamicEvaluator = Context -> XObj -> IO (Context, Either EvalError XObj)
 expandAll :: DynamicEvaluator -> Context -> XObj -> IO (Context, Either EvalError XObj)
 expandAll eval ctx root =
   do (ctx, fullyExpanded) <- expandAllInternal root
-     return (ctx, fmap setNewIdentifiers fullyExpanded)
+     pure (ctx, fmap setNewIdentifiers fullyExpanded)
   where expandAllInternal xobj =
           do (newCtx, expansionResult) <- expand eval ctx xobj
              case expansionResult of
                Right expanded -> if expanded == xobj
-                                 then return (ctx, Right expanded)
+                                 then pure (ctx, Right expanded)
                                  else expandAll eval newCtx expanded
-               err -> return (newCtx, err)
+               err -> pure (newCtx, err)
 
 -- | Macro expansion of a single form
 expand :: DynamicEvaluator -> Context -> XObj -> IO (Context, Either EvalError XObj)
@@ -38,107 +38,107 @@ expand eval ctx xobj =
     Lst _ -> expandList xobj
     Arr _ -> expandArray xobj
     Sym _ _ -> expandSymbol xobj
-    _     -> return (ctx, Right xobj)
+    _     -> pure (ctx, Right xobj)
 
   where
     expandList :: XObj -> IO (Context, Either EvalError XObj)
     expandList (XObj (Lst xobjs) i t) = do
       let fppl = projectFilePathPrintLength (contextProj ctx)
       case xobjs of
-        [] -> return (ctx, Right xobj)
-        XObj (External _) _ _ : _ -> return (ctx, Right xobj)
-        XObj (Instantiate _) _ _ : _ -> return (ctx, Right xobj)
-        XObj (Deftemplate _) _ _ : _ -> return (ctx, Right xobj)
-        XObj (Defalias _) _ _ : _ -> return (ctx, Right xobj)
+        [] -> pure (ctx, Right xobj)
+        XObj (External _) _ _ : _ -> pure (ctx, Right xobj)
+        XObj (Instantiate _) _ _ : _ -> pure (ctx, Right xobj)
+        XObj (Deftemplate _) _ _ : _ -> pure (ctx, Right xobj)
+        XObj (Defalias _) _ _ : _ -> pure (ctx, Right xobj)
         [defnExpr@(XObj (Defn _) _ _), name, args, body] ->
           do (ctx, expandedBody) <- expand eval ctx body
-             return (ctx, do okBody <- expandedBody
-                             Right (XObj (Lst [defnExpr, name, args, okBody]) i t))
+             pure (ctx, do okBody <- expandedBody
+                           Right (XObj (Lst [defnExpr, name, args, okBody]) i t))
         [defExpr@(XObj Def _ _), name, expr] ->
           do (ctx, expandedExpr) <- expand eval ctx expr
-             return (ctx, do okExpr <- expandedExpr
-                             Right (XObj (Lst [defExpr, name, okExpr]) i t))
+             pure (ctx, do okExpr <- expandedExpr
+                           Right (XObj (Lst [defExpr, name, okExpr]) i t))
         [theExpr@(XObj The _ _), typeXObj, value] ->
           do (ctx, expandedValue) <- expand eval ctx value
-             return (ctx, do okValue <- expandedValue
-                             Right (XObj (Lst [theExpr, typeXObj, okValue]) i t))
+             pure (ctx, do okValue <- expandedValue
+                           Right (XObj (Lst [theExpr, typeXObj, okValue]) i t))
         (XObj The _ _ : _) ->
-            return (evalError ctx ("I didn’t understand the `the` at " ++ prettyInfoFromXObj xobj ++ ":\n\n" ++ pretty xobj ++ "\n\nIs it valid? Every `the` needs to follow the form `(the type expression)`.") Nothing)
+            pure (evalError ctx ("I didn’t understand the `the` at " ++ prettyInfoFromXObj xobj ++ ":\n\n" ++ pretty xobj ++ "\n\nIs it valid? Every `the` needs to follow the form `(the type expression)`.") Nothing)
         [ifExpr@(XObj If _ _), condition, trueBranch, falseBranch] ->
           do (ctx, expandedCondition) <- expand eval ctx condition
              (ctx, expandedTrueBranch) <- expand eval ctx trueBranch
              (ctx, expandedFalseBranch) <- expand eval ctx falseBranch
-             return (ctx, do okCondition <- expandedCondition
-                             okTrueBranch <- expandedTrueBranch
-                             okFalseBranch <- expandedFalseBranch
-                             -- This is a HACK so that each branch of the if statement
-                             -- has a "safe place" (= a do-expression with just one element)
-                             -- where it can store info about its deleters. Without this,
-                             -- An if statement with let-expression inside will duplicate
-                             -- the calls to Delete when emitting code.
-                             let wrappedTrue =
-                                   case okTrueBranch of
-                                     XObj (Lst (XObj Do _ _ : _)) _ _ -> okTrueBranch -- Has a do-expression already
-                                     _ -> XObj (Lst [XObj Do Nothing Nothing, okTrueBranch]) (info okTrueBranch) Nothing
-                                 wrappedFalse =
-                                   case okFalseBranch of
-                                     XObj (Lst (XObj Do _ _ : _)) _ _ -> okFalseBranch -- Has a do-expression already
-                                     _ -> XObj (Lst [XObj Do Nothing Nothing, okFalseBranch]) (info okFalseBranch) Nothing
+             pure (ctx, do okCondition <- expandedCondition
+                           okTrueBranch <- expandedTrueBranch
+                           okFalseBranch <- expandedFalseBranch
+                           -- This is a HACK so that each branch of the if statement
+                           -- has a "safe place" (= a do-expression with just one element)
+                           -- where it can store info about its deleters. Without this,
+                           -- An if statement with let-expression inside will duplicate
+                           -- the calls to Delete when emitting code.
+                           let wrappedTrue =
+                                 case okTrueBranch of
+                                   XObj (Lst (XObj Do _ _ : _)) _ _ -> okTrueBranch -- Has a do-expression already
+                                   _ -> XObj (Lst [XObj Do Nothing Nothing, okTrueBranch]) (info okTrueBranch) Nothing
+                               wrappedFalse =
+                                 case okFalseBranch of
+                                   XObj (Lst (XObj Do _ _ : _)) _ _ -> okFalseBranch -- Has a do-expression already
+                                   _ -> XObj (Lst [XObj Do Nothing Nothing, okFalseBranch]) (info okFalseBranch) Nothing
 
-                             Right (XObj (Lst [ifExpr, okCondition, wrappedTrue, wrappedFalse]) i t))
+                           Right (XObj (Lst [ifExpr, okCondition, wrappedTrue, wrappedFalse]) i t))
         [letExpr@(XObj Let _ _), XObj (Arr bindings) bindi bindt, body] ->
           if even (length bindings)
           then do (ctx, bind) <- foldlM successiveExpand (ctx, Right []) (pairwise bindings)
                   (newCtx, expandedBody) <- expand eval ctx body
-                  return (newCtx, do okBindings <- bind
-                                     okBody <- expandedBody
-                                     Right (XObj (Lst [letExpr, XObj (Arr (concat okBindings)) bindi bindt, okBody]) i t))
-          else return (evalError ctx (
+                  pure (newCtx, do okBindings <- bind
+                                   okBody <- expandedBody
+                                   Right (XObj (Lst [letExpr, XObj (Arr (concat okBindings)) bindi bindt, okBody]) i t))
+          else pure (evalError ctx (
             "I ecountered an odd number of forms inside a `let` (`" ++
             pretty xobj ++ "`)") (info xobj))
           where successiveExpand (ctx, acc) (n, x) =
                   case acc of
-                    Left err -> return (ctx, acc)
+                    Left err -> pure (ctx, acc)
                     Right l -> do
                       (newCtx, x') <- expand eval ctx x
                       case x' of
-                        Left err -> return (newCtx, Left err)
-                        Right okX -> return (newCtx, Right (l ++ [[n, okX]]))
+                        Left err -> pure (newCtx, Left err)
+                        Right okX -> pure (newCtx, Right (l ++ [[n, okX]]))
 
         matchExpr@(XObj (Match _) _ _) : (expr : rest)
           | null rest ->
-              return (evalError ctx "I encountered a `match` without forms" (info xobj))
+              pure (evalError ctx "I encountered a `match` without forms" (info xobj))
           | even (length rest) ->
               do (ctx, expandedExpr) <- expand eval ctx expr
                  (newCtx, expandedPairs) <- foldlM successiveExpand (ctx, Right []) (pairwise rest)
-                 return (newCtx, do okExpandedExpr <- expandedExpr
-                                    okExpandedPairs <- expandedPairs
-                                    Right (XObj (Lst (matchExpr : okExpandedExpr : (concat okExpandedPairs))) i t))
-          | otherwise -> return (evalError ctx
+                 pure (newCtx, do okExpandedExpr <- expandedExpr
+                                  okExpandedPairs <- expandedPairs
+                                  Right (XObj (Lst (matchExpr : okExpandedExpr : (concat okExpandedPairs))) i t))
+          | otherwise -> pure (evalError ctx
                     "I encountered an odd number of forms inside a `match`" (info xobj))
           where successiveExpand (ctx, acc) (l, r) =
                   case acc of
-                    Left err -> return (ctx, acc)
+                    Left err -> pure (ctx, acc)
                     Right lst -> do
                       (newCtx, expandedR) <- expand eval ctx r
                       case expandedR of
-                        Left err -> return (newCtx, Left err)
-                        Right v -> return (newCtx, Right (lst ++ [[l, v]]))
+                        Left err -> pure (newCtx, Left err)
+                        Right v -> pure (newCtx, Right (lst ++ [[l, v]]))
 
         doExpr@(XObj Do _ _) : expressions ->
           do (newCtx, expandedExpressions) <- foldlM successiveExpand (ctx, Right []) expressions
-             return (newCtx, do okExpressions <- expandedExpressions
-                                Right (XObj (Lst (doExpr : okExpressions)) i t))
+             pure (newCtx, do okExpressions <- expandedExpressions
+                              Right (XObj (Lst (doExpr : okExpressions)) i t))
         [withExpr@(XObj With _ _), pathExpr@(XObj (Sym path _) _ _), expression] ->
           do (newCtx, expandedExpression) <- expand eval ctx expression
-             return (newCtx, do okExpression <- expandedExpression
-                                Right (XObj (Lst [withExpr, pathExpr , okExpression]) i t)) -- Replace the with-expression with just the expression!
+             pure (newCtx, do okExpression <- expandedExpression
+                              Right (XObj (Lst [withExpr, pathExpr , okExpression]) i t)) -- Replace the with-expression with just the expression!
         [withExpr@(XObj With _ _), _, _] ->
-          return (evalError ctx ("I encountered the value `" ++ pretty xobj ++
+          pure (evalError ctx ("I encountered the value `" ++ pretty xobj ++
             "` inside a `with` at " ++ prettyInfoFromXObj xobj ++
             ".\n\n`with` accepts only symbols.") Nothing)
         XObj With _ _ : _ ->
-          return (evalError ctx (
+          pure (evalError ctx (
             "I encountered multiple forms inside a `with` at " ++
             prettyInfoFromXObj xobj ++
             ".\n\n`with` accepts only one expression, except at the top level.") Nothing)
@@ -160,17 +160,17 @@ expand eval ctx xobj =
                Right (XObj (Lst [XObj (Command callback) _ _, _]) _ _) ->
                  getCommand callback ctx args
                Right _ ->
-                 return (ctx'', do okF <- expandedF
-                                   okArgs <- expandedArgs
-                                   Right (XObj (Lst (okF : okArgs)) i t))
-               Left err -> return (ctx'', Left err)
+                 pure (ctx'', do okF <- expandedF
+                                 okArgs <- expandedArgs
+                                 Right (XObj (Lst (okF : okArgs)) i t))
+               Left err -> pure (ctx'', Left err)
     expandList _ = error "Can't expand non-list in expandList."
 
     expandArray :: XObj -> IO (Context, Either EvalError XObj)
     expandArray (XObj (Arr xobjs) i t) =
       do (newCtx, evaledXObjs) <- foldlM successiveExpand (ctx, Right []) xobjs
-         return (newCtx, do okXObjs <- evaledXObjs
-                            Right (XObj (Arr okXObjs) i t))
+         pure (newCtx, do okXObjs <- evaledXObjs
+                          Right (XObj (Arr okXObjs) i t))
     expandArray _ = error "Can't expand non-array in expandArray."
 
     expandSymbol :: XObj -> IO (Context, Either EvalError XObj)
@@ -183,22 +183,21 @@ expand eval ctx xobj =
         Just (_, Binder meta (XObj (Lst (XObj Def _ _ : _)) _ _)) -> isPrivate meta xobj
         Just (_, Binder meta (XObj (Lst (XObj (Defalias _) _ _ : _)) _ _)) -> isPrivate meta xobj
         Just (_, Binder meta found) -> isPrivate meta found -- use the found value
-        Nothing -> return (ctx, Right xobj) -- symbols that are not found are left as-is
+        Nothing -> pure (ctx, Right xobj) -- symbols that are not found are left as-is
         where
-          isPrivate m x = if metaIsTrue m "private"
-                          then return (evalError ctx ("The binding: " ++ pretty sym ++ " is private; it may only be used within the module that defines it.") (info sym))
-                          else return (ctx, Right x)
-    expandSymbol _ = return (evalError ctx "Can't expand non-symbol in expandSymbol." Nothing)
+          isPrivate m x = pure $ if metaIsTrue m "private"
+                                 then evalError ctx ("The binding: " ++ pretty sym ++ " is private; it may only be used within the module that defines it.") (info sym)
+                                 else (ctx, Right x)
+    expandSymbol _ = pure (evalError ctx "Can't expand non-symbol in expandSymbol." Nothing)
 
     successiveExpand (ctx, acc) e =
       case acc of
-        Left err -> return (ctx, acc)
+        Left err -> pure (ctx, acc)
         Right lst -> do
           (newCtx, expanded) <- expand eval ctx e
-          case expanded of
-            Right e -> do
-              return (newCtx, Right (lst ++ [e]))
-            Left err -> return (ctx, Left err)
+          pure $ case expanded of
+            Right e -> (newCtx, Right (lst ++ [e]))
+            Left err -> (ctx, Left err)
 
 -- | Replace all the infoIdentifier:s on all nested XObj:s
 setNewIdentifiers :: XObj -> XObj
@@ -239,9 +238,9 @@ setNewIdentifiers root = let final = evalState (visit root) 0
     bumpAndSet xobj =
       do counter <- get
          put (counter + 1)
-         case info xobj of
-           Just i -> return (xobj { info = Just (i { infoIdentifier = counter })})
-           Nothing -> return xobj
+         pure $ case info xobj of
+           Just i -> (xobj { info = Just (i { infoIdentifier = counter })})
+           Nothing -> xobj
 
 -- | Replaces the file, line and column info on an XObj an all its children.
 replaceSourceInfo :: FilePath -> Int -> Int -> XObj -> XObj
