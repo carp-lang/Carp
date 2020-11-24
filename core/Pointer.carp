@@ -44,7 +44,7 @@ The user will have to ensure themselves that this is a safe operation.")
   (deftemplate free (Fn [(Ptr p)] Unit) "void $NAME($p* p)" "$DECL {CARP_FREE(p);}")
 
   (doc set "Sets the value of a pointer.")
-  (deftemplate set (Fn [(Ptr p) p] (Ptr p)) "$p* $NAME($p* p, $p a)" "$DECL { *p = a; return p;}")
+  (deftemplate set (Fn [(Ptr p) p] Unit) "void $NAME($p* p, $p a)" "$DECL { *p = a; }")
 
   (defn inc [a] (Pointer.add a 1l))
   (implements inc Pointer.inc)
