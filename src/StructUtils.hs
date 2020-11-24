@@ -2,10 +2,10 @@ module StructUtils where
 
 import Obj
 import Types
-import Util
 import Lookup
 import Polymorphism
 
+memberInfo :: TypeEnv -> Ty -> (Ty, String, Ty)
 memberInfo typeEnv memberTy =
   let refOrNotRefType = if isManaged typeEnv memberTy then RefTy memberTy (VarTy "w") else memberTy -- OBS! The VarTy "w" here is dubious
   in (refOrNotRefType, if isManaged typeEnv memberTy then "&" else "", FuncTy [refOrNotRefType] StringTy StaticLifetimeTy)

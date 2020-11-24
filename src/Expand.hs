@@ -3,7 +3,6 @@ module Expand (expandAll, replaceSourceInfoOnXObj) where
 import Control.Monad.State (evalState, get, put, State)
 import Data.Foldable (foldlM)
 import Data.Maybe (fromMaybe)
-import Debug.Trace
 
 import Types
 import Obj

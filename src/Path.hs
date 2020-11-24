@@ -1,5 +1,4 @@
 module Path where
-import Debug.Trace
 import qualified System.Directory as D
 import qualified System.FilePath.Posix as FP
 import qualified System.FilePath.Windows as FPW

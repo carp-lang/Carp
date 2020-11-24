@@ -2,8 +2,6 @@ module InitialTypes where
 
 import Control.Monad.State
 import qualified Data.Map as Map
-import Data.Maybe (catMaybes)
-import Debug.Trace
 
 import Types
 import Obj

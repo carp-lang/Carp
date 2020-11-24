@@ -2,16 +2,11 @@
 
 module ArrayTemplates where
 
-import Debug.Trace
-
-import Util
 import Types
 import TypesToC
 import Obj
-import Parsing
 import Template
 import ToTemplate
-import Polymorphism
 import Concretize
 import Lookup
 

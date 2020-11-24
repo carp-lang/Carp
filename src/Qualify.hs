@@ -1,8 +1,7 @@
 module Qualify where
 
-import qualified Data.Set as Set
 import qualified Data.Map as Map
-import Data.List (intercalate, foldl')
+import Data.List (foldl')
 import Debug.Trace
 
 import Types

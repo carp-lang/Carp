@@ -3,7 +3,6 @@ module StartingEnv where
 import qualified Data.Set as Set
 import qualified Data.Map as Map
 
-import ColorText
 import Obj
 import Types
 import Template
@@ -11,12 +10,9 @@ import ToTemplate
 import qualified ArrayTemplates
 import qualified StaticArrayTemplates
 import Commands
-import Parsing
 import Eval
-import Concretize
 import Primitives
 import Info
-import Debug.Trace (trace)
 
 -- | These modules will be loaded in order before any other code is evaluated.
 coreModules :: String -> [String]

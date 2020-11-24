@@ -9,15 +9,11 @@ import qualified Text.Parsec as Parsec
 -- import Text.Parsec.Error (newErrorMessage, Message(..))
 -- import Text.Parsec.Pos (newPos)
 import qualified Data.Set as Set
-import qualified Data.Map as Map
 import Data.Char (ord)
 import Obj
 import Types
 import Util
 import Info
-import Control.Monad.Error.Class (throwError)
-
-import Debug.Trace
 
 newtype ParseState = ParseState { parseInfo :: Info }
 
@@ -118,7 +114,7 @@ rawString = do
     pure (XObj (Str str) i Nothing)
   where
     continuation = do
-      Parsec.try $ Parsec.count 2 $ Parsec.char '"'
+      _ <- Parsec.try $ Parsec.count 2 $ Parsec.char '"'
       pure ['"']
     simple = do
       c <- Parsec.noneOf ['"']
@@ -136,6 +132,7 @@ string = do i <- createInfo
   where simple = do c <- Parsec.noneOf ['"']
                     pure [c]
 
+countLinebreaks :: String -> Int
 countLinebreaks =
   foldr (\x sum -> if x == '\n' then sum+1 else sum) 0
 
@@ -281,7 +278,7 @@ symbolSegment = do sym <- Parsec.many1 validInSymbol
         highCharacters = Parsec.satisfy ((> 127) . ord)
 
 period :: Parsec.Parsec String ParseState ()
-period = do Parsec.char '.'
+period = do _ <- Parsec.char '.'
             incColumn 1
             pure ()
 

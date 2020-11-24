@@ -2,8 +2,8 @@ module Obj where
 
 import qualified Data.Map as Map
 import qualified Data.Set as Set
-import Data.List (intercalate, foldl')
-import Data.Maybe (mapMaybe, fromMaybe, fromJust)
+import Data.List (intercalate)
+import Data.Maybe (fromMaybe)
 import Control.Monad.State
 import Data.Char
 import SymPath
@@ -12,7 +12,6 @@ import TypesToC
 import Util
 import Info
 import Project
-import Debug.Trace
 
 -- | Will the lookup look at other Carp code or at C code. This matters when calling functions, should they assume it's a lambda or a normal C function?
 data GlobalMode = CarpLand
@@ -118,7 +117,7 @@ data Obj = Sym SymPath SymbolMode
          | With
          | External (Maybe String)
          | ExternalType (Maybe String)
-         | DocStub
+         | MetaStub
          | Deftemplate TemplateCreator
          | Instantiate Template
          | Defalias Ty
@@ -241,7 +240,7 @@ getBinderDescription (XObj (Lst (XObj (Instantiate _) _ _ : XObj (Sym _ _) _ _ :
 getBinderDescription (XObj (Lst (XObj (Defalias _) _ _ : XObj (Sym _ _) _ _ : _)) _ _) = "alias"
 getBinderDescription (XObj (Lst (XObj (External _) _ _ : XObj (Sym _ _) _ _ : _)) _ _) = "external"
 getBinderDescription (XObj (Lst (XObj (ExternalType _) _ _ : XObj (Sym _ _) _ _ : _)) _ _) = "external-type"
-getBinderDescription (XObj (Lst (XObj DocStub _ _ : XObj (Sym _ _) _ _ : _)) _ _) = "doc-stub"
+getBinderDescription (XObj (Lst (XObj MetaStub _ _ : XObj (Sym _ _) _ _ : _)) _ _) = "meta-stub"
 getBinderDescription (XObj (Lst (XObj (Deftype _) _ _ : XObj (Sym _ _) _ _ : _)) _ _) = "deftype"
 getBinderDescription (XObj (Lst (XObj (DefSumtype _) _ _ : XObj (Sym _ _) _ _ : _)) _ _) = "deftype"
 getBinderDescription (XObj (Lst (XObj (Interface _ _) _ _ : XObj (Sym _ _) _ _ : _)) _ _) = "interface"
@@ -282,7 +281,7 @@ getPath (XObj (Lst (XObj (Instantiate _) _ _ : XObj (Sym path _) _ _ : _)) _ _) 
 getPath (XObj (Lst (XObj (Defalias _) _ _ : XObj (Sym path _) _ _ : _)) _ _) = path
 getPath (XObj (Lst (XObj (External _) _ _ : XObj (Sym path _) _ _ : _)) _ _) = path
 getPath (XObj (Lst (XObj (ExternalType _) _ _ : XObj (Sym path _) _ _ : _)) _ _) = path
-getPath (XObj (Lst (XObj DocStub _ _ : XObj (Sym path _) _ _ : _)) _ _) = path
+getPath (XObj (Lst (XObj MetaStub _ _ : XObj (Sym path _) _ _ : _)) _ _) = path
 getPath (XObj (Lst (XObj (Deftype _) _ _ : XObj (Sym path _) _ _ : _)) _ _) = path
 getPath (XObj (Lst (XObj (Mod _) _ _ : XObj (Sym path _) _ _ : _)) _ _) = path
 getPath (XObj (Lst (XObj (Interface _ _) _ _ : XObj (Sym path _) _ _ : _)) _ _) = path
@@ -344,7 +343,7 @@ pretty = visit 0
             External Nothing -> "external"
             External (Just override) -> "external (override: " ++ show override ++ ")"
             ExternalType (Just override) -> "external-type (override: " ++ show override ++ ")"
-            DocStub -> "doc-stub"
+            MetaStub -> "meta-stub"
             Defalias _ -> "defalias"
             Address -> "address"
             SetBang -> "set!"
@@ -407,7 +406,7 @@ prettyUpTo max xobj =
             External (Just override) -> ")"
             ExternalType Nothing -> ""
             ExternalType (Just override) -> ")"
-            DocStub -> ""
+            MetaStub -> ""
             Defalias _ -> ""
             Address -> ""
             SetBang -> ""
@@ -828,7 +827,7 @@ isGlobalVariableLookup (LookupGlobal _ AVariable) = True
 isGlobalVariableLookup _ = False
 
 anonMemberNames :: [String]
-anonMemberNames = map (\i -> "member" ++ show i) [0..]
+anonMemberNames = map (\i -> "member" ++ show i) ([0..] :: [Int])
 
 anonMemberSymbols :: [XObj]
 anonMemberSymbols = map (\n -> XObj (Sym (SymPath [] n) Symbol) Nothing Nothing) anonMemberNames

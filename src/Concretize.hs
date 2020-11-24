@@ -3,7 +3,7 @@ module Concretize where
 
 import Control.Monad.State
 import qualified Data.Map as Map
-import Data.Maybe (fromMaybe, fromJust)
+import Data.Maybe (fromMaybe)
 import qualified Data.Set as Set
 import Data.Set ((\\))
 import Data.List (foldl')
@@ -17,7 +17,6 @@ import Util
 import TypeError
 import AssignTypes
 import Polymorphism
-import InitialTypes
 import Lookup
 import ToTemplate
 import Validate
@@ -50,12 +49,12 @@ concretizeXObj allowAmbiguityRoot typeEnv rootEnv visitedDefinitions root =
                    Right (XObj (Lst okVisited) i t)
     visit allowAmbig level env xobj@(XObj (Arr arr) i (Just t)) =
       do visited <- fmap sequence (mapM (visit allowAmbig level env) arr)
-         concretizeTypeOfXObj typeEnv xobj
+         _ <- concretizeTypeOfXObj typeEnv xobj
          pure $ do okVisited <- visited
                    Right (XObj (Arr okVisited) i (Just t))
     visit allowAmbig level env xobj@(XObj (StaticArr arr) i (Just t)) =
       do visited <- fmap sequence (mapM (visit allowAmbig level env) arr)
-         concretizeTypeOfXObj typeEnv xobj
+         _ <- concretizeTypeOfXObj typeEnv xobj
          pure $ do okVisited <- visited
                    Right (XObj (StaticArr okVisited) i (Just t))
     visit _ _ _ x = pure (Right x)
@@ -66,7 +65,7 @@ concretizeXObj allowAmbiguityRoot typeEnv rootEnv visitedDefinitions root =
     visitList _ Toplevel env (XObj (Lst [defn@(XObj (Defn _) _ _), nameSymbol@(XObj (Sym (SymPath [] "main") _) _ _), args@(XObj (Arr argsArr) _ _), body]) _ _) =
       if not (null argsArr)
       then pure $ Left (MainCannotHaveArguments nameSymbol (length argsArr))
-      else do concretizeTypeOfXObj typeEnv body
+      else do _ <- concretizeTypeOfXObj typeEnv body
               visitedBody <- visit False Inside env body
               pure $ do okBody <- visitedBody
                         let t = fromMaybe UnitTy (ty okBody)
@@ -82,7 +81,7 @@ concretizeXObj allowAmbiguityRoot typeEnv rootEnv visitedDefinitions root =
                                   functionEnv argsArr
              Just funcTy = t
              allowAmbig = isTypeGeneric funcTy
-         concretizeTypeOfXObj typeEnv body
+         _ <- concretizeTypeOfXObj typeEnv body
          visitedBody <- visit allowAmbig Inside (incrementEnvNestLevel envWithArgs) body
          pure $ do okBody <- visitedBody
                    pure [defn, nameSymbol, args, okBody]
@@ -193,7 +192,7 @@ concretizeXObj allowAmbiguityRoot typeEnv rootEnv visitedDefinitions root =
                    pure [theExpr, typeXObj, okVisitedValue]
 
     visitList allowAmbig level env matchXObj@(XObj (Lst (matchExpr@(XObj (Match _) _ _) : expr : rest)) _ _) =
-      do concretizeTypeOfXObj typeEnv expr
+      do _ <- concretizeTypeOfXObj typeEnv expr
          visitedExpr <- visit allowAmbig level env expr
          mapM_ (concretizeTypeOfXObj typeEnv . snd) (pairwise rest)
          visitedRest <- fmap sequence (mapM (visitMatchCase allowAmbig level env) (pairwise rest))
@@ -207,7 +206,7 @@ concretizeXObj allowAmbiguityRoot typeEnv rootEnv visitedDefinitions root =
                    pure [setbangExpr, variable, okVisitedValue]
 
     visitList allowAmbig level env (XObj (Lst (func : args)) _ _) =
-      do concretizeTypeOfXObj typeEnv func
+      do _ <- concretizeTypeOfXObj typeEnv func
          mapM_ (concretizeTypeOfXObj typeEnv) args
          f <- visit allowAmbig level env func
          a <- fmap sequence (mapM (visit allowAmbig level env) args)
@@ -592,6 +591,7 @@ concretizeDefinition allowAmbiguity typeEnv globalEnv visitedDefinitions definit
         Left $ CannotConcretize definition
 
 -- | Find ALL functions with a certain name, matching a type signature.
+allFunctionsWithNameAndSignature :: Env -> String -> Ty -> [(Env, Binder)]
 allFunctionsWithNameAndSignature env functionName functionType =
   filter (predicate . ty . binderXObj . snd) (multiLookupALL functionName env)
   where
@@ -882,7 +882,7 @@ manageMemory typeEnv globalEnv root =
                                                         else (Left (UsingUnownedValue variable))
 
                         visitedValue <- visit  value
-                        unmanage value -- The assigned value can't be used anymore
+                        _ <- unmanage value -- The assigned value can't be used anymore
                         MemState managed deps postLifetimes <- get
                         -- Delete the value previously stored in the variable, if it's still alive
                         let deleters = case createDeleter okCorrectVariable of
@@ -1045,7 +1045,7 @@ manageMemory typeEnv globalEnv root =
                  case visitedExpr of
                    Left e -> pure (Left e)
                    Right okVisitedExpr ->
-                     do unmanage okVisitedExpr
+                     do _ <- unmanage okVisitedExpr
                         MemState preDeleters deps lifetimes <- get
                         vistedCasesAndDeps <- mapM visitMatchCase (pairwise cases)
                         case sequence vistedCasesAndDeps of
@@ -1121,7 +1121,7 @@ manageMemory typeEnv globalEnv root =
           do MemState preDeleters preDeps preLifetimes <- get
              _ <- visitCaseLhs lhs
              visitedRhs <- visit rhs
-             unmanage rhs
+             _ <- unmanage rhs
              MemState postDeleters postDeps postLifetimes <- get
              let diff = postDeleters \\ preDeleters
              put (MemState preDeleters postDeps postLifetimes) -- Restore managed variables, TODO: Use a "local" state monad instead?
@@ -1394,7 +1394,10 @@ memberDeletionGeneral separator typeEnv env (memberName, memberType) =
     FunctionNotFound msg -> error msg
     FunctionIgnored -> "    /* Ignore non-managed member '" ++ memberName ++ "' : " ++ show memberType ++ " */"
 
+memberDeletion :: TypeEnv -> Env -> (String, Ty) -> String
 memberDeletion = memberDeletionGeneral "."
+
+memberRefDeletion :: TypeEnv -> Env -> (String, Ty) -> String
 memberRefDeletion = memberDeletionGeneral "Ref->"
 
 -- | The template for the 'copy' function of a concrete deftype.
