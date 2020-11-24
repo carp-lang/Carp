@@ -92,7 +92,6 @@ presentError msg ret =
 commandProjectConfig :: CommandCallback
 commandProjectConfig ctx [xobj@(XObj (Str key) _ _), value] = do
   let proj = contextProj ctx
-      env = contextGlobalEnv ctx
       newProj = case key of
                   "cflag" -> do cflag <- unwrapStringXObj value
                                 pure (proj { projectCFlags = addIfNotPresent cflag (projectCFlags proj) })
@@ -156,7 +155,6 @@ commandProjectConfig ctx [faultyKey, _] =
 commandProjectGetConfig :: CommandCallback
 commandProjectGetConfig ctx [xobj@(XObj (Str key) _ _)] =
   let proj = contextProj ctx
-      env = contextGlobalEnv ctx
       xstr s = XObj s (Just dummyInfo) (Just StringTy)
       getVal ctx proj = case key of
           "cflag" -> Right $ Str $ show $ projectCFlags proj
@@ -248,7 +246,6 @@ commandBuild shutUp ctx args = do
              outDir = projectOutDir proj
              outMain = outDir </> "main.c"
              outExe = outDir </> projectTitle proj
-             outLib = outDir </> projectTitle proj
              generateOnly = projectGenerateOnly proj
              compile hasMain =
                do let cmd = joinWithSpace $ [ compiler
@@ -694,8 +691,7 @@ commandSexpression ctx xobj =
 
 commandSexpressionInternal :: Context -> [XObj] -> Bool -> IO (Context, Either EvalError XObj)
 commandSexpressionInternal ctx [xobj] bol =
-  let env = contextGlobalEnv ctx
-      tyEnv = getTypeEnv $ contextTypeEnv ctx
+  let tyEnv = getTypeEnv $ contextTypeEnv ctx
   in case xobj of
        (XObj (Lst [inter@(XObj (Interface ty _) _ _), path]) i t) ->
          pure (ctx, Right (XObj (Lst [(toSymbols inter), path, (reify ty)]) i t))

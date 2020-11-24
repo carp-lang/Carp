@@ -123,7 +123,7 @@ primitiveImplements xobj ctx [x@(XObj (Sym interface@(SymPath _ _) _) _ _), inne
   let global = contextGlobalEnv ctx
       def = lookupInEnv impl global
   in  maybe notFound found def
-  where fullPath@(SymPath modules name') = consPath (union (contextPath ctx) prefixes) (SymPath [] name)
+  where (SymPath modules _) = consPath (union (contextPath ctx) prefixes) (SymPath [] name)
         checkInterface = let warn = do putStrWithColor Blue ("[WARNING] The interface " ++ show interface ++ " implemented by " ++ show impl ++
                                                               " at " ++ prettyInfoFromXObj xobj ++ " is not defined." ++
                                                               " Did you define it using `definterface`?")
@@ -178,7 +178,6 @@ define hidden ctx@(Context globalEnv _ typeEnv _ proj _ _ _) annXObj =
       adjustedMeta = if hidden
                      then Meta.set "hidden" trueXObj previousMeta
                      else previousMeta
-      fppl = projectFilePathPrintLength proj
   in case annXObj of
        XObj (Lst (XObj (Defalias _) _ _ : _)) _ _ ->
          pure (ctx { contextTypeEnv = TypeEnv (envInsertAt (getTypeEnv typeEnv) (getPath annXObj) (Binder adjustedMeta annXObj)) })
@@ -333,7 +332,6 @@ primitiveMembers :: Primitive
 primitiveMembers _ ctx [target] = do
   let env = contextEnv ctx
       typeEnv = contextTypeEnv ctx
-      fppl = projectFilePathPrintLength (contextProj ctx)
   case bottomedTarget env target of
         XObj (Sym path@(SymPath _ name) _) _ _ ->
            case lookupInEnv path (getTypeEnv typeEnv) of
@@ -377,7 +375,7 @@ primitiveMetaSet :: Primitive
 primitiveMetaSet _ ctx [target@(XObj (Sym path@(SymPath prefixes name) _) _ _), XObj (Str key) _ _, value] =
   pure $ maybe create (\newCtx -> (newCtx, dynamicNil)) lookupAndUpdate
 
-  where fullPath@(SymPath modules name') = consPath (union (contextPath ctx) prefixes) (SymPath [] name)
+  where fullPath@(SymPath modules _) = consPath (union (contextPath ctx) prefixes) (SymPath [] name)
         dynamicPath = (consPath ["Dynamic"] fullPath)
         global = contextGlobalEnv ctx
         types = (getTypeEnv (contextTypeEnv ctx))
@@ -416,8 +414,7 @@ primitiveMetaSet _ ctx [target, _, _] =
 primitiveDefinterface :: Primitive
 primitiveDefinterface xobj ctx [nameXObj@(XObj (Sym path@(SymPath [] name) _) _ _), ty] =
   pure $ maybe invalidType validType (xobjToTy ty)
-  where fppl = projectFilePathPrintLength (contextProj ctx)
-        typeEnv = getTypeEnv (contextTypeEnv ctx)
+  where typeEnv = getTypeEnv (contextTypeEnv ctx)
         invalidType = evalError ctx ("Invalid type for interface `" ++ name ++ "`: " ++ pretty ty) (info ty)
         validType t = maybe defInterface (updateInterface . snd) (lookupInEnv path typeEnv)
           where defInterface = let interface = defineInterface name t [] (info nameXObj)
@@ -438,7 +435,6 @@ registerInternal :: Context -> String -> XObj -> Maybe String -> IO (Context, Ei
 registerInternal ctx name ty override =
   pure $ maybe invalidType validType (xobjToTy ty)
   where pathStrings = contextPath ctx
-        fppl = projectFilePathPrintLength (contextProj ctx)
         globalEnv = contextGlobalEnv ctx
         invalidType = evalError ctx
                                 ("Can't understand type when registering '" ++ name ++
@@ -523,7 +519,6 @@ primitiveDeftype xobj ctx (name:rest) =
         deftype' :: XObj -> String -> [XObj] -> IO (Context, Either EvalError XObj)
         deftype' nameXObj typeName typeVariableXObjs = do
          let pathStrings = contextPath ctx
-             fppl = projectFilePathPrintLength (contextProj ctx)
              env = contextGlobalEnv ctx
              innerEnv = fromMaybe env (contextInternalEnv ctx)
              typeEnv = contextTypeEnv ctx
@@ -571,7 +566,6 @@ primitiveUse :: Primitive
 primitiveUse xobj ctx [XObj (Sym path _) _ _] =
   pure $ maybe lookupInGlobal useModule (lookupInEnv path e)
   where pathStrings = contextPath ctx
-        fppl = projectFilePathPrintLength (contextProj ctx)
         env = contextGlobalEnv ctx
         e = getEnv env pathStrings
         useThese = envUseModules e

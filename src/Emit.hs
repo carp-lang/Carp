@@ -303,7 +303,6 @@ toC toCMode (Binder meta root) = emitterSrc (execState (visit startingIndent roo
               let indent' = indent + indentAmount
                   retVar = freshVar i
                   isNotVoid = t /= Just UnitTy
-                  sumTypeAsPath = SymPath [] (show exprTy)
                   exprTy = exprTyNotFixed
 
                   tagCondition :: String -> String -> Ty -> XObj -> [String]
@@ -313,8 +312,6 @@ toC toCMode (Binder meta root) = emitterSrc (execState (visit startingIndent roo
                     -- This requires a bunch of extra machinery though, so this will do for now...
                     [var ++ periodOrArrow ++ "_tag == " ++ tagName caseTy (removeSuffix caseName)] ++
                       concat (zipWith (\c i -> tagCondition (var ++ periodOrArrow ++ "u." ++ removeSuffix caseName ++ ".member" ++ show i) "." (forceTy c) c) caseMatchers ([0..] :: [Int]))
-                      where notUnitX (XObj _ _ (Just UnitTy)) = False
-                            notUnitX _ = True
                   tagCondition _ _ _ x =
                     []
                     --error ("tagCondition fell through: " ++ show x)
@@ -547,7 +544,7 @@ toC toCMode (Binder meta root) = emitterSrc (execState (visit startingIndent roo
                  let funcTy = case ty func of
                                Just actualType -> actualType
                                _ -> error ("No type on func " ++ show func)
-                     FuncTy argTys retTy _ = funcTy
+                     FuncTy _ retTy _ = funcTy
                      callFunction = overriddenName ++ "(" ++ argListAsC ++ ");\n"
                  if isUnit retTy
                    then do appendToSrc (addIndent indent ++ callFunction)
@@ -687,7 +684,6 @@ defnToDeclaration meta path@(SymPath _ name) argList retTy =
       then "int main(int argc, char** argv)"
       else let retTyAsC = tyToCLambdaFix retTy
                paramsAsC = paramListToC argList
-               annotations = meta
            in (retTyAsC ++ " " ++ pathToC path ++ "(" ++ paramsAsC ++ ")")
   where strToC (XObj (Str s) _ _) = s
         strToC xobj = pretty xobj
