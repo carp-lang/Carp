@@ -641,19 +641,19 @@ xobjToTy (XObj (Sym (SymPath _ s@(firstLetter:_)) _) _ _) | isLower firstLetter 
                                                           | otherwise = Just (StructTy (ConcreteNameTy s) [])
 xobjToTy (XObj (Lst [XObj (Sym (SymPath _ "Ptr") _) _ _, innerTy]) _ _) =
   do okInnerTy <- xobjToTy innerTy
-     return (PointerTy okInnerTy)
+     pure (PointerTy okInnerTy)
 xobjToTy (XObj (Lst (XObj (Sym (SymPath _ "Ptr") _) _ _ : _)) _ _) =
   Nothing
 xobjToTy (XObj (Lst [XObj (Sym (SymPath _ "Ref") _) _ _, innerTy]) i _) =
   do okInnerTy <- xobjToTy innerTy
-     return (RefTy okInnerTy (VarTy (makeTypeVariableNameFromInfo i)))
+     pure (RefTy okInnerTy (VarTy (makeTypeVariableNameFromInfo i)))
 xobjToTy (XObj (Lst [XObj (Sym (SymPath _ "Ref") _) _ _, innerTy, lifetimeTy]) _ _) =
   do okInnerTy <- xobjToTy innerTy
      okLifetimeTy <- xobjToTy lifetimeTy
-     return (RefTy okInnerTy okLifetimeTy)
+     pure (RefTy okInnerTy okLifetimeTy)
 xobjToTy (XObj (Lst [XObj Ref _ _, innerTy]) i _) = -- This enables parsing of '&'
   do okInnerTy <- xobjToTy innerTy
-     return (RefTy okInnerTy (VarTy (makeTypeVariableNameFromInfo i)))
+     pure (RefTy okInnerTy (VarTy (makeTypeVariableNameFromInfo i)))
 xobjToTy (XObj (Lst (XObj (Sym (SymPath _ "Ref") _) _ _ : _)) _ _) =
   Nothing
 xobjToTy (XObj (Lst [XObj (Sym (SymPath path "╬╗") _) fi ft, XObj (Arr argTys) ai at, retTy]) i t) =
@@ -663,19 +663,19 @@ xobjToTy (XObj (Lst [XObj (Sym (SymPath path "λ") _) fi ft, XObj (Arr argTys) a
 xobjToTy (XObj (Lst [XObj (Sym (SymPath _ "Fn") _) _ _, XObj (Arr argTys) _ _, retTy]) _ _) =
   do okArgTys <- mapM xobjToTy argTys
      okRetTy <- xobjToTy retTy
-     return (FuncTy okArgTys okRetTy StaticLifetimeTy)
+     pure (FuncTy okArgTys okRetTy StaticLifetimeTy)
 xobjToTy (XObj (Lst [XObj (Sym (SymPath _ "Fn") _) _ _, XObj (Arr argTys) _ _, retTy, lifetime]) _ _) =
   do okArgTys <- mapM xobjToTy argTys
      okRetTy <- xobjToTy retTy
      okLifetime <- xobjToTy lifetime
-     return (FuncTy okArgTys okRetTy StaticLifetimeTy)
+     pure (FuncTy okArgTys okRetTy StaticLifetimeTy)
 xobjToTy (XObj (Lst []) _ _) = Just UnitTy
 xobjToTy (XObj (Lst (x:xs)) _ _) =
   do okX <- xobjToTy x
      okXS <- mapM xobjToTy xs
      case okX of
-       (StructTy n []) -> return (StructTy n okXS)
-       v@(VarTy n) -> return (StructTy v okXS) -- Struct type with type variable as a name, i.e. "(a b)"
+       (StructTy n []) -> pure (StructTy n okXS)
+       v@(VarTy n) -> pure (StructTy v okXS) -- Struct type with type variable as a name, i.e. "(a b)"
        _ -> Nothing
 xobjToTy _ = Nothing
 
@@ -695,19 +695,19 @@ polymorphicSuffix signature actualType =
             (VarTy _, VarTy _) -> -- error $ "Unsolved variable in actual type: " ++ show sig ++ " => " ++ show actual ++
                                   --        " when calculating polymorphic suffix for " ++
                                   --        show signature ++ " => " ++ show actualType
-                                  return ["?"]
+                                  pure ["?"]
             (a@(VarTy _), b) -> do visitedTypeVariables <- get
                                    if a `elem` visitedTypeVariables
-                                     then return []
+                                     then pure []
                                      else do put (a : visitedTypeVariables) -- now it's visited
-                                             return [tyToC b]
+                                             pure [tyToC b]
             (FuncTy argTysA retTyA _, FuncTy argTysB retTyB _) -> do visitedArgs <- fmap concat (zipWithM visit argTysA argTysB)
                                                                      visitedRets <- visit retTyA retTyB
-                                                                     return (visitedArgs ++ visitedRets)
+                                                                     pure (visitedArgs ++ visitedRets)
             (StructTy _ a, StructTy _ b) -> fmap concat (zipWithM visit a b)
             (PointerTy a, PointerTy b) -> visit a b
             (RefTy a _, RefTy b _) -> visit a b
-            (_, _) -> return []
+            (_, _) -> pure []
 
 type VisitedTypes = [Ty]
 

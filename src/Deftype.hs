@@ -45,7 +45,7 @@ moduleForDeftype innerEnv typeEnv env pathStrings typeName typeVariables rest i 
             moduleEnvWithBindings = addListOfBindings typeModuleEnv funcs
             typeModuleXObj = XObj (Mod moduleEnvWithBindings) i (Just ModuleTy)
             deps = deleteDeps ++ membersDeps ++ copyDeps ++ strDeps
-        return (typeModuleName, typeModuleXObj, deps)
+        pure (typeModuleName, typeModuleXObj, deps)
 
 -- | Will generate getters/setters/updaters when registering EXTERNAL types.
 -- | i.e. (register-type VRUnicornData [hp Int, magic Float])
@@ -63,7 +63,7 @@ bindingsForRegisteredType typeEnv env pathStrings typeName rest i existingEnv =
         (okPrn, _) <- binderForStrOrPrn typeEnv env insidePath structTy rest "prn"
         let moduleEnvWithBindings = addListOfBindings typeModuleEnv (okInit : okStr : okPrn : binders)
             typeModuleXObj = XObj (Mod moduleEnvWithBindings) i (Just ModuleTy)
-        return (typeModuleName, typeModuleXObj, deps ++ strDeps)
+        pure (typeModuleName, typeModuleXObj, deps ++ strDeps)
 
 
 

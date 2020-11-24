@@ -86,7 +86,7 @@ readlineSettings historyFile =
     complete = completeWordWithPrev Nothing ['(', ')', '[', ']', ' ', '\t', '\n']
                   (\_ w -> do
                       ctx <- get
-                      return (completeKeywordsAnd ctx w)),
+                      pure (completeKeywordsAnd ctx w)),
     historyFile = Just historyFile,
     autoAddHistory = True
   }
@@ -134,7 +134,7 @@ repl readSoFar prompt =
      case input of
         Nothing -> do
           liftIO exitSuccess
-          return ()
+          pure ()
         Just i -> do
           let concatenated = readSoFar ++ i ++ "\n"
               balanced = balance concatenated

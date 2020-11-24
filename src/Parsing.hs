@@ -23,7 +23,7 @@ newtype ParseState = ParseState { parseInfo :: Info }
 
 createInfo :: Parsec.Parsec String ParseState (Maybe Info)
 createInfo = do i <- fmap parseInfo Parsec.getState
-                return (Just i)
+                pure (Just i)
 
 maybeSigned :: Parsec.Parsec String ParseState (Maybe Info, String)
 maybeSigned = do i <- createInfo
@@ -31,23 +31,23 @@ maybeSigned = do i <- createInfo
                  digits <- Parsec.many1 Parsec.digit
                  let num = maybe "" (\x -> [x]) sign ++ digits
                  incColumn (length num)
-                 return (i, num)
+                 pure (i, num)
 
 otherBases :: Parsec.Parsec String ParseState (Maybe Info, String)
 otherBases = do i <- createInfo
                 digits <- Parsec.try base2 <|> base16
-                return (i, digits)
+                pure (i, digits)
   where base16 = do
           _ <- Parsec.string "0x"
           digits <- Parsec.many1 Parsec.hexDigit
           incColumn (length digits)
           -- TODO: there must be a better way...
-          return (show (read ("0x" ++ digits) :: Int))
+          pure (show (read ("0x" ++ digits) :: Int))
         base2 = do
           _ <- Parsec.string "0b"
           digits <- Parsec.many1 (Parsec.oneOf "01")
           incColumn (length digits)
-          return (binToDec digits)
+          pure (binToDec digits)
         binToDec = show . foldl f 0
           where f :: Int -> Char -> Int
                 f x '0' = shift x 1
@@ -115,14 +115,14 @@ rawString = do
     _ <- Parsec.char '"'
     incColumn (length str + 3)
     incLine (countLinebreaks str)
-    return (XObj (Str str) i Nothing)
+    pure (XObj (Str str) i Nothing)
   where
     continuation = do
       Parsec.try $ Parsec.count 2 $ Parsec.char '"'
-      return ['"']
+      pure ['"']
     simple = do
       c <- Parsec.noneOf ['"']
-      return [c]
+      pure [c]
 
 string :: Parsec.Parsec String ParseState XObj
 string = do i <- createInfo
@@ -132,9 +132,9 @@ string = do i <- createInfo
             _ <- Parsec.char '"'
             incColumn (length str + 2)
             incLine (countLinebreaks str)
-            return (XObj (Str str) i Nothing)
+            pure (XObj (Str str) i Nothing)
   where simple = do c <- Parsec.noneOf ['"']
-                    return [c]
+                    pure [c]
 
 countLinebreaks =
   foldr (\x sum -> if x == '\n' then sum+1 else sum) 0
@@ -146,13 +146,13 @@ parseInternalPattern = do maybeAnchor <- Parsec.optionMaybe (Parsec.char '^')
                                               Parsec.try capture <|>
                                               simple)
                           maybeEnd <- Parsec.optionMaybe (Parsec.char '$')
-                          return $ unwrapMaybe maybeAnchor ++ concat str ++
+                          pure $ unwrapMaybe maybeAnchor ++ concat str ++
                                    unwrapMaybe maybeEnd
     where unwrapMaybe (Just c) = [c]
           unwrapMaybe Nothing  = []
           simple :: Parsec.Parsec String ParseState String
           simple = do char <- Parsec.noneOf "^$()[]\\\""
-                      return [char]
+                      pure [char]
           patternEscaped :: Parsec.Parsec String ParseState String
           patternEscaped = do
             _ <- Parsec.char '\\'
@@ -163,10 +163,10 @@ parseInternalPattern = do maybeAnchor <- Parsec.optionMaybe (Parsec.char '^')
             case c of
               'b' -> do c1 <- Parsec.noneOf ['"']
                         c2 <- Parsec.noneOf ['"']
-                        return ['\\', c, c1, c2]
+                        pure ['\\', c, c1, c2]
               'f' -> do str <- bracketClass
-                        return $ '\\' : c : str
-              _   -> return ['\\', c]
+                        pure $ '\\' : c : str
+              _   -> pure ['\\', c]
           capture :: Parsec.Parsec String ParseState String
           capture = do
             opening <- Parsec.char '('
@@ -174,13 +174,13 @@ parseInternalPattern = do maybeAnchor <- Parsec.optionMaybe (Parsec.char '^')
                                 Parsec.try bracketClass <|>
                                 simple)
             closing <- Parsec.char ')'
-            return $ "(" ++ concat str ++ ")"
+            pure $ "(" ++ concat str ++ ")"
           range :: Parsec.Parsec String ParseState String
           range = do
             begin <- Parsec.alphaNum
             _ <- Parsec.char '-'
             end <- Parsec.alphaNum
-            return [begin, '-', end]
+            pure [begin, '-', end]
           bracketClass :: Parsec.Parsec String ParseState String
           bracketClass = do
             opening <- Parsec.char '['
@@ -189,7 +189,7 @@ parseInternalPattern = do maybeAnchor <- Parsec.optionMaybe (Parsec.char '^')
                                 Parsec.try patternEscaped <|>
                                 Parsec.many1 (Parsec.noneOf "-^$()[]\\\""))
             closing <- Parsec.char ']'
-            return $ "[" ++ unwrapMaybe maybeAnchor ++ concat str ++ "]"
+            pure $ "[" ++ unwrapMaybe maybeAnchor ++ concat str ++ "]"
 
 pat :: Parsec.Parsec String ParseState XObj
 pat = do i <- createInfo
@@ -197,7 +197,7 @@ pat = do i <- createInfo
          str <- parseInternalPattern
          _ <- Parsec.char '"'
          incColumn (length str + 2)
-         return (XObj (Pattern $ treat str) i Nothing)
+         pure (XObj (Pattern $ treat str) i Nothing)
   -- auto-escaping backslashes
   where treat :: String -> String
         treat [] = []
@@ -208,51 +208,51 @@ escaped :: Parsec.Parsec String ParseState String
 escaped =  do
     _ <- Parsec.char '\\'
     c <- Parsec.oneOf ['\\', '\"']
-    case c of
-      '\\' -> return "\\\\"
-      '\"' -> return "\""
+    pure $ case c of
+      '\\' -> "\\\\"
+      '\"' -> "\""
 
 escapedQuoteChar :: Parsec.Parsec String ParseState Char
 escapedQuoteChar = do _ <- Parsec.string "\""
                       incColumn 2
-                      return '\"'
+                      pure '\"'
 
 escapedSpaceChar :: Parsec.Parsec String ParseState Char
 escapedSpaceChar = do _ <- Parsec.string "space"
                       incColumn 5
-                      return ' '
+                      pure ' '
 
 escapedNewlineChar :: Parsec.Parsec String ParseState Char
 escapedNewlineChar = do _ <- Parsec.string "newline"
                         incColumn 7
-                        return '\n'
+                        pure '\n'
 
 escapedTabChar :: Parsec.Parsec String ParseState Char
 escapedTabChar = do _ <- Parsec.string "tab"
                     incColumn 3
-                    return '\t'
+                    pure '\t'
 
 escapedBackspaceChar :: Parsec.Parsec String ParseState Char
 escapedBackspaceChar = do _ <- Parsec.string "backspace"
                           incColumn 9
-                          return '\b'
+                          pure '\b'
 
 escapedReturnChar :: Parsec.Parsec String ParseState Char
 escapedReturnChar = do _ <- Parsec.string "return"
                        incColumn 6
-                       return '\r'
+                       pure '\r'
 
 escapedFormfeedChar :: Parsec.Parsec String ParseState Char
 escapedFormfeedChar = do _ <- Parsec.string "formfeed"
                          incColumn 8
-                         return '\f'
+                         pure '\f'
 
 escapedHexChar :: Parsec.Parsec String ParseState Char
 escapedHexChar = do _ <- Parsec.char 'u'
                     hex <- Parsec.count 4 (Parsec.oneOf "0123456789abcdefABCDEF")
                     incColumn 5
                     let [(parsed, "")] = readHex hex
-                    return (toEnum parsed)
+                    pure (toEnum parsed)
 
 aChar :: Parsec.Parsec String ParseState XObj
 aChar = do i <- createInfo
@@ -267,7 +267,7 @@ aChar = do i <- createInfo
                 Parsec.try escapedHexChar <|>
                 Parsec.anyChar
            incColumn 2
-           return (XObj (Chr c) i Nothing)
+           pure (XObj (Chr c) i Nothing)
 
 {-# ANN validCharacters "HLint: ignore Use String" #-}
 validCharacters :: [Char]
@@ -276,46 +276,46 @@ validCharacters = "+-*/?!><=_:\9580\9559"
 symbolSegment :: Parsec.Parsec String ParseState String
 symbolSegment = do sym <- Parsec.many1 validInSymbol
                    incColumn (length sym)
-                   return sym
+                   pure sym
   where validInSymbol = Parsec.choice [Parsec.letter, Parsec.digit, Parsec.oneOf validCharacters, highCharacters]
         highCharacters = Parsec.satisfy ((> 127) . ord)
 
 period :: Parsec.Parsec String ParseState ()
 period = do Parsec.char '.'
             incColumn 1
-            return ()
+            pure ()
 
 symbol :: Parsec.Parsec String ParseState XObj
 symbol = do i <- createInfo
             segments <- Parsec.sepBy1 symbolSegment period
             if length segments > 1
             -- if it’s qualified, it can’t be a special form
-            then return (XObj
+            then pure (XObj
                           (Sym (SymPath (init segments) (last segments))
                                Symbol)
                           i Nothing)
             else
-              case last segments of
-                "defn" -> return (XObj (Defn Nothing) i Nothing)
-                "def" -> return (XObj Def i Nothing)
+              pure $ case last segments of
+                "defn" -> (XObj (Defn Nothing) i Nothing)
+                "def" -> (XObj Def i Nothing)
                 -- TODO: What about the other def- forms?
-                "do" -> return (XObj Do i Nothing)
-                "while" -> return (XObj While i Nothing)
-                "fn" -> return (XObj (Fn Nothing Set.empty) i Nothing)
-                "let" -> return (XObj Let i Nothing)
-                "break" -> return (XObj Break i Nothing)
-                "if" -> return (XObj If i Nothing)
-                "match" -> return (XObj (Match MatchValue) i Nothing)
-                "match-ref" -> return (XObj (Match MatchRef) i Nothing)
-                "true" -> return (XObj (Bol True) i Nothing)
-                "false" -> return (XObj (Bol False) i Nothing)
-                "address" -> return (XObj Address i Nothing)
-                "set!" -> return (XObj SetBang i Nothing)
-                "the" -> return (XObj The i Nothing)
-                "ref" -> return (XObj Ref i Nothing)
-                "deref" -> return (XObj Deref i Nothing)
-                "with" -> return (XObj With i Nothing)
-                name   -> return (XObj (Sym (SymPath (init segments) name) Symbol) i Nothing)
+                "do" -> (XObj Do i Nothing)
+                "while" -> (XObj While i Nothing)
+                "fn" -> (XObj (Fn Nothing Set.empty) i Nothing)
+                "let" -> (XObj Let i Nothing)
+                "break" -> (XObj Break i Nothing)
+                "if" -> (XObj If i Nothing)
+                "match" -> (XObj (Match MatchValue) i Nothing)
+                "match-ref" -> (XObj (Match MatchRef) i Nothing)
+                "true" -> (XObj (Bol True) i Nothing)
+                "false" -> (XObj (Bol False) i Nothing)
+                "address" -> (XObj Address i Nothing)
+                "set!" -> (XObj SetBang i Nothing)
+                "the" -> (XObj The i Nothing)
+                "ref" -> (XObj Ref i Nothing)
+                "deref" -> (XObj Deref i Nothing)
+                "with" -> (XObj With i Nothing)
+                name   -> (XObj (Sym (SymPath (init segments) name) Symbol) i Nothing)
 
 atom :: Parsec.Parsec String ParseState XObj
 atom = Parsec.choice [number, pat, rawString, string, aChar, symbol]
@@ -329,7 +329,7 @@ incColumn x = do s <- Parsec.getState
                      file = infoFile i
                      newInfo = Info line (column + x) file (Set.fromList []) identifier
                  Parsec.putState (s { parseInfo = newInfo })
-                 return ()
+                 pure ()
 
 incLine :: Int -> Parsec.Parsec String ParseState ()
 incLine x = do s <- Parsec.getState
@@ -340,12 +340,12 @@ incLine x = do s <- Parsec.getState
                    file = infoFile i
                    newInfo = Info (line + x) column file (Set.fromList []) identifier
                Parsec.putState (s { parseInfo = newInfo })
-               return ()
+               pure ()
 
 comment :: Parsec.Parsec String ParseState ()
 comment = do _ <- Parsec.char ';'
              _ <- Parsec.many (Parsec.noneOf ['\n'])
-             return ()
+             pure ()
 
 linebreak :: Parsec.Parsec String ParseState ()
 linebreak = do s <- Parsec.getState
@@ -356,37 +356,37 @@ linebreak = do s <- Parsec.getState
                    newInfo = Info (line + 1) 1 file (Set.fromList [])  identifier
                Parsec.putState (s { parseInfo = newInfo })
                _ <- Parsec.char '\n'
-               return ()
+               pure ()
 
 space :: Parsec.Parsec String ParseState ()
 space = do incColumn 1
            _ <- Parsec.char ' '
-           return ()
+           pure ()
 
 comma :: Parsec.Parsec String ParseState ()
 comma = do incColumn 1
            _ <- Parsec.char ','
-           return ()
+           pure ()
 
 tab :: Parsec.Parsec String ParseState ()
 tab = do incColumn 1
          _ <- Parsec.char '\t'
-         return ()
+         pure ()
 
 eof :: Parsec.Parsec String ParseState ()
 eof = do _ <- Parsec.char '\0'
-         return ()
+         pure ()
 
 emptyCharacters :: [Parsec.Parsec String ParseState ()]
 emptyCharacters = [space, tab, comma, linebreak, eof, comment]
 
 whitespace :: Parsec.Parsec String ParseState ()
 whitespace = do _ <- Parsec.many1 (Parsec.choice emptyCharacters)
-                return ()
+                pure ()
 
 whitespaceOrNothing :: Parsec.Parsec String ParseState ()
 whitespaceOrNothing = do _ <- Parsec.many (Parsec.choice emptyCharacters)
-                         return ()
+                         pure ()
 
 readObjs :: Parsec.Parsec String ParseState [XObj]
 readObjs = do padding <- Parsec.many whitespace
@@ -400,7 +400,7 @@ array = do i <- createInfo
            objs <- readObjs
            _ <- Parsec.char ']'
            incColumn 1
-           return (XObj (Arr objs) i Nothing)
+           pure (XObj (Arr objs) i Nothing)
 
 staticArray :: Parsec.Parsec String ParseState XObj
 staticArray =
@@ -410,7 +410,7 @@ staticArray =
      objs <- readObjs
      _ <- Parsec.string "]"
      incColumn 2
-     return (XObj (StaticArr objs) i Nothing)
+     pure (XObj (StaticArr objs) i Nothing)
 
 list :: Parsec.Parsec String ParseState XObj
 list = do i <- createInfo
@@ -419,7 +419,7 @@ list = do i <- createInfo
           objs <- readObjs
           _ <- Parsec.char ')'
           incColumn 1
-          return (XObj (Lst objs) i Nothing)
+          pure (XObj (Lst objs) i Nothing)
 
 dictionary :: Parsec.Parsec String ParseState XObj
 dictionary = do i <- createInfo
@@ -430,14 +430,14 @@ dictionary = do i <- createInfo
                 incColumn 1
                 let objs' = if even (length objs) then objs else init objs -- Drop last if uneven nr of forms.
                 -- TODO! Signal error here!
-                --return (XObj (Dict (Map.fromList (pairwise objs'))) i Nothing)
+                --pure (XObj (Dict (Map.fromList (pairwise objs'))) i Nothing)
                     pairInit = XObj (Sym (SymPath ["Pair"] "init") (LookupGlobal CarpLand AFunction)) i Nothing
                     pairs = map (\(k,v) -> XObj (Lst [pairInit, k, v]) i Nothing) (pairwise objs')
                     arrayLiteral = XObj (Arr pairs) i Nothing
                     reffedArrayLiteral = XObj (Lst [XObj Ref i Nothing, arrayLiteral]) i Nothing
                     fromArraySymbol = XObj (Sym (SymPath ["Map"] "from-array") (LookupGlobal CarpLand AFunction)) i Nothing
                     fromArraySexp = XObj (Lst [fromArraySymbol, reffedArrayLiteral]) i Nothing
-                return fromArraySexp
+                pure fromArraySexp
 
 
 ref :: Parsec.Parsec String ParseState XObj
@@ -445,14 +445,14 @@ ref = do i <- createInfo
          _ <- Parsec.char '&'
          incColumn 1
          expr <- sexpr
-         return (XObj (Lst [XObj Ref Nothing Nothing, expr]) i Nothing)
+         pure (XObj (Lst [XObj Ref Nothing Nothing, expr]) i Nothing)
 
 deref :: Parsec.Parsec String ParseState XObj
 deref = do i <- createInfo
            _ <- Parsec.char '~'
            incColumn 1
            expr <- sexpr
-           return (XObj (Lst [XObj Deref Nothing Nothing, expr]) i Nothing)
+           pure (XObj (Lst [XObj Deref Nothing Nothing, expr]) i Nothing)
 
 copy :: Parsec.Parsec String ParseState XObj
 copy = do i1 <- createInfo
@@ -460,7 +460,7 @@ copy = do i1 <- createInfo
           _ <- Parsec.char '@'
           incColumn 1
           expr <- sexpr
-          return (XObj (Lst [XObj (Sym (SymPath [] "copy") Symbol) i1 Nothing, expr]) i2 Nothing)
+          pure (XObj (Lst [XObj (Sym (SymPath [] "copy") Symbol) i1 Nothing, expr]) i2 Nothing)
 
 quote :: Parsec.Parsec String ParseState XObj
 quote = do i1 <- createInfo
@@ -468,19 +468,19 @@ quote = do i1 <- createInfo
            _ <- Parsec.char '\''
            incColumn 1
            expr <- sexpr
-           return (XObj (Lst [XObj (Sym (SymPath [] "quote") Symbol) i1 Nothing, expr]) i2 Nothing)
+           pure (XObj (Lst [XObj (Sym (SymPath [] "quote") Symbol) i1 Nothing, expr]) i2 Nothing)
 
 sexpr :: Parsec.Parsec String ParseState XObj
 sexpr = do x <- Parsec.choice [ref, deref, copy, quote, list, staticArray, array, dictionary, atom]
            _ <- whitespaceOrNothing
-           return x
+           pure x
 
 lispSyntax :: Parsec.Parsec String ParseState [XObj]
 lispSyntax = do padding <- Parsec.many whitespace
                 incColumn (length padding)
                 result <- Parsec.sepBy sexpr whitespaceOrNothing
                 Parsec.eof
-                return result
+                pure result
 
 parse :: String -> String -> Either Parsec.ParseError [XObj]
 parse text fileName = let initState = ParseState (Info 1 1 fileName (Set.fromList []) 0)
@@ -508,9 +508,9 @@ balance text =
                          [] -> push c
                          '"':xs -> case c of
                                      '\\' -> do c <- Parsec.anyChar -- consume next
-                                                return ()
+                                                pure ()
                                      '"' -> Parsec.putState xs -- close string
-                                     _ -> return () -- inside string
+                                     _ -> pure () -- inside string
                          (x:xs) -> case (x, c) of
                                      ('(', ')') -> Parsec.putState xs
                                      ('[', ']') -> Parsec.putState xs
@@ -525,4 +525,4 @@ balance text =
                '(' -> Parsec.putState (c : parens)
                '[' -> Parsec.putState (c : parens)
                '"' -> Parsec.putState (c : parens)
-               _ -> return ()
+               _ -> pure ()
