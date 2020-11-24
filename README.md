@@ -50,14 +50,14 @@ For instructions on how to run Carp code, see [this document](docs/HowToRunCode.
 
 For more examples, check out the [examples](examples) directory.
 
-### Maintainers
+## Maintainers
 - [Erik Svedäng](https://github.com/eriksvedang)
 - [Veit Heller](https://github.com/hellerve)
 - [Jorge Acereda](https://github.com/jacereda)
 - [Scott Olsen](https://github.com/scolsen)
 - [Tim Dévé](https://github.com/TimDeve)
 
-### Contributing
+## Contributing
 Thanks to all the [awesome people](https://github.com/carp-lang/Carp/graphs/contributors) who have contributed to Carp over the years!
 
 We are always looking for more help -- check out the [contributing guide](docs/contributing.md) to get started.
