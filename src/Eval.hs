@@ -2,18 +2,16 @@
 module Eval where
 
 import Control.Applicative
-import Control.Concurrent (forkIO)
 import Control.Exception
 import Control.Monad.State
 import Data.Foldable (foldlM, foldrM)
-import Data.List (foldl', null, isSuffixOf, intercalate)
+import Data.List (foldl', isSuffixOf, intercalate)
 import Data.List.Split (splitOn, splitWhen)
-import Data.Maybe (fromJust, mapMaybe, isJust, Maybe(..), fromMaybe)
-import System.Exit (exitSuccess, exitFailure, exitWith, ExitCode(..))
+import Data.Maybe (fromJust, isJust, fromMaybe)
+import System.Exit (exitSuccess, exitWith, ExitCode(..))
 import System.Process (readProcessWithExitCode)
 import qualified Data.Map as Map
 import qualified Text.Parsec as Parsec
-import qualified Text.Parsec.Error as ParsecError
 
 import Parsing
 import Emit
@@ -21,31 +19,27 @@ import Obj
 import Project
 import Types
 import Infer
-import Deftype
-import Sumtypes
 import ColorText
-import Template
 import Util
 import Commands
 import Expand
 import Lookup
 import Qualify
 import TypeError
-import Concretize
 import Path
 import Primitives
 import Info
 import qualified Meta
 
-import Debug.Trace
-
 data LookupPreference = PreferDynamic
                       | PreferGlobal
 
 -- Prefer dynamic bindings
+evalDynamic :: Context -> XObj -> IO (Context, Either EvalError XObj)
 evalDynamic ctx xobj = eval ctx xobj PreferDynamic
 
 -- Prefer global bindings
+evalStatic :: Context -> XObj -> IO (Context, Either EvalError XObj)
 evalStatic ctx xobj = eval ctx xobj PreferGlobal
 
 -- | Dynamic (REPL) evaluation of XObj:s (s-expressions)
@@ -390,7 +384,7 @@ executeString doCatch printResult ctx input fileName =
                                                                       , infoColumn = Parsec.sourceColumn sourcePos
                                                                       }) Nothing
                    in do
-                    liftIO $ treatErr ctx (replaceChars (Map.fromList [('\n', " ")]) (show parseError)) parseErrorXObj
+                    _ <- liftIO $ treatErr ctx (replaceChars (Map.fromList [('\n', " ")]) (show parseError)) parseErrorXObj
                     pure ctx
                  Right xobjs -> do
                   (res, ctx) <- foldM interactiveFolder

@@ -1,14 +1,10 @@
 module Template where
 
 import qualified Data.Set as Set
-import Debug.Trace
 
 import Util
 import Types
 import Obj
-import Parsing
-import Infer
-import Concretize
 import ToTemplate
 import Info
 import qualified Meta

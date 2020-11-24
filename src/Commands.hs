@@ -1,28 +1,24 @@
 module Commands where
 
 import Control.Exception
-import Control.Monad (join, when, foldM)
+import Control.Monad (join, when)
 import Control.Monad.IO.Class (liftIO, MonadIO)
 import Data.Bits (finiteBitSize)
 import Data.List (elemIndex)
 import Data.List.Split (splitOn)
 import Data.Maybe (fromMaybe)
-import System.Exit (exitSuccess, exitFailure, exitWith, ExitCode(..))
+import System.Exit (exitSuccess, ExitCode(..))
 import System.Info (os, arch)
 import System.Process (callCommand, spawnCommand, waitForProcess)
 import System.IO (openFile, hPutStr, hClose, utf8, hSetEncoding, IOMode(..))
 import System.Directory (makeAbsolute)
 import qualified Data.Map as Map
 
-import Parsing
 import Emit
 import Obj
 import Project
 import Types
-import Infer
-import Deftype
 import ColorText
-import Template
 import Util
 import Lookup
 import RenderDocs
@@ -196,7 +192,7 @@ commandProjectGetConfig ctx [faultyKey] =
 -- | Command for exiting the REPL/compiler
 commandQuit :: CommandCallback
 commandQuit ctx args =
-  do liftIO exitSuccess
+  do _ <- liftIO exitSuccess
      pure (ctx, dynamicNil)
 
 -- | Command for printing the generated C output (in out/main.c)
@@ -327,6 +323,7 @@ commandAddInclude includerConstructor ctx [x] =
     _ ->
       pure (evalError ctx ("Argument to 'include' must be a string, but was `" ++ pretty x ++ "`") (info x))
 
+commandAddSystemInclude :: CommandCallback
 commandAddSystemInclude = commandAddInclude SystemInclude
 
 commandAddRelativeInclude :: CommandCallback
@@ -576,6 +573,7 @@ commandSymStr ctx [XObj (Sym s _) i _] =
 commandSymStr ctx [x] =
   pure $ evalError ctx ("Can’t call `str` with " ++ pretty x) (info x)
 
+sFrom_ :: String -> Obj
 sFrom_ s = Sym (SymPath [] s) (LookupGlobal CarpLand AVariable)
 
 commandPathDirectory :: CommandCallback

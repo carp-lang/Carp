@@ -1,15 +1,13 @@
 module Primitives where
 
 import Control.Monad (unless, when, foldM)
-import Control.Monad.IO.Class (liftIO)
-import Data.List (foldl')
+import Control.Monad.IO.Class (liftIO, MonadIO)
 import Data.Maybe (fromMaybe)
-import Data.Either (isRight, rights)
+import Data.Either (rights)
 import Web.Browser (openBrowser)
 
 import ColorText
 import Commands
-import Constraints
 import Deftype
 import Emit
 import Lookup
@@ -28,11 +26,11 @@ import Interfaces
 import Infer
 import Reify
 
-import Debug.Trace
 
-found ctx binder =
-  liftIO $ do putStrLnWithColor White (show binder)
-              pure (ctx, dynamicNil)
+-- found :: (MonadIO m, Show a1) => a2 -> a1 -> m (a2, Either a3 XObj)
+-- found ctx binder =
+--   liftIO $ do putStrLnWithColor White (show binder)
+--               pure (ctx, dynamicNil)
 
 makePrim :: String -> Int -> String -> String -> Primitive -> (String, Binder)
 makePrim name arity doc example callback =
@@ -266,7 +264,7 @@ primitiveInfo _ ctx [target@(XObj (Sym path@(SymPath _ name) _) _ _)] = do
       -- First look in the type env, then in the global env:
       case lookupInEnv path (getTypeEnv typeEnv) of
         Nothing -> printer env True True (lookupInEnv path env)
-        found -> do printer env True True found -- this will print the interface itself
+        found -> do _ <- printer env True True found -- this will print the interface itself
                     printer env True False (lookupInEnv path env)-- this will print the locations of the implementers of the interface
     qualifiedPath ->
       case lookupInEnv path env of
@@ -764,6 +762,7 @@ primitiveHelp _ ctx [] =
 primitiveHelp _ ctx args =
   return (evalError ctx ("Invalid args to `help`: " ++ joinWithComma (map pretty args)) Nothing)
 
+openBrowserHelper :: MonadIO m => Context -> String -> m (Context, Either EvalError XObj)
 openBrowserHelper ctx url =
-  liftIO $ do openBrowser url
+  liftIO $ do _ <- openBrowser url
               return (ctx, dynamicNil)

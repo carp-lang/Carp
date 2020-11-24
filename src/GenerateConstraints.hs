@@ -1,20 +1,16 @@
 module GenerateConstraints (genConstraints) where
 
-import Data.List (foldl', sort, zipWith4)
 import Control.Arrow
 import Control.Monad.State
 import Data.Maybe (mapMaybe, fromMaybe)
 import Data.Set as Set
 import Data.List as List
-import Data.Map as Map (lookup)
-import Debug.Trace (trace)
 
 import Types
 import Obj
 import Constraints
 import Util
 import TypeError
-import Lookup
 import Info
 
 -- | Will create a list of type constraints for a form.

@@ -15,8 +15,6 @@ import Util
 import Constraints
 import Data.List (foldl')
 
-import Debug.Trace
-
 data InterfaceError = KindMismatch SymPath Ty Ty
                     | TypeMismatch SymPath Ty Ty
                     | NonInterface SymPath

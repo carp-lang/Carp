@@ -74,18 +74,20 @@ platform =
       "mingw32" -> Windows
       "freebsd" -> FreeBSD
 
+unionOfSetsInList :: Ord a => [Set.Set a] -> Set.Set a
 unionOfSetsInList (x:xs) =
   foldl' Set.union x xs
 unionOfSetsInList [] =
   Set.empty
 
+intersectionOfSetsInList :: Ord a => [Set.Set a] -> Set.Set a
 intersectionOfSetsInList (x:xs) =
   foldl' Set.intersection x xs
 intersectionOfSetsInList [] =
   Set.empty
 
 evenIndices :: [a] -> [a]
-evenIndices xs = map snd . filter (even . fst) $ zip [0..] xs
+evenIndices = map snd . filter (even . fst) . zip ([0..] :: [Int])
 
 -- 'Naked' Lmabdas declared at the top level have their own s-expression forms
 -- as names, e.g. (fn <> [] ()). This can result in invalid c code. This

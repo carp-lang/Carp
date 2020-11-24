@@ -2,7 +2,6 @@ module SumtypeCase where
 
 import Obj
 import Types
-import Util
 import TypeError
 import Validate
 

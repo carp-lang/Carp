@@ -2,21 +2,18 @@ module Sumtypes where
 
 import qualified Data.Map as Map
 import Data.Maybe
-import Debug.Trace
 
 import Obj
 import Types
 import TypesToC
 import Util
 import Concretize
-import Polymorphism
 import Lookup
 import Template
 import ToTemplate
 import Deftype
 import StructUtils
 import TypeError
-import Validate
 import SumtypeCase
 import Info
 

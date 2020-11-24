@@ -4,7 +4,6 @@ import qualified Text.Parsec as Parsec
 import Text.Parsec ((<|>))
 
 import Obj
-import Types
 import Parsing
 import Util
 
