@@ -30,7 +30,7 @@ templateUnsafeNth =
                         ,"    assert(n < a.len);"
                         ,"    return &((($t*)a.data)[n]);"
                         ,"}"])
-  (\(FuncTy [RefTy arrayType _, _] _ _) ->
+  (\(FuncTy [RefTy _ _, _] _ _) ->
      [])
 
 templateLength :: (String, Binder)
@@ -61,7 +61,7 @@ templateDeleteArray = defineTypeParameterizedTemplate templateCreator path t doc
                 [TokDecl, TokC "{\n"] ++
                 deleteTy typeEnv env arrayType ++
                 [TokC "}\n"])
-             (\(FuncTy [arrayType@(StructTy concreteArray [insideType])] UnitTy _) ->
+             (\(FuncTy [(StructTy _ [insideType])] UnitTy _) ->
                 depsForDeleteFunc typeEnv env insideType)
 
 deleteTy :: TypeEnv -> Env -> Ty -> [Token]
@@ -105,7 +105,7 @@ templateStrArray = defineTypeParameterizedTemplate templateCreator path t docs
                 [TokDecl, TokC " {\n"] ++
                 ArrayTemplates.strTy typeEnv env arrayType ++
                 [TokC "}\n"])
-             (\(FuncTy [RefTy arrayType@(StructTy concreteArray [insideType]) _] StringTy _) ->
+             (\(FuncTy [RefTy (StructTy _ [insideType]) _] StringTy _) ->
                 depsForPrnFunc typeEnv env insideType)
         path = SymPath ["StaticArray"] "str"
         t = FuncTy [RefTy (StructTy concreteArray [VarTy "a"]) (VarTy "q")] StringTy StaticLifetimeTy

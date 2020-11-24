@@ -160,7 +160,7 @@ replaceConflicted name (StructTy n tyArgs) = StructTy (replaceConflicted name n)
 replaceConflicted name (PointerTy p) = PointerTy (replaceConflicted name p)
 replaceConflicted name (RefTy r lt) = RefTy (replaceConflicted name r)
                                             (replaceConflicted name lt)
-replaceConflicted name t = t
+replaceConflicted _ t = t
 
 
 -- | Map type variable names to actual types, eg. t0 => Int, t1 => Float
@@ -171,28 +171,28 @@ type TypeMappings = Map.Map String Ty
 unifySignatures :: Ty -> Ty -> TypeMappings
 unifySignatures v t = Map.fromList (unify v t)
   where unify :: Ty -> Ty -> [(String, Ty)]
-        unify a@(VarTy _) b@(VarTy _) = [] -- if a == b then [] else error ("Can't unify " ++ show a ++ " with " ++ show b)
+        unify (VarTy _) (VarTy _) = [] -- if a == b then [] else error ("Can't unify " ++ show a ++ " with " ++ show b)
 
         unify (VarTy a) value = [(a, value)]
 
-        unify (StructTy v@(VarTy a) aArgs) (StructTy n bArgs) = unify v n ++ concat (zipWith unify aArgs bArgs)
+        unify (StructTy v@(VarTy _) aArgs) (StructTy n bArgs) = unify v n ++ concat (zipWith unify aArgs bArgs)
         unify (StructTy a@(ConcreteNameTy _) aArgs) (StructTy b bArgs)
             | a == b = concat (zipWith unify aArgs bArgs)
             | otherwise = [] -- error ("Can't unify " ++ a ++ " with " ++ b)
-        unify a@(StructTy _ _) b = [] -- error ("Can't unify " ++ show a ++ " with " ++ show b)
+        unify (StructTy _ _) _ = [] -- error ("Can't unify " ++ show a ++ " with " ++ show b)
 
         unify (PointerTy a) (PointerTy b) = unify a b
-        unify a@(PointerTy _) b = [] -- error ("Can't unify " ++ show a ++ " with " ++ show b)
+        unify (PointerTy _) _ = [] -- error ("Can't unify " ++ show a ++ " with " ++ show b)
 
         unify (RefTy a ltA) (RefTy b ltB) = unify a b ++ unify ltA ltB
-        unify a@(RefTy _ _) b = [] -- error ("Can't unify " ++ show a ++ " with " ++ show b)
+        unify (RefTy _ _) _ = [] -- error ("Can't unify " ++ show a ++ " with " ++ show b)
 
         unify (FuncTy argTysA retTyA ltA) (FuncTy argTysB retTyB ltB) =
           let argToks = concat (zipWith unify argTysA argTysB)
               retToks = unify retTyA retTyB
               ltToks = unify ltA ltB
           in  ltToks ++ argToks ++ retToks
-        unify a@FuncTy{} b = [] -- error ("Can't unify " ++ show a ++ " with " ++ show b)
+        unify FuncTy{} _ = [] -- error ("Can't unify " ++ show a ++ " with " ++ show b)
         unify a b | a == b    = []
                   | otherwise = [] -- error ("Can't unify " ++ show a ++ " with " ++ show b)
 

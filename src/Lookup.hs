@@ -121,7 +121,7 @@ recursiveLookupAll input lookf env =
 -- | Lookup binders by name.
 lookupByName :: String -> Env -> [Binder]
 lookupByName name env =
-  let filtered = Map.filterWithKey (\k v -> k == name) (envBindings env)
+  let filtered = Map.filterWithKey (\k _ -> k == name) (envBindings env)
   in map snd $ Map.toList filtered
 
 -- | Lookup binders that have specified metadata.
@@ -152,7 +152,7 @@ multiLookupQualified :: SymPath -> Env -> [(Env, Binder)]
 multiLookupQualified (SymPath [] name) rootEnv =
   -- This case is just like normal multiLookup, we have a name but no qualifyers:
   multiLookup name rootEnv
-multiLookupQualified path@(SymPath (p:ps) name) rootEnv =
+multiLookupQualified path@(SymPath (p:_) _) rootEnv =
   case lookupInEnv (SymPath [] p) rootEnv of
     Just (_, Binder _ (XObj (Mod _) _ _)) ->
       -- Found a module with the correct name, that means we should not look at anything else:
@@ -290,7 +290,7 @@ envReplaceBinding s@(SymPath [] name) binder env =
       case envParent env of
         Just parent -> env {envParent = Just (envReplaceBinding s binder parent)}
         Nothing -> env
-envReplaceBinding (SymPath p name) xobj e = error "TODO: cannot replace qualified bindings"
+envReplaceBinding (SymPath _ _) _ _ = error "TODO: cannot replace qualified bindings"
 
 
 bindingNames :: Env -> [String]

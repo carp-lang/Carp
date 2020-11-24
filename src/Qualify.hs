@@ -74,7 +74,7 @@ setFullyQualifiedSymbols typeEnv globalEnv env (XObj (Lst (matchExpr@(XObj (Matc
            newCasesXObjs =
              map (\(l, r) ->
                     case l of
-                      XObj (Lst (x:xs)) _ _ ->
+                      XObj (Lst (_:xs)) _ _ ->
                         let l' = setFullyQualifiedSymbols typeEnv globalEnv env l
                             innerEnv' = foldl' folder innerEnv xs
                                       where folder e v = case v of
@@ -82,7 +82,7 @@ setFullyQualifiedSymbols typeEnv globalEnv env (XObj (Lst (matchExpr@(XObj (Matc
                                                          extendEnv e binderName v
                                                        -- Nested sumtypes
                                                        -- fold recursively -- is there a more efficient way?
-                                                       XObj (Lst(y:ys)) _ _ ->
+                                                       XObj (Lst(_:ys)) _ _ ->
                                                          foldl' folder innerEnv ys
                                                        x ->
                                                          error ("Can't match variable with " ++ show x)
@@ -109,7 +109,7 @@ setFullyQualifiedSymbols typeEnv globalEnv localEnv xobj@(XObj (Sym path _) i t)
     -- Unqualified:
     SymPath [] name ->
       case lookupInEnv path (getTypeEnv typeEnv) of
-        Just found@(_, Binder _ (XObj (Lst (XObj (Interface _ _) _ _ : _)) _ _)) ->
+        Just (_, Binder _ (XObj (Lst (XObj (Interface _ _) _ _ : _)) _ _)) ->
           -- Found an interface with the same path!
           -- Have to ensure it's not a local variable with the same name as the interface
           case lookupInEnv path localEnv of
@@ -192,11 +192,11 @@ setFullyQualifiedSymbols typeEnv globalEnv localEnv xobj@(XObj (Sym path _) i t)
                 bs
 
 
-setFullyQualifiedSymbols typeEnv globalEnv env xobj@(XObj (Arr array) i t) =
+setFullyQualifiedSymbols typeEnv globalEnv env (XObj (Arr array) i t) =
   let array' = map (setFullyQualifiedSymbols typeEnv globalEnv env) array
   in  XObj (Arr array') i t
 
-setFullyQualifiedSymbols typeEnv globalEnv env xobj@(XObj (StaticArr array) i t) =
+setFullyQualifiedSymbols typeEnv globalEnv env (XObj (StaticArr array) i t) =
   let array' = map (setFullyQualifiedSymbols typeEnv globalEnv env) array
   in  XObj (StaticArr array') i t
 

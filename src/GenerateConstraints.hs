@@ -15,7 +15,7 @@ import Info
 
 -- | Will create a list of type constraints for a form.
 genConstraints :: Env -> XObj -> Maybe (Ty, XObj) -> Either TypeError [Constraint]
-genConstraints globalEnv root rootSig = fmap sort (gen root)
+genConstraints _ root rootSig = fmap sort (gen root)
   where genF xobj args body captures =
          do insideBodyConstraints <- gen body
             xobjType <- toEither (ty xobj) (DefnMissingType xobj)
@@ -300,7 +300,7 @@ genConstraintsForCaseMatcher matchMode = gen
                    wholeTypeConstraint = Constraint funcVarTy fabricatedFunctionType caseName expected xobj OrdFuncAppVarTy
                in  pure (wholeTypeConstraint : caseNameConstraints ++ variablesConstraints)
              _ -> Left (NotAFunction caseName) -- | TODO: This error could be more specific too, since it's not an actual function call.
-    gen x = pure []
+    gen _ = pure []
 
     -- | If this is a 'match-ref' statement we want to wrap the type of *symbols* (not lists matching nested sumtypes) in a Ref type
     -- | to make the type inference think they are refs.

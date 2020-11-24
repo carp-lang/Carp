@@ -48,7 +48,7 @@ otherBases = do i <- createInfo
           where f :: Int -> Char -> Int
                 f x '0' = shift x 1
                 f x '1' = shift x 1 + 1
-                f x _   = error "Not a valid binary literal (this should not happen)."
+                f _ _   = error "Not a valid binary literal (this should not happen)."
 
 withBases :: Parsec.Parsec String ParseState (Maybe Info, String)
 withBases = Parsec.try otherBases <|> maybeSigned
@@ -166,11 +166,11 @@ parseInternalPattern = do maybeAnchor <- Parsec.optionMaybe (Parsec.char '^')
               _   -> pure ['\\', c]
           capture :: Parsec.Parsec String ParseState String
           capture = do
-            opening <- Parsec.char '('
+            _ <- Parsec.char '('
             str <- Parsec.many (Parsec.try patternEscaped <|>
                                 Parsec.try bracketClass <|>
                                 simple)
-            closing <- Parsec.char ')'
+            _ <- Parsec.char ')'
             pure $ "(" ++ concat str ++ ")"
           range :: Parsec.Parsec String ParseState String
           range = do
@@ -180,12 +180,12 @@ parseInternalPattern = do maybeAnchor <- Parsec.optionMaybe (Parsec.char '^')
             pure [begin, '-', end]
           bracketClass :: Parsec.Parsec String ParseState String
           bracketClass = do
-            opening <- Parsec.char '['
+            _ <- Parsec.char '['
             maybeAnchor <- Parsec.optionMaybe (Parsec.char '^')
             str <- Parsec.many (Parsec.try range <|>
                                 Parsec.try patternEscaped <|>
                                 Parsec.many1 (Parsec.noneOf "-^$()[]\\\""))
-            closing <- Parsec.char ']'
+            _ <- Parsec.char ']'
             pure $ "[" ++ unwrapMaybe maybeAnchor ++ concat str ++ "]"
 
 pat :: Parsec.Parsec String ParseState XObj
@@ -504,7 +504,7 @@ balance text =
                        case parens of
                          [] -> push c
                          '"':xs -> case c of
-                                     '\\' -> do c <- Parsec.anyChar -- consume next
+                                     '\\' -> do _ <- Parsec.anyChar -- consume next
                                                 pure ()
                                      '"' -> Parsec.putState xs -- close string
                                      _ -> pure () -- inside string

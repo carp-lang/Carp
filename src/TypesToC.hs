@@ -10,14 +10,14 @@ tyToC :: Ty -> String
 tyToC = tyToCManglePtr False
 
 tyToCLambdaFix :: Ty -> String
-tyToCLambdaFix t@FuncTy{} = "Lambda"
+tyToCLambdaFix FuncTy{} = "Lambda"
 tyToCLambdaFix (RefTy FuncTy{} _) = "Lambda*"
 tyToCLambdaFix (RefTy (RefTy FuncTy{} _) _) = "Lambda**"
 tyToCLambdaFix (RefTy (RefTy (RefTy FuncTy{} _) _) _) = "Lambda***" -- | TODO: More cases needed?! What's a better way to do it..?
 tyToCLambdaFix t = tyToCManglePtr False t
 
 tyToCRawFunctionPtrFix :: Ty -> String
-tyToCRawFunctionPtrFix t@FuncTy{} = "void*"
+tyToCRawFunctionPtrFix FuncTy{} = "void*"
 tyToCRawFunctionPtrFix t = tyToCManglePtr False t
 
 tyToCManglePtr :: Bool -> Ty -> String

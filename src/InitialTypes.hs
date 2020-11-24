@@ -130,12 +130,12 @@ initialTypes typeEnv rootEnv root = evalState (visit rootEnv root) 0
             Nothing -> pure (Left (SymbolNotDefined symPath xobj env)) -- Gives the error message "Trying to refer to an undefined symbol ..."
 
     visitMultiSym :: Env -> XObj -> [SymPath] -> State Integer (Either TypeError XObj)
-    visitMultiSym _ xobj@(XObj (MultiSym name _) _ _) _ =
+    visitMultiSym _ xobj@(XObj (MultiSym _ _) _ _) _ =
       do freshTy <- genVarTy
          pure (Right xobj { ty = Just freshTy })
 
     visitInterfaceSym :: Env -> XObj -> State Integer (Either TypeError XObj)
-    visitInterfaceSym env xobj@(XObj (InterfaceSym name) _ _) =
+    visitInterfaceSym _ xobj@(XObj (InterfaceSym name) _ _) =
       do freshTy <- case lookupInEnv (SymPath [] name) (getTypeEnv typeEnv) of
                       Just (_, Binder _ (XObj (Lst [XObj (Interface interfaceSignature _) _ _, _]) _ _)) -> renameVarTys interfaceSignature
                       Just (_, Binder _ x) -> error ("A non-interface named '" ++ name ++ "' was found in the type environment: " ++ pretty x)
@@ -192,7 +192,7 @@ initialTypes typeEnv rootEnv root = evalState (visit rootEnv root) 0
                        okArgs <- sequence visitedArgs
                        pure (XObj (Lst [defn, nameSymbol, XObj (Arr okArgs) argsi argst, okBody]) i funcTy)
 
-        [defn@(XObj (Defn _) _ _), XObj (Sym _ _) _ _, XObj (Arr _) _ _] -> pure (Left (NoFormsInBody xobj))
+        [(XObj (Defn _) _ _), XObj (Sym _ _) _ _, XObj (Arr _) _ _] -> pure (Left (NoFormsInBody xobj))
         XObj defn@(Defn _) _ _ : _  -> pure (Left (InvalidObj defn xobj))
 
         -- Fn
@@ -240,7 +240,7 @@ initialTypes typeEnv rootEnv root = evalState (visit rootEnv root) 0
                                   Right (XObj (Lst [letExpr, XObj (Arr okBindings) bindi bindt, okBody]) i (Just wholeExprType))
                Left err -> pure (Left err)
           where getDuplicate _ [] = Nothing
-                getDuplicate names (o@(XObj (Sym (SymPath _ x) _) _ _):y:xs) =
+                getDuplicate names (o@(XObj (Sym (SymPath _ x) _) _ _):_:xs) =
                   if x `elem` names then Just o else getDuplicate (x:names) xs
 
         [XObj Let _ _, XObj (Arr _) _ _] ->
@@ -345,11 +345,11 @@ initialTypes typeEnv rootEnv root = evalState (visit rootEnv root) 0
                        pure (XObj (Lst [refExpr, okValue]) i (Just (RefTy valueTy lt)))
 
         -- Deref (error!)
-        [XObj Deref _ _, value] ->
+        [XObj Deref _ _, _] ->
           pure (Left (CantUseDerefOutsideFunctionApplication xobj))
 
         -- Function application with Deref
-        XObj (Lst [deref@(XObj Deref _ _), func]) xi xt : args ->
+        XObj (Lst [deref@(XObj Deref _ _), func]) xi _ : args ->
           -- TODO: Remove code duplication (taken from function application below)
           do t <- genVarTy
              derefTy <- genVarTy
@@ -432,9 +432,9 @@ initialTypes typeEnv rootEnv root = evalState (visit rootEnv root) 0
         createBindersForCaseVariable xobj@(XObj (Sym (SymPath _ name) _) _ _) = createBinderInternal xobj name
         createBindersForCaseVariable xobj@(XObj (MultiSym name _) _ _) = createBinderInternal xobj name
         createBindersForCaseVariable xobj@(XObj (InterfaceSym name) _ _) = createBinderInternal xobj name
-        createBindersForCaseVariable xobj@(XObj (Lst lst) _ _) = do binders <- mapM createBindersForCaseVariable lst
-                                                                    pure (concat binders)
-        createBindersForCaseVariable xobj@(XObj Ref _ _) = pure []
+        createBindersForCaseVariable (XObj (Lst lst) _ _) = do binders <- mapM createBindersForCaseVariable lst
+                                                               pure (concat binders)
+        createBindersForCaseVariable (XObj Ref _ _) = pure []
         createBindersForCaseVariable x = error ("Can't create binder for non-symbol in 'case' variable match:" ++ show x) -- TODO: Should use proper error mechanism
 
         createBinderInternal :: XObj -> String -> State Integer [(String, Binder)]
