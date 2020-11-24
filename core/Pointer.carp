@@ -20,20 +20,19 @@ The user will have to ensure themselves that this is a safe operation.")
   (doc from-long "converts a long integer to a pointer.")
   (deftemplate from-long (Fn [Long] (Ptr p)) "$p* $NAME(Long p)" " $DECL { return ($p*)p; }")
 
-  (doc set-unsafe
-    "Sets the value of a pointer."
+  (doc unsafe-set
+    "Sets the value of a pointer to a value of any type."
     "The user will have to ensure this operation is safe.")
-  (deftemplate set-unsafe (Fn [(Ptr p) (Ref a b)] (Ptr p)) "$p* $NAME($p* p, void* a)" "$DECL { *p = *($p*)a; return p;}")
+  (deftemplate unsafe-set (Fn [(Ptr p) (Ref a b)] (Ptr p)) "$p* $NAME($p* p, void* a)" "$DECL { *p = *($p*)a; return p;}")
 
-  (doc cast
-     "Cast a pointer to type p to a pointer to type a."
-     "The value of the `a` argument is ignored.")
-  (deftemplate cast (Fn [(Ptr p) a] (Ptr a)) "$a* $NAME($p* p, $a a)" "$DECL { *($a*)p = CARP_MALLOC(sizeof($a)); return ($a*)p;}")
-
-  (doc leak
-     "Allocate a new pointer that's a copy of the value of `Ref`"
-     "The Carp borrow checker won't delete this pointer. You will need to delete it manually by calling `Pointer.free`.")
-  (deftemplate leak (Fn [a] (Ptr a)) "$a* $NAME($a r)" "$DECL { void *leak = CARP_MALLOC(sizeof($a)); leak = r; return ($a*)leak;}")
+  (doc unsafe-alloc
+     "Allocate a new pointer to the value `a`."
+     ("This pointer won't be managed by Carp's borrow checker and will cause leaks " false)
+     "unless explicitly freed."
+     ""
+     ("See `Unsafe.leak` if you want to prevent Carp's automatic destructuring " false)
+     "on a value without performing an allocation.")
+  (deftemplate unsafe-alloc (Fn [a] (Ptr a)) "$a* $NAME($a r)" "$DECL { void *leak = CARP_MALLOC(sizeof($a)); leak = r; return ($a*)leak;}")
 
   (doc free
      "Free a pointer."
