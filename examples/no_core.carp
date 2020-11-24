@@ -3,6 +3,7 @@
 (system-include "limits.h")
 (system-include "carp_stdbool.h")
 
+(load "Macros.carp")
 (load "Interfaces.carp")
 (load "Bool.carp")
 (load "Pointer.carp")
