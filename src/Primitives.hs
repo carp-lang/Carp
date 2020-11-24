@@ -1,7 +1,9 @@
 module Primitives where
 
+import Control.Applicative
 import Control.Monad (unless, when, foldM)
 import Control.Monad.IO.Class (liftIO, MonadIO)
+import Data.List (union)
 import Data.Maybe (fromMaybe)
 import Data.Either (rights)
 import Web.Browser (openBrowser)
@@ -117,11 +119,12 @@ primitiveColumn x@(XObj _ i t) ctx args =
         go  = maybe err (\info -> (ctx, Right (XObj (Num IntTy (fromIntegral (infoColumn info))) i t)))
 
 primitiveImplements :: Primitive
-primitiveImplements xobj ctx [x@(XObj (Sym interface@(SymPath _ _) _) _ _), i@(XObj (Sym impl@(SymPath _ _) _) _ _)] =
+primitiveImplements xobj ctx [x@(XObj (Sym interface@(SymPath _ _) _) _ _), inner@(XObj (Sym impl@(SymPath prefixes name) _) inf _)] =
   let global = contextGlobalEnv ctx
       def = lookupInEnv impl global
   in  maybe notFound found def
-  where checkInterface = let warn = do putStrWithColor Blue ("[WARNING] The interface " ++ show interface ++ " implemented by " ++ show impl ++
+  where fullPath@(SymPath modules name') = consPath (union (contextPath ctx) prefixes) (SymPath [] name)
+        checkInterface = let warn = do putStrWithColor Blue ("[WARNING] The interface " ++ show interface ++ " implemented by " ++ show impl ++
                                                               " at " ++ prettyInfoFromXObj xobj ++ " is not defined." ++
                                                               " Did you define it using `definterface`?")
                                        putStrLnWithColor White "" -- To restore color for sure.
@@ -130,8 +133,13 @@ primitiveImplements xobj ctx [x@(XObj (Sym interface@(SymPath _ _) _) _ _), i@(X
         -- If the implementation binding doesn't exist yet, set the implements
         -- meta. This enables specifying a function as an implementation before
         -- defining it.
-        notFound = checkInterface >>
-                   primitiveMetaSet xobj ctx [i, XObj (Str "implements") (Just dummyInfo) (Just StringTy), XObj (Lst [x]) (Just dummyInfo) (Just DynamicTy)]
+        --
+        -- This is only allowed for qualified bindings. Allowing forward declarations on global bindings would cause a loop in
+        -- primitiveMetaSet's lookup which is generic.
+        notFound = if null modules
+                   then pure $ evalError ctx "Can't set the `implements` meta on a global definition before it is declared." inf
+                   else (checkInterface >>
+                         primitiveMetaSet xobj ctx [inner, XObj (Str "implements") (Just dummyInfo) (Just StringTy), XObj (Lst [x]) (Just dummyInfo) (Just DynamicTy)])
         found (_, Binder meta defobj) = checkInterface >>
                                         either registerError updateImpls (registerInInterface ctx defobj interface)
               where registerError e = do case contextExecMode ctx of
@@ -139,7 +147,7 @@ primitiveImplements xobj ctx [x@(XObj (Sym interface@(SymPath _ _) _) _ _), i@(X
                                                     in  putStrLn (machineReadableInfoFromXObj fppl defobj ++ " " ++ e)
                                            _ -> putStrLnWithColor Red e
                                          pure $ evalError ctx e (info x)
-                    updateImpls ctx' = do currentImplementations <- primitiveMeta xobj ctx [i, XObj (Str "implements") (Just dummyInfo) (Just StringTy)]
+                    updateImpls ctx' = do currentImplementations <- primitiveMeta xobj ctx [inner, XObj (Str "implements") (Just dummyInfo) (Just StringTy)]
                                           pure $ either metaError existingImpls (snd currentImplementations)
                       where metaError e = (ctx, Left e)
                             existingImpls is = case is of
@@ -366,36 +374,39 @@ primitiveMembers _ ctx [target] = do
 
 -- | Set meta data for a Binder
 primitiveMetaSet :: Primitive
-primitiveMetaSet _ ctx [target@(XObj (Sym path@(SymPath _ name) _) _ _), XObj (Str key) _ _, value] =
-  pure $ maybe dynamicScoped setTheMeta (lookupInEnv fullPath env)
-  where env = contextGlobalEnv ctx
-        pathStrings = contextPath ctx
-        fppl = projectFilePathPrintLength (contextProj ctx)
-        fullPath = consPath pathStrings path
-        setTheMeta x = setMetaOn ctx (Just (fst x)) (snd x)
-        dynamicScoped = maybe createBinder setTheMeta (lookupInEnv (consPath ["Dynamic"] fullPath) env)
-        createBinder = case path of
-                       -- | If the path is unqualified, create a binder and set the meta on that one.
-                       -- This enables docstrings and implementation declarations before function exists.
-                       (SymPath [] name) ->
-                         setMetaOn ctx Nothing (Binder emptyMeta (XObj (Lst [XObj DocStub Nothing Nothing,
-                                                                             XObj (Sym (SymPath pathStrings name) Symbol) Nothing Nothing])
-                                                                  (Just dummyInfo)
-                                                                  (Just (VarTy "a"))))
-                       (SymPath _ _) ->
-                         (evalError ctx ("`meta-set!` failed, I can't find the symbol `" ++ show path ++ "`") (info target))
-        setMetaOn :: Context -> Maybe Env -> Binder -> (Context, Either EvalError XObj)
-        setMetaOn ctx foundEnv binder@(Binder metaData xobj) =
-          let globalEnv = contextGlobalEnv ctx
-              newMetaData = Meta.set key value metaData
-              xobjPath = getPath xobj
-              prefixPath = fromMaybe [] (fmap pathToEnv foundEnv)
-              fullPath = case xobjPath of
-                           SymPath [] _ -> consPath prefixPath xobjPath
-                           SymPath _ _ -> xobjPath
-              newBinder = binder { binderMeta = newMetaData }
-              newEnv = envInsertAt globalEnv fullPath newBinder
-          in  (ctx { contextGlobalEnv = newEnv }, dynamicNil)
+primitiveMetaSet _ ctx [target@(XObj (Sym path@(SymPath prefixes name) _) _ _), XObj (Str key) _ _, value] =
+  pure $ maybe create (\newCtx -> (newCtx, dynamicNil)) lookupAndUpdate
+
+  where fullPath@(SymPath modules name') = consPath (union (contextPath ctx) prefixes) (SymPath [] name)
+        dynamicPath = (consPath ["Dynamic"] fullPath)
+        global = contextGlobalEnv ctx
+        types = (getTypeEnv (contextTypeEnv ctx))
+
+        lookupAndUpdate :: Maybe Context
+        lookupAndUpdate = ((lookupInEnv dynamicPath global)
+                            >>= \(e, binder) -> (pure (Meta.updateBinderMeta binder key value))
+                            >>= \b -> (pure (envInsertAt global dynamicPath b))
+                            >>= \env -> pure (ctx {contextGlobalEnv = env}))
+                          <|> ((lookupInEnv fullPath global)
+                               >>= \(e, binder) -> (pure (Meta.updateBinderMeta binder key value))
+                               >>= \b -> (pure (envInsertAt global fullPath b))
+                               >>= \env -> pure (ctx {contextGlobalEnv = env}))
+                          -- This is a global name but it doesn't exist in the global env
+                          -- Before creating a new binder, check that it doesn't denote an existing type or interface.
+                          <|> (if (null modules)
+                              then ((lookupInEnv fullPath types)
+                                   >>= \(_, binder) -> (pure (Meta.updateBinderMeta binder key value))
+                                   >>= \b -> (pure (envInsertAt types fullPath b))
+                                   >>= \env -> pure (ctx {contextTypeEnv = (TypeEnv env)}))
+                              else Nothing)
+
+        create :: (Context, Either EvalError XObj)
+        create =
+          if null prefixes
+          then let updated = Meta.updateBinderMeta (Meta.stub fullPath) key value
+                   newEnv  = envInsertAt global fullPath updated
+               in  (ctx {contextGlobalEnv = newEnv}, dynamicNil)
+          else evalError ctx ("`meta-set!` failed, I can't find the symbol `" ++ pretty target ++ "`") (info target)
 primitiveMetaSet _ ctx [XObj (Sym _ _) _ _, key, _] =
   argumentErr ctx "meta-set!" "a string" "second" key
 primitiveMetaSet _ ctx [target, _, _] =
@@ -573,19 +584,25 @@ primitiveUse xobj ctx [x] =
 
 -- | Get meta data for a Binder
 primitiveMeta :: Primitive
-primitiveMeta (XObj _ i _) ctx [XObj (Sym path _) _ _, XObj (Str key) _ _] = do
-  let fppl = projectFilePathPrintLength (contextProj ctx)
-      globalEnv = contextGlobalEnv ctx
-  case path of
-    (SymPath [] _) -> pure $ lookup (consPath (contextPath ctx) path) globalEnv
-    (SymPath quals _) -> pure $ lookup path globalEnv
-    where lookup p e =
-            maybe err
-                  (\binder -> (ctx, maybe dynamicNil Right (Meta.getBinderMetaValue key binder)))
-                  (fmap snd $ lookupInEnv p e)
-            where err = (evalError ctx
-                    ("`meta` failed, I can’t find `" ++ show path ++ "`")
-                    i)
+primitiveMeta (XObj _ i _) ctx [XObj (Sym path@(SymPath prefixes name) _) _ _, XObj (Str key) _ _] = do
+  pure $ maybe notFound foundBinder lookup
+
+  where global = contextGlobalEnv ctx
+        types  = getTypeEnv (contextTypeEnv ctx)
+        fullPath = consPath (union (contextPath ctx) prefixes) (SymPath [] name)
+
+        lookup :: Maybe Binder
+        lookup = ((lookupInEnv fullPath global)
+                 >>= pure . snd)
+                 <|>
+                 ((lookupInEnv fullPath types)
+                 >>= pure . snd)
+
+        foundBinder :: Binder -> (Context, Either EvalError XObj)
+        foundBinder binder = (ctx, maybe dynamicNil Right (Meta.getBinderMetaValue key binder))
+
+        notFound :: (Context, Either EvalError XObj)
+        notFound = evalError ctx  ("`meta` failed, I can’t find `" ++ show fullPath ++ "`") i
 primitiveMeta _ ctx [XObj (Sym path _) _ _, key] =
   argumentErr ctx "meta" "a string" "second" key
 primitiveMeta _ ctx [path, _] =

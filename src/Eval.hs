@@ -594,10 +594,10 @@ primitiveDefmodule xobj ctx@(Context env i typeEnv pathStrings proj lastInput ex
   (newCtx, result) <-
     case lookupInEnv (SymPath pathStrings moduleName) env of
       Just (_, Binder _ (XObj (Mod innerEnv) _ _)) -> do
-        let ctx' = Context env (Just innerEnv) typeEnv (pathStrings ++ [moduleName]) proj lastInput execMode history -- TODO: use { = } syntax instead
+        let ctx' = Context env (Just innerEnv{envParent=i}) typeEnv (pathStrings ++ [moduleName]) proj lastInput execMode history -- TODO: use { = } syntax instead
         (ctxAfterModuleAdditions, res) <- liftIO $ foldM folder (ctx', dynamicNil) innerExpressions
         pure (popModulePath ctxAfterModuleAdditions{contextInternalEnv=i}, res) -- TODO: propagate errors...
-      Just (_, Binder existingMeta (XObj (Lst [XObj DocStub _ _, _]) _ _)) ->
+      Just (_, Binder existingMeta (XObj (Lst [XObj MetaStub _ _, _]) _ _)) ->
         defineIt existingMeta
       Just (_, Binder _ x) ->
         pure (evalError ctx ("Can't redefine '" ++ moduleName ++ "' as module") (info xobj))
