@@ -13,8 +13,6 @@ module Info (Info(..),
 import qualified Data.Set as Set
 import Path (takeFileName)
 import SymPath
-import Types
-import Util
 
 -- | Information about where the Obj originated from.
 data Info = Info { infoLine :: Int
@@ -30,10 +28,10 @@ data Deleter = ProperDeleter { deleterPath :: SymPath
                              , deleterVariable :: String
                              }
              -- used for external types with no delete function
-             | FakeDeleter { deleterVariable :: String 
+             | FakeDeleter { deleterVariable :: String
                            }
              -- used by primitive types (i.e. Int) to signify that the variable is alive
-             | PrimDeleter { aliveVariable :: String 
+             | PrimDeleter { aliveVariable :: String
                            }
              | RefDeleter { refVariable :: String
                           }

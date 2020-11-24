@@ -62,11 +62,11 @@ parseHeaderFile path src prefix kebab =
                       Nothing ->
                         let tyXObj =
                               XObj (Sym (SymPath [] "a") Symbol) Nothing Nothing
-                        in return (createRegisterForm name tyXObj prefix False)
+                        in pure (createRegisterForm name tyXObj prefix False)
                       Just args ->
                         let argsTy = genTypes (length args)
                             tyXObj = toFnTypeXObj argsTy ("a", 0)
-                        in return (createRegisterForm name tyXObj prefix False)
+                        in pure (createRegisterForm name tyXObj prefix False)
             where argList = do
                     _ <- Parsec.char '('
                     args <- Parsec.sepBy
@@ -74,7 +74,7 @@ parseHeaderFile path src prefix kebab =
                                Parsec.many1 identifierChar)
                               (Parsec.char ',')
                     _ <- Parsec.char ')'
-                    return args
+                    pure args
                   genTypes 0 = []
                   genTypes n = (("a" ++ show n), 0) : genTypes (n - 1)
 
@@ -86,7 +86,7 @@ parseHeaderFile path src prefix kebab =
                             do c <- Parsec.optionMaybe (Parsec.noneOf "\n")
                                case c of
                                  Just _  -> defineBody
-                                 Nothing -> return ()
+                                 Nothing -> pure ()
                           Just _ -> defineBody
 
         prefixedFunctionPrototype :: Parsec.Parsec String () [XObj]
@@ -108,17 +108,17 @@ parseHeaderFile path src prefix kebab =
                                Parsec.char ';'
                                Parsec.many (Parsec.noneOf "\n")
                                let tyXObj = toFnTypeXObj argTypeStrings (returnTypeString, length stars1 + length stars2)
-                               return (createRegisterForm name tyXObj prefix kebab)
+                               pure (createRegisterForm name tyXObj prefix kebab)
 
         voidArg :: Parsec.Parsec String () [(String, Int)]
         voidArg = do _ <- Parsec.string "(void)"
-                     return []
+                     pure []
 
         argList :: Parsec.Parsec String () [(String, Int)]
         argList = do Parsec.char '('
                      args <- Parsec.sepBy arg (Parsec.char ',')
                      Parsec.char ')'
-                     return args
+                     pure args
 
         arg :: Parsec.Parsec String () (String, Int)
         arg = do Parsec.many spaceOrTab
@@ -130,7 +130,7 @@ parseHeaderFile path src prefix kebab =
                  stars2 <- stars
                  _ <- Parsec.many1 identifierChar
                  Parsec.many spaceOrTab
-                 return (argTypeAsString, length stars1 + length stars2)
+                 pure (argTypeAsString, length stars1 + length stars2)
 
         stars :: Parsec.Parsec String () String
         stars = Parsec.many (Parsec.char '*')
@@ -140,8 +140,8 @@ parseHeaderFile path src prefix kebab =
 
         discarded :: Parsec.Parsec String () [XObj]
         discarded = do discardedLine <- Parsec.many (Parsec.noneOf "\n")
-                       return []
-                       --return [(XObj (Str ("DISCARDED: " ++ discardedLine)) Nothing Nothing)]
+                       pure []
+                       --pure [(XObj (Str ("DISCARDED: " ++ discardedLine)) Nothing Nothing)]
 
 createRegisterForm :: String -> XObj -> String -> Bool -> [XObj]
 createRegisterForm name tyXObj prefix kebab =

@@ -2,12 +2,9 @@ module AssignTypes where
 
 import Types
 import Obj
-import Util
 import TypeError
 import Data.List (nub)
 import qualified Data.Map as Map
-
-import Debug.Trace
 
 {-# ANN assignTypes "HLint: ignore Eta reduce" #-}
 -- | Walk the whole expression tree and replace all occurences of VarTy with their corresponding actual type.
@@ -49,7 +46,7 @@ assignTypes mappings root = visit root
         in  if isArrayTypeOK finalType
             then Right (xobj { ty = Just finalType })
             else Left  (ArraysCannotContainRefs xobj)
-      Nothing -> return xobj
+      Nothing -> pure xobj
 
 
 isArrayTypeOK :: Ty -> Bool

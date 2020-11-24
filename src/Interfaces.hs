@@ -15,8 +15,6 @@ import Util
 import Constraints
 import Data.List (foldl')
 
-import Debug.Trace
-
 data InterfaceError = KindMismatch SymPath Ty Ty
                     | TypeMismatch SymPath Ty Ty
                     | NonInterface SymPath
@@ -33,7 +31,7 @@ instance Show InterfaceError where
 -- Checks whether a given form's type matches an interface, and if so, registers the form with the interface.
 registerInInterfaceIfNeeded :: Context -> SymPath -> SymPath -> Ty -> Either String Context
 registerInInterfaceIfNeeded ctx path@(SymPath _ _) interface@(SymPath [] name) definitionSignature =
-  maybe (return ctx) (typeCheck . snd) (lookupInEnv interface typeEnv)
+  maybe (pure ctx) (typeCheck . snd) (lookupInEnv interface typeEnv)
   where typeEnv = getTypeEnv (contextTypeEnv ctx)
         typeCheck binder = case binder of
                              Binder _ (XObj (Lst [inter@(XObj (Interface interfaceSignature paths) ii it), isym]) i t) ->
@@ -68,7 +66,7 @@ registerInInterface ctx xobj interface =
       -- And instantiated/auto-derived type functions! (e.g. Pair.a)
     XObj (Lst [XObj (Instantiate _) _ _, XObj (Sym path _) _ _]) _ (Just t) ->
       registerInInterfaceIfNeeded ctx path interface t
-    _ -> return ctx
+    _ -> pure ctx
 
 -- | For forms that were declared as implementations of interfaces that didn't exist,
 -- retroactively register those forms with the interface once its defined.

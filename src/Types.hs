@@ -85,6 +85,7 @@ data SumTyCase = SumTyCase { caseName :: String
                            , caseMembers :: [(String, Ty)]
                            } deriving (Show, Ord, Eq)
 
+fnOrLambda :: String
 fnOrLambda =
   case platform of
     Windows -> "Fn"
@@ -266,6 +267,7 @@ typesCopyFunctionType memberType = FuncTy [RefTy memberType (VarTy "q")] memberT
 typesDeleterFunctionType :: Ty -> Ty
 typesDeleterFunctionType memberType = FuncTy [memberType] UnitTy StaticLifetimeTy
 
+isFullyGenericType :: Ty -> Bool
 isFullyGenericType (VarTy _) = True
 isFullyGenericType _ = False
 

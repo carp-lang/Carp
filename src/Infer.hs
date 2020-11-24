@@ -7,18 +7,9 @@ module Infer (annotate
              ,depsOfPolymorphicFunction
              ) where
 
-import Control.Monad.State
-import Control.Monad (replicateM)
-import qualified Data.Map as Map
-import qualified Data.Set as Set
-import Data.List (foldl', sort)
-import Data.Maybe (mapMaybe)
-import Debug.Trace
-
 import Obj
 import Constraints
 import Types
-import Util
 import TypeError
 import InitialTypes
 import AssignTypes
@@ -35,7 +26,7 @@ annotate typeEnv globalEnv xobj rootSig =
      (annotated, dependencies) <- annotateUntilDone typeEnv globalEnv initiated rootSig [] 100
      (final, deleteDeps) <- manageMemory typeEnv globalEnv annotated
      finalWithNiceTypes <- beautifyTypeVariables final
-     return (finalWithNiceTypes, dependencies ++ deleteDeps)
+     pure (finalWithNiceTypes, dependencies ++ deleteDeps)
 
 -- | Call the 'annotateOne' function until nothing changes
 annotateUntilDone :: TypeEnv -> Env -> XObj -> Maybe (Ty, XObj) -> [XObj] -> Int -> Either TypeError (XObj, [XObj])
@@ -45,7 +36,7 @@ annotateUntilDone typeEnv globalEnv xobj rootSig deps limiter =
   else do (xobj', deps') <- annotateOne typeEnv globalEnv xobj rootSig True
           let newDeps = deps ++ deps'
           if xobj == xobj' -- Is it the same?
-            then return (xobj', newDeps)
+            then pure (xobj', newDeps)
             else annotateUntilDone typeEnv globalEnv xobj' rootSig newDeps (limiter - 1)
 
 -- | Performs ONE step of annotation. The 'annotate' function will call this function several times.

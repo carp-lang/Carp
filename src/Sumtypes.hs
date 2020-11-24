@@ -2,21 +2,18 @@ module Sumtypes where
 
 import qualified Data.Map as Map
 import Data.Maybe
-import Debug.Trace
 
 import Obj
 import Types
 import TypesToC
 import Util
 import Concretize
-import Polymorphism
 import Lookup
 import Template
 import ToTemplate
 import Deftype
 import StructUtils
 import TypeError
-import Validate
 import SumtypeCase
 import Info
 
@@ -42,7 +39,7 @@ moduleForSumtype innerEnv typeEnv env pathStrings typeName typeVariables rest i 
         okMemberDeps <- memberDeps typeEnv cases
         let moduleEnvWithBindings = addListOfBindings typeModuleEnv (okIniters ++ [okStr, okPrn, okDelete, okCopy, okTag])
             typeModuleXObj = XObj (Mod moduleEnvWithBindings) i (Just ModuleTy)
-        return (typeModuleName, typeModuleXObj, okMemberDeps ++ okCopyDeps ++ okStrDeps)
+        pure (typeModuleName, typeModuleXObj, okMemberDeps ++ okCopyDeps ++ okStrDeps)
 
 memberDeps :: TypeEnv -> [SumtypeCase] -> Either TypeError [XObj]
 memberDeps typeEnv cases = fmap concat (mapM (concretizeType typeEnv) (concatMap caseTys cases))

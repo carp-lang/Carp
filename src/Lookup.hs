@@ -1,16 +1,13 @@
 module Lookup where
 
-import Data.List (intercalate, foldl')
+import Data.List (foldl')
 import qualified Data.Map as Map
-import Data.Maybe (mapMaybe, fromMaybe, fromJust)
+import Data.Maybe (mapMaybe)
 import Text.EditDistance (defaultEditCosts, levenshteinDistance)
 
 import Types
 import Obj
-import Util
 import qualified Meta
-
-import Debug.Trace
 
 -- | The type of generic lookup functions.
 type LookupFunc a = a -> Env -> [Binder]
