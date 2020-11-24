@@ -18,4 +18,16 @@
   (sig zero (Fn [] Unit))
   (defn zero []
     ())
+
+  (implements = =)
+  (sig = (Fn [Unit Unit] Bool))
+  (defn = [unit-a unit-b]
+    true)
+)
+
+(defmodule UnitRef
+  (implements = =)
+  (sig = (Fn [&Unit &Unit] Bool))
+  (defn = [unit-a unit-b]
+    true)
 )
