@@ -23,7 +23,7 @@ The user will have to ensure themselves that this is a safe operation.")
   (doc unsafe-set
     "Sets the value of a pointer to a value of any type."
     "The user will have to ensure this operation is safe.")
-  (deftemplate unsafe-set (Fn [(Ptr p) (Ref a b)] (Ptr p)) "$p* $NAME($p* p, void* a)" "$DECL { *p = *($p*)a; return p;}")
+  (deftemplate unsafe-set (Fn [(Ptr p) a] (Ptr p)) "$p* $NAME($p* p, $a a)" "$DECL { *p = ($p)a; return p;}")
 
   (doc unsafe-alloc
      "Allocate a new pointer to the value `a`."
