@@ -1,0 +1,15 @@
+(doc *gensym-counter* "Is a helper counter for `gensym`.")
+(defdynamic *gensym-counter* 1000)
+
+(defndynamic gensym-local [x]
+  (Symbol.concat ['gensym-generated x]))
+
+(doc gensym-with "Generates symbols dynamically, based on a symbol name.")
+(defndynamic gensym-with [x]
+  (do
+    (set! *gensym-counter* (inc *gensym-counter*))
+    (Symbol.concat [x (Symbol.from *gensym-counter*)])))
+
+(doc gensym "Generates symbols dynamically as needed.")
+(defndynamic gensym []
+  (gensym-with 'gensym-generated))

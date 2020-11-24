@@ -1,0 +1,240 @@
+(defmodule Dynamic
+
+  (defndynamic cxr [x pair]
+    (if (= (length x) 0)
+      (list 'quote pair)
+      (list
+        (if (= 'a (cadr x))
+          'car
+          (if (= 'd (cadr x))
+            'cdr
+            (macro-error "`cxr` expects either `a` or `d` symbols, got " (cadr x))))
+        (if (= 1 (car x))
+          (cxr (cddr x) pair)
+          (cxr (cons (- (car x) 1) (cdr x)) pair)))))
+
+  (defndynamic nthcdr [n pair]
+    (cxr (list (+ n 1) 'd) pair))
+
+  (defndynamic nthcar [n pair]
+    (cxr (list 1 'a n 'd) pair))
+
+  (defndynamic collect-into-internal [xs acc f]
+    (if (= 0 (length xs))
+        acc
+        (collect-into-internal (cdr xs) (append acc (f (car xs))) f)))
+
+  (doc collect-into
+       "Transforms a dynamic data literal into another, preserving order")
+  (defndynamic collect-into [xs f]
+    (collect-into-internal xs (f) f))
+
+  (doc empty?
+       "Returns true if the provided data literal is empty, false otherwise.")
+  (defndynamic empty? [xs]
+    (= 0 (length xs)))
+
+  (doc reduce
+       "Reduces or 'folds' a data literal, such as a list or array, into a single"
+       "value through successive applications of `f`.")
+  (defndynamic reduce [f x xs]
+    (if (empty? xs)
+      x
+      (reduce f (f x (car xs)) (cdr xs))))
+
+  (hidden unreduce-internal)
+  (defndynamic unreduce-internal [f x lim acc counter]
+    ;; Currently only works with anonymous functions and named functions.
+    ;; does not work with commands.
+    (if (not (or (array? acc) (list? acc)))
+      (macro-error
+       "Unreduce requires a dynamic data structure to collect results, such as
+         (list) or (array).")
+      (if (= counter lim)
+        acc
+        (unreduce-internal f (f x) lim (append acc (cons (eval (f x)) (empty acc))) (+ counter 1)))))
+
+  (doc unreduce
+       "Applies `f` to a starting value `x`, then generates a sequence of values"
+       "by successively applying `f` to the result `lim-1` times."
+       "Collects results in the structure given by `acc`."
+       ""
+       "```"
+       "(unreduce (curry + 1) 0 10 (list))"
+       "=> (1 2 3 4 5 6 7 8 9 10)"
+       "```")
+  (defndynamic unreduce [f x lim acc]
+    (unreduce-internal f x lim acc 0))
+
+  (doc filter
+       "Returns a list containing only the elements of `xs` that satisify"
+       "predicate `p`."
+       ""
+       "```"
+       "(filter (fn [x] (= 'a x)) '(a b a b a b a b))"
+       "=> (a a a a)"
+       "```")
+  (defndynamic filter [p xs]
+    (let [filter-fn (fn [x y] (if (p y) (append x (list y)) x))]
+      (reduce filter-fn (list) xs)))
+
+  (doc reverse
+       "Reverses the order of elements in an array or list."
+       ""
+       "```"
+       "(reverse [1 2 3 4])"
+       "=> [4 3 2 1]"
+       "```")
+  (defndynamic reverse [xs]
+    (if (array? xs)
+      (reduce (flip append) (array) (map array xs))
+      (reduce (flip append) (list) (map list xs))))
+
+  (doc empty
+       "Returns the empty form of `xs`."
+       ""
+       "```"
+       "(empty '(1 2 3 4))"
+       "=> ()"
+       "(empty '[1 2 3 4])"
+       "=> []"
+       "```")
+  (defndynamic empty [xs]
+    (if (array? xs)
+      (array)
+      (list)))
+
+  (doc take
+       "Returns a list containing the first `n` elements of a list."
+       ""
+       "```"
+       "(take 3 '(1 2 3 4 5))"
+       "=> (1 2 3)"
+       "```")
+  (defndynamic take [n xs]
+    ;; A more straightforward impl is likely more efficient?
+    (let [indicies (unreduce (curry + 1) 0 n (list))
+          result (map cadr (zip list xs indicies))]
+      (if (array? xs)
+        (collect-into result array)
+        result)))
+
+  (doc apply
+       "Applies the function `f` to the provided argument list, passing each value"
+       "in the list as an argument to the function.")
+  (defndynamic apply [f argument-list]
+    ;; The let clause here is a tad mysterious at first glance. When passed a
+    ;; standalone function name (i.e. not an application (f x), carp evaluates
+    ;; it into the function's defining form, e.g. foo becomes (defn foo [x] x),
+    ;; commands such as + become (command +) etc.  ;; The binding here accounts
+    ;; for that case, allowing users to pass the function name to apply
+    ;; unquoted.
+    ;;
+    ;; This is necessary for parity across map-internal, zip, and apply.
+    ;; Since map calls its function directly, it takes it as is. Apply, on the
+    ;; other hand, would have to take the quoted form, since it builds a list
+    ;; that serves as the actual application.
+    ;;
+    ;; This is problematic for the user facing map function, since it makes
+    ;; calls to map or zip (which uses apply) as appropriate--unless we support
+    ;; the quoted function name argument in map-internal or the unquoted one in
+    ;; apply, we can't use zip and map-internal in map.
+    (if (not (list? f))
+      (f argument-list)
+      (let [function-name (list (cadr f))]
+        (if (array? argument-list)
+          (append function-name (collect-into argument-list list))
+          (append function-name argument-list)))))
+
+  (doc any?
+       "Checks whether any of the elements in `xs` conforms to the predicate"
+       "function `f`."
+       ""
+       "```"
+       "(any? (fn [x] (= 'a x)) '(a b c))"
+       "=> true"
+       "(any? (fn [x] (= 'a x)) '(e f g))"
+       "=> false"
+       "```")
+  (defndynamic any? [f xs]
+    (reduce (fn [acc x] (or acc (f x))) false xs))
+
+  (doc all?
+       "Checks whether all of the elements in `xs` conform to the predicate"
+       "function `f`."
+       ""
+       "```"
+       "(all? (fn [x] (< 1 x)) '(2 3 4))"
+       "=> true"
+       "(all? (fn [x] (< 1 x)) '(-1 0 1))"
+       "=> false"
+       "```")
+  (defndynamic all? [f xs]
+    (reduce (fn [acc x] (and acc (f x))) true xs))
+
+  (hidden zip-internal)
+  (defndynamic zip-internal [f forms acc]
+    (if (any? empty? forms)
+      acc
+      (zip-internal
+       f
+       (map-internal cdr forms (list))
+       (let [result (list (apply f (map-internal car forms (list))))]
+         (append acc result)))))
+
+  (doc zip
+       "Returns the *form* that results from applying  a function `f` to each of"
+       "the values supplied in `forms`."
+
+       "If the members of a single form are exhuasted, the result of the"
+       "applications thus far is returned, and any remaining members in the other"
+       "forms are ignored."
+       ""
+       "```"
+       "(zip + '(1 2 3) '(4 5 6))"
+       "=> ((+ 1 4) (+ 2 5) (+ 3 6))"
+       "```"
+       ""
+       "It's important to note that zip operates on forms, and that the form"
+       "returned by zip may not be evaluable by itself. For instance, to actually"
+       "transform the result in the example above into something Carp can"
+       "evaluate, we need to wrap each member of the list in a `do`:"
+       ""
+       "```"
+       "(append (list 'do) (zip + '(1 2 3) '(4 5 6)))"
+       "=> (do (+ 1 4) (+ 2 5) (+ 3 6))"
+       "(eval (append (list 'do) (zip + '(1 2 3) '(4 5 6))))"
+       "=> 9 ;; do returns the value of the last form in its body"
+       "```")
+  (defndynamic zip [f :rest forms]
+    (zip-internal f forms (list)))
+
+  (doc map
+       "Applies a function `f` to each element in the list or array `xs` and"
+       "returns a list dynamic data literal containing the result of the function"
+       "applications."
+       ""
+       "```"
+       "'(map symbol? '(a b c))"
+       "=> (true true true)"
+       "'(map (curry + 1) '(1 2 3))"
+       "=> (2 3 4)"
+       "```")
+  (defndynamic map [f xs]
+    (map-internal f xs (list)))
+
+  (doc flatten
+       "Flattens a list recursively."
+       ""
+       "```"
+       "(flatten '(1 2 (3 (4))))"
+       "=> '(1 2 3 4)"
+       "```")
+  (defndynamic flatten [l]
+    (reduce (fn [acc x]
+              (if (list? x)
+                (append acc (flatten x))
+                (cons-last x acc)))
+            '()
+            l))
+  )

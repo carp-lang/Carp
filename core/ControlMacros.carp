@@ -28,6 +28,12 @@
 (defmacro ==> [:rest forms]
   (thread-last-internal forms))
 
+(defmacro -> [:rest forms]
+  (thread-first-internal forms))
+
+(defmacro --> [:rest forms]
+  (thread-last-internal forms))
+
 (defndynamic comp-internal [sym fns]
   (if (= (length fns) 0)
     sym
@@ -53,9 +59,9 @@
 (defmacro doto [thing :rest expressions]
   (let [s (gensym)]
     (list 'let [s thing]
-      (cons-last
-        s
-        (cons 'do (map (fn [expr] (cons (car expr) (cons s (cdr expr)))) expressions))))))
+          (cons-last
+           s
+           (cons 'do (map (fn [expr] (cons (car expr) (cons s (cdr expr)))) expressions))))))
 
 (doc doto-ref
      "Evaluates `thing`, then calls all of the functions on it and"
@@ -71,8 +77,147 @@
 (defmacro doto-ref [thing :rest expressions]
   (let [s (gensym)]
     (list 'let [s thing]
-      (cons-last
-        s
-        (cons 'do
-          (map (fn [expr] (cons (car expr) (cons (list 'ref s) (cdr expr))))
-          expressions))))))
+          (cons-last
+           s
+           (cons 'do
+                 (map (fn [expr] (cons (car expr) (cons (list 'ref s) (cdr expr))))
+                      expressions))))))
+
+(doc until "Executes `body` until the condition `cnd` is true.")
+(defmacro until [cnd body]
+  (list 'while (list 'not cnd)
+        body))
+
+(defmacro let-do [bindings :rest forms]
+  (list 'let bindings
+        (cons 'do forms)))
+
+(defmacro while-do [condition :rest forms]
+  (list 'while condition
+        (cons 'do forms)))
+
+(defmacro defn-do [name arguments :rest body]
+  (eval (list 'defn name arguments (cons 'do body))))
+
+(defmacro forever-do [:rest forms]
+  (list 'while true (cons 'do forms)))
+
+(defmacro when [condition form]
+  (list 'if condition form (list)))
+
+(defmacro unless [condition form]
+  (list 'if condition (list) form))
+
+(defndynamic case-internal [name xs]
+  (if (= (length xs) 0)
+    (list)
+    (if (= (length xs) 2)
+      (macro-error "case has even number of branches; add an else branch")
+      (if (= (length xs) 1)
+        (car xs)
+        (list 'if
+              (list '= name (car xs))
+              (cadr xs)
+              (case-internal name (cddr xs)))))))
+
+(defmacro case [name :rest forms]
+  (case-internal name forms))
+
+(defmodule Dynamic
+  (doc flip
+       "Flips the arguments of a function `f`."
+       "```"
+       "((flip Symbol.prefix) 'Bar 'Foo)"
+       "=> (Foo.Bar)"
+       "```")
+  (defndynamic flip [f]
+    (fn [x y]
+      (f y x)))
+
+  ;; Higher-order functions can't currently accept primitives
+  ;; For now, wrapping primitives in a function allows us to pass them
+  ;; to HOFs like map.
+
+  (doc compose
+       "Returns the composition of two functions `f` and `g` for functions of any"
+       "arity; concretely, returns a function accepting the correct number of"
+       "arguments for `g`, applies `g` to those arguments, then applies `f` to the"
+       "result."
+       ""
+       "If you only need to compose functions that take a single argument (unary arity)"
+       "see `comp`. Comp also generates the form that corresponds to the composition,"
+       "compose contrarily evaluates 'eagerly' and returns a computed symbol."
+       "```"
+       ";; a silly composition"
+       "((compose empty take) 3 [1 2 3 4 5])"
+       ";; => []"
+       ""
+       "(String.join (collect-into ((compose reverse map) Symbol.str '(p r a c)) array))"
+       ";; => 'carp'"
+       ""
+       ";; comp for comparison"
+       "((comp (curry + 1) (curry + 2)) 4)"
+       ";; => (+ 1 (+ 2 4))"
+       "```")
+  (defndynamic compose [f g]
+    ;; Recall that **unquoted** function names evaluate to their definitions in
+    ;; dynamic contexts, e.g. f = (dyanmic f [arg] body)
+    ;;
+    ;; Right now, this cannot handle anonymous functions because they cannot be passed to apply.
+    ;; and not anonymous functions.
+    ;; commands expand to (command <name>), fns expand to a non-list.
+    ;;
+    ;; TODO: Support passing anonymous functions.
+    (if (not (or (list? f) (list? g)))
+      (macro-error "compose can only compose named dynamic functions. To
+                     compose anonymous functions, such as curried functions,
+                     see comp.")
+      (let [f-name (cadr f)
+            g-name (cadr g)
+            arguments (caddr g)]
+        (list 'fn arguments
+              ;; Since we call an eval to apply g immediately, we wrap the args in an
+              ;; extra quote, otherwise, users would need to double quote any sequence of
+              ;; symbols such as '(p r a c)
+              (list  f-name (list 'eval (list 'apply g-name (list 'quote arguments))))))))
+
+  (doc curry
+       "Returns a curried function accepting a single argument, that applies `f` to `x`"
+       "and then to the following argument."
+       ""
+       "```"
+       "(map (curry Symbol.prefix 'Foo) '(bar baz))"
+       "=> (Foo.bar Foo.baz)"
+       "```")
+  (defndynamic curry [f x]
+    (fn [y]
+      (f x y)))
+
+  (doc curry*
+       "Curry functions of any arity."
+       ""
+       "```"
+       "(map (curry* Dynamic.zip + '(1 2 3)) '((4 5) (6)))"
+       "=> (((+ 1 4) (+ 2 5)) ((+ 1 6)))"
+       ""
+       "((curry* Dynamic.zip cons '(1 2 3)) '((4 5) (6)))"
+       "=> ((cons 1 (4 5)) (cons (2 (6))))"
+       ""
+       "(defndynamic add-em-up [x y z] (+ (+ x y) z))"
+       "(map (curry* add-em-up 1 2) '(1 2 3))"
+       "=> (4 5 6)"
+       "```")
+  (defndynamic curry* [f :rest args]
+    (let [f-name (cadr f)
+          all-args (caddr f)
+          unfilled-args (- (length all-args) (length args))
+          remaining (take unfilled-args all-args)
+          ;; Quote the arguments to retain expected behavior and avoid the need
+          ;; for double quotes in curried higher-orders, e.g. zip.
+          quote-args (map quoted args)]
+      (list 'fn remaining
+            ;; eval to execute the curried function.
+            ;; otherwise, this resolves to the form that will call the function, e.g. (add-three-vals 2 3 1)
+            (list 'eval (list 'apply f-name (list 'quote (append quote-args (collect-into
+                                                                             remaining list))))))))
+  )
