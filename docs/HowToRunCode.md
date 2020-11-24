@@ -4,9 +4,11 @@ This document is aimed at people just starting out with Carp, in particular if y
 
 ## Prerequisites
 
-Make sure that you have [installed the Carp compiler and its dependencies](Install.md) and that you can start it without any error messages. Here's how it should look:
+Make sure that you have [installed the Carp compiler and its dependencies](Install.md) and that you can start it without any error messages.
 
-```bash
+Here's how it should look:
+
+```text
 $ carp
 Welcome to Carp X.Y.Z
 This is free software with ABSOLUTELY NO WARRANTY.
@@ -24,7 +26,7 @@ You can load some code with:
 鲤 (load "some_file.carp")
 ```
 
-The path to the file should be relative to where you started `carp` (or in your [search-path](Libraries.md) path).
+The path to the file should be relative to where you started `carp` (or the file has to be in your [search-path](Libraries.md) path).
 It is also possible to paste a block of code (even multiple top-level expressions) into the REPL.
 
 To build and run, first do:
