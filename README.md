@@ -20,7 +20,7 @@ The key features of Carp are the following:
 * Ownership tracking enables a functional programming style while still using mutation of cache-friendly data structures under the hood
 * No hidden performance penalties – allocation and copying are explicit
 * Straightforward integration with existing C code
-* Lisp macros, compile time scripting, and REPL
+* Lisp macros, compile time scripting and a helpful REPL
 
 ## Learn more
 * [The Compiler Manual](docs/Manual.md) - how to install and use the compiler
@@ -60,7 +60,7 @@ For more examples, check out the [examples](examples) directory.
 ## Contributing
 Thanks to all the [awesome people](https://github.com/carp-lang/Carp/graphs/contributors) who have contributed to Carp over the years!
 
-We are always looking for more help -- check out the [contributing guide](docs/contributing.md) to get started.
+We are always looking for more help &ndash; check out the [contributing guide](docs/contributing.md) to get started.
 
 ## License
 
