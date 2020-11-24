@@ -27,16 +27,33 @@ The user will have to ensure themselves that this is a safe operation.")
 
   (doc unsafe-alloc
      "Allocate a new pointer to the value `a`."
-     ("This pointer won't be managed by Carp's borrow checker and will cause leaks " false)
-     "unless explicitly freed."
+     ("This pointer won't be managed by Carp's borrow checker and will cause " false)
+     "memory leaks unless explicitly freed using `Pointer.free`."
      ""
-     ("See `Unsafe.leak` if you want to prevent Carp's automatic destructuring " false)
-     "on a value without performing an allocation.")
+     ("See `Unsafe.leak` if you want to prevent Carp's automatic memory management " false)
+     "from deallocating a value without performing an allocation."
+     ""
+     "```"
+     "(let-do [x (Pointer.unsafe-alloc @\"c\")]"
+     "  (Pointer.set x @\"carp\")"
+     "  (println* (Pointer.to-value x))"
+     "  (Pointer.free x))"
+     "```")
   (deftemplate unsafe-alloc (Fn [a] (Ptr a)) "$a* $NAME($a r)" "$DECL { void *leak = CARP_MALLOC(sizeof($a)); *($a*)leak= r; return ($a*)leak;}")
 
   (doc free
-     "Free a pointer."
-     "Users need to manually verify that this operation is safe.")
+     "Free a pointer, deallocating the memory associated with it."
+     ("Carp's borrow checker handles deallocation automatically for managed types. " false)
+     ("The Ptr type is unmanaged, so pointers allocated with functions " false)
+     "such as `Pointer.unsafe-alloc` need to be deallocated manually using this function."
+     "Users need to manually verify that this operation is safe."
+     ""
+     "```"
+     "(let-do [x (Pointer.unsafe-alloc @\"c\")]"
+     "  (Pointer.set x @\"carp\")"
+     "  (println* (Pointer.to-value x))"
+     "  (Pointer.free x))"
+     "```")
   (deftemplate free (Fn [(Ptr p)] Unit) "void $NAME($p* p)" "$DECL {CARP_FREE(p);}")
 
   (doc set "Sets the value of a pointer.")
