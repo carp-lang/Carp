@@ -119,7 +119,7 @@ primitiveColumn x@(XObj _ i t) ctx args =
         go  = maybe err (\info -> (ctx, Right (XObj (Num IntTy (fromIntegral (infoColumn info))) i t)))
 
 primitiveImplements :: Primitive
-primitiveImplements xobj ctx [x@(XObj (Sym interface@(SymPath _ _) _) _ _), i@(XObj (Sym impl@(SymPath prefixes name) _) inf _)] =
+primitiveImplements xobj ctx [x@(XObj (Sym interface@(SymPath _ _) _) _ _), inner@(XObj (Sym impl@(SymPath prefixes name) _) inf _)] =
   let global = contextGlobalEnv ctx
       def = lookupInEnv impl global
   in  maybe notFound found def
@@ -139,7 +139,7 @@ primitiveImplements xobj ctx [x@(XObj (Sym interface@(SymPath _ _) _) _ _), i@(X
         notFound = if null modules
                    then pure $ evalError ctx "Can't set the `implements` meta on a global definition before it is declared." inf
                    else (checkInterface >>
-                         primitiveMetaSet xobj ctx [i, XObj (Str "implements") (Just dummyInfo) (Just StringTy), XObj (Lst [x]) (Just dummyInfo) (Just DynamicTy)])
+                         primitiveMetaSet xobj ctx [inner, XObj (Str "implements") (Just dummyInfo) (Just StringTy), XObj (Lst [x]) (Just dummyInfo) (Just DynamicTy)])
         found (_, Binder meta defobj) = checkInterface >>
                                         either registerError updateImpls (registerInInterface ctx defobj interface)
               where registerError e = do case contextExecMode ctx of
@@ -147,7 +147,7 @@ primitiveImplements xobj ctx [x@(XObj (Sym interface@(SymPath _ _) _) _ _), i@(X
                                                     in  putStrLn (machineReadableInfoFromXObj fppl defobj ++ " " ++ e)
                                            _ -> putStrLnWithColor Red e
                                          pure $ evalError ctx e (info x)
-                    updateImpls ctx' = do currentImplementations <- primitiveMeta xobj ctx [i, XObj (Str "implements") (Just dummyInfo) (Just StringTy)]
+                    updateImpls ctx' = do currentImplementations <- primitiveMeta xobj ctx [inner, XObj (Str "implements") (Just dummyInfo) (Just StringTy)]
                                           pure $ either metaError existingImpls (snd currentImplementations)
                       where metaError e = (ctx, Left e)
                             existingImpls is = case is of
