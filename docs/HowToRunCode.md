@@ -24,7 +24,10 @@ You can load some code with:
 鲤 (load "some_file.carp")
 ```
 
-To build and run it, do:
+The path to the file should be relative to where you started `carp` (or in your [search-path](Libraries.md) path).
+It is also possible to paste a block of code (even multiple top-level expressions) into the REPL.
+
+To build and run, first do:
 
 ```bash
 鲤 (build)
@@ -38,7 +41,7 @@ And then:
 
 ## Running code from the terminal
 
-If you don't want to work in the REPL and use a more classic "compile & run" setup, you need to do this:
+If you don't want to work in the REPL and use a more classic "compile & run" setup, do this:
 
 ```bash
 $ carp some_file.carp -x

@@ -45,9 +45,8 @@ The key features of Carp are the following:
     (SDLApp.run-with-callbacks &app SDLApp.quit-on-esc tick draw state)))
 ```
 
-To build this example, save it to a file called 'example.carp' and load it with ```(load "example.carp")```, then execute ```(build)``` to build an executable, and ```(run)``` to start. The external dependencies are SDL2 and pkg-config. On macOS Catalina libiconv is also required.
-
-For a slightly longer example, check out [Reptile](examples/reptile.carp) - a Snake clone in Carp.
+For instructions on how to run this code, see [this document](docs/HowToRunCode.md).
+For more examples, check out the [examples](examples) directory.
 
 ### Language Designer & Lead Developer
 [Erik Svedäng](http://www.eriksvedang.com) ([@e_svedang](https://twitter.com/e_svedang))
