@@ -110,7 +110,7 @@ setFullyQualifiedSymbols typeEnv globalEnv localEnv xobj@(XObj (Sym path _) i t)
     -- Unqualified:
     SymPath [] name ->
       case lookupInEnv path (getTypeEnv typeEnv) of
-        Just found ->
+        Just found@(_, Binder _ (XObj (Lst (XObj (Interface _ _) _ _ : _)) _ _)) ->
           -- Found an interface with the same path!
           -- Have to ensure it's not a local variable with the same name as the interface
           case lookupInEnv path localEnv of
@@ -121,7 +121,7 @@ setFullyQualifiedSymbols typeEnv globalEnv localEnv xobj@(XObj (Sym path _) i t)
             Nothing ->
               --trace ("Will turn '" ++ show path ++ "' " ++ prettyInfoFromXObj xobj ++ " into an interface symbol.")
                 createInterfaceSym name
-        Nothing ->
+        _ ->
           doesNotBelongToAnInterface False localEnv
     -- Qualified:
     _ ->
@@ -150,6 +150,14 @@ setFullyQualifiedSymbols typeEnv globalEnv localEnv xobj@(XObj (Sym path _) i t)
                     else doesNotBelongToAnInterface True globalEnv
           [(_, Binder _ foundOne@(XObj (Lst (XObj (External (Just overrideWithName)) _ _ : _)) _ _))] ->
             XObj (Sym (getPath foundOne) (LookupGlobalOverride overrideWithName)) i t
+          [(e, Binder _ (XObj (Mod modEnv) _ _))] ->
+            -- Lookup of a "naked" module name means that the Carp code is trying to
+            -- instantiate a (nested) module with an implicit .init, e.g. (Pair 1 2)
+            case envModuleName modEnv of
+              Nothing -> error ("Can't get name from unqualified module path: " ++ show path)
+              Just name ->
+                let pathHere = pathToEnv e
+                in XObj (Sym (SymPath (pathHere ++ [name]) "init") (LookupGlobal CarpLand AFunction)) i t
           [(e, Binder _ foundOne)] ->
             case envMode e of
               ExternalEnv -> XObj (Sym (getPath foundOne)

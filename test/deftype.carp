@@ -1,0 +1,26 @@
+(load "Test.carp")
+(use Test)
+
+(deftype A [])
+
+(defmodule Wrap
+  (deftype B []))
+
+(defmodule Wrap2
+  (deftype C []))
+(use Wrap2)
+
+(deftest test
+  (assert-equal test
+    "(A)"
+    (ref (str (ref (A))))
+    "implicit .init for global type works")
+  (assert-equal test
+    "(B)"
+    (ref (str (ref (Wrap.B))))
+    "implicit .init for qualified type defined inside module works")
+  (assert-equal test
+    "(C)"
+    (ref (str (ref (C))))
+    "implicit .init for 'use':d type defined inside module works")
+  )

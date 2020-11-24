@@ -215,7 +215,6 @@ dynamicModule = Env { envBindings = bindings
                     , addCommand (SymPath path "build") 0 (commandBuild False) "builds the current code to an executable." "(build)"
                     , addCommand (SymPath path "reload") 0 commandReload "reloads all currently loaded files that weren’t marked as only loading once (see `load` and `load-once`)." "(reload)"
                     , addCommand (SymPath path "env") 0 commandListBindings "lists all current bindings." "(env)"
-                    , addCommandConfigurable (SymPath path "help") Nothing commandHelp "prints help." "(help)"
                     , addCommand (SymPath path "project") 0 commandProject "prints the current project state." "(project)"
                     , addCommand (SymPath path "load") 1 commandLoad "loads a file into the current environment." "(load \"myfile.carp\")"
                     , addCommand (SymPath path "load-once") 1 commandLoadOnce "loads a file and prevents it from being reloaded (see `reload`)." "(load-once \"myfile.carp\")"
@@ -229,7 +228,7 @@ dynamicModule = Env { envBindings = bindings
                     , addCommand (SymPath path "write-file") 2 commandWriteFile "writes a string to a file." "(write-file \"myfile\" \"hello there!\")"
                     , addCommand (SymPath path "host-bit-width") 0 commandHostBitWidth "gets the bit width of the host platform." "(host-bit-width) ; => your host machine’s bit width, e.g. 32 or 64"
                     , addCommandConfigurable (SymPath path "s-expr") Nothing commandSexpression "returns the s-expression associated with a binding. When the binding is a type, the deftype form is returned instead of the type's module by default. Pass an optional bool argument to explicitly request the module for a type instead of its definition form. If the bool is true, the module for the type will be returned. Returns an error when no definition is found for the binding." "(s-expr foo), (s-expr foo true)"
-                    , makePrim "quote" 1 "quotes any value." "(quote x) ; where x is an actual symbol" (\_ ctx [x] -> return (ctx, Right x))
+                    , makePrim "quote" 1 "quotes any value." "(quote x) ; where x is an actual symbol" (\_ ctx [x] -> pure (ctx, Right x))
                     , makeVarPrim "file" "returns the file a symbol was defined in." "(file mysymbol)" primitiveFile
                     , makeVarPrim "line" "returns the line a symbol was defined on." "(line mysymbol)" primitiveLine
                     , makeVarPrim "column" "returns the column a symbol was defined on." "(column mysymbol)" primitiveColumn
@@ -252,6 +251,7 @@ dynamicModule = Env { envBindings = bindings
                     , makePrim "implements" 2 "designates a function as an implementation of an interface." "(implements zero Maybe.zero)" primitiveImplements
                     , makePrim "type" 1 "prints the type of a symbol." "(type mysymbol)" primitiveType
                     , makePrim "kind" 1 "prints the kind of a symbol." "(kind mysymbol)" primitiveKind
+                    , makeVarPrim "help" "prints help." "(help)" primitiveHelp
                     ]
                     ++ [("String", Binder emptyMeta (XObj (Mod dynamicStringModule) Nothing Nothing))
                        ,("Symbol", Binder emptyMeta (XObj (Mod dynamicSymModule) Nothing Nothing))

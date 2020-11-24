@@ -48,11 +48,51 @@ isLookupLocal _ = False
 
 data MatchMode = MatchValue | MatchRef deriving (Eq, Show)
 
+data Number = Floating Double | Integral Int deriving (Eq, Ord)
+
+instance Num Number where
+    (Floating a) + (Floating b) = Floating (a + b)
+    (Integral a) + (Integral b) = Integral (a + b)
+    _ + _ = error "+"
+    (Floating a) * (Floating b) = Floating (a * b)
+    (Integral a) * (Integral b) = Integral (a * b)
+    _ * _ = error "*"
+    negate (Floating a) = Floating (negate a)
+    negate (Integral a) = Integral (negate a)
+    abs (Floating a) = Floating (abs a)
+    abs (Integral a) = Integral (abs a)
+    signum (Floating a) = Floating (signum a)
+    signum (Integral a) = Integral (signum a)
+    fromInteger a = Integral (fromInteger a)
+
+
+instance Real Number where
+  toRational (Integral a) = toRational a
+  toRational (Floating a) = toRational a
+
+instance Enum Number where
+  toEnum a = Integral (toEnum a)
+  fromEnum (Integral a) = fromEnum a
+
+instance Fractional Number where
+  fromRational a = Floating (fromRational a)
+  recip (Floating a) = Floating (recip a)
+
+instance Integral Number where
+  quotRem (Integral a) (Integral b) = let (q,r) = quotRem a b in (Integral q, Integral r)
+  quotRem _ _ = error "quotRem"
+  toInteger (Integral a) = toInteger a
+  toInteger _ = error "toInteger"
+
+instance Show Number where
+  show (Floating a) = show a
+  show (Integral a) = show a
+
 -- | The canonical Lisp object.
 data Obj = Sym SymPath SymbolMode
          | MultiSym String [SymPath] -- refering to multiple functions with the same name
          | InterfaceSym String -- refering to an interface. TODO: rename to InterfaceLookupSym?
-         | Num Ty Double
+         | Num Ty Number
          | Str String
          | Pattern String
          | Chr Char
@@ -270,7 +310,7 @@ pretty = visit 0
             Arr arr -> "[" ++ joinWithSpace (map (visit indent) arr) ++ "]"
             StaticArr arr -> "$[" ++ joinWithSpace (map (visit indent) arr) ++ "]"
             Dict dict -> "{" ++ joinWithSpace (map (visit indent) (concatMap (\(a, b) -> [a, b]) (Map.toList dict))) ++ "}"
-            Num IntTy num -> show (round num :: Int)
+            Num IntTy num -> show num
             Num LongTy num -> show num ++ "l"
             Num ByteTy num -> show num ++ "b"
             Num FloatTy num -> show num ++ "f"
@@ -601,19 +641,19 @@ xobjToTy (XObj (Sym (SymPath _ s@(firstLetter:_)) _) _ _) | isLower firstLetter 
                                                           | otherwise = Just (StructTy (ConcreteNameTy s) [])
 xobjToTy (XObj (Lst [XObj (Sym (SymPath _ "Ptr") _) _ _, innerTy]) _ _) =
   do okInnerTy <- xobjToTy innerTy
-     return (PointerTy okInnerTy)
+     pure (PointerTy okInnerTy)
 xobjToTy (XObj (Lst (XObj (Sym (SymPath _ "Ptr") _) _ _ : _)) _ _) =
   Nothing
 xobjToTy (XObj (Lst [XObj (Sym (SymPath _ "Ref") _) _ _, innerTy]) i _) =
   do okInnerTy <- xobjToTy innerTy
-     return (RefTy okInnerTy (VarTy (makeTypeVariableNameFromInfo i)))
+     pure (RefTy okInnerTy (VarTy (makeTypeVariableNameFromInfo i)))
 xobjToTy (XObj (Lst [XObj (Sym (SymPath _ "Ref") _) _ _, innerTy, lifetimeTy]) _ _) =
   do okInnerTy <- xobjToTy innerTy
      okLifetimeTy <- xobjToTy lifetimeTy
-     return (RefTy okInnerTy okLifetimeTy)
+     pure (RefTy okInnerTy okLifetimeTy)
 xobjToTy (XObj (Lst [XObj Ref _ _, innerTy]) i _) = -- This enables parsing of '&'
   do okInnerTy <- xobjToTy innerTy
-     return (RefTy okInnerTy (VarTy (makeTypeVariableNameFromInfo i)))
+     pure (RefTy okInnerTy (VarTy (makeTypeVariableNameFromInfo i)))
 xobjToTy (XObj (Lst (XObj (Sym (SymPath _ "Ref") _) _ _ : _)) _ _) =
   Nothing
 xobjToTy (XObj (Lst [XObj (Sym (SymPath path "╬╗") _) fi ft, XObj (Arr argTys) ai at, retTy]) i t) =
@@ -623,19 +663,19 @@ xobjToTy (XObj (Lst [XObj (Sym (SymPath path "λ") _) fi ft, XObj (Arr argTys) a
 xobjToTy (XObj (Lst [XObj (Sym (SymPath _ "Fn") _) _ _, XObj (Arr argTys) _ _, retTy]) _ _) =
   do okArgTys <- mapM xobjToTy argTys
      okRetTy <- xobjToTy retTy
-     return (FuncTy okArgTys okRetTy StaticLifetimeTy)
+     pure (FuncTy okArgTys okRetTy StaticLifetimeTy)
 xobjToTy (XObj (Lst [XObj (Sym (SymPath _ "Fn") _) _ _, XObj (Arr argTys) _ _, retTy, lifetime]) _ _) =
   do okArgTys <- mapM xobjToTy argTys
      okRetTy <- xobjToTy retTy
      okLifetime <- xobjToTy lifetime
-     return (FuncTy okArgTys okRetTy StaticLifetimeTy)
+     pure (FuncTy okArgTys okRetTy StaticLifetimeTy)
 xobjToTy (XObj (Lst []) _ _) = Just UnitTy
 xobjToTy (XObj (Lst (x:xs)) _ _) =
   do okX <- xobjToTy x
      okXS <- mapM xobjToTy xs
      case okX of
-       (StructTy n []) -> return (StructTy n okXS)
-       v@(VarTy n) -> return (StructTy v okXS) -- Struct type with type variable as a name, i.e. "(a b)"
+       (StructTy n []) -> pure (StructTy n okXS)
+       v@(VarTy n) -> pure (StructTy v okXS) -- Struct type with type variable as a name, i.e. "(a b)"
        _ -> Nothing
 xobjToTy _ = Nothing
 
@@ -655,19 +695,19 @@ polymorphicSuffix signature actualType =
             (VarTy _, VarTy _) -> -- error $ "Unsolved variable in actual type: " ++ show sig ++ " => " ++ show actual ++
                                   --        " when calculating polymorphic suffix for " ++
                                   --        show signature ++ " => " ++ show actualType
-                                  return ["?"]
+                                  pure ["?"]
             (a@(VarTy _), b) -> do visitedTypeVariables <- get
                                    if a `elem` visitedTypeVariables
-                                     then return []
+                                     then pure []
                                      else do put (a : visitedTypeVariables) -- now it's visited
-                                             return [tyToC b]
+                                             pure [tyToC b]
             (FuncTy argTysA retTyA _, FuncTy argTysB retTyB _) -> do visitedArgs <- fmap concat (zipWithM visit argTysA argTysB)
                                                                      visitedRets <- visit retTyA retTyB
-                                                                     return (visitedArgs ++ visitedRets)
+                                                                     pure (visitedArgs ++ visitedRets)
             (StructTy _ a, StructTy _ b) -> fmap concat (zipWithM visit a b)
             (PointerTy a, PointerTy b) -> visit a b
             (RefTy a _, RefTy b _) -> visit a b
-            (_, _) -> return []
+            (_, _) -> pure []
 
 type VisitedTypes = [Ty]
 

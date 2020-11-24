@@ -72,6 +72,7 @@ library
                      , ansi-terminal >= 0.10.3
                      , cmark
                      , edit-distance
+                     , open-browser
 
   default-language:    Haskell2010
 

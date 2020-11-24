@@ -1,4 +1,4 @@
-(relative-include "banana.h")
+(relative-include "headers/banana.h")
 (Project.no-echo)
 
 (register-type Apple)

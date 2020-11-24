@@ -35,22 +35,22 @@ okXObjForType typeEnv typeVariables xobj =
 canBeUsedAsMemberType :: TypeEnv -> [Ty] -> Ty -> XObj -> Either TypeError ()
 canBeUsedAsMemberType typeEnv typeVariables t xobj =
   case t of
-    UnitTy    -> return ()
-    IntTy     -> return ()
-    FloatTy   -> return ()
-    DoubleTy  -> return ()
-    ByteTy    -> return ()
-    LongTy    -> return ()
-    BoolTy    -> return ()
-    StringTy  -> return ()
-    PatternTy -> return ()
-    CharTy    -> return ()
-    FuncTy{} -> return ()
-    PointerTy UnitTy -> return ()
+    UnitTy    -> pure ()
+    IntTy     -> pure ()
+    FloatTy   -> pure ()
+    DoubleTy  -> pure ()
+    ByteTy    -> pure ()
+    LongTy    -> pure ()
+    BoolTy    -> pure ()
+    StringTy  -> pure ()
+    PatternTy -> pure ()
+    CharTy    -> pure ()
+    FuncTy{} -> pure ()
+    PointerTy UnitTy -> pure ()
     PointerTy inner -> do _ <- canBeUsedAsMemberType typeEnv typeVariables inner xobj
-                          return ()
+                          pure ()
     StructTy (ConcreteNameTy "Array") [inner] -> do _ <- canBeUsedAsMemberType typeEnv typeVariables inner xobj
-                                                    return ()
+                                                    pure ()
     StructTy name [tyVars] ->
       case name of
         (ConcreteNameTy name') ->
@@ -58,13 +58,13 @@ canBeUsedAsMemberType typeEnv typeVariables t xobj =
           -- Prevents deftypes such as (deftype Player [pos Vector3])
           do _ <- canBeUsedAsMemberType typeEnv typeVariables tyVars xobj
              case lookupInEnv (SymPath [] name') (getTypeEnv typeEnv) of
-               Just _ -> return ()
+               Just _ -> pure ()
                Nothing -> Left (NotAmongRegisteredTypes t xobj)
         -- e.g. (deftype (Higher (f a)) (Of [(f a)]))
-        t@(VarTy _) -> return ()
+        t@(VarTy _) -> pure ()
     s@(StructTy name tyvar) ->
       if isExternalType typeEnv s
-      then return ()
+      then pure ()
       else case name of
              (ConcreteNameTy n) ->
                case lookupInEnv (SymPath [] n) (getTypeEnv typeEnv) of
@@ -78,12 +78,12 @@ canBeUsedAsMemberType typeEnv typeVariables t xobj =
                          case ty of
                          (StructTy _ vars) ->
                            if length vars == length tyvar
-                           then return ()
+                           then pure ()
                            else Left (UninhabitedConstructor ty xobj (length tyvar) (length vars))
                          _ -> Left (InvalidMemberType ty xobj)
              _ -> Left (InvalidMemberType t xobj)
     VarTy _ -> if foldr (||) False (map (isCaptured t) typeVariables)
-               then return ()
+               then pure ()
                else Left (InvalidMemberType t xobj)
                where
                  -- If a variable `a` appears in a higher-order polymorphic form, such as `(f a)`

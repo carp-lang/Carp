@@ -26,10 +26,10 @@ getCase cases caseNameToFind =
     found : _ -> Just found
     [] -> Nothing
 
-moduleForSumtype :: TypeEnv -> Env -> [String] -> String -> [Ty] -> [XObj] -> Maybe Info -> Maybe Env -> Either TypeError (String, XObj, [XObj])
-moduleForSumtype typeEnv env pathStrings typeName typeVariables rest i existingEnv =
+moduleForSumtype :: Env -> TypeEnv -> Env -> [String] -> String -> [Ty] -> [XObj] -> Maybe Info -> Maybe Env -> Either TypeError (String, XObj, [XObj])
+moduleForSumtype innerEnv typeEnv env pathStrings typeName typeVariables rest i existingEnv =
   let typeModuleName = typeName
-      typeModuleEnv = fromMaybe (Env (Map.fromList []) (Just env) (Just typeModuleName) [] ExternalEnv 0) existingEnv
+      typeModuleEnv = fromMaybe (Env (Map.fromList []) (Just innerEnv) (Just typeModuleName) [] ExternalEnv 0) existingEnv
       insidePath = pathStrings ++ [typeModuleName]
   in do let structTy = StructTy (ConcreteNameTy typeName) typeVariables
         cases <- toCases typeEnv typeVariables rest
@@ -42,7 +42,7 @@ moduleForSumtype typeEnv env pathStrings typeName typeVariables rest i existingE
         okMemberDeps <- memberDeps typeEnv cases
         let moduleEnvWithBindings = addListOfBindings typeModuleEnv (okIniters ++ [okStr, okPrn, okDelete, okCopy, okTag])
             typeModuleXObj = XObj (Mod moduleEnvWithBindings) i (Just ModuleTy)
-        return (typeModuleName, typeModuleXObj, okMemberDeps ++ okCopyDeps ++ okStrDeps)
+        pure (typeModuleName, typeModuleXObj, okMemberDeps ++ okCopyDeps ++ okStrDeps)
 
 memberDeps :: TypeEnv -> [SumtypeCase] -> Either TypeError [XObj]
 memberDeps typeEnv cases = fmap concat (mapM (concretizeType typeEnv) (concatMap caseTys cases))
