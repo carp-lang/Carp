@@ -32,7 +32,11 @@ The user will have to ensure themselves that this is a safe operation.")
      ""
      ("See `Unsafe.leak` if you want to prevent Carp's automatic destructuring " false)
      "on a value without performing an allocation.")
-  (deftemplate unsafe-alloc (Fn [a] (Ptr a)) "$a* $NAME($a r)" "$DECL { void *leak = CARP_MALLOC(sizeof($a)); leak = r; return ($a*)leak;}")
+  (deftemplate unsafe-alloc (Fn [a] (Ptr a)) "$a* $NAME($a r)" "$DECL { void *leak = CARP_MALLOC(sizeof($a)); *($a*)leak= r; return ($a*)leak;}")
+
+  (doc unsafe-realloc
+    "Reallocate an existing pointer in-place.")
+  (deftemplate unsafe-realloc (Fn [(Ptr p) a] Unit) "$void $NAME($p* p, $a x)" "$DECL { *($a*)p = CARP_MALLOC(sizeof($a)); }")
 
   (doc free
      "Free a pointer."
