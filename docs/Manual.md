@@ -3,6 +3,7 @@
 ### Related pages
 
 * [Installation](Install.md) - how to acquire and configure the Carp compiler
+* [How To Run Code](HowToRunCode.md) - compile and execute .carp files
 * [Tooling](Tooling.md) - supported editors
 * [Libraries](Libraries.md) - how to work with libraries and modules
 * [Multimedia](Multimedia.md) - graphics, sounds, etc
@@ -12,7 +13,7 @@
 
 To learn more about the Carp language and its syntax and semantics, check out the [Carp Language Guide](LanguageGuide.md).
 
-### Basics
+### REPL Basics
 
 The Carp language is very tightly integrated with the REPL, everything you want to do to your program can be controlled from here.
 
