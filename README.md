@@ -20,6 +20,7 @@ The key features of Carp are the following:
 * Ownership tracking enables a functional programming style while still using mutation of cache-friendly data structures under the hood
 * No hidden performance penalties – allocation and copying are explicit
 * Straightforward integration with existing C code
+* Lisp macros, compile time scripting, and REPL
 
 ## Learn more
 * [The Compiler Manual](docs/Manual.md) - how to install and use the compiler
@@ -45,7 +46,8 @@ The key features of Carp are the following:
     (SDLApp.run-with-callbacks &app SDLApp.quit-on-esc tick draw state)))
 ```
 
-For instructions on how to run this code, see [this document](docs/HowToRunCode.md).
+For instructions on how to run Carp code, see [this document](docs/HowToRunCode.md).
+
 For more examples, check out the [examples](examples) directory.
 
 ### Language Designer & Lead Developer
