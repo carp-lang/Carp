@@ -51,11 +51,11 @@ For instructions on how to run Carp code, see [this document](docs/HowToRunCode.
 For more examples, check out the [examples](examples) directory.
 
 ### Maintainers
-[Erik Svedäng](http://www.eriksvedang.com) ([@e_svedang](https://twitter.com/e_svedang))
-[Veit Heller](http://veitheller.de) ([@hellerve](https://github.com/hellerve))
-Jorge Acereda ([@jacereda](https://github.com/jacereda))
-Scott Olsen ([@scolsen](https://github.com/scolsen))
-Tim Dévé ([@timdeve](https://github.com/TimDeve))
+- [Erik Svedäng](https://github.com/eriksvedang)
+- [Veit Heller](https://github.com/hellerve)
+- [Jorge Acereda](https://github.com/jacereda)
+- [Scott Olsen](https://github.com/scolsen)
+- [Tim Dévé](https://github.com/TimDeve)
 
 ### Contributing
 Thanks to all the [awesome people](https://github.com/carp-lang/Carp/graphs/contributors) who have contributed to Carp over the years!
