@@ -1,10 +1,10 @@
 # How to run code
 
-This document is aimed at people just starting out with Carp, in particular if you want to run the [examples](../examples).
+This document is aimed at people just starting out with Carp, in particular if you want to try out the [examples](../examples).
 
 ## Prerequisites
 
-Make sure that you have [installed the Carp compiler and its dependencies](Install.md) and that you can start it without any error messages, here's how it should look:
+Make sure that you have [installed the Carp compiler and its dependencies](Install.md) and that you can start it without any error messages. Here's how it should look:
 
 ```bash
 $ carp
@@ -44,7 +44,7 @@ If you don't want to work in the REPL and use a more classic "compile & run" set
 $ carp some_file.carp -x
 ```
 
-Any files you list as arguments to `carp` will be loaded (this works for the REPL too).
+Any files you list as arguments to `carp` will be loaded (this works when starting the REPL too).
 The `-x` flag means that you want to compile and run the code immedately, exiting afterwards.
 
 If you just want to build the executable, use `-b` instead:
