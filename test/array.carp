@@ -47,7 +47,7 @@
                     "repeat-indexed works as expected")
   (assert-equal test
                 1
-                (unsafe-first &[1 2 3])
+                @(unsafe-first &[1 2 3])
                 "unsafe-first works as expected")
   (assert-ref-equal test
                     (Maybe.Just 1)
