@@ -58,7 +58,7 @@
                   "first works as expected on empty array")
   (assert-equal test
                 \c
-                (unsafe-last &[\a \b \c])
+                @(unsafe-last &[\a \b \c])
                 "unsafe-last works as expected")
   (assert-ref-equal test
                     (Maybe.Just \c)

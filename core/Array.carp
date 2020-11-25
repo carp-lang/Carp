@@ -83,7 +83,7 @@ Returns `Nothing` if the array is empty.")
 
 Generates a runtime error if the array is empty.")
   (defn unsafe-last [a]
-    @(Array.unsafe-nth a (Int.dec (Array.length a))))
+    (Array.unsafe-nth a (Int.dec (Array.length a))))
 
 
   (doc last "takes the last element of an array and returns a `Just`.
