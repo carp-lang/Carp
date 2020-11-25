@@ -185,20 +185,20 @@ type Primitive = XObj -> Context -> [XObj] -> IO (Context, Either EvalError XObj
 newtype PrimitiveFunctionType = PrimitiveFunction { getPrimitive :: Primitive }
 
 instance Eq PrimitiveFunctionType where
-  a == b = True
+  _ == _ = True
 
 instance Show PrimitiveFunctionType where
-  show t = "Primitive { ... }"
+  show _ = "Primitive { ... }"
 
 type CommandCallback = Context -> [XObj] -> IO (Context, Either EvalError XObj)
 
 newtype CommandFunctionType = CommandFunction { getCommand :: CommandCallback }
 
 instance Eq CommandFunctionType where
-  a == b = True
+  _ == _ = True
 
 instance Show CommandFunctionType where
-  show t = "CommandFunction { ... }"
+  show _ = "CommandFunction { ... }"
 
 
 newtype TemplateCreator = TemplateCreator { getTemplateCreator :: TypeEnv -> Env -> Template }
@@ -266,7 +266,7 @@ getSimpleNameWithArgs xobj@(XObj (Lst (XObj Dynamic _ _ : _ : XObj (Arr args) _ 
   Just $
     "(" ++ getSimpleName xobj ++ (if not (null args) then " " else "") ++
     unwords (map getSimpleName args) ++ ")"
-getSimpleNameWithArgs xobj = Nothing
+getSimpleNameWithArgs _ = Nothing
 
 -- | Extracts the second form (where the name of definitions are stored) from a list of XObj:s.
 getPath :: XObj -> SymPath
@@ -318,7 +318,7 @@ pretty = visit 0
             Str str -> show str
             Pattern str -> '#' : show str
             Chr c -> '\\' : c : ""
-            Sym path mode -> show path -- ++ " <" ++ show mode ++ ">"
+            Sym path _ -> show path -- ++ " <" ++ show mode ++ ">"
             MultiSym originalName paths -> originalName ++ "{" ++ joinWithComma (map show paths) ++ "}"
             InterfaceSym name -> name -- ++ "§"
             Bol b -> if b then "true" else "false"
@@ -368,44 +368,44 @@ prettyUpTo max xobj =
   where end =
           -- we match all of them explicitly to get errors if we forget one
           case obj xobj of
-            Lst lst -> ")"
-            Arr arr -> "]"
-            Dict dict -> "}"
-            Num LongTy num -> "l"
-            Num IntTy num -> ""
-            Num ByteTy num -> "b"
-            Num FloatTy num -> show num ++ "f"
-            Num DoubleTy num -> ""
+            Lst _ -> ")"
+            Arr _ -> "]"
+            Dict _ -> "}"
+            Num LongTy _ -> "l"
+            Num IntTy _ -> ""
+            Num ByteTy _ -> "b"
+            Num FloatTy _ -> "f"
+            Num DoubleTy _ -> ""
             Num _ _ -> error "Invalid number type."
-            Str str -> ""
-            Pattern str -> ""
-            Chr c -> ""
-            Sym path mode -> ""
-            MultiSym originalName paths -> "}"
-            InterfaceSym name -> ""
-            Bol b -> ""
+            Str _ -> ""
+            Pattern _ -> ""
+            Chr _ -> ""
+            Sym _ _ -> ""
+            MultiSym _ _ -> "}"
+            InterfaceSym _ -> ""
+            Bol _ -> ""
             Defn maybeCaptures ->
               case maybeCaptures of
-                Just captures -> ">"
+                Just _ -> ">"
                 Nothing -> ""
             Def -> ""
-            Fn _ captures -> ">"
-            Closure elem _ -> ">"
+            Fn _ _ -> ">"
+            Closure _ _ -> ">"
             If -> ""
             Match _ -> ""
             While -> ""
             Do -> ""
             Let -> ""
             LetDef -> ""
-            Mod env -> ""
+            Mod _ -> ""
             Deftype _ -> ""
             DefSumtype _ -> ""
             Deftemplate _ -> ""
             Instantiate _ -> ""
             External Nothing -> ""
-            External (Just override) -> ")"
+            External (Just _) -> ")"
             ExternalType Nothing -> ""
-            ExternalType (Just override) -> ")"
+            ExternalType (Just _) -> ")"
             MetaStub -> ""
             Defalias _ -> ""
             Address -> ""
@@ -666,7 +666,7 @@ xobjToTy (XObj (Lst [XObj (Sym (SymPath _ "Fn") _) _ _, XObj (Arr argTys) _ _, r
 xobjToTy (XObj (Lst [XObj (Sym (SymPath _ "Fn") _) _ _, XObj (Arr argTys) _ _, retTy, lifetime]) _ _) =
   do okArgTys <- mapM xobjToTy argTys
      okRetTy <- xobjToTy retTy
-     okLifetime <- xobjToTy lifetime
+     _ <- xobjToTy lifetime
      pure (FuncTy okArgTys okRetTy StaticLifetimeTy)
 xobjToTy (XObj (Lst []) _ _) = Just UnitTy
 xobjToTy (XObj (Lst (x:xs)) _ _) =
@@ -674,7 +674,7 @@ xobjToTy (XObj (Lst (x:xs)) _ _) =
      okXS <- mapM xobjToTy xs
      case okX of
        (StructTy n []) -> pure (StructTy n okXS)
-       v@(VarTy n) -> pure (StructTy v okXS) -- Struct type with type variable as a name, i.e. "(a b)"
+       v@(VarTy _) -> pure (StructTy v okXS) -- Struct type with type variable as a name, i.e. "(a b)"
        _ -> Nothing
 xobjToTy _ = Nothing
 

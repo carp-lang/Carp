@@ -113,7 +113,7 @@ instance Show TypeError where
     "There are no expressions in the body body of the form at " ++
     prettyInfoFromXObj xobj ++
     ".\n\nI need exactly one body form. For multiple forms, try using `do`."
-  show (UnificationFailed constraint@(Constraint a b aObj bObj ctx _) mappings constraints) =
+  show (UnificationFailed (Constraint a b aObj bObj ctx _) mappings _) =
     "I can’t match the types `" ++ show (recursiveLookupTy mappings a) ++
     "` and `" ++ show (recursiveLookupTy mappings b) ++ "`" ++ extra ++
     ".\n\n" ++
@@ -185,10 +185,10 @@ instance Show TypeError where
   show (ArraysCannotContainRefs xobj) =
     "Arrays can’t contain references: `" ++ pretty xobj ++ "` at " ++
     prettyInfoFromXObj xobj ++ ".\n\nYou’ll have to make a copy using `@`."
-  show (MainCanOnlyReturnUnitOrInt xobj t) =
+  show (MainCanOnlyReturnUnitOrInt _ t) =
     "The main function can only return an `Int` or a unit type (`()`), but it got `" ++
     show t ++ "`."
-  show (MainCannotHaveArguments xobj c) =
+  show (MainCannotHaveArguments _ c) =
     "The main function may not receive arguments, but it got " ++ show c ++ "."
   show (CannotConcretize xobj) =
     "I’m unable to concretize the expression '" ++ pretty xobj ++ "' at " ++
@@ -204,7 +204,7 @@ instance Show TypeError where
   show (CannotSet xobj) =
     "I can’t `set!` the expression `" ++ pretty xobj ++ "` at " ++
     prettyInfoFromXObj xobj ++ ".\n\nOnly variables can be reset using `set!`."
-  show (CannotSetVariableFromLambda variable xobj) =
+  show (CannotSetVariableFromLambda variable _) =
     "I can’t `set!` the variable `" ++ pretty variable ++ "` at " ++
     prettyInfoFromXObj variable ++ " because it's defined outside the lambda."
   show (DoesNotMatchSignatureAnnotation xobj sigTy) =
@@ -249,7 +249,7 @@ instance Show TypeError where
 machineReadableErrorStrings :: FilePathPrintLength -> TypeError -> [String]
 machineReadableErrorStrings fppl err =
   case err of
-    (UnificationFailed constraint@(Constraint a b aObj bObj _ _) mappings constraints) ->
+    (UnificationFailed (Constraint a b aObj bObj _ _) mappings _) ->
       [machineReadableInfoFromXObj fppl aObj ++ " Inferred " ++ showTypeFromXObj mappings aObj ++ ", can't unify with " ++ show (recursiveLookupTy mappings b) ++ "."
       ,machineReadableInfoFromXObj fppl bObj ++ " Inferred " ++ showTypeFromXObj mappings bObj ++ ", can't unify with " ++ show (recursiveLookupTy mappings a) ++ "."]
 
@@ -261,7 +261,7 @@ machineReadableErrorStrings fppl err =
       [machineReadableInfoFromXObj fppl xobj ++ " Expression '" ++ pretty xobj ++ "' missing type."]
     (SymbolNotDefined symPath xobj _) ->
       [machineReadableInfoFromXObj fppl xobj ++ " Trying to refer to an undefined symbol '" ++ show symPath ++ "'."]
-    (SymbolMissingType xobj env) ->
+    (SymbolMissingType xobj _) ->
       [machineReadableInfoFromXObj fppl xobj ++ " Symbol '" ++ getName xobj ++ "' missing type."]
     (InvalidObj (Defn _) xobj) ->
       [machineReadableInfoFromXObj fppl xobj ++ " Invalid function definition."]
@@ -336,7 +336,7 @@ machineReadableErrorStrings fppl err =
 
     (CannotSet xobj) ->
       [machineReadableInfoFromXObj fppl xobj ++ " Can't set! '" ++ pretty xobj ++ "'."]
-    (CannotSetVariableFromLambda variable xobj) ->
+    (CannotSetVariableFromLambda variable _) ->
       [machineReadableInfoFromXObj fppl variable ++ " Can't set! '" ++ pretty variable ++ "' from inside of a lambda."]
 
     (CannotConcretize xobj) ->
@@ -363,7 +363,7 @@ machineReadableErrorStrings fppl err =
       [machineReadableInfoFromXObj fppl xobj ++ " Duplicate binding `" ++ pretty xobj ++ "` inside `let`."]
     (DefinitionsMustBeAtToplevel xobj) ->
       [machineReadableInfoFromXObj fppl xobj ++ " Definition not at top level: `" ++ pretty xobj ++ "`"]
-    (UsingDeadReference xobj dependsOn) ->
+    (UsingDeadReference xobj _) ->
       [machineReadableInfoFromXObj fppl xobj ++ " The reference '" ++ pretty xobj ++ "' isn't alive."]
     (UninhabitedConstructor ty xobj got wanted) ->
       [machineReadableInfoFromXObj fppl xobj ++ "Can't use a struct or sumtype constructor without arguments as a member type at " ++ prettyInfoFromXObj xobj ++ ". The type constructor " ++ show ty ++ " expects " ++ show wanted ++ " arguments but got " ++ show got]

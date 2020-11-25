@@ -61,7 +61,7 @@ data UnificationFailure = UnificationFailure { unificationFailure ::Constraint
                         deriving (Eq, Show)
 
 instance Show Constraint where
-  show (Constraint a b xa xb ctx ord) = "{" ++ show a ++ " == " ++ show b ++ " (ord " ++ show ord ++ ")} " -- ++ show (fmap infoLine (info xa)) ++ ", " ++ show (fmap infoLine (info xb)) ++ " in " ++ show ctx
+  show (Constraint a b _ _ _ ord) = "{" ++ show a ++ " == " ++ show b ++ " (ord " ++ show ord ++ ")} " -- ++ show (fmap infoLine (info xa)) ++ ", " ++ show (fmap infoLine (info xb)) ++ " in " ++ show ctx
 
 -- Finds the symbol with the "lowest name" (first in alphabetical order)
 recursiveLookup :: TypeMappings -> String -> Maybe Ty
@@ -196,7 +196,7 @@ checkConflictInternal mappings constraint name otherTy =
         Just (VarTy _) -> ok
         Just (StructTy (VarTy _) structTyVars) ->
           case otherTy of
-            StructTy otherStructName otherTyVars -> foldM solveOneInternal mappings (zipWith (mkConstraint OrdStruct xobj1 xobj2 ctx) structTyVars otherTyVars)
+            StructTy _ otherTyVars -> foldM solveOneInternal mappings (zipWith (mkConstraint OrdStruct xobj1 xobj2 ctx) structTyVars otherTyVars)
             VarTy _ -> Right mappings
             _ -> Left (UnificationFailure constraint mappings)
         Just (StructTy (ConcreteNameTy structName) structTyVars) ->
@@ -211,7 +211,7 @@ checkConflictInternal mappings constraint name otherTy =
             FuncTy otherArgTys otherRetTy otherLifetimeTy ->
               do m <- foldM solveOneInternal mappings (zipWith (mkConstraint OrdFunc xobj1 xobj2 ctx) argTys otherArgTys)
                  case solveOneInternal m (mkConstraint OrdFunc xobj1 xobj2 ctx retTy otherRetTy) of
-                   Right ok -> solveOneInternal m (mkConstraint OrdFunc xobj1 xobj2 ctx lifetimeTy otherLifetimeTy)
+                   Right _ -> solveOneInternal m (mkConstraint OrdFunc xobj1 xobj2 ctx lifetimeTy otherLifetimeTy)
                    Left err -> Left err
             VarTy _ -> Right mappings
             _ -> Left (UnificationFailure constraint mappings)
@@ -271,4 +271,4 @@ resolveFully mappings varName = Right (Map.insert varName (fullResolve (VarTy va
         fullLookup visited funcTy@(FuncTy argTys retTy ltTy) =
           let newVisited = Set.insert funcTy visited
           in  FuncTy (map (fullLookup newVisited) argTys) (fullLookup newVisited retTy) (fullLookup newVisited ltTy)
-        fullLookup visited x = x
+        fullLookup _ x = x

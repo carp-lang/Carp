@@ -122,18 +122,18 @@ toC toCMode (Binder meta root) = emitterSrc (execState (visit startingIndent roo
             Break -> error (show (DontVisitObj xobj))
             While -> error (show (DontVisitObj xobj))
             Do -> error (show (DontVisitObj xobj))
-            e@(Deftype _) -> error (show (DontVisitObj xobj))
-            e@(DefSumtype _) -> error (show (DontVisitObj xobj))
+            (Deftype _) -> error (show (DontVisitObj xobj))
+            (DefSumtype _) -> error (show (DontVisitObj xobj))
             Mod _ -> error (show (CannotEmitModKeyword xobj))
             External _ -> error (show (CannotEmitExternal xobj))
             ExternalType _ -> error (show (DontVisitObj xobj))
-            e@(Command _) -> error (show (DontVisitObj xobj))
-            e@(Primitive _) -> error (show (DontVisitObj xobj))
-            e@(Deftemplate _) ->  error (show (DontVisitObj xobj))
-            e@(Instantiate _) ->  error (show (DontVisitObj xobj))
-            e@(Defalias _) -> error (show (DontVisitObj xobj))
-            e@(MultiSym _ _) -> error (show (DontVisitObj xobj))
-            e@(InterfaceSym _) -> error (show (DontVisitObj xobj))
+            (Command _) -> error (show (DontVisitObj xobj))
+            (Primitive _) -> error (show (DontVisitObj xobj))
+            (Deftemplate _) ->  error (show (DontVisitObj xobj))
+            (Instantiate _) ->  error (show (DontVisitObj xobj))
+            (Defalias _) -> error (show (DontVisitObj xobj))
+            (MultiSym _ _) -> error (show (DontVisitObj xobj))
+            (InterfaceSym _) -> error (show (DontVisitObj xobj))
             Address -> error (show (DontVisitObj xobj))
             SetBang -> error (show (DontVisitObj xobj))
             Macro -> error (show (DontVisitObj xobj))
@@ -142,7 +142,7 @@ toC toCMode (Binder meta root) = emitterSrc (execState (visit startingIndent roo
             The -> error (show (DontVisitObj xobj))
             Ref -> error (show (DontVisitObj xobj))
             Deref -> error (show (DontVisitObj xobj))
-            e@(Interface _ _) -> error (show (DontVisitObj xobj))
+            (Interface _ _) -> error (show (DontVisitObj xobj))
 
         visitStr' indent str i =
           -- | This will allocate a new string every time the code runs:
@@ -164,7 +164,7 @@ toC toCMode (Binder meta root) = emitterSrc (execState (visit startingIndent roo
         escapeString = foldr escaper ""
 
         visitSymbol :: Int -> XObj -> State EmitterState String
-        visitSymbol _ xobj@(XObj (Sym _ (LookupGlobalOverride overrideWithName)) _ t) =
+        visitSymbol _ (XObj (Sym _ (LookupGlobalOverride overrideWithName)) _ _) =
           pure overrideWithName
         visitSymbol indent xobj@(XObj sym@(Sym path lookupMode) (Just i) t) =
           let Just t' = t
@@ -179,7 +179,7 @@ toC toCMode (Binder meta root) = emitterSrc (execState (visit startingIndent roo
                          LookupLocal (Capture _) -> "_env->" ++ pathToC path
                          _ -> pathToC path
 
-        visitSymbol _ xobj@(XObj (Sym path _) Nothing _) = error ("Symbol missing info: " ++ show xobj)
+        visitSymbol _ xobj@(XObj (Sym _ _) Nothing _) = error ("Symbol missing info: " ++ show xobj)
         visitSymbol _ _ = error "Not a symbol."
 
         visitList :: Int -> XObj -> State EmitterState String
@@ -207,7 +207,7 @@ toC toCMode (Binder meta root) = emitterSrc (execState (visit startingIndent roo
                      pure ""
 
             -- Fn / λ
-            [XObj (Fn name set) _ _, XObj (Arr argList) _ _, body] ->
+            [XObj (Fn name set) _ _, XObj (Arr _) _ _, _] ->
               do let retVar = freshVar i
                      capturedVars = Set.toList set
                      Just callback = name
@@ -306,7 +306,7 @@ toC toCMode (Binder meta root) = emitterSrc (execState (visit startingIndent roo
                   exprTy = exprTyNotFixed
 
                   tagCondition :: String -> String -> Ty -> XObj -> [String]
-                  tagCondition var periodOrArrow caseTy (caseLhs@(XObj (Lst (XObj (Sym firstPath@(SymPath _ caseName) _) _ _ : caseMatchers)) caseLhsInfo _)) =
+                  tagCondition var periodOrArrow caseTy ((XObj (Lst (XObj (Sym (SymPath _ caseName) _) _ _ : caseMatchers)) _ _)) =
                     -- HACK! The function 'removeSuffix' ignores the type specialisation of the tag name and just uses the base name
                     -- A better idea is to not specialise the names, which happens when calling 'concretize' on the lhs
                     -- This requires a bunch of extra machinery though, so this will do for now...
@@ -321,11 +321,11 @@ toC toCMode (Binder meta root) = emitterSrc (execState (visit startingIndent roo
                   tempVarToAvoidClash = freshVar exprInfo ++ "_temp";
 
                   emitCaseMatcher :: (String, String) -> String -> XObj -> Integer -> State EmitterState ()
-                  emitCaseMatcher (periodOrArrow, ampersandOrNot) caseName (XObj (Sym path _) i t) index =
+                  emitCaseMatcher (periodOrArrow, ampersandOrNot) caseName (XObj (Sym path _) _ t) index =
                     let Just tt = t
                     in  appendToSrc (addIndent indent' ++ tyToCLambdaFix tt ++ " " ++ pathToC path ++ " = "
                                     ++ ampersandOrNot ++ tempVarToAvoidClash ++ periodOrArrow ++ "u." ++ mangle caseName ++ ".member" ++ show index ++ ";\n")
-                  emitCaseMatcher periodOrArrow caseName xobj@(XObj (Lst (XObj (Sym (SymPath _ innerCaseName) _) _ _ : xs)) i t) index =
+                  emitCaseMatcher periodOrArrow caseName (XObj (Lst (XObj (Sym (SymPath _ innerCaseName) _) _ _ : xs)) _ _) index =
                     zipWithM_ (\x i -> emitCaseMatcher periodOrArrow (caseName ++ ".member" ++ show i ++ ".u." ++ removeSuffix innerCaseName) x index) xs ([0..] :: [Int])
                   emitCaseMatcher _ _ xobj _ =
                     error ("Failed to emit case matcher for: " ++ pretty xobj)
@@ -340,9 +340,9 @@ toC toCMode (Binder meta root) = emitterSrc (execState (visit startingIndent roo
                            _ -> error ("Failed to remove outer ref on type " ++ show t)
 
                   emitCase :: String -> Bool -> (XObj, XObj) -> State EmitterState ()
-                  emitCase exprVar isFirst (caseLhs@(XObj (Lst (XObj Ref _ _ : caseMatchers)) _ _), caseExpr) =
+                  emitCase _ _ (caseLhs@(XObj (Lst (XObj Ref _ _ : _)) _ _), _) =
                     error ("Can't emit case matchers for refs: " ++ pretty caseLhs)
-                  emitCase exprVar isFirst (caseLhs@(XObj (Lst (XObj (Sym firstPath@(SymPath _ caseName@(firstLetter : _)) _) _ _ : caseMatchers)) caseLhsInfo _), caseExpr) =
+                  emitCase exprVar isFirst (caseLhs@(XObj (Lst (XObj (Sym (SymPath _ caseName@(_ : _)) _) _ _ : caseMatchers)) caseLhsInfo _), caseExpr) =
                     -- A list of things, beginning with a tag
                     do appendToSrc (addIndent indent)
                        unless isFirst (appendToSrc "else ")
@@ -443,9 +443,9 @@ toC toCMode (Binder meta root) = emitterSrc (execState (visit startingIndent roo
               do valueVar <- visit indent value
                  let properVariableName =
                        case variable of
-                         (XObj (Lst (XObj (Sym (SymPath _ "copy") _) _ _ : symObj@(XObj (Sym sym _) _ _) : _)) _ _) -> "*" ++ pathToC sym
+                         (XObj (Lst (XObj (Sym (SymPath _ "copy") _) _ _ : (XObj (Sym sym _) _ _) : _)) _ _) -> "*" ++ pathToC sym
                          (XObj (Sym sym _) _ _) -> pathToC sym
-                         v -> error (show (CannotSet variable))
+                         _ -> error (show (CannotSet variable))
                      Just varInfo = info variable
                  --appendToSrc (addIndent indent ++ "// " ++ show (length (infoDelete varInfo)) ++ " deleters for " ++ properVariableName ++ ":\n")
                  delete indent varInfo
@@ -659,7 +659,7 @@ toC toCMode (Binder meta root) = emitterSrc (execState (visit startingIndent roo
         visitStaticArray _ _ = error "Must visit static array!"
 
         visitStaticArrayElement :: Int -> String -> Ty -> Int -> XObj -> State EmitterState ()
-        visitStaticArrayElement indent arrayDataVar innerTy index xobj =
+        visitStaticArrayElement indent arrayDataVar _ index xobj =
           do visited <- visit indent xobj
              appendToSrc (addIndent indent ++ arrayDataVar ++ "[" ++ show index ++ "] = " ++ visited ++ ";\n")
              pure ()
@@ -714,7 +714,7 @@ memberToDecl indent (memberName, memberType) =
     Nothing -> error ("Invalid memberType: " ++ show memberType)
 
 defStructToDeclaration :: Ty -> SymPath -> [XObj] -> String
-defStructToDeclaration structTy@(StructTy typeName typeVariables) path rest =
+defStructToDeclaration structTy@(StructTy _ _) _ rest =
   let indent = indentAmount
 
       typedefCaseToMemberDecl :: XObj -> State EmitterState [()]
@@ -733,7 +733,7 @@ defStructToDeclaration structTy@(StructTy typeName typeVariables) path rest =
      else emitterSrc (execState visit (EmitterState ""))
 
 defSumtypeToDeclaration :: Ty -> [XObj] -> String
-defSumtypeToDeclaration sumTy@(StructTy typeName typeVariables) rest =
+defSumtypeToDeclaration sumTy@(StructTy _ _) rest =
   let indent = indentAmount
 
       visit = do appendToSrc "typedef struct {\n"
@@ -749,18 +749,18 @@ defSumtypeToDeclaration sumTy@(StructTy typeName typeVariables) rest =
       emitSumtypeCase :: Int -> XObj -> State EmitterState ()
       emitSumtypeCase indent (XObj (Lst [XObj (Sym (SymPath [] caseName) _) _ _, XObj (Arr []) _ _]) _ _) =
         appendToSrc (addIndent indent ++ "// " ++ caseName ++ "\n")
-      emitSumtypeCase indent xobj@(XObj (Lst [XObj (Sym (SymPath [] caseName) _) _ _, XObj (Arr memberTys) _ _]) _ _) =
+      emitSumtypeCase indent (XObj (Lst [XObj (Sym (SymPath [] caseName) _) _ _, XObj (Arr memberTys) _ _]) _ _) =
         do appendToSrc (addIndent indent ++ "struct {\n")
            let members = zipWith (\anonName tyXObj -> (anonName, tyXObj)) anonMemberSymbols (remove (isUnit . fromJust . xobjToTy) memberTys)
            mapM_ (memberToDecl (indent + indentAmount)) members
            appendToSrc (addIndent indent ++ "} " ++ caseName ++ ";\n")
-      emitSumtypeCase indent xobj@(XObj (Sym (SymPath [] caseName) _) _ _) =
+      emitSumtypeCase indent (XObj (Sym (SymPath [] caseName) _) _ _) =
         appendToSrc (addIndent indent ++ "// " ++ caseName ++ "\n")
 
       emitSumtypeCaseTagDefinition :: (Int, XObj) -> State EmitterState ()
-      emitSumtypeCaseTagDefinition (tagIndex, xobj@(XObj (Lst [XObj (Sym (SymPath [] caseName) _) _ _, _]) _ _)) =
+      emitSumtypeCaseTagDefinition (tagIndex, (XObj (Lst [XObj (Sym (SymPath [] caseName) _) _ _, _]) _ _)) =
         appendToSrc ("#define " ++ tagName sumTy caseName ++ " " ++ show tagIndex ++ "\n")
-      emitSumtypeCaseTagDefinition (tagIndex, xobj@(XObj (Sym (SymPath [] caseName) _) _ _)) =
+      emitSumtypeCaseTagDefinition (tagIndex, (XObj (Sym (SymPath [] caseName) _) _ _)) =
         appendToSrc ("#define " ++ tagName sumTy caseName ++ " " ++ show tagIndex ++ "\n")
 
   in if isTypeGeneric sumTy
@@ -787,7 +787,7 @@ toDeclaration (Binder meta xobj@(XObj (Lst xobjs) _ t)) =
       in "" ++ tyToCLambdaFix t' ++ " " ++ pathToC path ++ ";\n"
     XObj (Deftype t) _ _ : XObj (Sym path _) _ _ : rest ->
       defStructToDeclaration t path rest
-    XObj (DefSumtype t) _ _ : XObj (Sym path _) _ _ : rest ->
+    XObj (DefSumtype t) _ _ : XObj (Sym _ _) _ _ : rest ->
       defSumtypeToDeclaration t rest
     XObj (Deftemplate _) _ _ : _ ->
       ""
@@ -912,21 +912,21 @@ checkForUnresolvedSymbols = visit
             _ -> pure ()
 
     visitList :: XObj -> Either ToCError ()
-    visitList (XObj (Lst xobjs) i t) =
+    visitList (XObj (Lst xobjs) _ _) =
       case mapM visit xobjs of
         Left e -> Left e
         Right _ -> pure ()
     visitList _ = error "The function 'visitList' only accepts XObjs with lists in them."
 
     visitArray :: XObj -> Either ToCError ()
-    visitArray (XObj (Arr xobjs) i t) =
+    visitArray (XObj (Arr xobjs) _ _) =
       case mapM visit xobjs of
         Left e -> Left e
         Right _ -> pure ()
     visitArray _ = error "The function 'visitArray' only accepts XObjs with arrays in them."
 
     visitStaticArray :: XObj -> Either ToCError ()
-    visitStaticArray (XObj (StaticArr xobjs) i t) =
+    visitStaticArray (XObj (StaticArr xobjs) _ _) =
       case mapM visit xobjs of
         Left e -> Left e
         Right _ -> pure ()
@@ -948,5 +948,5 @@ wrapInInitFunction with_core src =
 removeSuffix :: String -> String
 removeSuffix [] = []
 removeSuffix [c] = [c]
-removeSuffix ('_' : '_' : cs) = []
+removeSuffix ('_' : '_' : _) = []
 removeSuffix (c:cs) = c : removeSuffix cs

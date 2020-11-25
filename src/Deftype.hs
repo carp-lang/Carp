@@ -106,7 +106,7 @@ templatesForSingleMember typeEnv env insidePath p@(StructTy (ConcreteNameTy type
 
 -- | The template for getters of a deftype.
 templateGetter :: String -> Ty -> Template
-templateGetter member UnitTy =
+templateGetter _ UnitTy =
   Template
     (FuncTy [RefTy (VarTy "p") (VarTy "q")] UnitTy StaticLifetimeTy)
     (const (toTemplate "void $NAME($(Ref p) p)"))
@@ -129,7 +129,7 @@ templateGetter member memberTy =
 
 -- | The template for setters of a concrete deftype.
 templateSetter :: TypeEnv -> Env -> String -> Ty -> Template
-templateSetter typeEnv env memberName UnitTy =
+templateSetter _ _ _ UnitTy =
   Template
     (FuncTy [VarTy "p", VarTy "t"] (VarTy "p") StaticLifetimeTy)
     (const (toTemplate "$p $NAME($p p)"))
@@ -182,7 +182,7 @@ templateGenericSetter pathStrings originalStructTy@(StructTy (ConcreteNameTy typ
 
 -- | The template for mutating setters of a deftype.
 templateMutatingSetter :: TypeEnv -> Env -> String -> Ty -> Template
-templateMutatingSetter typeEnv env memberName UnitTy =
+templateMutatingSetter _ _ _ UnitTy =
   Template
     (FuncTy [RefTy (VarTy "p") (VarTy "q"), VarTy "t"] UnitTy StaticLifetimeTy)
     (const (toTemplate "void $NAME($p* pRef)"))
@@ -231,7 +231,7 @@ templateGenericMutatingSetter pathStrings originalStructTy@(StructTy (ConcreteNa
 -- | The template for updater functions of a deftype.
 -- | (allows changing a variable by passing an transformation function).
 templateUpdater :: String -> Ty -> Template
-templateUpdater member UnitTy =
+templateUpdater _ UnitTy =
   Template
     (FuncTy [VarTy "p", RefTy (FuncTy [] UnitTy (VarTy "fq")) (VarTy "q")] (VarTy "p") StaticLifetimeTy)
     (const (toTemplate "$p $NAME($p p, Lambda *updater)")) -- "Lambda" used to be: $(Fn [t] t)
@@ -269,7 +269,7 @@ initArgListTypes xobjs =
 
 -- | The template for the 'init' and 'new' functions for a concrete deftype.
 concreteInit :: AllocationMode -> Ty -> [XObj] -> Template
-concreteInit allocationMode originalStructTy@(StructTy (ConcreteNameTy typeName) typeVariables) membersXObjs =
+concreteInit allocationMode originalStructTy@(StructTy (ConcreteNameTy typeName) _) membersXObjs =
   Template
     (FuncTy (map snd (memberXObjsToPairs membersXObjs)) (VarTy "p") StaticLifetimeTy)
     (\(FuncTy _ concreteStructTy _) ->
@@ -292,7 +292,7 @@ genericInit allocationMode pathStrings originalStructTy@(StructTy (ConcreteNameT
         t = FuncTy (map snd (memberXObjsToPairs membersXObjs)) originalStructTy StaticLifetimeTy
         docs = "creates a `" ++ typeName ++ "`."
         templateCreator = TemplateCreator $
-          \typeEnv env ->
+          \typeEnv _ ->
             Template
             (FuncTy (map snd (memberXObjsToPairs membersXObjs)) (VarTy "p") StaticLifetimeTy)
             (\(FuncTy _ concreteStructTy _) ->
@@ -325,7 +325,7 @@ tokensForInit allocationMode typeName membersXObjs =
                        , "    return instance;"
                        , "}"]
   where assignments [] = "    instance.__dummy = 0;"
-        assignments xobjs = go $ unitless
+        assignments _ = go $ unitless
           where go [] = ""
                 go xobjs = joinLines $ memberAssignment allocationMode . fst <$> xobjs
         unitless = remove (isUnit . snd) (memberXObjsToPairs membersXObjs)
@@ -358,19 +358,19 @@ binderForStrOrPrn typeEnv env insidePath structTy@(StructTy (ConcreteNameTy type
 
 -- | The template for the 'str' function for a concrete deftype.
 concreteStr :: TypeEnv -> Env -> Ty -> [(String, Ty)] -> String -> Template
-concreteStr typeEnv env concreteStructTy@(StructTy (ConcreteNameTy typeName) _) memberPairs strOrPrn =
+concreteStr typeEnv env concreteStructTy@(StructTy (ConcreteNameTy typeName) _) memberPairs _ =
   Template
     (FuncTy [RefTy concreteStructTy (VarTy "q")] StringTy StaticLifetimeTy)
     (\(FuncTy [RefTy structTy _] StringTy _) -> toTemplate $ "String $NAME(" ++ tyToCLambdaFix structTy ++ " *p)")
-    (\(FuncTy [RefTy structTy@(StructTy _ concreteMemberTys) _] StringTy _) ->
+    (\(FuncTy [RefTy (StructTy _ _) _] StringTy _) ->
         tokensForStr typeEnv env typeName memberPairs concreteStructTy)
-    (\ft@(FuncTy [RefTy structTy@(StructTy _ concreteMemberTys) (VarTy "q")] StringTy _) ->
+    (\(FuncTy [RefTy (StructTy _ _) (VarTy "q")] StringTy _) ->
        concatMap (depsOfPolymorphicFunction typeEnv env [] "prn" . typesStrFunctionType typeEnv)
                  (remove isFullyGenericType (map snd memberPairs)))
 
 -- | The template for the 'str' function for a generic deftype.
 genericStr :: [String] -> Ty -> [XObj] -> String -> (String, Binder)
-genericStr pathStrings originalStructTy@(StructTy (ConcreteNameTy typeName) varTys) membersXObjs strOrPrn =
+genericStr pathStrings originalStructTy@(StructTy (ConcreteNameTy typeName) _) membersXObjs strOrPrn =
   defineTypeParameterizedTemplate templateCreator path t docs
   where path = SymPath pathStrings strOrPrn
         t = FuncTy [RefTy originalStructTy (VarTy "q")] StringTy StaticLifetimeTy
@@ -381,12 +381,12 @@ genericStr pathStrings originalStructTy@(StructTy (ConcreteNameTy typeName) varT
             t
             (\(FuncTy [RefTy concreteStructTy _] StringTy _) ->
                toTemplate $ "String $NAME(" ++ tyToCLambdaFix concreteStructTy ++ " *p)")
-            (\(FuncTy [RefTy concreteStructTy@(StructTy _ concreteMemberTys) _] StringTy _) ->
+            (\(FuncTy [RefTy concreteStructTy@(StructTy _ _) _] StringTy _) ->
                let mappings = unifySignatures originalStructTy concreteStructTy
                    correctedMembers = replaceGenericTypeSymbolsOnMembers mappings membersXObjs
                    memberPairs = memberXObjsToPairs correctedMembers
                in tokensForStr typeEnv env typeName memberPairs concreteStructTy)
-            (\ft@(FuncTy [RefTy concreteStructTy@(StructTy _ concreteMemberTys) _] StringTy _) ->
+            (\ft@(FuncTy [RefTy concreteStructTy@(StructTy _ _) _] StringTy _) ->
                let mappings = unifySignatures originalStructTy concreteStructTy
                    correctedMembers = replaceGenericTypeSymbolsOnMembers mappings membersXObjs
                    memberPairs = memberXObjsToPairs correctedMembers
@@ -416,7 +416,7 @@ tokensForStr typeEnv env typeName memberPairs concreteStructTy  =
 
 -- | Figure out how big the string needed for the string representation of the struct has to be.
 calculateStructStrSize :: TypeEnv -> Env -> [(String, Ty)] -> Ty -> String
-calculateStructStrSize typeEnv env members structTy@(StructTy (ConcreteNameTy name) _) =
+calculateStructStrSize typeEnv env members (StructTy (ConcreteNameTy name) _) =
   "  int size = snprintf(NULL, 0, \"(%s )\", \"" ++ name ++ "\");\n" ++
   unlines (map (memberPrnSize typeEnv env) members)
 
