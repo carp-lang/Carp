@@ -374,7 +374,6 @@ genericStr pathStrings originalStructTy@(StructTy (ConcreteNameTy typeName) varT
   defineTypeParameterizedTemplate templateCreator path t docs
   where path = SymPath pathStrings strOrPrn
         t = FuncTy [RefTy originalStructTy (VarTy "q")] StringTy StaticLifetimeTy
-        members = memberXObjsToPairs membersXObjs
         docs = "converts a `" ++ typeName ++ "` to a string."
         templateCreator = TemplateCreator $
           \typeEnv env ->

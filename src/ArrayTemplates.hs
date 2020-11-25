@@ -150,7 +150,6 @@ templatePopBack = defineTypeParameterizedTemplate templateCreator path t docs
 templatePopBackBang :: (String, Binder)
 templatePopBackBang =
   let aTy = RefTy (StructTy (ConcreteNameTy "Array") [VarTy "a"]) (VarTy "q")
-      valTy = VarTy "a"
   in  defineTemplate
       (SymPath ["Array"] "pop-back!")
       (FuncTy [aTy] (VarTy "a") StaticLifetimeTy)

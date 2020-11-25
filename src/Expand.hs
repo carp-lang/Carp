@@ -2,11 +2,9 @@ module Expand (expandAll, replaceSourceInfoOnXObj) where
 
 import Control.Monad.State (evalState, get, put, State)
 import Data.Foldable (foldlM)
-import Data.Maybe (fromMaybe)
 
 import Types
 import Obj
-import Project
 import Util
 import Lookup
 import TypeError
@@ -42,7 +40,6 @@ expand eval ctx xobj =
   where
     expandList :: XObj -> IO (Context, Either EvalError XObj)
     expandList (XObj (Lst xobjs) i t) = do
-      let fppl = projectFilePathPrintLength (contextProj ctx)
       case xobjs of
         [] -> pure (ctx, Right xobj)
         XObj (External _) _ _ : _ -> pure (ctx, Right xobj)
@@ -142,8 +139,7 @@ expand eval ctx xobj =
             prettyInfoFromXObj xobj ++
             ".\n\n`with` accepts only one expression, except at the top level.") Nothing)
         XObj (Mod modEnv) _ _ : args ->
-          let moduleName = fromMaybe "" (envModuleName modEnv)
-              pathToModule = pathToEnv modEnv
+          let pathToModule = pathToEnv modEnv
               implicitInit = XObj (Sym (SymPath pathToModule "init") Symbol) i t
           in expand eval ctx (XObj (Lst (implicitInit : args)) (info xobj) (ty xobj))
         f:args ->

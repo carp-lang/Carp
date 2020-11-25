@@ -483,9 +483,7 @@ catcher ctx exception =
 
 specialCommandWith :: Context -> XObj -> SymPath -> [XObj] -> IO (Context, Either EvalError XObj)
 specialCommandWith ctx xobj path forms = do
-  let pathStrings = contextPath ctx
-      env = contextEnv ctx
-      typeEnv = contextTypeEnv ctx
+  let env = contextEnv ctx
       useThese = envUseModules env
       env' = if path `elem` useThese then env else env { envUseModules = path : useThese }
       ctx' = ctx { contextGlobalEnv = env' }
@@ -579,9 +577,7 @@ annotateWithinContext qualifyDefn ctx xobj = do
 
 primitiveDefmodule :: Primitive
 primitiveDefmodule xobj ctx@(Context env i typeEnv pathStrings proj lastInput execMode history) (XObj (Sym (SymPath [] moduleName) _) _ _:innerExpressions) = do
-  let fppl = projectFilePathPrintLength proj
-
-      defineIt :: MetaData -> IO (Context, Either EvalError XObj)
+  let defineIt :: MetaData -> IO (Context, Either EvalError XObj)
       defineIt meta = do
         let parentEnv = getEnv env pathStrings
             innerEnv = Env (Map.fromList []) (Just parentEnv) (Just moduleName) [] ExternalEnv 0
@@ -794,7 +790,6 @@ loadFilesExt loadCmd ctxStart filesToLoad = foldM folder ctxStart filesToLoad
   where folder :: Context -> FilePath -> IO Context
         folder ctx file = do
          (newCtx, ret) <- loadCmd ctx [XObj (Str file) Nothing Nothing]
-         let fppl = projectFilePathPrintLength (contextProj newCtx)
          case ret of
            Left err -> throw (EvalException err)
            Right _ -> pure newCtx
