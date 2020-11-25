@@ -20,6 +20,7 @@ The key features of Carp are the following:
 * Ownership tracking enables a functional programming style while still using mutation of cache-friendly data structures under the hood
 * No hidden performance penalties – allocation and copying are explicit
 * Straightforward integration with existing C code
+* Lisp macros, compile time scripting and a helpful REPL
 
 ## Learn more
 * [The Compiler Manual](docs/Manual.md) - how to install and use the compiler
@@ -45,32 +46,21 @@ The key features of Carp are the following:
     (SDLApp.run-with-callbacks &app SDLApp.quit-on-esc tick draw state)))
 ```
 
-To build this example, save it to a file called 'example.carp' and load it with ```(load "example.carp")```, then execute ```(build)``` to build an executable, and ```(run)``` to start. The external dependencies are SDL2 and pkg-config. On macOS Catalina libiconv is also required.
+For instructions on how to run Carp code, see [this document](docs/HowToRunCode.md).
 
-For a slightly longer example, check out [Reptile](examples/reptile.carp) - a Snake clone in Carp.
+For more examples, check out the [examples](examples) directory.
 
-### Language Designer & Lead Developer
-[Erik Svedäng](http://www.eriksvedang.com) ([@e_svedang](https://twitter.com/e_svedang))
+## Maintainers
+- [Erik Svedäng](https://github.com/eriksvedang)
+- [Veit Heller](https://github.com/hellerve)
+- [Jorge Acereda](https://github.com/jacereda)
+- [Scott Olsen](https://github.com/scolsen)
+- [Tim Dévé](https://github.com/TimDeve)
 
-### Core Contributor
-[Veit Heller](http://veitheller.de) ([@hellerve](https://github.com/hellerve))
+## Contributing
+Thanks to all the [awesome people](https://github.com/carp-lang/Carp/graphs/contributors) who have contributed to Carp over the years!
 
-### Contributors
-* Markus Gustavsson
-* Fyodor Shchukin
-* Anes Lihovac
-* Chris Hall
-* Tom Smeding
-* Dan Connolly
-* Reini Urban
-* Jonas Granquist
-* Joel Kaasinen ([@opqdonut](https://github.com/opqdonut))
-* Eric Shimizu Karbstein ([@GrayJack](https://github.com/GrayJack))
-* Jorge Acereda ([@jacereda](https://github.com/jacereda))
-* Scott Olsen ([@scolsen](https://github.com/scolsen))
-* Tim Dévé ([@timdeve](https://github.com/TimDeve))
-
-Are you missing from the contributors list? Please send a pull request!
+We are always looking for more help &ndash; check out the [contributing guide](docs/contributing.md) to get started.
 
 ## License
 

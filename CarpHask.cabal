@@ -14,6 +14,7 @@ extra-source-files:  README.md
 cabal-version:       >=1.10
 
 library
+  ghc-options:         -Wall -Wno-name-shadowing -Wno-unused-matches -Wno-incomplete-patterns
   hs-source-dirs:      src
   exposed-modules:     Info,
                        Obj,

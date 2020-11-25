@@ -10,27 +10,18 @@ import System.Console.Haskeline ( getInputLine
                                 , completeWordWithPrev
                                 )
 import Data.List (isPrefixOf)
-import Control.Monad.IO.Class (liftIO)
 import Control.Monad.State.Strict
 import System.Exit (exitSuccess)
 import qualified Data.Map as Map
 
-import Types
 import Obj
 import Project
-import Util
 import ColorText
 import Eval
 import Path
 import Lookup
 import Parsing (balance)
 
-import Debug.Trace
-
-instance MonadState s m => MonadState s (InputT m) where
-    get = lift get
-    put = lift . put
-    state = lift . state
 
 completeKeywordsAnd :: Context -> String -> [Completion]
 completeKeywordsAnd context word =
@@ -86,7 +77,7 @@ readlineSettings historyFile =
     complete = completeWordWithPrev Nothing ['(', ')', '[', ']', ' ', '\t', '\n']
                   (\_ w -> do
                       ctx <- get
-                      return (completeKeywordsAnd ctx w)),
+                      pure (completeKeywordsAnd ctx w)),
     historyFile = Just historyFile,
     autoAddHistory = True
   }
@@ -129,12 +120,12 @@ treatSpecialInput arg = arg
 
 repl :: String -> String -> InputT (StateT Context IO) ()
 repl readSoFar prompt =
-  do context <- get
+  do context <- lift $ get
      input <- getInputLine (strWithColor Yellow prompt)
      case input of
         Nothing -> do
-          liftIO exitSuccess
-          return ()
+          _ <- liftIO exitSuccess
+          pure ()
         Just i -> do
           let concatenated = readSoFar ++ i ++ "\n"
               balanced = balance concatenated
@@ -143,10 +134,11 @@ repl readSoFar prompt =
             "" -> do
               let input' = if concatenated == "\n" then contextLastInput context else concatenated -- Entering an empty string repeats last input
               context' <- liftIO $ executeString True True (resetAlreadyLoadedFiles context) (treatSpecialInput input') "REPL"
-              put context'
+              lift $ put context'
               repl "" (projectPrompt proj)
             _ -> repl concatenated (if projectBalanceHints proj then balanced else "")
 
+resetAlreadyLoadedFiles :: Context -> Context
 resetAlreadyLoadedFiles context =
   let proj = contextProj context
       proj' = proj { projectAlreadyLoaded = [] }
