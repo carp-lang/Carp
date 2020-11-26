@@ -21,6 +21,7 @@
 (load-once "Introspect.carp")
 (load-once "Pointer.carp")
 (load-once "Unsafe.carp")
+(load-once "Function.carp")
 (load-once "Generics.carp")
 (load-once "Maybe.carp")
 (load-once "Result.carp")

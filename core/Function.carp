@@ -1,0 +1,7 @@
+(defmodule Function
+  (doc unsafe-ptr "returns void pointer to the function passed in."
+                 "This is unsafe as unsafe-ptr can't check the value passed in is a function.")
+  (deftemplate unsafe-ptr (Fn [(Ref a)] (Ptr ())) "void* $NAME($a *fn)" "$DECL { return fn->callback; }")
+  (doc unsafe-env-ptr "returns void pointer to the environment captured by a lambda."
+                   "This is unsafe as unsafe-env-ptr can't check the value passed in is a function.")
+  (deftemplate unsafe-env-ptr (Fn [(Ref a)] (Ptr ())) "void* $NAME($a *fn)" "$DECL { return fn->env; }"))
