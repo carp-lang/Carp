@@ -68,7 +68,7 @@ Array Uint8_from_MINUS_bytes(Array* a) {
     uint8_t* d = (uint8_t*)a->data;
     x.len = a->len;
     x.capacity = a->capacity;
-    x.data = malloc(x.len);
+    x.data = CARP_MALLOC(x.len);
     memcpy(x.data, a->data, x.len);
 
     return x;
@@ -135,7 +135,7 @@ Array Uint16_from_MINUS_bytes(Array* a) {
     uint8_t* d = (uint8_t*)a->data;
     x.len = a->len / 2;
     x.capacity = a->capacity / 2;
-    x.data = malloc(x.len);
+    x.data = CARP_MALLOC(x.len);
     memcpy(x.data, a->data, x.len);
 
     return x;
@@ -202,7 +202,7 @@ Array Uint32_from_MINUS_bytes(Array* a) {
     uint8_t* d = (uint8_t*)a->data;
     x.len = a->len / 4;
     x.capacity = a->capacity / 4;
-    x.data = malloc(x.len);
+    x.data = CARP_MALLOC(x.len);
     memcpy(x.data, a->data, x.len);
 
     return x;
@@ -269,7 +269,7 @@ Array Uint64_from_MINUS_bytes(Array* a) {
     uint8_t* d = (uint8_t*)a->data;
     x.len = a->len / 2;
     x.capacity = a->capacity / 2;
-    x.data = malloc(x.len);
+    x.data = CARP_MALLOC(x.len);
     memcpy(x.data, a->data, x.len);
 
     return x;
@@ -336,7 +336,7 @@ Array Int8_from_MINUS_bytes(Array* a) {
     int8_t* d = (int8_t*)a->data;
     x.len = a->len;
     x.capacity = a->capacity;
-    x.data = malloc(x.len);
+    x.data = CARP_MALLOC(x.len);
     memcpy(x.data, a->data, x.len);
 
     return x;
@@ -403,7 +403,7 @@ Array Int16_from_MINUS_bytes(Array* a) {
     uint8_t* d = (uint8_t*)a->data;
     x.len = a->len;
     x.capacity = a->capacity;
-    x.data = malloc(x.len);
+    x.data = CARP_MALLOC(x.len);
     memcpy(x.data, a->data, x.len);
 
     return x;
@@ -470,7 +470,7 @@ Array Int32_from_MINUS_bytes(Array* a) {
     uint8_t* d = (uint8_t*)a->data;
     x.len = a->len / 4;
     x.capacity = a->capacity / 4;
-    x.data = malloc(x.len);
+    x.data = CARP_MALLOC(x.len);
     memcpy(x.data, a->data, x.len);
 
     return x;
@@ -537,7 +537,7 @@ Array Int64_from_MINUS_bytes(Array* a) {
     uint8_t* d = (uint8_t*)a->data;
     x.len = a->len / 2;
     x.capacity = a->capacity / 2;
-    x.data = malloc(x.len);
+    x.data = CARP_MALLOC(x.len);
     memcpy(x.data, a->data, x.len);
 
     return x;
