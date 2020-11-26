@@ -211,12 +211,12 @@
 
 (defn array-first []
   (let [xs [@"a" @"b" @"c"]
-        result (Array.unsafe-first &xs)]
+        result @(Array.unsafe-first &xs)]
     (assert (= @"a" result))))
 
 (defn array-last []
   (let [xs [@"a" @"b" @"c"]
-        result (Array.unsafe-last &xs)]
+        result @(Array.unsafe-last &xs)]
     (assert (= @"c" result))))
 
 (defn array-eq-1 []
