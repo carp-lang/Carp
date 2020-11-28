@@ -175,7 +175,7 @@ unifySignatures at ct = Map.fromList (unify at ct)
 
         unify (VarTy a) value = [(a, value)]
 
-        unify (StructTy v@(VarTy _) aArgs) (StructTy n bArgs) = unify v n ++ concat (zipWith unify aArgs bArgs)
+        unify (StructTy v'@(VarTy _) aArgs) (StructTy n bArgs) = unify v' n ++ concat (zipWith unify aArgs bArgs)
         unify (StructTy a@(ConcreteNameTy _) aArgs) (StructTy b bArgs)
             | a == b = concat (zipWith unify aArgs bArgs)
             | otherwise = [] -- error ("Can't unify " ++ a ++ " with " ++ b)

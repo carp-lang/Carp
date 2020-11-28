@@ -16,7 +16,7 @@ templateEMap =
   let fTy = FuncTy [VarTy "a"] (VarTy "a") (VarTy "fq")
       aTy = StructTy (ConcreteNameTy "Array") [VarTy "a"]
       bTy = StructTy (ConcreteNameTy "Array") [VarTy "a"]
-      elem = "((($a*)a.data)[i])"
+      elt = "((($a*)a.data)[i])"
   in  defineTemplate
       (SymPath ["Array"] "endo-map")
       (FuncTy [RefTy fTy (VarTy "q"), aTy] bTy StaticLifetimeTy)
@@ -25,7 +25,7 @@ templateEMap =
       (toTemplate $ unlines
         ["$DECL { "
         ,"    for(int i = 0; i < a.len; ++i) {"
-        ,"        (($a*)a.data)[i] = " ++ templateCodeForCallingLambda "(*f)" fTy [elem] ++ ";"
+        ,"        (($a*)a.data)[i] = " ++ templateCodeForCallingLambda "(*f)" fTy [elt] ++ ";"
         ,"    }"
         ,"    return a;"
         ,"}"
@@ -50,7 +50,7 @@ templateEFilter = defineTypeParameterizedTemplate templateCreator path t docs
     path = SymPath ["Array"] "endo-filter"
     t = FuncTy [RefTy fTy (VarTy "w"), aTy] aTy StaticLifetimeTy
     docs = "filters array members using a function. This function takes ownership."
-    elem = "&((($a*)a.data)[i])"
+    elt = "&((($a*)a.data)[i])"
     templateCreator = TemplateCreator $
       \typeEnv env ->
         Template
@@ -62,7 +62,7 @@ templateEFilter = defineTypeParameterizedTemplate templateCreator path t docs
             in ["$DECL { "
                , "    int insertIndex = 0;"
                , "    for(int i = 0; i < a.len; ++i) {"
-               , "        if(" ++ templateCodeForCallingLambda "(*predicate)" fTy [elem] ++ ") {"
+               , "        if(" ++ templateCodeForCallingLambda "(*predicate)" fTy [elt] ++ ") {"
                , "            ((($a*)a.data)[insertIndex++]) = (($a*)a.data)[i];"
                , "        } else {"
                , "        " ++ deleter "i"
@@ -381,7 +381,7 @@ templateCopyArray = defineTypeParameterizedTemplate templateCreator path t docs
 
 copyTy :: TypeEnv -> Env -> Ty -> [Token]
 copyTy typeEnv env (StructTy (ConcreteNameTy "Array") [innerType]) =
-  if isManaged
+  if managed
   then
     [ TokC   "    for(int i = 0; i < a->len; i++) {\n"
     , TokC $ "    " ++ insideArrayCopying typeEnv env innerType
@@ -389,7 +389,7 @@ copyTy typeEnv env (StructTy (ConcreteNameTy "Array") [innerType]) =
     ]
   else
     [TokC "    memcpy(copy.data, a->data, sizeof(", TokTy (VarTy "a") Normal, TokC ") * a->len);\n"]
-  where isManaged =
+  where managed =
           case findFunctionForMember typeEnv env "delete"
                (typesDeleterFunctionType innerType) ("Inside array.", innerType) of
             FunctionFound _ -> True
