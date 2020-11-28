@@ -169,7 +169,7 @@ type TypeMappings = Map.Map String Ty
 -- | From two types, one with type variables and one without (e.g. (Fn ["t0"] "t1") and (Fn [Int] Bool))
 --   create mappings that translate from the type variables to concrete types, e.g. "t0" => Int, "t1" => Bool
 unifySignatures :: Ty -> Ty -> TypeMappings
-unifySignatures v t = Map.fromList (unify v t)
+unifySignatures at ct = Map.fromList (unify at ct)
   where unify :: Ty -> Ty -> [(String, Ty)]
         unify (VarTy _) (VarTy _) = [] -- if a == b then [] else error ("Can't unify " ++ show a ++ " with " ++ show b)
 
