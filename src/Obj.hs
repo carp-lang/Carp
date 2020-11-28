@@ -327,7 +327,7 @@ pretty = visit 0
                                               Nothing -> ""
             Def -> "def"
             Fn _ captures -> "fn" ++ " <" ++ prettyCaptures captures ++ ">"
-            Closure elem _ -> "closure<" ++ pretty elem ++ ">"
+            Closure elt _ -> "closure<" ++ pretty elt ++ ">"
             If -> "if"
             Match MatchValue -> "match"
             Match MatchRef -> "match-ref"
@@ -360,10 +360,10 @@ pretty = visit 0
             With -> "with"
 
 prettyUpTo :: Int -> XObj -> String
-prettyUpTo max xobj =
+prettyUpTo lim xobj =
   let prettied = pretty xobj
-  in if length prettied > max
-     then take max prettied ++ "..." ++ end
+  in if length prettied > lim
+     then take lim prettied ++ "..." ++ end
      else prettied
   where end =
           -- we match all of them explicitly to get errors if we forget one
@@ -431,18 +431,18 @@ data EvalError = EvalError String [XObj] FilePathPrintLength (Maybe Info)
                deriving (Eq)
 
 instance Show EvalError where
-  show (HasStaticCall xobj info) = "Expression " ++ (pretty xobj) ++ " has unexpected static call"++ getInfo info
-    where getInfo (Just i) = " at " ++ prettyInfo i ++ "."
-          getInfo Nothing = ""
-  show (EvalError msg t fppl i) = msg ++ getInfo i ++ getTrace
-    where getInfo (Just i) = " at " ++ machineReadableInfo fppl i ++ "."
-          getInfo Nothing = ""
+  show (HasStaticCall xobj info) = "Expression " ++ (pretty xobj) ++ " has unexpected static call"++ showInfo info
+    where showInfo (Just i) = " at " ++ prettyInfo i ++ "."
+          showInfo Nothing = ""
+  show (EvalError msg t fppl info) = msg ++ showInfo info ++ getTrace
+    where showInfo (Just i) = " at " ++ machineReadableInfo fppl i ++ "."
+          showInfo Nothing = ""
           getTrace =
             if null t
             then ""
             else
               "\n\nTraceback:\n" ++
-              unlines (map (\x -> prettyUpTo 60 x ++ getInfo (xobjInfo x)) t)
+              unlines (map (\x -> prettyUpTo 60 x ++ showInfo (xobjInfo x)) t)
 
 -- | Get the type of an XObj as a string.
 typeStr :: XObj -> String
