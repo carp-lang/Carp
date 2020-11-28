@@ -81,3 +81,9 @@
         (Maybe.Nothing)
         (Maybe.Just (from-cstr e)))))
 )
+
+(defmacro println* [:rest forms]
+  (list 'IO.println (build-str* forms)))
+
+(defmacro print* [:rest forms]
+  (list 'IO.print (build-str* forms)))

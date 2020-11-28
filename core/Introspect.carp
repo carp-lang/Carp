@@ -34,24 +34,24 @@
           false
           (Dynamic.= (Symbol.from "primitive") (car s)))))
 
-(doc external?
-    "Is this binding external?")
+  (doc external?
+       "Is this binding external?")
   (defndynamic external? [binding]
     (let [s (s-expr binding)]
       (if (empty? s)
-          false
-          (Dynamic.= (Symbol.from "external") (car s)))))
+        false
+        (Dynamic.= (Symbol.from "external") (car s)))))
 
   (doc variable?
-    "Is this binding a variable?")
+       "Is this binding a variable?")
   (defndynamic variable? [binding]
     (let [s (s-expr binding)]
       (if (empty? s)
-          false
-          (Dynamic.= (Symbol.from "def") (car s)))))
+        false
+        (Dynamic.= (Symbol.from "def") (car s)))))
 
   (doc type?
-    "Is this binding a type?")
+       "Is this binding a type?")
   (defndynamic type? [binding]
     (let [s (s-expr binding)]
       (if (empty? s)
@@ -73,6 +73,12 @@
       (if (or (empty? s) (< (length s) 3))
           false
           (list? (caddr s)))))
+
+  (doc implements? "Does `function` implement `interface`?")
+  (defmacro implements? [interface function]
+    (eval (list 'any?
+                (list 'fn (array 'x) (list '= 'x interface))
+                (list 'meta function "implements"))))
 
   (doc arity
     "What's the arity of this binding?

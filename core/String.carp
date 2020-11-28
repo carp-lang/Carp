@@ -465,3 +465,13 @@
   (implements str Pointer.str)
   (defn prn [a] (Pointer.str a))
   )
+
+(defndynamic build-str* [forms]
+  (if (= (length forms) 0)
+    (list "")
+    (if (= (length forms) 1)
+      (list 'ref (list 'str (car forms)))
+      (list 'ref (list 'String.append (list 'ref (list 'str (car forms))) (build-str* (cdr forms)))))))
+
+(defmacro str* [:rest forms]
+  (list 'copy (build-str* forms)))
