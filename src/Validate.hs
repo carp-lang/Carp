@@ -49,8 +49,8 @@ okXObjForType typeEnv typeVariables xobj =
 
 -- | Can this type be used as a member for a deftype?
 canBeUsedAsMemberType :: TypeEnv -> [Ty] -> Ty -> XObj -> Either TypeError ()
-canBeUsedAsMemberType typeEnv typeVariables t xobj =
-  case t of
+canBeUsedAsMemberType typeEnv typeVariables ty xobj =
+  case ty of
     UnitTy    -> pure ()
     IntTy     -> pure ()
     FloatTy   -> pure ()
@@ -75,7 +75,7 @@ canBeUsedAsMemberType typeEnv typeVariables t xobj =
           do _ <- canBeUsedAsMemberType typeEnv typeVariables tyVars xobj
              case lookupInEnv (SymPath [] name') (getTypeEnv typeEnv) of
                Just _ -> pure ()
-               Nothing -> Left (NotAmongRegisteredTypes t xobj)
+               Nothing -> Left (NotAmongRegisteredTypes ty xobj)
         -- e.g. (deftype (Higher (f a)) (Of [(f a)]))
         (VarTy _) -> pure ()
     s@(StructTy name tyvar) ->
@@ -84,26 +84,26 @@ canBeUsedAsMemberType typeEnv typeVariables t xobj =
       else case name of
              (ConcreteNameTy n) ->
                case lookupInEnv (SymPath [] n) (getTypeEnv typeEnv) of
-                 Just (_, (Binder _ (XObj (Lst (XObj (Deftype t') _ _ : _))_ _))) ->
-                   checkInhabitants t'
-                 Just (_, (Binder _ (XObj (Lst (XObj (DefSumtype t') _ _ : _))_ _))) ->
-                   checkInhabitants t'
-                 _ -> Left (InvalidMemberType t xobj)
+                 Just (_, (Binder _ (XObj (Lst (XObj (Deftype t) _ _ : _))_ _))) ->
+                   checkInhabitants t
+                 Just (_, (Binder _ (XObj (Lst (XObj (DefSumtype t) _ _ : _))_ _))) ->
+                   checkInhabitants t
+                 _ -> Left (InvalidMemberType ty xobj)
                  -- Make sure any struct types have arguments before they can be used as members.
-                 where checkInhabitants ty =
-                         case ty of
+                 where checkInhabitants t =
+                         case t of
                          (StructTy _ vars) ->
                            if length vars == length tyvar
                            then pure ()
                            else Left (UninhabitedConstructor ty xobj (length tyvar) (length vars))
                          _ -> Left (InvalidMemberType ty xobj)
-             _ -> Left (InvalidMemberType t xobj)
-    VarTy _ -> if foldr (||) False (map (isCaptured t) typeVariables)
+             _ -> Left (InvalidMemberType ty xobj)
+    VarTy _ -> if foldr (||) False (map (isCaptured ty) typeVariables)
                then pure ()
-               else Left (InvalidMemberType t xobj)
+               else Left (InvalidMemberType ty xobj)
                where
                  -- If a variable `a` appears in a higher-order polymorphic form, such as `(f a)`
                  -- `a` may be used as a member, sans `f`.
                  isCaptured t v@(VarTy _) = t == v
                  isCaptured t (StructTy (VarTy _) vars) = any (== t) vars
-    _ -> Left (InvalidMemberType t xobj)
+    _ -> Left (InvalidMemberType ty xobj)
