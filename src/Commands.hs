@@ -406,8 +406,8 @@ commandCons :: CommandCallback
 commandCons ctx [x, xs] =
   pure $ case xs of
     XObj (Lst lst) _ _ ->
-      (ctx, Right (XObj (Lst (x : lst)) (info x) (ty x))) -- TODO: probably not correct to just copy 'i' and 't'?
-    XObj (Arr arr) _ _ -> (ctx, Right (XObj (Arr (x : arr)) (info x) (ty x)))
+      (ctx, Right (XObj (Lst (x : lst)) (info x) (xobjTy x))) -- TODO: probably not correct to just copy 'i' and 't'?
+    XObj (Arr arr) _ _ -> (ctx, Right (XObj (Arr (x : arr)) (info x) (xobjTy x)))
     _ -> evalError ctx "Applying 'cons' to non-list or empty list." (info xs)
 
 commandConsLast :: CommandCallback

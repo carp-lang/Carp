@@ -68,7 +68,7 @@ concretizeXObj allowAmbiguityRoot typeEnv rootEnv visitedDefinitions root =
       else do _ <- concretizeTypeOfXObj typeEnv body
               visitedBody <- visit False Inside env body
               pure $ do okBody <- visitedBody
-                        let t = fromMaybe UnitTy (ty okBody)
+                        let t = fromMaybe UnitTy (xobjTy okBody)
                         if not (isTypeGeneric t) && t /= UnitTy && t /= IntTy
                           then Left (MainCanOnlyReturnUnitOrInt nameSymbol t)
                           else return [defn, nameSymbol, args, okBody]
@@ -228,7 +228,7 @@ concretizeXObj allowAmbiguityRoot typeEnv rootEnv visitedDefinitions root =
         Just (foundEnv, binder)
           | envIsExternal foundEnv ->
             let theXObj = binderXObj binder
-                Just theType = ty theXObj
+                Just theType = xobjTy theXObj
                 typeOfVisited = fromMaybe (error ("Missing type on " ++ show xobj ++ " at " ++ prettyInfoFromXObj xobj ++ " when looking up path " ++ show path)) t
             in if --(trace $ "CHECKING " ++ getName xobj ++ " : " ++ show theType ++ " with visited type " ++ show typeOfVisited ++ " and visited definitions: " ++ show visitedDefinitions) $
                   isTypeGeneric theType && not (isTypeGeneric typeOfVisited)
@@ -343,7 +343,7 @@ collectCapturedVars root = removeDuplicates (map decreaseCaptureLevel (visit roo
         (Lst _) -> visitList xobj
         (Arr _) -> visitArray xobj
         -- TODO: Static Arrays!
-        sym@(Sym _ (LookupLocal (Capture _))) -> [XObj sym (Just dummyInfo) (ty xobj)]
+        sym@(Sym _ (LookupLocal (Capture _))) -> [XObj sym (Just dummyInfo) (xobjTy xobj)]
         _ -> []
 
     visitList :: XObj -> [XObj]
@@ -553,7 +553,7 @@ modeFromPath env p =
 concretizeDefinition :: Bool -> TypeEnv -> Env -> [SymPath] -> XObj -> Ty -> Either TypeError (XObj, [XObj])
 concretizeDefinition allowAmbiguity typeEnv globalEnv visitedDefinitions definition concreteType =
   let SymPath pathStrings name = getPath definition
-      Just polyType = ty definition
+      Just polyType = xobjTy definition
       suffix = polymorphicSuffix polyType concreteType
       newPath = SymPath pathStrings (name ++ suffix)
   in
@@ -576,14 +576,14 @@ concretizeDefinition allowAmbiguity typeEnv globalEnv visitedDefinitions definit
         if name == "NULL"
         then Right (definition, []) -- A hack to make all versions of NULL have the same name
         else let withNewPath = setPath definition newPath
-                 withNewType = withNewPath { ty = Just concreteType }
+                 withNewType = withNewPath { xobjTy = Just concreteType }
              in  Right (withNewType, [])
       -- TODO: This old form shouldn't be necessary, but somehow, some External xobjs are still registered without a ty xobj position.
       XObj (Lst [XObj (External _) _ _, _]) _ _ ->
         if name == "NULL"
         then Right (definition, []) -- A hack to make all versions of NULL have the same name
         else let withNewPath = setPath definition newPath
-                 withNewType = withNewPath { ty = Just concreteType }
+                 withNewType = withNewPath { xobjTy = Just concreteType }
              in  Right (withNewType, [])
       XObj (Lst [XObj (Instantiate template) _ _, _]) _ _ ->
         Right (instantiateTemplate newPath concreteType template)
@@ -593,7 +593,7 @@ concretizeDefinition allowAmbiguity typeEnv globalEnv visitedDefinitions definit
 -- | Find ALL functions with a certain name, matching a type signature.
 allFunctionsWithNameAndSignature :: Env -> String -> Ty -> [(Env, Binder)]
 allFunctionsWithNameAndSignature env functionName functionType =
-  filter (predicate . ty . binderXObj . snd) (multiLookupALL functionName env)
+  filter (predicate . xobjTy . binderXObj . snd) (multiLookupALL functionName env)
   where
     predicate (Just t) = --trace ("areUnifiable? " ++ show functionType ++ " == " ++ show t ++ " " ++ show (areUnifiable functionType t)) $
                          areUnifiable functionType t
@@ -653,7 +653,7 @@ data FunctionFinderResult = FunctionFound String
 -- | TODO: COMMENT THIS
 getConcretizedPath :: XObj -> Ty -> SymPath
 getConcretizedPath single functionType =
-  let Just t' = ty single
+  let Just t' = xobjTy single
       (SymPath pathStrings name) = getPath single
       suffix = polymorphicSuffix t' functionType
   in SymPath pathStrings (name ++ suffix)
@@ -774,7 +774,7 @@ manageMemory typeEnv globalEnv root =
                Right _ ->
                  -- We know that we want to add a deleter for the static array here
                  do let var = varOfXObj xobj
-                        Just (RefTy t@(StructTy (ConcreteNameTy "StaticArray") [_]) _) = ty xobj
+                        Just (RefTy t@(StructTy (ConcreteNameTy "StaticArray") [_]) _) = xobjTy xobj
                         deleter = case nameOfPolymorphicFunction typeEnv globalEnv (FuncTy [t] UnitTy StaticLifetimeTy) "delete" of
                                     Just pathOfDeleteFunc ->
                                       ProperDeleter pathOfDeleteFunc var
@@ -1141,7 +1141,7 @@ manageMemory typeEnv globalEnv root =
 
         addToLifetimesMappingsIfRef :: Bool -> XObj -> State MemState ()
         addToLifetimesMappingsIfRef internal xobj =
-          case ty xobj of
+          case xobjTy xobj of
             Just (RefTy _ (VarTy lt)) ->
               do m@(MemState _ _ lifetimes) <- get
                  case Map.lookup lt lifetimes of
@@ -1171,7 +1171,7 @@ manageMemory typeEnv globalEnv root =
         checkThatRefTargetIsAlive :: XObj -> State MemState (Either TypeError XObj)
         checkThatRefTargetIsAlive xobj =
           -- TODO: Replace this whole thing with a function that collects all lifetime variables in a type.
-          case ty xobj of
+          case xobjTy xobj of
             Just (RefTy _ (VarTy lt)) ->
               performCheck lt
             Just (FuncTy _ _ (VarTy lt)) ->
@@ -1249,7 +1249,7 @@ manageMemory typeEnv globalEnv root =
 
         createDeleter :: XObj -> Maybe Deleter
         createDeleter xobj =
-          case ty xobj of
+          case xobjTy xobj of
             Just (RefTy _ _) -> Just (RefDeleter (varOfXObj xobj))
             Just t -> let var = varOfXObj xobj
                       in  if isExternalType typeEnv t
@@ -1270,7 +1270,7 @@ manageMemory typeEnv globalEnv root =
           else case createDeleter xobj of
                  Just deleter -> do MemState deleters deps lifetimes <- get
                                     let newDeleters = Set.insert deleter deleters
-                                        Just t = ty xobj
+                                        Just t = xobjTy xobj
                                         newDeps = deps ++ depsForDeleteFunc typeEnv globalEnv t
                                     put (MemState newDeleters newDeps lifetimes)
                  Nothing -> pure ()
@@ -1294,7 +1294,7 @@ manageMemory typeEnv globalEnv root =
 
         unmanage :: XObj -> State MemState (Either TypeError ())
         unmanage xobj =
-          let Just t = ty xobj
+          let Just t = xobjTy xobj
           in if isManaged typeEnv t && not (isGlobalFunc xobj) && not (isExternalType typeEnv t)
              then do MemState deleters deps lifetimes <- get
                      case deletersMatchingXObj xobj deleters of
@@ -1310,7 +1310,7 @@ manageMemory typeEnv globalEnv root =
         -- | Check that the value being referenced hasn't already been given away
         refCheck :: XObj -> State MemState (Either TypeError ())
         refCheck xobj =
-          let Just t = ty xobj
+          let Just t = xobjTy xobj
               isGlobalVariable = case xobj of
                                    XObj (Sym _ (LookupGlobal _ _)) _ _ -> True
                                    _ -> False

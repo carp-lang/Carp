@@ -194,7 +194,7 @@ eval ctx xobj@(XObj o i t) preference =
                      (newCtx, res) <- eval ctx x preference
                      case res of
                        Right okX -> do
-                        let binder = Binder emptyMeta (XObj (Lst [(XObj LetDef Nothing Nothing), XObj (Sym (SymPath [] n) Symbol) Nothing Nothing, okX]) Nothing (ty okX))
+                        let binder = Binder emptyMeta (XObj (Lst [(XObj LetDef Nothing Nothing), XObj (Sym (SymPath [] n) Symbol) Nothing Nothing, okX]) Nothing (xobjTy okX))
                             Just e = contextInternalEnv ctx
                         pure $ Right (newCtx {contextInternalEnv=Just (envInsertAt e (SymPath [] n) binder)})
                        Left err -> pure $ Left err
@@ -390,7 +390,7 @@ executeString doCatch printResult ctx input fileName =
                   (res, ctx) <- foldM interactiveFolder
                                     (XObj (Lst []) (Just dummyInfo) (Just UnitTy), ctx)
                                     xobjs
-                  when (printResult && ty res /= Just UnitTy)
+                  when (printResult && xobjTy res /= Just UnitTy)
                     (putStrLnWithColor Yellow ("=> " ++ pretty res))
                   pure ctx
         interactiveFolder (_, context) xobj =
@@ -850,7 +850,7 @@ buildMainFunction xobj =
             , XObj (Sym (SymPath [] "main") Symbol) di Nothing
             , XObj (Arr []) di Nothing
             , XObj (Lst [ XObj Do di Nothing
-                        , case ty xobj of
+                        , case xobjTy xobj of
                             Just UnitTy -> xobj
                             Just (RefTy _ _) -> XObj (Lst [XObj (Sym (SymPath [] "println*") Symbol) di Nothing, xobj])
                                                 di (Just UnitTy)
@@ -921,8 +921,8 @@ typeCheckValueAgainstBinder ctx val binder = do
     Right (val', _) -> go ctx' binderTy val'
     Left err -> (ctx', Left err)
   where path = (getPath (binderXObj binder))
-        binderTy = ty (binderXObj binder)
-        typeErr x = evalError ctx ("can't `set!` " ++ show path ++ " to a value of type " ++ show (fromJust (ty x)) ++ ", " ++ show path ++ " has type " ++ show (fromJust binderTy)) (info x)
+        binderTy = xobjTy (binderXObj binder)
+        typeErr x = evalError ctx ("can't `set!` " ++ show path ++ " to a value of type " ++ show (fromJust (xobjTy x)) ++ ", " ++ show path ++ " has type " ++ show (fromJust binderTy)) (info x)
         go ctx (Just DynamicTy) x = (ctx, Right x)
         go ctx t x@(XObj _ _ t') = if t == t' then (ctx, Right x) else typeErr x
 

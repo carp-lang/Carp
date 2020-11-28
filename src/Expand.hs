@@ -141,7 +141,7 @@ expand eval ctx xobj =
         XObj (Mod modEnv) _ _ : args ->
           let pathToModule = pathToEnv modEnv
               implicitInit = XObj (Sym (SymPath pathToModule "init") Symbol) i t
-          in expand eval ctx (XObj (Lst (implicitInit : args)) (info xobj) (ty xobj))
+          in expand eval ctx (XObj (Lst (implicitInit : args)) (info xobj) (xobjTy xobj))
         f:args ->
           do (_, expandedF) <- expand eval ctx f
              (ctx'', expandedArgs) <- foldlM successiveExpand (ctx, Right []) args

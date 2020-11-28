@@ -129,7 +129,7 @@ binderToHtml (Binder meta xobj) =
   let name = getSimpleName xobj
       maybeNameAndArgs = getSimpleNameWithArgs xobj
       description = getBinderDescription xobj
-      typeSignature = case ty xobj of
+      typeSignature = case xobjTy xobj of
                  Just t -> show (beautifyType t) -- NOTE: This destroys user-defined names of type variables!
                  Nothing -> ""
       docString = case Meta.get "doc" meta of

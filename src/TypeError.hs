@@ -392,7 +392,7 @@ recursiveLookupTy mappings t = case t of
 
 showTypeFromXObj :: TypeMappings -> XObj -> String
 showTypeFromXObj mappings xobj =
-  case ty xobj of
+  case xobjTy xobj of
     Just t -> show (recursiveLookupTy mappings t)
     Nothing -> "Type missing"
 

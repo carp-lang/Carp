@@ -225,7 +225,7 @@ machineReadableInfoFromXObj fppl xobj =
 -- | Obj with eXtra information.
 data XObj = XObj { obj :: Obj
                  , info :: Maybe Info
-                 , ty :: Maybe Ty
+                 , xobjTy :: Maybe Ty
                  } deriving (Show, Eq, Ord)
 
 getBinderDescription :: XObj -> String
@@ -424,7 +424,7 @@ prettyUpTo max xobj =
 
 prettyCaptures :: Set.Set XObj -> String
 prettyCaptures captures =
-  joinWithComma (map (\x -> getName x ++ " : " ++ fromMaybe "" (fmap show (ty x))) (Set.toList captures))
+  joinWithComma (map (\x -> getName x ++ " : " ++ fromMaybe "" (fmap show (xobjTy x))) (Set.toList captures))
 
 data EvalError = EvalError String [XObj] FilePathPrintLength (Maybe Info)
                | HasStaticCall XObj (Maybe Info)
@@ -446,7 +446,7 @@ instance Show EvalError where
 
 -- | Get the type of an XObj as a string.
 typeStr :: XObj -> String
-typeStr xobj = case ty xobj of
+typeStr xobj = case xobjTy xobj of
                  Nothing -> "" --" : _"
                  Just t -> " : " ++ show t
 
@@ -526,7 +526,7 @@ showBinderIndented indent (name, Binder meta xobj) =
   then ""
   else replicate indent ' ' ++ name ++
        -- " (" ++ show (getPath xobj) ++ ")" ++
-       " : " ++ showMaybeTy (ty xobj)
+       " : " ++ showMaybeTy (xobjTy xobj)
        -- ++ " <" ++ getBinderDescription xobj ++ ">"
 
 -- | Get a list of pairs from a deftype declaration.
@@ -773,7 +773,7 @@ defineInterface name t paths info =
 
 -- | Unsafe way of getting the type from an XObj
 forceTy :: XObj -> Ty
-forceTy xobj = fromMaybe (error ("No type in " ++ show xobj)) (ty xobj)
+forceTy xobj = fromMaybe (error ("No type in " ++ show xobj)) (xobjTy xobj)
 
 -- | How should the compiler be run? Interactively or just build / build & run and then quit?
 data ExecutionMode = Repl | Build | BuildAndRun | Install String | Check deriving (Show, Eq)

@@ -171,7 +171,7 @@ define :: Bool -> Context -> XObj -> IO Context
 define hidden ctx@(Context globalEnv _ typeEnv _ proj _ _ _) annXObj =
   let previousType =
         case lookupInEnv (getPath annXObj) globalEnv of
-          Just (_, Binder _ found) -> ty found
+          Just (_, Binder _ found) -> xobjTy found
           Nothing -> Nothing
       previousMeta = existingMeta globalEnv annXObj
       adjustedMeta = if hidden
@@ -658,14 +658,14 @@ primitiveType _ ctx [x@(XObj (Sym path@(SymPath [] name) _) _ _)] =
                         >>= pure . Lst . rights . map snd
                         >>= \obj -> pure (ctx, Right $ (XObj obj Nothing Nothing))
         go ctx binder =
-          case (ty (binderXObj binder))of
+          case (xobjTy (binderXObj binder))of
             Nothing -> noTypeError ctx x
             Just t -> pure (ctx, Right (reify t))
 primitiveType _ ctx [x@(XObj (Sym qualifiedPath _) _ _)] =
   maybe (notFound ctx x qualifiedPath) (go ctx . snd) (lookupInEnv qualifiedPath env)
   where env = contextGlobalEnv ctx
         go ctx binder =
-          case (ty (binderXObj binder)) of
+          case (xobjTy (binderXObj binder)) of
             Nothing -> noTypeError ctx x
             Just t -> pure (ctx, Right $ reify t)
 -- As a special case, we force evaluation on sequences such as (type (type 1))

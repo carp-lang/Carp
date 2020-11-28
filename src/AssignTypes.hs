@@ -40,11 +40,11 @@ assignTypes mappings root = visit root
     visitStaticArray _ = error "The function 'visitStaticArray' only accepts XObjs with arrays in them."
 
     assignType :: XObj -> Either TypeError XObj
-    assignType xobj = case ty xobj of
+    assignType xobj = case xobjTy xobj of
       Just startingType ->
         let finalType = replaceTyVars mappings startingType
         in  if isArrayTypeOK finalType
-            then Right (xobj { ty = Just finalType })
+            then Right (xobj { xobjTy = Just finalType })
             else Left  (ArraysCannotContainRefs xobj)
       Nothing -> pure xobj
 
@@ -58,7 +58,7 @@ isArrayTypeOK _ = True
 -- | TODO: Only change variables that are machine generated.
 beautifyTypeVariables :: XObj -> Either TypeError XObj
 beautifyTypeVariables root =
-  let Just t = ty root
+  let Just t = xobjTy root
       tys = nub (typeVariablesInOrderOfAppearance t)
       mappings = Map.fromList (zip (map (\(VarTy name) -> name) tys)
                                    (map (VarTy . (:[])) ['a'..]))
