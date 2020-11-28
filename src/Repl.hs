@@ -72,13 +72,13 @@ completeKeywordsAnd context word =
 
 
 readlineSettings :: String -> Settings (StateT Context IO)
-readlineSettings historyFile =
+readlineSettings historyPath =
   Settings {
     complete = completeWordWithPrev Nothing ['(', ')', '[', ']', ' ', '\t', '\n']
                   (\_ w -> do
                       ctx <- get
                       pure (completeKeywordsAnd ctx w)),
-    historyFile = Just historyFile,
+    historyFile = Just historyPath,
     autoAddHistory = True
   }
 
@@ -146,6 +146,6 @@ resetAlreadyLoadedFiles context =
 
 runRepl :: Context -> IO ((), Context)
 runRepl context = do
-  historyFile <- configPath "history"
-  createDirectoryIfMissing True (takeDirectory historyFile)
-  runStateT (runInputT (readlineSettings historyFile) (repl "" (projectPrompt (contextProj context)))) context
+  historyPath <- configPath "history"
+  createDirectoryIfMissing True (takeDirectory historyPath)
+  runStateT (runInputT (readlineSettings historyPath) (repl "" (projectPrompt (contextProj context)))) context
