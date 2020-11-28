@@ -2,11 +2,9 @@ module Expand (expandAll, replaceSourceInfoOnXObj) where
 
 import Control.Monad.State (evalState, get, put, State)
 import Data.Foldable (foldlM)
-import Data.Maybe (fromMaybe)
 
 import Types
 import Obj
-import Project
 import Util
 import Lookup
 import TypeError
@@ -42,7 +40,6 @@ expand eval ctx xobj =
   where
     expandList :: XObj -> IO (Context, Either EvalError XObj)
     expandList (XObj (Lst xobjs) i t) = do
-      let fppl = projectFilePathPrintLength (contextProj ctx)
       case xobjs of
         [] -> pure (ctx, Right xobj)
         XObj (External _) _ _ : _ -> pure (ctx, Right xobj)
@@ -97,7 +94,7 @@ expand eval ctx xobj =
             pretty xobj ++ "`)") (info xobj))
           where successiveExpand (ctx, acc) (n, x) =
                   case acc of
-                    Left err -> pure (ctx, acc)
+                    Left _ -> pure (ctx, acc)
                     Right l -> do
                       (newCtx, x') <- expand eval ctx x
                       case x' of
@@ -117,7 +114,7 @@ expand eval ctx xobj =
                     "I encountered an odd number of forms inside a `match`" (info xobj))
           where successiveExpand (ctx, acc) (l, r) =
                   case acc of
-                    Left err -> pure (ctx, acc)
+                    Left _ -> pure (ctx, acc)
                     Right lst -> do
                       (newCtx, expandedR) <- expand eval ctx r
                       case expandedR of
@@ -128,11 +125,11 @@ expand eval ctx xobj =
           do (newCtx, expandedExpressions) <- foldlM successiveExpand (ctx, Right []) expressions
              pure (newCtx, do okExpressions <- expandedExpressions
                               Right (XObj (Lst (doExpr : okExpressions)) i t))
-        [withExpr@(XObj With _ _), pathExpr@(XObj (Sym path _) _ _), expression] ->
+        [withExpr@(XObj With _ _), pathExpr@(XObj (Sym _ _) _ _), expression] ->
           do (newCtx, expandedExpression) <- expand eval ctx expression
              pure (newCtx, do okExpression <- expandedExpression
                               Right (XObj (Lst [withExpr, pathExpr , okExpression]) i t)) -- Replace the with-expression with just the expression!
-        [withExpr@(XObj With _ _), _, _] ->
+        [(XObj With _ _), _, _] ->
           pure (evalError ctx ("I encountered the value `" ++ pretty xobj ++
             "` inside a `with` at " ++ prettyInfoFromXObj xobj ++
             ".\n\n`with` accepts only symbols.") Nothing)
@@ -142,12 +139,11 @@ expand eval ctx xobj =
             prettyInfoFromXObj xobj ++
             ".\n\n`with` accepts only one expression, except at the top level.") Nothing)
         XObj (Mod modEnv) _ _ : args ->
-          let moduleName = fromMaybe "" (envModuleName modEnv)
-              pathToModule = pathToEnv modEnv
+          let pathToModule = pathToEnv modEnv
               implicitInit = XObj (Sym (SymPath pathToModule "init") Symbol) i t
           in expand eval ctx (XObj (Lst (implicitInit : args)) (info xobj) (ty xobj))
         f:args ->
-          do (ctx', expandedF) <- expand eval ctx f
+          do (_, expandedF) <- expand eval ctx f
              (ctx'', expandedArgs) <- foldlM successiveExpand (ctx, Right []) args
              case expandedF of
                Right (XObj (Lst [XObj Dynamic _ _, _, XObj (Arr _) _ _, _]) _ _) ->
@@ -191,7 +187,7 @@ expand eval ctx xobj =
 
     successiveExpand (ctx, acc) e =
       case acc of
-        Left err -> pure (ctx, acc)
+        Left _ -> pure (ctx, acc)
         Right lst -> do
           (newCtx, expanded) <- expand eval ctx e
           pure $ case expanded of

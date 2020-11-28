@@ -27,7 +27,7 @@ completeKeywordsAnd :: Context -> String -> [Completion]
 completeKeywordsAnd context word =
   findKeywords word (bindingNames (contextGlobalEnv context) ++ keywords) []
   where
-        findKeywords match [] res = res
+        findKeywords _ [] res = res
         findKeywords match (x : xs) res =
           if match `isPrefixOf` x
             then findKeywords match xs (res ++ [simpleCompletion x])

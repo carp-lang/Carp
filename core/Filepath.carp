@@ -14,5 +14,5 @@
     (let [segments (split-by path &[\/])]
       ; this is actually safe here, because split by will return an array of
       ; length > 0
-      (unsafe-last &segments)))
+      @(unsafe-last &segments)))
   )

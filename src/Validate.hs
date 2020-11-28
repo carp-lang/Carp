@@ -63,16 +63,16 @@ canBeUsedAsMemberType typeEnv typeVariables t xobj =
                Just _ -> pure ()
                Nothing -> Left (NotAmongRegisteredTypes t xobj)
         -- e.g. (deftype (Higher (f a)) (Of [(f a)]))
-        t@(VarTy _) -> pure ()
+        (VarTy _) -> pure ()
     s@(StructTy name tyvar) ->
       if isExternalType typeEnv s
       then pure ()
       else case name of
              (ConcreteNameTy n) ->
                case lookupInEnv (SymPath [] n) (getTypeEnv typeEnv) of
-                 Just (_, binder@(Binder _ xo@(XObj (Lst (XObj (Deftype t') _ _ : _))_ _))) ->
+                 Just (_, (Binder _ (XObj (Lst (XObj (Deftype t') _ _ : _))_ _))) ->
                    checkInhabitants t'
-                 Just (_, binder@(Binder _ xo@(XObj (Lst (XObj (DefSumtype t') _ _ : _))_ _))) ->
+                 Just (_, (Binder _ (XObj (Lst (XObj (DefSumtype t') _ _ : _))_ _))) ->
                    checkInhabitants t'
                  _ -> Left (InvalidMemberType t xobj)
                  -- Make sure any struct types have arguments before they can be used as members.
@@ -91,5 +91,5 @@ canBeUsedAsMemberType typeEnv typeVariables t xobj =
                  -- If a variable `a` appears in a higher-order polymorphic form, such as `(f a)`
                  -- `a` may be used as a member, sans `f`.
                  isCaptured t v@(VarTy _) = t == v
-                 isCaptured t (StructTy (VarTy v) vars) = any (== t) vars
+                 isCaptured t (StructTy (VarTy _) vars) = any (== t) vars
     _ -> Left (InvalidMemberType t xobj)

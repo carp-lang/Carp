@@ -71,7 +71,7 @@ registerInInterface ctx xobj interface =
 -- | For forms that were declared as implementations of interfaces that didn't exist,
 -- retroactively register those forms with the interface once its defined.
 retroactivelyRegisterInInterface :: Context -> SymPath -> Context
-retroactivelyRegisterInInterface ctx interface@(SymPath _ inter) =
+retroactivelyRegisterInInterface ctx interface@(SymPath _ _) =
   -- TODO: Don't use error here?
   either (\e -> error e) id resultCtx
   where env = contextGlobalEnv ctx

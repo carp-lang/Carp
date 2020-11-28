@@ -111,7 +111,7 @@ envBinderToHtml envBinder ctx moduleName moduleNames =
                      mapM_ (binderToHtml . snd) (Prelude.filter shouldEmitDocsForBinder (Map.toList (envBindings env)))
 
 shouldEmitDocsForBinder :: (String, Binder) -> Bool
-shouldEmitDocsForBinder (name, Binder meta xobj) =
+shouldEmitDocsForBinder (_, Binder meta _) =
   not (metaIsTrue meta "hidden")
 
 moduleIndex :: [String] -> H.Html

@@ -64,7 +64,7 @@ depthOfType typeEnv visited selfName theType =
   else visitType theType + 1
   where
     visitType :: Ty -> Int
-    visitType t@(StructTy name varTys) = depthOfStructType (tyToC t) varTys
+    visitType t@(StructTy _ varTys) = depthOfStructType (tyToC t) varTys
     visitType (FuncTy argTys retTy ltTy) =
       -- trace ("Depth of args of " ++ show argTys ++ ": " ++ show (map (visitType . Just) argTys))
       maximum (visitType ltTy : visitType retTy : fmap visitType argTys)
@@ -95,11 +95,11 @@ depthOfType typeEnv visited selfName theType =
 -- | The score is used for sorting the bindings before emitting them.
 -- | A lower score means appearing earlier in the emitted file.
 scoreValueBinder :: Env -> Set.Set SymPath -> Binder -> (Int, Binder)
-scoreValueBinder globalEnv _ binder@(Binder _ (XObj (Lst (XObj (External _) _ _ : _)) _ _)) =
+scoreValueBinder _ _ binder@(Binder _ (XObj (Lst (XObj (External _) _ _ : _)) _ _)) =
   (0, binder)
-scoreValueBinder globalEnv visited binder@(Binder _ (XObj (Lst [XObj Def  _ _, XObj (Sym path Symbol) _ _, body]) _ _)) =
+scoreValueBinder globalEnv visited binder@(Binder _ (XObj (Lst [XObj Def  _ _, XObj (Sym _ Symbol) _ _, body]) _ _)) =
   (scoreBody globalEnv visited body, binder)
-scoreValueBinder globalEnv visited binder@(Binder _ (XObj (Lst [XObj (Defn _) _ _, XObj (Sym path Symbol) _ _, _, body]) _ _)) =
+scoreValueBinder globalEnv visited binder@(Binder _ (XObj (Lst [XObj (Defn _) _ _, XObj (Sym _ Symbol) _ _, _, body]) _ _)) =
   (scoreBody globalEnv visited body, binder)
 scoreValueBinder _ _ binder =
   (0, binder)

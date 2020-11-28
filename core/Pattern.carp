@@ -52,7 +52,7 @@ list of those characters.")
     (Pattern.init &(str* @"[" (String.from-chars chars) @"]")))
 
   (defn global-match-str [p s]
-    (Array.copy-map &Array.unsafe-first &(global-match p s)))
+    (Array.copy-map &(fn [x] @(Array.unsafe-first x)) &(global-match p s)))
 
   (doc split "splits a string by a pattern.")
   (defn split [p s]

@@ -127,7 +127,7 @@ main = do setLocaleEncoding utf8
             >>= load argFilesToLoad
             >>= execStrs "Postload" postloads
             >>= \ctx -> case execMode of
-                          Repl -> do putStrLn "Welcome to Carp 0.3.0"
+                          Repl -> do putStrLn "Welcome to Carp 0.4.2"
                                      putStrLn "This is free software with ABSOLUTELY NO WARRANTY."
                                      putStrLn "Evaluate (help) for more information."
                                      snd <$> runRepl ctx
