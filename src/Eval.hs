@@ -109,7 +109,7 @@ eval ctx xobj@(XObj o i t) preference =
          (newCtx, evd) <- eval ctx mcond preference
          case evd of
            Right cond ->
-             case obj cond of
+             case xobjObj cond of
                Bol b -> eval newCtx (if b then mtrue else mfalse) preference
                _     ->
                  pure (evalError ctx
@@ -123,7 +123,7 @@ eval ctx xobj@(XObj o i t) preference =
                    "\n```\n\nExpected the form:\n```\n(if cond then else)\n```\n") (xobjInfo xobj))
 
        [XObj (Defn _) _ _, name, args@(XObj (Arr a) _ _), _] ->
-         case obj name of
+         case xobjObj name of
            (Sym (SymPath [] _) _) ->
                if all isUnqualifiedSym a
                then specialCommandDefine ctx xobj
@@ -517,7 +517,7 @@ specialCommandWhile ctx cond body = do
   (newCtx, evd) <- evalDynamic ctx cond
   case evd of
     Right c ->
-      case obj c of
+      case xobjObj c of
         Bol b -> if b
           then do
             (newCtx, _) <- evalDynamic newCtx body

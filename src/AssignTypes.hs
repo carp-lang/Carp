@@ -12,7 +12,7 @@ assignTypes :: TypeMappings -> XObj -> Either TypeError XObj
 assignTypes mappings root = visit root
   where
     visit xobj =
-      case obj xobj of
+      case xobjObj xobj of
         (Lst _) -> visitList xobj
         (Arr _) -> visitArray xobj
         (StaticArr _) -> visitStaticArray xobj

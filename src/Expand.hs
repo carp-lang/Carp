@@ -30,7 +30,7 @@ expandAll eval ctx root =
 -- | Macro expansion of a single form
 expand :: DynamicEvaluator -> Context -> XObj -> IO (Context, Either EvalError XObj)
 expand eval ctx xobj =
-  case obj xobj of
+  case xobjObj xobj of
   --case obj (trace ("Expand: " ++ pretty xobj) xobj) of
     Lst _ -> expandList xobj
     Arr _ -> expandArray xobj
@@ -202,7 +202,7 @@ setNewIdentifiers root = let final = evalState (visit root) 0
   where
     visit :: XObj -> State Int XObj
     visit xobj =
-      case obj xobj of
+      case xobjObj xobj of
         (Lst _) -> visitList xobj
         (Arr _) -> visitArray xobj
         (StaticArr _) -> visitStaticArray xobj
@@ -243,7 +243,7 @@ replaceSourceInfo newFile newLine newColumn root = visit root
   where
     visit :: XObj -> XObj
     visit xobj =
-      case obj xobj of
+      case xobjObj xobj of
         (Lst _) -> visitList xobj
         (Arr _) -> visitArray xobj
         _ -> setNewInfo xobj

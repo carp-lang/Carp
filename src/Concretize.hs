@@ -98,7 +98,7 @@ concretizeXObj allowAmbiguityRoot typeEnv rootEnv visitedDefinitions root =
       do mapM_ (concretizeTypeOfXObj typeEnv) argsArr
          let Just ii = i
              Just funcTy = t
-             argObjs = map obj argsArr
+             argObjs = map xobjObj argsArr
               -- | TODO: This code is a copy of the one above in Defn, remove duplication:
              functionEnv = Env Map.empty (Just env) Nothing [] InternalEnv (envFunctionNestingLevel env)
              envWithArgs = foldl' (\e arg@(XObj (Sym (SymPath _ argSymName) _) _ _) ->
@@ -110,7 +110,7 @@ concretizeXObj allowAmbiguityRoot typeEnv rootEnv visitedDefinitions root =
              let -- Analyse the body of the lambda to find what variables it captures
                  capturedVarsRaw = collectCapturedVars okBody
                  -- and then remove the captures that are actually our arguments
-                 capturedVars = filter (\xobj -> obj (toGeneralSymbol xobj) `notElem` argObjs) capturedVarsRaw
+                 capturedVars = filter (\xobj -> xobjObj (toGeneralSymbol xobj) `notElem` argObjs) capturedVarsRaw
 
                  -- Create a new (top-level) function that will be used when the lambda is called.
                  -- Its name will contain the name of the (normal, non-lambda) function it's contained within,
@@ -327,7 +327,7 @@ collectCapturedVars root = removeDuplicates (map decreaseCaptureLevel (visit roo
       (Just dummyInfo) ty
 
     visit xobj =
-      case obj xobj of
+      case xobjObj xobj of
         -- don't peek inside lambdas, trust their capture lists:
         (Lst [XObj (Fn _ captures) _ _, _, _]) -> Set.toList captures
         -- in the case of lets, we have to remove new bindings from the list of captured variables,
@@ -734,7 +734,7 @@ manageMemory typeEnv globalEnv root =
 
   where visit :: XObj -> State MemState (Either TypeError XObj)
         visit xobj =
-          do r <- case obj xobj of
+          do r <- case xobjObj xobj of
                     Lst _ -> visitList xobj
                     Arr _ -> visitArray xobj
                     StaticArr _ -> visitStaticArray xobj

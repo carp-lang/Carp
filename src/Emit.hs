@@ -46,22 +46,22 @@ data ToCError = InvalidParameter XObj
 
 instance Show ToCError where
   show (InvalidParameter xobj) =
-    "I encountered an invalid parameter `" ++ show (obj xobj) ++ "` at " ++
+    "I encountered an invalid parameter `" ++ show (xobjObj xobj) ++ "` at " ++
     prettyInfoFromXObj xobj ++ "."
   show (InvalidList xobj) =
-    "I encountered an invalid list `" ++ show (obj xobj) ++ "` at " ++
+    "I encountered an invalid list `" ++ show (xobjObj xobj) ++ "` at " ++
     prettyInfoFromXObj xobj ++ "."
   show (DontVisitObj xobj) =
-    "I can’t visit " ++ show (obj xobj) ++ " at " ++ prettyInfoFromXObj xobj ++
+    "I can’t visit " ++ show (xobjObj xobj) ++ " at " ++ prettyInfoFromXObj xobj ++
     "."
   show (CannotEmitUnit xobj) =
     "I can't emit code for the unit type `()` at" ++ prettyInfoFromXObj xobj ++
     "."
   show (CannotEmitExternal xobj) =
     "I can’t emit code for the external function/variable `" ++
-    show (obj xobj) ++ "` at " ++ prettyInfoFromXObj xobj ++ "."
+    show (xobjObj xobj) ++ "` at " ++ prettyInfoFromXObj xobj ++ "."
   show (CannotEmitModKeyword xobj) =
-    "I can’t emit code for the module `" ++ show (obj xobj) ++ "` at " ++
+    "I can’t emit code for the module `" ++ show (xobjObj xobj) ++ "` at " ++
     prettyInfoFromXObj xobj ++ "."
   show (BinderIsMissingType b) =
     "I encountered a binder `" ++ show b ++ "` that is missing its type."
@@ -95,7 +95,7 @@ toC toCMode (Binder meta root) = emitterSrc (execState (visit startingIndent roo
                            All -> 0
         visit :: Int -> XObj -> State EmitterState String
         visit indent xobj =
-          case obj xobj of
+          case xobjObj xobj of
             Lst _   -> visitList indent xobj
             Arr _   -> visitArray indent xobj
             StaticArr _ -> visitStaticArray indent xobj
@@ -903,7 +903,7 @@ checkForUnresolvedSymbols = visit
                   else visitXObj
       where
         visitXObj =
-          case obj xobj of
+          case xobjObj xobj of
             (Lst _) -> visitList xobj
             (Arr _) -> visitArray xobj
             (StaticArr _) -> visitStaticArray xobj

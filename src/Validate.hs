@@ -29,7 +29,7 @@ validateMembers typeEnv typeVariables membersXObjs =
           else Left (UnevenMembers membersXObjs)
         pairs = pairwise membersXObjs
         fields = fst <$> pairs
-        uniqueFields = nubBy ((==) `on` obj) fields
+        uniqueFields = nubBy ((==) `on` xobjObj) fields
         dups = fields \\ uniqueFields
         checkDuplicateMembers =
           if length fields == length uniqueFields

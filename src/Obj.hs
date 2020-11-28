@@ -223,7 +223,7 @@ machineReadableInfoFromXObj fppl xobj =
     Nothing -> ""
 
 -- | Obj with eXtra information.
-data XObj = XObj { obj :: Obj
+data XObj = XObj { xobjObj :: Obj
                  , xobjInfo :: Maybe Info
                  , xobjTy :: Maybe Ty
                  } deriving (Show, Eq, Ord)
@@ -304,7 +304,7 @@ pretty :: XObj -> String
 pretty = visit 0
   where visit :: Int -> XObj -> String
         visit indent xobj =
-          case obj xobj of
+          case xobjObj xobj of
             Lst lst -> "(" ++ joinWithSpace (map (visit indent) lst) ++ ")"
             Arr arr -> "[" ++ joinWithSpace (map (visit indent) arr) ++ "]"
             StaticArr arr -> "$[" ++ joinWithSpace (map (visit indent) arr) ++ "]"
@@ -367,7 +367,7 @@ prettyUpTo max xobj =
      else prettied
   where end =
           -- we match all of them explicitly to get errors if we forget one
-          case obj xobj of
+          case xobjObj xobj of
             Lst _ -> ")"
             Arr _ -> "]"
             Dict _ -> "}"
@@ -471,7 +471,7 @@ prettyTyped = visit 0
                        identifierStr xobj ++ " " ++
                        deletersStr xobj ++ " " ++
                        "\n"
-          in case obj xobj of
+          in case xobjObj xobj of
                Lst lst ->
                  listPrinter "(" ")" lst suffix indent
                Arr arr ->

@@ -65,7 +65,7 @@ initialTypes :: TypeEnv -> Env -> XObj -> Either TypeError XObj
 initialTypes typeEnv rootEnv root = evalState (visit rootEnv root) 0
   where
     visit :: Env -> XObj -> State Integer (Either TypeError XObj)
-    visit env xobj = case obj xobj of
+    visit env xobj = case xobjObj xobj of
                        (Num t _)          -> pure (Right (xobj { xobjTy = Just t }))
                        (Bol _)            -> pure (Right (xobj { xobjTy = Just BoolTy }))
                        (Str _)            -> do lt <- genVarTy
@@ -391,7 +391,7 @@ initialTypes typeEnv rootEnv root = evalState (visit rootEnv root) 0
           case envOrErr of
             Left err -> pure (Left err)
             Right env' ->
-              case obj sym of
+              case xobjObj sym of
                 (Sym (SymPath _ name) _) ->
                   do visited <- visit env' expr
                      pure (envAddBinding env' name . Binder emptyMeta <$> visited)
@@ -410,7 +410,7 @@ initialTypes typeEnv rootEnv root = evalState (visit rootEnv root) 0
       where
         createBinderForParam :: XObj -> State Integer (String, Binder)
         createBinderForParam xobj =
-          case obj xobj of
+          case xobjObj xobj of
             (Sym (SymPath _ name) _) ->
               do t <- genVarTy
                  let xobjWithTy = xobj { xobjTy = Just t }

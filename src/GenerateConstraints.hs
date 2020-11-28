@@ -45,7 +45,7 @@ genConstraints _ root rootSig = fmap sort (gen root)
                                       captureList)
             pure (bodyConstr : argConstrs ++ insideBodyConstraints ++ capturesConstrs ++ sigConstr)
         gen xobj =
-          case obj xobj of
+          case xobjObj xobj of
             Lst lst -> case lst of
                            -- Defn
                            [XObj (Defn captures) _ _, _, XObj (Arr args) _ _, body] ->
