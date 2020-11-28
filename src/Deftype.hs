@@ -153,8 +153,8 @@ templateSetter typeEnv env memberName memberTy =
 
 -- | The template for setters of a generic deftype.
 templateGenericSetter :: [String] -> Ty -> Ty -> String -> (String, Binder)
-templateGenericSetter pathStrings originalStructTy@(StructTy (ConcreteNameTy typeName) _) memberTy memberName =
-  defineTypeParameterizedTemplate templateCreator path (FuncTy [originalStructTy, memberTy] originalStructTy StaticLifetimeTy) docs
+templateGenericSetter pathStrings originalStructTy@(StructTy (ConcreteNameTy typeName) _) membTy memberName =
+  defineTypeParameterizedTemplate templateCreator path (FuncTy [originalStructTy, membTy] originalStructTy StaticLifetimeTy) docs
   where path = SymPath pathStrings ("set-" ++ memberName)
         t = FuncTy [VarTy "p", VarTy "t"] (VarTy "p") StaticLifetimeTy
         docs = "sets the `" ++ memberName ++ "` property of a `" ++ typeName ++ "`."
@@ -202,8 +202,8 @@ templateMutatingSetter typeEnv env memberName memberTy =
 
 -- | The template for mutating setters of a generic deftype.
 templateGenericMutatingSetter :: [String] -> Ty -> Ty -> String -> (String, Binder)
-templateGenericMutatingSetter pathStrings originalStructTy@(StructTy (ConcreteNameTy typeName) _) memberTy memberName =
-  defineTypeParameterizedTemplate templateCreator path (FuncTy [(RefTy originalStructTy (VarTy "q")), memberTy] UnitTy StaticLifetimeTy) docs
+templateGenericMutatingSetter pathStrings originalStructTy@(StructTy (ConcreteNameTy typeName) _) membTy memberName =
+  defineTypeParameterizedTemplate templateCreator path (FuncTy [(RefTy originalStructTy (VarTy "q")), membTy] UnitTy StaticLifetimeTy) docs
   where path = SymPath pathStrings ("set-" ++ memberName ++ "!")
         t = FuncTy [RefTy (VarTy "p") (VarTy "q"), VarTy "t"] UnitTy StaticLifetimeTy
         docs = "sets the `" ++ memberName ++ "` property of a `" ++ typeName ++ "` in place."
