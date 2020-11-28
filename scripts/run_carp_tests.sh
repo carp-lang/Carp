@@ -34,7 +34,7 @@ for f in ./test/*.carp; do
 done
 
 echo "Test for correct error messages when doing "carp --check" on the source."
-for f in ./test-for-errors/*.carp; do
+for f in ./test/test-for-errors/*.carp; do
     echo $f
    ./test/check.sh $f
 done
