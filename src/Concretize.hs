@@ -603,17 +603,15 @@ depsOfPolymorphicFunction :: TypeEnv -> Env -> [SymPath] -> String -> Ty -> [XOb
 depsOfPolymorphicFunction typeEnv env visitedDefinitions functionName functionType =
   case allFunctionsWithNameAndSignature env functionName functionType of
     [] ->
-      (trace $ "[Warning] No '" ++ functionName ++ "' function found with type " ++ show functionType ++ ".")
+      -- (trace $ "[Warning] No '" ++ functionName ++ "' function found with type " ++ show functionType ++ ".")
       []
-    -- TODO: this code was added to solve a bug (presumably) but it seems OK to comment it out?!
-    -- [(_, (Binder xobj@(XObj (Lst (XObj (Instantiate template) _ _ : _)) _ _)))] ->
-    --   []
     [(_, Binder _ single)] ->
       case concretizeDefinition False typeEnv env visitedDefinitions single functionType of
         Left err -> error (show err)
         Right (ok, deps) -> ok : deps
     tooMany ->
-      (trace $ "Too many '" ++ functionName ++ "' functions found with type " ++ show functionType ++ ", can't figure out dependencies:\n  " ++ joinWith "\n  " (map ((" - " ++) . show . snd) tooMany))
+      (trace $ "Too many '" ++ functionName ++ "' functions found with type " ++ show functionType ++
+               ", can't figure out dependencies:\n  " ++ joinWith "\n  " (map ((" - " ++) . show . snd) tooMany))
       []
 
 -- | Helper for finding the 'delete' function for a type.
@@ -663,8 +661,10 @@ findFunctionForMember :: TypeEnv -> Env -> String -> Ty -> (String, Ty) -> Funct
 findFunctionForMember typeEnv env functionName functionType (memberName, memberType)
   | isManaged typeEnv memberType =
     case allFunctionsWithNameAndSignature env functionName functionType of
-      [] -> FunctionNotFound ("Can't find any '" ++ functionName ++ "' function for member '" ++
-                              memberName ++ "' of type " ++ show functionType)
+      [] -> if isExternalStructType typeEnv memberType
+            then FunctionIgnored -- We allow external functions to not have deleters..?
+            else FunctionNotFound ("Can't find any '" ++ functionName ++ "' function for member '" ++
+                                   memberName ++ "' of type " ++ show functionType)
       [(_, Binder _ single)] ->
         let concretizedPath = getConcretizedPath single functionType
         in  FunctionFound (pathToC concretizedPath)
@@ -1252,7 +1252,7 @@ manageMemory typeEnv globalEnv root =
           case ty xobj of
             Just (RefTy _ _) -> Just (RefDeleter (varOfXObj xobj))
             Just t -> let var = varOfXObj xobj
-                      in  if isExternalType typeEnv t
+                      in  if False -- isExternalType typeEnv t TURN OFF THIS FOR NOW!
                           then Just (FakeDeleter var)
                           else if isManaged typeEnv t
                                then case nameOfPolymorphicFunction typeEnv globalEnv (FuncTy [t] UnitTy StaticLifetimeTy) "delete" of
@@ -1295,7 +1295,7 @@ manageMemory typeEnv globalEnv root =
         unmanage :: XObj -> State MemState (Either TypeError ())
         unmanage xobj =
           let Just t = ty xobj
-          in if isManaged typeEnv t && not (isGlobalFunc xobj) && not (isExternalType typeEnv t)
+          in if isManaged typeEnv t && not (isGlobalFunc xobj) -- && not (isExternalType typeEnv t)
              then do MemState deleters deps lifetimes <- get
                      case deletersMatchingXObj xobj deleters of
                        [] -> pure $ if isSymbolThatCaptures xobj
@@ -1314,7 +1314,7 @@ manageMemory typeEnv globalEnv root =
               isGlobalVariable = case xobj of
                                    XObj (Sym _ (LookupGlobal _ _)) _ _ -> True
                                    _ -> False
-          in if not isGlobalVariable && not (isGlobalFunc xobj) && isManaged typeEnv t && not (isExternalType typeEnv t) && not (isSymbolThatCaptures xobj) -- TODO: The 'isManaged typeEnv t' boolean check should be removed!
+          in if not isGlobalVariable && not (isGlobalFunc xobj) && isManaged typeEnv t && not (isSymbolThatCaptures xobj) -- TODO: The 'isManaged typeEnv t' boolean check should be removed!
              then do MemState deleters _ _ <- get
                      pure $ case deletersMatchingXObj xobj deleters of
                        [] -> Left (GettingReferenceToUnownedValue xobj)

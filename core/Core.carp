@@ -53,7 +53,7 @@
 (load-once "Map.carp")
 (load-once "Heap.carp")
 (load-once "Sort.carp")
-(load-once "Binary.carp")
+;;(load-once "Binary.carp")
 (load-once "Control.carp")
 (load-once "Opaque.carp")
 (load-once "Unit.carp")

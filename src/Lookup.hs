@@ -242,15 +242,7 @@ isExternalType _ _ =
 
 -- | Is this type managed - does it need to be freed?
 isManaged :: TypeEnv -> Ty -> Bool
-isManaged typeEnv (StructTy (ConcreteNameTy name) _) =
-  (name == "Array") || (name == "StaticArray") || (name == "Dictionary") || (
-    case lookupInEnv (SymPath [] name) (getTypeEnv typeEnv) of
-         Just (_, Binder _ (XObj (Lst (XObj (ExternalType _) _ _ : _)) _ _)) -> False
-         Just (_, Binder _ (XObj (Lst (XObj (Deftype _) _ _ : _)) _ _)) -> True
-         Just (_, Binder _ (XObj (Lst (XObj (DefSumtype _) _ _ : _)) _ _)) -> True
-         Just (_, Binder _ (XObj wrong _ _)) -> error ("Invalid XObj in type env: " ++ show wrong)
-         Nothing -> error ("Can't find " ++ name ++ " in type env.") -- TODO: Please don't crash here!
-    )
+isManaged _ StructTy{} = True
 isManaged _ StringTy  = True
 isManaged _ PatternTy = True
 isManaged _ FuncTy{} = True
@@ -265,6 +257,13 @@ isFunctionType _ = False
 isStructType :: Ty -> Bool
 isStructType (StructTy _ _) = True
 isStructType _ = False
+
+isExternalStructType :: TypeEnv -> Ty -> Bool
+isExternalStructType typeEnv (StructTy (ConcreteNameTy name) _) =
+  case lookupInEnv (SymPath [] name) (getTypeEnv typeEnv) of
+    Just (_, Binder _ (XObj (Lst (XObj (ExternalType _) _ _ : _)) _ _)) -> True
+    _ -> False
+isExternalStructType _ _ = False
 
 keysInEnvEditDistance :: SymPath -> Env -> Int -> [String]
 keysInEnvEditDistance (SymPath [] name) env distance =
