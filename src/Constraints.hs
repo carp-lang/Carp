@@ -225,7 +225,7 @@ checkConflictInternal mappings constraint name otherTy =
             RefTy otherInnerTy otherLifetimeTy ->
               case solveOneInternal mappings (mkConstraint OrdRef xobj1 xobj2 ctx innerTy otherInnerTy) of
                 Left err -> Left err
-                Right ok -> solveOneInternal ok (mkConstraint OrdRef xobj1 xobj2 ctx lifetimeTy otherLifetimeTy)
+                Right smappings -> solveOneInternal smappings (mkConstraint OrdRef xobj1 xobj2 ctx lifetimeTy otherLifetimeTy)
             VarTy _ -> Right mappings
             _ -> Left (UnificationFailure constraint mappings)
         Just foundNonVar -> case otherTy of
