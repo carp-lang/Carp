@@ -46,7 +46,7 @@ argumentErr :: Context -> String -> String -> String -> XObj -> IO (Context, Eit
 argumentErr ctx fun ty number actual =
   pure (evalError ctx (
             "`" ++ fun ++ "` expected " ++ ty ++ " as its " ++ number ++
-            " argument, but got `" ++ pretty actual ++ "`") (info actual))
+            " argument, but got `" ++ pretty actual ++ "`") (xobjInfo actual))
 
 makePrim' :: String -> Maybe Int -> String -> String -> Primitive -> (String, Binder)
 makePrim' name maybeArity docString example callback =
@@ -69,7 +69,7 @@ makePrim' name maybeArity docString example callback =
         err x ctx a l =
           pure (evalError ctx (
             "The primitive `" ++ name ++ "` expected " ++ show a ++
-            " arguments, but got " ++ show l ++ ".\n\n" ++ exampleUsage) (info x))
+            " arguments, but got " ++ show l ++ ".\n\n" ++ exampleUsage) (xobjInfo x))
         doc = docString ++ "\n\n" ++ exampleUsage
         exampleUsage = "Example Usage:\n```\n" ++ example ++ "\n```\n"
         unfoldArgs =
@@ -86,8 +86,8 @@ primitiveFile x@(XObj _ i t) ctx args =
              [XObj _ mi _] -> go mi
              _ -> evalError ctx
                             ("`file` expected 0 or 1 arguments, but got " ++ show (length args))
-                            (info x)
-  where err = evalError ctx ("No information about object " ++ pretty x) (info x)
+                            (xobjInfo x)
+  where err = evalError ctx ("No information about object " ++ pretty x) (xobjInfo x)
         go  = maybe err (\info ->
           let fppl = projectFilePathPrintLength (contextProj ctx)
               file = infoFile info
@@ -103,8 +103,8 @@ primitiveLine x@(XObj _ i t) ctx args =
              [XObj _ mi _] -> go mi
              _ -> evalError ctx
                             ("`line` expected 0 or 1 arguments, but got " ++ show (length args))
-                            (info x)
-  where err = evalError ctx ("No information about object " ++ pretty x) (info x)
+                            (xobjInfo x)
+  where err = evalError ctx ("No information about object " ++ pretty x) (xobjInfo x)
         go  = maybe err (\info -> (ctx, Right (XObj (Num IntTy (fromIntegral (infoLine info))) i t)))
 
 primitiveColumn :: Primitive
@@ -114,8 +114,8 @@ primitiveColumn x@(XObj _ i t) ctx args =
              [XObj _ mi _] -> go mi
              _ -> evalError ctx
                  ("`column` expected 0 or 1 arguments, but got " ++ show (length args))
-                 (info x)
-  where err = evalError ctx ("No information about object " ++ pretty x) (info x)
+                 (xobjInfo x)
+  where err = evalError ctx ("No information about object " ++ pretty x) (xobjInfo x)
         go  = maybe err (\info -> (ctx, Right (XObj (Num IntTy (fromIntegral (infoColumn info))) i t)))
 
 primitiveImplements :: Primitive
@@ -145,7 +145,7 @@ primitiveImplements xobj ctx [x@(XObj (Sym interface@(SymPath _ _) _) _ _), inne
                                            Check -> let fppl = projectFilePathPrintLength (contextProj ctx)
                                                     in  putStrLn (machineReadableInfoFromXObj fppl defobj ++ " " ++ e)
                                            _ -> putStrLnWithColor Red e
-                                         pure $ evalError ctx e (info x)
+                                         pure $ evalError ctx e (xobjInfo x)
                     updateImpls ctx' = do currentImplementations <- primitiveMeta xobj ctx [inner, XObj (Str "implements") (Just dummyInfo) (Just StringTy)]
                                           pure $ either metaError existingImpls (snd currentImplementations)
                       where metaError e = (ctx, Left e)
@@ -161,10 +161,10 @@ primitiveImplements xobj ctx [x@(XObj (Sym interface@(SymPath _ _) _) _ _), inne
                                                       in (ctx' {contextGlobalEnv = envInsertAt global (getPath defobj) (Binder newMeta defobj)}, dynamicNil)
                             global = contextGlobalEnv ctx
 primitiveImplements _ ctx [x, _] =
-  pure $ evalError ctx ("`implements` expects symbol arguments.") (info x)
+  pure $ evalError ctx ("`implements` expects symbol arguments.") (xobjInfo x)
 primitiveImplements x@(XObj _ _ _) ctx args =
   pure $ evalError
-    ctx ("`implements` expected 2 arguments, but got " ++ show (length args)) (info x)
+    ctx ("`implements` expected 2 arguments, but got " ++ show (length args)) (xobjInfo x)
 
 
 define :: Bool -> Context -> XObj -> IO Context
@@ -211,7 +211,7 @@ primitiveRegisterType :: Primitive
 primitiveRegisterType _ ctx [XObj (Sym (SymPath [] t) _) _ _] =
   primitiveRegisterTypeWithoutFields ctx t Nothing
 primitiveRegisterType _ ctx [x] =
-  pure (evalError ctx ("`register-type` takes a symbol, but it got " ++ pretty x) (info x))
+  pure (evalError ctx ("`register-type` takes a symbol, but it got " ++ pretty x) (xobjInfo x))
 primitiveRegisterType _ ctx [XObj (Sym (SymPath [] t) _) _ _, XObj (Str override) _ _] =
   primitiveRegisterTypeWithoutFields ctx t (Just override)
 primitiveRegisterType _ ctx [x@(XObj (Sym (SymPath [] t) _) _ _), (XObj (Str override) _ _), members] =
@@ -240,7 +240,7 @@ primitiveRegisterTypeWithFields :: Context -> XObj -> String -> (Maybe String) -
 primitiveRegisterTypeWithFields ctx x t override members =
   either handleErr updateContext
     (bindingsForRegisteredType typeEnv globalEnv pathStrings t [members] Nothing preExistingModule)
-  where handleErr e = pure $ makeEvalError ctx (Just e) (show e) (info x)
+  where handleErr e = pure $ makeEvalError ctx (Just e) (show e) (xobjInfo x)
         updateContext (typeModuleName, typeModuleXObj, deps) =
           do let typeDefinition = XObj (Lst [XObj (ExternalType override) Nothing Nothing, XObj (Sym path Symbol) Nothing Nothing]) Nothing (Just TypeTy)
                  ctx' = (ctx { contextGlobalEnv = envInsertAt globalEnv (SymPath pathStrings typeModuleName) (Binder emptyMeta typeModuleXObj)
@@ -258,7 +258,7 @@ primitiveRegisterTypeWithFields ctx x t override members =
 
 notFound :: Context -> XObj -> SymPath -> IO (Context, Either EvalError XObj)
 notFound ctx x path =
-  pure (evalError ctx ("I can’t find the symbol `" ++ show path ++ "`") (info x))
+  pure (evalError ctx ("I can’t find the symbol `" ++ show path ++ "`") (xobjInfo x))
 
 primitiveInfo :: Primitive
 primitiveInfo _ ctx [target@(XObj (Sym path@(SymPath _ name) _) _ _)] = do
@@ -322,7 +322,7 @@ dynamicOrMacroWith ctx producer ty name body = do
   let pathStrings = contextPath ctx
       globalEnv = contextGlobalEnv ctx
       path = SymPath pathStrings name
-      elem = XObj (Lst (producer path)) (info body) (Just ty)
+      elem = XObj (Lst (producer path)) (xobjInfo body) (Just ty)
       meta = existingMeta globalEnv elem
   pure (ctx { contextGlobalEnv = envInsertAt globalEnv path (Binder meta elem) }, dynamicNil)
 
@@ -353,8 +353,8 @@ primitiveMembers _ ctx [target] = do
                      getMembersFromCase (XObj x _ _) =
                        error ("Can't handle case " ++ show x)
              _ ->
-               pure (evalError ctx ("Can't find a struct type named '" ++ name ++ "' in type environment") (info target))
-        _ -> pure (evalError ctx ("Can't get the members of non-symbol: " ++ pretty target) (info target))
+               pure (evalError ctx ("Can't find a struct type named '" ++ name ++ "' in type environment") (xobjInfo target))
+        _ -> pure (evalError ctx ("Can't get the members of non-symbol: " ++ pretty target) (xobjInfo target))
   where bottomedTarget env target =
           case target of
             XObj (Sym targetPath _) _ _ ->
@@ -402,7 +402,7 @@ primitiveMetaSet _ ctx [target@(XObj (Sym (SymPath prefixes name) _) _ _), XObj 
           then let updated = Meta.updateBinderMeta (Meta.stub fullPath) key value
                    newEnv  = envInsertAt global fullPath updated
                in  (ctx {contextGlobalEnv = newEnv}, dynamicNil)
-          else evalError ctx ("`meta-set!` failed, I can't find the symbol `" ++ pretty target ++ "`") (info target)
+          else evalError ctx ("`meta-set!` failed, I can't find the symbol `" ++ pretty target ++ "`") (xobjInfo target)
 primitiveMetaSet _ ctx [XObj (Sym _ _) _ _, key, _] =
   argumentErr ctx "meta-set!" "a string" "second" key
 primitiveMetaSet _ ctx [target, _, _] =
@@ -413,9 +413,9 @@ primitiveDefinterface :: Primitive
 primitiveDefinterface xobj ctx [nameXObj@(XObj (Sym path@(SymPath [] name) _) _ _), ty] =
   pure $ maybe invalidType validType (xobjToTy ty)
   where typeEnv = getTypeEnv (contextTypeEnv ctx)
-        invalidType = evalError ctx ("Invalid type for interface `" ++ name ++ "`: " ++ pretty ty) (info ty)
+        invalidType = evalError ctx ("Invalid type for interface `" ++ name ++ "`: " ++ pretty ty) (xobjInfo ty)
         validType t = maybe defInterface (updateInterface . snd) (lookupInEnv path typeEnv)
-          where defInterface = let interface = defineInterface name t [] (info nameXObj)
+          where defInterface = let interface = defineInterface name t [] (xobjInfo nameXObj)
                                    typeEnv' = TypeEnv (envInsertAt typeEnv (SymPath [] name) (Binder emptyMeta interface))
                                    newCtx = retroactivelyRegisterInInterface (ctx { contextTypeEnv = typeEnv' }) path
                                in  (newCtx, dynamicNil)
@@ -425,9 +425,9 @@ primitiveDefinterface xobj ctx [nameXObj@(XObj (Sym path@(SymPath [] name) _) _ 
                                              then (ctx, dynamicNil)
                                              else evalError ctx ("Tried to change the type of interface `" ++
                                                                  show path ++ "` from `" ++ show foundType ++
-                                                                 "` to `" ++ show t ++ "`") (info xobj)
+                                                                 "` to `" ++ show t ++ "`") (xobjInfo xobj)
 primitiveDefinterface _ ctx [name, _] =
-  pure (evalError ctx ("`definterface` expects a name as first argument, but got `" ++ pretty name ++ "`") (info name))
+  pure (evalError ctx ("`definterface` expects a name as first argument, but got `" ++ pretty name ++ "`") (xobjInfo name))
 
 registerInternal :: Context -> String -> XObj -> Maybe String -> IO (Context, Either EvalError XObj)
 registerInternal ctx name ty override =
@@ -436,13 +436,13 @@ registerInternal ctx name ty override =
         globalEnv = contextGlobalEnv ctx
         invalidType = evalError ctx
                                 ("Can't understand type when registering '" ++ name ++
-                                 "'") (info ty)
+                                 "'") (xobjInfo ty)
         -- TODO: Retroactively register in interface if implements metadata is present.
         validType t = let path = SymPath pathStrings name
                           registration = XObj (Lst [XObj (External override) Nothing Nothing
                                                    ,XObj (Sym path Symbol) Nothing Nothing
                                                    ,ty
-                                                   ]) (info ty) (Just t)
+                                                   ]) (xobjInfo ty) (Just t)
                           meta = existingMeta globalEnv registration
                           env' = envInsertAt globalEnv path (Binder meta registration)
                       in  (ctx { contextGlobalEnv = env' }, dynamicNil)
@@ -453,22 +453,22 @@ primitiveRegister _ ctx [XObj (Sym (SymPath _ name) _) _ _, ty] =
 primitiveRegister _ ctx [name, _] =
   pure (evalError ctx
     ("`register` expects a name as first argument, but got `" ++ pretty name ++ "`")
-    (info name))
+    (xobjInfo name))
 primitiveRegister _ ctx [XObj (Sym (SymPath _ name) _) _ _, ty, XObj (Str override) _ _] =
   registerInternal ctx name ty (Just override)
 primitiveRegister _ ctx [XObj (Sym (SymPath _ _) _) _ _, _, override] =
   pure (evalError ctx
     ("`register` expects a string as third argument, but got `" ++ pretty override ++ "`")
-    (info override))
+    (xobjInfo override))
 primitiveRegister _ ctx [name, _, _] =
   pure (evalError ctx
     ("`register` expects a name as first argument, but got `" ++ pretty name ++ "`")
-    (info name))
+    (xobjInfo name))
 primitiveRegister x ctx _ =
   pure (evalError ctx
     ("I didn’t understand the form `" ++ pretty x ++
      "`.\n\nIs it valid? Every `register` needs to follow the form `(register name <signature> <optional: override>)`.")
-    (info x))
+    (xobjInfo x))
 
 
 
@@ -485,7 +485,7 @@ primitiveDeftype xobj ctx (name:rest) =
                   ("All fields must have a name and a type." ++
                    "Example:\n" ++
                    "```(deftype Name [field1 Type1, field2 Type2, field3 Type3])```\n")
-                  (info xobj)
+                  (xobjInfo xobj)
         Just a ->
           ensureUnqualified $ map fst a
       where members :: [XObj] -> Maybe [(XObj, XObj)]
@@ -505,7 +505,7 @@ primitiveDeftype xobj ctx (name:rest) =
                           Nothing
                           ("Type members must be unqualified symbols, but got `" ++
                            concatMap pretty rest ++ "`")
-                          (info xobj)
+                          (xobjInfo xobj)
     _ -> deftype name
   where deftype name@(XObj (Sym (SymPath _ ty) _) _ _) = deftype' name ty []
         deftype (XObj (Lst (name@(XObj (Sym (SymPath _ ty) _) _ _) : tyvars)) _ _) =
@@ -513,7 +513,7 @@ primitiveDeftype xobj ctx (name:rest) =
         deftype name =
           pure (evalError ctx
                    ("Invalid name for type definition: " ++ pretty name)
-                   (info name))
+                   (xobjInfo name))
         deftype' :: XObj -> String -> [XObj] -> IO (Context, Either EvalError XObj)
         deftype' nameXObj typeName typeVariableXObjs = do
          let pathStrings = contextPath ctx
@@ -558,7 +558,7 @@ primitiveDeftype xobj ctx (name:rest) =
                Left err ->
                  pure (makeEvalError ctx (Just err) ("Invalid type definition for '" ++ pretty nameXObj ++ "':\n\n" ++ show err) Nothing)
            (_, Nothing) ->
-             pure (makeEvalError ctx Nothing ("Invalid type variables for type definition: " ++ pretty nameXObj) (info nameXObj))
+             pure (makeEvalError ctx Nothing ("Invalid type variables for type definition: " ++ pretty nameXObj) (xobjInfo nameXObj))
 
 primitiveUse :: Primitive
 primitiveUse xobj ctx [XObj (Sym path _) _ _] =
@@ -569,7 +569,7 @@ primitiveUse xobj ctx [XObj (Sym path _) _ _] =
         useThese = envUseModules e
         e' = if path `elem` useThese then e else e { envUseModules = path : useThese }
         lookupInGlobal = maybe missing useModule (lookupInEnv path env)
-          where missing = evalError ctx ("Can't find a module named '" ++ show path ++ "'") (info xobj)
+          where missing = evalError ctx ("Can't find a module named '" ++ show path ++ "'") (xobjInfo xobj)
         useModule _ = (ctx { contextGlobalEnv = envReplaceEnvAt env pathStrings e' }, dynamicNil)
 primitiveUse _ ctx [x] =
   argumentErr ctx "use" "a symbol" "first" x
@@ -615,7 +615,7 @@ primitiveDeftemplate _ ctx [XObj (Sym (SymPath [] name) _) _ _, ty, XObj (Str de
         typeEnv = contextTypeEnv ctx
         globalEnv = contextGlobalEnv ctx
         p = SymPath pathStrings name
-        invalidType = evalError ctx ("I do not understand the type form in " ++ pretty ty) (info ty)
+        invalidType = evalError ctx ("I do not understand the type form in " ++ pretty ty) (xobjInfo ty)
         validType t =  case defineTemplate p t "" (toTemplate declTempl) (toTemplate defTempl) (const []) of
                          (_, b@(Binder _ (XObj (Lst (XObj (Deftemplate template) _ _ : _)) _ _))) ->
                            if isTypeGeneric t
@@ -640,7 +640,7 @@ primitiveDeftemplate _ ctx [x, _, _, _] =
   argumentErr ctx "deftemplate" "a symbol" "first" x
 
 noTypeError :: Context -> XObj -> IO (Context, Either EvalError XObj)
-noTypeError ctx x = pure $ evalError ctx ("Can't get the type of: " ++ pretty x) (info x)
+noTypeError ctx x = pure $ evalError ctx ("Can't get the type of: " ++ pretty x) (xobjInfo x)
 
 primitiveType :: Primitive
 -- A special case, the type of the type of types (type (type (type 1))) => ()
@@ -687,18 +687,18 @@ primitiveType _ ctx [x@(XObj _ _ _)] =
   let tenv  = contextTypeEnv ctx
       typed = annotate tenv (contextGlobalEnv ctx) x Nothing
   in  liftIO $ either fail ok typed
-  where fail _ = pure (evalError ctx ("Can't get the type of: " ++ pretty x) (info x))
+  where fail _ = pure (evalError ctx ("Can't get the type of: " ++ pretty x) (xobjInfo x))
         ok ((XObj _ _ (Just t)),_) = pure (ctx, Right $ reify t)
-        ok (_,_) = pure (evalError ctx ("Can't get the type of: " ++ pretty x) (info x))
+        ok (_,_) = pure (evalError ctx ("Can't get the type of: " ++ pretty x) (xobjInfo x))
 
 primitiveKind :: Primitive
 primitiveKind _ ctx [x@(XObj _ _ _)] =
   let tenv = contextTypeEnv ctx
       typed = annotate tenv (contextGlobalEnv ctx) x Nothing
   in  pure (either fail ok typed)
-  where fail _ = (evalError ctx ("Can't get the kind of: " ++ pretty x) (info x))
+  where fail _ = (evalError ctx ("Can't get the kind of: " ++ pretty x) (xobjInfo x))
         ok (XObj _ _ (Just t), _) = (ctx, Right $ reify (tyToKind t))
-        ok (_, _) = (evalError ctx ("Can't get the kind of: " ++ pretty x) (info x))
+        ok (_, _) = (evalError ctx ("Can't get the kind of: " ++ pretty x) (xobjInfo x))
 
 -- | Primitive for printing help.
 primitiveHelp :: Primitive

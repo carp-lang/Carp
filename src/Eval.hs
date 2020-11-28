@@ -114,13 +114,13 @@ eval ctx xobj@(XObj o i t) preference =
                _     ->
                  pure (evalError ctx
                           ("This `if` condition contains the non-boolean value `" ++
-                           pretty cond ++ "`") (info cond))
+                           pretty cond ++ "`") (xobjInfo cond))
            Left e -> pure (newCtx, Left e)
 
        XObj If _ _:_ ->
          pure (evalError ctx
                   ("I didn’t understand this `if`.\n\n Got:\n```\n" ++ pretty xobj ++
-                   "\n```\n\nExpected the form:\n```\n(if cond then else)\n```\n") (info xobj))
+                   "\n```\n\nExpected the form:\n```\n(if cond then else)\n```\n") (xobjInfo xobj))
 
        [XObj (Defn _) _ _, name, args@(XObj (Arr a) _ _), _] ->
          case obj name of
@@ -129,29 +129,29 @@ eval ctx xobj@(XObj o i t) preference =
                then specialCommandDefine ctx xobj
                else pure (evalError ctx
                  ("`defn` requires all arguments to be unqualified symbols, but it got `" ++
-                  pretty args ++ "`") (info xobj))
+                  pretty args ++ "`") (xobjInfo xobj))
            _                      -> pure (evalError ctx
              ("`defn` identifiers must be unqualified symbols, but it got `" ++
-              pretty name ++ "`") (info xobj))
+              pretty name ++ "`") (xobjInfo xobj))
 
        [XObj (Defn _) _ _, _, invalidArgs, _] ->
          pure (evalError ctx
            ("`defn` requires an array of symbols as argument list, but it got `" ++
-            pretty invalidArgs ++ "`") (info xobj))
+            pretty invalidArgs ++ "`") (xobjInfo xobj))
 
        (defn@(XObj (Defn _) _ _) : _) ->
            pure (evalError ctx
              ("I didn’t understand the `defn` at " ++ prettyInfoFromXObj xobj ++
               ":\n\n" ++ pretty xobj ++
               "\n\nIs it valid? Every `defn` needs to follow the form `(defn name [arg] body)`.")
-              (info defn))
+              (xobjInfo defn))
 
        [(XObj Def _ _), name, _] ->
          if isUnqualifiedSym name
          then specialCommandDefine ctx xobj
          else pure (evalError ctx
            ("`def` identifiers must be unqualified symbols, but it got `" ++
-            pretty name ++ "`") (info xobj))
+            pretty name ++ "`") (xobjInfo xobj))
 
        [the@(XObj The _ _), ty, value] ->
          do (newCtx, evaledValue) <- expandAll evalDynamic ctx value -- TODO: Why expand all here?
@@ -163,15 +163,15 @@ eval ctx xobj@(XObj o i t) preference =
              ("I didn’t understand the `the` at " ++ prettyInfoFromXObj xobj ++
               ":\n\n" ++ pretty xobj ++
               "\n\nIs it valid? Every `the` needs to follow the form `(the type expression)`.")
-              (info xobj))
+              (xobjInfo xobj))
 
        [XObj Let _ _, XObj (Arr bindings) _ _, body]
          | odd (length bindings) -> pure (evalError ctx
              ("Uneven number of forms in `let`: " ++ pretty xobj)
-             (info xobj)) -- Unreachable?
+             (xobjInfo xobj)) -- Unreachable?
          | not (all isSym (evenIndices bindings)) -> pure (evalError ctx
              ("`let` identifiers must be symbols, but it got `" ++
-              joinWithSpace (map pretty bindings) ++ "`") (info xobj))
+              joinWithSpace (map pretty bindings) ++ "`") (xobjInfo xobj))
          | otherwise ->
              do let binds = unwrapVar (pairwise bindings) []
                     i = contextInternalEnv ctx
@@ -202,10 +202,10 @@ eval ctx xobj@(XObj o i t) preference =
        l@[XObj Fn{} _ _, args@(XObj (Arr a) _ _), _] ->
          pure $ if all isUnqualifiedSym a
                 then (ctx, Right (XObj (Closure (XObj (Lst l) i t) (CCtx ctx)) i t))
-                else evalError ctx ("`fn` requires all arguments to be unqualified symbols, but it got `" ++ pretty args ++ "`") (info args)
+                else evalError ctx ("`fn` requires all arguments to be unqualified symbols, but it got `" ++ pretty args ++ "`") (xobjInfo args)
        XObj (Closure (XObj (Lst [XObj (Fn _ _) _ _, XObj (Arr params) _ _, body]) _ _) (CCtx c)) _ _:args ->
          case checkArity params args of
-           Left err -> pure (evalError ctx err (info xobj))
+           Left err -> pure (evalError ctx err (xobjInfo xobj))
            Right () ->
              do (newCtx, evaledArgs) <- foldlM successiveEval (ctx, Right []) args
                 case evaledArgs of
@@ -270,10 +270,10 @@ eval ctx xobj@(XObj o i t) preference =
        XObj With _ _ : xobj@(XObj (Sym path _) _ _) : forms ->
          specialCommandWith ctx xobj path forms
        XObj With _ _ : _ ->
-         pure (evalError ctx ("Invalid arguments to `with`: " ++ pretty xobj) (info xobj))
+         pure (evalError ctx ("Invalid arguments to `with`: " ++ pretty xobj) (xobjInfo xobj))
        XObj SetBang _ _ :args -> specialCommandSet ctx args
        [XObj Do _ _] ->
-         pure (evalError ctx "No forms in do" (info xobj))
+         pure (evalError ctx "No forms in do" (xobjInfo xobj))
        XObj Do _ _ : rest -> foldlM successiveEval (ctx, dynamicNil) rest
         where successiveEval (ctx, acc) x =
                case acc of
@@ -285,7 +285,7 @@ eval ctx xobj@(XObj o i t) preference =
          specialCommandAddress ctx value
        [] -> pure (ctx, dynamicNil)
        _ -> do
-        pure (evalError ctx ("I did not understand the form `" ++ pretty xobj ++ "`") (info xobj))
+        pure (evalError ctx ("I did not understand the form `" ++ pretty xobj ++ "`") (xobjInfo xobj))
     checkArity params args =
       let la = length args
           withRest = any ((":rest" ==) . getName) params
@@ -511,7 +511,7 @@ specialCommandAddress ctx xobj =
            Right (annXObj, _) -> return (newCtx, Right annXObj)
            Left err ->
              return (ctx, Left err)
-    _ -> return (evalError ctx ("Can't get the address of non-symbol " ++ pretty xobj) (info xobj))
+    _ -> return (evalError ctx ("Can't get the address of non-symbol " ++ pretty xobj) (xobjInfo xobj))
 specialCommandWhile :: Context -> XObj -> XObj -> IO (Context, Either EvalError XObj)
 specialCommandWhile ctx cond body = do
   (newCtx, evd) <- evalDynamic ctx cond
@@ -526,7 +526,7 @@ specialCommandWhile ctx cond body = do
             pure (newCtx, dynamicNil)
         _ ->
           pure (evalError ctx ("This `while` condition contains the non-boolean value '" ++
-                  pretty c ++ "`") (info c))
+                  pretty c ++ "`") (xobjInfo c))
     Left e -> pure (newCtx, Left e)
 
 getSigFromDefnOrDef :: Context -> Env -> FilePathPrintLength -> XObj -> (Either EvalError (Maybe (Ty, XObj)))
@@ -544,7 +544,7 @@ getSigFromDefnOrDef ctx globalEnv fppl xobj@(XObj _ i t) =
                           nameToken = XObj (Sym (SymPath [] (getName xobj)) Symbol) Nothing Nothing
                           recreatedSigForm = XObj (Lst [sigToken, nameToken, foundSignature]) Nothing (Just MacroTy)
                       in Right (Just (t, recreatedSigForm))
-            Nothing -> Left (EvalError ("Can't use '" ++ pretty foundSignature ++ "' as a type signature") (contextHistory ctx) fppl (info xobj))
+            Nothing -> Left (EvalError ("Can't use '" ++ pretty foundSignature ++ "' as a type signature") (contextHistory ctx) fppl (xobjInfo xobj))
         Nothing -> Right Nothing
 
 annotateWithinContext :: Bool -> Context -> XObj -> IO (Context, Either EvalError (XObj, [XObj]))
@@ -571,7 +571,7 @@ annotateWithinContext qualifyDefn ctx xobj = do
                         let fppl = projectFilePathPrintLength (contextProj ctx)
                         in  pure (evalError ctx (joinLines (machineReadableErrorStrings fppl err)) Nothing)
                       _ ->
-                        pure (evalError ctx (show err) (info xobj))
+                        pure (evalError ctx (show err) (xobjInfo xobj))
                   Right ok -> pure (ctx, Right ok)
 
 primitiveDefmodule :: Primitive
@@ -580,7 +580,7 @@ primitiveDefmodule xobj ctx@(Context env i typeEnv pathStrings proj lastInput ex
       defineIt meta = do
         let parentEnv = getEnv env pathStrings
             innerEnv = Env (Map.fromList []) (Just parentEnv) (Just moduleName) [] ExternalEnv 0
-            newModule = XObj (Mod innerEnv) (info xobj) (Just ModuleTy)
+            newModule = XObj (Mod innerEnv) (xobjInfo xobj) (Just ModuleTy)
             globalEnvWithModuleAdded = envInsertAt env (SymPath pathStrings moduleName) (Binder meta newModule)
             ctx' = Context globalEnvWithModuleAdded (Just (innerEnv{envParent=i})) typeEnv (pathStrings ++ [moduleName]) proj lastInput execMode history
         (ctxAfterModuleDef, res) <- liftIO $ foldM folder (ctx', dynamicNil) innerExpressions
@@ -595,7 +595,7 @@ primitiveDefmodule xobj ctx@(Context env i typeEnv pathStrings proj lastInput ex
       Just (_, Binder existingMeta (XObj (Lst [XObj MetaStub _ _, _]) _ _)) ->
         defineIt existingMeta
       Just (_, Binder _ _) ->
-        pure (evalError ctx ("Can't redefine '" ++ moduleName ++ "' as module") (info xobj))
+        pure (evalError ctx ("Can't redefine '" ++ moduleName ++ "' as module") (xobjInfo xobj))
       Nothing ->
         defineIt emptyMeta
 
@@ -615,7 +615,7 @@ primitiveDefmodule xobj ctx@(Context env i typeEnv pathStrings proj lastInput ex
                    Left err -> pure (newCtx, Left err)
                    Right _ -> pure (newCtx, r)
 primitiveDefmodule _ ctx (x:_) =
-  pure (evalError ctx ("`defmodule` expects a symbol, got '" ++ pretty x ++ "' instead.") (info x))
+  pure (evalError ctx ("`defmodule` expects a symbol, got '" ++ pretty x ++ "' instead.") (xobjInfo x))
 primitiveDefmodule _ ctx [] =
   pure (evalError ctx "`defmodule` requires at least a symbol, received none." (Just dummyInfo))
 
@@ -626,13 +626,13 @@ commandLoad :: CommandCallback
 commandLoad ctx [xobj@(XObj (Str path) i _)] =
   loadInternal ctx xobj path i DoesReload
 commandLoad ctx [x] =
-  pure $ evalError ctx ("Invalid args to `load`: " ++ pretty x) (info x)
+  pure $ evalError ctx ("Invalid args to `load`: " ++ pretty x) (xobjInfo x)
 
 commandLoadOnce :: CommandCallback
 commandLoadOnce ctx [xobj@(XObj (Str path) i _)] =
   loadInternal ctx xobj path i Frozen
 commandLoadOnce ctx [x] =
-  pure $ evalError ctx ("Invalid args to `load-once`: " ++ pretty x) (info x)
+  pure $ evalError ctx ("Invalid args to `load-once`: " ++ pretty x) (xobjInfo x)
 
 loadInternal :: Context -> XObj -> String -> Maybe Info -> ReloadMode -> IO (Context, Either EvalError XObj)
 loadInternal ctx xobj path i reloadMode = do
@@ -704,7 +704,7 @@ loadInternal ctx xobj path i reloadMode = do
           Check ->
             machineReadableInfoFromXObj (fppl ctx) xobj ++ " I can't find a file named: '" ++ path ++ "'"
           _ -> "I can't find a file named: '" ++ path ++ "'") ++
-        "\n\nIf you tried loading an external package, try appending a version string (like `@master`)") (info xobj)
+        "\n\nIf you tried loading an external package, try appending a version string (like `@master`)") (xobjInfo xobj)
     invalidPathWith ctx path stderr cleanup cleanupPath = do
       _ <- liftIO $ when cleanup (removeDirectoryRecursive cleanupPath)
       pure $ evalError ctx
@@ -713,15 +713,15 @@ loadInternal ctx xobj path i reloadMode = do
             machineReadableInfoFromXObj (fppl ctx) xobj ++ " I can't find a file named: '" ++ path ++ "'"
           _ -> "I can't find a file named: '" ++ path ++ "'") ++
         "\n\nI tried interpreting the statement as a git import, but got: " ++ stderr)
-        (info xobj)
+        (xobjInfo xobj)
     replaceC _ _ [] = []
     replaceC c s (a:b) = if a == c then s ++ replaceC c s b else a : replaceC c s b
     cantLoadSelf ctx path =
       case contextExecMode ctx of
         Check ->
-          evalError ctx (machineReadableInfoFromXObj (fppl ctx) xobj ++ " A file can't load itself: '" ++ path ++ "'") (info xobj)
+          evalError ctx (machineReadableInfoFromXObj (fppl ctx) xobj ++ " A file can't load itself: '" ++ path ++ "'") (xobjInfo xobj)
         _ ->
-          evalError ctx ("A file can't load itself: '" ++ path ++ "'") (info xobj)
+          evalError ctx ("A file can't load itself: '" ++ path ++ "'") (xobjInfo xobj)
     tryInstall path =
       let split = splitOn "@" path
       in tryInstallWithCheckout (joinWith "@" (init split)) (last split)
@@ -827,7 +827,7 @@ commandC ctx [xobj] = do
     Left err -> pure (newCtx, Left err)
     Right expanded ->
       case annotate typeEnv globalEnv (setFullyQualifiedSymbols typeEnv globalEnv globalEnv expanded) Nothing of
-        Left err -> pure $ evalError newCtx (show err) (info xobj)
+        Left err -> pure $ evalError newCtx (show err) (xobjInfo xobj)
         Right (annXObj, annDeps) ->
           do let cXObj = printC annXObj
                  cDeps = concatMap printC annDeps
@@ -870,7 +870,7 @@ primitiveDefdynamic _ ctx [XObj (Sym (SymPath [] name) _) _ _, value] = do
     Right evaledBody ->
       dynamicOrMacroWith newCtx (\path -> [XObj DefDynamic Nothing Nothing, XObj (Sym path Symbol) Nothing Nothing, evaledBody]) DynamicTy name value
 primitiveDefdynamic _ ctx [notName, _] =
-  pure (evalError ctx ("`defndynamic` expected a name as first argument, but got " ++ pretty notName) (info notName))
+  pure (evalError ctx ("`defndynamic` expected a name as first argument, but got " ++ pretty notName) (xobjInfo notName))
 
 specialCommandSet :: Context -> [XObj] -> IO (Context, Either EvalError XObj)
 specialCommandSet ctx [(XObj (Sym path@(SymPath mod n) _) _ _), value] = do
@@ -904,9 +904,9 @@ specialCommandSet ctx [(XObj (Sym path@(SymPath mod n) _) _ _), value] = do
               -- If the def isn't found in the internal environment, check the global environment.
               Nothing -> setGlobal ctx (contextGlobalEnv ctx) value
 specialCommandSet ctx [notName, _] =
-  pure (evalError ctx ("`set!` expected a name as first argument, but got " ++ pretty notName) (info notName))
+  pure (evalError ctx ("`set!` expected a name as first argument, but got " ++ pretty notName) (xobjInfo notName))
 specialCommandSet ctx args =
-  pure (evalError ctx ("`set!` takes a name and a value, but got `" ++ intercalate " " (map pretty args)) (if null args then Nothing else info (head args)))
+  pure (evalError ctx ("`set!` takes a name and a value, but got `" ++ intercalate " " (map pretty args)) (if null args then Nothing else xobjInfo (head args)))
 
 -- | Convenience method for signifying failure in a given context.
 failure :: Context -> EvalError -> (Context, Either EvalError a)
@@ -922,7 +922,7 @@ typeCheckValueAgainstBinder ctx val binder = do
     Left err -> (ctx', Left err)
   where path = (getPath (binderXObj binder))
         binderTy = xobjTy (binderXObj binder)
-        typeErr x = evalError ctx ("can't `set!` " ++ show path ++ " to a value of type " ++ show (fromJust (xobjTy x)) ++ ", " ++ show path ++ " has type " ++ show (fromJust binderTy)) (info x)
+        typeErr x = evalError ctx ("can't `set!` " ++ show path ++ " to a value of type " ++ show (fromJust (xobjTy x)) ++ ", " ++ show path ++ " has type " ++ show (fromJust binderTy)) (xobjInfo x)
         go ctx (Just DynamicTy) x = (ctx, Right x)
         go ctx t x@(XObj _ _ t') = if t == t' then (ctx, Right x) else typeErr x
 
@@ -933,11 +933,11 @@ setStaticOrDynamicVar :: SymPath -> Env -> Binder -> XObj -> Env
 setStaticOrDynamicVar path env binder value =
     case binder of
       (Binder meta (XObj (Lst (def@(XObj Def _ _) : sym : _)) _ t)) ->
-        envReplaceBinding path (Binder meta (XObj (Lst [def, sym, value]) (info value) t)) env
+        envReplaceBinding path (Binder meta (XObj (Lst [def, sym, value]) (xobjInfo value) t)) env
       (Binder meta (XObj (Lst (defdy@(XObj DefDynamic _ _) : sym : _)) _ _)) ->
-        envReplaceBinding path (Binder meta (XObj (Lst [defdy, sym, value]) (info value) (Just DynamicTy))) env
+        envReplaceBinding path (Binder meta (XObj (Lst [defdy, sym, value]) (xobjInfo value) (Just DynamicTy))) env
       (Binder meta (XObj (Lst (lett@(XObj LetDef _ _) : sym : _)) _ t)) ->
-        envReplaceBinding path (Binder meta (XObj (Lst [lett, sym, value]) (info value) t)) env
+        envReplaceBinding path (Binder meta (XObj (Lst [lett, sym, value]) (xobjInfo value) t)) env
       -- shouldn't happen, errors are thrown at call sites.
       -- TODO: Return an either here to propagate error.
       _ -> env
@@ -991,9 +991,9 @@ primitiveAnd _ ctx [a, b] = do
            Left e -> (newCtx, Left e)
            Right (XObj (Bol bb) _ _) ->
              (newCtx', Right (boolToXObj bb))
-           Right b -> evalError ctx ("Can’t call `or` on " ++ pretty b) (info b)
+           Right b -> evalError ctx ("Can’t call `or` on " ++ pretty b) (xobjInfo b)
        else pure (newCtx, Right falseXObj)
-   Right a -> pure (evalError ctx ("Can’t call `or` on " ++ pretty a) (info a))
+   Right a -> pure (evalError ctx ("Can’t call `or` on " ++ pretty a) (xobjInfo a))
 
 primitiveOr :: Primitive
 primitiveOr _ ctx [a, b] = do
@@ -1009,5 +1009,5 @@ primitiveOr _ ctx [a, b] = do
            Left e -> (newCtx, Left e)
            Right (XObj (Bol bb) _ _) ->
              (newCtx', Right (boolToXObj bb))
-           Right b -> evalError ctx ("Can’t call `or` on " ++ pretty b) (info b)
-   Right a -> pure (evalError ctx ("Can’t call `or` on " ++ pretty a) (info a))
+           Right b -> evalError ctx ("Can’t call `or` on " ++ pretty b) (xobjInfo b)
+   Right a -> pure (evalError ctx ("Can’t call `or` on " ++ pretty a) (xobjInfo a))

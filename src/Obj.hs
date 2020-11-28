@@ -212,19 +212,19 @@ instance Eq TemplateCreator where
   _ == _ = True
 
 prettyInfoFromXObj :: XObj -> String
-prettyInfoFromXObj xobj = case info xobj of
+prettyInfoFromXObj xobj = case xobjInfo xobj of
                             Just i -> prettyInfo i
                             Nothing -> "no info"
 
 machineReadableInfoFromXObj :: FilePathPrintLength -> XObj -> String
 machineReadableInfoFromXObj fppl xobj =
-  case info xobj of
+  case xobjInfo xobj of
     Just i -> machineReadableInfo fppl i
     Nothing -> ""
 
 -- | Obj with eXtra information.
 data XObj = XObj { obj :: Obj
-                 , info :: Maybe Info
+                 , xobjInfo :: Maybe Info
                  , xobjTy :: Maybe Ty
                  } deriving (Show, Eq, Ord)
 
@@ -442,7 +442,7 @@ instance Show EvalError where
             then ""
             else
               "\n\nTraceback:\n" ++
-              unlines (map (\x -> prettyUpTo 60 x ++ getInfo (info x)) t)
+              unlines (map (\x -> prettyUpTo 60 x ++ getInfo (xobjInfo x)) t)
 
 -- | Get the type of an XObj as a string.
 typeStr :: XObj -> String
@@ -452,13 +452,13 @@ typeStr xobj = case xobjTy xobj of
 
 -- | Get the identifier of an XObj as a string.
 identifierStr :: XObj -> String
-identifierStr xobj = case info xobj of
+identifierStr xobj = case xobjInfo xobj of
                        Just i -> "#" ++ show (infoIdentifier i)
                        Nothing -> "#?"
 
 -- | Get the deleters of an XObj as a string.
 deletersStr :: XObj -> String
-deletersStr xobj = case info xobj of
+deletersStr xobj = case xobjInfo xobj of
                      Just i -> joinWithComma (map show (Set.toList (infoDelete i)))
                      Nothing -> ""
 

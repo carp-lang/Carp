@@ -694,7 +694,7 @@ setDeletersOnInfo i deleters = fmap (\i' -> i' { infoDelete = deleters }) i
 
 -- | Helper function for setting the deleters for an XObj.
 del :: XObj -> Set.Set Deleter -> XObj
-del xobj deleters = xobj { info = setDeletersOnInfo (info xobj) deleters }
+del xobj deleters = xobj { xobjInfo = setDeletersOnInfo (xobjInfo xobj) deleters }
 
 -- | Differentiate between lifetimes depending on variables in a lexical scope and depending on something outside the function
 data LifetimeMode = LifetimeInsideFunction String
@@ -724,13 +724,13 @@ manageMemory typeEnv globalEnv root =
   in  -- (trace ("Delete these: " ++ joinWithComma (map show (Set.toList deleteThese)))) $
       case finalObj of
         Left err -> Left err
-        Right ok -> let newInfo = fmap (\i -> i { infoDelete = deleteThese }) (info ok)
+        Right ok -> let newInfo = fmap (\i -> i { infoDelete = deleteThese }) (xobjInfo ok)
                     in -- This final check of lifetimes works on the lifetimes mappings after analyzing the function form, and
                        --  after all the local variables in it have been deleted. This is needed for values that are created
                        --  directly in body position, e.g. (defn f [] &[1 2 3])
                        case evalState (checkThatRefTargetIsAlive ok) (MemState (Set.fromList []) [] (memStateLifetimes finalState)) of
                          Left err -> Left err
-                         Right _ -> Right (ok { info = newInfo }, deps)
+                         Right _ -> Right (ok { xobjInfo = newInfo }, deps)
 
   where visit :: XObj -> State MemState (Either TypeError XObj)
         visit xobj =
@@ -856,7 +856,7 @@ manageMemory typeEnv globalEnv root =
 
             -- Set!
             [setbangExpr@(XObj SetBang _ _), variable, value] ->
-                 let varInfo = info variable
+                 let varInfo = xobjInfo variable
                      correctVariableAndMode =
                        case variable of
                          -- DISABLE FOR NOW: (XObj (Lst (XObj (Sym (SymPath _ "copy") _) _ _ : symObj@(XObj (Sym _ _) _ _) : _)) _ _) -> Right symObj
@@ -886,10 +886,10 @@ manageMemory typeEnv globalEnv root =
                                 Symbol -> error "How to handle this?"
                                 LookupLocal _ ->
                                   if Set.size (Set.intersection managed deleters) == 1 -- The variable is still alive
-                                  then variable { info = setDeletersOnInfo varInfo deleters }
+                                  then variable { xobjInfo = setDeletersOnInfo varInfo deleters }
                                   else variable -- don't add the new info = no deleter
                                 LookupGlobal _ _ ->
-                                  variable { info = setDeletersOnInfo varInfo deleters }
+                                  variable { xobjInfo = setDeletersOnInfo varInfo deleters }
 
                             -- traceDeps = trace ("SET!-deleters for " ++ pretty xobj ++ " at " ++ prettyInfoFromXObj xobj ++ ":\n" ++
                             --                    "unmanaged " ++ pretty value ++ "\n" ++
@@ -1071,8 +1071,8 @@ manageMemory typeEnv globalEnv root =
                                                -- Putting the deleter info on the lhs,
                                                -- because the right one can collide with
                                                -- the other expressions, e.g. a 'let'
-                                               let newLhsInfo = setDeletersOnInfo (info lhs) finalSetOfDeleters
-                                               in [lhs { info = newLhsInfo }, rhs]
+                                               let newLhsInfo = setDeletersOnInfo (xobjInfo lhs) finalSetOfDeleters
+                                               in [lhs { xobjInfo = newLhsInfo }, rhs]
                                             )
                                         okVisitedCases
                                         deletersForEachCase
@@ -1334,7 +1334,7 @@ varOfXObj :: XObj -> String
 varOfXObj xobj =
   case xobj of
     XObj (Sym path _) _ _ -> pathToC path
-    _ -> case info xobj of
+    _ -> case xobjInfo xobj of
            Just i -> freshVar i
            Nothing -> error ("Missing info on " ++ show xobj)
 

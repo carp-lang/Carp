@@ -285,13 +285,13 @@ toC toCMode (Binder meta root) = emitterSrc (execState (visit startingIndent roo
                      exprVar <- visit indent expr
                      appendToSrc (addIndent indent ++ "if (" ++ exprVar ++ ") {\n")
                      trueVar <- visit indent' ifTrue
-                     let Just ifTrueInfo = info ifTrue
+                     let Just ifTrueInfo = xobjInfo ifTrue
                      delete indent' ifTrueInfo
                      when isNotVoid $
                        appendToSrc (addIndent indent' ++ ifRetVar ++ " = " ++ trueVar ++ ";\n")
                      appendToSrc (addIndent indent ++ "} else {\n")
                      falseVar <- visit indent' ifFalse
-                     let Just ifFalseInfo = info ifFalse
+                     let Just ifFalseInfo = xobjInfo ifFalse
                      delete indent' ifFalseInfo
                      when isNotVoid $
                        appendToSrc (addIndent indent' ++ ifRetVar ++ " = " ++ falseVar ++ ";\n")
@@ -399,7 +399,7 @@ toC toCMode (Binder meta root) = emitterSrc (execState (visit startingIndent roo
               let indent' = indent + indentAmount
                   Just exprTy = xobjTy expr
                   conditionVar = freshVar i
-                  Just exprInfo = info expr
+                  Just exprInfo = xobjInfo expr
               in  do exprRetVar <- visitWhileExpression indent
                      appendToSrc (addIndent indent ++ tyToCLambdaFix exprTy ++ " " ++ conditionVar ++ " = " ++ exprRetVar ++ ";\n")
                      delete indent exprInfo
@@ -446,7 +446,7 @@ toC toCMode (Binder meta root) = emitterSrc (execState (visit startingIndent roo
                          (XObj (Lst (XObj (Sym (SymPath _ "copy") _) _ _ : (XObj (Sym sym _) _ _) : _)) _ _) -> "*" ++ pathToC sym
                          (XObj (Sym sym _) _ _) -> pathToC sym
                          _ -> error (show (CannotSet variable))
-                     Just varInfo = info variable
+                     Just varInfo = xobjInfo variable
                  --appendToSrc (addIndent indent ++ "// " ++ show (length (infoDelete varInfo)) ++ " deleters for " ++ properVariableName ++ ":\n")
                  delete indent varInfo
                  appendToSrc (addIndent indent ++ properVariableName ++ " = " ++ valueVar ++ "; "

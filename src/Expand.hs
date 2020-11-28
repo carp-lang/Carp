@@ -75,11 +75,11 @@ expand eval ctx xobj =
                            let wrappedTrue =
                                  case okTrueBranch of
                                    XObj (Lst (XObj Do _ _ : _)) _ _ -> okTrueBranch -- Has a do-expression already
-                                   _ -> XObj (Lst [XObj Do Nothing Nothing, okTrueBranch]) (info okTrueBranch) Nothing
+                                   _ -> XObj (Lst [XObj Do Nothing Nothing, okTrueBranch]) (xobjInfo okTrueBranch) Nothing
                                wrappedFalse =
                                  case okFalseBranch of
                                    XObj (Lst (XObj Do _ _ : _)) _ _ -> okFalseBranch -- Has a do-expression already
-                                   _ -> XObj (Lst [XObj Do Nothing Nothing, okFalseBranch]) (info okFalseBranch) Nothing
+                                   _ -> XObj (Lst [XObj Do Nothing Nothing, okFalseBranch]) (xobjInfo okFalseBranch) Nothing
 
                            Right (XObj (Lst [ifExpr, okCondition, wrappedTrue, wrappedFalse]) i t))
         [letExpr@(XObj Let _ _), XObj (Arr bindings) bindi bindt, body] ->
@@ -91,7 +91,7 @@ expand eval ctx xobj =
                                    Right (XObj (Lst [letExpr, XObj (Arr (concat okBindings)) bindi bindt, okBody]) i t))
           else pure (evalError ctx (
             "I ecountered an odd number of forms inside a `let` (`" ++
-            pretty xobj ++ "`)") (info xobj))
+            pretty xobj ++ "`)") (xobjInfo xobj))
           where successiveExpand (ctx, acc) (n, x) =
                   case acc of
                     Left _ -> pure (ctx, acc)
@@ -103,7 +103,7 @@ expand eval ctx xobj =
 
         matchExpr@(XObj (Match _) _ _) : (expr : rest)
           | null rest ->
-              pure (evalError ctx "I encountered a `match` without forms" (info xobj))
+              pure (evalError ctx "I encountered a `match` without forms" (xobjInfo xobj))
           | even (length rest) ->
               do (ctx, expandedExpr) <- expand eval ctx expr
                  (newCtx, expandedPairs) <- foldlM successiveExpand (ctx, Right []) (pairwise rest)
@@ -111,7 +111,7 @@ expand eval ctx xobj =
                                   okExpandedPairs <- expandedPairs
                                   Right (XObj (Lst (matchExpr : okExpandedExpr : (concat okExpandedPairs))) i t))
           | otherwise -> pure (evalError ctx
-                    "I encountered an odd number of forms inside a `match`" (info xobj))
+                    "I encountered an odd number of forms inside a `match`" (xobjInfo xobj))
           where successiveExpand (ctx, acc) (l, r) =
                   case acc of
                     Left _ -> pure (ctx, acc)
@@ -141,7 +141,7 @@ expand eval ctx xobj =
         XObj (Mod modEnv) _ _ : args ->
           let pathToModule = pathToEnv modEnv
               implicitInit = XObj (Sym (SymPath pathToModule "init") Symbol) i t
-          in expand eval ctx (XObj (Lst (implicitInit : args)) (info xobj) (xobjTy xobj))
+          in expand eval ctx (XObj (Lst (implicitInit : args)) (xobjInfo xobj) (xobjTy xobj))
         f:args ->
           do (_, expandedF) <- expand eval ctx f
              (ctx'', expandedArgs) <- foldlM successiveExpand (ctx, Right []) args
@@ -181,7 +181,7 @@ expand eval ctx xobj =
         Nothing -> pure (ctx, Right xobj) -- symbols that are not found are left as-is
         where
           isPrivate m x = pure $ if metaIsTrue m "private"
-                                 then evalError ctx ("The binding: " ++ pretty sym ++ " is private; it may only be used within the module that defines it.") (info sym)
+                                 then evalError ctx ("The binding: " ++ pretty sym ++ " is private; it may only be used within the module that defines it.") (xobjInfo sym)
                                  else (ctx, Right x)
     expandSymbol _ = pure (evalError ctx "Can't expand non-symbol in expandSymbol." Nothing)
 
@@ -233,8 +233,8 @@ setNewIdentifiers root = let final = evalState (visit root) 0
     bumpAndSet xobj =
       do counter <- get
          put (counter + 1)
-         pure $ case info xobj of
-           Just i -> (xobj { info = Just (i { infoIdentifier = counter })})
+         pure $ case xobjInfo xobj of
+           Just i -> (xobj { xobjInfo = Just (i { infoIdentifier = counter })})
            Nothing -> xobj
 
 -- | Replaces the file, line and column info on an XObj an all its children.
@@ -261,8 +261,8 @@ replaceSourceInfo newFile newLine newColumn root = visit root
 
     setNewInfo :: XObj -> XObj
     setNewInfo xobj =
-      case info xobj of
-        Just i -> (xobj { info = Just (i { infoFile = newFile
+      case xobjInfo xobj of
+        Just i -> (xobj { xobjInfo = Just (i { infoFile = newFile
                                          , infoLine = newLine
                                          , infoColumn = newColumn
                                          })})

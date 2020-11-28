@@ -88,7 +88,7 @@ genConstraints _ root rootSig = fmap sort (gen root)
                                 exprType <- toEither (xobjTy expr) (ExpressionMissingType expr)
                                 trueType <- toEither (xobjTy ifTrue) (ExpressionMissingType ifTrue)
                                 falseType <- toEither (xobjTy ifFalse) (ExpressionMissingType ifFalse)
-                                let expected = XObj (Sym (SymPath [] "Condition in if value") Symbol) (info expr) (Just BoolTy)
+                                let expected = XObj (Sym (SymPath [] "Condition in if value") Symbol) (xobjInfo expr) (Just BoolTy)
                                 let conditionConstraint = Constraint exprType BoolTy expr expected xobj OrdIfCondition
                                     sameReturnConstraint = Constraint trueType falseType ifTrue ifFalse xobj OrdIfReturn
                                     Just t = xobjTy xobj
@@ -147,8 +147,8 @@ genConstraints _ root rootSig = fmap sort (gen root)
                                 insideBodyConstraints <- gen body
                                 exprType <- toEither (xobjTy expr) (ExpressionMissingType expr)
                                 bodyType <- toEither (xobjTy body) (ExpressionMissingType body)
-                                let expectedCond = XObj (Sym (SymPath [] "Condition in while-expression") Symbol) (info expr) (Just BoolTy)
-                                    expectedBody = XObj (Sym (SymPath [] "Body in while-expression") Symbol) (info xobj) (Just UnitTy)
+                                let expectedCond = XObj (Sym (SymPath [] "Condition in while-expression") Symbol) (xobjInfo expr) (Just BoolTy)
+                                    expectedBody = XObj (Sym (SymPath [] "Body in while-expression") Symbol) (xobjInfo xobj) (Just UnitTy)
                                     conditionConstraint = Constraint exprType BoolTy expr expectedCond xobj OrdWhileCondition
                                     wholeStatementConstraint = Constraint bodyType UnitTy body expectedBody xobj OrdWhileBody
                                 pure (conditionConstraint : wholeStatementConstraint :
@@ -163,7 +163,7 @@ genConstraints _ root rootSig = fmap sort (gen root)
                                           xobjType <- toEither (xobjTy xobj) (DefMissingType xobj)
                                           lastExprType <- toEither (xobjTy lastExpr) (ExpressionMissingType xobj)
                                           let retConstraint = Constraint xobjType lastExprType xobj lastExpr xobj OrdDoReturn
-                                              must = XObj (Sym (SymPath [] "Statement in do-expression") Symbol) (info xobj) (Just UnitTy)
+                                              must = XObj (Sym (SymPath [] "Statement in do-expression") Symbol) (xobjInfo xobj) (Just UnitTy)
                                               mkConstr x@(XObj _ _ (Just t)) = Just (Constraint t UnitTy x must xobj OrdDoStatement)
                                               mkConstr _ = Nothing
                                               expressionsShouldReturnUnit = mapMaybe mkConstr (init expressions)
@@ -199,7 +199,7 @@ genConstraints _ root rootSig = fmap sort (gen root)
                              do insideValueConstraints <- gen value
                                 xobjType <- toEither (xobjTy xobj) (ExpressionMissingType xobj)
                                 valueType <- toEither (xobjTy value) (ExpressionMissingType value)
-                                let lt = VarTy (makeTypeVariableNameFromInfo (info xobj))
+                                let lt = VarTy (makeTypeVariableNameFromInfo (xobjInfo xobj))
                                 let theTheConstraint = Constraint (RefTy xobjType lt) valueType xobj value xobj OrdDeref
                                 pure (theTheConstraint : insideValueConstraints)
 
@@ -219,7 +219,7 @@ genConstraints _ root rootSig = fmap sort (gen root)
                                     else
                                       let expected t n =
                                             XObj (Sym (SymPath [] ("Expected " ++ enumerate n ++ " argument to '" ++ getName func ++ "'")) Symbol)
-                                            (info func) (Just t)
+                                            (xobjInfo func) (Just t)
                                           argConstraints = zipWith4 (\a t aObj n -> Constraint a t aObj (expected t n) xobj OrdFuncAppArg)
                                                                     (List.map forceTy args)
                                                                     argTys
@@ -230,7 +230,7 @@ genConstraints _ root rootSig = fmap sort (gen root)
                                       in  pure (retConstraint : funcConstraints ++ argConstraints ++ variablesConstraints)
                                   funcVarTy@(VarTy _) ->
                                     let fabricatedFunctionType = FuncTy (List.map forceTy args) (forceTy xobj) (VarTy "what?!")
-                                        expected = XObj (Sym (SymPath [] ("Calling '" ++ getName func ++ "'")) Symbol) (info func) Nothing
+                                        expected = XObj (Sym (SymPath [] ("Calling '" ++ getName func ++ "'")) Symbol) (xobjInfo func) Nothing
                                         wholeTypeConstraint = Constraint funcVarTy fabricatedFunctionType func expected xobj OrdFuncAppVarTy
                                     in  pure (wholeTypeConstraint : funcConstraints ++ variablesConstraints)
                                   _ -> Left (NotAFunction func)
@@ -244,9 +244,9 @@ genConstraints _ root rootSig = fmap sort (gen root)
                 x:xs -> do insideExprConstraints <- fmap join (mapM gen arr)
                            let Just headTy = xobjTy x
                                genObj o n = XObj (Sym (SymPath [] ("Whereas the " ++ enumerate n ++ " element in the array is " ++ show (getPath o))) Symbol)
-                                  (info o) (xobjTy o)
+                                  (xobjInfo o) (xobjTy o)
                                headObj = XObj (Sym (SymPath [] ("I inferred the type of the array from its first element " ++ show (getPath x))) Symbol)
-                                  (info x) (Just headTy)
+                                  (xobjInfo x) (Just headTy)
                                Just (StructTy (ConcreteNameTy "Array") [t]) = xobjTy xobj
                                betweenExprConstraints = zipWith (\o n -> Constraint headTy (forceTy o) headObj (genObj o n) xobj OrdArrBetween) xs [1..]
                                headConstraint = Constraint headTy t headObj (genObj x 1) xobj OrdArrHead
@@ -259,9 +259,9 @@ genConstraints _ root rootSig = fmap sort (gen root)
                 x:xs -> do insideExprConstraints <- fmap join (mapM gen arr)
                            let Just headTy = xobjTy x
                                genObj o n = XObj (Sym (SymPath [] ("Whereas the " ++ enumerate n ++ " element in the array is " ++ show (getPath o))) Symbol)
-                                  (info o) (xobjTy o)
+                                  (xobjInfo o) (xobjTy o)
                                headObj = XObj (Sym (SymPath [] ("I inferred the type of the static array from its first element " ++ show (getPath x))) Symbol)
-                                  (info x) (Just headTy)
+                                  (xobjInfo x) (Just headTy)
                                Just (RefTy(StructTy (ConcreteNameTy "StaticArray") [t]) _) = xobjTy xobj
                                betweenExprConstraints = zipWith (\o n -> Constraint headTy (forceTy o) headObj (genObj o n) xobj OrdArrBetween) xs [1..]
                                headConstraint = Constraint headTy t headObj (genObj x 1) xobj OrdArrHead
@@ -285,7 +285,7 @@ genConstraintsForCaseMatcher matchMode = gen
                if length variables /= length argTys then
                  Left (WrongArgCount caseName (length argTys) (length variables)) -- | TODO: This could be another error since this isn't an actual function call.
                else
-                 let expected t n = XObj (Sym (SymPath [] ("Expected " ++ enumerate n ++ " argument to '" ++ getName caseName ++ "'")) Symbol) (info caseName) (Just t)
+                 let expected t n = XObj (Sym (SymPath [] ("Expected " ++ enumerate n ++ " argument to '" ++ getName caseName ++ "'")) Symbol) (xobjInfo caseName) (Just t)
                      argConstraints = zipWith4 (\a t aObj n -> Constraint a t aObj (expected t n) xobj OrdFuncAppArg)
                                                (List.map forceTy variables)
                                                (zipWith refWrapper variables argTys)
@@ -296,7 +296,7 @@ genConstraintsForCaseMatcher matchMode = gen
                  in  pure (retConstraint : caseNameConstraints ++ argConstraints ++ variablesConstraints)
              funcVarTy@(VarTy _) ->
                let fabricatedFunctionType = FuncTy (List.map forceTy variables) (forceTy xobj) (VarTy "what?!") -- | TODO: Fix
-                   expected = XObj (Sym (SymPath [] ("Matchin on '" ++ getName caseName ++ "'")) Symbol) (info caseName) Nothing
+                   expected = XObj (Sym (SymPath [] ("Matchin on '" ++ getName caseName ++ "'")) Symbol) (xobjInfo caseName) Nothing
                    wholeTypeConstraint = Constraint funcVarTy fabricatedFunctionType caseName expected xobj OrdFuncAppVarTy
                in  pure (wholeTypeConstraint : caseNameConstraints ++ variablesConstraints)
              _ -> Left (NotAFunction caseName) -- | TODO: This error could be more specific too, since it's not an actual function call.
