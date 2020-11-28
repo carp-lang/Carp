@@ -1,6 +1,7 @@
 {-# LANGUAGE LambdaCase #-}
 module Concretize where
 
+import Prelude hiding (lookup)
 import Control.Monad.State
 import qualified Data.Map as Map
 import Data.Maybe (fromMaybe)
@@ -115,8 +116,8 @@ concretizeXObj allowAmbiguityRoot typeEnv rootEnv visitedDefinitions root =
                  -- Create a new (top-level) function that will be used when the lambda is called.
                  -- Its name will contain the name of the (normal, non-lambda) function it's contained within,
                  -- plus the identifier of the particular s-expression that defines the lambda.
-                 SymPath path name = rootDefinitionPath
-                 lambdaPath = SymPath path ("_Lambda_" ++ lambdaToCName name (envFunctionNestingLevel envWithArgs) ++ "_" ++ show (infoIdentifier ii))
+                 SymPath spath name = rootDefinitionPath
+                 lambdaPath = SymPath spath ("_Lambda_" ++ lambdaToCName name (envFunctionNestingLevel envWithArgs) ++ "_" ++ show (infoIdentifier ii))
                  lambdaNameSymbol = XObj (Sym lambdaPath Symbol) (Just dummyInfo) Nothing
                  extendedArgs = if null capturedVars
                                 then args
@@ -334,9 +335,9 @@ collectCapturedVars root = removeDuplicates (map decreaseCaptureLevel (visit roo
         -- including the ones captured in later bindings
         (Lst [XObj Let _ _, XObj (Arr bindings) _ _, body]) ->
           let (bound, bindingsCaptured) = foldl
-                (\(bound, captured) (XObj sym _ ty, expr) ->
-                   let capt = filter (\x -> Set.notMember x bound) (visit expr) in
-                     (Set.insert (XObj sym (Just dummyInfo) ty) bound, capt++captured))
+                (\(bound', captured) (XObj sym _ ty, expr) ->
+                   let capt = filter (\x -> Set.notMember x bound') (visit expr) in
+                     (Set.insert (XObj sym (Just dummyInfo) ty) bound', capt++captured))
                    (Set.empty, []) (pairwise bindings) in
           let bodyCaptured = filter (\x -> Set.notMember x bound) (visit body) in
             bindingsCaptured++bodyCaptured
@@ -367,8 +368,8 @@ matchingSignature3 tA (tB, _, _) = areUnifiable tA tB
 -- | Does the type of an XObj require additional concretization of generic types or some typedefs for function types, etc?
 -- | If so, perform the concretization and append the results to the list of dependencies.
 concretizeTypeOfXObj :: TypeEnv -> XObj -> State [XObj] (Either TypeError ())
-concretizeTypeOfXObj typeEnv (XObj _ _ (Just t)) =
-  case concretizeType typeEnv t of
+concretizeTypeOfXObj typeEnv (XObj _ _ (Just ty)) =
+  case concretizeType typeEnv ty of
     Right t -> do modify (t ++)
                   pure (Right ())
     Left err -> pure (Left err)
@@ -501,8 +502,8 @@ replaceGenericTypeSymbols mappings (XObj (Arr arr) i t) =
 replaceGenericTypeSymbols _ xobj = xobj
 
 replaceGenericTypeSymbolsOnCase :: Map.Map String Ty -> XObj -> XObj
-replaceGenericTypeSymbolsOnCase mappings (XObj (Lst (caseName : caseMembers)) i t) =
-  XObj (Lst (caseName : map replacer caseMembers)) i t
+replaceGenericTypeSymbolsOnCase mappings (XObj (Lst (caseNm : caseMembers)) i t) =
+  XObj (Lst (caseNm : map replacer caseMembers)) i t
   where replacer memberXObj =
           replaceGenericTypeSymbols mappings memberXObj
 -- Handle cases like `(State a) Done (Value [a]))`
@@ -748,9 +749,9 @@ manageMemory typeEnv globalEnv root =
                       pure (Right xobj)
              case r of
                Right ok -> do MemState _ _ _ <- get
-                              r <- checkThatRefTargetIsAlive ok -- $ trace ("CHECKING " ++ pretty ok ++ " : " ++ showMaybeTy (ty xobj) ++ ", mappings: " ++ prettyLifetimeMappings m) $
+                              r' <- checkThatRefTargetIsAlive ok -- $ trace ("CHECKING " ++ pretty ok ++ " : " ++ showMaybeTy (ty xobj) ++ ", mappings: " ++ prettyLifetimeMappings m) $
                               addToLifetimesMappingsIfRef True ok -- (***)
-                              pure r
+                              pure r'
                Left err -> pure (Left err)
 
         visitArray :: XObj -> State MemState (Either TypeError XObj)
@@ -923,8 +924,8 @@ manageMemory typeEnv globalEnv root =
                                           pure (XObj (Lst [theExpr, typeXObj, okValue]) i t)
 
             [refExpr@(XObj Ref _ _), value] ->
-              do visitedValue <- visit  value
-                 case visitedValue of
+              do visited <- visit  value
+                 case visited of
                    Left e -> pure (Left e)
                    Right visitedValue ->
                      do checkResult <- refCheck visitedValue
@@ -1084,9 +1085,9 @@ manageMemory typeEnv globalEnv root =
                                   in (XObj (Lst ([matchExpr, okVisitedExpr] ++ concat okVisitedCasesWithAllDeleters)) i t
                                      , deletersAfterTheMatch)
 
-            XObj (Lst [deref@(XObj Deref _ _), f]) xi xt : args ->
+            XObj (Lst [deref@(XObj Deref _ _), f]) xi xt : uargs ->
               do -- Do not visit f in this case, we don't want to manage it's memory since it is a ref!
-                 visitedArgs <- sequence <$> mapM visitArg args
+                 visitedArgs <- sequence <$> mapM visitArg uargs
                  case visitedArgs of
                    Left err -> pure (Left err)
                    Right args ->
@@ -1095,9 +1096,9 @@ manageMemory typeEnv globalEnv root =
                         pure $ do okArgs <- unmanagedArgs
                                   Right (XObj (Lst (XObj (Lst [deref, f]) xi xt : okArgs)) i t)
 
-            f : args ->
+            f : uargs ->
               do visitedF <- visit  f
-                 visitedArgs <- sequence <$> mapM visitArg args
+                 visitedArgs <- sequence <$> mapM visitArg uargs
                  case visitedArgs of
                    Left err -> pure (Left err)
                    Right args -> do unmanagedArgs <- sequence <$> mapM unmanageArg args
@@ -1149,7 +1150,7 @@ manageMemory typeEnv globalEnv root =
                      --trace ("\nThere is already a mapping for '" ++ pretty xobj ++ "' from the lifetime '" ++ lt ++ "' to " ++ show existing ++ ", won't add " ++ show (makeLifetimeMode xobj)) $
                      pure ()
                    Nothing ->
-                     do let lifetimes' = Map.insert lt (makeLifetimeMode xobj) lifetimes
+                     do let lifetimes' = Map.insert lt makeLifetimeMode lifetimes
                         put $ --(trace $ "\nExtended lifetimes mappings for '" ++ pretty xobj ++ "' with " ++ show lt ++ " => " ++ show (makeLifetimeMode xobj) ++ " at " ++ prettyInfoFromXObj xobj ++ ":\n" ++ prettyLifetimeMappings lifetimes') $
                           m { memStateLifetimes = lifetimes' }
                         pure ()
@@ -1159,7 +1160,7 @@ manageMemory typeEnv globalEnv root =
             _ ->
               --trace ("No type on " ++ pretty xobj ++ " at " ++ prettyInfoFromXObj xobj) $
               pure ()
-            where makeLifetimeMode xobj =
+            where makeLifetimeMode =
                     if internal then
                       LifetimeInsideFunction $
                       case xobj of
