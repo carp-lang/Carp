@@ -1,5 +1,6 @@
 module Commands where
 
+import Prelude hiding (abs)
 import Control.Exception
 import Control.Monad (join, when)
 import Control.Monad.IO.Class (liftIO, MonadIO)
@@ -137,11 +138,11 @@ commandProjectConfig ctx [xobj@(XObj (Str key) _ _), value] = do
                                    pure (proj { projectDocsURL = url })
                   "docs-styling" -> do url <- unwrapStringXObj value
                                        pure (proj { projectDocsStyling = url })
-                  "file-path-print-length" -> do length <- unwrapStringXObj value
-                                                 case length of
+                  "file-path-print-length" -> do len <- unwrapStringXObj value
+                                                 case len of
                                                    "short" -> pure (proj { projectFilePathPrintLength = ShortPath })
                                                    "full" -> pure (proj { projectFilePathPrintLength = ShortPath })
-                                                   _ -> Left ("Project.config can't understand the value '" ++ length ++ "' for key 'file-path-print-length.")
+                                                   _ -> Left ("Project.config can't understand the value '" ++ len ++ "' for key 'file-path-print-length.")
                   "generate-only" -> do generateOnly <- unwrapBoolXObj value
                                         pure (proj { projectGenerateOnly = generateOnly })
                   "paren-balance-hints" ->
@@ -161,7 +162,7 @@ commandProjectGetConfig :: CommandCallback
 commandProjectGetConfig ctx [xobj@(XObj (Str key) _ _)] =
   let proj = contextProj ctx
       xstr s = XObj s (Just dummyInfo) (Just StringTy)
-      getVal _ proj = case key of
+      getVal _ = case key of
           "cflag" -> Right $ Str $ show $ projectCFlags proj
           "libflag" -> Right $ Str $ show $ projectLibFlags proj
           "pkgconfigflag" -> Right $ Arr $ xstr . Str <$> projectPkgConfigFlags proj
@@ -185,9 +186,9 @@ commandProjectGetConfig ctx [xobj@(XObj (Str key) _ _)] =
           "generate-only" -> Right $ Bol $ projectGenerateOnly proj
           "paren-balance-hints" -> Right $ Bol $ projectBalanceHints proj
           _ -> Left key
-  in pure $ case getVal ctx proj of
+  in pure $ case getVal ctx of
        Right val -> (ctx, Right $ xstr val)
-       Left key -> (evalError ctx (labelStr "CONFIG ERROR" ("Project.get-config can't understand the key '" ++ key)) (xobjInfo xobj))
+       Left k -> (evalError ctx (labelStr "CONFIG ERROR" ("Project.get-config can't understand the key '" ++ k)) (xobjInfo xobj))
 
 commandProjectGetConfig ctx [faultyKey] =
   presentError ("First argument to 'Project.config' must be a string: " ++ pretty faultyKey) (ctx, dynamicNil)
@@ -214,8 +215,8 @@ commandRunExe ctx _ = do
       quoted x = "\"" ++ x ++ "\""
       outExe = quoted $ outDir </> projectTitle (contextProj ctx)
   if projectCanExecute proj
-    then liftIO $ do handle <- spawnCommand outExe
-                     exitCode <- waitForProcess handle
+    then liftIO $ do hndl <- spawnCommand outExe
+                     exitCode <- waitForProcess hndl
                      case exitCode of
                        ExitSuccess -> pure (ctx, Right (XObj (Num IntTy 0) (Just dummyInfo) (Just IntTy)))
                        ExitFailure i -> throw (ShellOutException ("'" ++ outExe ++ "' exited with return value " ++ show i ++ ".") i)
@@ -436,16 +437,16 @@ commandMacroLog ctx msgs = do
   liftIO (mapM_ (putStr . logify) msgs)
   liftIO (putStr "\n")
   pure (ctx, dynamicNil)
-  where logify msg =
-          case msg of
+  where logify m =
+          case m of
             XObj (Str msg) _ _ -> msg
             x                  -> pretty x
 
 commandEq :: CommandCallback
 commandEq ctx [a, b] =
   pure $ case cmp (a, b) of
-    Left (a, b) -> evalError ctx ("Can't compare " ++ pretty a ++ " with " ++ pretty b) (xobjInfo a)
-    Right b -> (ctx, Right (boolToXObj b))
+    Left (a', b') -> evalError ctx ("Can't compare " ++ pretty a' ++ " with " ++ pretty b') (xobjInfo a')
+    Right b' -> (ctx, Right (boolToXObj b'))
   where
     cmp (XObj (Num aTy aNum) _ _, XObj (Num bTy bNum) _ _) | aTy == bTy =
       Right $ aNum == bNum
@@ -482,7 +483,7 @@ commandEq ctx [a, b] =
     cmp invalid = Left invalid
     cmp' _ invalid@(Left _) = invalid
     cmp' _ (Right False) = Right False
-    cmp' elem (Right True) = cmp elem
+    cmp' elt (Right True) = cmp elt
 
 commandComp :: (Number -> Number -> Bool) -> String -> CommandCallback
 commandComp op _ ctx [XObj (Num aTy aNum) _ _, XObj (Num bTy bNum) _ _] | aTy == bTy = pure $ (ctx, Right (boolToXObj (op aNum bNum)))
@@ -702,7 +703,7 @@ commandSexpressionInternal ctx [xobj] bol =
          pure (ctx, Right (XObj (Lst [(toSymbols inter), path, (reify ty)]) i t))
        (XObj (Lst forms) i t) ->
          pure (ctx, Right (XObj (Lst (map toSymbols forms)) i t))
-       mod@(XObj (Mod e) _ _) ->
+       mdl@(XObj (Mod e) _ _) ->
          if bol
          then getMod
          else
@@ -714,7 +715,7 @@ commandSexpressionInternal ctx [xobj] bol =
              Nothing ->
                getMod
          where getMod =
-                 case (toSymbols mod) of
+                 case (toSymbols mdl) of
                    x@(XObj (Lst _) _ _) ->
                      bindingSyms e (ctx, Right x)
                  where bindingSyms env start =
