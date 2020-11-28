@@ -1,6 +1,6 @@
 module GenerateConstraints (genConstraints) where
 
-import Control.Arrow
+import Control.Arrow hiding(arr)
 import Control.Monad.State
 import Data.Maybe (mapMaybe, fromMaybe)
 import Data.Set as Set
