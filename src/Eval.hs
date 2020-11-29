@@ -396,11 +396,10 @@ executeString doCatch printResult ctx input fileName =
         interactiveFolder (_, context) xobj =
           executeCommand context xobj
         treatErr ctx e xobj = do
-          let msg =  "[PARSE ERROR] " ++ e
-              fppl = projectFilePathPrintLength (contextProj ctx)
+          let fppl = projectFilePathPrintLength (contextProj ctx)
           case contextExecMode ctx of
-            Check -> putStrLn (machineReadableInfoFromXObj fppl xobj ++ " " ++ msg)
-            _ -> putStrLnWithColor Red msg
+            Check -> putStrLn (machineReadableInfoFromXObj fppl xobj ++ " " ++ e)
+            _ -> emitErrorWithLabel "PARSE ERROR" e
           throw CancelEvaluationException
 
 -- | Used by functions that has a series of forms to evaluate and need to fold over them (producing a new Context in the end)
@@ -458,7 +457,7 @@ reportExecutionError ctx errorMessage =
   case contextExecMode ctx of
     Check -> putStrLn errorMessage
     _ ->
-      do putStrLnWithColor Red errorMessage
+      do emitErrorBare errorMessage
          throw CancelEvaluationException
 
 -- | Decides what to do when the evaluation fails for some reason.
@@ -466,12 +465,12 @@ catcher :: Context -> CarpException -> IO Context
 catcher ctx exception =
   case exception of
     (ShellOutException message returnCode) ->
-      do putStrLnWithColor Red ("[RUNTIME ERROR] " ++ message)
+      do emitErrorWithLabel "RUNTIME ERROR" message
          stop returnCode
     CancelEvaluationException ->
       stop 1
     EvalException evalError ->
-      do putStrLnWithColor Red (show evalError)
+      do emitError (show evalError)
          stop 1
   where stop returnCode =
           case contextExecMode ctx of
