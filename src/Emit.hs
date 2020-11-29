@@ -321,23 +321,23 @@ toC toCMode (Binder meta root) = emitterSrc (execState (visit startingIndent roo
                   tempVarToAvoidClash = freshVar exprInfo ++ "_temp";
 
                   emitCaseMatcher :: (String, String) -> String -> XObj -> Integer -> State EmitterState ()
-                  emitCaseMatcher (periodOrArrow, ampersandOrNot) caseName (XObj (Sym path _) _ t') index =
-                    let Just tt = t'
+                  emitCaseMatcher (periodOrArrow, ampersandOrNot) caseName (XObj (Sym path _) _ t) index =
+                    let Just tt = t
                     in  appendToSrc (addIndent indent' ++ tyToCLambdaFix tt ++ " " ++ pathToC path ++ " = "
                                     ++ ampersandOrNot ++ tempVarToAvoidClash ++ periodOrArrow ++ "u." ++ mangle caseName ++ ".member" ++ show index ++ ";\n")
                   emitCaseMatcher periodOrArrow caseName (XObj (Lst (XObj (Sym (SymPath _ innerCaseName) _) _ _ : xs)) _ _) index =
-                    zipWithM_ (\x j -> emitCaseMatcher periodOrArrow (caseName ++ ".member" ++ show j ++ ".u." ++ removeSuffix innerCaseName) x index) xs ([0..] :: [Int])
+                    zipWithM_ (\x i -> emitCaseMatcher periodOrArrow (caseName ++ ".member" ++ show i ++ ".u." ++ removeSuffix innerCaseName) x index) xs ([0..] :: [Int])
                   emitCaseMatcher _ _ xobj _ =
                     error ("Failed to emit case matcher for: " ++ pretty xobj)
 
                   removeOuterRefTyIfMatchRef :: Ty -> Ty
-                  removeOuterRefTyIfMatchRef t' =
+                  removeOuterRefTyIfMatchRef t =
                      case matchMode of
-                       MatchValue -> t'
+                       MatchValue -> t
                        MatchRef ->
-                         case t' of
+                         case t of
                            RefTy inner _ -> inner
-                           _ -> error ("Failed to remove outer ref on type " ++ show t')
+                           _ -> error ("Failed to remove outer ref on type " ++ show t)
 
                   emitCase :: String -> Bool -> (XObj, XObj) -> State EmitterState ()
                   emitCase _ _ (caseLhs@(XObj (Lst (XObj Ref _ _ : _)) _ _), _) =
