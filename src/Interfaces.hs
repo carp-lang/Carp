@@ -8,6 +8,7 @@ module Interfaces (registerInInterfaceIfNeeded,
 
 import Data.Either (isRight)
 
+import ColorText
 import Obj
 import Lookup
 import Types
@@ -20,12 +21,18 @@ data InterfaceError = KindMismatch SymPath Ty Ty
                     | NonInterface SymPath
 
 instance Show InterfaceError where
-  show (KindMismatch path definitionSignature interfaceSignature) = "[INTERFACE ERROR] " ++ show path ++ ":" ++ " One or more types in the interface implementation " ++
-                                                                    show definitionSignature ++ " have kinds that do not match the kinds of the types in the interface signature " ++
-                                                                    show interfaceSignature ++ "\n" ++ "Types of the form (f a) must be matched by constructor types such as (Maybe a)"
-  show (TypeMismatch path definitionSignature interfaceSignature) = "[INTERFACE ERROR] " ++ show path ++ " : " ++ show definitionSignature ++
-                                                                  " doesn't match the interface signature " ++ show interfaceSignature
-  show (NonInterface path) = "[INTERFACE ERROR] " ++ show path ++ "Cant' implement the non-interface `" ++ show path ++ "`"
+  show (KindMismatch path definitionSignature interfaceSignature) =
+    labelStr "INTERFACE ERROR"
+      (show path ++ ":" ++ " One or more types in the interface implementation " ++
+       show definitionSignature ++ " have kinds that do not match the kinds of the types in the interface signature " ++
+       show interfaceSignature ++ "\n" ++ "Types of the form (f a) must be matched by constructor types such as (Maybe a)")
+  show (TypeMismatch path definitionSignature interfaceSignature) =
+    labelStr "INTERFACE ERROR"
+      (show path ++ " : " ++ show definitionSignature ++
+       " doesn't match the interface signature " ++ show interfaceSignature)
+  show (NonInterface path) =
+    labelStr "INTERFACE ERROR"
+      (show path ++ "Cant' implement the non-interface `" ++ show path ++ "`")
 
 -- TODO: This is currently called once outside of this module--try to remove that call and make this internal.
 -- Checks whether a given form's type matches an interface, and if so, registers the form with the interface.

@@ -9,4 +9,5 @@ then
     fi
     CARP="$CARP $BUILD_OPTS --"
 fi
+export CARP_DIR=`pwd`
 $CARP $CARP_OPTS "$@"

@@ -1,6 +1,7 @@
 module ColorText where
 
 import System.Console.ANSI hiding (Blue, Red, Yellow, Green, White)
+import System.Exit (exitFailure)
 import System.IO
 
 import Util
@@ -28,3 +29,23 @@ putStrWithColor color str =
 
 putStrLnWithColor :: TextColor -> String -> IO ()
 putStrLnWithColor color str = putStrWithColor color (str ++ "\n")
+
+labelStr :: String -> String -> String
+labelStr label str = "[" ++ label ++ "] " ++ str
+
+emitWarning :: String -> IO ()
+emitWarning str = putStrLnWithColor Blue (labelStr "WARNING" str)
+
+emitErrorWithLabel :: String -> String -> IO ()
+emitErrorWithLabel label str = putStrLnWithColor Red (labelStr label str)
+
+emitError :: String -> IO ()
+emitError str = emitErrorWithLabel "ERROR" str
+
+emitErrorBare :: String -> IO ()
+emitErrorBare str = putStrLnWithColor Red str
+
+emitErrorAndExit :: String -> IO a
+emitErrorAndExit str = do
+  _ <- emitError str
+  exitFailure

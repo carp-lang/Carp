@@ -2,7 +2,8 @@ module Main where
 
 import qualified System.Environment as SystemEnvironment
 import System.Console.Haskeline (runInputT)
-import Control.Monad (foldM)
+import System.Exit (exitFailure)
+import Control.Monad (foldM, when)
 import GHC.IO.Encoding
 import Data.Maybe
 
@@ -90,12 +91,21 @@ main = do setLocaleEncoding utf8
               optimize = otherOptimize otherOptions
               generateOnly = otherGenerateOnly otherOptions
               prompt = otherPrompt otherOptions
+              carpDir = lookup "CARP_DIR" sysEnv
+              ifCarpDirSet comp =
+                case carpDir of
+                  Just _ -> comp
+                  Nothing -> do
+                    emitWarning "The environment variable `CARP_DIR` is not set."
+                    if core
+                    then emitErrorAndExit "Cannot use core libraries without `CARP_DIR` being set (if you want to provide your own, use `--no-core`)."
+                    else comp
               applySettings p = p { projectCFlags = ["-D LOG_MEMORY" | logMemory] ++
                                                     ["-O3 -D NDEBUG" | optimize]
                                                     ++ projectCFlags p
                                   , projectCore = core
                                   , projectGenerateOnly = generateOnly
-                                  , projectCarpDir = fromMaybe (projectCarpDir p) $ lookup "CARP_DIR" sysEnv
+                                  , projectCarpDir = fromMaybe (projectCarpDir p) carpDir
                                   , projectPrompt = fromMaybe (projectPrompt p) prompt
                                   }
               project = applySettings defaultProject
@@ -120,22 +130,23 @@ main = do setLocaleEncoding utf8
               loadOnce = flip loadFilesOnce
           carpProfile <- configPath "profile.carp"
           hasProfile <- doesFileExist carpProfile
-          _ <- pure startingContext
-            >>= load [carpProfile | hasProfile]
-            >>= execStrs "Preload" preloads
-            >>= loadOnce coreModulesToLoad
-            >>= load argFilesToLoad
-            >>= execStrs "Postload" postloads
-            >>= \ctx -> case execMode of
-                          Repl -> do putStrLn "Welcome to Carp 0.4.2"
-                                     putStrLn "This is free software with ABSOLUTELY NO WARRANTY."
-                                     putStrLn "Evaluate (help) for more information."
-                                     snd <$> runRepl ctx
-                          Build -> execStr "Compiler (Build)" "(build)" ctx
-                          Install thing -> execStr "Installation" ("(load \"" ++ thing ++ "\")") ctx
-                          BuildAndRun -> execStr "Compiler (Build & Run)" "(do (build) (run))" ctx
-                          Check -> execStr "Check" "" ctx
-                          -- TODO: Handle the return value from executeString and return that one to the shell
+          _ <- ifCarpDirSet
+                (pure startingContext
+                >>= load [carpProfile | hasProfile]
+                >>= execStrs "Preload" preloads
+                >>= loadOnce coreModulesToLoad
+                >>= load argFilesToLoad
+                >>= execStrs "Postload" postloads
+                >>= \ctx -> case execMode of
+                              Repl -> do putStrLn "Welcome to Carp 0.4.2"
+                                         putStrLn "This is free software with ABSOLUTELY NO WARRANTY."
+                                         putStrLn "Evaluate (help) for more information."
+                                         snd <$> runRepl ctx
+                              Build -> execStr "Compiler (Build)" "(build)" ctx
+                              Install thing -> execStr "Installation" ("(load \"" ++ thing ++ "\")") ctx
+                              BuildAndRun -> execStr "Compiler (Build & Run)" "(do (build) (run))" ctx
+                              Check -> execStr "Check" "" ctx)
+                              -- TODO: Handle the return value from executeString and return that one to the shell
           pure ()
 -- | Options for how to run the compiler.
 data FullOptions = FullOptions

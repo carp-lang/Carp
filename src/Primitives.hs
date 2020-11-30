@@ -124,10 +124,9 @@ primitiveImplements xobj ctx [x@(XObj (Sym interface@(SymPath _ _) _) _ _), inne
       def = lookupInEnv impl global
   in  maybe notFound found def
   where (SymPath modules _) = consPath (union (contextPath ctx) prefixes) (SymPath [] name)
-        checkInterface = let warn = do putStrWithColor Blue ("[WARNING] The interface " ++ show interface ++ " implemented by " ++ show impl ++
-                                                              " at " ++ prettyInfoFromXObj xobj ++ " is not defined." ++
-                                                              " Did you define it using `definterface`?")
-                                       putStrLnWithColor White "" -- To restore color for sure.
+        checkInterface = let warn = do emitWarning ("The interface " ++ show interface ++ " implemented by " ++ show impl ++
+                                                    " at " ++ prettyInfoFromXObj xobj ++ " is not defined." ++
+                                                    " Did you define it using `definterface`?")
                              tyEnv = getTypeEnv . contextTypeEnv $ ctx
                          in maybe warn (\_ -> pure ()) (lookupInEnv interface tyEnv)
         -- If the implementation binding doesn't exist yet, set the implements
@@ -191,9 +190,8 @@ define hidden ctx@(Context globalEnv _ typeEnv _ proj _ _ _) annXObj =
             case previousType of
               Just previousTypeUnwrapped ->
                 unless (areUnifiable (forceTy annXObj) previousTypeUnwrapped) $
-                  do putStrWithColor Blue ("[WARNING] Definition at " ++ prettyInfoFromXObj annXObj ++ " changed type of '" ++ show (getPath annXObj) ++
-                                           "' from " ++ show previousTypeUnwrapped ++ " to " ++ show (forceTy annXObj))
-                     putStrLnWithColor White "" -- To restore color for sure.
+                  do emitWarning ("Definition at " ++ prettyInfoFromXObj annXObj ++ " changed type of '" ++ show (getPath annXObj) ++
+                                  "' from " ++ show previousTypeUnwrapped ++ " to " ++ show (forceTy annXObj))
               Nothing -> pure ()
             case Meta.get "implements" previousMeta of
               Just (XObj (Lst interfaces) _ _) ->

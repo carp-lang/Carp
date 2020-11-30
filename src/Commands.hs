@@ -83,9 +83,14 @@ addCommandConfigurable path maybeArity callback doc example =
               in  XObj (Arr (map (tosym . intToArgName) [1..arity])) Nothing Nothing
             Nothing -> XObj (Arr [(XObj (Sym (SymPath [] "") Symbol) Nothing Nothing)]) Nothing Nothing
 
+presentErrorWithLabel :: MonadIO m => String -> String -> a -> m a
+presentErrorWithLabel label msg ret =
+  liftIO $ do emitErrorWithLabel label msg
+              pure ret
+
 presentError :: MonadIO m => String -> a -> m a
 presentError msg ret =
-  liftIO $ do putStrLnWithColor Red msg
+  liftIO $ do emitError msg
               pure ret
 
 -- | Command for changing various project settings.
@@ -146,7 +151,7 @@ commandProjectConfig ctx [xobj@(XObj (Str key) _ _), value] = do
                                        pure (proj { projectForceReload = forceReload })
                   _ -> Left ("Project.config can't understand the key '" ++ key ++ "' at " ++ prettyInfoFromXObj xobj ++ ".")
   case newProj of
-    Left errorMessage -> presentError ("[CONFIG ERROR] " ++ errorMessage) (ctx, dynamicNil)
+    Left errorMessage -> presentErrorWithLabel "CONFIG ERROR" errorMessage (ctx, dynamicNil)
     Right ok -> pure (ctx {contextProj=ok}, dynamicNil)
 commandProjectConfig ctx [faultyKey, _] =
   presentError ("First argument to 'Project.config' must be a string: " ++ pretty faultyKey) (ctx, dynamicNil)
@@ -182,7 +187,7 @@ commandProjectGetConfig ctx [xobj@(XObj (Str key) _ _)] =
           _ -> Left key
   in pure $ case getVal ctx proj of
        Right val -> (ctx, Right $ xstr val)
-       Left key -> (evalError ctx ("[CONFIG ERROR] Project.get-config can't understand the key '" ++ key) (info xobj))
+       Left key -> (evalError ctx (labelStr "CONFIG ERROR" ("Project.get-config can't understand the key '" ++ key)) (info xobj))
 
 commandProjectGetConfig ctx [faultyKey] =
   presentError ("First argument to 'Project.config' must be a string: " ++ pretty faultyKey) (ctx, dynamicNil)
