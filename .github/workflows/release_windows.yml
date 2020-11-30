@@ -14,7 +14,7 @@ jobs:
         id: get_tag_name
         run: echo ::set-output name=VERSION::${GITHUB_REF/refs\/tags\//}
 
-            - name: Check out
+      - name: Check out
         uses: actions/checkout@v2
 
       - name: Install Scoop
