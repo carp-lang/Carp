@@ -47,3 +47,40 @@ ownership and is deleted when they are no longer needed. Not all types are
 managed. `Int`, for example, is not a managed type, and so the issue described
 above won't be relevant for `Int` arguments. For more information see
 [docs/memory.md](docs/memory.md)
+
+## Update a Sumtype Reference in-place
+
+Product types automatically generate *mutating setters*, which provide a nice
+means of updating their fields in-place, given you have a reference to an
+instance you want to update:
+
+```clojure
+;; An example of a mutating setter, `Pair.set-a!`
+Pair.set-a!: (Fn [(Ref (Pair a b) q), a] ())
+```
+
+Contrarily, sumtypes don't generate such mutating setters, and naturally don't
+lend themselves to such functions; instead, they are primarily copied around and
+passed as values.
+
+However, if you find yourself in the rare position in which you'd like to alter
+the value of a Sumtype reference in-place, you can use an *unsafe coercion to a
+pointer* to do so. The steps are as follows:
+
+- Get the reference to the sumtype value you'd like to mutate
+- Use `Unsafe.coerce` to coerce the reference to a `Ptr` to the value.
+- Use `Pointer.set` to set the value of the pointer to a new value of the same
+  type.
+
+Here's the pattern in action:
+
+```clojure
+(defn up-to-eleven [val]
+  (let [val* (the (Ptr (Maybe Int)) (Unsafe.coerce &val))]
+    (Pointer.set m* (Maybe.Just 11))))
+
+(let-do [volume (Maybe.Just 0)]
+  (up-to-eleven &volume)
+  volume)
+;; => (Just 11)
+```
