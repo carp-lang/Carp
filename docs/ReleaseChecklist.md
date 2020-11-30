@@ -26,3 +26,7 @@ $ git push --tags
 # 5. Update the blurb in README.md
 
 See [README.md](../README.md)
+
+# 6. Update the changelog
+
+TODO: Create CHANGELOG.md
