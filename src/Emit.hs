@@ -46,22 +46,22 @@ data ToCError = InvalidParameter XObj
 
 instance Show ToCError where
   show (InvalidParameter xobj) =
-    "I encountered an invalid parameter `" ++ show (obj xobj) ++ "` at " ++
+    "I encountered an invalid parameter `" ++ show (xobjObj xobj) ++ "` at " ++
     prettyInfoFromXObj xobj ++ "."
   show (InvalidList xobj) =
-    "I encountered an invalid list `" ++ show (obj xobj) ++ "` at " ++
+    "I encountered an invalid list `" ++ show (xobjObj xobj) ++ "` at " ++
     prettyInfoFromXObj xobj ++ "."
   show (DontVisitObj xobj) =
-    "I can’t visit " ++ show (obj xobj) ++ " at " ++ prettyInfoFromXObj xobj ++
+    "I can’t visit " ++ show (xobjObj xobj) ++ " at " ++ prettyInfoFromXObj xobj ++
     "."
   show (CannotEmitUnit xobj) =
     "I can't emit code for the unit type `()` at" ++ prettyInfoFromXObj xobj ++
     "."
   show (CannotEmitExternal xobj) =
     "I can’t emit code for the external function/variable `" ++
-    show (obj xobj) ++ "` at " ++ prettyInfoFromXObj xobj ++ "."
+    show (xobjObj xobj) ++ "` at " ++ prettyInfoFromXObj xobj ++ "."
   show (CannotEmitModKeyword xobj) =
-    "I can’t emit code for the module `" ++ show (obj xobj) ++ "` at " ++
+    "I can’t emit code for the module `" ++ show (xobjObj xobj) ++ "` at " ++
     prettyInfoFromXObj xobj ++ "."
   show (BinderIsMissingType b) =
     "I encountered a binder `" ++ show b ++ "` that is missing its type."
@@ -95,7 +95,7 @@ toC toCMode (Binder meta root) = emitterSrc (execState (visit startingIndent roo
                            All -> 0
         visit :: Int -> XObj -> State EmitterState String
         visit indent xobj =
-          case obj xobj of
+          case xobjObj xobj of
             Lst _   -> visitList indent xobj
             Arr _   -> visitArray indent xobj
             StaticArr _ -> visitStaticArray indent xobj
@@ -113,7 +113,7 @@ toC toCMode (Binder meta root) = emitterSrc (execState (visit startingIndent roo
                                 '\n' -> "'\\n'"
                                 '\\' -> "'\\\\'"
                                 x -> show (ord x) ++ "/*" ++ show x ++ "*/" -- ['U', '\'', x, '\'']
-            Closure elem _ -> visit indent elem
+            Closure elt _ -> visit indent elt
             Sym _ _ -> visitSymbol indent xobj
             (Defn _) -> error (show (DontVisitObj xobj))
             Def -> error (show (DontVisitObj xobj))
@@ -166,12 +166,12 @@ toC toCMode (Binder meta root) = emitterSrc (execState (visit startingIndent roo
         visitSymbol :: Int -> XObj -> State EmitterState String
         visitSymbol _ (XObj (Sym _ (LookupGlobalOverride overrideWithName)) _ _) =
           pure overrideWithName
-        visitSymbol indent xobj@(XObj sym@(Sym path lookupMode) (Just i) t) =
-          let Just t' = t
-          in if isTypeGeneric t'
+        visitSymbol indent xobj@(XObj sym@(Sym path lookupMode) (Just i) ty) =
+          let Just t = ty
+          in if isTypeGeneric t
              then error ("Can't emit symbol of generic type: " ++
-                         show path ++ " : " ++ show t' ++ " at " ++ prettyInfoFromXObj xobj)
-             else if isFunctionType t' && not (isLookupLocal lookupMode) && not (isGlobalVariableLookup lookupMode)
+                         show path ++ " : " ++ show t ++ " at " ++ prettyInfoFromXObj xobj)
+             else if isFunctionType t && not (isLookupLocal lookupMode) && not (isGlobalVariableLookup lookupMode)
                   then do let var = freshVar i
                           appendToSrc (addIndent indent ++ "Lambda " ++ var ++ " = { .callback = (void*)" ++ pathToC path ++ ", .env = NULL, .delete = NULL, .copy = NULL }; //" ++ show sym ++ "\n")
                           pure var
@@ -183,7 +183,7 @@ toC toCMode (Binder meta root) = emitterSrc (execState (visit startingIndent roo
         visitSymbol _ _ = error "Not a symbol."
 
         visitList :: Int -> XObj -> State EmitterState String
-        visitList indent (XObj (Lst xobjs) (Just i) t) =
+        visitList indent (XObj (Lst xobjs) (Just info) ty) =
           case xobjs of
             -- Defn
             [XObj (Defn _) _ _, XObj (Sym path@(SymPath _ name) _) _ _, XObj (Arr argList) _ _, body] ->
@@ -192,14 +192,14 @@ toC toCMode (Binder meta root) = emitterSrc (execState (visit startingIndent roo
                   pure ""
                 _ ->
                   do let innerIndent = indent + indentAmount
-                         Just (FuncTy _ retTy _) = t
+                         Just (FuncTy _ retTy _) = ty
                          defnDecl = defnToDeclaration meta path argList retTy
                          isMain = name == "main"
                      appendToSrc (defnDecl ++ " {\n")
                      when isMain $
                        appendToSrc (addIndent innerIndent ++ "carp_init_globals(argc, argv);\n")
                      ret <- visit innerIndent body
-                     delete innerIndent i
+                     delete innerIndent info
                      case retTy of
                        UnitTy -> when isMain $ appendToSrc (addIndent innerIndent ++ "return 0;\n")
                        _ -> appendToSrc (addIndent innerIndent ++ "return " ++ ret ++ ";\n")
@@ -208,14 +208,14 @@ toC toCMode (Binder meta root) = emitterSrc (execState (visit startingIndent roo
 
             -- Fn / λ
             [XObj (Fn name set) _ _, XObj (Arr _) _ _, _] ->
-              do let retVar = freshVar i
+              do let retVar = freshVar info
                      capturedVars = Set.toList set
                      Just callback = name
                      callbackMangled = pathToC callback
                      needEnv = not (null capturedVars)
                      lambdaEnvTypeName = callbackMangled ++ "_env" -- The name of the struct is the callback name with suffix '_env'.
                      lambdaEnvType = StructTy (ConcreteNameTy lambdaEnvTypeName) []
-                     lambdaEnvName = freshVar i ++ "_env"
+                     lambdaEnvName = freshVar info ++ "_env"
                  appendToSrc (addIndent indent ++ "// This lambda captures " ++
                               show (length capturedVars) ++ " variables: " ++
                               joinWithComma (map getName capturedVars) ++ "\n")
@@ -247,22 +247,22 @@ toC toCMode (Binder meta root) = emitterSrc (execState (visit startingIndent roo
                      let innerIndent = indent + indentAmount
                      ret <- visit innerIndent expr
                      appendToSrc (addIndent innerIndent ++ pathToC path ++ " = " ++ ret ++ ";\n")
-                     delete innerIndent i
+                     delete innerIndent info
                      appendToSrc (addIndent indent ++ "}\n")
                      pure ""
 
             -- Let
             [XObj Let _ _, XObj (Arr bindings) _ _, body] ->
               let indent' = indent + indentAmount
-              in  do let Just bodyTy = ty body
+              in  do let Just bodyTy = xobjTy body
                          isNotVoid = bodyTy /= UnitTy
-                         letBodyRet = freshVar i
+                         letBodyRet = freshVar info
                      when isNotVoid $ -- Must be declared outside the scope
                        appendToSrc (addIndent indent ++ tyToCLambdaFix bodyTy ++ " " ++ letBodyRet ++ ";\n")
                      appendToSrc (addIndent indent ++ "/* let */ {\n")
                      let letBindingToC (XObj (Sym (SymPath _ symName) _) _ _) expr =
                            do ret <- visit indent' expr
-                              let Just bindingTy = ty expr
+                              let Just bindingTy = xobjTy expr
                               when (bindingTy /= UnitTy) $
                                 appendToSrc (addIndent indent' ++ tyToCLambdaFix bindingTy ++ " " ++ mangle symName ++ " = " ++ ret ++ ";\n")
                          letBindingToC _ _ = error "Invalid binding."
@@ -270,28 +270,28 @@ toC toCMode (Binder meta root) = emitterSrc (execState (visit startingIndent roo
                      ret <- visit indent' body
                      when isNotVoid $
                        appendToSrc (addIndent indent' ++ letBodyRet ++ " = " ++ ret ++ ";\n")
-                     delete indent' i
+                     delete indent' info
                      appendToSrc (addIndent indent ++ "}\n")
                      pure letBodyRet
 
             -- If
             [XObj If _ _, expr, ifTrue, ifFalse] ->
               let indent' = indent + indentAmount
-              in  do let isNotVoid = ty ifTrue /= Just UnitTy
-                         ifRetVar = freshVar i
+              in  do let isNotVoid = xobjTy ifTrue /= Just UnitTy
+                         ifRetVar = freshVar info
                      when isNotVoid $
-                       let Just ifT = ty ifTrue
+                       let Just ifT = xobjTy ifTrue
                        in  appendToSrc (addIndent indent ++ tyToCLambdaFix ifT ++ " " ++ ifRetVar ++ ";\n")
                      exprVar <- visit indent expr
                      appendToSrc (addIndent indent ++ "if (" ++ exprVar ++ ") {\n")
                      trueVar <- visit indent' ifTrue
-                     let Just ifTrueInfo = info ifTrue
+                     let Just ifTrueInfo = xobjInfo ifTrue
                      delete indent' ifTrueInfo
                      when isNotVoid $
                        appendToSrc (addIndent indent' ++ ifRetVar ++ " = " ++ trueVar ++ ";\n")
                      appendToSrc (addIndent indent ++ "} else {\n")
                      falseVar <- visit indent' ifFalse
-                     let Just ifFalseInfo = info ifFalse
+                     let Just ifFalseInfo = xobjInfo ifFalse
                      delete indent' ifFalseInfo
                      when isNotVoid $
                        appendToSrc (addIndent indent' ++ ifRetVar ++ " = " ++ falseVar ++ ";\n")
@@ -301,8 +301,8 @@ toC toCMode (Binder meta root) = emitterSrc (execState (visit startingIndent roo
             -- Match
             XObj (Match matchMode) _ _ : expr@(XObj _ (Just exprInfo) (Just exprTyNotFixed)) : rest ->
               let indent' = indent + indentAmount
-                  retVar = freshVar i
-                  isNotVoid = t /= Just UnitTy
+                  retVar = freshVar info
+                  isNotVoid = ty /= Just UnitTy
                   exprTy = exprTyNotFixed
 
                   tagCondition :: String -> String -> Ty -> XObj -> [String]
@@ -314,7 +314,7 @@ toC toCMode (Binder meta root) = emitterSrc (execState (visit startingIndent roo
                     -- TODO probably we want to filter Units from caseMatchers here
                     [var ++ periodOrArrow ++ "_tag == " ++ tagName caseTy (removeSuffix caseName)] ++
                       concat (zipWith (\c i -> tagCondition (var ++ periodOrArrow ++ "u." ++ removeSuffix caseName ++ ".member" ++ show i) "." (forceTy c) c) caseMatchers ([0..] :: [Int]))
-                  tagCondition _ _ _ x =
+                  tagCondition _ _ _ _ =
                     []
                     --error ("tagCondition fell through: " ++ show x)
 
@@ -378,12 +378,12 @@ toC toCMode (Binder meta root) = emitterSrc (execState (visit startingIndent roo
 
               in  do exprVar <- visit indent expr
                      when isNotVoid $
-                       let Just tt = t
-                       in  appendToSrc (addIndent indent ++ tyToCLambdaFix tt ++ " " ++ retVar ++ ";\n")
+                       let Just t = ty
+                       in  appendToSrc (addIndent indent ++ tyToCLambdaFix t ++ " " ++ retVar ++ ";\n")
                      zipWithM_ (emitCase exprVar) (True : repeat False) (pairwise rest)
                      appendToSrc (addIndent indent ++ "else {\n")
                      appendToSrc (addIndent indent ++ "  // This will not be needed with static exhaustiveness checking in 'match' expressions:\n")
-                     appendToSrc (addIndent indent ++ "  fprintf(stderr, \"Unhandled case in 'match' expression at " ++ quoteBackslashes (prettyInfo i) ++ "\\n\");\n")
+                     appendToSrc (addIndent indent ++ "  fprintf(stderr, \"Unhandled case in 'match' expression at " ++ quoteBackslashes (prettyInfo info) ++ "\\n\");\n")
                      appendToSrc (addIndent indent ++ "  exit(1);\n")
                      appendToSrc (addIndent indent ++ "}\n")
                      pure retVar
@@ -397,16 +397,16 @@ toC toCMode (Binder meta root) = emitterSrc (execState (visit startingIndent roo
             -- While
             [XObj While _ _, expr, body] ->
               let indent' = indent + indentAmount
-                  Just exprTy = ty expr
-                  conditionVar = freshVar i
-                  Just exprInfo = info expr
+                  Just exprTy = xobjTy expr
+                  conditionVar = freshVar info
+                  Just exprInfo = xobjInfo expr
               in  do exprRetVar <- visitWhileExpression indent
                      appendToSrc (addIndent indent ++ tyToCLambdaFix exprTy ++ " " ++ conditionVar ++ " = " ++ exprRetVar ++ ";\n")
                      delete indent exprInfo
                      appendToSrc (addIndent indent ++ "while (" ++ conditionVar ++ ") {\n")
                      _ <- visit indent' body
                      exprRetVar' <- visitWhileExpression indent'
-                     delete indent' i
+                     delete indent' info
                      appendToSrc (addIndent indent' ++ conditionVar ++ " = " ++ exprRetVar' ++ ";\n")
                      appendToSrc (addIndent indent ++ "}\n")
                      pure ""
@@ -423,9 +423,9 @@ toC toCMode (Binder meta root) = emitterSrc (execState (visit startingIndent roo
             -- Do
             XObj Do _ _ : expressions ->
               do let lastExpr = last expressions
-                     retVar = freshVar i
+                     retVar = freshVar info
                  mapM_ (visit indent) (init expressions)
-                 let (Just lastTy) = ty lastExpr
+                 let (Just lastTy) = xobjTy lastExpr
                  if lastTy == UnitTy
                    then do _ <- visit indent lastExpr
                            pure ""
@@ -446,35 +446,35 @@ toC toCMode (Binder meta root) = emitterSrc (execState (visit startingIndent roo
                          (XObj (Lst (XObj (Sym (SymPath _ "copy") _) _ _ : (XObj (Sym sym _) _ _) : _)) _ _) -> "*" ++ pathToC sym
                          (XObj (Sym sym _) _ _) -> pathToC sym
                          _ -> error (show (CannotSet variable))
-                     Just varInfo = info variable
+                     Just varInfo = xobjInfo variable
                  --appendToSrc (addIndent indent ++ "// " ++ show (length (infoDelete varInfo)) ++ " deleters for " ++ properVariableName ++ ":\n")
                  delete indent varInfo
                  appendToSrc (addIndent indent ++ properVariableName ++ " = " ++ valueVar ++ "; "
-                              ++ " // " ++ show (fromMaybe (VarTy "?") (ty variable)) ++ " = " ++ show (fromMaybe (VarTy "?") (ty value))
+                              ++ " // " ++ show (fromMaybe (VarTy "?") (xobjTy variable)) ++ " = " ++ show (fromMaybe (VarTy "?") (xobjTy value))
                               ++ "\n")
                  pure ""
 
             -- The
             [XObj The _ _, _, value] ->
               do var <- visit indent value
-                 let Just t' = t
-                     fresh = mangle (freshVar i)
-                 appendToSrc (addIndent indent ++ tyToCLambdaFix t' ++ " " ++ fresh ++ " = " ++ var ++ "; // From the 'the' function.\n")
+                 let Just t = ty
+                     fresh = mangle (freshVar info)
+                 appendToSrc (addIndent indent ++ tyToCLambdaFix t ++ " " ++ fresh ++ " = " ++ var ++ "; // From the 'the' function.\n")
                  pure fresh
 
             -- Ref
             [XObj Ref _ _, value] ->
               do var <- visit indent value
-                 let Just t' = t
-                     fresh = mangle (freshVar i)
-                 case t' of
+                 let Just t = ty
+                     fresh = mangle (freshVar info)
+                 case t of
                    (RefTy UnitTy _) -> appendToSrc ""
                    _ -> if isNumericLiteral value
-                          then do let literal = freshVar i ++ "_lit";
-                                      Just literalTy = ty value
-                                  appendToSrc (addIndent indent ++ "static " ++ tyToCLambdaFix literalTy ++ " " ++ literal ++ " = " ++ var ++ ";\n")
-                                  appendToSrc (addIndent indent ++ tyToCLambdaFix t' ++ " " ++ fresh ++ " = &" ++ literal ++ "; // ref\n")
-                          else appendToSrc (addIndent indent ++ tyToCLambdaFix t' ++ " " ++ fresh ++ " = &" ++ var ++ "; // ref\n")
+                        then do let literal = freshVar info ++ "_lit"
+                                    Just literalTy = xobjTy value
+                                appendToSrc (addIndent indent ++ "static " ++ tyToCLambdaFix literalTy ++ " " ++ literal ++ " = " ++ var ++ ";\n")
+                                appendToSrc (addIndent indent ++ tyToCLambdaFix t ++ " " ++ fresh ++ " = &" ++ literal ++ "; // ref\n")
+                        else appendToSrc (addIndent indent ++ tyToCLambdaFix t ++ " " ++ fresh ++ " = &" ++ var ++ "; // ref\n")
                  pure fresh
 
             -- Deref
@@ -499,8 +499,8 @@ toC toCMode (Binder meta root) = emitterSrc (execState (visit startingIndent roo
                 Globals ->
                   pure ""
                 _ ->
-                  do let Just t' = t
-                     appendToSrc (templateToC template path t')
+                  do let Just t = ty
+                     appendToSrc (templateToC template path t)
                      pure ""
 
             -- Alias
@@ -543,7 +543,7 @@ toC toCMode (Binder meta root) = emitterSrc (execState (visit startingIndent roo
             -- Function application (functions with overridden names)
             func@(XObj (Sym _ (LookupGlobalOverride overriddenName)) _ _) : args ->
               do argListAsC <- createArgList indent True args -- The 'True' means "unwrap lambdas" which is always the case for functions with overriden names (they are external)
-                 let funcTy = case ty func of
+                 let funcTy = case xobjTy func of
                                Just actualType -> actualType
                                _ -> error ("No type on func " ++ show func)
                      FuncTy _ retTy _ = funcTy
@@ -551,19 +551,19 @@ toC toCMode (Binder meta root) = emitterSrc (execState (visit startingIndent roo
                  if isUnit retTy
                    then do appendToSrc (addIndent indent ++ callFunction)
                            pure ""
-                   else do let varName = freshVar i
+                   else do let varName = freshVar info
                            appendToSrc (addIndent indent ++ tyToCLambdaFix retTy ++ " " ++ varName ++ " = " ++ callFunction)
                            pure varName
 
             -- Function application (global symbols that are functions -- lambdas stored in def:s need to be called like locals, see below)
             func@(XObj (Sym path (LookupGlobal mode AFunction)) _ _) : args ->
               do argListAsC <- createArgList indent (mode == ExternalCode) args
-                 let Just (FuncTy _ retTy _) = ty func
+                 let Just (FuncTy _ retTy _) = xobjTy func
                      funcToCall = pathToC path
                  if isUnit retTy
                    then do appendToSrc (addIndent indent ++ funcToCall ++ "(" ++ argListAsC ++ ");\n")
                            pure ""
-                   else do let varName = freshVar i
+                   else do let varName = freshVar info
                            appendToSrc (addIndent indent ++ tyToCLambdaFix retTy ++ " " ++ varName ++ " = " ++ funcToCall ++ "(" ++ argListAsC ++ ");\n")
                            pure varName
 
@@ -574,7 +574,7 @@ toC toCMode (Binder meta root) = emitterSrc (execState (visit startingIndent roo
                                        XObj (Sym _ (LookupGlobal ExternalCode _)) _ _ -> True
                                        _ -> False
                  argListAsC <- createArgList indent unwrapLambdas args
-                 let funcTy = case ty func of
+                 let funcTy = case xobjTy func of
                                Just actualType -> actualType
                                _ -> error ("No type on func " ++ show func)
                      FuncTy argTys retTy _ = funcTy
@@ -591,7 +591,7 @@ toC toCMode (Binder meta root) = emitterSrc (execState (visit startingIndent roo
                  if isUnit retTy
                    then do appendToSrc (addIndent indent ++ callLambda)
                            pure ""
-                   else do let varName = freshVar i
+                   else do let varName = freshVar info
                            appendToSrc (addIndent indent ++ tyToCLambdaFix retTy ++ " " ++ varName ++ " = " ++ callLambda)
                            pure varName
 
@@ -747,15 +747,15 @@ defSumtypeToDeclaration sumTy@(StructTy _ _) rest =
                  mapM_ emitSumtypeCaseTagDefinition (zip [0..] rest)
 
       emitSumtypeCase :: Int -> XObj -> State EmitterState ()
-      emitSumtypeCase indent (XObj (Lst [XObj (Sym (SymPath [] caseName) _) _ _, XObj (Arr []) _ _]) _ _) =
-        appendToSrc (addIndent indent ++ "// " ++ caseName ++ "\n")
-      emitSumtypeCase indent (XObj (Lst [XObj (Sym (SymPath [] caseName) _) _ _, XObj (Arr memberTys) _ _]) _ _) =
-        do appendToSrc (addIndent indent ++ "struct {\n")
+      emitSumtypeCase ind (XObj (Lst [XObj (Sym (SymPath [] caseName) _) _ _, XObj (Arr []) _ _]) _ _) =
+        appendToSrc (addIndent ind ++ "// " ++ caseName ++ "\n")
+      emitSumtypeCase ind (XObj (Lst [XObj (Sym (SymPath [] caseName) _) _ _, XObj (Arr memberTys) _ _]) _ _) =
+        do appendToSrc (addIndent ind ++ "struct {\n")
            let members = zipWith (\anonName tyXObj -> (anonName, tyXObj)) anonMemberSymbols (remove (isUnit . fromJust . xobjToTy) memberTys)
-           mapM_ (memberToDecl (indent + indentAmount)) members
-           appendToSrc (addIndent indent ++ "} " ++ caseName ++ ";\n")
-      emitSumtypeCase indent (XObj (Sym (SymPath [] caseName) _) _ _) =
-        appendToSrc (addIndent indent ++ "// " ++ caseName ++ "\n")
+           mapM_ (memberToDecl (ind + indentAmount)) members
+           appendToSrc (addIndent ind ++ "} " ++ caseName ++ ";\n")
+      emitSumtypeCase ind (XObj (Sym (SymPath [] caseName) _) _ _) =
+        appendToSrc (addIndent ind ++ "// " ++ caseName ++ "\n")
 
       emitSumtypeCaseTagDefinition :: (Int, XObj) -> State EmitterState ()
       emitSumtypeCaseTagDefinition (tagIndex, (XObj (Lst [XObj (Sym (SymPath [] caseName) _) _ _, _]) _ _)) =
@@ -777,14 +777,14 @@ defaliasToDeclaration t path =
           fixer x = tyToCLambdaFix x
 
 toDeclaration :: Binder -> String
-toDeclaration (Binder meta xobj@(XObj (Lst xobjs) _ t)) =
+toDeclaration (Binder meta xobj@(XObj (Lst xobjs) _ ty)) =
   case xobjs of
     [XObj (Defn _) _ _, XObj (Sym path _) _ _, XObj (Arr argList) _ _, _] ->
-      let (Just (FuncTy _ retTy _)) = t
+      let (Just (FuncTy _ retTy _)) = ty
       in  defnToDeclaration meta path argList retTy ++ ";\n"
     [XObj Def _ _, XObj (Sym path _) _ _, _] ->
-      let Just t' = t
-      in "" ++ tyToCLambdaFix t' ++ " " ++ pathToC path ++ ";\n"
+      let Just t = ty
+      in "" ++ tyToCLambdaFix t ++ " " ++ pathToC path ++ ";\n"
     XObj (Deftype t) _ _ : XObj (Sym path _) _ _ : rest ->
       defStructToDeclaration t path rest
     XObj (DefSumtype t) _ _ : XObj (Sym _ _) _ _ : rest ->
@@ -798,8 +798,8 @@ toDeclaration (Binder meta xobj@(XObj (Lst xobjs) _ t)) =
     XObj DefDynamic _ _ : _ ->
       ""
     [XObj (Instantiate template) _ _, XObj (Sym path _) _ _] ->
-      let Just t' = t
-      in templateToDeclaration template path t'
+      let Just t = ty
+      in templateToDeclaration template path t
     [XObj (Defalias aliasTy) _ _, XObj (Sym path _) _ _] ->
       defaliasToDeclaration aliasTy path
     [XObj (Interface _ _) _ _, _] ->
@@ -839,7 +839,7 @@ binderToC toCMode binder =
         XObj (ExternalType _) _ _ -> Right ""
         XObj (Command _) _ _ -> Right ""
         XObj (Mod env) _ _ -> envToC env toCMode
-        _ -> case ty xobj of
+        _ -> case xobjTy xobj of
                Just t -> if isTypeGeneric t
                          then Right ""
                          else do checkForUnresolvedSymbols xobj
@@ -851,7 +851,7 @@ binderToDeclaration typeEnv binder =
   let xobj = binderXObj binder
   in  case xobj of
         XObj (Mod env) _ _ -> envToDeclarations typeEnv env
-        _ -> case ty xobj of
+        _ -> case xobjTy xobj of
                Just t -> if isTypeGeneric t then Right "" else Right (toDeclaration binder ++ "")
                Nothing -> Left (BinderIsMissingType binder)
 
@@ -896,14 +896,14 @@ checkForUnresolvedSymbols = visit
   where
     visit :: XObj -> Either ToCError ()
     visit xobj =
-      case ty xobj of
+      case xobjTy xobj of
         Nothing -> visitXObj
         Just t -> if isTypeGeneric t
                   then Left (UnresolvedGenericType xobj)
                   else visitXObj
       where
         visitXObj =
-          case obj xobj of
+          case xobjObj xobj of
             (Lst _) -> visitList xobj
             (Arr _) -> visitArray xobj
             (StaticArr _) -> visitStaticArray xobj

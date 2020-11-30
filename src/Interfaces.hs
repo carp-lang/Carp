@@ -84,5 +84,5 @@ retroactivelyRegisterInInterface ctx interface@(SymPath _ _) =
   where env = contextGlobalEnv ctx
         impls = recursiveLookupAll interface lookupImplementations env
         resultCtx = foldl' folder (Right ctx) impls
-        folder ctx' binder = either Left register ctx'
-          where register ok = registerInInterface ok (binderXObj binder) interface
+        folder ctx' binder = either Left register' ctx'
+          where register' ok = registerInInterface ok (binderXObj binder) interface

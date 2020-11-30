@@ -134,7 +134,7 @@ string = do i <- createInfo
 
 countLinebreaks :: String -> Int
 countLinebreaks =
-  foldr (\x sum -> if x == '\n' then sum+1 else sum) 0
+  foldr (\x acc -> if x == '\n' then acc+1 else acc) 0
 
 parseInternalPattern :: Parsec.Parsec String ParseState String
 parseInternalPattern = do maybeAnchor <- Parsec.optionMaybe (Parsec.char '^')

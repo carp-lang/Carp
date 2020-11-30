@@ -74,10 +74,6 @@ multiLookupInternal allowLookupInAllModules name rootEnv = recursiveLookup rootE
         importsNormal env =
           mapMaybe (\path -> fmap getEnvFromBinder (lookupInEnv path env)) (envUseModules env)
 
-        binderToEnv :: Binder -> Maybe Env
-        binderToEnv (Binder _ (XObj (Mod e) _ _)) = Just e
-        binderToEnv _ = Nothing
-
         importsLookup :: Env -> [(Env, Binder)]
         importsLookup env =
           let envs = (if allowLookupInAllModules then importsAll else importsNormal) env
@@ -167,7 +163,7 @@ multiLookupQualified path@(SymPath (p:_) _) rootEnv =
                                 Just parent -> multiLookupQualified path parent
                                 Nothing -> []
               fromUsedModules = let usedModules = envUseModules rootEnv
-                                    envs = mapMaybe (\path -> fmap getEnvFromBinder (lookupInEnv path rootEnv)) usedModules
+                                    envs = mapMaybe (\path' -> fmap getEnvFromBinder (lookupInEnv path' rootEnv)) usedModules
                                 in  concatMap (multiLookupQualified path) envs
           in fromParent ++ fromUsedModules
 
@@ -182,8 +178,8 @@ envInsertAt env (SymPath [] name) binder =
   envAddBinding env name binder
 envInsertAt env (SymPath (p:ps) name) xobj =
   case Map.lookup p (envBindings env) of
-    Just (Binder existingMeta (XObj (Mod innerEnv) i t)) ->
-      let newInnerEnv = Binder existingMeta (XObj (Mod (envInsertAt innerEnv (SymPath ps name) xobj)) i t)
+    Just (Binder meta (XObj (Mod innerEnv) i t)) ->
+      let newInnerEnv = Binder meta (XObj (Mod (envInsertAt innerEnv (SymPath ps name) xobj)) i t)
       in  env { envBindings = Map.insert p newInnerEnv (envBindings env) }
     Just _ -> error ("Can't insert into non-module: " ++ p)
     Nothing -> error ("Can't insert into non-existing module: " ++ p)

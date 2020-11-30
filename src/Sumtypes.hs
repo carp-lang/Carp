@@ -111,8 +111,8 @@ tokensForCaseInit allocationMode sumTy@(StructTy (ConcreteNameTy typeName) _) su
         unitless = zip anonMemberNames $ remove isUnit (caseTys sumtypeCase)
 
 caseMemberAssignment :: AllocationMode -> String -> String -> String
-caseMemberAssignment allocationMode caseName memberName =
-  "    instance" ++ sep ++ caseName ++ "." ++ memberName ++ " = " ++ memberName ++ ";"
+caseMemberAssignment allocationMode caseNm memberName =
+  "    instance" ++ sep ++ caseNm ++ "." ++ memberName ++ " = " ++ memberName ++ ";"
   where sep = case allocationMode of
                 StackAlloc -> ".u."
                 HeapAlloc -> "->u."
@@ -173,7 +173,7 @@ genericStr insidePath originalStructTy@(StructTy (ConcreteNameTy typeName) _) ca
             (\ft@(FuncTy [RefTy concreteStructTy@(StructTy _ _) _] StringTy _) ->
                let mappings = unifySignatures originalStructTy concreteStructTy
                    correctedCases = replaceGenericTypesOnCases mappings cases
-                   tys = filter (\t -> (not . isExternalType typeEnv) t && (not . isFullyGenericType) t) (concatMap caseTys correctedCases)
+                   tys = filter (\t' -> (not . isExternalType typeEnv) t' && (not . isFullyGenericType) t') (concatMap caseTys correctedCases)
                in  concatMap (depsOfPolymorphicFunction typeEnv env [] "prn" . typesStrFunctionType typeEnv) tys
                    ++
                    (if isTypeGeneric concreteStructTy then [] else [defineFunctionTypeAlias ft]))

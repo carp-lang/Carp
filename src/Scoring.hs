@@ -108,7 +108,7 @@ scoreBody :: Env -> Set.Set SymPath -> XObj -> Int
 scoreBody globalEnv visited root = visit root
   where
     visit xobj =
-      case obj xobj of
+      case xobjObj xobj of
         (Lst _) ->
           visitList xobj
         (Arr _) ->

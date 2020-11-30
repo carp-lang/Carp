@@ -212,20 +212,20 @@ instance Eq TemplateCreator where
   _ == _ = True
 
 prettyInfoFromXObj :: XObj -> String
-prettyInfoFromXObj xobj = case info xobj of
+prettyInfoFromXObj xobj = case xobjInfo xobj of
                             Just i -> prettyInfo i
                             Nothing -> "no info"
 
 machineReadableInfoFromXObj :: FilePathPrintLength -> XObj -> String
 machineReadableInfoFromXObj fppl xobj =
-  case info xobj of
+  case xobjInfo xobj of
     Just i -> machineReadableInfo fppl i
     Nothing -> ""
 
 -- | Obj with eXtra information.
-data XObj = XObj { obj :: Obj
-                 , info :: Maybe Info
-                 , ty :: Maybe Ty
+data XObj = XObj { xobjObj :: Obj
+                 , xobjInfo :: Maybe Info
+                 , xobjTy :: Maybe Ty
                  } deriving (Show, Eq, Ord)
 
 getBinderDescription :: XObj -> String
@@ -304,7 +304,7 @@ pretty :: XObj -> String
 pretty = visit 0
   where visit :: Int -> XObj -> String
         visit indent xobj =
-          case obj xobj of
+          case xobjObj xobj of
             Lst lst -> "(" ++ joinWithSpace (map (visit indent) lst) ++ ")"
             Arr arr -> "[" ++ joinWithSpace (map (visit indent) arr) ++ "]"
             StaticArr arr -> "$[" ++ joinWithSpace (map (visit indent) arr) ++ "]"
@@ -327,7 +327,7 @@ pretty = visit 0
                                               Nothing -> ""
             Def -> "def"
             Fn _ captures -> "fn" ++ " <" ++ prettyCaptures captures ++ ">"
-            Closure elem _ -> "closure<" ++ pretty elem ++ ">"
+            Closure elt _ -> "closure<" ++ pretty elt ++ ">"
             If -> "if"
             Match MatchValue -> "match"
             Match MatchRef -> "match-ref"
@@ -360,14 +360,14 @@ pretty = visit 0
             With -> "with"
 
 prettyUpTo :: Int -> XObj -> String
-prettyUpTo max xobj =
+prettyUpTo lim xobj =
   let prettied = pretty xobj
-  in if length prettied > max
-     then take max prettied ++ "..." ++ end
+  in if length prettied > lim
+     then take lim prettied ++ "..." ++ end
      else prettied
   where end =
           -- we match all of them explicitly to get errors if we forget one
-          case obj xobj of
+          case xobjObj xobj of
             Lst _ -> ")"
             Arr _ -> "]"
             Dict _ -> "}"
@@ -424,41 +424,41 @@ prettyUpTo max xobj =
 
 prettyCaptures :: Set.Set XObj -> String
 prettyCaptures captures =
-  joinWithComma (map (\x -> getName x ++ " : " ++ fromMaybe "" (fmap show (ty x))) (Set.toList captures))
+  joinWithComma (map (\x -> getName x ++ " : " ++ fromMaybe "" (fmap show (xobjTy x))) (Set.toList captures))
 
 data EvalError = EvalError String [XObj] FilePathPrintLength (Maybe Info)
                | HasStaticCall XObj (Maybe Info)
                deriving (Eq)
 
 instance Show EvalError where
-  show (HasStaticCall xobj info) = "Expression " ++ (pretty xobj) ++ " has unexpected static call"++ getInfo info
-    where getInfo (Just i) = " at " ++ prettyInfo i ++ "."
-          getInfo Nothing = ""
-  show (EvalError msg t fppl i) = msg ++ getInfo i ++ getTrace
-    where getInfo (Just i) = " at " ++ machineReadableInfo fppl i ++ "."
-          getInfo Nothing = ""
+  show (HasStaticCall xobj info) = "Expression " ++ (pretty xobj) ++ " has unexpected static call"++ showInfo info
+    where showInfo (Just i) = " at " ++ prettyInfo i ++ "."
+          showInfo Nothing = ""
+  show (EvalError msg t fppl info) = msg ++ showInfo info ++ getTrace
+    where showInfo (Just i) = " at " ++ machineReadableInfo fppl i ++ "."
+          showInfo Nothing = ""
           getTrace =
             if null t
             then ""
             else
               "\n\nTraceback:\n" ++
-              unlines (map (\x -> prettyUpTo 60 x ++ getInfo (info x)) t)
+              unlines (map (\x -> prettyUpTo 60 x ++ showInfo (xobjInfo x)) t)
 
 -- | Get the type of an XObj as a string.
 typeStr :: XObj -> String
-typeStr xobj = case ty xobj of
+typeStr xobj = case xobjTy xobj of
                  Nothing -> "" --" : _"
                  Just t -> " : " ++ show t
 
 -- | Get the identifier of an XObj as a string.
 identifierStr :: XObj -> String
-identifierStr xobj = case info xobj of
+identifierStr xobj = case xobjInfo xobj of
                        Just i -> "#" ++ show (infoIdentifier i)
                        Nothing -> "#?"
 
 -- | Get the deleters of an XObj as a string.
 deletersStr :: XObj -> String
-deletersStr xobj = case info xobj of
+deletersStr xobj = case xobjInfo xobj of
                      Just i -> joinWithComma (map show (Set.toList (infoDelete i)))
                      Nothing -> ""
 
@@ -471,7 +471,7 @@ prettyTyped = visit 0
                        identifierStr xobj ++ " " ++
                        deletersStr xobj ++ " " ++
                        "\n"
-          in case obj xobj of
+          in case xobjObj xobj of
                Lst lst ->
                  listPrinter "(" ")" lst suffix indent
                Arr arr ->
@@ -526,7 +526,7 @@ showBinderIndented indent (name, Binder meta xobj) =
   then ""
   else replicate indent ' ' ++ name ++
        -- " (" ++ show (getPath xobj) ++ ")" ++
-       " : " ++ showMaybeTy (ty xobj)
+       " : " ++ showMaybeTy (xobjTy xobj)
        -- ++ " <" ++ getBinderDescription xobj ++ ">"
 
 -- | Get a list of pairs from a deftype declaration.
@@ -773,7 +773,7 @@ defineInterface name t paths info =
 
 -- | Unsafe way of getting the type from an XObj
 forceTy :: XObj -> Ty
-forceTy xobj = fromMaybe (error ("No type in " ++ show xobj)) (ty xobj)
+forceTy xobj = fromMaybe (error ("No type in " ++ show xobj)) (xobjTy xobj)
 
 -- | How should the compiler be run? Interactively or just build / build & run and then quit?
 data ExecutionMode = Repl | Build | BuildAndRun | Install String | Check deriving (Show, Eq)

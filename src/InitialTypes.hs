@@ -65,16 +65,16 @@ initialTypes :: TypeEnv -> Env -> XObj -> Either TypeError XObj
 initialTypes typeEnv rootEnv root = evalState (visit rootEnv root) 0
   where
     visit :: Env -> XObj -> State Integer (Either TypeError XObj)
-    visit env xobj = case obj xobj of
-                       (Num t _)          -> pure (Right (xobj { ty = Just t }))
-                       (Bol _)            -> pure (Right (xobj { ty = Just BoolTy }))
+    visit env xobj = case xobjObj xobj of
+                       (Num t _)          -> pure (Right (xobj { xobjTy = Just t }))
+                       (Bol _)            -> pure (Right (xobj { xobjTy = Just BoolTy }))
                        (Str _)            -> do lt <- genVarTy
-                                                pure (Right (xobj { ty = Just (RefTy StringTy lt) }))
+                                                pure (Right (xobj { xobjTy = Just (RefTy StringTy lt) }))
                        (Pattern _)        -> do lt <- genVarTy
-                                                pure (Right (xobj { ty = Just (RefTy PatternTy lt) }))
-                       (Chr _)            -> pure (Right (xobj { ty = Just CharTy }))
-                       Break              -> pure (Right (xobj { ty = Just (FuncTy [] UnitTy StaticLifetimeTy)}))
-                       (Command _)        -> pure (Right (xobj { ty = Just DynamicTy }))
+                                                pure (Right (xobj { xobjTy = Just (RefTy PatternTy lt) }))
+                       (Chr _)            -> pure (Right (xobj { xobjTy = Just CharTy }))
+                       Break              -> pure (Right (xobj { xobjTy = Just (FuncTy [] UnitTy StaticLifetimeTy)}))
+                       (Command _)        -> pure (Right (xobj { xobjTy = Just DynamicTy }))
                        (Lst _)            -> visitList env xobj
                        (Arr _)            -> visitArray env xobj
                        (StaticArr _)      -> visitStaticArray env xobj
@@ -112,27 +112,27 @@ initialTypes typeEnv rootEnv root = evalState (visit rootEnv root) 0
     visitSymbol _ xobj@(XObj (Sym _ LookupRecursive) _ _) _ =
       -- Recursive lookups are left untouched (this avoids problems with looking up the thing they're referring to)
       do freshTy <- genVarTy
-         pure (Right xobj { ty = Just freshTy })
+         pure (Right xobj { xobjTy = Just freshTy })
     visitSymbol env xobj symPath =
       case symPath of
         -- Symbols with leading ? are 'holes'.
-        SymPath _ name@('?' : _) -> pure (Right (xobj { ty = Just (VarTy name) }))
+        SymPath _ name@('?' : _) -> pure (Right (xobj { xobjTy = Just (VarTy name) }))
         SymPath _ (':' : _) -> pure (Left (LeadingColon xobj))
         _ ->
           case lookupInEnv symPath env of
             Just (foundEnv, binder) ->
-              case ty (binderXObj binder) of
+              case xobjTy (binderXObj binder) of
                 -- Don't rename internal symbols like parameters etc!
                 Just theType | envIsExternal foundEnv -> do renamed <- renameVarTys theType
-                                                            pure (Right (xobj { ty = Just renamed }))
-                             | otherwise -> pure (Right (xobj { ty = Just theType }))
+                                                            pure (Right (xobj { xobjTy = Just renamed }))
+                             | otherwise -> pure (Right (xobj { xobjTy = Just theType }))
                 Nothing -> pure (Left (SymbolMissingType xobj foundEnv))
             Nothing -> pure (Left (SymbolNotDefined symPath xobj env)) -- Gives the error message "Trying to refer to an undefined symbol ..."
 
     visitMultiSym :: Env -> XObj -> [SymPath] -> State Integer (Either TypeError XObj)
     visitMultiSym _ xobj@(XObj (MultiSym _ _) _ _) _ =
       do freshTy <- genVarTy
-         pure (Right xobj { ty = Just freshTy })
+         pure (Right xobj { xobjTy = Just freshTy })
 
     visitInterfaceSym :: Env -> XObj -> State Integer (Either TypeError XObj)
     visitInterfaceSym _ xobj@(XObj (InterfaceSym name) _ _) =
@@ -140,7 +140,7 @@ initialTypes typeEnv rootEnv root = evalState (visit rootEnv root) 0
                       Just (_, Binder _ (XObj (Lst [XObj (Interface interfaceSignature _) _ _, _]) _ _)) -> renameVarTys interfaceSignature
                       Just (_, Binder _ x) -> error ("A non-interface named '" ++ name ++ "' was found in the type environment: " ++ pretty x)
                       Nothing -> genVarTy
-         pure (Right xobj { ty = Just freshTy })
+         pure (Right xobj { xobjTy = Just freshTy })
 
     visitArray :: Env -> XObj -> State Integer (Either TypeError XObj)
     visitArray env (XObj (Arr xobjs) i _) =
@@ -183,7 +183,7 @@ initialTypes typeEnv rootEnv root = evalState (visit rootEnv root) 0
         [defn@(XObj (Defn _) _ _), nameSymbol@(XObj (Sym (SymPath _ name) _) _ _), XObj (Arr argList) argsi argst, body] ->
           do (argTypes, returnType, funcScopeEnv) <- getTys env argList
              let funcTy = Just (FuncTy argTypes returnType StaticLifetimeTy)
-                 typedNameSymbol = nameSymbol { ty = funcTy }
+                 typedNameSymbol = nameSymbol { xobjTy = funcTy }
                  -- TODO! After the introduction of 'LookupRecursive' this env shouldn't be needed anymore? (but it is for some reason...)
                  envWithSelf = extendEnv funcScopeEnv name typedNameSymbol
              visitedBody <- visit envWithSelf body
@@ -312,7 +312,7 @@ initialTypes typeEnv rootEnv root = evalState (visit rootEnv root) 0
         [addressExpr@(XObj Address _ _), value] ->
           do visitedValue <- visit env value
              pure $ do okValue <- visitedValue
-                       let Just t' = ty okValue
+                       let Just t' = xobjTy okValue
                        pure (XObj (Lst [addressExpr, okValue]) i (Just (PointerTy t')))
 
         -- Set!
@@ -341,7 +341,7 @@ initialTypes typeEnv rootEnv root = evalState (visit rootEnv root) 0
                      _ | isLiteral value -> pure StaticLifetimeTy
                        | otherwise -> genVarTy
              pure $ do okValue <- visitedValue
-                       let Just valueTy = ty okValue
+                       let Just valueTy = xobjTy okValue
                        pure (XObj (Lst [refExpr, okValue]) i (Just (RefTy valueTy lt)))
 
         -- Deref (error!)
@@ -369,7 +369,7 @@ initialTypes typeEnv rootEnv root = evalState (visit rootEnv root) 0
                        pure (XObj (Lst (okFunc : okArgs)) i (Just t))
 
         -- Empty list
-        [] -> pure (Right xobj { ty = Just UnitTy })
+        [] -> pure (Right xobj { xobjTy = Just UnitTy })
 
     visitList _ _ = error "Must match on list!"
 
@@ -391,7 +391,7 @@ initialTypes typeEnv rootEnv root = evalState (visit rootEnv root) 0
           case envOrErr of
             Left err -> pure (Left err)
             Right env' ->
-              case obj sym of
+              case xobjObj sym of
                 (Sym (SymPath _ name) _) ->
                   do visited <- visit env' expr
                      pure (envAddBinding env' name . Binder emptyMeta <$> visited)
@@ -410,10 +410,10 @@ initialTypes typeEnv rootEnv root = evalState (visit rootEnv root) 0
       where
         createBinderForParam :: XObj -> State Integer (String, Binder)
         createBinderForParam xobj =
-          case obj xobj of
+          case xobjObj xobj of
             (Sym (SymPath _ name) _) ->
               do t <- genVarTy
-                 let xobjWithTy = xobj { ty = Just t }
+                 let xobjWithTy = xobj { xobjTy = Just t }
                  pure (name, Binder emptyMeta xobjWithTy)
             _ -> error "Can't create binder for non-symbol parameter."
 
@@ -442,7 +442,7 @@ initialTypes typeEnv rootEnv root = evalState (visit rootEnv root) 0
           if isVarName name
           -- A variable that will bind to something:
           then do freshTy <- genVarTy
-                  pure [(name, Binder emptyMeta xobj { ty = Just freshTy })]
+                  pure [(name, Binder emptyMeta xobj { xobjTy = Just freshTy })]
           -- Tags for the sumtypes won't bind to anything:
           else pure []
 

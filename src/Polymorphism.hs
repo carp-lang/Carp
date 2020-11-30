@@ -15,12 +15,12 @@ import Lookup
 nameOfPolymorphicFunction :: TypeEnv -> Env -> Ty -> String -> Maybe SymPath
 nameOfPolymorphicFunction _ env functionType functionName =
   let foundBinders = multiLookupALL functionName env
-  in case filter ((\(Just t') -> areUnifiable functionType t') . ty . binderXObj . snd) foundBinders of
+  in case filter ((\(Just t') -> areUnifiable functionType t') . xobjTy . binderXObj . snd) foundBinders of
        [] -> Nothing
        [(_, Binder _ (XObj (Lst (XObj (External (Just name)) _ _ : _)) _ _))] ->
          Just (SymPath [] name)
        [(_, Binder _ single)] ->
-         let Just t' = ty single
+         let Just t' = xobjTy single
              (SymPath pathStrings name) = getPath single
              suffix = polymorphicSuffix t' functionType
              concretizedPath = SymPath pathStrings (name ++ suffix)

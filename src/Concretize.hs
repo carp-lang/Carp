@@ -1,6 +1,7 @@
 {-# LANGUAGE LambdaCase #-}
 module Concretize where
 
+import Prelude hiding (lookup)
 import Control.Monad.State
 import qualified Data.Map as Map
 import Data.Maybe (fromMaybe)
@@ -68,7 +69,7 @@ concretizeXObj allowAmbiguityRoot typeEnv rootEnv visitedDefinitions root =
       else do _ <- concretizeTypeOfXObj typeEnv body
               visitedBody <- visit False Inside env body
               pure $ do okBody <- visitedBody
-                        let t = fromMaybe UnitTy (ty okBody)
+                        let t = fromMaybe UnitTy (xobjTy okBody)
                         if not (isTypeGeneric t) && t /= UnitTy && t /= IntTy
                           then Left (MainCanOnlyReturnUnitOrInt nameSymbol t)
                           else return [defn, nameSymbol, args, okBody]
@@ -98,7 +99,7 @@ concretizeXObj allowAmbiguityRoot typeEnv rootEnv visitedDefinitions root =
       do mapM_ (concretizeTypeOfXObj typeEnv) argsArr
          let Just ii = i
              Just funcTy = t
-             argObjs = map obj argsArr
+             argObjs = map xobjObj argsArr
               -- | TODO: This code is a copy of the one above in Defn, remove duplication:
              functionEnv = Env Map.empty (Just env) Nothing [] InternalEnv (envFunctionNestingLevel env)
              envWithArgs = foldl' (\e arg@(XObj (Sym (SymPath _ argSymName) _) _ _) ->
@@ -110,13 +111,13 @@ concretizeXObj allowAmbiguityRoot typeEnv rootEnv visitedDefinitions root =
              let -- Analyse the body of the lambda to find what variables it captures
                  capturedVarsRaw = collectCapturedVars okBody
                  -- and then remove the captures that are actually our arguments
-                 capturedVars = filter (\xobj -> obj (toGeneralSymbol xobj) `notElem` argObjs) capturedVarsRaw
+                 capturedVars = filter (\xobj -> xobjObj (toGeneralSymbol xobj) `notElem` argObjs) capturedVarsRaw
 
                  -- Create a new (top-level) function that will be used when the lambda is called.
                  -- Its name will contain the name of the (normal, non-lambda) function it's contained within,
                  -- plus the identifier of the particular s-expression that defines the lambda.
-                 SymPath path name = rootDefinitionPath
-                 lambdaPath = SymPath path ("_Lambda_" ++ lambdaToCName name (envFunctionNestingLevel envWithArgs) ++ "_" ++ show (infoIdentifier ii))
+                 SymPath spath name = rootDefinitionPath
+                 lambdaPath = SymPath spath ("_Lambda_" ++ lambdaToCName name (envFunctionNestingLevel envWithArgs) ++ "_" ++ show (infoIdentifier ii))
                  lambdaNameSymbol = XObj (Sym lambdaPath Symbol) (Just dummyInfo) Nothing
                  extendedArgs = if null capturedVars
                                 then args
@@ -228,7 +229,7 @@ concretizeXObj allowAmbiguityRoot typeEnv rootEnv visitedDefinitions root =
         Just (foundEnv, binder)
           | envIsExternal foundEnv ->
             let theXObj = binderXObj binder
-                Just theType = ty theXObj
+                Just theType = xobjTy theXObj
                 typeOfVisited = fromMaybe (error ("Missing type on " ++ show xobj ++ " at " ++ prettyInfoFromXObj xobj ++ " when looking up path " ++ show path)) t
             in if --(trace $ "CHECKING " ++ getName xobj ++ " : " ++ show theType ++ " with visited type " ++ show typeOfVisited ++ " and visited definitions: " ++ show visitedDefinitions) $
                   isTypeGeneric theType && not (isTypeGeneric typeOfVisited)
@@ -327,23 +328,23 @@ collectCapturedVars root = removeDuplicates (map decreaseCaptureLevel (visit roo
       (Just dummyInfo) ty
 
     visit xobj =
-      case obj xobj of
+      case xobjObj xobj of
         -- don't peek inside lambdas, trust their capture lists:
         (Lst [XObj (Fn _ captures) _ _, _, _]) -> Set.toList captures
         -- in the case of lets, we have to remove new bindings from the list of captured variables,
         -- including the ones captured in later bindings
         (Lst [XObj Let _ _, XObj (Arr bindings) _ _, body]) ->
           let (bound, bindingsCaptured) = foldl
-                (\(bound, captured) (XObj sym _ ty, expr) ->
-                   let capt = filter (\x -> Set.notMember x bound) (visit expr) in
-                     (Set.insert (XObj sym (Just dummyInfo) ty) bound, capt++captured))
+                (\(bound', captured) (XObj sym _ ty, expr) ->
+                   let capt = filter (\x -> Set.notMember x bound') (visit expr) in
+                     (Set.insert (XObj sym (Just dummyInfo) ty) bound', capt++captured))
                    (Set.empty, []) (pairwise bindings) in
           let bodyCaptured = filter (\x -> Set.notMember x bound) (visit body) in
             bindingsCaptured++bodyCaptured
         (Lst _) -> visitList xobj
         (Arr _) -> visitArray xobj
         -- TODO: Static Arrays!
-        sym@(Sym _ (LookupLocal (Capture _))) -> [XObj sym (Just dummyInfo) (ty xobj)]
+        sym@(Sym _ (LookupLocal (Capture _))) -> [XObj sym (Just dummyInfo) (xobjTy xobj)]
         _ -> []
 
     visitList :: XObj -> [XObj]
@@ -367,8 +368,8 @@ matchingSignature3 tA (tB, _, _) = areUnifiable tA tB
 -- | Does the type of an XObj require additional concretization of generic types or some typedefs for function types, etc?
 -- | If so, perform the concretization and append the results to the list of dependencies.
 concretizeTypeOfXObj :: TypeEnv -> XObj -> State [XObj] (Either TypeError ())
-concretizeTypeOfXObj typeEnv (XObj _ _ (Just t)) =
-  case concretizeType typeEnv t of
+concretizeTypeOfXObj typeEnv (XObj _ _ (Just ty)) =
+  case concretizeType typeEnv ty of
     Right t -> do modify (t ++)
                   pure (Right ())
     Left err -> pure (Left err)
@@ -501,8 +502,8 @@ replaceGenericTypeSymbols mappings (XObj (Arr arr) i t) =
 replaceGenericTypeSymbols _ xobj = xobj
 
 replaceGenericTypeSymbolsOnCase :: Map.Map String Ty -> XObj -> XObj
-replaceGenericTypeSymbolsOnCase mappings (XObj (Lst (caseName : caseMembers)) i t) =
-  XObj (Lst (caseName : map replacer caseMembers)) i t
+replaceGenericTypeSymbolsOnCase mappings (XObj (Lst (caseNm : caseMembers)) i t) =
+  XObj (Lst (caseNm : map replacer caseMembers)) i t
   where replacer memberXObj =
           replaceGenericTypeSymbols mappings memberXObj
 -- Handle cases like `(State a) Done (Value [a]))`
@@ -553,7 +554,7 @@ modeFromPath env p =
 concretizeDefinition :: Bool -> TypeEnv -> Env -> [SymPath] -> XObj -> Ty -> Either TypeError (XObj, [XObj])
 concretizeDefinition allowAmbiguity typeEnv globalEnv visitedDefinitions definition concreteType =
   let SymPath pathStrings name = getPath definition
-      Just polyType = ty definition
+      Just polyType = xobjTy definition
       suffix = polymorphicSuffix polyType concreteType
       newPath = SymPath pathStrings (name ++ suffix)
   in
@@ -576,14 +577,14 @@ concretizeDefinition allowAmbiguity typeEnv globalEnv visitedDefinitions definit
         if name == "NULL"
         then Right (definition, []) -- A hack to make all versions of NULL have the same name
         else let withNewPath = setPath definition newPath
-                 withNewType = withNewPath { ty = Just concreteType }
+                 withNewType = withNewPath { xobjTy = Just concreteType }
              in  Right (withNewType, [])
       -- TODO: This old form shouldn't be necessary, but somehow, some External xobjs are still registered without a ty xobj position.
       XObj (Lst [XObj (External _) _ _, _]) _ _ ->
         if name == "NULL"
         then Right (definition, []) -- A hack to make all versions of NULL have the same name
         else let withNewPath = setPath definition newPath
-                 withNewType = withNewPath { ty = Just concreteType }
+                 withNewType = withNewPath { xobjTy = Just concreteType }
              in  Right (withNewType, [])
       XObj (Lst [XObj (Instantiate template) _ _, _]) _ _ ->
         Right (instantiateTemplate newPath concreteType template)
@@ -593,7 +594,7 @@ concretizeDefinition allowAmbiguity typeEnv globalEnv visitedDefinitions definit
 -- | Find ALL functions with a certain name, matching a type signature.
 allFunctionsWithNameAndSignature :: Env -> String -> Ty -> [(Env, Binder)]
 allFunctionsWithNameAndSignature env functionName functionType =
-  filter (predicate . ty . binderXObj . snd) (multiLookupALL functionName env)
+  filter (predicate . xobjTy . binderXObj . snd) (multiLookupALL functionName env)
   where
     predicate (Just t) = --trace ("areUnifiable? " ++ show functionType ++ " == " ++ show t ++ " " ++ show (areUnifiable functionType t)) $
                          areUnifiable functionType t
@@ -653,7 +654,7 @@ data FunctionFinderResult = FunctionFound String
 -- | TODO: COMMENT THIS
 getConcretizedPath :: XObj -> Ty -> SymPath
 getConcretizedPath single functionType =
-  let Just t' = ty single
+  let Just t' = xobjTy single
       (SymPath pathStrings name) = getPath single
       suffix = polymorphicSuffix t' functionType
   in SymPath pathStrings (name ++ suffix)
@@ -694,7 +695,7 @@ setDeletersOnInfo i deleters = fmap (\i' -> i' { infoDelete = deleters }) i
 
 -- | Helper function for setting the deleters for an XObj.
 del :: XObj -> Set.Set Deleter -> XObj
-del xobj deleters = xobj { info = setDeletersOnInfo (info xobj) deleters }
+del xobj deleters = xobj { xobjInfo = setDeletersOnInfo (xobjInfo xobj) deleters }
 
 -- | Differentiate between lifetimes depending on variables in a lexical scope and depending on something outside the function
 data LifetimeMode = LifetimeInsideFunction String
@@ -724,17 +725,17 @@ manageMemory typeEnv globalEnv root =
   in  -- (trace ("Delete these: " ++ joinWithComma (map show (Set.toList deleteThese)))) $
       case finalObj of
         Left err -> Left err
-        Right ok -> let newInfo = fmap (\i -> i { infoDelete = deleteThese }) (info ok)
+        Right ok -> let newInfo = fmap (\i -> i { infoDelete = deleteThese }) (xobjInfo ok)
                     in -- This final check of lifetimes works on the lifetimes mappings after analyzing the function form, and
                        --  after all the local variables in it have been deleted. This is needed for values that are created
                        --  directly in body position, e.g. (defn f [] &[1 2 3])
                        case evalState (checkThatRefTargetIsAlive ok) (MemState (Set.fromList []) [] (memStateLifetimes finalState)) of
                          Left err -> Left err
-                         Right _ -> Right (ok { info = newInfo }, deps)
+                         Right _ -> Right (ok { xobjInfo = newInfo }, deps)
 
   where visit :: XObj -> State MemState (Either TypeError XObj)
         visit xobj =
-          do r <- case obj xobj of
+          do r <- case xobjObj xobj of
                     Lst _ -> visitList xobj
                     Arr _ -> visitArray xobj
                     StaticArr _ -> visitStaticArray xobj
@@ -748,9 +749,9 @@ manageMemory typeEnv globalEnv root =
                       pure (Right xobj)
              case r of
                Right ok -> do MemState _ _ _ <- get
-                              r <- checkThatRefTargetIsAlive ok -- $ trace ("CHECKING " ++ pretty ok ++ " : " ++ showMaybeTy (ty xobj) ++ ", mappings: " ++ prettyLifetimeMappings m) $
+                              r' <- checkThatRefTargetIsAlive ok -- $ trace ("CHECKING " ++ pretty ok ++ " : " ++ showMaybeTy (ty xobj) ++ ", mappings: " ++ prettyLifetimeMappings m) $
                               addToLifetimesMappingsIfRef True ok -- (***)
-                              pure r
+                              pure r'
                Left err -> pure (Left err)
 
         visitArray :: XObj -> State MemState (Either TypeError XObj)
@@ -774,7 +775,7 @@ manageMemory typeEnv globalEnv root =
                Right _ ->
                  -- We know that we want to add a deleter for the static array here
                  do let var = varOfXObj xobj
-                        Just (RefTy t@(StructTy (ConcreteNameTy "StaticArray") [_]) _) = ty xobj
+                        Just (RefTy t@(StructTy (ConcreteNameTy "StaticArray") [_]) _) = xobjTy xobj
                         deleter = case nameOfPolymorphicFunction typeEnv globalEnv (FuncTy [t] UnitTy StaticLifetimeTy) "delete" of
                                     Just pathOfDeleteFunc ->
                                       ProperDeleter pathOfDeleteFunc var
@@ -856,7 +857,7 @@ manageMemory typeEnv globalEnv root =
 
             -- Set!
             [setbangExpr@(XObj SetBang _ _), variable, value] ->
-                 let varInfo = info variable
+                 let varInfo = xobjInfo variable
                      correctVariableAndMode =
                        case variable of
                          -- DISABLE FOR NOW: (XObj (Lst (XObj (Sym (SymPath _ "copy") _) _ _ : symObj@(XObj (Sym _ _) _ _) : _)) _ _) -> Right symObj
@@ -886,10 +887,10 @@ manageMemory typeEnv globalEnv root =
                                 Symbol -> error "How to handle this?"
                                 LookupLocal _ ->
                                   if Set.size (Set.intersection managed deleters) == 1 -- The variable is still alive
-                                  then variable { info = setDeletersOnInfo varInfo deleters }
+                                  then variable { xobjInfo = setDeletersOnInfo varInfo deleters }
                                   else variable -- don't add the new info = no deleter
                                 LookupGlobal _ _ ->
-                                  variable { info = setDeletersOnInfo varInfo deleters }
+                                  variable { xobjInfo = setDeletersOnInfo varInfo deleters }
 
                             -- traceDeps = trace ("SET!-deleters for " ++ pretty xobj ++ " at " ++ prettyInfoFromXObj xobj ++ ":\n" ++
                             --                    "unmanaged " ++ pretty value ++ "\n" ++
@@ -923,8 +924,8 @@ manageMemory typeEnv globalEnv root =
                                           pure (XObj (Lst [theExpr, typeXObj, okValue]) i t)
 
             [refExpr@(XObj Ref _ _), value] ->
-              do visitedValue <- visit  value
-                 case visitedValue of
+              do visited <- visit  value
+                 case visited of
                    Left e -> pure (Left e)
                    Right visitedValue ->
                      do checkResult <- refCheck visitedValue
@@ -1071,8 +1072,8 @@ manageMemory typeEnv globalEnv root =
                                                -- Putting the deleter info on the lhs,
                                                -- because the right one can collide with
                                                -- the other expressions, e.g. a 'let'
-                                               let newLhsInfo = setDeletersOnInfo (info lhs) finalSetOfDeleters
-                                               in [lhs { info = newLhsInfo }, rhs]
+                                               let newLhsInfo = setDeletersOnInfo (xobjInfo lhs) finalSetOfDeleters
+                                               in [lhs { xobjInfo = newLhsInfo }, rhs]
                                             )
                                         okVisitedCases
                                         deletersForEachCase
@@ -1084,9 +1085,9 @@ manageMemory typeEnv globalEnv root =
                                   in (XObj (Lst ([matchExpr, okVisitedExpr] ++ concat okVisitedCasesWithAllDeleters)) i t
                                      , deletersAfterTheMatch)
 
-            XObj (Lst [deref@(XObj Deref _ _), f]) xi xt : args ->
+            XObj (Lst [deref@(XObj Deref _ _), f]) xi xt : uargs ->
               do -- Do not visit f in this case, we don't want to manage it's memory since it is a ref!
-                 visitedArgs <- sequence <$> mapM visitArg args
+                 visitedArgs <- sequence <$> mapM visitArg uargs
                  case visitedArgs of
                    Left err -> pure (Left err)
                    Right args ->
@@ -1095,9 +1096,9 @@ manageMemory typeEnv globalEnv root =
                         pure $ do okArgs <- unmanagedArgs
                                   Right (XObj (Lst (XObj (Lst [deref, f]) xi xt : okArgs)) i t)
 
-            f : args ->
+            f : uargs ->
               do visitedF <- visit  f
-                 visitedArgs <- sequence <$> mapM visitArg args
+                 visitedArgs <- sequence <$> mapM visitArg uargs
                  case visitedArgs of
                    Left err -> pure (Left err)
                    Right args -> do unmanagedArgs <- sequence <$> mapM unmanageArg args
@@ -1141,7 +1142,7 @@ manageMemory typeEnv globalEnv root =
 
         addToLifetimesMappingsIfRef :: Bool -> XObj -> State MemState ()
         addToLifetimesMappingsIfRef internal xobj =
-          case ty xobj of
+          case xobjTy xobj of
             Just (RefTy _ (VarTy lt)) ->
               do m@(MemState _ _ lifetimes) <- get
                  case Map.lookup lt lifetimes of
@@ -1149,7 +1150,7 @@ manageMemory typeEnv globalEnv root =
                      --trace ("\nThere is already a mapping for '" ++ pretty xobj ++ "' from the lifetime '" ++ lt ++ "' to " ++ show existing ++ ", won't add " ++ show (makeLifetimeMode xobj)) $
                      pure ()
                    Nothing ->
-                     do let lifetimes' = Map.insert lt (makeLifetimeMode xobj) lifetimes
+                     do let lifetimes' = Map.insert lt makeLifetimeMode lifetimes
                         put $ --(trace $ "\nExtended lifetimes mappings for '" ++ pretty xobj ++ "' with " ++ show lt ++ " => " ++ show (makeLifetimeMode xobj) ++ " at " ++ prettyInfoFromXObj xobj ++ ":\n" ++ prettyLifetimeMappings lifetimes') $
                           m { memStateLifetimes = lifetimes' }
                         pure ()
@@ -1159,7 +1160,7 @@ manageMemory typeEnv globalEnv root =
             _ ->
               --trace ("No type on " ++ pretty xobj ++ " at " ++ prettyInfoFromXObj xobj) $
               pure ()
-            where makeLifetimeMode xobj =
+            where makeLifetimeMode =
                     if internal then
                       LifetimeInsideFunction $
                       case xobj of
@@ -1171,7 +1172,7 @@ manageMemory typeEnv globalEnv root =
         checkThatRefTargetIsAlive :: XObj -> State MemState (Either TypeError XObj)
         checkThatRefTargetIsAlive xobj =
           -- TODO: Replace this whole thing with a function that collects all lifetime variables in a type.
-          case ty xobj of
+          case xobjTy xobj of
             Just (RefTy _ (VarTy lt)) ->
               performCheck lt
             Just (FuncTy _ _ (VarTy lt)) ->
@@ -1249,7 +1250,7 @@ manageMemory typeEnv globalEnv root =
 
         createDeleter :: XObj -> Maybe Deleter
         createDeleter xobj =
-          case ty xobj of
+          case xobjTy xobj of
             Just (RefTy _ _) -> Just (RefDeleter (varOfXObj xobj))
             Just t -> let var = varOfXObj xobj
                       in  if isExternalType typeEnv t
@@ -1270,7 +1271,7 @@ manageMemory typeEnv globalEnv root =
           else case createDeleter xobj of
                  Just deleter -> do MemState deleters deps lifetimes <- get
                                     let newDeleters = Set.insert deleter deleters
-                                        Just t = ty xobj
+                                        Just t = xobjTy xobj
                                         newDeps = deps ++ depsForDeleteFunc typeEnv globalEnv t
                                     put (MemState newDeleters newDeps lifetimes)
                  Nothing -> pure ()
@@ -1294,7 +1295,7 @@ manageMemory typeEnv globalEnv root =
 
         unmanage :: XObj -> State MemState (Either TypeError ())
         unmanage xobj =
-          let Just t = ty xobj
+          let Just t = xobjTy xobj
           in if isManaged typeEnv t && not (isGlobalFunc xobj) && not (isExternalType typeEnv t)
              then do MemState deleters deps lifetimes <- get
                      case deletersMatchingXObj xobj deleters of
@@ -1310,7 +1311,7 @@ manageMemory typeEnv globalEnv root =
         -- | Check that the value being referenced hasn't already been given away
         refCheck :: XObj -> State MemState (Either TypeError ())
         refCheck xobj =
-          let Just t = ty xobj
+          let Just t = xobjTy xobj
               isGlobalVariable = case xobj of
                                    XObj (Sym _ (LookupGlobal _ _)) _ _ -> True
                                    _ -> False
@@ -1334,7 +1335,7 @@ varOfXObj :: XObj -> String
 varOfXObj xobj =
   case xobj of
     XObj (Sym path _) _ _ -> pathToC path
-    _ -> case info xobj of
+    _ -> case xobjInfo xobj of
            Just i -> freshVar i
            Nothing -> error ("Missing info on " ++ show xobj)
 

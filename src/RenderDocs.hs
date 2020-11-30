@@ -4,8 +4,9 @@ module RenderDocs where
 
 import CMark
 import Control.Monad (when)
-import Text.Blaze.Html5 as H
-import Text.Blaze.Html5.Attributes as A
+import qualified Text.Blaze.Html5 as H
+import Text.Blaze.Html5 ((!))
+import qualified Text.Blaze.Html5.Attributes as A
 import Text.Blaze.Html.Renderer.Pretty (renderHtml)
 import Data.Maybe (fromMaybe)
 import Data.Text as Text
@@ -51,9 +52,9 @@ projectIndexPage ctx moduleNames =
   let logo = projectDocsLogo ctx
       url = projectDocsURL ctx
       css = projectDocsStyling ctx
-      htmlHeader = toHtml $ projectTitle ctx
+      htmlHeader = H.toHtml $ projectTitle ctx
       htmlDoc = commonmarkToHtml [optSafe] $ Text.pack $ projectDocsPrelude ctx
-      html = renderHtml $ docTypeHtml $
+      html = renderHtml $ H.docTypeHtml $
                           do headOfPage css
                              H.body $
                                H.div ! A.class_ "content" $
@@ -63,7 +64,7 @@ projectIndexPage ctx moduleNames =
                                            moduleIndex moduleNames
                                       H.div $
                                         do H.h1 htmlHeader
-                                           preEscapedToHtml htmlDoc
+                                           H.preEscapedToHtml htmlDoc
   in html
 
 headOfPage :: String -> H.Html
@@ -77,11 +78,11 @@ getModuleName :: Env -> String
 getModuleName env = fromMaybe "Global" (envModuleName env)
 
 saveDocsForEnvBinder :: Project -> [String] -> (SymPath, Binder) -> IO ()
-saveDocsForEnvBinder ctx moduleNames (pathToEnv, envBinder) =
-  do let SymPath _ moduleName = pathToEnv
+saveDocsForEnvBinder ctx moduleNames (envPath, envBinder) =
+  do let SymPath _ moduleName = envPath
          dir = projectDocsDir ctx
          fullPath = dir </> moduleName ++ ".html"
-         string = renderHtml (envBinderToHtml envBinder ctx (show pathToEnv) moduleNames)
+         string = renderHtml (envBinderToHtml envBinder ctx (show envPath) moduleNames)
      createDirectoryIfMissing False dir
      writeFile fullPath string
 
@@ -104,10 +105,10 @@ envBinderToHtml envBinder ctx moduleName moduleNames =
                        do H.a ! A.href (H.stringValue url) $
                             H.img ! A.src (H.stringValue logo)
                           --span_ "CARP DOCS FOR"
-                          H.div  ! A.class_ "title" $ toHtml title
+                          H.div  ! A.class_ "title" $ H.toHtml title
                           moduleIndex moduleNames
-                     H.h1 (toHtml moduleName)
-                     H.div ! A.class_ "module-description" $ preEscapedToHtml moduleDescriptionHtml
+                     H.h1 (H.toHtml moduleName)
+                     H.div ! A.class_ "module-description" $ H.preEscapedToHtml moduleDescriptionHtml
                      mapM_ (binderToHtml . snd) (Prelude.filter shouldEmitDocsForBinder (Map.toList (envBindings env)))
 
 shouldEmitDocsForBinder :: (String, Binder) -> Bool
@@ -121,7 +122,7 @@ moduleIndex moduleNames =
 
 moduleLink :: String -> H.Html
 moduleLink name =
-  H.li $ H.a ! A.href (stringValue (name ++ ".html")) $ toHtml name
+  H.li $ H.a ! A.href (H.stringValue (name ++ ".html")) $ H.toHtml name
 
 
 binderToHtml :: Binder -> H.Html
@@ -129,7 +130,7 @@ binderToHtml (Binder meta xobj) =
   let name = getSimpleName xobj
       maybeNameAndArgs = getSimpleNameWithArgs xobj
       description = getBinderDescription xobj
-      typeSignature = case ty xobj of
+      typeSignature = case xobjTy xobj of
                  Just t -> show (beautifyType t) -- NOTE: This destroys user-defined names of type variables!
                  Nothing -> ""
       docString = case Meta.get "doc" meta of
@@ -138,12 +139,12 @@ binderToHtml (Binder meta xobj) =
                     Nothing -> ""
       htmlDoc = commonmarkToHtml [optSafe] $ Text.pack docString
   in  H.div ! A.class_ "binder" $
-        do H.a ! A.class_ "anchor" ! A.href (stringValue ("#" ++ name)) $
-             H.h3 ! A.id (stringValue name) $ toHtml name
-           H.div ! A.class_ "description" $ toHtml description
-           H.p  ! A.class_ "sig" $ toHtml typeSignature
+        do H.a ! A.class_ "anchor" ! A.href (H.stringValue ("#" ++ name)) $
+             H.h3 ! A.id (H.stringValue name) $ H.toHtml name
+           H.div ! A.class_ "description" $ H.toHtml description
+           H.p  ! A.class_ "sig" $ H.toHtml typeSignature
            case maybeNameAndArgs of
-             Just nameAndArgs -> H.pre ! A.class_ "args" $ toHtml nameAndArgs
-             Nothing -> H.span $ toHtml (""::String)
-           H.p ! A.class_ "doc" $ preEscapedToHtml htmlDoc
+             Just nameAndArgs -> H.pre ! A.class_ "args" $ H.toHtml nameAndArgs
+             Nothing -> H.span $ H.toHtml (""::String)
+           H.p ! A.class_ "doc" $ H.preEscapedToHtml htmlDoc
            --p_ (toHtml (description))
