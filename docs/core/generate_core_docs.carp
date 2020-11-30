@@ -21,6 +21,7 @@
            Double
            Dynamic
            Float
+           Function
            Geometry
            Int
            IO
