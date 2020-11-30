@@ -1,5 +1,8 @@
 module Validate where
 
+import Data.List (nubBy, (\\))
+import Data.Function (on)
+
 import TypeError
 import Obj
 import Types
@@ -19,13 +22,24 @@ validateMemberCases typeEnv typeVariables rest = mapM_ visit rest
 
 validateMembers :: TypeEnv -> [Ty] -> [XObj] -> Either TypeError ()
 validateMembers typeEnv typeVariables membersXObjs =
-  if length membersXObjs `mod` 2 == 0
-  then mapM_ (okXObjForType typeEnv typeVariables . snd) (pairwise membersXObjs)
-  else Left (UnevenMembers membersXObjs)
+  checkUnevenMembers >> checkDuplicateMembers >> checkMembers
+  where checkUnevenMembers =
+          if length membersXObjs `mod` 2 == 0
+          then Right ()
+          else Left (UnevenMembers membersXObjs)
+        pairs = pairwise membersXObjs
+        fields = fst <$> pairs
+        uniqueFields = nubBy ((==) `on` obj) fields
+        dups = fields \\ uniqueFields
+        checkDuplicateMembers =
+          if length fields == length uniqueFields
+          then Right ()
+          else Left (DuplicatedMembers dups)
+        checkMembers = mapM_ (okXObjForType typeEnv typeVariables . snd) pairs
 
-validateOneCase :: XObj -> a
-validateOneCase XObj {} =
-  error "Type members must be defined using array syntax: [member1 type1 member2 type2 ...]" -- | TODO: How to reach this case?
+-- validateOneCase :: XObj -> a
+-- validateOneCase XObj {} =
+--   error "Type members must be defined using array syntax: [member1 type1 member2 type2 ...]" -- | TODO: How to reach this case?
 
 okXObjForType :: TypeEnv -> [Ty] -> XObj -> Either TypeError ()
 okXObjForType typeEnv typeVariables xobj =

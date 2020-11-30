@@ -51,6 +51,7 @@ data TypeError = SymbolMissingType XObj Env
                | InvalidMemberTypeWhenConcretizing Ty XObj TypeError
                | NotAmongRegisteredTypes Ty XObj
                | UnevenMembers [XObj]
+               | DuplicatedMembers [XObj]
                | InvalidLetBinding [XObj] (XObj, XObj)
                | DuplicateBinding XObj
                | DefinitionsMustBeAtToplevel XObj
@@ -232,6 +233,10 @@ instance Show TypeError where
     joinWithComma (map pretty xobjs) ++ "` at " ++
     prettyInfoFromXObj (head xobjs) ++
     ".\n\nBecause they are pairs of names and their types, they need to be even.\nDid you forget a name or type?"
+  show (DuplicatedMembers xobjs) =
+    "Duplicate members: `" ++
+    joinWithComma (map pretty xobjs) ++ "` at " ++
+    prettyInfoFromXObj (head xobjs)
   show (InvalidLetBinding xobjs (sym, expr)) =
     "The binding `[" ++ pretty sym ++ " " ++ pretty expr ++ "]` is invalid at " ++
     prettyInfoFromXObj (head xobjs) ++ ". \n\n Binding names must be symbols."
