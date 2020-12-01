@@ -12,6 +12,7 @@ This is an extension of what is covered in the [Language Guide](./LanguageGuide.
   - [`deftemplate`](#deftemplate)
     - [`Basic example`](#basic-example)
     - [`Generics`](#generics)
+- [Callbacks](#callbacks)
 
 
 ## How Carp generates identifiers
@@ -341,4 +342,45 @@ out/main.c:9153:29: error: invalid operands to binary expression ('String' (aka 
                           ~ ^ ~
 1 error generated.
 ```
+
+## Callbacks
+
+Some C APIs rely on callbacks, let's define a C function that accepts a
+callback and an argument and returns the result of calling that function as an
+example:
+
+```clojure
+(deftemplate runner (Fn [(Ptr ()) (Ptr ())] a)
+                    "$a $NAME(void* fnptr, void* args)"
+                    "$DECL {
+                       return (($a(*)(void*))fnptr)(args);
+                    }")
+
+; Using a lambda capturing variables from its environment
+(let [x 20 y 22 fnfn (fn [] (+ @&x @&y))]
+  (= (runner (Function.unsafe-ptr &fnfn) (Function.unsafe-env-ptr &fnfn))
+     42))
+
+; Using a static function
+(defn double [x] (Int.* @x 2))
+
+(let [x 42]
+  (= (runner (Function.unsafe-ptr &double) (Unsafe.coerce &x))
+     84))
+```
+
+In the first example we want to use a lambda capturing some variable, we can
+use `Function.unsafe-ptr` to get a `void*` to the function and in the case of
+lambdas capturing environment the first argument to that function is the
+environment so we have to use `Function.unsafe-env-ptr` to pass in that
+environment.
+
+In the second example we want to use a static function so we can use
+`Function.unsafe-ptr` again, and the argument we pass in needs to be coerced
+from a `Ref` into a `(Ptr ())`.
+
+Because everything gets turned into a void pointer all type safety is lost so
+it is the responsibility of the caller to ensure the operation is safe. It is
+also important to ensure the lifetime of the `Ptr` doesn't not exceed the
+lifetime of the function/env it represents.
 
