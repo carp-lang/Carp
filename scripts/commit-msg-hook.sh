@@ -3,8 +3,8 @@ set -euo noglob
 
 VALID_TYPES="build|ci|chore|docs|feat|fix|perf|refactor|revert|style|test"
 COMMIT_MESSAGE=$(cat "$1")
-OUTPUT=$(echo "$COMMIT_MESSAGE" | awk "/^($VALID_TYPES)(\(.*\))?(!|)?: .*/");
-if [ ${#OUTPUT} -gt 0 ]; then
+OUTPUT=$(echo "$COMMIT_MESSAGE" | sed -n 1p | sed -E "s/^($VALID_TYPES)(\(.*\))?(\!|\\\!)?: .*//");
+if [ ${#OUTPUT} -eq 0 ] && [ ${#COMMIT_MESSAGE} -ne 0 ]; then
   exit 0;
 else
   echo "Commit message does not follow Conventional Commits."
@@ -15,3 +15,4 @@ else
   echo "For more information see https://www.conventionalcommits.org"
   exit 1;
 fi
+
