@@ -351,13 +351,13 @@ example:
 
 ```clojure
 (deftemplate runner (Fn [(Ptr ()) (Ptr ())] a)
-                    "$a $NAME(void* fn, void* args)"
-                    "$a $NAME(void* fnptr, void* args) {
+                    "$a $NAME(void* fnptr, void* args)"
+                    "$DECL {
                        return (($a(*)(void*))fnptr)(args);
                     }")
 
 ; Using a lambda capturing variables from its environment
-(let [x 20 y 22 fnfn (fn [] (+ &x &y))]
+(let [x 20 y 22 fnfn (fn [] (+ @&x @&y))]
   (= (runner (Function.unsafe-ptr &fnfn) (Function.unsafe-env-ptr &fnfn))
      42))
 
@@ -382,5 +382,5 @@ from a `Ref` into a `(Ptr ())`.
 Because everything gets turned into a void pointer all type safety is lost so
 it is the responsibility of the caller to ensure the operation is safe. It is
 also important to ensure the lifetime of the `Ptr` doesn't not exceed the
-lifetime of the function/env it represent.
+lifetime of the function/env it represents.
 

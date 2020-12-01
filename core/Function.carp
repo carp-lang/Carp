@@ -3,7 +3,7 @@
 
   This is unsafe as unsafe-ptr can't check the value passed in is a function.
 
-  It is the responsability of the caller to ensure that the lifetime of the pointer
+  It is the responsibility of the caller to ensure that the lifetime of the pointer
   does not exceed the lifetime of the function it's used on.")
   (deftemplate unsafe-ptr (Fn [(Ref a)] (Ptr ())) "void* $NAME($a *fn)" "$DECL { return fn->callback; }")
 
@@ -11,6 +11,6 @@
 
   This is unsafe as unsafe-env-ptr can't check the value passed in is a function.
 
-  It is the responsability of the caller to ensure that the lifetime of the pointer
+  It is the responsibility of the caller to ensure that the lifetime of the pointer
   does not exceed the lifetime of the function it's used on.")
   (deftemplate unsafe-env-ptr (Fn [(Ref a)] (Ptr ())) "void* $NAME($a *fn)" "$DECL { return fn->env; }"))
