@@ -16,14 +16,15 @@ repo_root=$(git rev-parse --show-toplevel)
 
 if [ "${1-}" = "--only-changed" ]; then
   cd "$repo_root"
-  changed_haskell_files="$(git diff --relative --name-only head | sed '/.*\.hs$/!d')"
-  if [ "$changed_haskell_files" = '' ]; then
-    exit 0
-  fi
+  changed_haskell_files=$(git diff --cached --name-only --diff-filter=ACMR "*.hs" | sed 's| |\\ |g')
+  [ -z "$changed_haskell_files" ] && exit 0
   check_ormolu_installed
-  ormolu --mode inplace $(git diff --relative --name-only head | sed '/.*\.hs$/!d')
+  ormolu --mode inplace $changed_haskell_files
+  echo $changed_haskell_files
 else
   check_ormolu_installed
-  ormolu --mode inplace $(find $repo_root -name '*.hs')
+  cd "$repo_root"
+  ormolu --mode inplace ./**/*.hs
+  echo ./**/*.hs
 fi
 
