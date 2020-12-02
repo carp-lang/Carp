@@ -267,7 +267,7 @@ toC toCMode (Binder meta root) = emitterSrc (execState (visit startingIndent roo
                             ++ ";\n"
                         )
                   )
-                  capturedVars
+                  (remove (isUnit . forceTy) capturedVars)
             appendToSrc (addIndent indent ++ "Lambda " ++ retVar ++ " = {\n")
             appendToSrc (addIndent indent ++ "  .callback = (void*)" ++ callbackMangled ++ ",\n")
             appendToSrc (addIndent indent ++ "  .env = " ++ (if needEnv then lambdaEnvName else "NULL") ++ ",\n")
@@ -303,7 +303,7 @@ toC toCMode (Binder meta root) = emitterSrc (execState (visit startingIndent roo
                       do
                         ret <- visit indent' expr
                         let Just bindingTy = xobjTy expr
-                        when (bindingTy /= UnitTy) $
+                        when ((not . isUnit) bindingTy) $
                           appendToSrc (addIndent indent' ++ tyToCLambdaFix bindingTy ++ " " ++ mangle symName ++ " = " ++ ret ++ ";\n")
                     letBindingToC _ _ = error "Invalid binding."
                 mapM_ (uncurry letBindingToC) (pairwise bindings)
@@ -349,9 +349,10 @@ toC toCMode (Binder meta root) = emitterSrc (execState (visit startingIndent roo
                 -- A better idea is to not specialise the names, which happens when calling 'concretize' on the lhs
                 -- This requires a bunch of extra machinery though, so this will do for now...
 
-                -- TODO probably we want to filter Units from caseMatchers here
                 [var ++ periodOrArrow ++ "_tag == " ++ tagName caseTy (removeSuffix caseName)]
-                  ++ concat (zipWith (\c i -> tagCondition (var ++ periodOrArrow ++ "u." ++ removeSuffix caseName ++ ".member" ++ show i) "." (forceTy c) c) caseMatchers ([0 ..] :: [Int]))
+                  ++ concat (zipWith (\c i -> tagCondition (var ++ periodOrArrow ++ "u." ++ removeSuffix caseName ++ ".member" ++ show i) "." (forceTy c) c) unitless ([0 ..] :: [Int]))
+                where
+                  unitless = remove (isUnit . forceTy) caseMatchers
               tagCondition _ _ _ _ =
                 []
               --error ("tagCondition fell through: " ++ show x)
