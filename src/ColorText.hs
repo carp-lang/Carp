@@ -1,9 +1,8 @@
 module ColorText where
 
-import System.Console.ANSI hiding (Blue, Red, Yellow, Green, White)
+import System.Console.ANSI hiding (Blue, Green, Red, White, Yellow)
 import System.Exit (exitFailure)
 import System.IO
-
 import Util
 
 data TextColor = Blue | Red | Yellow | Green | White
@@ -15,11 +14,11 @@ strWithColor color str =
     _ -> "\x1b[" ++ col ++ "m" ++ str ++ "\x1b[0m"
       where
         col = case color of
-                Red -> "31"
-                Green -> "32"
-                Yellow -> "33"
-                Blue -> "34"
-                White -> "37" -- TODO: Use 0 instead?
+          Red -> "31"
+          Green -> "32"
+          Yellow -> "33"
+          Blue -> "34"
+          White -> "37" -- TODO: Use 0 instead?
 
 putStrWithColor :: TextColor -> String -> IO ()
 putStrWithColor color str =
