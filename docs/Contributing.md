@@ -14,8 +14,8 @@ See [Hacking.md](hacking.md) for a gentle introduction to the Carp compiler inte
 ## Committing to the repo
 We follow [Conventional Commits](https://www.conventionalcommits.org), there is
 a `commit-msg` hook to ensure the messages follow the convention, please make
-sure you have run `scripts/setup-git-hooks.sh` before you commit the first time
-so that the hook is in place.
+sure you have run `./scripts/git-hooks/setup.sh` before you commit the first
+time so that the hook is in place.
 
 License
 -------
