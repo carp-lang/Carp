@@ -1,13 +1,17 @@
 #!/bin/sh
 set -eu
 
+echoerr() {
+  echo "$@" >&2
+}
+
 check_ormolu_installed() {
   if ! command -v ormolu >/dev/null 2>&1
   then
-    echo "'ormolu' is needed to format Haskell files"
-    echo "On MacOS it is available in brew: 'brew install ormolu'"
-    echo "Otherwise it can be installed using stack: 'stack install ormolu'"
-    echo "The last command needs to be run outside of the repository"
+    echoerr "'ormolu' is needed to format Haskell files"
+    echoerr "On MacOS it is available in brew: 'brew install ormolu'"
+    echoerr "Otherwise it can be installed using stack: 'stack install ormolu'"
+    echoerr "The last command needs to be run outside of the repository"
     exit 1
   fi
 }
