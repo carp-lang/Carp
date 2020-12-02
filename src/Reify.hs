@@ -2,10 +2,10 @@
 -- corresponding representations in the Carp language.
 module Reify where
 
-import Types
 import Obj
+import Types
 
--- | The Reifiable class ranges over internal Carp compiler types that 
+-- | The Reifiable class ranges over internal Carp compiler types that
 -- may have corresponding representations in Carp itself.
 class Reifiable a where
   reify :: a -> XObj
@@ -15,7 +15,7 @@ symbol x = XObj (Sym (SymPath [] (show x)) Symbol) Nothing Nothing
 
 -- Show on strings results in a symbol that includes quotes ""
 -- This function is the same as symbol, for string literals.
-literal :: String -> XObj 
+literal :: String -> XObj
 literal x = XObj (Sym (SymPath [] x) Symbol) Nothing Nothing
 
 array :: (Reifiable a) => [a] -> XObj
