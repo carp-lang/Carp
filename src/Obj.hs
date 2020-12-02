@@ -1,41 +1,45 @@
 module Obj where
 
-import qualified Data.Map as Map
-import qualified Data.Set as Set
-import Data.List (intercalate)
-import Data.Maybe (fromMaybe)
 import Control.Monad.State
 import Data.Char
+import Data.List (intercalate)
+import qualified Data.Map as Map
+import Data.Maybe (fromMaybe)
+import qualified Data.Set as Set
+import Info
+import Project
 import SymPath
 import Types
 import TypesToC
 import Util
-import Info
-import Project
 
 -- | Will the lookup look at other Carp code or at C code. This matters when calling functions, should they assume it's a lambda or a normal C function?
-data GlobalMode = CarpLand
-                | ExternalCode
-                deriving (Eq, Show, Ord)
+data GlobalMode
+  = CarpLand
+  | ExternalCode
+  deriving (Eq, Show, Ord)
 
 -- | Will the lookup look at a global variable
-data DefinitionMode = AVariable
-                    | AFunction
-                    deriving (Eq, Show, Ord)
+data DefinitionMode
+  = AVariable
+  | AFunction
+  deriving (Eq, Show, Ord)
 
 -- | For local lookups, does the variable live in the current function or is it captured from outside it's body?
-data CaptureMode = NoCapture
-                 | Capture Int
-                 deriving (Eq, Show, Ord)
+data CaptureMode
+  = NoCapture
+  | Capture Int
+  deriving (Eq, Show, Ord)
 
 -- | A symbol knows a bit about what it refers to - is it a local scope or a global one? (the latter include modules).
 -- | A symbol that is not used for looking up things will use the 'Symbol' case.
-data SymbolMode = Symbol
-                | LookupLocal CaptureMode
-                | LookupRecursive
-                | LookupGlobal GlobalMode DefinitionMode
-                | LookupGlobalOverride String -- Used to emit another name than the one used in the Carp program.
-                deriving (Eq, Show, Ord)
+data SymbolMode
+  = Symbol
+  | LookupLocal CaptureMode
+  | LookupRecursive
+  | LookupGlobal GlobalMode DefinitionMode
+  | LookupGlobalOverride String -- Used to emit another name than the one used in the Carp program.
+  deriving (Eq, Show, Ord)
 
 isLookupGlobal :: SymbolMode -> Bool
 isLookupGlobal (LookupGlobal _ _) = True
@@ -50,20 +54,19 @@ data MatchMode = MatchValue | MatchRef deriving (Eq, Show)
 data Number = Floating Double | Integral Int deriving (Eq, Ord)
 
 instance Num Number where
-    (Floating a) + (Floating b) = Floating (a + b)
-    (Integral a) + (Integral b) = Integral (a + b)
-    _ + _ = error "+"
-    (Floating a) * (Floating b) = Floating (a * b)
-    (Integral a) * (Integral b) = Integral (a * b)
-    _ * _ = error "*"
-    negate (Floating a) = Floating (negate a)
-    negate (Integral a) = Integral (negate a)
-    abs (Floating a) = Floating (abs a)
-    abs (Integral a) = Integral (abs a)
-    signum (Floating a) = Floating (signum a)
-    signum (Integral a) = Integral (signum a)
-    fromInteger a = Integral (fromInteger a)
-
+  (Floating a) + (Floating b) = Floating (a + b)
+  (Integral a) + (Integral b) = Integral (a + b)
+  _ + _ = error "+"
+  (Floating a) * (Floating b) = Floating (a * b)
+  (Integral a) * (Integral b) = Integral (a * b)
+  _ * _ = error "*"
+  negate (Floating a) = Floating (negate a)
+  negate (Integral a) = Integral (negate a)
+  abs (Floating a) = Floating (abs a)
+  abs (Integral a) = Integral (abs a)
+  signum (Floating a) = Floating (signum a)
+  signum (Integral a) = Integral (signum a)
+  fromInteger a = Integral (fromInteger a)
 
 instance Real Number where
   toRational (Integral a) = toRational a
@@ -78,7 +81,7 @@ instance Fractional Number where
   recip (Floating a) = Floating (recip a)
 
 instance Integral Number where
-  quotRem (Integral a) (Integral b) = let (q,r) = quotRem a b in (Integral q, Integral r)
+  quotRem (Integral a) (Integral b) = let (q, r) = quotRem a b in (Integral q, Integral r)
   quotRem _ _ = error "quotRem"
   toInteger (Integral a) = toInteger a
   toInteger _ = error "toInteger"
@@ -88,59 +91,60 @@ instance Show Number where
   show (Integral a) = show a
 
 -- | The canonical Lisp object.
-data Obj = Sym SymPath SymbolMode
-         | MultiSym String [SymPath] -- refering to multiple functions with the same name
-         | InterfaceSym String -- refering to an interface. TODO: rename to InterfaceLookupSym?
-         | Num Ty Number
-         | Str String
-         | Pattern String
-         | Chr Char
-         | Bol Bool
-         | Lst [XObj]
-         | Arr [XObj]
-         | StaticArr [XObj]
-         | Dict (Map.Map XObj XObj)
-         | Closure XObj ClosureContext
-         | Defn (Maybe (Set.Set XObj)) -- if this is a lifted lambda it needs the set of captured variables
-         | Def
-         | Fn (Maybe SymPath) (Set.Set XObj) -- the name of the lifted function, the set of variables this lambda captures, and a dynamic environment
-         | Do
-         | Let
-         | LetDef
-         | While
-         | Break
-         | If
-         | Match MatchMode
-         | Mod Env
-         | Deftype Ty
-         | DefSumtype Ty
-         | With
-         | External (Maybe String)
-         | ExternalType (Maybe String)
-         | MetaStub
-         | Deftemplate TemplateCreator
-         | Instantiate Template
-         | Defalias Ty
-         | Address
-         | SetBang
-         | Macro
-         | Dynamic -- DefnDynamic
-         | DefDynamic
-         | Command CommandFunctionType
-         | Primitive PrimitiveFunctionType
-         | The
-         | Ref
-         | Deref
-         | Interface Ty [SymPath]
-         deriving (Show, Eq)
+data Obj
+  = Sym SymPath SymbolMode
+  | MultiSym String [SymPath] -- refering to multiple functions with the same name
+  | InterfaceSym String -- refering to an interface. TODO: rename to InterfaceLookupSym?
+  | Num Ty Number
+  | Str String
+  | Pattern String
+  | Chr Char
+  | Bol Bool
+  | Lst [XObj]
+  | Arr [XObj]
+  | StaticArr [XObj]
+  | Dict (Map.Map XObj XObj)
+  | Closure XObj ClosureContext
+  | Defn (Maybe (Set.Set XObj)) -- if this is a lifted lambda it needs the set of captured variables
+  | Def
+  | Fn (Maybe SymPath) (Set.Set XObj) -- the name of the lifted function, the set of variables this lambda captures, and a dynamic environment
+  | Do
+  | Let
+  | LetDef
+  | While
+  | Break
+  | If
+  | Match MatchMode
+  | Mod Env
+  | Deftype Ty
+  | DefSumtype Ty
+  | With
+  | External (Maybe String)
+  | ExternalType (Maybe String)
+  | MetaStub
+  | Deftemplate TemplateCreator
+  | Instantiate Template
+  | Defalias Ty
+  | Address
+  | SetBang
+  | Macro
+  | Dynamic -- DefnDynamic
+  | DefDynamic
+  | Command CommandFunctionType
+  | Primitive PrimitiveFunctionType
+  | The
+  | Ref
+  | Deref
+  | Interface Ty [SymPath]
+  deriving (Show, Eq)
 
 isGlobalFunc :: XObj -> Bool
 isGlobalFunc xobj =
   case xobj of
-    XObj (InterfaceSym _) _ (Just FuncTy{}) -> True
-    XObj (MultiSym _ _) _ (Just FuncTy{}) -> True
-    XObj (Sym _ (LookupGlobal _ _)) _ (Just FuncTy{}) -> True
-    XObj (Sym _ (LookupGlobalOverride _)) _ (Just FuncTy{}) -> True
+    XObj (InterfaceSym _) _ (Just FuncTy {}) -> True
+    XObj (MultiSym _ _) _ (Just FuncTy {}) -> True
+    XObj (Sym _ (LookupGlobal _ _)) _ (Just FuncTy {}) -> True
+    XObj (Sym _ (LookupGlobalOverride _)) _ (Just FuncTy {}) -> True
     _ -> False
 
 isNumericLiteral :: XObj -> Bool
@@ -177,12 +181,13 @@ instance Ord Obj where
   compare (Str a) (Str b) = compare a b
   compare (Num _ a) (Num _ b) = compare a b
   compare a b = compare (show a) (show b)
-  -- TODO: handle comparison of lists, arrays and dictionaries
+
+-- TODO: handle comparison of lists, arrays and dictionaries
 
 -- | The type of primitive functions. See Primitives.hs
 type Primitive = XObj -> Context -> [XObj] -> IO (Context, Either EvalError XObj)
 
-newtype PrimitiveFunctionType = PrimitiveFunction { getPrimitive :: Primitive }
+newtype PrimitiveFunctionType = PrimitiveFunction {getPrimitive :: Primitive}
 
 instance Eq PrimitiveFunctionType where
   _ == _ = True
@@ -192,7 +197,7 @@ instance Show PrimitiveFunctionType where
 
 type CommandCallback = Context -> [XObj] -> IO (Context, Either EvalError XObj)
 
-newtype CommandFunctionType = CommandFunction { getCommand :: CommandCallback }
+newtype CommandFunctionType = CommandFunction {getCommand :: CommandCallback}
 
 instance Eq CommandFunctionType where
   _ == _ = True
@@ -200,8 +205,7 @@ instance Eq CommandFunctionType where
 instance Show CommandFunctionType where
   show _ = "CommandFunction { ... }"
 
-
-newtype TemplateCreator = TemplateCreator { getTemplateCreator :: TypeEnv -> Env -> Template }
+newtype TemplateCreator = TemplateCreator {getTemplateCreator :: TypeEnv -> Env -> Template}
 
 instance Show TemplateCreator where
   show _ = "TemplateCreator"
@@ -213,8 +217,8 @@ instance Eq TemplateCreator where
 
 prettyInfoFromXObj :: XObj -> String
 prettyInfoFromXObj xobj = case xobjInfo xobj of
-                            Just i -> prettyInfo i
-                            Nothing -> "no info"
+  Just i -> prettyInfo i
+  Nothing -> "no info"
 
 machineReadableInfoFromXObj :: FilePathPrintLength -> XObj -> String
 machineReadableInfoFromXObj fppl xobj =
@@ -223,10 +227,13 @@ machineReadableInfoFromXObj fppl xobj =
     Nothing -> ""
 
 -- | Obj with eXtra information.
-data XObj = XObj { xobjObj :: Obj
-                 , xobjInfo :: Maybe Info
-                 , xobjTy :: Maybe Ty
-                 } deriving (Show, Eq, Ord)
+data XObj
+  = XObj
+      { xobjObj :: Obj,
+        xobjInfo :: Maybe Info,
+        xobjTy :: Maybe Ty
+      }
+  deriving (Show, Eq, Ord)
 
 getBinderDescription :: XObj -> String
 getBinderDescription (XObj (Lst (XObj (Defn _) _ _ : XObj (Sym _ _) _ _ : _)) _ _) = "defn"
@@ -256,16 +263,19 @@ getSimpleName xobj = let SymPath _ name = getPath xobj in name
 getSimpleNameWithArgs :: XObj -> Maybe String
 getSimpleNameWithArgs xobj@(XObj (Lst (XObj (Defn _) _ _ : _ : XObj (Arr args) _ _ : _)) _ _) =
   Just $
-    "(" ++ getSimpleName xobj ++ (if not (null args) then " " else "") ++
-    unwords (map getSimpleName args) ++ ")"
+    "(" ++ getSimpleName xobj ++ (if not (null args) then " " else "")
+      ++ unwords (map getSimpleName args)
+      ++ ")"
 getSimpleNameWithArgs xobj@(XObj (Lst (XObj Macro _ _ : _ : XObj (Arr args) _ _ : _)) _ _) =
   Just $
-    "(" ++ getSimpleName xobj ++ (if not (null args) then " " else "") ++
-    unwords (map getSimpleName args) ++ ")"
+    "(" ++ getSimpleName xobj ++ (if not (null args) then " " else "")
+      ++ unwords (map getSimpleName args)
+      ++ ")"
 getSimpleNameWithArgs xobj@(XObj (Lst (XObj Dynamic _ _ : _ : XObj (Arr args) _ _ : _)) _ _) =
   Just $
-    "(" ++ getSimpleName xobj ++ (if not (null args) then " " else "") ++
-    unwords (map getSimpleName args) ++ ")"
+    "(" ++ getSimpleName xobj ++ (if not (null args) then " " else "")
+      ++ unwords (map getSimpleName args)
+      ++ ")"
 getSimpleNameWithArgs _ = Nothing
 
 -- | Extracts the second form (where the name of definitions are stored) from a list of XObj:s.
@@ -302,198 +312,207 @@ setPath x _ =
 -- | Convert an XObj to a pretty string representation.
 pretty :: XObj -> String
 pretty = visit 0
-  where visit :: Int -> XObj -> String
-        visit indent xobj =
-          case xobjObj xobj of
-            Lst lst -> "(" ++ joinWithSpace (map (visit indent) lst) ++ ")"
-            Arr arr -> "[" ++ joinWithSpace (map (visit indent) arr) ++ "]"
-            StaticArr arr -> "$[" ++ joinWithSpace (map (visit indent) arr) ++ "]"
-            Dict dict -> "{" ++ joinWithSpace (map (visit indent) (concatMap (\(a, b) -> [a, b]) (Map.toList dict))) ++ "}"
-            Num IntTy num -> show num
-            Num LongTy num -> show num ++ "l"
-            Num ByteTy num -> show num ++ "b"
-            Num FloatTy num -> show num ++ "f"
-            Num DoubleTy num -> show num
-            Num _ _ -> error "Invalid number type."
-            Str str -> show str
-            Pattern str -> '#' : show str
-            Chr c -> '\\' : c : ""
-            Sym path _ -> show path -- ++ " <" ++ show mode ++ ">"
-            MultiSym originalName paths -> originalName ++ "{" ++ joinWithComma (map show paths) ++ "}"
-            InterfaceSym name -> name -- ++ "§"
-            Bol b -> if b then "true" else "false"
-            Defn maybeCaptures -> "defn" ++ case maybeCaptures of
-                                              Just captures -> " <" ++ prettyCaptures captures ++ ">"
-                                              Nothing -> ""
-            Def -> "def"
-            Fn _ captures -> "fn" ++ " <" ++ prettyCaptures captures ++ ">"
-            Closure elt _ -> "closure<" ++ pretty elt ++ ">"
-            If -> "if"
-            Match MatchValue -> "match"
-            Match MatchRef -> "match-ref"
-            While -> "while"
-            Do -> "do"
-            Let -> "let"
-            LetDef -> "let"
-            Mod env -> fromMaybe "module" (envModuleName env)
-            Deftype _ -> "deftype"
-            DefSumtype _ -> "deftype"
-            Deftemplate _ -> "deftemplate"
-            Instantiate _ -> "instantiate"
-            External Nothing -> "external"
-            External (Just override) -> "external (override: " ++ show override ++ ")"
-            ExternalType (Just override) -> "external-type (override: " ++ show override ++ ")"
-            MetaStub -> "meta-stub"
-            Defalias _ -> "defalias"
-            Address -> "address"
-            SetBang -> "set!"
-            Macro -> "macro"
-            Dynamic -> "dynamic"
-            DefDynamic -> "defdynamic"
-            Command _ -> "command"
-            Primitive _ -> "primitive"
-            The -> "the"
-            Ref -> "ref"
-            Deref -> "deref"
-            Break -> "break"
-            Interface _ _ -> "interface"
-            With -> "with"
+  where
+    visit :: Int -> XObj -> String
+    visit indent xobj =
+      case xobjObj xobj of
+        Lst lst -> "(" ++ joinWithSpace (map (visit indent) lst) ++ ")"
+        Arr arr -> "[" ++ joinWithSpace (map (visit indent) arr) ++ "]"
+        StaticArr arr -> "$[" ++ joinWithSpace (map (visit indent) arr) ++ "]"
+        Dict dict -> "{" ++ joinWithSpace (map (visit indent) (concatMap (\(a, b) -> [a, b]) (Map.toList dict))) ++ "}"
+        Num IntTy num -> show num
+        Num LongTy num -> show num ++ "l"
+        Num ByteTy num -> show num ++ "b"
+        Num FloatTy num -> show num ++ "f"
+        Num DoubleTy num -> show num
+        Num _ _ -> error "Invalid number type."
+        Str str -> show str
+        Pattern str -> '#' : show str
+        Chr c -> '\\' : c : ""
+        Sym path _ -> show path -- ++ " <" ++ show mode ++ ">"
+        MultiSym originalName paths -> originalName ++ "{" ++ joinWithComma (map show paths) ++ "}"
+        InterfaceSym name -> name -- ++ "§"
+        Bol b -> if b then "true" else "false"
+        Defn maybeCaptures -> "defn" ++ case maybeCaptures of
+          Just captures -> " <" ++ prettyCaptures captures ++ ">"
+          Nothing -> ""
+        Def -> "def"
+        Fn _ captures -> "fn" ++ " <" ++ prettyCaptures captures ++ ">"
+        Closure elt _ -> "closure<" ++ pretty elt ++ ">"
+        If -> "if"
+        Match MatchValue -> "match"
+        Match MatchRef -> "match-ref"
+        While -> "while"
+        Do -> "do"
+        Let -> "let"
+        LetDef -> "let"
+        Mod env -> fromMaybe "module" (envModuleName env)
+        Deftype _ -> "deftype"
+        DefSumtype _ -> "deftype"
+        Deftemplate _ -> "deftemplate"
+        Instantiate _ -> "instantiate"
+        External Nothing -> "external"
+        External (Just override) -> "external (override: " ++ show override ++ ")"
+        ExternalType (Just override) -> "external-type (override: " ++ show override ++ ")"
+        MetaStub -> "meta-stub"
+        Defalias _ -> "defalias"
+        Address -> "address"
+        SetBang -> "set!"
+        Macro -> "macro"
+        Dynamic -> "dynamic"
+        DefDynamic -> "defdynamic"
+        Command _ -> "command"
+        Primitive _ -> "primitive"
+        The -> "the"
+        Ref -> "ref"
+        Deref -> "deref"
+        Break -> "break"
+        Interface _ _ -> "interface"
+        With -> "with"
 
 prettyUpTo :: Int -> XObj -> String
 prettyUpTo lim xobj =
   let prettied = pretty xobj
-  in if length prettied > lim
-     then take lim prettied ++ "..." ++ end
-     else prettied
-  where end =
-          -- we match all of them explicitly to get errors if we forget one
-          case xobjObj xobj of
-            Lst _ -> ")"
-            Arr _ -> "]"
-            Dict _ -> "}"
-            Num LongTy _ -> "l"
-            Num IntTy _ -> ""
-            Num ByteTy _ -> "b"
-            Num FloatTy _ -> "f"
-            Num DoubleTy _ -> ""
-            Num _ _ -> error "Invalid number type."
-            Str _ -> ""
-            Pattern _ -> ""
-            Chr _ -> ""
-            Sym _ _ -> ""
-            MultiSym _ _ -> "}"
-            InterfaceSym _ -> ""
-            Bol _ -> ""
-            Defn maybeCaptures ->
-              case maybeCaptures of
-                Just _ -> ">"
-                Nothing -> ""
-            Def -> ""
-            Fn _ _ -> ">"
-            Closure _ _ -> ">"
-            If -> ""
-            Match _ -> ""
-            While -> ""
-            Do -> ""
-            Let -> ""
-            LetDef -> ""
-            Mod _ -> ""
-            Deftype _ -> ""
-            DefSumtype _ -> ""
-            Deftemplate _ -> ""
-            Instantiate _ -> ""
-            External Nothing -> ""
-            External (Just _) -> ")"
-            ExternalType Nothing -> ""
-            ExternalType (Just _) -> ")"
-            MetaStub -> ""
-            Defalias _ -> ""
-            Address -> ""
-            SetBang -> ""
-            Macro -> ""
-            Dynamic -> ""
-            DefDynamic -> ""
-            Command _ -> ""
-            Primitive _ -> ""
-            The -> ""
-            Ref -> ""
-            Deref -> ""
-            Break -> ""
-            Interface _ _ -> ""
-            With -> ""
+   in if length prettied > lim
+        then take lim prettied ++ "..." ++ end
+        else prettied
+  where
+    end =
+      -- we match all of them explicitly to get errors if we forget one
+      case xobjObj xobj of
+        Lst _ -> ")"
+        Arr _ -> "]"
+        Dict _ -> "}"
+        Num LongTy _ -> "l"
+        Num IntTy _ -> ""
+        Num ByteTy _ -> "b"
+        Num FloatTy _ -> "f"
+        Num DoubleTy _ -> ""
+        Num _ _ -> error "Invalid number type."
+        Str _ -> ""
+        Pattern _ -> ""
+        Chr _ -> ""
+        Sym _ _ -> ""
+        MultiSym _ _ -> "}"
+        InterfaceSym _ -> ""
+        Bol _ -> ""
+        Defn maybeCaptures ->
+          case maybeCaptures of
+            Just _ -> ">"
+            Nothing -> ""
+        Def -> ""
+        Fn _ _ -> ">"
+        Closure _ _ -> ">"
+        If -> ""
+        Match _ -> ""
+        While -> ""
+        Do -> ""
+        Let -> ""
+        LetDef -> ""
+        Mod _ -> ""
+        Deftype _ -> ""
+        DefSumtype _ -> ""
+        Deftemplate _ -> ""
+        Instantiate _ -> ""
+        External Nothing -> ""
+        External (Just _) -> ")"
+        ExternalType Nothing -> ""
+        ExternalType (Just _) -> ")"
+        MetaStub -> ""
+        Defalias _ -> ""
+        Address -> ""
+        SetBang -> ""
+        Macro -> ""
+        Dynamic -> ""
+        DefDynamic -> ""
+        Command _ -> ""
+        Primitive _ -> ""
+        The -> ""
+        Ref -> ""
+        Deref -> ""
+        Break -> ""
+        Interface _ _ -> ""
+        With -> ""
 
 prettyCaptures :: Set.Set XObj -> String
 prettyCaptures captures =
   joinWithComma (map (\x -> getName x ++ " : " ++ fromMaybe "" (fmap show (xobjTy x))) (Set.toList captures))
 
-data EvalError = EvalError String [XObj] FilePathPrintLength (Maybe Info)
-               | HasStaticCall XObj (Maybe Info)
-               deriving (Eq)
+data EvalError
+  = EvalError String [XObj] FilePathPrintLength (Maybe Info)
+  | HasStaticCall XObj (Maybe Info)
+  deriving (Eq)
 
 instance Show EvalError where
-  show (HasStaticCall xobj info) = "Expression " ++ (pretty xobj) ++ " has unexpected static call"++ showInfo info
-    where showInfo (Just i) = " at " ++ prettyInfo i ++ "."
-          showInfo Nothing = ""
+  show (HasStaticCall xobj info) = "Expression " ++ (pretty xobj) ++ " has unexpected static call" ++ showInfo info
+    where
+      showInfo (Just i) = " at " ++ prettyInfo i ++ "."
+      showInfo Nothing = ""
   show (EvalError msg t fppl info) = msg ++ showInfo info ++ getTrace
-    where showInfo (Just i) = " at " ++ machineReadableInfo fppl i ++ "."
-          showInfo Nothing = ""
-          getTrace =
-            if null t
-            then ""
-            else
-              "\n\nTraceback:\n" ++
-              unlines (map (\x -> prettyUpTo 60 x ++ showInfo (xobjInfo x)) t)
+    where
+      showInfo (Just i) = " at " ++ machineReadableInfo fppl i ++ "."
+      showInfo Nothing = ""
+      getTrace =
+        if null t
+          then ""
+          else
+            "\n\nTraceback:\n"
+              ++ unlines (map (\x -> prettyUpTo 60 x ++ showInfo (xobjInfo x)) t)
 
 -- | Get the type of an XObj as a string.
 typeStr :: XObj -> String
 typeStr xobj = case xobjTy xobj of
-                 Nothing -> "" --" : _"
-                 Just t -> " : " ++ show t
+  Nothing -> "" --" : _"
+  Just t -> " : " ++ show t
 
 -- | Get the identifier of an XObj as a string.
 identifierStr :: XObj -> String
 identifierStr xobj = case xobjInfo xobj of
-                       Just i -> "#" ++ show (infoIdentifier i)
-                       Nothing -> "#?"
+  Just i -> "#" ++ show (infoIdentifier i)
+  Nothing -> "#?"
 
 -- | Get the deleters of an XObj as a string.
 deletersStr :: XObj -> String
 deletersStr xobj = case xobjInfo xobj of
-                     Just i -> joinWithComma (map show (Set.toList (infoDelete i)))
-                     Nothing -> ""
+  Just i -> joinWithComma (map show (Set.toList (infoDelete i)))
+  Nothing -> ""
 
 -- | Convert XObj to pretty string representation with type annotations.
 prettyTyped :: XObj -> String
 prettyTyped = visit 0
-  where visit :: Int -> XObj -> String
-        visit indent xobj =
-          let suffix = typeStr xobj ++ " " ++
-                       identifierStr xobj ++ " " ++
-                       deletersStr xobj ++ " " ++
-                       "\n"
-          in case xobjObj xobj of
-               Lst lst ->
-                 listPrinter "(" ")" lst suffix indent
-               Arr arr ->
-                 listPrinter "[" "]" arr suffix indent
-               StaticArr arr ->
-                 listPrinter "$[" "]" arr suffix indent
-               _ ->
-                 pretty xobj ++ suffix
-
-        listPrinter :: String -> String -> [XObj] -> String -> Int -> String
-        listPrinter opening closing xobjs suffix indent =
-          opening ++ "   " ++
-          joinWith (spaces (indent + 4)) (map (visit (indent + 4)) xobjs) ++
-          spaces indent ++ closing ++
-          suffix
+  where
+    visit :: Int -> XObj -> String
+    visit indent xobj =
+      let suffix =
+            typeStr xobj ++ " "
+              ++ identifierStr xobj
+              ++ " "
+              ++ deletersStr xobj
+              ++ " "
+              ++ "\n"
+       in case xobjObj xobj of
+            Lst lst ->
+              listPrinter "(" ")" lst suffix indent
+            Arr arr ->
+              listPrinter "[" "]" arr suffix indent
+            StaticArr arr ->
+              listPrinter "$[" "]" arr suffix indent
+            _ ->
+              pretty xobj ++ suffix
+    listPrinter :: String -> String -> [XObj] -> String -> Int -> String
+    listPrinter opening closing xobjs suffix indent =
+      opening ++ "   "
+        ++ joinWith (spaces (indent + 4)) (map (visit (indent + 4)) xobjs)
+        ++ spaces indent
+        ++ closing
+        ++ suffix
 
 spaces :: Int -> String
 spaces n =
   join (take n (repeat " "))
 
 -- | Datatype for holding meta data about a binder, like type annotation or docstring.
-newtype MetaData = MetaData { getMeta :: Map.Map String XObj } deriving (Eq, Show)
+newtype MetaData = MetaData {getMeta :: Map.Map String XObj} deriving (Eq, Show)
 
 emptyMeta :: MetaData
 emptyMeta = MetaData Map.empty
@@ -504,30 +523,36 @@ metaIsTrue metaData key =
     Just (XObj (Bol True) _ _) -> True
     _ -> False
 
-
-
 -- | Wraps and holds an XObj in an environment.
-data Binder = Binder { binderMeta :: MetaData, binderXObj :: XObj } deriving Eq
+data Binder = Binder {binderMeta :: MetaData, binderXObj :: XObj} deriving (Eq)
 
 instance Show Binder where
   show binder = showBinderIndented 0 (getName (binderXObj binder), binder)
 
 showBinderIndented :: Int -> (String, Binder) -> String
 showBinderIndented indent (name, Binder _ (XObj (Mod env) _ _)) =
-  replicate indent ' ' ++ name ++ " : Module = {\n" ++
-  prettyEnvironmentIndented (indent + 4) env ++
-  "\n" ++ replicate indent ' ' ++ "}"
+  replicate indent ' ' ++ name ++ " : Module = {\n"
+    ++ prettyEnvironmentIndented (indent + 4) env
+    ++ "\n"
+    ++ replicate indent ' '
+    ++ "}"
 showBinderIndented indent (name, Binder _ (XObj (Lst [XObj (Interface t paths) _ _, _]) _ _)) =
-  replicate indent ' ' ++ name ++ " : " ++ show t ++ " = {\n    " ++
-  joinWith "\n    " (map show paths) ++
-  "\n" ++ replicate indent ' ' ++ "}"
+  replicate indent ' ' ++ name ++ " : " ++ show t ++ " = {\n    "
+    ++ joinWith "\n    " (map show paths)
+    ++ "\n"
+    ++ replicate indent ' '
+    ++ "}"
 showBinderIndented indent (name, Binder meta xobj) =
   if metaIsTrue meta "hidden"
-  then ""
-  else replicate indent ' ' ++ name ++
-       -- " (" ++ show (getPath xobj) ++ ")" ++
-       " : " ++ showMaybeTy (xobjTy xobj)
-       -- ++ " <" ++ getBinderDescription xobj ++ ">"
+    then ""
+    else
+      replicate indent ' ' ++ name
+        ++
+        -- " (" ++ show (getPath xobj) ++ ")" ++
+        " : "
+        ++ showMaybeTy (xobjTy xobj)
+
+-- ++ " <" ++ getBinderDescription xobj ++ ">"
 
 -- | Get a list of pairs from a deftype declaration.
 memberXObjsToPairs :: [XObj] -> [(String, Ty)]
@@ -539,21 +564,34 @@ fromJustWithErrorMessage Nothing msg = error msg
 
 -- | Helper function to create binding pairs for registering external functions.
 register :: String -> Ty -> (String, Binder)
-register name t = (name, Binder emptyMeta
-                    (XObj (Lst [XObj (External Nothing) Nothing Nothing,
-                                XObj (Sym (SymPath [] name) Symbol) Nothing Nothing])
-                      (Just dummyInfo) (Just t)))
+register name t =
+  ( name,
+    Binder
+      emptyMeta
+      ( XObj
+          ( Lst
+              [ XObj (External Nothing) Nothing Nothing,
+                XObj (Sym (SymPath [] name) Symbol) Nothing Nothing
+              ]
+          )
+          (Just dummyInfo)
+          (Just t)
+      )
+  )
 
 data EnvMode = ExternalEnv | InternalEnv | RecursionEnv deriving (Show, Eq)
 
 -- | Environment
-data Env = Env { envBindings :: Map.Map String Binder
-               , envParent :: Maybe Env
-               , envModuleName :: Maybe String
-               , envUseModules :: [SymPath]
-               , envMode :: EnvMode
-               , envFunctionNestingLevel :: Int -- Normal defn:s have 0, lambdas get +1 for each level of nesting
-               } deriving (Show, Eq)
+data Env
+  = Env
+      { envBindings :: Map.Map String Binder,
+        envParent :: Maybe Env,
+        envModuleName :: Maybe String,
+        envUseModules :: [SymPath],
+        envMode :: EnvMode,
+        envFunctionNestingLevel :: Int -- Normal defn:s have 0, lambdas get +1 for each level of nesting
+      }
+  deriving (Show, Eq)
 
 newtype ClosureContext = CCtx Context
   deriving (Show)
@@ -561,8 +599,7 @@ newtype ClosureContext = CCtx Context
 instance Eq ClosureContext where
   _ == _ = True
 
-
-newtype TypeEnv = TypeEnv { getTypeEnv :: Env }
+newtype TypeEnv = TypeEnv {getTypeEnv :: Env}
 
 instance Show TypeEnv where
   show (TypeEnv env) = "(TypeEnv " ++ show env ++ ")"
@@ -572,10 +609,11 @@ safeEnvModuleName env =
   case envModuleName env of
     Just name -> name ++ ", with parent " ++ parent
     Nothing -> "???, with parent " ++ parent
-  where parent =
-          case envParent env of
-            Just p -> safeEnvModuleName p
-            Nothing -> "Global"
+  where
+    parent =
+      case envParent env of
+        Just p -> safeEnvModuleName p
+        Nothing -> "Global"
 
 -- | Used by the compiler command "(env)"
 prettyEnvironment :: Env -> String
@@ -583,11 +621,12 @@ prettyEnvironment = prettyEnvironmentIndented 0
 
 prettyEnvironmentIndented :: Int -> Env -> String
 prettyEnvironmentIndented indent env =
-  joinLines $ filter (/= "") (map (showBinderIndented indent) (Map.toList (envBindings env))) ++
-                  let modules = envUseModules env
-                  in  if null modules
-                      then []
-                      else ("\n" ++ replicate indent ' ' ++ "Used modules:") : map (showImportIndented indent) modules
+  joinLines $
+    filter (/= "") (map (showBinderIndented indent) (Map.toList (envBindings env)))
+      ++ let modules = envUseModules env
+          in if null modules
+               then []
+               else ("\n" ++ replicate indent ' ' ++ "Used modules:") : map (showImportIndented indent) modules
 
 -- | For debugging nested environments
 prettyEnvironmentChain :: Env -> String
@@ -595,14 +634,20 @@ prettyEnvironmentChain env =
   let bs = envBindings env
       name = fromMaybe "<env has no name>" (envModuleName env)
       otherInfo = "(" ++ show (envMode env) ++ ", lvl " ++ show (envFunctionNestingLevel env) ++ ")"
-  in  (if length bs < 20
-       then "'" ++ name ++ "' " ++ otherInfo ++ ":\n" ++ joinLines (filter (/= "")
-                                                 (map (showBinderIndented 4) (Map.toList (envBindings env))))
-       else "'" ++ name ++ "' " ++ otherInfo ++ ":\n    Too big to show bindings.")
-      ++
-      (case envParent env of
-          Just parent -> "\nWITH PARENT ENV " ++ prettyEnvironmentChain parent
-          Nothing -> "")
+   in ( if length bs < 20
+          then
+            "'" ++ name ++ "' " ++ otherInfo ++ ":\n"
+              ++ joinLines
+                ( filter
+                    (/= "")
+                    (map (showBinderIndented 4) (Map.toList (envBindings env)))
+                )
+          else "'" ++ name ++ "' " ++ otherInfo ++ ":\n    Too big to show bindings."
+      )
+        ++ ( case envParent env of
+               Just parent -> "\nWITH PARENT ENV " ++ prettyEnvironmentChain parent
+               Nothing -> ""
+           )
 
 pathToEnv :: Env -> [String]
 pathToEnv rootEnv = reverse (visit rootEnv)
@@ -611,17 +656,19 @@ pathToEnv rootEnv = reverse (visit rootEnv)
       case envModuleName env of
         Just name -> name : parent
         Nothing -> parent
-        where parent =
-                case envParent env of
-                  Just p -> visit p
-                  Nothing -> []
+      where
+        parent =
+          case envParent env of
+            Just p -> visit p
+            Nothing -> []
 
 showImportIndented :: Int -> SymPath -> String
 showImportIndented indent path = replicate indent ' ' ++ " * " ++ show path
 
 incrementEnvNestLevel :: Env -> Env
-incrementEnvNestLevel env = let current = envFunctionNestingLevel env
-                            in env { envFunctionNestingLevel = current + 1 }
+incrementEnvNestLevel env =
+  let current = envFunctionNestingLevel env
+   in env {envFunctionNestingLevel = current + 1}
 
 -- | Converts an S-expression to one of the Carp types.
 xobjToTy :: XObj -> Maybe Ty
@@ -636,23 +683,29 @@ xobjToTy (XObj (Sym (SymPath _ "Pattern") _) _ _) = Just PatternTy
 xobjToTy (XObj (Sym (SymPath _ "Char") _) _ _) = Just CharTy
 xobjToTy (XObj (Sym (SymPath _ "Bool") _) _ _) = Just BoolTy
 xobjToTy (XObj (Sym (SymPath _ "Static") _) _ _) = Just StaticLifetimeTy
-xobjToTy (XObj (Sym (SymPath _ s@(firstLetter:_)) _) _ _) | isLower firstLetter = Just (VarTy s)
-                                                          | otherwise = Just (StructTy (ConcreteNameTy s) [])
+xobjToTy (XObj (Sym (SymPath _ s@(firstLetter : _)) _) _ _)
+  | isLower firstLetter = Just (VarTy s)
+  | otherwise = Just (StructTy (ConcreteNameTy s) [])
 xobjToTy (XObj (Lst [XObj (Sym (SymPath _ "Ptr") _) _ _, innerTy]) _ _) =
-  do okInnerTy <- xobjToTy innerTy
-     pure (PointerTy okInnerTy)
+  do
+    okInnerTy <- xobjToTy innerTy
+    pure (PointerTy okInnerTy)
 xobjToTy (XObj (Lst (XObj (Sym (SymPath _ "Ptr") _) _ _ : _)) _ _) =
   Nothing
 xobjToTy (XObj (Lst [XObj (Sym (SymPath _ "Ref") _) _ _, innerTy]) i _) =
-  do okInnerTy <- xobjToTy innerTy
-     pure (RefTy okInnerTy (VarTy (makeTypeVariableNameFromInfo i)))
+  do
+    okInnerTy <- xobjToTy innerTy
+    pure (RefTy okInnerTy (VarTy (makeTypeVariableNameFromInfo i)))
 xobjToTy (XObj (Lst [XObj (Sym (SymPath _ "Ref") _) _ _, innerTy, lifetimeTy]) _ _) =
-  do okInnerTy <- xobjToTy innerTy
-     okLifetimeTy <- xobjToTy lifetimeTy
-     pure (RefTy okInnerTy okLifetimeTy)
-xobjToTy (XObj (Lst [XObj Ref _ _, innerTy]) i _) = -- This enables parsing of '&'
-  do okInnerTy <- xobjToTy innerTy
-     pure (RefTy okInnerTy (VarTy (makeTypeVariableNameFromInfo i)))
+  do
+    okInnerTy <- xobjToTy innerTy
+    okLifetimeTy <- xobjToTy lifetimeTy
+    pure (RefTy okInnerTy okLifetimeTy)
+xobjToTy (XObj (Lst [XObj Ref _ _, innerTy]) i _) =
+  -- This enables parsing of '&'
+  do
+    okInnerTy <- xobjToTy innerTy
+    pure (RefTy okInnerTy (VarTy (makeTypeVariableNameFromInfo i)))
 xobjToTy (XObj (Lst (XObj (Sym (SymPath _ "Ref") _) _ _ : _)) _ _) =
   Nothing
 xobjToTy (XObj (Lst [XObj (Sym (SymPath path "╬╗") _) fi ft, XObj (Arr argTys) ai at, retTy]) i t) =
@@ -660,22 +713,25 @@ xobjToTy (XObj (Lst [XObj (Sym (SymPath path "╬╗") _) fi ft, XObj (Arr argTy
 xobjToTy (XObj (Lst [XObj (Sym (SymPath path "λ") _) fi ft, XObj (Arr argTys) ai at, retTy]) i t) =
   xobjToTy (XObj (Lst [XObj (Sym (SymPath path "Fn") Symbol) fi ft, XObj (Arr argTys) ai at, retTy]) i t)
 xobjToTy (XObj (Lst [XObj (Sym (SymPath _ "Fn") _) _ _, XObj (Arr argTys) _ _, retTy]) _ _) =
-  do okArgTys <- mapM xobjToTy argTys
-     okRetTy <- xobjToTy retTy
-     pure (FuncTy okArgTys okRetTy StaticLifetimeTy)
+  do
+    okArgTys <- mapM xobjToTy argTys
+    okRetTy <- xobjToTy retTy
+    pure (FuncTy okArgTys okRetTy StaticLifetimeTy)
 xobjToTy (XObj (Lst [XObj (Sym (SymPath _ "Fn") _) _ _, XObj (Arr argTys) _ _, retTy, lifetime]) _ _) =
-  do okArgTys <- mapM xobjToTy argTys
-     okRetTy <- xobjToTy retTy
-     _ <- xobjToTy lifetime
-     pure (FuncTy okArgTys okRetTy StaticLifetimeTy)
+  do
+    okArgTys <- mapM xobjToTy argTys
+    okRetTy <- xobjToTy retTy
+    _ <- xobjToTy lifetime
+    pure (FuncTy okArgTys okRetTy StaticLifetimeTy)
 xobjToTy (XObj (Lst []) _ _) = Just UnitTy
-xobjToTy (XObj (Lst (x:xs)) _ _) =
-  do okX <- xobjToTy x
-     okXS <- mapM xobjToTy xs
-     case okX of
-       (StructTy n []) -> pure (StructTy n okXS)
-       v@(VarTy _) -> pure (StructTy v okXS) -- Struct type with type variable as a name, i.e. "(a b)"
-       _ -> Nothing
+xobjToTy (XObj (Lst (x : xs)) _ _) =
+  do
+    okX <- xobjToTy x
+    okXS <- mapM xobjToTy xs
+    case okX of
+      (StructTy n []) -> pure (StructTy n okXS)
+      v@(VarTy _) -> pure (StructTy v okXS) -- Struct type with type variable as a name, i.e. "(a b)"
+      _ -> Nothing
 xobjToTy _ = Nothing
 
 -- | Generates the suffix added to polymorphic functions when they are instantiated.
@@ -688,34 +744,41 @@ polymorphicSuffix signature actualType =
   case evalState (visit signature actualType) [] of
     [] -> ""
     parts -> "__" ++ intercalate "_" parts
-  where visit :: Ty -> Ty -> State VisitedTypes [String]
-        visit sig actual =
-          case (sig, actual) of
-            (VarTy _, VarTy _) -> -- error $ "Unsolved variable in actual type: " ++ show sig ++ " => " ++ show actual ++
-                                  --        " when calculating polymorphic suffix for " ++
-                                  --        show signature ++ " => " ++ show actualType
-                                  pure ["?"]
-            (a@(VarTy _), b) -> do visitedTypeVariables <- get
-                                   if a `elem` visitedTypeVariables
-                                     then pure []
-                                     else do put (a : visitedTypeVariables) -- now it's visited
-                                             pure [tyToC b]
-            (FuncTy argTysA retTyA _, FuncTy argTysB retTyB _) -> do visitedArgs <- fmap concat (zipWithM visit argTysA argTysB)
-                                                                     visitedRets <- visit retTyA retTyB
-                                                                     pure (visitedArgs ++ visitedRets)
-            (StructTy _ a, StructTy _ b) -> fmap concat (zipWithM visit a b)
-            (PointerTy a, PointerTy b) -> visit a b
-            (RefTy a _, RefTy b _) -> visit a b
-            (_, _) -> pure []
+  where
+    visit :: Ty -> Ty -> State VisitedTypes [String]
+    visit sig actual =
+      case (sig, actual) of
+        (VarTy _, VarTy _) ->
+          -- error $ "Unsolved variable in actual type: " ++ show sig ++ " => " ++ show actual ++
+          --        " when calculating polymorphic suffix for " ++
+          --        show signature ++ " => " ++ show actualType
+          pure ["?"]
+        (a@(VarTy _), b) -> do
+          visitedTypeVariables <- get
+          if a `elem` visitedTypeVariables
+            then pure []
+            else do
+              put (a : visitedTypeVariables) -- now it's visited
+              pure [tyToC b]
+        (FuncTy argTysA retTyA _, FuncTy argTysB retTyB _) -> do
+          visitedArgs <- fmap concat (zipWithM visit argTysA argTysB)
+          visitedRets <- visit retTyA retTyB
+          pure (visitedArgs ++ visitedRets)
+        (StructTy _ a, StructTy _ b) -> fmap concat (zipWithM visit a b)
+        (PointerTy a, PointerTy b) -> visit a b
+        (RefTy a _, RefTy b _) -> visit a b
+        (_, _) -> pure []
 
 type VisitedTypes = [Ty]
 
 -- | Templates are like macros, but defined inside the compiler and with access to the types they are instantiated with
-data Template = Template { templateSignature :: Ty
-                         , templateDeclaration :: Ty -> [Token] -- Will this parameterization ever be useful?
-                         , templateDefinition :: Ty -> [Token]
-                         , templateDependencies :: Ty -> [XObj]
-                         }
+data Template
+  = Template
+      { templateSignature :: Ty,
+        templateDeclaration :: Ty -> [Token], -- Will this parameterization ever be useful?
+        templateDefinition :: Ty -> [Token],
+        templateDependencies :: Ty -> [XObj]
+      }
 
 instance Show Template where
   show _ = "Template"
@@ -728,12 +791,13 @@ instance Eq Template where
 data TokTyMode = Normal | Raw deriving (Eq, Ord)
 
 -- | Tokens are used for emitting C code from templates.
-data Token = TokTy Ty TokTyMode -- | Some kind of type, will be looked up if it's a type variable.
-           | TokC String        -- | Plain C code.
-           | TokDecl            -- | Will emit the declaration (i.e. "foo(int x)"), this is useful
-                                --   for avoiding repetition in the definition part of the template.
-           | TokName            -- | Will emit the name of the instantiated function/variable.
-           deriving (Eq, Ord)
+data Token
+  = TokTy Ty TokTyMode -- Some kind of type, will be looked up if it's a type variable.
+  | TokC String -- Plain C code.
+  | TokDecl -- Will emit the declaration (i.e. "foo(int x)"), this is useful
+    --   for avoiding repetition in the definition part of the template.
+  | TokName -- Will emit the name of the instantiated function/variable.
+  deriving (Eq, Ord)
 
 instance Show Token where
   show (TokC s) = s
@@ -744,15 +808,21 @@ instance Show Token where
 
 instantiateTemplate :: SymPath -> Ty -> Template -> (XObj, [XObj])
 instantiateTemplate path actualType template =
-    let defLst = [XObj (Instantiate template) Nothing Nothing, XObj (Sym path Symbol) Nothing Nothing]
-        deps = templateDependencies template actualType
-    in  (XObj (Lst defLst) (Just (Info (-1) (-1) (show path ++ " template") Set.empty (-1))) (Just actualType), deps)
+  let defLst = [XObj (Instantiate template) Nothing Nothing, XObj (Sym path Symbol) Nothing Nothing]
+      deps = templateDependencies template actualType
+   in (XObj (Lst defLst) (Just (Info (-1) (-1) (show path ++ " template") Set.empty (-1))) (Just actualType), deps)
 
 -- | Type aliases are used to create C-typedefs when those are needed.
 defineTypeAlias :: String -> Ty -> XObj
-defineTypeAlias name t = XObj (Lst [XObj (Defalias t) Nothing Nothing
-                                   ,XObj (Sym (SymPath [] name) Symbol) Nothing Nothing
-                                   ]) (Just dummyInfo) (Just TypeTy)
+defineTypeAlias name t =
+  XObj
+    ( Lst
+        [ XObj (Defalias t) Nothing Nothing,
+          XObj (Sym (SymPath [] name) Symbol) Nothing Nothing
+        ]
+    )
+    (Just dummyInfo)
+    (Just TypeTy)
 
 defineFunctionTypeAlias :: Ty -> XObj
 defineFunctionTypeAlias aliasTy = defineTypeAlias (tyToC aliasTy) aliasTy
@@ -766,10 +836,14 @@ defineStaticArrayTypeAlias t = defineTypeAlias (tyToC t) (StructTy (ConcreteName
 -- |
 defineInterface :: String -> Ty -> [SymPath] -> Maybe Info -> XObj
 defineInterface name t paths info =
-  XObj (Lst [XObj (Interface t paths) Nothing Nothing
-            ,XObj (Sym (SymPath [] name) Symbol) Nothing Nothing
-            ])
-  info (Just InterfaceTy)
+  XObj
+    ( Lst
+        [ XObj (Interface t paths) Nothing Nothing,
+          XObj (Sym (SymPath [] name) Symbol) Nothing Nothing
+        ]
+    )
+    info
+    (Just InterfaceTy)
 
 -- | Unsafe way of getting the type from an XObj
 forceTy :: XObj -> Ty
@@ -779,25 +853,28 @@ forceTy xobj = fromMaybe (error ("No type in " ++ show xobj)) (xobjTy xobj)
 data ExecutionMode = Repl | Build | BuildAndRun | Install String | Check deriving (Show, Eq)
 
 -- | Information needed by the REPL
-data Context = Context { contextGlobalEnv :: Env
-                       , contextInternalEnv :: Maybe Env
-                       , contextTypeEnv :: TypeEnv
-                       , contextPath :: [String]
-                       , contextProj :: Project
-                       , contextLastInput :: String
-                       , contextExecMode :: ExecutionMode
-                       , contextHistory :: ![XObj]
-                       } deriving Show
+data Context
+  = Context
+      { contextGlobalEnv :: Env,
+        contextInternalEnv :: Maybe Env,
+        contextTypeEnv :: TypeEnv,
+        contextPath :: [String],
+        contextProj :: Project,
+        contextLastInput :: String,
+        contextExecMode :: ExecutionMode,
+        contextHistory :: ![XObj]
+      }
+  deriving (Show)
 
 popModulePath :: Context -> Context
-popModulePath ctx = ctx { contextPath = init (contextPath ctx) }
+popModulePath ctx = ctx {contextPath = init (contextPath ctx)}
 
 pushFrame :: Context -> XObj -> Context
-pushFrame ctx x = ctx { contextHistory = x:contextHistory ctx }
+pushFrame ctx x = ctx {contextHistory = x : contextHistory ctx}
 
 popFrame :: Context -> Context
-popFrame ctx@Context{contextHistory=[]}= ctx
-popFrame ctx@Context{contextHistory=(_:rest)}= ctx { contextHistory = rest }
+popFrame ctx@Context {contextHistory = []} = ctx
+popFrame ctx@Context {contextHistory = (_ : rest)} = ctx {contextHistory = rest}
 
 -- | Unwrapping of XObj:s
 -- | Unwrapping of XObj:s
@@ -819,7 +896,7 @@ unwrapSymPathXObj x = Left ("The value '" ++ pretty x ++ "' at " ++ prettyInfoFr
 
 -- | Given a form, what definition mode will it generate?
 definitionMode :: XObj -> DefinitionMode
-definitionMode (XObj (Lst (XObj Def _ _ : _)) _ _)  = AVariable
+definitionMode (XObj (Lst (XObj Def _ _ : _)) _ _) = AVariable
 definitionMode _ = AFunction
 
 isGlobalVariableLookup :: SymbolMode -> Bool
@@ -827,7 +904,7 @@ isGlobalVariableLookup (LookupGlobal _ AVariable) = True
 isGlobalVariableLookup _ = False
 
 anonMemberNames :: [String]
-anonMemberNames = map (\i -> "member" ++ show i) ([0..] :: [Int])
+anonMemberNames = map (\i -> "member" ++ show i) ([0 ..] :: [Int])
 
 anonMemberSymbols :: [XObj]
 anonMemberSymbols = map (\n -> XObj (Sym (SymPath [] n) Symbol) Nothing Nothing) anonMemberNames
@@ -845,7 +922,7 @@ wrapInParens xobj@(XObj _ i t) =
 
 -- | Is this symbol name appropriate for a normal variable (i.e. NOT a type name or sumtype tag)
 isVarName :: String -> Bool
-isVarName (firstLetter:_) =
+isVarName (firstLetter : _) =
   not (isUpper firstLetter) -- This allows names beginning with special chars etc. to be OK for vars
 
 -- construct an empty list xobj

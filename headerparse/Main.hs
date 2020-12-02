@@ -3,35 +3,51 @@
 
 module Main where
 
-import Options.Applicative hiding ((<|>))
-import Text.Parsec ((<|>))
-import qualified Text.Parsec as Parsec
-import Data.Char (toLower, isUpper)
-import Util
-import Types
+import Data.Char (isUpper, toLower)
 import Obj
+import Options.Applicative hiding ((<|>))
 import Path
 import Reify
+import Text.Parsec ((<|>))
+import qualified Text.Parsec as Parsec
+import Types
+import Util
 
-data Args = Args { prefixToRemove :: String
-                 , kebabCase :: Bool
-                 , sourcePath :: String
-                 } deriving Show
+data Args
+  = Args
+      { prefixToRemove :: String,
+        kebabCase :: Bool,
+        sourcePath :: String
+      }
+  deriving (Show)
 
 parseArgs :: Parser Args
-parseArgs = Args
-  <$> strOption (long "prefixtoremove" <> short 'p' <> metavar "ITEM" <> value "")
-  <*> switch (long "kebabcase" <> short 'f')
-  <*> argument str (metavar "FILE")
+parseArgs =
+  Args
+    <$> strOption (long "prefixtoremove" <> short 'p' <> metavar "ITEM" <> value "")
+    <*> switch (long "kebabcase" <> short 'f')
+    <*> argument str (metavar "FILE")
 
-main = do parsedArgs <- execParser $ Options.Applicative.info (parseArgs <**> helper) fullDesc
-          let path = sourcePath parsedArgs
-          if path /= ""
-            then do source <- slurp path
-                    putStrLn (joinWith "\n" (map pretty (parseHeaderFile path source
-                                                         (prefixToRemove parsedArgs)
-                                                         (kebabCase parsedArgs))))
-            else print parsedArgs
+main = do
+  parsedArgs <- execParser $ Options.Applicative.info (parseArgs <**> helper) fullDesc
+  let path = sourcePath parsedArgs
+  if path /= ""
+    then do
+      source <- slurp path
+      putStrLn
+        ( joinWith
+            "\n"
+            ( map
+                pretty
+                ( parseHeaderFile
+                    path
+                    source
+                    (prefixToRemove parsedArgs)
+                    (kebabCase parsedArgs)
+                )
+            )
+        )
+    else print parsedArgs
 
 parseHeaderFile :: FilePath -> String -> String -> Bool -> [XObj]
 parseHeaderFile path src prefix kebab =
@@ -39,130 +55,148 @@ parseHeaderFile path src prefix kebab =
     Left err -> error (show err)
     Right ok -> concat ok
   where
-        cSyntax :: Parsec.Parsec String () [[XObj]]
-        cSyntax = Parsec.sepBy line (Parsec.char '\n')
+    cSyntax :: Parsec.Parsec String () [[XObj]]
+    cSyntax = Parsec.sepBy line (Parsec.char '\n')
+    line :: Parsec.Parsec String () [XObj]
+    line =
+      Parsec.try prefixedFunctionPrototype
+        <|> Parsec.try functionPrototype
+        <|> Parsec.try define
+        <|> discarded
+    define :: Parsec.Parsec String () [XObj]
+    define = do
+      Parsec.many spaceOrTab
+      Parsec.string "#define"
+      Parsec.many spaceOrTab
+      name <- Parsec.many1 identifierChar
+      argList <- Parsec.optionMaybe argList
+      Parsec.many spaceOrTab
+      _ <- defineBody
+      Parsec.many spaceOrTab
+      -- OBS! Never kebab
+      case argList of
+        Nothing ->
+          let tyXObj =
+                XObj (Sym (SymPath [] "a") Symbol) Nothing Nothing
+           in pure (createRegisterForm name tyXObj prefix False)
+        Just args ->
+          let argsTy = genTypes (length args)
+              tyXObj = toFnTypeXObj argsTy ("a", 0)
+           in pure (createRegisterForm name tyXObj prefix False)
+      where
+        argList = do
+          _ <- Parsec.char '('
+          args <-
+            Parsec.sepBy
+              ( Parsec.many spaceOrTab
+                  >> Parsec.many1 identifierChar
+              )
+              (Parsec.char ',')
+          _ <- Parsec.char ')'
+          pure args
+        genTypes 0 = []
+        genTypes n = (("a" ++ show n), 0) : genTypes (n - 1)
+    defineBody :: Parsec.Parsec String () ()
+    defineBody = do
+      s <- Parsec.many (Parsec.noneOf "\\\n")
+      ending <- Parsec.optionMaybe (Parsec.string "\\\n")
+      case ending of
+        Nothing ->
+          do
+            c <- Parsec.optionMaybe (Parsec.noneOf "\n")
+            case c of
+              Just _ -> defineBody
+              Nothing -> pure ()
+        Just _ -> defineBody
+    prefixedFunctionPrototype :: Parsec.Parsec String () [XObj]
+    prefixedFunctionPrototype = do
+      Parsec.many spaceOrTab
+      _ <- Parsec.many1 identifierChar
+      functionPrototype
+    functionPrototype :: Parsec.Parsec String () [XObj]
+    functionPrototype = do
+      Parsec.many spaceOrTab
+      returnTypeString <- Parsec.many1 identifierChar
+      stars1 <- stars
+      Parsec.many1 spaceOrTab
+      stars2 <- stars
+      name <- Parsec.many1 identifierChar
+      Parsec.many spaceOrTab
+      argTypeStrings <-
+        Parsec.try voidArg
+          <|> argList
+      Parsec.many spaceOrTab
+      Parsec.char ';'
+      Parsec.many (Parsec.noneOf "\n")
+      let tyXObj = toFnTypeXObj argTypeStrings (returnTypeString, length stars1 + length stars2)
+      pure (createRegisterForm name tyXObj prefix kebab)
+    voidArg :: Parsec.Parsec String () [(String, Int)]
+    voidArg = do
+      _ <- Parsec.string "(void)"
+      pure []
+    argList :: Parsec.Parsec String () [(String, Int)]
+    argList = do
+      Parsec.char '('
+      args <- Parsec.sepBy arg (Parsec.char ',')
+      Parsec.char ')'
+      pure args
+    arg :: Parsec.Parsec String () (String, Int)
+    arg = do
+      Parsec.many spaceOrTab
+      _ <- Parsec.option "" $ do
+        Parsec.string "const"
+        Parsec.many spaceOrTab
+      argTypeAsString <- Parsec.many1 identifierChar
+      stars1 <- stars
+      Parsec.many1 spaceOrTab
+      stars2 <- stars
+      _ <- Parsec.many1 identifierChar
+      Parsec.many spaceOrTab
+      pure (argTypeAsString, length stars1 + length stars2)
+    stars :: Parsec.Parsec String () String
+    stars = Parsec.many (Parsec.char '*')
+    spaceOrTab :: Parsec.Parsec String () Char
+    spaceOrTab = Parsec.choice [Parsec.char ' ', Parsec.char '\t']
+    discarded :: Parsec.Parsec String () [XObj]
+    discarded = do
+      discardedLine <- Parsec.many (Parsec.noneOf "\n")
+      pure []
 
-        line :: Parsec.Parsec String () [XObj]
-        line = Parsec.try prefixedFunctionPrototype <|>
-               Parsec.try functionPrototype <|>
-               Parsec.try define <|>
-               discarded
-
-        define :: Parsec.Parsec String () [XObj]
-        define = do Parsec.many spaceOrTab
-                    Parsec.string "#define"
-                    Parsec.many spaceOrTab
-                    name <- Parsec.many1 identifierChar
-                    argList <- Parsec.optionMaybe argList
-                    Parsec.many spaceOrTab
-                    _ <- defineBody
-                    Parsec.many spaceOrTab
-                    -- OBS! Never kebab
-                    case argList of
-                      Nothing ->
-                        let tyXObj =
-                              XObj (Sym (SymPath [] "a") Symbol) Nothing Nothing
-                        in pure (createRegisterForm name tyXObj prefix False)
-                      Just args ->
-                        let argsTy = genTypes (length args)
-                            tyXObj = toFnTypeXObj argsTy ("a", 0)
-                        in pure (createRegisterForm name tyXObj prefix False)
-            where argList = do
-                    _ <- Parsec.char '('
-                    args <- Parsec.sepBy
-                              (Parsec.many spaceOrTab >>
-                               Parsec.many1 identifierChar)
-                              (Parsec.char ',')
-                    _ <- Parsec.char ')'
-                    pure args
-                  genTypes 0 = []
-                  genTypes n = (("a" ++ show n), 0) : genTypes (n - 1)
-
-        defineBody :: Parsec.Parsec String () ()
-        defineBody = do s <- Parsec.many (Parsec.noneOf "\\\n")
-                        ending <- Parsec.optionMaybe (Parsec.string "\\\n")
-                        case ending of
-                          Nothing ->
-                            do c <- Parsec.optionMaybe (Parsec.noneOf "\n")
-                               case c of
-                                 Just _  -> defineBody
-                                 Nothing -> pure ()
-                          Just _ -> defineBody
-
-        prefixedFunctionPrototype :: Parsec.Parsec String () [XObj]
-        prefixedFunctionPrototype = do Parsec.many spaceOrTab
-                                       _ <- Parsec.many1 identifierChar
-                                       functionPrototype
-
-        functionPrototype :: Parsec.Parsec String () [XObj]
-        functionPrototype = do Parsec.many spaceOrTab
-                               returnTypeString <- Parsec.many1 identifierChar
-                               stars1 <- stars
-                               Parsec.many1 spaceOrTab
-                               stars2 <- stars
-                               name <- Parsec.many1 identifierChar
-                               Parsec.many spaceOrTab
-                               argTypeStrings <- Parsec.try voidArg <|>
-                                                 argList
-                               Parsec.many spaceOrTab
-                               Parsec.char ';'
-                               Parsec.many (Parsec.noneOf "\n")
-                               let tyXObj = toFnTypeXObj argTypeStrings (returnTypeString, length stars1 + length stars2)
-                               pure (createRegisterForm name tyXObj prefix kebab)
-
-        voidArg :: Parsec.Parsec String () [(String, Int)]
-        voidArg = do _ <- Parsec.string "(void)"
-                     pure []
-
-        argList :: Parsec.Parsec String () [(String, Int)]
-        argList = do Parsec.char '('
-                     args <- Parsec.sepBy arg (Parsec.char ',')
-                     Parsec.char ')'
-                     pure args
-
-        arg :: Parsec.Parsec String () (String, Int)
-        arg = do Parsec.many spaceOrTab
-                 _ <- Parsec.option "" $ do Parsec.string "const"
-                                            Parsec.many spaceOrTab
-                 argTypeAsString <- Parsec.many1 identifierChar
-                 stars1 <- stars
-                 Parsec.many1 spaceOrTab
-                 stars2 <- stars
-                 _ <- Parsec.many1 identifierChar
-                 Parsec.many spaceOrTab
-                 pure (argTypeAsString, length stars1 + length stars2)
-
-        stars :: Parsec.Parsec String () String
-        stars = Parsec.many (Parsec.char '*')
-
-        spaceOrTab :: Parsec.Parsec String () Char
-        spaceOrTab = Parsec.choice [Parsec.char ' ', Parsec.char '\t']
-
-        discarded :: Parsec.Parsec String () [XObj]
-        discarded = do discardedLine <- Parsec.many (Parsec.noneOf "\n")
-                       pure []
-                       --pure [(XObj (Str ("DISCARDED: " ++ discardedLine)) Nothing Nothing)]
+--pure [(XObj (Str ("DISCARDED: " ++ discardedLine)) Nothing Nothing)]
 
 createRegisterForm :: String -> XObj -> String -> Bool -> [XObj]
 createRegisterForm name tyXObj prefix kebab =
-  let carpName = (if kebab then (toKebab . lowerFirst) else id)
-                   (if prefix == "" then name else removePrefix prefix name)
+  let carpName =
+        (if kebab then (toKebab . lowerFirst) else id)
+          (if prefix == "" then name else removePrefix prefix name)
       emitName = name
-  in [XObj (Lst ([ (XObj (Sym (SymPath [] "register") Symbol) Nothing Nothing)
-                 , (XObj (Sym (SymPath [] carpName) Symbol) Nothing Nothing)
-                 , tyXObj
-                 ] ++
-                  if prefix == ""
-                  then []
-                  else [(XObj (Str emitName) Nothing Nothing)]
-                )) Nothing Nothing]
+   in [ XObj
+          ( Lst
+              ( [ (XObj (Sym (SymPath [] "register") Symbol) Nothing Nothing),
+                  (XObj (Sym (SymPath [] carpName) Symbol) Nothing Nothing),
+                  tyXObj
+                ]
+                  ++ if prefix == ""
+                    then []
+                    else [(XObj (Str emitName) Nothing Nothing)]
+              )
+          )
+          Nothing
+          Nothing
+      ]
 
 toFnTypeXObj :: [(String, Int)] -> (String, Int) -> XObj
 toFnTypeXObj argTypeStrings returnTypeString =
-  (XObj (Lst [ (XObj (Sym (SymPath [] "λ") Symbol) Nothing Nothing)
-             , (XObj (Arr (map (reify . cTypeToCarpType) argTypeStrings)) Nothing Nothing)
-             , (XObj (Sym (SymPath [] (show (cTypeToCarpType returnTypeString))) Symbol) Nothing Nothing)
-             ]) Nothing Nothing)
+  ( XObj
+      ( Lst
+          [ (XObj (Sym (SymPath [] "λ") Symbol) Nothing Nothing),
+            (XObj (Arr (map (reify . cTypeToCarpType) argTypeStrings)) Nothing Nothing),
+            (XObj (Sym (SymPath [] (show (cTypeToCarpType returnTypeString))) Symbol) Nothing Nothing)
+          ]
+      )
+      Nothing
+      Nothing
+  )
 
 toTypeXObj :: (String, Int) -> XObj
 toTypeXObj typeString =
@@ -187,9 +221,11 @@ removePrefix prefix s =
   case Parsec.runParser match () "" s of
     Left err -> s
     Right ok -> ok
-  where match =
-          do _ <- Parsec.string prefix
-             Parsec.many1 identifierChar
+  where
+    match =
+      do
+        _ <- Parsec.string prefix
+        Parsec.many1 identifierChar
 
 lowerFirst :: String -> String
 lowerFirst (c : cs) = toLower c : cs
