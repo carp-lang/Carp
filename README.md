@@ -60,7 +60,7 @@ For more examples, check out the [examples](examples) directory.
 ## Contributing
 Thanks to all the [awesome people](https://github.com/carp-lang/Carp/graphs/contributors) who have contributed to Carp over the years!
 
-We are always looking for more help &ndash; check out the [contributing guide](docs/contributing.md) to get started.
+We are always looking for more help &ndash; check out the [contributing guide](docs/Contributing.md) to get started.
 
 ## License
 
