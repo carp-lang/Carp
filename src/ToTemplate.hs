@@ -2,8 +2,8 @@ module ToTemplate where
 
 import Obj
 import Parsing
-import qualified Text.Parsec as Parsec
 import Text.Parsec ((<|>))
+import qualified Text.Parsec as Parsec
 import Util
 
 -- | High-level helper function for creating templates from strings of C code.

@@ -372,7 +372,7 @@ symbol = do
   i <- createInfo
   segments <- Parsec.sepBy1 symbolSegment period
   if length segments > 1
-    then-- if it’s qualified, it can’t be a special form
+    then -- if it’s qualified, it can’t be a special form
 
       pure
         ( XObj
@@ -532,8 +532,8 @@ dictionary = do
   _ <- Parsec.char '}'
   incColumn 1
   let objs' = if even (length objs) then objs else init objs -- Drop last if uneven nr of forms.
-              -- TODO! Signal error here!
-              --pure (XObj (Dict (Map.fromList (pairwise objs'))) i Nothing)
+  -- TODO! Signal error here!
+  --pure (XObj (Dict (Map.fromList (pairwise objs'))) i Nothing)
       pairInit = XObj (Sym (SymPath ["Pair"] "init") (LookupGlobal CarpLand AFunction)) i Nothing
       pairs = map (\(k, v) -> XObj (Lst [pairInit, k, v]) i Nothing) (pairwise objs')
       arrayLiteral = XObj (Arr pairs) i Nothing

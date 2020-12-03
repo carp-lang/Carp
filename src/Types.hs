@@ -86,11 +86,10 @@ typeEqIgnoreLifetimes (StructTy a tyVarsA) (StructTy b tyVarsB) =
     && all (== True) (zipWith typeEqIgnoreLifetimes tyVarsA tyVarsB)
 typeEqIgnoreLifetimes a b = a == b
 
-data SumTyCase
-  = SumTyCase
-      { caseName :: String,
-        caseMembers :: [(String, Ty)]
-      }
+data SumTyCase = SumTyCase
+  { caseName :: String,
+    caseMembers :: [(String, Ty)]
+  }
   deriving (Show, Ord, Eq)
 
 fnOrLambda :: String

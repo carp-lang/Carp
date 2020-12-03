@@ -165,7 +165,8 @@ templateSetter typeEnv env memberName memberTy =
             )
         )
         ( \_ ->
-            if  | isManaged typeEnv memberTy -> depsOfPolymorphicFunction typeEnv env [] "delete" (typesDeleterFunctionType memberTy)
+            if
+                | isManaged typeEnv memberTy -> depsOfPolymorphicFunction typeEnv env [] "delete" (typesDeleterFunctionType memberTy)
                 | isFunctionType memberTy -> [defineFunctionTypeAlias memberTy]
                 | otherwise -> []
         )
@@ -279,7 +280,7 @@ templateUpdater _ UnitTy =
   Template
     (FuncTy [VarTy "p", RefTy (FuncTy [] UnitTy (VarTy "fq")) (VarTy "q")] (VarTy "p") StaticLifetimeTy)
     (const (toTemplate "$p $NAME($p p, Lambda *updater)")) -- "Lambda" used to be: $(Fn [t] t)
-        -- Execution of the action passed as an argument is handled in Emit.hs.
+    -- Execution of the action passed as an argument is handled in Emit.hs.
     (const (toTemplate ("$DECL { " ++ templateCodeForCallingLambda "(*updater)" (FuncTy [] UnitTy (VarTy "fq")) [] ++ "; return p;}\n")))
     ( \(FuncTy [_, RefTy t@(FuncTy fArgTys fRetTy _) _] _ _) ->
         [defineFunctionTypeAlias t, defineFunctionTypeAlias (FuncTy (lambdaEnvTy : fArgTys) fRetTy StaticLifetimeTy)]

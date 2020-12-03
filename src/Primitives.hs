@@ -437,9 +437,9 @@ primitiveMembers _ ctx [target] = do
               _
               ( XObj
                   ( Lst
-                      ( XObj (DefSumtype _) Nothing Nothing :
-                          XObj (Sym (SymPath _ _) Symbol) Nothing Nothing :
-                          sumtypeCases
+                      ( XObj (DefSumtype _) Nothing Nothing
+                          : XObj (Sym (SymPath _ _) Symbol) Nothing Nothing
+                          : sumtypeCases
                         )
                     )
                   _
@@ -485,23 +485,29 @@ primitiveMetaSet _ ctx [target@(XObj (Sym (SymPath prefixes name) _) _ _), XObj 
     lookupAndUpdate :: Maybe Context
     lookupAndUpdate =
       ( (lookupInEnv dynamicPath global)
-          >>= \(_, binder) -> (pure (Meta.updateBinderMeta binder key value))
-            >>= \b -> (pure (envInsertAt global dynamicPath b))
-              >>= \env -> pure (ctx {contextGlobalEnv = env})
+          >>= \(_, binder) ->
+            (pure (Meta.updateBinderMeta binder key value))
+              >>= \b ->
+                (pure (envInsertAt global dynamicPath b))
+                  >>= \env -> pure (ctx {contextGlobalEnv = env})
       )
         <|> ( (lookupInEnv fullPath global)
-                >>= \(_, binder) -> (pure (Meta.updateBinderMeta binder key value))
-                  >>= \b -> (pure (envInsertAt global fullPath b))
-                    >>= \env -> pure (ctx {contextGlobalEnv = env})
+                >>= \(_, binder) ->
+                  (pure (Meta.updateBinderMeta binder key value))
+                    >>= \b ->
+                      (pure (envInsertAt global fullPath b))
+                        >>= \env -> pure (ctx {contextGlobalEnv = env})
             )
         -- This is a global name but it doesn't exist in the global env
         -- Before creating a new binder, check that it doesn't denote an existing type or interface.
         <|> ( if (null modules)
                 then
                   ( (lookupInEnv fullPath types)
-                      >>= \(_, binder) -> (pure (Meta.updateBinderMeta binder key value))
-                        >>= \b -> (pure (envInsertAt types fullPath b))
-                          >>= \env -> pure (ctx {contextTypeEnv = (TypeEnv env)})
+                      >>= \(_, binder) ->
+                        (pure (Meta.updateBinderMeta binder key value))
+                          >>= \b ->
+                            (pure (envInsertAt types fullPath b))
+                              >>= \env -> pure (ctx {contextTypeEnv = (TypeEnv env)})
                   )
                 else Nothing
             )
@@ -691,9 +697,9 @@ primitiveDeftype xobj ctx (name : rest) =
                     -- NOTE: The type binding is needed to emit the type definition and all the member functions of the type.
                     XObj
                       ( Lst
-                          ( XObj (typeConstructor structTy) Nothing Nothing
-                              : XObj (Sym (SymPath pathStrings tyName) Symbol) Nothing Nothing
-                              : rest
+                          ( XObj (typeConstructor structTy) Nothing Nothing :
+                            XObj (Sym (SymPath pathStrings tyName) Symbol) Nothing Nothing :
+                            rest
                           )
                       )
                       i

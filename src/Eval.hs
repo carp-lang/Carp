@@ -66,8 +66,8 @@ eval ctx xobj@(XObj o info ty) preference =
       pure $
         fromMaybe
           (evalError ctx ("Can't find symbol '" ++ show n ++ "'") info) -- all else failed, error.
-            -- Certain contexts prefer looking up bindings in the dynamic environment (e.g. defdyanmic) while others
-            -- prefer the static global environment.
+          -- Certain contexts prefer looking up bindings in the dynamic environment (e.g. defdyanmic) while others
+          -- prefer the static global environment.
           ( ( case preference of
                 PreferDynamic -> tryDynamicLookup
                 PreferGlobal -> (tryLookup spath <|> tryDynamicLookup)
@@ -794,9 +794,9 @@ loadInternal ctx xobj path i reloadMode = do
         Nothing -> "."
       carpDir = projectCarpDir proj
       fullSearchPaths =
-        path
-          : (relativeTo </> path)
-          : map (</> path) (projectCarpSearchPaths proj) -- the path from the file that contains the '(load)', or the current directory if not loading from a file (e.g. the repl)
+        path :
+        (relativeTo </> path) :
+        map (</> path) (projectCarpSearchPaths proj) -- the path from the file that contains the '(load)', or the current directory if not loading from a file (e.g. the repl)
           ++ [carpDir </> "core" </> path] -- user defined search paths
           ++ [libDir </> path]
       firstM _ [] = pure Nothing

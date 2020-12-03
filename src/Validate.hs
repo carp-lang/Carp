@@ -1,7 +1,7 @@
 module Validate where
 
 import Data.Function (on)
-import Data.List ((\\), nubBy)
+import Data.List (nubBy, (\\))
 import Lookup
 import Obj
 import TypeError

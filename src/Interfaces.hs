@@ -56,7 +56,7 @@ registerInInterfaceIfNeeded ctx path@(SymPath _ _) interface@(SymPath [] name) d
     typeCheck binder = case binder of
       Binder _ (XObj (Lst [inter@(XObj (Interface interfaceSignature paths) ii it), isym]) i t) ->
         if checkKinds interfaceSignature definitionSignature
-          then-- N.B. the xobjs aren't important here--we only care about types,
+          then -- N.B. the xobjs aren't important here--we only care about types,
           -- thus we pass inter to all three xobj positions.
 
             if isRight $ solve [Constraint interfaceSignature definitionSignature inter inter inter OrdInterfaceImpl]

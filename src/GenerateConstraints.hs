@@ -87,7 +87,8 @@ genConstraints _ root rootSig = fmap sort (gen root)
                       (List.map (forceTy *** forceTy) (pairwise bindings))
                       (pairwise bindings)
               pure
-                ( wholeStatementConstraint : insideBodyConstraints
+                ( wholeStatementConstraint :
+                  insideBodyConstraints
                     ++ bindingsConstraints
                     ++ insideBindingsConstraints
                 )
@@ -106,9 +107,10 @@ genConstraints _ root rootSig = fmap sort (gen root)
                   Just t = xobjTy xobj
                   wholeStatementConstraint = Constraint trueType t ifTrue xobj xobj OrdIfWhole
               pure
-                ( conditionConstraint : sameReturnConstraint
-                    : wholeStatementConstraint
-                    : insideConditionConstraints
+                ( conditionConstraint :
+                  sameReturnConstraint :
+                  wholeStatementConstraint :
+                  insideConditionConstraints
                     ++ insideTrueConstraints
                     ++ insideFalseConstraints
                 )
@@ -166,8 +168,9 @@ genConstraints _ root rootSig = fmap sort (gen root)
                   conditionConstraint = Constraint exprType BoolTy expr expectedCond xobj OrdWhileCondition
                   wholeStatementConstraint = Constraint bodyType UnitTy body expectedBody xobj OrdWhileBody
               pure
-                ( conditionConstraint : wholeStatementConstraint
-                    : insideConditionConstraints ++ insideBodyConstraints
+                ( conditionConstraint :
+                  wholeStatementConstraint :
+                  insideConditionConstraints ++ insideBodyConstraints
                 )
           -- Do
           XObj Do _ _ : expressions ->

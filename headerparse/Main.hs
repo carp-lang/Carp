@@ -13,12 +13,11 @@ import qualified Text.Parsec as Parsec
 import Types
 import Util
 
-data Args
-  = Args
-      { prefixToRemove :: String,
-        kebabCase :: Bool,
-        sourcePath :: String
-      }
+data Args = Args
+  { prefixToRemove :: String,
+    kebabCase :: Bool,
+    sourcePath :: String
+  }
   deriving (Show)
 
 parseArgs :: Parser Args

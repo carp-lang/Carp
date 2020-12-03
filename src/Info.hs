@@ -18,14 +18,13 @@ import Path (takeFileName)
 import SymPath
 
 -- | Information about where the Obj originated from.
-data Info
-  = Info
-      { infoLine :: Int,
-        infoColumn :: Int,
-        infoFile :: String,
-        infoDelete :: Set.Set Deleter,
-        infoIdentifier :: Int
-      }
+data Info = Info
+  { infoLine :: Int,
+    infoColumn :: Int,
+    infoFile :: String,
+    infoDelete :: Set.Set Deleter,
+    infoIdentifier :: Int
+  }
   deriving (Show, Eq, Ord)
 
 -- TODO: The name 'deleter' for these things are really confusing!
