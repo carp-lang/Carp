@@ -9,6 +9,9 @@
   (defndynamic dec [x]
     (- x 1))
 
+  (defndynamic mod [x y]
+    (- x (* y (/ x y))))
+
   (defmodule Project
     (doc no-echo "Turn off debug printing in the compiler.")
     (defndynamic no-echo []
