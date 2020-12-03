@@ -5,11 +5,10 @@ import TypeError
 import Types
 import Validate
 
-data SumtypeCase
-  = SumtypeCase
-      { caseName :: String,
-        caseTys :: [Ty]
-      }
+data SumtypeCase = SumtypeCase
+  { caseName :: String,
+    caseTys :: [Ty]
+  }
   deriving (Show, Eq)
 
 toCases :: TypeEnv -> [Ty] -> [XObj] -> Either TypeError [SumtypeCase]

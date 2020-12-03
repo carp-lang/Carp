@@ -12,40 +12,39 @@ instance Show Target where
   show (Target x) = x
 
 -- | Project (represents a lot of useful information for working at the REPL and building executables)
-data Project
-  = Project
-      { projectTitle :: String,
-        projectIncludes :: [Includer],
-        projectCFlags :: [String],
-        projectLibFlags :: [String],
-        projectPkgConfigFlags :: [String],
-        projectFiles :: [(FilePath, ReloadMode)],
-        projectAlreadyLoaded :: [FilePath],
-        projectEchoC :: Bool,
-        projectLibDir :: FilePath,
-        projectCarpDir :: FilePath,
-        projectOutDir :: FilePath,
-        projectDocsDir :: FilePath,
-        projectDocsLogo :: FilePath,
-        projectDocsPrelude :: String,
-        projectDocsURL :: String,
-        projectDocsGenerateIndex :: Bool,
-        projectDocsStyling :: String,
-        projectPrompt :: String,
-        projectCarpSearchPaths :: [FilePath],
-        projectPrintTypedAST :: Bool,
-        projectCompiler :: String,
-        projectTarget :: Target,
-        projectCore :: Bool,
-        projectEchoCompilationCommand :: Bool,
-        projectCanExecute :: Bool,
-        projectFilePathPrintLength :: FilePathPrintLength,
-        projectGenerateOnly :: Bool,
-        projectBalanceHints :: Bool,
-        projectForceReload :: Bool, -- Setting this to true will make the `load-once` command work just like `load`.
-        projectCModules :: [FilePath],
-        projectLoadStack :: [FilePath]
-      }
+data Project = Project
+  { projectTitle :: String,
+    projectIncludes :: [Includer],
+    projectCFlags :: [String],
+    projectLibFlags :: [String],
+    projectPkgConfigFlags :: [String],
+    projectFiles :: [(FilePath, ReloadMode)],
+    projectAlreadyLoaded :: [FilePath],
+    projectEchoC :: Bool,
+    projectLibDir :: FilePath,
+    projectCarpDir :: FilePath,
+    projectOutDir :: FilePath,
+    projectDocsDir :: FilePath,
+    projectDocsLogo :: FilePath,
+    projectDocsPrelude :: String,
+    projectDocsURL :: String,
+    projectDocsGenerateIndex :: Bool,
+    projectDocsStyling :: String,
+    projectPrompt :: String,
+    projectCarpSearchPaths :: [FilePath],
+    projectPrintTypedAST :: Bool,
+    projectCompiler :: String,
+    projectTarget :: Target,
+    projectCore :: Bool,
+    projectEchoCompilationCommand :: Bool,
+    projectCanExecute :: Bool,
+    projectFilePathPrintLength :: FilePathPrintLength,
+    projectGenerateOnly :: Bool,
+    projectBalanceHints :: Bool,
+    projectForceReload :: Bool, -- Setting this to true will make the `load-once` command work just like `load`.
+    projectCModules :: [FilePath],
+    projectLoadStack :: [FilePath]
+  }
 
 projectFlags :: Project -> String
 projectFlags proj = joinWithSpace (projectCFlags proj ++ projectLibFlags proj)

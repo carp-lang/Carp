@@ -61,22 +61,23 @@ templateEFilter = defineTypeParameterizedTemplate templateCreator path t docs
           t
           (const (toTemplate "Array $NAME(Lambda *predicate, Array a)")) -- Lambda used to be $(Fn [(Ref a)] Bool)
           ( \(FuncTy [RefTy (FuncTy [RefTy insideTy _] BoolTy _) _, _] _ _) ->
-              toTemplate $ unlines $
-                let deleter = insideArrayDeletion typeEnv env insideTy
-                 in [ "$DECL { ",
-                      "    int insertIndex = 0;",
-                      "    for(int i = 0; i < a.len; ++i) {",
-                      "        if(" ++ templateCodeForCallingLambda "(*predicate)" fTy [elt] ++ ") {",
-                      "            ((($a*)a.data)[insertIndex++]) = (($a*)a.data)[i];",
-                      "        } else {",
-                      "        " ++ deleter "i",
-                      "        }",
-                      "    }",
-                      "    a.len = insertIndex;",
-                      templateShrinkCheck "a",
-                      "    return a;",
-                      "}"
-                    ]
+              toTemplate $
+                unlines $
+                  let deleter = insideArrayDeletion typeEnv env insideTy
+                   in [ "$DECL { ",
+                        "    int insertIndex = 0;",
+                        "    for(int i = 0; i < a.len; ++i) {",
+                        "        if(" ++ templateCodeForCallingLambda "(*predicate)" fTy [elt] ++ ") {",
+                        "            ((($a*)a.data)[insertIndex++]) = (($a*)a.data)[i];",
+                        "        } else {",
+                        "        " ++ deleter "i",
+                        "        }",
+                        "    }",
+                        "    a.len = insertIndex;",
+                        templateShrinkCheck "a",
+                        "    return a;",
+                        "}"
+                      ]
           )
           ( \(FuncTy [RefTy ft@(FuncTy fArgTys@[RefTy insideType _] BoolTy _) _, _] _ _) ->
               [defineFunctionTypeAlias ft, defineFunctionTypeAlias (FuncTy (lambdaEnvTy : fArgTys) BoolTy StaticLifetimeTy)]

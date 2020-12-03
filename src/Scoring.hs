@@ -68,19 +68,20 @@ depthOfType typeEnv visited selfName theType =
     visitType (RefTy r lt) = max (visitType r) (visitType lt)
     visitType _ = 1
     depthOfStructType :: String -> [Ty] -> Int
-    depthOfStructType name varTys = 1
-      + case name of
-        "Array" -> depthOfVarTys
-        _
-          | name == selfName -> 1
-          | otherwise ->
-            case lookupInEnv (SymPath [] name) (getTypeEnv typeEnv) of
-              Just (_, Binder _ typedef) -> depthOfDeftype typeEnv (Set.insert theType visited) typedef varTys
-              Nothing ->
-                --trace ("Unknown type: " ++ name) $
-                depthOfVarTys -- The problem here is that generic types don't generate
-                -- their definition in time so we get nothing for those.
-                -- Instead, let's try the type vars.
+    depthOfStructType name varTys =
+      1
+        + case name of
+          "Array" -> depthOfVarTys
+          _
+            | name == selfName -> 1
+            | otherwise ->
+              case lookupInEnv (SymPath [] name) (getTypeEnv typeEnv) of
+                Just (_, Binder _ typedef) -> depthOfDeftype typeEnv (Set.insert theType visited) typedef varTys
+                Nothing ->
+                  --trace ("Unknown type: " ++ name) $
+                  depthOfVarTys -- The problem here is that generic types don't generate
+                  -- their definition in time so we get nothing for those.
+                  -- Instead, let's try the type vars.
       where
         depthOfVarTys =
           case fmap (depthOfType typeEnv visited name) varTys of

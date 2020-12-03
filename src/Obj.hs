@@ -227,12 +227,11 @@ machineReadableInfoFromXObj fppl xobj =
     Nothing -> ""
 
 -- | Obj with eXtra information.
-data XObj
-  = XObj
-      { xobjObj :: Obj,
-        xobjInfo :: Maybe Info,
-        xobjTy :: Maybe Ty
-      }
+data XObj = XObj
+  { xobjObj :: Obj,
+    xobjInfo :: Maybe Info,
+    xobjTy :: Maybe Ty
+  }
   deriving (Show, Eq, Ord)
 
 getBinderDescription :: XObj -> String
@@ -333,9 +332,10 @@ pretty = visit 0
         MultiSym originalName paths -> originalName ++ "{" ++ joinWithComma (map show paths) ++ "}"
         InterfaceSym name -> name -- ++ "§"
         Bol b -> if b then "true" else "false"
-        Defn maybeCaptures -> "defn" ++ case maybeCaptures of
-          Just captures -> " <" ++ prettyCaptures captures ++ ">"
-          Nothing -> ""
+        Defn maybeCaptures ->
+          "defn" ++ case maybeCaptures of
+            Just captures -> " <" ++ prettyCaptures captures ++ ">"
+            Nothing -> ""
         Def -> "def"
         Fn _ captures -> "fn" ++ " <" ++ prettyCaptures captures ++ ">"
         Closure elt _ -> "closure<" ++ pretty elt ++ ">"
@@ -582,15 +582,14 @@ register name t =
 data EnvMode = ExternalEnv | InternalEnv | RecursionEnv deriving (Show, Eq)
 
 -- | Environment
-data Env
-  = Env
-      { envBindings :: Map.Map String Binder,
-        envParent :: Maybe Env,
-        envModuleName :: Maybe String,
-        envUseModules :: [SymPath],
-        envMode :: EnvMode,
-        envFunctionNestingLevel :: Int -- Normal defn:s have 0, lambdas get +1 for each level of nesting
-      }
+data Env = Env
+  { envBindings :: Map.Map String Binder,
+    envParent :: Maybe Env,
+    envModuleName :: Maybe String,
+    envUseModules :: [SymPath],
+    envMode :: EnvMode,
+    envFunctionNestingLevel :: Int -- Normal defn:s have 0, lambdas get +1 for each level of nesting
+  }
   deriving (Show, Eq)
 
 newtype ClosureContext = CCtx Context
@@ -772,13 +771,12 @@ polymorphicSuffix signature actualType =
 type VisitedTypes = [Ty]
 
 -- | Templates are like macros, but defined inside the compiler and with access to the types they are instantiated with
-data Template
-  = Template
-      { templateSignature :: Ty,
-        templateDeclaration :: Ty -> [Token], -- Will this parameterization ever be useful?
-        templateDefinition :: Ty -> [Token],
-        templateDependencies :: Ty -> [XObj]
-      }
+data Template = Template
+  { templateSignature :: Ty,
+    templateDeclaration :: Ty -> [Token], -- Will this parameterization ever be useful?
+    templateDefinition :: Ty -> [Token],
+    templateDependencies :: Ty -> [XObj]
+  }
 
 instance Show Template where
   show _ = "Template"
@@ -795,7 +793,7 @@ data Token
   = TokTy Ty TokTyMode -- Some kind of type, will be looked up if it's a type variable.
   | TokC String -- Plain C code.
   | TokDecl -- Will emit the declaration (i.e. "foo(int x)"), this is useful
-    --   for avoiding repetition in the definition part of the template.
+  --   for avoiding repetition in the definition part of the template.
   | TokName -- Will emit the name of the instantiated function/variable.
   deriving (Eq, Ord)
 
@@ -853,17 +851,16 @@ forceTy xobj = fromMaybe (error ("No type in " ++ show xobj)) (xobjTy xobj)
 data ExecutionMode = Repl | Build | BuildAndRun | Install String | Check deriving (Show, Eq)
 
 -- | Information needed by the REPL
-data Context
-  = Context
-      { contextGlobalEnv :: Env,
-        contextInternalEnv :: Maybe Env,
-        contextTypeEnv :: TypeEnv,
-        contextPath :: [String],
-        contextProj :: Project,
-        contextLastInput :: String,
-        contextExecMode :: ExecutionMode,
-        contextHistory :: ![XObj]
-      }
+data Context = Context
+  { contextGlobalEnv :: Env,
+    contextInternalEnv :: Maybe Env,
+    contextTypeEnv :: TypeEnv,
+    contextPath :: [String],
+    contextProj :: Project,
+    contextLastInput :: String,
+    contextExecMode :: ExecutionMode,
+    contextHistory :: ![XObj]
+  }
   deriving (Show)
 
 popModulePath :: Context -> Context
