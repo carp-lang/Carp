@@ -16,6 +16,10 @@ check_ormolu_installed() {
   fi
 }
 
+print_on_newlines() {
+  echo "$@" | tr ' ' '\n'
+}
+
 repo_root=$(git rev-parse --show-toplevel)
 
 if [ "${1-}" = "--only-changed" ]; then
@@ -24,11 +28,11 @@ if [ "${1-}" = "--only-changed" ]; then
   [ -z "$changed_haskell_files" ] && exit 0
   check_ormolu_installed
   ormolu --mode inplace $changed_haskell_files
-  echo $changed_haskell_files
+  print_on_newlines $changed_haskell_files
 else
   check_ormolu_installed
   cd "$repo_root"
   ormolu --mode inplace ./**/*.hs
-  echo ./**/*.hs
+  print_on_newlines ./**/*.hs
 fi
 
