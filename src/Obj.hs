@@ -299,6 +299,9 @@ getPath (XObj (Lst (XObj (Primitive _) _ _ : XObj (Sym path _) _ _ : _)) _ _) = 
 getPath (XObj (Sym path _) _ _) = path
 getPath x = SymPath [] (pretty x)
 
+getBinderPath :: Binder -> SymPath
+getBinderPath = getPath . binderXObj
+
 -- | Changes the second form (where the name of definitions are stored) in a list of XObj:s.
 setPath :: XObj -> SymPath -> XObj
 setPath (XObj (Lst (defn@(XObj (Defn _) _ _) : XObj (Sym _ _) si st : rest)) i t) newPath =

@@ -7,7 +7,7 @@ import Control.Monad (foldM, unless, when)
 import Control.Monad.IO.Class (MonadIO, liftIO)
 import Data.Either (rights)
 import Data.List (union)
-import Data.Maybe (fromMaybe)
+import Data.Maybe (catMaybes, fromJust, fromMaybe)
 import Deftype
 import Emit
 import Infer
@@ -151,65 +151,61 @@ primitiveColumn x@(XObj _ i t) ctx args =
     go = maybe err (\info -> (ctx, Right (XObj (Num IntTy (fromIntegral (infoColumn info))) i t)))
 
 primitiveImplements :: Primitive
-primitiveImplements xobj ctx [x@(XObj (Sym interface@(SymPath _ _) _) _ _), inner@(XObj (Sym impl@(SymPath prefixes name) _) info _)] =
-  let global = contextGlobalEnv ctx
-      def = lookupInEnv impl global
-   in maybe notFound' found def
+primitiveImplements _ ctx [x@(XObj (Sym interface@(SymPath _ _) _) _ _), (XObj (Sym (SymPath prefixes name) _) info _)] =
+  do
+    (maybeInterface, maybeImpl) <- pure ((lookupInEnv interface tyEnv), (lookupInEnv (SymPath modules name) global))
+    case (maybeInterface, maybeImpl) of
+      (_, Nothing) ->
+        if null modules
+          then pure (evalError ctx "Can't set the `implements` meta on a global definition before it is declared." info)
+          else updateMeta (Meta.stub (SymPath modules name)) ctx
+      (Nothing, Just (_, implBinder)) ->
+        (warn >> updateMeta implBinder ctx)
+      (Just (_, interfaceBinder), Just (_, implBinder)) ->
+        (registerIt interfaceBinder implBinder)
   where
+    global = contextGlobalEnv ctx
+    tyEnv = getTypeEnv . contextTypeEnv $ ctx
     (SymPath modules _) = consPath (union (contextPath ctx) prefixes) (SymPath [] name)
-    checkInterface =
-      let warn = do
-            emitWarning
-              ( "The interface " ++ show interface ++ " implemented by " ++ show impl
-                  ++ " at "
-                  ++ prettyInfoFromXObj xobj
-                  ++ " is not defined."
-                  ++ " Did you define it using `definterface`?"
-              )
-          tyEnv = getTypeEnv . contextTypeEnv $ ctx
-       in maybe warn (\_ -> pure ()) (lookupInEnv interface tyEnv)
-    -- If the implementation binding doesn't exist yet, set the implements
-    -- meta. This enables specifying a function as an implementation before
-    -- defining it.
-    --
-    -- This is only allowed for qualified bindings. Allowing forward declarations on global bindings would cause a loop in
-    -- primitiveMetaSet's lookup which is generic.
-    notFound' =
-      if null modules
-        then pure $ evalError ctx "Can't set the `implements` meta on a global definition before it is declared." info
-        else
-          ( checkInterface
-              >> primitiveMetaSet xobj ctx [inner, XObj (Str "implements") (Just dummyInfo) (Just StringTy), XObj (Lst [x]) (Just dummyInfo) (Just DynamicTy)]
-          )
-    found (_, Binder meta defobj) =
-      checkInterface
-        >> either registerError updateImpls (registerInInterface ctx defobj interface)
+    warn =
+      emitWarning
+        ( "The interface "
+            ++ show (getPath x)
+            ++ " is not defined."
+            ++ " Did you define it using `definterface`?"
+        )
+    registerIt :: Binder -> Binder -> IO (Context, Either EvalError XObj)
+    registerIt inter impl =
+      either
+        (registerError (contextExecMode ctx))
+        (updateMeta impl)
+        (registerInInterface ctx impl inter)
+    registerError :: ExecutionMode -> String -> IO (Context, Either EvalError XObj)
+    registerError Check e =
+      putStrLn (machineReadableInfoFromXObj fppl x ++ " " ++ e)
+        >> pure (evalError ctx e (xobjInfo x))
       where
-        registerError e = do
-          case contextExecMode ctx of
-            Check ->
-              let fppl = projectFilePathPrintLength (contextProj ctx)
-               in putStrLn (machineReadableInfoFromXObj fppl defobj ++ " " ++ e)
-            _ -> putStrLnWithColor Red e
-          pure $ evalError ctx e (xobjInfo x)
-        updateImpls ctx' = do
-          currentImplementations <- primitiveMeta xobj ctx [inner, XObj (Str "implements") (Just dummyInfo) (Just StringTy)]
-          pure $ either metaError existingImpls (snd currentImplementations)
-          where
-            metaError e = (ctx, Left e)
-            existingImpls is = case is of
-              old@(XObj (Lst impls) inf ty) ->
-                let newImpls =
-                      if x `elem` impls
-                        then old
-                        else XObj (Lst (x : impls)) inf ty
-                    newMeta = Meta.set "implements" newImpls meta
-                 in (ctx' {contextGlobalEnv = envInsertAt global (getPath defobj) (Binder newMeta defobj)}, dynamicNil)
-              _ ->
-                let impls = XObj (Lst [x]) (Just dummyInfo) (Just DynamicTy)
-                    newMeta = Meta.set "implements" impls meta
-                 in (ctx' {contextGlobalEnv = envInsertAt global (getPath defobj) (Binder newMeta defobj)}, dynamicNil)
-            global = contextGlobalEnv ctx
+        fppl = projectFilePathPrintLength (contextProj ctx)
+    registerError _ e =
+      putStrLnWithColor Red e
+        >> pure (evalError ctx e (xobjInfo x))
+    updateMeta :: Binder -> Context -> IO (Context, Either EvalError XObj)
+    updateMeta binder context =
+      pure (fromJust update, dynamicNil)
+      where
+        update = ( ( Meta.getBinderMetaValue "implements" binder
+                       >>= pure . updateImplementations binder
+                   )
+                     <|> Just (updateImplementations binder (XObj (Lst []) (Just dummyInfo) (Just DynamicTy)))
+                 )
+          >>= \newBinder -> pure (context {contextGlobalEnv = envInsertAt global (getBinderPath binder) newBinder})
+    updateImplementations :: Binder -> XObj -> Binder
+    updateImplementations binder (XObj (Lst impls) inf ty) =
+      if x `elem` impls
+        then binder
+        else Meta.updateBinderMeta binder "implements" (XObj (Lst (x : impls)) inf ty)
+    updateImplementations binder _ =
+      Meta.updateBinderMeta binder "implements" (XObj (Lst [x]) (Just dummyInfo) (Just DynamicTy))
 primitiveImplements _ ctx [x, _] =
   pure $ evalError ctx ("`implements` expects symbol arguments.") (xobjInfo x)
 primitiveImplements x@(XObj _ _ _) ctx args =
@@ -221,53 +217,63 @@ primitiveImplements x@(XObj _ _ _) ctx args =
 
 define :: Bool -> Context -> XObj -> IO Context
 define hidden ctx@(Context globalEnv _ typeEnv _ proj _ _ _) annXObj =
-  let previousType =
-        case lookupInEnv (getPath annXObj) globalEnv of
-          Just (_, Binder _ found) -> xobjTy found
-          Nothing -> Nothing
-      previousMeta = existingMeta globalEnv annXObj
-      adjustedMeta =
-        if hidden
-          then Meta.set "hidden" trueXObj previousMeta
-          else previousMeta
-   in case annXObj of
-        XObj (Lst (XObj (Defalias _) _ _ : _)) _ _ ->
-          pure (ctx {contextTypeEnv = TypeEnv (envInsertAt (getTypeEnv typeEnv) (getPath annXObj) (Binder adjustedMeta annXObj))})
-        XObj (Lst (XObj (Deftype _) _ _ : _)) _ _ ->
-          pure (ctx {contextTypeEnv = TypeEnv (envInsertAt (getTypeEnv typeEnv) (getPath annXObj) (Binder adjustedMeta annXObj))})
-        XObj (Lst (XObj (DefSumtype _) _ _ : _)) _ _ ->
-          pure (ctx {contextTypeEnv = TypeEnv (envInsertAt (getTypeEnv typeEnv) (getPath annXObj) (Binder adjustedMeta annXObj))})
-        _ ->
-          do
-            when (projectEchoC proj) $
-              putStrLn (toC All (Binder emptyMeta annXObj))
-            case previousType of
-              Just previousTypeUnwrapped ->
-                unless (areUnifiable (forceTy annXObj) previousTypeUnwrapped) $
-                  do
-                    emitWarning
-                      ( "Definition at " ++ prettyInfoFromXObj annXObj ++ " changed type of '" ++ show (getPath annXObj)
-                          ++ "' from "
-                          ++ show previousTypeUnwrapped
-                          ++ " to "
-                          ++ show (forceTy annXObj)
-                      )
-              Nothing -> pure ()
-            case Meta.get "implements" previousMeta of
-              Just (XObj (Lst interfaces) _ _) ->
-                do
-                  let result = foldM (\ctx' (xobj, interface) -> registerInInterface ctx' xobj interface) ctx (zip (cycle [annXObj]) (map getPath interfaces))
-                  case result of
-                    Left err ->
-                      do
-                        case contextExecMode ctx of
-                          Check ->
-                            let fppl = projectFilePathPrintLength (contextProj ctx)
-                             in putStrLn (machineReadableInfoFromXObj fppl annXObj ++ " " ++ err)
-                          _ -> putStrLnWithColor Red err
-                        pure ctx
-                    Right ctx' -> pure (ctx' {contextGlobalEnv = envInsertAt globalEnv (getPath annXObj) (Binder adjustedMeta annXObj)})
-              _ -> pure (ctx {contextGlobalEnv = envInsertAt globalEnv (getPath annXObj) (Binder adjustedMeta annXObj)})
+  pure (hideIt freshBinder)
+    >>= \newBinder -> case annXObj of
+      XObj (Lst (XObj (Defalias _) _ _ : _)) _ _ ->
+        pure (ctx {contextTypeEnv = TypeEnv (envInsertAt (getTypeEnv typeEnv) (getPath annXObj) newBinder)})
+      XObj (Lst (XObj (Deftype _) _ _ : _)) _ _ ->
+        pure (ctx {contextTypeEnv = TypeEnv (envInsertAt (getTypeEnv typeEnv) (getPath annXObj) newBinder)})
+      XObj (Lst (XObj (DefSumtype _) _ _ : _)) _ _ ->
+        pure (ctx {contextTypeEnv = TypeEnv (envInsertAt (getTypeEnv typeEnv) (getPath annXObj) newBinder)})
+      _ -> defineGlobal
+  where
+    freshBinder = (Binder emptyMeta annXObj)
+    defineGlobal :: IO Context
+    defineGlobal =
+      when (projectEchoC proj) (putStrLn (toC All (Binder emptyMeta annXObj)))
+        >> pure (lookupInEnv (getPath annXObj) globalEnv)
+        >>= \maybebinder ->
+          case maybebinder of
+            Nothing -> pure (hideIt freshBinder)
+              >>= \newBinder -> pure (ctx {contextGlobalEnv = envInsertAt globalEnv (getPath annXObj) newBinder})
+            Just (_, (Binder meta _)) -> pure (hideIt (Binder meta annXObj))
+              >>= \newBinder -> warnTypeChange newBinder
+                >> registerDef newBinder
+                >>= \context -> pure (context {contextGlobalEnv = envInsertAt globalEnv (getPath annXObj) newBinder})
+    hideIt :: Binder -> Binder
+    hideIt binder =
+      if hidden
+        then Meta.updateBinderMeta binder "hidden" trueXObj
+        else binder
+    warnTypeChange :: Binder -> IO ()
+    warnTypeChange binder =
+      unless (areUnifiable (forceTy annXObj) previousType) warn
+      where
+        previousType = forceTy (binderXObj binder)
+        warn =
+          emitWarning
+            ( "Definition at " ++ prettyInfoFromXObj annXObj ++ " changed type of '" ++ show (getPath annXObj)
+                ++ "' from "
+                ++ show previousType
+                ++ " to "
+                ++ show (forceTy annXObj)
+            )
+    registerDef :: Binder -> IO Context
+    registerDef binder =
+      pure
+        ( Meta.getBinderMetaValue "implements" binder
+            >>= \(XObj (Lst interfaces) _ _) -> pure (map getPath interfaces)
+        )
+        >>= \maybeinterfaces -> pure (map snd (catMaybes (map ((flip lookupInEnv) (getTypeEnv typeEnv)) (fromMaybe [] maybeinterfaces))))
+          >>= \interfaceBinders -> pure (foldM (\ctx' interface -> registerInInterface ctx' binder interface) ctx interfaceBinders)
+            >>= \result -> case result of
+              Left e -> ((printError (contextExecMode ctx) e) >> pure ctx)
+              Right newCtx -> (pure newCtx)
+    printError :: ExecutionMode -> String -> IO ()
+    printError Check e =
+      let fppl = projectFilePathPrintLength (contextProj ctx)
+       in putStrLn (machineReadableInfoFromXObj fppl annXObj ++ " " ++ e)
+    printError _ e = putStrLnWithColor Red e
 
 primitiveRegisterType :: Primitive
 primitiveRegisterType _ ctx [XObj (Sym (SymPath [] t) _) _ _] =
@@ -437,9 +443,9 @@ primitiveMembers _ ctx [target] = do
               _
               ( XObj
                   ( Lst
-                      ( XObj (DefSumtype _) Nothing Nothing
-                          : XObj (Sym (SymPath _ _) Symbol) Nothing Nothing
-                          : sumtypeCases
+                      ( XObj (DefSumtype _) Nothing Nothing :
+                          XObj (Sym (SymPath _ _) Symbol) Nothing Nothing :
+                          sumtypeCases
                         )
                     )
                   _
@@ -535,7 +541,7 @@ primitiveDefinterface xobj ctx [nameXObj@(XObj (Sym path@(SymPath [] name) _) _ 
         defInterface =
           let interface = defineInterface name t [] (xobjInfo nameXObj)
               typeEnv' = TypeEnv (envInsertAt typeEnv (SymPath [] name) (Binder emptyMeta interface))
-              newCtx = retroactivelyRegisterInInterface (ctx {contextTypeEnv = typeEnv'}) path
+              newCtx = retroactivelyRegisterInInterface (ctx {contextTypeEnv = typeEnv'}) (Binder emptyMeta interface)
            in (newCtx, dynamicNil)
         updateInterface binder = case binder of
           Binder _ (XObj (Lst (XObj (Interface foundType _) _ _ : _)) _ _) ->
@@ -697,9 +703,9 @@ primitiveDeftype xobj ctx (name : rest) =
                     -- NOTE: The type binding is needed to emit the type definition and all the member functions of the type.
                     XObj
                       ( Lst
-                          ( XObj (typeConstructor structTy) Nothing Nothing :
-                            XObj (Sym (SymPath pathStrings tyName) Symbol) Nothing Nothing :
-                            rest
+                          ( XObj (typeConstructor structTy) Nothing Nothing
+                              : XObj (Sym (SymPath pathStrings tyName) Symbol) Nothing Nothing
+                              : rest
                           )
                       )
                       i
@@ -712,13 +718,18 @@ primitiveDeftype xobj ctx (name : rest) =
                     )
                in do
                     ctxWithDeps <- liftIO (foldM (define True) ctx' deps)
-                    let ctxWithInterfaceRegistrations =
+                    let fakeImplBinder sympath t = (Binder emptyMeta (XObj (Sym sympath Symbol) (Just dummyInfo) (Just t)))
+                        strSig = FuncTy [RefTy structTy (VarTy "q")] StringTy StaticLifetimeTy
+                        copySig = FuncTy [RefTy structTy (VarTy "q")] structTy StaticLifetimeTy
+                        Just (_, strInterface) = lookupInEnv (SymPath [] "str") (getTypeEnv typeEnv)
+                        Just (_, copyInterface) = lookupInEnv (SymPath [] "copy") (getTypeEnv typeEnv)
+                        ctxWithInterfaceRegistrations =
                           -- Since these functions are autogenerated, we treat them as a special case and automatically implement the interfaces.
                           foldM
                             (\context (path, sig, interface) -> registerInInterfaceIfNeeded context path interface sig)
                             ctxWithDeps
-                            [ (SymPath (pathStrings ++ [typeModuleName]) "str", FuncTy [RefTy structTy (VarTy "q")] StringTy StaticLifetimeTy, (SymPath [] "str")),
-                              (SymPath (pathStrings ++ [typeModuleName]) "copy", FuncTy [RefTy structTy (VarTy "q")] structTy StaticLifetimeTy, (SymPath [] "copy"))
+                            [ ((fakeImplBinder (SymPath (pathStrings ++ [typeModuleName]) "str") strSig), strSig, strInterface),
+                              ((fakeImplBinder (SymPath (pathStrings ++ [typeModuleName]) "copy") copySig), copySig, copyInterface)
                             ]
                     case ctxWithInterfaceRegistrations of
                       Left err -> do
