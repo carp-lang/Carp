@@ -176,6 +176,12 @@ isExternalFunction :: XObj -> Bool
 isExternalFunction (XObj (Lst (XObj (External _) _ _ : _)) _ _) = True
 isExternalFunction _ = False
 
+isTypeDef :: XObj -> Bool
+isTypeDef (XObj (Lst (XObj (Defalias _) _ _ : _)) _ _) = True
+isTypeDef (XObj (Lst (XObj (Deftype _) _ _ : _)) _ _) = True
+isTypeDef (XObj (Lst (XObj (DefSumtype _) _ _ : _)) _ _) = True
+isTypeDef _ = False
+
 -- | This instance is needed for the dynamic Dictionary
 instance Ord Obj where
   compare (Str a) (Str b) = compare a b
