@@ -13,6 +13,7 @@ import SumtypeCase
 import Template
 import ToTemplate
 import TypeError
+import TypePredicates
 import Types
 import TypesToC
 import Util

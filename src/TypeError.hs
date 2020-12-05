@@ -1,11 +1,12 @@
 module TypeError where
 
 import Constraints
+import qualified Data.Map as Map
 import Data.Maybe (fromMaybe)
 import Info
-import Lookup
 import Obj
 import Project
+import Text.EditDistance (defaultEditCosts, levenshteinDistance)
 import Types
 import Util
 
@@ -470,3 +471,18 @@ makeEvalError ctx err msg info =
                     Nothing -> msg
            in (ctx, Left (EvalError messageWhenChecking [] fppl Nothing)) -- Passing no history to avoid appending it at the end in 'show' instance for EvalError
         _ -> (ctx, Left (EvalError msg history fppl info))
+
+keysInEnvEditDistance :: SymPath -> Env -> Int -> [String]
+keysInEnvEditDistance (SymPath [] name) env distance =
+  let candidates = Map.filterWithKey (\k _ -> levenshteinDistance defaultEditCosts k name < distance) (envBindings env)
+   in Map.keys candidates
+keysInEnvEditDistance path@(SymPath (p : ps) name) env distance =
+  case Map.lookup p (envBindings env) of
+    Just (Binder _ xobj) ->
+      case xobj of
+        (XObj (Mod modEnv) _ _) -> keysInEnvEditDistance (SymPath ps name) modEnv distance
+        _ -> []
+    Nothing ->
+      case envParent env of
+        Just parent -> keysInEnvEditDistance path parent distance
+        Nothing -> []

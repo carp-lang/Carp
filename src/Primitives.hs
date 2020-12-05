@@ -24,6 +24,7 @@ import Sumtypes
 import Template
 import ToTemplate
 import TypeError
+import TypePredicates
 import Types
 import Util
 import Web.Browser (openBrowser)

@@ -4,7 +4,6 @@ import qualified Data.Map as Map
 import Data.Maybe (mapMaybe)
 import qualified Meta
 import Obj
-import Text.EditDistance (defaultEditCosts, levenshteinDistance)
 import Types
 
 -- | The type of generic lookup functions.
@@ -193,38 +192,6 @@ isManaged _ StringTy = True
 isManaged _ PatternTy = True
 isManaged _ FuncTy {} = True
 isManaged _ _ = False
-
--- | Is this type a function type?
-isFunctionType :: Ty -> Bool
-isFunctionType FuncTy {} = True
-isFunctionType _ = False
-
--- | Is this type a struct type?
-isStructType :: Ty -> Bool
-isStructType (StructTy _ _) = True
-isStructType _ = False
-
-keysInEnvEditDistance :: SymPath -> Env -> Int -> [String]
-keysInEnvEditDistance (SymPath [] name) env distance =
-  let candidates = Map.filterWithKey (\k _ -> levenshteinDistance defaultEditCosts k name < distance) (envBindings env)
-   in Map.keys candidates
-keysInEnvEditDistance path@(SymPath (p : ps) name) env distance =
-  case Map.lookup p (envBindings env) of
-    Just (Binder _ xobj) ->
-      case xobj of
-        (XObj (Mod modEnv) _ _) -> keysInEnvEditDistance (SymPath ps name) modEnv distance
-        _ -> []
-    Nothing ->
-      case envParent env of
-        Just parent -> keysInEnvEditDistance path parent distance
-        Nothing -> []
-
-bindingNames :: Env -> [String]
-bindingNames = concatMap select . envBindings
-  where
-    select :: Binder -> [String]
-    select (Binder _ (XObj (Mod i) _ _)) = bindingNames i
-    select (Binder _ obj) = [getName obj]
 
 existingMeta :: Env -> XObj -> MetaData
 existingMeta globalEnv xobj =

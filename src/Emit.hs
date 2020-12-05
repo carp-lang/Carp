@@ -23,6 +23,7 @@ import Obj
 import Project
 import Scoring
 import Template
+import TypePredicates
 import Types
 import TypesToC
 import Util

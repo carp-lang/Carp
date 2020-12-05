@@ -57,7 +57,8 @@ library
                        Primitives,
                        Validate,
                        Reify,
-                       Env
+                       Env,
+                       TypePredicates
 
   build-depends:       base >= 4.7 && < 5
                      , parsec == 3.1.*

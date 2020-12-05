@@ -20,6 +20,7 @@ import Reify
 import SumtypeCase
 import ToTemplate
 import TypeError
+import TypePredicates
 import Types
 import TypesToC
 import Util
