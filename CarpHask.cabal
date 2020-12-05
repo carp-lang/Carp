@@ -111,6 +111,8 @@ test-suite CarpHask-test
                      , CarpHask
                      , HUnit
                      , containers
+  other-modules:       TestConstraints
+                     , TestLookup
   ghc-options:         -threaded -rtsopts -with-rtsopts=-N
   default-language:    Haskell2010
 
