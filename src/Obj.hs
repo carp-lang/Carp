@@ -176,6 +176,12 @@ isExternalFunction :: XObj -> Bool
 isExternalFunction (XObj (Lst (XObj (External _) _ _ : _)) _ _) = True
 isExternalFunction _ = False
 
+isTypeDef :: XObj -> Bool
+isTypeDef (XObj (Lst (XObj (Defalias _) _ _ : _)) _ _) = True
+isTypeDef (XObj (Lst (XObj (Deftype _) _ _ : _)) _ _) = True
+isTypeDef (XObj (Lst (XObj (DefSumtype _) _ _ : _)) _ _) = True
+isTypeDef _ = False
+
 -- | This instance is needed for the dynamic Dictionary
 instance Ord Obj where
   compare (Str a) (Str b) = compare a b
@@ -298,6 +304,9 @@ getPath (XObj (Lst (XObj (Command _) _ _ : XObj (Sym path _) _ _ : _)) _ _) = pa
 getPath (XObj (Lst (XObj (Primitive _) _ _ : XObj (Sym path _) _ _ : _)) _ _) = path
 getPath (XObj (Sym path _) _ _) = path
 getPath x = SymPath [] (pretty x)
+
+getBinderPath :: Binder -> SymPath
+getBinderPath = getPath . binderXObj
 
 -- | Changes the second form (where the name of definitions are stored) in a list of XObj:s.
 setPath :: XObj -> SymPath -> XObj
