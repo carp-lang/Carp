@@ -11,8 +11,7 @@ where
 
 import ColorText
 import Constraints
-import Data.Either (isRight)
-import Data.List (foldl')
+import Control.Monad (foldM)
 import Lookup
 import Obj
 import Types
@@ -48,58 +47,53 @@ instance Show InterfaceError where
 
 -- TODO: This is currently called once outside of this module--try to remove that call and make this internal.
 -- Checks whether a given form's type matches an interface, and if so, registers the form with the interface.
-registerInInterfaceIfNeeded :: Context -> SymPath -> SymPath -> Ty -> Either String Context
-registerInInterfaceIfNeeded ctx path@(SymPath _ _) interface@(SymPath [] name) definitionSignature =
-  maybe (pure ctx) (typeCheck . snd) (lookupInEnv interface typeEnv)
+registerInInterfaceIfNeeded :: Context -> Binder -> Binder -> Ty -> Either String Context
+registerInInterfaceIfNeeded ctx implementation interface definitionSignature =
+  case interface of
+    Binder _ (XObj (Lst [inter@(XObj (Interface interfaceSignature paths) ii it), isym]) i t) ->
+      if checkKinds interfaceSignature definitionSignature
+        then case solve [Constraint interfaceSignature definitionSignature inter inter inter OrdInterfaceImpl] of
+          Left _ -> Left (show $ TypeMismatch implPath definitionSignature interfaceSignature)
+          Right _ -> Right (ctx {contextTypeEnv = TypeEnv (extendEnv typeEnv name updatedInterface)})
+        else Left (show $ KindMismatch implPath definitionSignature interfaceSignature)
+      where
+        updatedInterface = XObj (Lst [XObj (Interface interfaceSignature (addIfNotPresent implPath paths)) ii it, isym]) i t
+    _ ->
+      Left (show $ NonInterface (getBinderPath interface))
   where
+    implPath = (getBinderPath implementation)
     typeEnv = getTypeEnv (contextTypeEnv ctx)
-    typeCheck binder = case binder of
-      Binder _ (XObj (Lst [inter@(XObj (Interface interfaceSignature paths) ii it), isym]) i t) ->
-        if checkKinds interfaceSignature definitionSignature
-          then -- N.B. the xobjs aren't important here--we only care about types,
-          -- thus we pass inter to all three xobj positions.
+    (SymPath _ name) = getBinderPath interface
 
-            if isRight $ solve [Constraint interfaceSignature definitionSignature inter inter inter OrdInterfaceImpl]
-              then
-                let updatedInterface = XObj (Lst [XObj (Interface interfaceSignature (addIfNotPresent path paths)) ii it, isym]) i t
-                 in Right $ ctx {contextTypeEnv = TypeEnv (extendEnv typeEnv name updatedInterface)}
-              else Left (show $ TypeMismatch path definitionSignature interfaceSignature)
-          else Left (show $ KindMismatch path definitionSignature interfaceSignature)
-      _ ->
-        Left (show $ NonInterface interface)
-
--- | Given an XObj and an interface path, ensure that the form is
+-- | Given a binder and an interface path, ensure that the form is
 -- registered with the interface.
-registerInInterface :: Context -> XObj -> SymPath -> Either String Context
-registerInInterface ctx xobj interface =
-  case xobj of
-    XObj (Lst [XObj (Defn _) _ _, XObj (Sym path _) _ _, _, _]) _ (Just t) ->
+registerInInterface :: Context -> Binder -> Binder -> Either String Context
+registerInInterface ctx implementation interface =
+  case (binderXObj implementation) of
+    XObj (Lst [XObj (Defn _) _ _, _, _, _]) _ (Just t) ->
       -- This is a function, does it belong to an interface?
-      registerInInterfaceIfNeeded ctx path interface t
-    XObj (Lst [XObj (Deftemplate _) _ _, XObj (Sym path _) _ _]) _ (Just t) ->
+      registerInInterfaceIfNeeded ctx implementation interface t
+    XObj (Lst [XObj (Deftemplate _) _ _, _]) _ (Just t) ->
       -- Templates should also be registered.
-      registerInInterfaceIfNeeded ctx path interface t
-    XObj (Lst [XObj Def _ _, XObj (Sym path _) _ _, _]) _ (Just t) ->
+      registerInInterfaceIfNeeded ctx implementation interface t
+    XObj (Lst [XObj Def _ _, _, _]) _ (Just t) ->
       -- Global variables can also be part of an interface
-      registerInInterfaceIfNeeded ctx path interface t
+      registerInInterfaceIfNeeded ctx implementation interface t
     -- So can externals!
-    XObj (Lst [XObj (External _) _ _, XObj (Sym path _) _ _, _]) _ (Just t) ->
-      registerInInterfaceIfNeeded ctx path interface t
+    XObj (Lst [XObj (External _) _ _, _, _]) _ (Just t) ->
+      registerInInterfaceIfNeeded ctx implementation interface t
     -- And instantiated/auto-derived type functions! (e.g. Pair.a)
-    XObj (Lst [XObj (Instantiate _) _ _, XObj (Sym path _) _ _]) _ (Just t) ->
-      registerInInterfaceIfNeeded ctx path interface t
+    XObj (Lst [XObj (Instantiate _) _ _, _]) _ (Just t) ->
+      registerInInterfaceIfNeeded ctx implementation interface t
     _ -> pure ctx
 
 -- | For forms that were declared as implementations of interfaces that didn't exist,
 -- retroactively register those forms with the interface once its defined.
-retroactivelyRegisterInInterface :: Context -> SymPath -> Context
-retroactivelyRegisterInInterface ctx interface@(SymPath _ _) =
+retroactivelyRegisterInInterface :: Context -> Binder -> Context
+retroactivelyRegisterInInterface ctx interface =
   -- TODO: Don't use error here?
   either (\e -> error e) id resultCtx
   where
     env = contextGlobalEnv ctx
-    impls = recursiveLookupAll interface lookupImplementations env
-    resultCtx = foldl' folder (Right ctx) impls
-    folder ctx' binder = either Left register' ctx'
-      where
-        register' ok = registerInInterface ok (binderXObj binder) interface
+    impls = recursiveLookupAll (getPath (binderXObj interface)) lookupImplementations env
+    resultCtx = foldM (\context binder -> registerInInterface context binder interface) ctx impls

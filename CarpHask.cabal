@@ -47,6 +47,7 @@ library
                        Expand,
                        Scoring,
                        Lookup,
+                       Context,
                        Qualify,
                        Repl,
                        StartingEnv,
