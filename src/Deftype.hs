@@ -10,7 +10,7 @@ where
 import Concretize
 import qualified Data.Map as Map
 import Data.Maybe
-import Infer
+import Env
 import Info
 import Lookup
 import Obj

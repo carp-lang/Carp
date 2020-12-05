@@ -13,6 +13,7 @@ import Data.List.Split (splitOn, splitWhen)
 import qualified Data.Map as Map
 import Data.Maybe (fromJust, fromMaybe, isJust)
 import Emit
+import Env
 import Expand
 import Infer
 import Info

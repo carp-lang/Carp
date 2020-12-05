@@ -2,6 +2,7 @@ module Expand (expandAll, replaceSourceInfoOnXObj) where
 
 import Control.Monad.State (State, evalState, get, put)
 import Data.Foldable (foldlM)
+import Env
 import Info
 import Lookup
 import Obj

@@ -10,6 +10,7 @@ import Data.List (union)
 import Data.Maybe (fromMaybe)
 import Deftype
 import Emit
+import Env
 import Infer
 import Info
 import Interfaces

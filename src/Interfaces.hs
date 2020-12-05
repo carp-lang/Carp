@@ -13,6 +13,7 @@ import ColorText
 import Constraints
 import Data.Either (isRight)
 import Data.List (foldl')
+import Env
 import Lookup
 import Obj
 import Types

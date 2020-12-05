@@ -11,6 +11,7 @@ import Data.Maybe (fromMaybe)
 import Data.Set ((\\))
 import qualified Data.Set as Set
 import Debug.Trace
+import Env
 import Info
 import Lookup
 import Obj

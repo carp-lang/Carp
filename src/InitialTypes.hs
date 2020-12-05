@@ -2,6 +2,7 @@ module InitialTypes where
 
 import Control.Monad.State
 import qualified Data.Map as Map
+import Env
 import Info
 import Lookup
 import Obj

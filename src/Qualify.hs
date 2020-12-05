@@ -3,6 +3,7 @@ module Qualify where
 import Data.List (foldl')
 import qualified Data.Map as Map
 import Debug.Trace
+import Env
 import Info
 import Lookup
 import Obj

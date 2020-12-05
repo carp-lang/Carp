@@ -56,7 +56,8 @@ library
                        Interfaces,
                        Primitives,
                        Validate,
-                       Reify
+                       Reify,
+                       Env
 
   build-depends:       base >= 4.7 && < 5
                      , parsec == 3.1.*
