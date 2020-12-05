@@ -123,7 +123,7 @@ instance Show TypeError where
       ++ prettyInfoFromXObj xobj
       ++ ".\n\nTry wrapping them in a `do`."
   show (NoFormsInBody xobj) =
-    "There are no expressions in the body body of the form at "
+    "There are no expressions in the body of the form at "
       ++ prettyInfoFromXObj xobj
       ++ ".\n\nI need exactly one body form. For multiple forms, try using `do`."
   show (UnificationFailed (Constraint a b aObj bObj ctx _) mappings _) =
