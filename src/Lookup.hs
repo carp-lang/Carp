@@ -39,20 +39,6 @@ lookupMeta path globalEnv =
     Just (Binder meta _) -> meta
     Nothing -> emptyMeta
 
--- | Find the possible (imported) symbols that could be referred to by a name.
-multiLookup :: String -> Env -> [(Env, Binder)]
-multiLookup = recursiveLookup OnlyImports lookupByName
-
--- | Find all symbols with a certain name, in *all* environments.
-multiLookupEverywhere :: String -> Env -> [(Env, Binder)]
-multiLookupEverywhere = recursiveLookup Everywhere lookupByName
-
--- | Lookup binders by name in a single Env (no recursion),
-lookupByName :: String -> Env -> [(Env, Binder)]
-lookupByName name env =
-  let filtered = Map.filterWithKey (\k _ -> k == name) (envBindings env)
-   in map ((,) env . snd) (Map.toList filtered)
-
 -- | Get the Env stored in a binder, if any.
 envFromBinder :: Binder -> Maybe Env
 envFromBinder (Binder _ (XObj (Mod e) _ _)) = Just e
@@ -87,7 +73,11 @@ recursiveLookup lookWhere lookf input env =
         Nothing -> []
    in spine ++ leaves ++ above
 
--- TODO: recursiveLookupAll (env + binder) :: a -> LookupFunc a -> Env -> [(Env, Binder)]
+-- | Lookup binders by name in a single Env (no recursion),
+lookupByName :: String -> Env -> [(Env, Binder)]
+lookupByName name env =
+  let filtered = Map.filterWithKey (\k _ -> k == name) (envBindings env)
+   in map ((,) env . snd) (Map.toList filtered)
 
 -- | Lookup binders that have specified metadata.
 lookupByMeta :: String -> Env -> [Binder]
@@ -107,6 +97,14 @@ lookupImplementations interface env =
       case Meta.get "implements" meta of
         Just (XObj (Lst interfaces) _ _) -> interface `elem` map getPath interfaces
         _ -> False
+
+-- | Find the possible (imported) symbols that could be referred to by a name.
+multiLookup :: String -> Env -> [(Env, Binder)]
+multiLookup = recursiveLookup OnlyImports lookupByName
+
+-- | Find all symbols with a certain name, in *all* environments.
+multiLookupEverywhere :: String -> Env -> [(Env, Binder)]
+multiLookupEverywhere = recursiveLookup Everywhere lookupByName
 
 -- | Enables look up "semi qualified" (and fully qualified) symbols.
 -- | i.e. if there are nested environments with a function A.B.f
