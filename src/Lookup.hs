@@ -39,12 +39,13 @@ lookupMeta path globalEnv =
     Just (Binder meta _) -> meta
     Nothing -> emptyMeta
 
--- | Find all the possible (imported) symbols that could be referred to
+-- | Find the possible (imported) symbols that could be referred to by a name.
 multiLookup :: String -> Env -> [(Env, Binder)]
-multiLookup = recursiveLookupAll OnlyImports lookupByName
+multiLookup = recursiveLookup OnlyImports lookupByName
 
-multiLookupALL :: String -> Env -> [(Env, Binder)]
-multiLookupALL = recursiveLookupAll Everywhere lookupByName
+-- | Find all symbols with a certain name, in *all* environments.
+multiLookupEverywhere :: String -> Env -> [(Env, Binder)]
+multiLookupEverywhere = recursiveLookup Everywhere lookupByName
 
 -- | Lookup binders by name in a single Env (no recursion),
 lookupByName :: String -> Env -> [(Env, Binder)]
@@ -52,6 +53,7 @@ lookupByName name env =
   let filtered = Map.filterWithKey (\k _ -> k == name) (envBindings env)
    in map ((,) env . snd) (Map.toList filtered)
 
+-- | Get the Env stored in a binder, if any.
 envFromBinder :: Binder -> Maybe Env
 envFromBinder (Binder _ (XObj (Mod e) _ _)) = Just e
 envFromBinder _ = Nothing
@@ -76,12 +78,12 @@ getEnvs OnlyImports = importedEnvs
 
 -- | Given an environment, use a lookup function to recursively find all binders
 -- in the environment that satisfy the lookup.
-recursiveLookupAll :: LookWhere -> LookupFunc a b -> a -> Env -> [b]
-recursiveLookupAll lookWhere lookf input env =
+recursiveLookup :: LookWhere -> LookupFunc a b -> a -> Env -> [b]
+recursiveLookup lookWhere lookf input env =
   let spine = lookf input env
       leaves = concatMap (lookf input) (getEnvs lookWhere env)
       above = case envParent env of
-        Just parent -> recursiveLookupAll lookWhere lookf input parent
+        Just parent -> recursiveLookup lookWhere lookf input parent
         Nothing -> []
    in spine ++ leaves ++ above
 
@@ -103,7 +105,7 @@ lookupImplementations interface env =
   where
     isImpl (Binder meta _) =
       case Meta.get "implements" meta of
-        Just (XObj (Lst interfaces) _ _) -> interface `elem` (map getPath interfaces)
+        Just (XObj (Lst interfaces) _ _) -> interface `elem` map getPath interfaces
         _ -> False
 
 -- | Enables look up "semi qualified" (and fully qualified) symbols.

@@ -3,7 +3,7 @@ module Constraints
     Constraint (..),
     ConstraintOrder (..),
     UnificationFailure (..),
-    recursiveLookup,
+    recursiveNameLookup,
     debugSolveOne, -- exported to avoid warning about unused function (should be another way...)
     debugResolveFully, -- exported to avoid warning about unused function
   )
@@ -68,8 +68,8 @@ instance Show Constraint where
   show (Constraint a b _ _ _ ord) = "{" ++ show a ++ " == " ++ show b ++ " (ord " ++ show ord ++ ")} " -- ++ show (fmap infoLine (info xa)) ++ ", " ++ show (fmap infoLine (info xb)) ++ " in " ++ show ctx
 
 -- Finds the symbol with the "lowest name" (first in alphabetical order)
-recursiveLookup :: TypeMappings -> String -> Maybe Ty
-recursiveLookup mappings name = innerLookup name []
+recursiveNameLookup :: TypeMappings -> String -> Maybe Ty
+recursiveNameLookup mappings name = innerLookup name []
   where
     innerLookup :: String -> [Ty] -> Maybe Ty
     innerLookup k visited =
@@ -200,7 +200,7 @@ checkForConflict mappings constraint name otherTy =
 checkConflictInternal :: TypeMappings -> Constraint -> String -> Ty -> Either UnificationFailure TypeMappings
 checkConflictInternal mappings constraint name otherTy =
   let (Constraint _ _ xobj1 xobj2 ctx _) = constraint
-      found = recursiveLookup mappings name
+      found = recursiveNameLookup mappings name
    in case found of --trace ("CHECK CONFLICT " ++ show constraint ++ " with name " ++ name ++ ", otherTy: " ++ show otherTy ++ ", found: " ++ show found) found of
         Just (VarTy _) -> ok
         Just (StructTy (VarTy _) structTyVars) ->
@@ -239,7 +239,7 @@ checkConflictInternal mappings constraint name otherTy =
             VarTy _ -> Right mappings
             _ -> Left (UnificationFailure constraint mappings)
         Just foundNonVar -> case otherTy of
-          (VarTy v) -> case recursiveLookup mappings v of
+          (VarTy v) -> case recursiveNameLookup mappings v of
             Just (VarTy _) -> Right mappings
             Just otherNonVar ->
               if foundNonVar == otherNonVar
@@ -263,7 +263,7 @@ resolveFully mappings varName = Right (Map.insert varName (fullResolve (VarTy va
   where
     fullResolve :: Ty -> Ty
     fullResolve x@(VarTy var) =
-      case recursiveLookup mappings var of
+      case recursiveNameLookup mappings var of
         Just (StructTy name varTys) -> StructTy name (map (fullLookup Set.empty) varTys)
         Just (FuncTy argTys retTy ltTy) -> FuncTy (map (fullLookup Set.empty) argTys) (fullLookup Set.empty retTy) (fullLookup Set.empty ltTy)
         Just found -> found
@@ -271,7 +271,7 @@ resolveFully mappings varName = Right (Map.insert varName (fullResolve (VarTy va
     fullResolve x = x
     fullLookup :: Set.Set Ty -> Ty -> Ty
     fullLookup visited vv@(VarTy v) =
-      case recursiveLookup mappings v of
+      case recursiveNameLookup mappings v of
         Just found ->
           if found == vv || Set.member found visited
             then found

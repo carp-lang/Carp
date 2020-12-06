@@ -13,7 +13,7 @@ import Types
 -- | TODO: Environments are passed in different order here!!!
 nameOfPolymorphicFunction :: TypeEnv -> Env -> Ty -> String -> Maybe SymPath
 nameOfPolymorphicFunction _ env functionType functionName =
-  let foundBinders = multiLookupALL functionName env
+  let foundBinders = multiLookupEverywhere functionName env
    in case filter ((\(Just t') -> areUnifiable functionType t') . xobjTy . binderXObj . snd) foundBinders of
         [] -> Nothing
         [(_, Binder _ (XObj (Lst (XObj (External (Just name)) _ _ : _)) _ _))] ->

@@ -436,7 +436,7 @@ joinedMachineReadableErrorStrings fppl err = joinWith "\n\n" (machineReadableErr
 
 recursiveLookupTy :: TypeMappings -> Ty -> Ty
 recursiveLookupTy mappings t = case t of
-  (VarTy v) -> fromMaybe t (recursiveLookup mappings v)
+  (VarTy v) -> fromMaybe t (recursiveNameLookup mappings v)
   (RefTy r lt) -> RefTy (recursiveLookupTy mappings r) (recursiveLookupTy mappings lt)
   (PointerTy p) -> PointerTy (recursiveLookupTy mappings p)
   (StructTy n innerTys) -> StructTy n (map (recursiveLookupTy mappings) innerTys)

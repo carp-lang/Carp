@@ -363,7 +363,7 @@ primitiveInfo _ ctx [target@(XObj (Sym path@(SymPath _ name) _) _ _)] = do
         Nothing -> notFound ctx target path
         found -> printer env False True found
   where
-    printer env allowLookupInALL errNotFound binderPair = do
+    printer env allowLookupEverywhere errNotFound binderPair = do
       let proj = contextProj ctx
       case binderPair of
         Just (binder@(Binder metaData x@(XObj _ (Just i) _))) ->
@@ -375,8 +375,8 @@ primitiveInfo _ ctx [target@(XObj (Sym path@(SymPath _ name) _) _ _)] = do
             liftIO $ print binder
             printDoc metaData proj x
         Nothing
-          | allowLookupInALL ->
-            case multiLookupALL name env of
+          | allowLookupEverywhere ->
+            case multiLookupEverywhere name env of
               [] ->
                 if errNotFound
                   then notFound ctx target path
@@ -833,7 +833,7 @@ primitiveType _ ctx [x@(XObj (Sym path@(SymPath [] name) _) _ _)] =
   (maybe otherDefs go (lookupBinder path env))
   where
     env = contextGlobalEnv ctx
-    otherDefs = case multiLookupALL name env of
+    otherDefs = case multiLookupEverywhere name env of
       [] ->
         notFound ctx x path
       binders ->

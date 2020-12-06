@@ -665,7 +665,7 @@ concretizeDefinition allowAmbiguity typeEnv globalEnv visitedDefinitions definit
 -- | Find ALL functions with a certain name, matching a type signature.
 allFunctionsWithNameAndSignature :: Env -> String -> Ty -> [(Env, Binder)]
 allFunctionsWithNameAndSignature env functionName functionType =
-  filter (predicate . xobjTy . binderXObj . snd) (multiLookupALL functionName env)
+  filter (predicate . xobjTy . binderXObj . snd) (multiLookupEverywhere functionName env)
   where
     predicate (Just t) =
       --trace ("areUnifiable? " ++ show functionType ++ " == " ++ show t ++ " " ++ show (areUnifiable functionType t)) $
