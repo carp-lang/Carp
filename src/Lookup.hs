@@ -7,7 +7,7 @@ import Obj
 import Types
 
 -- | The type of generic lookup functions.
-type LookupFunc a = a -> Env -> [Binder]
+type LookupFunc a b = a -> Env -> [b]
 
 -- | Find the Binder at a specified path.
 lookupInEnv :: SymPath -> Env -> Maybe (Env, Binder)
@@ -41,45 +41,16 @@ lookupMeta path globalEnv =
 
 -- | Find all the possible (imported) symbols that could be referred to
 multiLookup :: String -> Env -> [(Env, Binder)]
-multiLookup = multiLookupInternal False
+multiLookup = recursiveLookupAll False lookupByName
 
 multiLookupALL :: String -> Env -> [(Env, Binder)]
-multiLookupALL = multiLookupInternal True
+multiLookupALL = recursiveLookupAll True lookupByName
 
-{-# ANN multiLookupInternal "HLint: ignore Eta reduce" #-}
-
--- | The advanced version of multiLookup that allows for looking into modules that are NOT imported.
--- | Perhaps this function will become unnecessary when all functions can be found through Interfaces? (even 'delete', etc.)
-multiLookupInternal :: Bool -> String -> Env -> [(Env, Binder)]
-multiLookupInternal allowLookupInAllModules name rootEnv = recursiveLookup rootEnv
-  where
-    lookupInLocalEnv :: String -> Env -> Maybe (Env, Binder)
-    lookupInLocalEnv n localEnv = case Map.lookup n (envBindings localEnv) of -- No recurse!
-      Just b -> Just (localEnv, b)
-      Nothing -> Nothing
-    importsAll :: Env -> [Env]
-    importsAll env =
-      let envs = mapMaybe (envFromBinder . snd) (Map.toList (envBindings env))
-       in envs ++ concatMap importsAll envs
-    -- Only lookup in imported modules (nonrecursively!)
-    importsNormal :: Env -> [Env]
-    importsNormal env =
-      catMaybes $ mapMaybe (\path -> fmap envFromBinder (lookupBinder path env)) (envUseModules env)
-    importsLookup :: Env -> [(Env, Binder)]
-    importsLookup env =
-      let envs = (if allowLookupInAllModules then importsAll else importsNormal) env
-       in mapMaybe (lookupInLocalEnv name) envs
-    recursiveLookup :: Env -> [(Env, Binder)]
-    recursiveLookup env =
-      let spine = case Map.lookup name (envBindings env) of
-            Just found -> [(env, found)]
-            Nothing -> []
-          leaves = importsLookup env
-          above = case envParent env of
-            Just parent -> recursiveLookup parent
-            Nothing -> []
-       in --(trace $ "multiLookupInternal '" ++ name ++ "' " ++ show (envModuleName env) ++ ", spine: " ++ show (fmap snd spine) ++ ", leaves: " ++ show (fmap snd leaves) ++ ", above: " ++ show (fmap snd above))
-          spine ++ leaves ++ above
+-- | Lookup binders by name in a single Env (no recursion),
+lookupByName :: String -> Env -> [(Env, Binder)]
+lookupByName name env =
+  let filtered = Map.filterWithKey (\k _ -> k == name) (envBindings env)
+   in map ((,) env . snd) (Map.toList filtered)
 
 envFromBinder :: Binder -> Maybe Env
 envFromBinder (Binder _ (XObj (Mod e) _ _)) = Just e
@@ -89,17 +60,22 @@ envFromBinder _ = Nothing
 -- imported modules.
 importedEnvs :: Env -> [Env]
 importedEnvs env =
+  catMaybes $ mapMaybe (\path -> fmap envFromBinder (lookupBinder path env)) (envUseModules env)
+
+-- | Given an environment, returns the list of all environments of its binders.
+allEnvs :: Env -> [Env]
+allEnvs env =
   let envs = mapMaybe (envFromBinder . snd) (Map.toList (envBindings env))
-   in envs ++ concatMap importedEnvs envs
+   in envs ++ concatMap allEnvs envs
 
 -- | Given an environment, use a lookup function to recursively find all binders
 -- in the environment that satisfy the lookup.
-recursiveLookupAll :: a -> LookupFunc a -> Env -> [Binder]
-recursiveLookupAll input lookf env =
+recursiveLookupAll :: Bool -> LookupFunc a b -> a -> Env -> [b]
+recursiveLookupAll everywhere lookf input env =
   let spine = lookf input env
-      leaves = concatMap (lookf input) (importedEnvs env)
+      leaves = concatMap (lookf input) (if everywhere then allEnvs env else importedEnvs env)
       above = case envParent env of
-        Just parent -> recursiveLookupAll input lookf parent
+        Just parent -> recursiveLookupAll everywhere lookf input parent
         Nothing -> []
    in spine ++ leaves ++ above
 
