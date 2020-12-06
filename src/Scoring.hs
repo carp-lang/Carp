@@ -25,8 +25,8 @@ scoreTypeBinder typeEnv b@(Binder _ (XObj (Lst (XObj x _ _ : XObj (Sym _ _) _ _ 
     _ -> (500, b)
   where
     depthOfStruct (StructTy (ConcreteNameTy structName) varTys) =
-      case lookupInEnv (SymPath [] structName) (getTypeEnv typeEnv) of
-        Just (_, Binder _ typedef) -> (depthOfDeftype typeEnv Set.empty typedef varTys + 1, b)
+      case lookupBinder (SymPath [] structName) (getTypeEnv typeEnv) of
+        Just (Binder _ typedef) -> (depthOfDeftype typeEnv Set.empty typedef varTys + 1, b)
         Nothing -> error ("Can't find user defined type '" ++ structName ++ "' in type env.")
 scoreTypeBinder _ b@(Binder _ (XObj (Mod _) _ _)) =
   (1000, b)
@@ -75,8 +75,8 @@ depthOfType typeEnv visited selfName theType =
           _
             | name == selfName -> 1
             | otherwise ->
-              case lookupInEnv (SymPath [] name) (getTypeEnv typeEnv) of
-                Just (_, Binder _ typedef) -> depthOfDeftype typeEnv (Set.insert theType visited) typedef varTys
+              case lookupBinder (SymPath [] name) (getTypeEnv typeEnv) of
+                Just (Binder _ typedef) -> depthOfDeftype typeEnv (Set.insert theType visited) typedef varTys
                 Nothing ->
                   --trace ("Unknown type: " ++ name) $
                   depthOfVarTys -- The problem here is that generic types don't generate
@@ -113,8 +113,8 @@ scoreBody globalEnv visited root = visit root
         (Sym path (LookupGlobal _ _)) ->
           if Set.member path visited
             then 0
-            else case lookupInEnv path globalEnv of
-              Just (_, foundBinder) ->
+            else case lookupBinder path globalEnv of
+              Just foundBinder ->
                 let (score, _) = scoreValueBinder globalEnv (Set.insert path visited) foundBinder
                  in score + 1
               Nothing ->

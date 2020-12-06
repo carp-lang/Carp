@@ -726,10 +726,10 @@ commandSaveDocsInternal ctx [modulePath] = do
   where
     getEnvironmentBinderForDocumentation :: Context -> Env -> SymPath -> Either String Binder
     getEnvironmentBinderForDocumentation _ env path =
-      case lookupInEnv path env of
-        Just (_, foundBinder@(Binder _ (XObj (Mod _) _ _))) ->
+      case lookupBinder path env of
+        Just foundBinder@(Binder _ (XObj (Mod _) _ _)) ->
           Right foundBinder
-        Just (_, Binder _ x) ->
+        Just (Binder _ x) ->
           Left ("I can’t generate documentation for `" ++ pretty x ++ "` because it isn’t a module")
         Nothing ->
           Left ("I can’t find the module `" ++ show path ++ "`")
@@ -758,10 +758,10 @@ commandSexpressionInternal ctx [xobj] bol =
         mdl@(XObj (Mod e) _ _) ->
           if bol
             then getMod
-            else case lookupInEnv (SymPath [] (fromMaybe "" (envModuleName e))) tyEnv of
-              Just (_, Binder _ (XObj (Lst forms) i t)) ->
+            else case lookupBinder (SymPath [] (fromMaybe "" (envModuleName e))) tyEnv of
+              Just (Binder _ (XObj (Lst forms) i t)) ->
                 pure (ctx, Right (XObj (Lst (map toSymbols forms)) i t))
-              Just (_, Binder _ xobj') ->
+              Just (Binder _ xobj') ->
                 pure (ctx, Right (toSymbols xobj'))
               Nothing ->
                 getMod
@@ -772,10 +772,10 @@ commandSexpressionInternal ctx [xobj] bol =
                   bindingSyms e (ctx, Right x)
               where
                 bindingSyms env start =
-                  ( mapM (\x -> commandSexpression ctx [x]) $
-                      map snd $
-                        Map.toList $
-                          Map.map binderXObj (envBindings env)
+                  ( mapM (\x -> commandSexpression ctx [x])
+                      $ map snd
+                      $ Map.toList
+                      $ Map.map binderXObj (envBindings env)
                   )
                     >>= pure . foldl combine start
                 combine (c, (Right (XObj (Lst xs) i t))) (_, (Right y@(XObj (Lst _) _ _))) =

@@ -134,8 +134,8 @@ setFullyQualifiedSymbols typeEnv globalEnv localEnv xobj@(XObj (Sym path _) i t)
   case path of
     -- Unqualified:
     SymPath [] name ->
-      case lookupInEnv path (getTypeEnv typeEnv) of
-        Just (_, Binder _ (XObj (Lst (XObj (Interface _ _) _ _ : _)) _ _)) ->
+      case lookupBinder path (getTypeEnv typeEnv) of
+        Just (Binder _ (XObj (Lst (XObj (Interface _ _) _ _ : _)) _ _)) ->
           -- Found an interface with the same path!
           -- Have to ensure it's not a local variable with the same name as the interface
           case lookupInEnv path localEnv of
