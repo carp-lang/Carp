@@ -1,7 +1,7 @@
 module Lookup where
 
 import qualified Data.Map as Map
-import Data.Maybe (mapMaybe)
+import Data.Maybe (catMaybes, mapMaybe)
 import qualified Meta
 import Obj
 import Types
@@ -28,18 +28,9 @@ lookupInEnv path@(SymPath (p : ps) name) env =
         Just parent -> lookupInEnv path parent
         Nothing -> Nothing
 
--- | Recursively look through all environments for (def ...) forms.
-findAllGlobalVariables :: Env -> [Binder]
-findAllGlobalVariables env =
-  concatMap finder (envBindings env)
-  where
-    finder :: Binder -> [Binder]
-    finder def@(Binder _ (XObj (Lst (XObj Def _ _ : _)) _ _)) =
-      [def]
-    finder (Binder _ (XObj (Mod innerEnv) _ _)) =
-      findAllGlobalVariables innerEnv
-    finder _ =
-      []
+-- | Like 'lookupInEnv' but only returns the Binder (no Env)
+lookupBinder :: SymPath -> Env -> Maybe Binder
+lookupBinder path env = snd <$> lookupInEnv path env
 
 -- | Find all the possible (imported) symbols that could be referred to
 multiLookup :: String -> Env -> [(Env, Binder)]
@@ -48,8 +39,6 @@ multiLookup = multiLookupInternal False
 multiLookupALL :: String -> Env -> [(Env, Binder)]
 multiLookupALL = multiLookupInternal True
 
--- TODO: Many of the local functions defined in the body of multiLookupInternal have been extracted.
--- Remove the duplication and define this in terms of the more generic/extracted functions.
 {-# ANN multiLookupInternal "HLint: ignore Eta reduce" #-}
 
 -- | The advanced version of multiLookup that allows for looking into modules that are NOT imported.
@@ -68,7 +57,7 @@ multiLookupInternal allowLookupInAllModules name rootEnv = recursiveLookup rootE
     -- Only lookup in imported modules (nonrecursively!)
     importsNormal :: Env -> [Env]
     importsNormal env =
-      mapMaybe (\path -> fmap getEnvFromBinder (lookupInEnv path env)) (envUseModules env)
+      catMaybes $ mapMaybe (\path -> fmap envFromBinder (lookupBinder path env)) (envUseModules env)
     importsLookup :: Env -> [(Env, Binder)]
     importsLookup env =
       let envs = (if allowLookupInAllModules then importsAll else importsNormal) env
@@ -107,11 +96,7 @@ recursiveLookupAll input lookf env =
         Nothing -> []
    in spine ++ leaves ++ above
 
--- | Lookup binders by name.
-lookupByName :: String -> Env -> [Binder]
-lookupByName name env =
-  let filtered = Map.filterWithKey (\k _ -> k == name) (envBindings env)
-   in map snd $ Map.toList filtered
+-- TODO: recursiveLookupAll (env + binder) :: a -> LookupFunc a -> Env -> [(Env, Binder)]
 
 -- | Lookup binders that have specified metadata.
 lookupByMeta :: String -> Env -> [Binder]
@@ -131,10 +116,6 @@ lookupImplementations interface env =
       case Meta.get "implements" meta of
         Just (XObj (Lst interfaces) _ _) -> interface `elem` (map getPath interfaces)
         _ -> False
-
-getEnvFromBinder :: (a, Binder) -> Env
-getEnvFromBinder (_, Binder _ (XObj (Mod foundEnv) _ _)) = foundEnv
-getEnvFromBinder (_, Binder _ err) = error ("Can't handle imports of non modules yet: " ++ show err)
 
 -- | Enables look up "semi qualified" (and fully qualified) symbols.
 -- | i.e. if there are nested environments with a function A.B.f
@@ -160,12 +141,26 @@ multiLookupQualified path@(SymPath (p : _) _) rootEnv =
             Nothing -> []
           fromUsedModules =
             let usedModules = envUseModules rootEnv
-                envs = mapMaybe (\path' -> fmap getEnvFromBinder (lookupInEnv path' rootEnv)) usedModules
+                envs = catMaybes $ mapMaybe (\path' -> fmap envFromBinder (lookupBinder path' rootEnv)) usedModules
              in concatMap (multiLookupQualified path) envs
        in fromParent ++ fromUsedModules
 
+-- | Get the meta data associated with an XObj that contains 'path' information (i.e. definitions).
 existingMeta :: Env -> XObj -> MetaData
 existingMeta globalEnv xobj =
-  case lookupInEnv (getPath xobj) globalEnv of
-    Just (_, Binder meta _) -> meta
+  case lookupBinder (getPath xobj) globalEnv of
+    Just (Binder meta _) -> meta
     Nothing -> emptyMeta
+
+-- | Recursively look through all environments for (def ...) forms.
+findAllGlobalVariables :: Env -> [Binder]
+findAllGlobalVariables env =
+  concatMap finder (envBindings env)
+  where
+    finder :: Binder -> [Binder]
+    finder def@(Binder _ (XObj (Lst (XObj Def _ _ : _)) _ _)) =
+      [def]
+    finder (Binder _ (XObj (Mod innerEnv) _ _)) =
+      findAllGlobalVariables innerEnv
+    finder _ =
+      []
