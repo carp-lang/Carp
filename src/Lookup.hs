@@ -64,12 +64,12 @@ getEnvs OnlyImports = importedEnvs
 
 -- | Given an environment, use a lookup function to recursively find all binders
 -- in the environment that satisfy the lookup.
-recursiveLookup :: LookWhere -> LookupFunc a b -> a -> Env -> [b]
-recursiveLookup lookWhere lookf input env =
+lookupMany :: LookWhere -> LookupFunc a b -> a -> Env -> [b]
+lookupMany lookWhere lookf input env =
   let spine = lookf input env
       leaves = concatMap (lookf input) (getEnvs lookWhere env)
       above = case envParent env of
-        Just parent -> recursiveLookup lookWhere lookf input parent
+        Just parent -> lookupMany lookWhere lookf input parent
         Nothing -> []
    in spine ++ leaves ++ above
 
@@ -99,12 +99,12 @@ lookupImplementations interface env =
         _ -> False
 
 -- | Find the possible (imported) symbols that could be referred to by a name.
-multiLookup :: String -> Env -> [(Env, Binder)]
-multiLookup = recursiveLookup OnlyImports lookupByName
+multiLookupImports :: String -> Env -> [(Env, Binder)]
+multiLookupImports = lookupMany OnlyImports lookupByName
 
 -- | Find all symbols with a certain name, in *all* environments.
 multiLookupEverywhere :: String -> Env -> [(Env, Binder)]
-multiLookupEverywhere = recursiveLookup Everywhere lookupByName
+multiLookupEverywhere = lookupMany Everywhere lookupByName
 
 -- | Enables look up "semi qualified" (and fully qualified) symbols.
 -- | i.e. if there are nested environments with a function A.B.f
@@ -112,7 +112,7 @@ multiLookupEverywhere = recursiveLookup Everywhere lookupByName
 multiLookupQualified :: SymPath -> Env -> [(Env, Binder)]
 multiLookupQualified (SymPath [] name) rootEnv =
   -- This case is just like normal multiLookup, we have a name but no qualifyers:
-  multiLookup name rootEnv
+  multiLookupImports name rootEnv
 multiLookupQualified path@(SymPath (p : _) _) rootEnv =
   case lookupInEnv (SymPath [] p) rootEnv of
     Just (_, Binder _ (XObj (Mod _) _ _)) ->

@@ -96,5 +96,5 @@ retroactivelyRegisterInInterface ctx interface =
   either (\e -> error e) id resultCtx
   where
     env = contextGlobalEnv ctx
-    impls = recursiveLookup Everywhere lookupImplementations (getPath (binderXObj interface)) env
+    impls = lookupMany Everywhere lookupImplementations (getPath (binderXObj interface)) env
     resultCtx = foldM (\context binder -> registerInInterface context binder interface) ctx impls
