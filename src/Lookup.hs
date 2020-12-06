@@ -41,10 +41,10 @@ lookupMeta path globalEnv =
 
 -- | Find all the possible (imported) symbols that could be referred to
 multiLookup :: String -> Env -> [(Env, Binder)]
-multiLookup = recursiveLookupAll False lookupByName
+multiLookup = recursiveLookupAll OnlyImports lookupByName
 
 multiLookupALL :: String -> Env -> [(Env, Binder)]
-multiLookupALL = recursiveLookupAll True lookupByName
+multiLookupALL = recursiveLookupAll Everywhere lookupByName
 
 -- | Lookup binders by name in a single Env (no recursion),
 lookupByName :: String -> Env -> [(Env, Binder)]
@@ -68,14 +68,20 @@ allEnvs env =
   let envs = mapMaybe (envFromBinder . snd) (Map.toList (envBindings env))
    in envs ++ concatMap allEnvs envs
 
+data LookWhere = Everywhere | OnlyImports
+
+getEnvs :: LookWhere -> Env -> [Env]
+getEnvs Everywhere = allEnvs
+getEnvs OnlyImports = importedEnvs
+
 -- | Given an environment, use a lookup function to recursively find all binders
 -- in the environment that satisfy the lookup.
-recursiveLookupAll :: Bool -> LookupFunc a b -> a -> Env -> [b]
-recursiveLookupAll everywhere lookf input env =
+recursiveLookupAll :: LookWhere -> LookupFunc a b -> a -> Env -> [b]
+recursiveLookupAll lookWhere lookf input env =
   let spine = lookf input env
-      leaves = concatMap (lookf input) (if everywhere then allEnvs env else importedEnvs env)
+      leaves = concatMap (lookf input) (getEnvs lookWhere env)
       above = case envParent env of
-        Just parent -> recursiveLookupAll everywhere lookf input parent
+        Just parent -> recursiveLookupAll lookWhere lookf input parent
         Nothing -> []
    in spine ++ leaves ++ above
 
