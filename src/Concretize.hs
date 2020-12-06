@@ -136,15 +136,15 @@ concretizeXObj allowAmbiguityRoot typeEnv rootEnv visitedDefinitions root =
                 extendedArgs =
                   if null capturedVars
                     then args
-                    else-- If the lambda captures anything it need an extra arg for its env:
+                    else -- If the lambda captures anything it need an extra arg for its env:
 
                       XObj
                         ( Arr
                             ( XObj
                                 (Sym (SymPath [] "_env") Symbol)
                                 (Just dummyInfo)
-                                (Just (PointerTy (StructTy (ConcreteNameTy environmentTypeName) [])))
-                                : argsArr
+                                (Just (PointerTy (StructTy (ConcreteNameTy environmentTypeName) []))) :
+                              argsArr
                             )
                         )
                         ai
@@ -490,14 +490,14 @@ instantiateGenericStructType typeEnv originalStructTy@(StructTy _ originalTyVars
                           Right $
                             XObj
                               ( Lst
-                                  ( XObj (Deftype genericStructTy) Nothing Nothing
-                                      : XObj (Sym (SymPath [] (tyToC genericStructTy)) Symbol) Nothing Nothing
-                                      : [XObj (Arr concretelyTypedMembers) Nothing Nothing]
+                                  ( XObj (Deftype genericStructTy) Nothing Nothing :
+                                    XObj (Sym (SymPath [] (tyToC genericStructTy)) Symbol) Nothing Nothing :
+                                    [XObj (Arr concretelyTypedMembers) Nothing Nothing]
                                   )
                               )
                               (Just dummyInfo)
-                              (Just TypeTy)
-                              : concat okDeps
+                              (Just TypeTy) :
+                            concat okDeps
 
 depsForStructMemberPair :: TypeEnv -> (XObj, XObj) -> Either TypeError [XObj]
 depsForStructMemberPair typeEnv (_, tyXObj) =
@@ -524,14 +524,14 @@ instantiateGenericSumtype typeEnv originalStructTy@(StructTy _ originalTyVars) g
                       Right $
                         XObj
                           ( Lst
-                              ( XObj (DefSumtype genericStructTy) Nothing Nothing
-                                  : XObj (Sym (SymPath [] (tyToC genericStructTy)) Symbol) Nothing Nothing
-                                  : concretelyTypedCases
+                              ( XObj (DefSumtype genericStructTy) Nothing Nothing :
+                                XObj (Sym (SymPath [] (tyToC genericStructTy)) Symbol) Nothing Nothing :
+                                concretelyTypedCases
                               )
                           )
                           (Just dummyInfo)
-                          (Just TypeTy)
-                          : concat okDeps
+                          (Just TypeTy) :
+                        concat okDeps
                     Left err -> Left err
 
 -- Resolves dependencies for sumtype cases.
@@ -797,12 +797,11 @@ data LifetimeMode
   deriving (Show)
 
 -- | To keep track of the deleters when recursively walking the form.
-data MemState
-  = MemState
-      { memStateDeleters :: Set.Set Deleter,
-        memStateDeps :: [XObj],
-        memStateLifetimes :: Map.Map String LifetimeMode
-      }
+data MemState = MemState
+  { memStateDeleters :: Set.Set Deleter,
+    memStateDeps :: [XObj],
+    memStateLifetimes :: Map.Map String LifetimeMode
+  }
   deriving (Show)
 
 prettyLifetimeMappings :: Map.Map String LifetimeMode -> String

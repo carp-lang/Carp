@@ -478,11 +478,11 @@ initialTypes typeEnv rootEnv root = evalState (visit rootEnv root) 0
         createBinderInternal :: XObj -> String -> State Integer [(String, Binder)]
         createBinderInternal xobj name =
           if isVarName name
-            then-- A variable that will bind to something:
+            then -- A variable that will bind to something:
             do
               freshTy <- genVarTy
               pure [(name, Binder emptyMeta xobj {xobjTy = Just freshTy})]
-            else-- Tags for the sumtypes won't bind to anything:
+            else -- Tags for the sumtypes won't bind to anything:
               pure []
 
 uniquifyWildcardNames :: XObj -> XObj

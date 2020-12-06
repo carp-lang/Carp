@@ -772,10 +772,10 @@ commandSexpressionInternal ctx [xobj] bol =
                   bindingSyms e (ctx, Right x)
               where
                 bindingSyms env start =
-                  ( mapM (\x -> commandSexpression ctx [x])
-                      $ map snd
-                      $ Map.toList
-                      $ Map.map binderXObj (envBindings env)
+                  ( mapM (\x -> commandSexpression ctx [x]) $
+                      map snd $
+                        Map.toList $
+                          Map.map binderXObj (envBindings env)
                   )
                     >>= pure . foldl combine start
                 combine (c, (Right (XObj (Lst xs) i t))) (_, (Right y@(XObj (Lst _) _ _))) =

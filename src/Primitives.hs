@@ -448,9 +448,9 @@ primitiveMembers _ ctx [target] = do
               _
               ( XObj
                   ( Lst
-                      ( XObj (DefSumtype _) Nothing Nothing :
-                          XObj (Sym (SymPath _ _) Symbol) Nothing Nothing :
-                          sumtypeCases
+                      ( XObj (DefSumtype _) Nothing Nothing
+                          : XObj (Sym (SymPath _ _) Symbol) Nothing Nothing
+                          : sumtypeCases
                         )
                     )
                   _
@@ -708,9 +708,9 @@ primitiveDeftype xobj ctx (name : rest) =
                     -- NOTE: The type binding is needed to emit the type definition and all the member functions of the type.
                     XObj
                       ( Lst
-                          ( XObj (typeConstructor structTy) Nothing Nothing
-                              : XObj (Sym (SymPath pathStrings tyName) Symbol) Nothing Nothing
-                              : rest
+                          ( XObj (typeConstructor structTy) Nothing Nothing :
+                            XObj (Sym (SymPath pathStrings tyName) Symbol) Nothing Nothing :
+                            rest
                           )
                       )
                       i
