@@ -14,6 +14,7 @@ import Debug.Trace
 import Env
 import Info
 import Lookup
+import Managed
 import Obj
 import Polymorphism
 import Reify

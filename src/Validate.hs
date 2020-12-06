@@ -3,6 +3,7 @@ module Validate where
 import Data.Function (on)
 import Data.List (nubBy, (\\))
 import Lookup
+import Managed
 import Obj
 import TypeError
 import Types

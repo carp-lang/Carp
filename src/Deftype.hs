@@ -12,7 +12,7 @@ import qualified Data.Map as Map
 import Data.Maybe
 import Env
 import Info
-import Lookup
+import Managed
 import Obj
 import StructUtils
 import Template

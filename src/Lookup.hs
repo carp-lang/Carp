@@ -28,7 +28,7 @@ lookupInEnv path@(SymPath (p : ps) name) env =
         Just parent -> lookupInEnv path parent
         Nothing -> Nothing
 
--- |
+-- | Recursively look through all environments for (def ...) forms.
 findAllGlobalVariables :: Env -> [Binder]
 findAllGlobalVariables env =
   concatMap finder (envBindings env)
@@ -63,7 +63,7 @@ multiLookupInternal allowLookupInAllModules name rootEnv = recursiveLookup rootE
       Nothing -> Nothing
     importsAll :: Env -> [Env]
     importsAll env =
-      let envs = mapMaybe (binderToEnv . snd) (Map.toList (envBindings env))
+      let envs = mapMaybe (envFromBinder . snd) (Map.toList (envBindings env))
        in envs ++ concatMap importsAll envs
     -- Only lookup in imported modules (nonrecursively!)
     importsNormal :: Env -> [Env]
@@ -85,15 +85,15 @@ multiLookupInternal allowLookupInAllModules name rootEnv = recursiveLookup rootE
        in --(trace $ "multiLookupInternal '" ++ name ++ "' " ++ show (envModuleName env) ++ ", spine: " ++ show (fmap snd spine) ++ ", leaves: " ++ show (fmap snd leaves) ++ ", above: " ++ show (fmap snd above))
           spine ++ leaves ++ above
 
-binderToEnv :: Binder -> Maybe Env
-binderToEnv (Binder _ (XObj (Mod e) _ _)) = Just e
-binderToEnv _ = Nothing
+envFromBinder :: Binder -> Maybe Env
+envFromBinder (Binder _ (XObj (Mod e) _ _)) = Just e
+envFromBinder _ = Nothing
 
 -- | Given an environment, returns the list of all environments of binders from
--- imported modules `(load "module-file.carp")`
+-- imported modules.
 importedEnvs :: Env -> [Env]
 importedEnvs env =
-  let envs = mapMaybe (binderToEnv . snd) (Map.toList (envBindings env))
+  let envs = mapMaybe (envFromBinder . snd) (Map.toList (envBindings env))
    in envs ++ concatMap importedEnvs envs
 
 -- | Given an environment, use a lookup function to recursively find all binders
@@ -163,35 +163,6 @@ multiLookupQualified path@(SymPath (p : _) _) rootEnv =
                 envs = mapMaybe (\path' -> fmap getEnvFromBinder (lookupInEnv path' rootEnv)) usedModules
              in concatMap (multiLookupQualified path) envs
        in fromParent ++ fromUsedModules
-
--- | Find out if a type is "external", meaning it is not defined by the user
---   in this program but instead imported from another C library or similar.
-isExternalType :: TypeEnv -> Ty -> Bool
-isExternalType typeEnv (PointerTy p) =
-  isExternalType typeEnv p
-isExternalType typeEnv (StructTy (ConcreteNameTy name) _) =
-  case lookupInEnv (SymPath [] name) (getTypeEnv typeEnv) of
-    Just (_, Binder _ (XObj (Lst (XObj (ExternalType _) _ _ : _)) _ _)) -> True
-    Just _ -> False
-    Nothing -> False
-isExternalType _ _ =
-  False
-
--- | Is this type managed - does it need to be freed?
-isManaged :: TypeEnv -> Ty -> Bool
-isManaged typeEnv (StructTy (ConcreteNameTy name) _) =
-  (name == "Array") || (name == "StaticArray") || (name == "Dictionary")
-    || ( case lookupInEnv (SymPath [] name) (getTypeEnv typeEnv) of
-           Just (_, Binder _ (XObj (Lst (XObj (ExternalType _) _ _ : _)) _ _)) -> False
-           Just (_, Binder _ (XObj (Lst (XObj (Deftype _) _ _ : _)) _ _)) -> True
-           Just (_, Binder _ (XObj (Lst (XObj (DefSumtype _) _ _ : _)) _ _)) -> True
-           Just (_, Binder _ (XObj wrong _ _)) -> error ("Invalid XObj in type env: " ++ show wrong)
-           Nothing -> error ("Can't find " ++ name ++ " in type env.") -- TODO: Please don't crash here!
-       )
-isManaged _ StringTy = True
-isManaged _ PatternTy = True
-isManaged _ FuncTy {} = True
-isManaged _ _ = False
 
 existingMeta :: Env -> XObj -> MetaData
 existingMeta globalEnv xobj =

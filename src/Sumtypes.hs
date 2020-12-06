@@ -6,7 +6,7 @@ import Data.Maybe
 import Deftype
 import Env
 import Info
-import Lookup
+import Managed
 import Obj
 import StructUtils
 import SumtypeCase

@@ -59,7 +59,8 @@ library
                        Validate,
                        Reify,
                        Env,
-                       TypePredicates
+                       TypePredicates,
+                       Managed
 
   build-depends:       base >= 4.7 && < 5
                      , parsec == 3.1.*
