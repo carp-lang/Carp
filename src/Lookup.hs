@@ -32,6 +32,13 @@ lookupInEnv path@(SymPath (p : ps) name) env =
 lookupBinder :: SymPath -> Env -> Maybe Binder
 lookupBinder path env = snd <$> lookupInEnv path env
 
+-- | Like 'lookupBinder' but return the Meta for the binder, or a default empty meta.
+lookupMeta :: SymPath -> Env -> MetaData
+lookupMeta path globalEnv =
+  case lookupBinder path globalEnv of
+    Just (Binder meta _) -> meta
+    Nothing -> emptyMeta
+
 -- | Find all the possible (imported) symbols that could be referred to
 multiLookup :: String -> Env -> [(Env, Binder)]
 multiLookup = multiLookupInternal False
@@ -144,23 +151,3 @@ multiLookupQualified path@(SymPath (p : _) _) rootEnv =
                 envs = catMaybes $ mapMaybe (\path' -> fmap envFromBinder (lookupBinder path' rootEnv)) usedModules
              in concatMap (multiLookupQualified path) envs
        in fromParent ++ fromUsedModules
-
--- | Get the meta data associated with an XObj that contains 'path' information (i.e. definitions).
-existingMeta :: Env -> XObj -> MetaData
-existingMeta globalEnv xobj =
-  case lookupBinder (getPath xobj) globalEnv of
-    Just (Binder meta _) -> meta
-    Nothing -> emptyMeta
-
--- | Recursively look through all environments for (def ...) forms.
-findAllGlobalVariables :: Env -> [Binder]
-findAllGlobalVariables env =
-  concatMap finder (envBindings env)
-  where
-    finder :: Binder -> [Binder]
-    finder def@(Binder _ (XObj (Lst (XObj Def _ _ : _)) _ _)) =
-      [def]
-    finder (Binder _ (XObj (Mod innerEnv) _ _)) =
-      findAllGlobalVariables innerEnv
-    finder _ =
-      []

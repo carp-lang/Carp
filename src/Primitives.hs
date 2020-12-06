@@ -177,7 +177,6 @@ primitiveImplements _ ctx [x@(XObj (Sym interface@(SymPath _ _) _) _ _), (XObj (
             ++ " is not defined."
             ++ " Did you define it using `definterface`?"
         )
-
     addToInterface :: Binder -> Binder -> IO (Context, Either EvalError XObj)
     addToInterface inter impl =
       either
@@ -204,7 +203,6 @@ primitiveImplements _ ctx [x@(XObj (Sym interface@(SymPath _ _) _) _ _), (XObj (
               <|> Just (updateImplementations binder (XObj (Lst []) (Just dummyInfo) (Just DynamicTy)))
           )
             >>= \newBinder -> pure (context {contextGlobalEnv = envInsertAt global (getBinderPath binder) newBinder})
-
         updateImplementations :: Binder -> XObj -> Binder
         updateImplementations implBinder (XObj (Lst impls) inf ty) =
           if x `elem` impls
@@ -230,7 +228,6 @@ define hidden ctx@(Context globalEnv _ typeEnv _ proj _ _ _) annXObj =
         else defineInGlobalEnv newBinder
   where
     freshBinder = (Binder emptyMeta annXObj)
-
     defineInTypeEnv :: Binder -> IO Context
     defineInTypeEnv binder = pure (insertInTypeEnv ctx (getPath annXObj) binder)
     defineInGlobalEnv :: Binder -> IO Context
@@ -422,7 +419,7 @@ dynamicOrMacroWith ctx producer ty name body = do
       globalEnv = contextGlobalEnv ctx
       path = SymPath pathStrings name
       elt = XObj (Lst (producer path)) (xobjInfo body) (Just ty)
-      meta = existingMeta globalEnv elt
+      meta = lookupMeta (getPath elt) globalEnv
   pure (ctx {contextGlobalEnv = envInsertAt globalEnv path (Binder meta elt)}, dynamicNil)
 
 primitiveMembers :: Primitive
@@ -453,9 +450,9 @@ primitiveMembers _ ctx [target] = do
               _
               ( XObj
                   ( Lst
-                      ( XObj (DefSumtype _) Nothing Nothing
-                          : XObj (Sym (SymPath _ _) Symbol) Nothing Nothing
-                          : sumtypeCases
+                      ( XObj (DefSumtype _) Nothing Nothing :
+                          XObj (Sym (SymPath _ _) Symbol) Nothing Nothing :
+                          sumtypeCases
                         )
                     )
                   _
@@ -598,7 +595,7 @@ registerInternal ctx name ty override =
               )
               (xobjInfo ty)
               (Just t)
-          meta = existingMeta globalEnv registration
+          meta = lookupMeta (getPath registration) globalEnv
           env' = envInsertAt globalEnv path (Binder meta registration)
        in (ctx {contextGlobalEnv = env'}, dynamicNil)
 
@@ -713,9 +710,9 @@ primitiveDeftype xobj ctx (name : rest) =
                     -- NOTE: The type binding is needed to emit the type definition and all the member functions of the type.
                     XObj
                       ( Lst
-                          ( XObj (typeConstructor structTy) Nothing Nothing :
-                            XObj (Sym (SymPath pathStrings tyName) Symbol) Nothing Nothing :
-                            rest
+                          ( XObj (typeConstructor structTy) Nothing Nothing
+                              : XObj (Sym (SymPath pathStrings tyName) Symbol) Nothing Nothing
+                              : rest
                           )
                       )
                       i
@@ -808,13 +805,13 @@ primitiveDeftemplate _ ctx [XObj (Sym (SymPath [] name) _) _ _, ty, XObj (Str de
         if isTypeGeneric t
           then
             let (Binder _ registration) = b
-                meta = existingMeta globalEnv registration
+                meta = lookupMeta (getPath registration) globalEnv
                 env' = envInsertAt globalEnv p (Binder meta registration)
              in (ctx {contextGlobalEnv = env'}, dynamicNil)
           else
             let templateCreator = getTemplateCreator template
                 (registration, _) = instantiateTemplate p t (templateCreator typeEnv globalEnv)
-                meta = existingMeta globalEnv registration
+                meta = lookupMeta (getPath registration) globalEnv
                 env' = envInsertAt globalEnv p (Binder meta registration)
              in (ctx {contextGlobalEnv = env'}, dynamicNil)
 primitiveDeftemplate _ ctx [XObj (Sym (SymPath [] _) _) _ _, _, XObj (Str _) _ _, x] =

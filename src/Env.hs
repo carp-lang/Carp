@@ -78,3 +78,16 @@ envBindingNames = concatMap select . envBindings
     select :: Binder -> [String]
     select (Binder _ (XObj (Mod m) _ _)) = envBindingNames m
     select (Binder _ obj) = [getName obj]
+
+-- | Recursively look through all environments for (def ...) forms.
+findAllGlobalVariables :: Env -> [Binder]
+findAllGlobalVariables env =
+  concatMap finder (envBindings env)
+  where
+    finder :: Binder -> [Binder]
+    finder def@(Binder _ (XObj (Lst (XObj Def _ _ : _)) _ _)) =
+      [def]
+    finder (Binder _ (XObj (Mod innerEnv) _ _)) =
+      findAllGlobalVariables innerEnv
+    finder _ =
+      []

@@ -67,8 +67,8 @@ eval ctx xobj@(XObj o info ty) preference =
       pure $
         fromMaybe
           (evalError ctx ("Can't find symbol '" ++ show n ++ "'") info) -- all else failed, error.
-          -- Certain contexts prefer looking up bindings in the dynamic environment (e.g. defdyanmic) while others
-          -- prefer the static global environment.
+            -- Certain contexts prefer looking up bindings in the dynamic environment (e.g. defdyanmic) while others
+            -- prefer the static global environment.
           ( ( case preference of
                 PreferDynamic -> tryDynamicLookup
                 PreferGlobal -> (tryLookup spath <|> tryDynamicLookup)
@@ -679,14 +679,14 @@ specialCommandWhile ctx cond body = do
             )
     Left e -> pure (newCtx, Left e)
 
-getSigFromDefnOrDef :: Context -> Env -> FilePathPrintLength -> XObj -> (Either EvalError (Maybe (Ty, XObj)))
-getSigFromDefnOrDef ctx globalEnv fppl xobj@(XObj _ i ty) =
+getSigFromDefnOrDef :: Context -> Env -> FilePathPrintLength -> XObj -> Either EvalError (Maybe (Ty, XObj))
+getSigFromDefnOrDef ctx globalEnv fppl xobj =
   let pathStrings = contextPath ctx
-      path = (getPath xobj)
+      path = getPath xobj
       fullPath = case path of
         (SymPath [] _) -> consPath pathStrings path
         (SymPath _ _) -> path
-      metaData = existingMeta globalEnv (XObj (Sym fullPath Symbol) i ty)
+      metaData = lookupMeta fullPath globalEnv
    in case Meta.get "sig" metaData of
         Just foundSignature ->
           case xobjToTy foundSignature of
@@ -795,9 +795,9 @@ loadInternal ctx xobj path i reloadMode = do
         Nothing -> "."
       carpDir = projectCarpDir proj
       fullSearchPaths =
-        path :
-        (relativeTo </> path) :
-        map (</> path) (projectCarpSearchPaths proj) -- the path from the file that contains the '(load)', or the current directory if not loading from a file (e.g. the repl)
+        path
+          : (relativeTo </> path)
+          : map (</> path) (projectCarpSearchPaths proj) -- the path from the file that contains the '(load)', or the current directory if not loading from a file (e.g. the repl)
           ++ [carpDir </> "core" </> path] -- user defined search paths
           ++ [libDir </> path]
       firstM _ [] = pure Nothing
