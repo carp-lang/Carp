@@ -10,14 +10,15 @@ where
 import Concretize
 import qualified Data.Map as Map
 import Data.Maybe
-import Infer
+import Env
 import Info
-import Lookup
+import Managed
 import Obj
 import StructUtils
 import Template
 import ToTemplate
 import TypeError
+import TypePredicates
 import Types
 import TypesToC
 import Util

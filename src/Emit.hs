@@ -16,13 +16,14 @@ import Data.List (intercalate, sortOn)
 import qualified Data.Map as Map
 import Data.Maybe (fromJust, fromMaybe)
 import qualified Data.Set as Set
+import Env
 import Info
-import Lookup
 import qualified Meta
 import Obj
 import Project
 import Scoring
 import Template
+import TypePredicates
 import Types
 import TypesToC
 import Util

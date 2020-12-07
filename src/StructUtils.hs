@@ -1,6 +1,6 @@
 module StructUtils where
 
-import Lookup
+import Managed
 import Obj
 import Polymorphism
 import Types

@@ -3,7 +3,7 @@
 module ArrayTemplates where
 
 import Concretize
-import Lookup
+import Managed
 import Obj
 import Template
 import ToTemplate

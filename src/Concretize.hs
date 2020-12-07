@@ -11,14 +11,17 @@ import Data.Maybe (fromMaybe)
 import Data.Set ((\\))
 import qualified Data.Set as Set
 import Debug.Trace
+import Env
 import Info
 import Lookup
+import Managed
 import Obj
 import Polymorphism
 import Reify
 import SumtypeCase
 import ToTemplate
 import TypeError
+import TypePredicates
 import Types
 import TypesToC
 import Util
@@ -313,8 +316,8 @@ concretizeXObj allowAmbiguityRoot typeEnv rootEnv visitedDefinitions root =
     visitMultiSym _ _ _ = error "Not a multi symbol."
     visitInterfaceSym :: Bool -> Env -> XObj -> State [XObj] (Either TypeError XObj)
     visitInterfaceSym allowAmbig env xobj@(XObj (InterfaceSym name) i t) =
-      case lookupInEnv (SymPath [] name) (getTypeEnv typeEnv) of
-        Just (_, Binder _ (XObj (Lst [XObj (Interface _ interfacePaths) _ _, _]) _ _)) ->
+      case lookupBinder (SymPath [] name) (getTypeEnv typeEnv) of
+        Just (Binder _ (XObj (Lst [XObj (Interface _ interfacePaths) _ _, _]) _ _)) ->
           let Just actualType = t
               tys = map (typeFromPath env) interfacePaths
               tysToPathsDict = zip tys interfacePaths
@@ -662,7 +665,7 @@ concretizeDefinition allowAmbiguity typeEnv globalEnv visitedDefinitions definit
 -- | Find ALL functions with a certain name, matching a type signature.
 allFunctionsWithNameAndSignature :: Env -> String -> Ty -> [(Env, Binder)]
 allFunctionsWithNameAndSignature env functionName functionType =
-  filter (predicate . xobjTy . binderXObj . snd) (multiLookupALL functionName env)
+  filter (predicate . xobjTy . binderXObj . snd) (multiLookupEverywhere functionName env)
   where
     predicate (Just t) =
       --trace ("areUnifiable? " ++ show functionType ++ " == " ++ show t ++ " " ++ show (areUnifiable functionType t)) $

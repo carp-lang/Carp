@@ -8,8 +8,8 @@ import ColorText
 import Control.Monad.State.Strict
 import Data.List (isPrefixOf)
 import qualified Data.Map as Map
+import Env
 import Eval
-import Lookup
 import Obj
 import Parsing (balance)
 import Path
@@ -27,7 +27,7 @@ import System.Exit (exitSuccess)
 
 completeKeywordsAnd :: Context -> String -> [Completion]
 completeKeywordsAnd context word =
-  findKeywords word (bindingNames (contextGlobalEnv context) ++ keywords) []
+  findKeywords word (envBindingNames (contextGlobalEnv context) ++ keywords) []
   where
     findKeywords _ [] res = res
     findKeywords match (x : xs) res =

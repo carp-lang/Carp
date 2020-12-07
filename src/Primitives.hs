@@ -8,9 +8,10 @@ import Control.Monad (foldM, unless, when)
 import Control.Monad.IO.Class (MonadIO, liftIO)
 import Data.Either (rights)
 import Data.List (union)
-import Data.Maybe (catMaybes, fromJust, fromMaybe)
+import Data.Maybe (fromJust, fromMaybe, mapMaybe)
 import Deftype
 import Emit
+import Env
 import Infer
 import Info
 import Interfaces
@@ -24,6 +25,7 @@ import Sumtypes
 import Template
 import ToTemplate
 import TypeError
+import TypePredicates
 import Types
 import Util
 import Web.Browser (openBrowser)
@@ -154,15 +156,15 @@ primitiveColumn x@(XObj _ i t) ctx args =
 primitiveImplements :: Primitive
 primitiveImplements _ ctx [x@(XObj (Sym interface@(SymPath _ _) _) _ _), (XObj (Sym (SymPath prefixes name) _) info _)] =
   do
-    (maybeInterface, maybeImpl) <- pure ((lookupInEnv interface tyEnv), (lookupInEnv (SymPath modules name) global))
+    (maybeInterface, maybeImpl) <- pure ((lookupBinder interface tyEnv), (lookupBinder (SymPath modules name) global))
     case (maybeInterface, maybeImpl) of
       (_, Nothing) ->
         if null modules
           then pure (evalError ctx "Can't set the `implements` meta on a global definition before it is declared." info)
           else updateMeta (Meta.stub (SymPath modules name)) ctx
-      (Nothing, Just (_, implBinder)) ->
+      (Nothing, Just implBinder) ->
         (warn >> updateMeta implBinder ctx)
-      (Just (_, interfaceBinder), Just (_, implBinder)) ->
+      (Just interfaceBinder, Just implBinder) ->
         (addToInterface interfaceBinder implBinder)
   where
     global = contextGlobalEnv ctx
@@ -175,7 +177,6 @@ primitiveImplements _ ctx [x@(XObj (Sym interface@(SymPath _ _) _) _ _), (XObj (
             ++ " is not defined."
             ++ " Did you define it using `definterface`?"
         )
-
     addToInterface :: Binder -> Binder -> IO (Context, Either EvalError XObj)
     addToInterface inter impl =
       either
@@ -202,7 +203,6 @@ primitiveImplements _ ctx [x@(XObj (Sym interface@(SymPath _ _) _) _ _), (XObj (
               <|> Just (updateImplementations binder (XObj (Lst []) (Just dummyInfo) (Just DynamicTy)))
           )
             >>= \newBinder -> pure (context {contextGlobalEnv = envInsertAt global (getBinderPath binder) newBinder})
-
         updateImplementations :: Binder -> XObj -> Binder
         updateImplementations implBinder (XObj (Lst impls) inf ty) =
           if x `elem` impls
@@ -228,17 +228,16 @@ define hidden ctx@(Context globalEnv _ typeEnv _ proj _ _ _) annXObj =
         else defineInGlobalEnv newBinder
   where
     freshBinder = (Binder emptyMeta annXObj)
-
     defineInTypeEnv :: Binder -> IO Context
     defineInTypeEnv binder = pure (insertInTypeEnv ctx (getPath annXObj) binder)
     defineInGlobalEnv :: Binder -> IO Context
     defineInGlobalEnv fallbackBinder =
       do
-        maybeExistingBinder <- pure (lookupInEnv (getPath annXObj) globalEnv)
+        maybeExistingBinder <- pure (lookupBinder (getPath annXObj) globalEnv)
         when (projectEchoC proj) (putStrLn (toC All (Binder emptyMeta annXObj)))
         case maybeExistingBinder of
           Nothing -> pure (insertInGlobalEnv ctx (getPath annXObj) fallbackBinder)
-          Just (_, binder) -> redefineExistingBinder binder
+          Just binder -> redefineExistingBinder binder
     redefineExistingBinder :: Binder -> IO Context
     redefineExistingBinder old@(Binder meta _) =
       do
@@ -271,7 +270,7 @@ define hidden ctx@(Context globalEnv _ typeEnv _ proj _ _ _) annXObj =
             >>= \(XObj (Lst interfaces) _ _) -> pure (map getPath interfaces)
         )
         >>= \maybeinterfaces ->
-          pure (map snd (catMaybes (map ((flip lookupInEnv) (getTypeEnv typeEnv)) (fromMaybe [] maybeinterfaces))))
+          pure (mapMaybe ((flip lookupBinder) (getTypeEnv typeEnv)) (fromMaybe [] maybeinterfaces))
             >>= \interfaceBinders ->
               pure (foldM (\ctx' interface -> registerInInterface ctx' binder interface) ctx interfaceBinders)
                 >>= \result -> case result of
@@ -339,8 +338,8 @@ primitiveRegisterTypeWithFields ctx x t override members =
     globalEnv = contextGlobalEnv ctx
     typeEnv = contextTypeEnv ctx
     path = SymPath pathStrings t
-    preExistingModule = case lookupInEnv (SymPath pathStrings t) globalEnv of
-      Just (_, Binder _ (XObj (Mod found) _ _)) -> Just found
+    preExistingModule = case lookupBinder (SymPath pathStrings t) globalEnv of
+      Just (Binder _ (XObj (Mod found) _ _)) -> Just found
       _ -> Nothing
 
 notFound :: Context -> XObj -> SymPath -> IO (Context, Either EvalError XObj)
@@ -354,30 +353,30 @@ primitiveInfo _ ctx [target@(XObj (Sym path@(SymPath _ name) _) _ _)] = do
   case path of
     SymPath [] _ ->
       -- First look in the type env, then in the global env:
-      case lookupInEnv path (getTypeEnv typeEnv) of
-        Nothing -> printer env True True (lookupInEnv path env)
+      case lookupBinder path (getTypeEnv typeEnv) of
+        Nothing -> printer env True True (lookupBinder path env)
         found -> do
           _ <- printer env True True found -- this will print the interface itself
-          printer env True False (lookupInEnv path env) -- this will print the locations of the implementers of the interface
+          printer env True False (lookupBinder path env) -- this will print the locations of the implementers of the interface
     _ ->
-      case lookupInEnv path env of
+      case lookupBinder path env of
         Nothing -> notFound ctx target path
         found -> printer env False True found
   where
-    printer env allowLookupInALL errNotFound binderPair = do
+    printer env allowLookupEverywhere errNotFound binderPair = do
       let proj = contextProj ctx
       case binderPair of
-        Just (_, binder@(Binder metaData x@(XObj _ (Just i) _))) ->
+        Just (binder@(Binder metaData x@(XObj _ (Just i) _))) ->
           do
             liftIO $ putStrLn (show binder ++ "\nDefined at " ++ prettyInfo i)
             printDoc metaData proj x
-        Just (_, binder@(Binder metaData x)) ->
+        Just (binder@(Binder metaData x)) ->
           do
             liftIO $ print binder
             printDoc metaData proj x
         Nothing
-          | allowLookupInALL ->
-            case multiLookupALL name env of
+          | allowLookupEverywhere ->
+            case multiLookupEverywhere name env of
               [] ->
                 if errNotFound
                   then notFound ctx target path
@@ -420,7 +419,7 @@ dynamicOrMacroWith ctx producer ty name body = do
       globalEnv = contextGlobalEnv ctx
       path = SymPath pathStrings name
       elt = XObj (Lst (producer path)) (xobjInfo body) (Just ty)
-      meta = existingMeta globalEnv elt
+      meta = lookupMeta (getPath elt) globalEnv
   pure (ctx {contextGlobalEnv = envInsertAt globalEnv path (Binder meta elt)}, dynamicNil)
 
 primitiveMembers :: Primitive
@@ -428,10 +427,9 @@ primitiveMembers _ ctx [target] = do
   let typeEnv = contextTypeEnv ctx
   case bottomedTarget of
     XObj (Sym path@(SymPath _ name) _) _ _ ->
-      case lookupInEnv path (getTypeEnv typeEnv) of
+      case lookupBinder path (getTypeEnv typeEnv) of
         Just
-          ( _,
-            Binder
+          ( Binder
               _
               ( XObj
                   ( Lst
@@ -446,8 +444,7 @@ primitiveMembers _ ctx [target] = do
             ) ->
             pure (ctx, Right (XObj (Arr (map (\(a, b) -> XObj (Lst [a, b]) Nothing Nothing) (pairwise members))) Nothing Nothing))
         Just
-          ( _,
-            Binder
+          ( Binder
               _
               ( XObj
                   ( Lst
@@ -477,13 +474,13 @@ primitiveMembers _ ctx [target] = do
     bottomedTarget =
       case target of
         XObj (Sym targetPath _) _ _ ->
-          case lookupInEnv targetPath env of
+          case lookupBinder targetPath env of
             -- this is a trick: every type generates a module in the env;
             -- we’re special-casing here because we need the parent of the
             -- module
-            Just (_, Binder _ (XObj (Mod _) _ _)) -> target
+            Just (Binder _ (XObj (Mod _) _ _)) -> target
             -- if we’re recursing into a non-sym, we’ll stop one level down
-            Just (_, Binder _ _) -> bottomedTarget
+            Just (Binder _ _) -> bottomedTarget
             _ -> target
         _ -> target
 
@@ -498,15 +495,15 @@ primitiveMetaSet _ ctx [target@(XObj (Sym (SymPath prefixes name) _) _ _), XObj 
     types = (getTypeEnv (contextTypeEnv ctx))
     lookupAndUpdate :: Maybe Context
     lookupAndUpdate =
-      ( (lookupInEnv dynamicPath global)
-          >>= \(_, binder) ->
+      ( (lookupBinder dynamicPath global)
+          >>= \binder ->
             (pure (Meta.updateBinderMeta binder key value))
               >>= \b ->
                 (pure (envInsertAt global dynamicPath b))
                   >>= \env -> pure (ctx {contextGlobalEnv = env})
       )
-        <|> ( (lookupInEnv fullPath global)
-                >>= \(_, binder) ->
+        <|> ( (lookupBinder fullPath global)
+                >>= \binder ->
                   (pure (Meta.updateBinderMeta binder key value))
                     >>= \b ->
                       (pure (envInsertAt global fullPath b))
@@ -516,8 +513,8 @@ primitiveMetaSet _ ctx [target@(XObj (Sym (SymPath prefixes name) _) _ _), XObj 
         -- Before creating a new binder, check that it doesn't denote an existing type or interface.
         <|> ( if (null modules)
                 then
-                  ( (lookupInEnv fullPath types)
-                      >>= \(_, binder) ->
+                  ( (lookupBinder fullPath types)
+                      >>= \binder ->
                         (pure (Meta.updateBinderMeta binder key value))
                           >>= \b ->
                             (pure (envInsertAt types fullPath b))
@@ -544,7 +541,7 @@ primitiveDefinterface xobj ctx [nameXObj@(XObj (Sym path@(SymPath [] name) _) _ 
   where
     typeEnv = getTypeEnv (contextTypeEnv ctx)
     invalidType = evalError ctx ("Invalid type for interface `" ++ name ++ "`: " ++ pretty ty) (xobjInfo ty)
-    validType t = maybe defInterface (updateInterface . snd) (lookupInEnv path typeEnv)
+    validType t = maybe defInterface updateInterface (lookupBinder path typeEnv)
       where
         defInterface =
           let interface = defineInterface name t [] (xobjInfo nameXObj)
@@ -596,7 +593,7 @@ registerInternal ctx name ty override =
               )
               (xobjInfo ty)
               (Just t)
-          meta = existingMeta globalEnv registration
+          meta = lookupMeta (getPath registration) globalEnv
           env' = envInsertAt globalEnv path (Binder meta registration)
        in (ctx {contextGlobalEnv = env'}, dynamicNil)
 
@@ -694,9 +691,9 @@ primitiveDeftype xobj ctx (name : rest) =
           typeEnv = contextTypeEnv ctx
           typeVariables = mapM xobjToTy typeVariableXObjs
           (preExistingModule, preExistingMeta) =
-            case lookupInEnv (SymPath pathStrings typeName) env of
-              Just (_, Binder meta (XObj (Mod found) _ _)) -> (Just found, meta)
-              Just (_, Binder meta _) -> (Nothing, meta)
+            case lookupBinder (SymPath pathStrings typeName) env of
+              Just (Binder meta (XObj (Mod found) _ _)) -> (Just found, meta)
+              Just (Binder meta _) -> (Nothing, meta)
               _ -> (Nothing, emptyMeta)
           (creatorFunction, typeConstructor) =
             if length rest == 1 && isArray (head rest)
@@ -729,8 +726,8 @@ primitiveDeftype xobj ctx (name : rest) =
                     let fakeImplBinder sympath t = (Binder emptyMeta (XObj (Sym sympath Symbol) (Just dummyInfo) (Just t)))
                         strSig = FuncTy [RefTy structTy (VarTy "q")] StringTy StaticLifetimeTy
                         copySig = FuncTy [RefTy structTy (VarTy "q")] structTy StaticLifetimeTy
-                        Just (_, strInterface) = lookupInEnv (SymPath [] "str") (getTypeEnv typeEnv)
-                        Just (_, copyInterface) = lookupInEnv (SymPath [] "copy") (getTypeEnv typeEnv)
+                        Just strInterface = lookupBinder (SymPath [] "str") (getTypeEnv typeEnv)
+                        Just copyInterface = lookupBinder (SymPath [] "copy") (getTypeEnv typeEnv)
                         ctxWithInterfaceRegistrations =
                           -- Since these functions are autogenerated, we treat them as a special case and automatically implement the interfaces.
                           foldM
@@ -774,7 +771,7 @@ primitiveMeta (XObj _ i _) ctx [XObj (Sym (SymPath prefixes name) _) _ _, XObj (
     types = getTypeEnv (contextTypeEnv ctx)
     fullPath = consPath (union (contextPath ctx) prefixes) (SymPath [] name)
     lookup' :: Maybe Binder
-    lookup' = (lookupInEnv fullPath global <|> lookupInEnv fullPath types) >>= pure . snd
+    lookup' = (lookupBinder fullPath global <|> lookupBinder fullPath types) >>= pure
     foundBinder :: Binder -> (Context, Either EvalError XObj)
     foundBinder binder = (ctx, maybe dynamicNil Right (Meta.getBinderMetaValue key binder))
     errNotFound :: (Context, Either EvalError XObj)
@@ -806,13 +803,13 @@ primitiveDeftemplate _ ctx [XObj (Sym (SymPath [] name) _) _ _, ty, XObj (Str de
         if isTypeGeneric t
           then
             let (Binder _ registration) = b
-                meta = existingMeta globalEnv registration
+                meta = lookupMeta (getPath registration) globalEnv
                 env' = envInsertAt globalEnv p (Binder meta registration)
              in (ctx {contextGlobalEnv = env'}, dynamicNil)
           else
             let templateCreator = getTemplateCreator template
                 (registration, _) = instantiateTemplate p t (templateCreator typeEnv globalEnv)
-                meta = existingMeta globalEnv registration
+                meta = lookupMeta (getPath registration) globalEnv
                 env' = envInsertAt globalEnv p (Binder meta registration)
              in (ctx {contextGlobalEnv = env'}, dynamicNil)
 primitiveDeftemplate _ ctx [XObj (Sym (SymPath [] _) _) _ _, _, XObj (Str _) _ _, x] =
@@ -833,10 +830,10 @@ primitiveType _ ctx [(XObj _ _ (Just Universe))] =
   pure (ctx, Right (XObj (Lst []) Nothing Nothing))
 primitiveType _ ctx [(XObj _ _ (Just TypeTy))] = liftIO $ pure (ctx, Right $ reify TypeTy)
 primitiveType _ ctx [x@(XObj (Sym path@(SymPath [] name) _) _ _)] =
-  (maybe otherDefs (go . snd) (lookupInEnv path env))
+  (maybe otherDefs go (lookupBinder path env))
   where
     env = contextGlobalEnv ctx
-    otherDefs = case multiLookupALL name env of
+    otherDefs = case multiLookupEverywhere name env of
       [] ->
         notFound ctx x path
       binders ->

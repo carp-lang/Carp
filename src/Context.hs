@@ -4,7 +4,7 @@ module Context
   )
 where
 
-import Lookup
+import Env
 import Obj
 import SymPath
 

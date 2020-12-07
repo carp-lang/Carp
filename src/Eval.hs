@@ -13,6 +13,7 @@ import Data.List.Split (splitOn, splitWhen)
 import qualified Data.Map as Map
 import Data.Maybe (fromJust, fromMaybe, isJust)
 import Emit
+import Env
 import Expand
 import Infer
 import Info
@@ -76,21 +77,21 @@ eval ctx xobj@(XObj o info ty) preference =
           )
       where
         tryDynamicLookup =
-          ( lookupInEnv (SymPath ("Dynamic" : p) n) (contextGlobalEnv ctx)
-              >>= \(_, Binder _ found) -> pure (ctx, Right (resolveDef found))
+          ( lookupBinder (SymPath ("Dynamic" : p) n) (contextGlobalEnv ctx)
+              >>= \(Binder _ found) -> pure (ctx, Right (resolveDef found))
           )
         tryInternalLookup path =
           ( contextInternalEnv ctx
-              >>= lookupInEnv path
-              >>= \(_, Binder _ found) -> pure (ctx, Right (resolveDef found))
+              >>= lookupBinder path
+              >>= \(Binder _ found) -> pure (ctx, Right (resolveDef found))
           )
             <|> tryLookup path -- fallback
         tryLookup path =
-          ( lookupInEnv path (contextGlobalEnv ctx)
-              >>= \(_, Binder meta found) -> checkPrivate meta found
+          ( lookupBinder path (contextGlobalEnv ctx)
+              >>= \(Binder meta found) -> checkPrivate meta found
           )
-            <|> ( lookupInEnv path (getTypeEnv (contextTypeEnv ctx))
-                    >>= \(_, Binder _ found) -> pure (ctx, Right (resolveDef found))
+            <|> ( lookupBinder path (getTypeEnv (contextTypeEnv ctx))
+                    >>= \(Binder _ found) -> pure (ctx, Right (resolveDef found))
                 )
         checkPrivate meta found =
           pure $
@@ -678,14 +679,14 @@ specialCommandWhile ctx cond body = do
             )
     Left e -> pure (newCtx, Left e)
 
-getSigFromDefnOrDef :: Context -> Env -> FilePathPrintLength -> XObj -> (Either EvalError (Maybe (Ty, XObj)))
-getSigFromDefnOrDef ctx globalEnv fppl xobj@(XObj _ i ty) =
+getSigFromDefnOrDef :: Context -> Env -> FilePathPrintLength -> XObj -> Either EvalError (Maybe (Ty, XObj))
+getSigFromDefnOrDef ctx globalEnv fppl xobj =
   let pathStrings = contextPath ctx
-      path = (getPath xobj)
+      path = getPath xobj
       fullPath = case path of
         (SymPath [] _) -> consPath pathStrings path
         (SymPath _ _) -> path
-      metaData = existingMeta globalEnv (XObj (Sym fullPath Symbol) i ty)
+      metaData = lookupMeta fullPath globalEnv
    in case Meta.get "sig" metaData of
         Just foundSignature ->
           case xobjToTy foundSignature of
@@ -735,14 +736,14 @@ primitiveDefmodule xobj ctx@(Context env i typeEnv pathStrings proj lastInput ex
         (ctxAfterModuleDef, res) <- liftIO $ foldM step (ctx', dynamicNil) innerExpressions
         pure (popModulePath ctxAfterModuleDef {contextInternalEnv = i}, res)
   (newCtx, result) <-
-    case lookupInEnv (SymPath pathStrings moduleName) env of
-      Just (_, Binder _ (XObj (Mod innerEnv) _ _)) -> do
+    case lookupBinder (SymPath pathStrings moduleName) env of
+      Just (Binder _ (XObj (Mod innerEnv) _ _)) -> do
         let ctx' = Context env (Just innerEnv {envParent = i}) typeEnv (pathStrings ++ [moduleName]) proj lastInput execMode history -- TODO: use { = } syntax instead
         (ctxAfterModuleAdditions, res) <- liftIO $ foldM step (ctx', dynamicNil) innerExpressions
         pure (popModulePath ctxAfterModuleAdditions {contextInternalEnv = i}, res) -- TODO: propagate errors...
-      Just (_, Binder meta (XObj (Lst [XObj MetaStub _ _, _]) _ _)) ->
+      Just (Binder meta (XObj (Lst [XObj MetaStub _ _, _]) _ _)) ->
         defineIt meta
-      Just (_, Binder _ _) ->
+      Just (Binder _ _) ->
         pure (evalError ctx ("Can't redefine '" ++ moduleName ++ "' as module") (xobjInfo xobj))
       Nothing ->
         defineIt emptyMeta
@@ -1075,8 +1076,8 @@ specialCommandSet ctx [(XObj (Sym path@(SymPath mod n) _) _ _), val] = do
         Just env -> setInternal newCtx env evald
   where
     setGlobal ctx' env value =
-      case lookupInEnv path env of
-        Just (_, binder) -> do
+      case lookupBinder path env of
+        Just binder -> do
           (ctx'', typedVal) <- typeCheckValueAgainstBinder ctx' value binder
           pure $ either (failure ctx'') (success ctx'') typedVal
           where

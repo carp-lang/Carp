@@ -2,6 +2,7 @@ module InitialTypes where
 
 import Control.Monad.State
 import qualified Data.Map as Map
+import Env
 import Info
 import Lookup
 import Obj
@@ -144,9 +145,9 @@ initialTypes typeEnv rootEnv root = evalState (visit rootEnv root) 0
     visitInterfaceSym :: Env -> XObj -> State Integer (Either TypeError XObj)
     visitInterfaceSym _ xobj@(XObj (InterfaceSym name) _ _) =
       do
-        freshTy <- case lookupInEnv (SymPath [] name) (getTypeEnv typeEnv) of
-          Just (_, Binder _ (XObj (Lst [XObj (Interface interfaceSignature _) _ _, _]) _ _)) -> renameVarTys interfaceSignature
-          Just (_, Binder _ x) -> error ("A non-interface named '" ++ name ++ "' was found in the type environment: " ++ pretty x)
+        freshTy <- case lookupBinder (SymPath [] name) (getTypeEnv typeEnv) of
+          Just (Binder _ (XObj (Lst [XObj (Interface interfaceSignature _) _ _, _]) _ _)) -> renameVarTys interfaceSignature
+          Just (Binder _ x) -> error ("A non-interface named '" ++ name ++ "' was found in the type environment: " ++ pretty x)
           Nothing -> genVarTy
         pure (Right xobj {xobjTy = Just freshTy})
     visitArray :: Env -> XObj -> State Integer (Either TypeError XObj)

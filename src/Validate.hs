@@ -4,11 +4,12 @@ import Control.Monad (foldM)
 import Data.Function (on)
 import Data.List ((\\), nubBy)
 import Data.Maybe (fromJust)
-import Debug.Trace
 import Lookup
+import Managed
 import Obj
 import TypeError
 import Types
+import TypePredicates
 import Util
 
 {-# ANN validateMembers "HLint: ignore Eta reduce" #-}
@@ -109,11 +110,11 @@ canBeUsedAsMemberType typeEnv typeVariables ty xobj =
     checkStruct (ConcreteNameTy "Array") [innerType] =
       canBeUsedAsMemberType typeEnv typeVariables innerType xobj
         >> pure ()
-    checkStruct s@(ConcreteNameTy n) vars =
-      case lookupInEnv (SymPath [] n) (getTypeEnv typeEnv) of
-        Just (_, (Binder _ (XObj (Lst (XObj (Deftype t) _ _ : _)) _ _))) ->
+    checkStruct (ConcreteNameTy n) vars =
+      case lookupBinder (SymPath [] n) (getTypeEnv typeEnv) of
+        Just (Binder _ (XObj (Lst (XObj (Deftype t) _ _ : _)) _ _)) ->
           checkInhabitants t >> foldM (\_ typ -> canBeUsedAsMemberType typeEnv typeVariables typ xobj) () vars
-        Just (_, (Binder _ (XObj (Lst (XObj (DefSumtype t) _ _ : _)) _ _))) ->
+        Just (Binder _ (XObj (Lst (XObj (DefSumtype t) _ _ : _)) _ _)) ->
           checkInhabitants t >> foldM (\_ typ -> canBeUsedAsMemberType typeEnv typeVariables typ xobj) () vars
         _ -> Left (NotAmongRegisteredTypes ty xobj)
       where

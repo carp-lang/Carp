@@ -2,6 +2,7 @@ module Expand (expandAll, replaceSourceInfoOnXObj) where
 
 import Control.Monad.State (State, evalState, get, put)
 import Data.Foldable (foldlM)
+import Env
 import Info
 import Lookup
 import Obj
@@ -225,14 +226,14 @@ expand eval ctx xobj =
     expandArray _ = error "Can't expand non-array in expandArray."
     expandSymbol :: XObj -> IO (Context, Either EvalError XObj)
     expandSymbol sym@(XObj (Sym path _) _ _) =
-      case lookupInEnv path (contextEnv ctx) of
-        Just (_, Binder meta (XObj (Lst (XObj (External _) _ _ : _)) _ _)) -> isPrivate meta xobj
-        Just (_, Binder meta (XObj (Lst (XObj (Instantiate _) _ _ : _)) _ _)) -> isPrivate meta xobj
-        Just (_, Binder meta (XObj (Lst (XObj (Deftemplate _) _ _ : _)) _ _)) -> isPrivate meta xobj
-        Just (_, Binder meta (XObj (Lst (XObj (Defn _) _ _ : _)) _ _)) -> isPrivate meta xobj
-        Just (_, Binder meta (XObj (Lst (XObj Def _ _ : _)) _ _)) -> isPrivate meta xobj
-        Just (_, Binder meta (XObj (Lst (XObj (Defalias _) _ _ : _)) _ _)) -> isPrivate meta xobj
-        Just (_, Binder meta found) -> isPrivate meta found -- use the found value
+      case lookupBinder path (contextEnv ctx) of
+        Just (Binder meta (XObj (Lst (XObj (External _) _ _ : _)) _ _)) -> isPrivate meta xobj
+        Just (Binder meta (XObj (Lst (XObj (Instantiate _) _ _ : _)) _ _)) -> isPrivate meta xobj
+        Just (Binder meta (XObj (Lst (XObj (Deftemplate _) _ _ : _)) _ _)) -> isPrivate meta xobj
+        Just (Binder meta (XObj (Lst (XObj (Defn _) _ _ : _)) _ _)) -> isPrivate meta xobj
+        Just (Binder meta (XObj (Lst (XObj Def _ _ : _)) _ _)) -> isPrivate meta xobj
+        Just (Binder meta (XObj (Lst (XObj (Defalias _) _ _ : _)) _ _)) -> isPrivate meta xobj
+        Just (Binder meta found) -> isPrivate meta found -- use the found value
         Nothing -> pure (ctx, Right xobj) -- symbols that are not found are left as-is
       where
         isPrivate m x =
