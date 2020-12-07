@@ -3,7 +3,6 @@
 module ArrayTemplates where
 
 import Concretize
-import Debug.Trace
 import Managed
 import Obj
 import Template
@@ -503,9 +502,7 @@ insideArrayInitLambda :: Ty -> String -> String
 insideArrayInitLambda (FuncTy _ UnitTy _) _ =
   "break;"
 insideArrayInitLambda t indexer =
-  trace
-    (show t)
-    "    Lambda lambda = "
+  "    Lambda lambda = "
     ++ initLambda
     ++ "\n"
     ++ "        (("
