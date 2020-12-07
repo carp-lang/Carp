@@ -4,14 +4,16 @@ import Concretize
 import qualified Data.Map as Map
 import Data.Maybe
 import Deftype
+import Env
 import Info
-import Lookup
+import Managed
 import Obj
 import StructUtils
 import SumtypeCase
 import Template
 import ToTemplate
 import TypeError
+import TypePredicates
 import Types
 import TypesToC
 import Util

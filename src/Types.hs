@@ -2,13 +2,11 @@ module Types
   ( TypeMappings,
     Ty (..),
     showMaybeTy,
-    isTypeGeneric,
     unifySignatures,
     replaceTyVars,
     areUnifiable,
     typesDeleterFunctionType,
     typesCopyFunctionType,
-    isFullyGenericType,
     doesTypeContainTyVarWithName,
     replaceConflicted,
     lambdaEnvTy,
@@ -21,7 +19,6 @@ module Types
     consPath,
     Kind,
     tyToKind,
-    isUnit,
   )
 where
 
@@ -134,14 +131,6 @@ instance Show Ty where
 showMaybeTy :: Maybe Ty -> String
 showMaybeTy (Just t) = show t
 showMaybeTy Nothing = "(missing-type)"
-
-isTypeGeneric :: Ty -> Bool
-isTypeGeneric (VarTy _) = True
-isTypeGeneric (FuncTy argTys retTy _) = any isTypeGeneric argTys || isTypeGeneric retTy
-isTypeGeneric (StructTy n tyArgs) = isTypeGeneric n || any isTypeGeneric tyArgs
-isTypeGeneric (PointerTy p) = isTypeGeneric p
-isTypeGeneric (RefTy r _) = isTypeGeneric r
-isTypeGeneric _ = False
 
 doesTypeContainTyVarWithName :: String -> Ty -> Bool
 doesTypeContainTyVarWithName name (VarTy n) = name == n
@@ -278,15 +267,6 @@ typesCopyFunctionType memberType = FuncTy [RefTy memberType (VarTy "q")] memberT
 typesDeleterFunctionType :: Ty -> Ty
 typesDeleterFunctionType memberType = FuncTy [memberType] UnitTy StaticLifetimeTy
 
-isFullyGenericType :: Ty -> Bool
-isFullyGenericType (VarTy _) = True
-isFullyGenericType _ = False
-
 -- | The type of environments sent to Lambdas (used in emitted C code)
 lambdaEnvTy :: Ty
 lambdaEnvTy = StructTy (ConcreteNameTy "LambdaEnv") []
-
-isUnit :: Ty -> Bool
-isUnit UnitTy = True
-isUnit (RefTy UnitTy _) = True
-isUnit _ = False

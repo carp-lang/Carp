@@ -3,6 +3,7 @@ module Validate where
 import Data.Function (on)
 import Data.List (nubBy, (\\))
 import Lookup
+import Managed
 import Obj
 import TypeError
 import Types
@@ -78,7 +79,7 @@ canBeUsedAsMemberType typeEnv typeVariables ty xobj =
           -- Prevents deftypes such as (deftype Player [pos Vector3])
           do
             _ <- canBeUsedAsMemberType typeEnv typeVariables tyVars xobj
-            case lookupInEnv (SymPath [] name') (getTypeEnv typeEnv) of
+            case lookupBinder (SymPath [] name') (getTypeEnv typeEnv) of
               Just _ -> pure ()
               Nothing -> Left (NotAmongRegisteredTypes ty xobj)
         -- e.g. (deftype (Higher (f a)) (Of [(f a)]))
@@ -88,10 +89,10 @@ canBeUsedAsMemberType typeEnv typeVariables ty xobj =
         then pure ()
         else case name of
           (ConcreteNameTy n) ->
-            case lookupInEnv (SymPath [] n) (getTypeEnv typeEnv) of
-              Just (_, (Binder _ (XObj (Lst (XObj (Deftype t) _ _ : _)) _ _))) ->
+            case lookupBinder (SymPath [] n) (getTypeEnv typeEnv) of
+              Just (Binder _ (XObj (Lst (XObj (Deftype t) _ _ : _)) _ _)) ->
                 checkInhabitants t
-              Just (_, (Binder _ (XObj (Lst (XObj (DefSumtype t) _ _ : _)) _ _))) ->
+              Just (Binder _ (XObj (Lst (XObj (DefSumtype t) _ _ : _)) _ _)) ->
                 checkInhabitants t
               _ -> Left (InvalidMemberType ty xobj)
             where
