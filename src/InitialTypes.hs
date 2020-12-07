@@ -202,7 +202,8 @@ initialTypes typeEnv rootEnv root = evalState (visit rootEnv root) 0
               okArgs <- sequence visitedArgs
               pure (XObj (Lst [defn, nameSymbol, XObj (Arr okArgs) argsi argst, okBody]) i funcTy)
         [(XObj (Defn _) _ _), XObj (Sym _ _) _ _, XObj (Arr _) _ _] -> pure (Left (NoFormsInBody xobj))
-        XObj defn@(Defn _) _ _ : _ -> pure (Left (InvalidObj defn xobj))
+        XObj defn@(Defn _) _ _ : _ ->
+          pure (Left (InvalidObjExample defn xobj "(defn <name> [<arguments>] <body>)"))
         -- Fn
         [fn@(XObj (Fn _ _) _ _), XObj (Arr argList) argsi argst, body] ->
           do
@@ -217,7 +218,8 @@ initialTypes typeEnv rootEnv root = evalState (visit rootEnv root) 0
               let final = XObj (Lst [fn, XObj (Arr okArgs) argsi argst, okBody]) i funcTy
               pure final --(trace ("FINAL: " ++ show final) final)
         [XObj (Fn _ _) _ _, XObj (Arr _) _ _] -> pure (Left (NoFormsInBody xobj)) -- TODO: Special error message for lambdas needed?
-        XObj fn@(Fn _ _) _ _ : _ -> pure (Left (InvalidObj fn xobj))
+        XObj fn@(Fn _ _) _ _ : _ ->
+          pure (Left (InvalidObjExample fn xobj "(fn [<arguments>] <body>)"))
         -- Def
         [def@(XObj Def _ _), nameSymbol, expression] ->
           do
@@ -226,11 +228,13 @@ initialTypes typeEnv rootEnv root = evalState (visit rootEnv root) 0
             pure $ do
               okExpr <- visitedExpr
               pure (XObj (Lst [def, nameSymbol, okExpr]) i (Just definitionType))
-        XObj Def _ _ : _ -> pure (Left (InvalidObj Def xobj))
+        XObj Def _ _ : _ ->
+          pure (Left (InvalidObjExample Def xobj "(def <name> <expression>)"))
         -- DefDynamic
         [def@(XObj DefDynamic _ _), nameSymbol, expression] ->
           pure $ pure (XObj (Lst [def, nameSymbol, expression]) i (Just DynamicTy))
-        XObj DefDynamic _ _ : _ -> pure (Left (InvalidObj Def xobj))
+        XObj DefDynamic _ _ : _ ->
+          pure (Left (InvalidObjExample Def xobj "(defdynamic <name> <expression>"))
         -- Let binding
         [letExpr@(XObj Let _ _), XObj (Arr bindings) bindi bindt, body] ->
           do
@@ -258,7 +262,7 @@ initialTypes typeEnv rootEnv root = evalState (visit rootEnv root) 0
         XObj Let _ _ : XObj (Arr _) _ _ : _ ->
           pure (Left (TooManyFormsInBody xobj))
         XObj Let _ _ : _ ->
-          pure (Left (InvalidObj Let xobj))
+          pure (Left (InvalidObjExample Let xobj "(let [<variable> <expression ...] <body>)"))
         -- If
         [ifExpr@(XObj If _ _), expr, ifTrue, ifFalse] ->
           do
@@ -282,7 +286,8 @@ initialTypes typeEnv rootEnv root = evalState (visit rootEnv root) 0
                     i
                     (Just returnType)
                 )
-        XObj If _ _ : _ -> pure (Left (InvalidObj If xobj))
+        XObj If _ _ : _ ->
+          pure (Left (InvalidObjExample If xobj "(if <condition> <then-expression> <else-expression>)"))
         -- Match
         matchExpr@(XObj (Match _) _ _) : expr : cases ->
           do
@@ -312,7 +317,8 @@ initialTypes typeEnv rootEnv root = evalState (visit rootEnv root) 0
                     i
                     (Just returnType)
                 )
-        XObj (Match m) _ _ : _ -> pure (Left (InvalidObj (Match m) xobj))
+        XObj (Match m) _ _ : _ ->
+          pure (Left (InvalidObjExample (Match m) xobj "(match <to-match> <condition> <clause> ...)"))
         -- While (always return Unit)
         [whileExpr@(XObj While _ _), expr, body] ->
           do
@@ -351,7 +357,8 @@ initialTypes typeEnv rootEnv root = evalState (visit rootEnv root) 0
               okVariable <- visitedVariable
               okValue <- visitedValue
               pure (XObj (Lst [setExpr, okVariable, okValue]) i (Just UnitTy))
-        XObj SetBang _ _ : _ -> pure (Left (InvalidObj SetBang xobj))
+        XObj SetBang _ _ : _ ->
+          pure (Left (InvalidObjExample SetBang xobj "(set! <variable> <new-value>)"))
         -- The
         [theExpr@(XObj The _ _), typeXObj, value] ->
           do
@@ -361,7 +368,8 @@ initialTypes typeEnv rootEnv root = evalState (visit rootEnv root) 0
               case xobjToTy typeXObj of
                 Just okType -> pure (XObj (Lst [theExpr, typeXObj, okValue]) i (Just okType))
                 Nothing -> Left (NotAType typeXObj)
-        XObj The _ _ : _ -> pure (Left (InvalidObj The xobj))
+        XObj The _ _ : _ ->
+          pure (Left (InvalidObjExample The xobj "(the <type> <expression>)"))
         -- Ref
         [refExpr@(XObj Ref _ _), value] ->
           do
