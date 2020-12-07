@@ -13,8 +13,7 @@ isExternalType typeEnv (PointerTy p) =
 isExternalType typeEnv (StructTy (ConcreteNameTy name) _) =
   case lookupBinder (SymPath [] name) (getTypeEnv typeEnv) of
     Just (Binder _ (XObj (Lst (XObj (ExternalType _) _ _ : _)) _ _)) -> True
-    Just _ -> False
-    Nothing -> False
+    _ -> False
 isExternalType _ _ =
   False
 

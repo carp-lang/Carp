@@ -12,6 +12,7 @@ isTypeGeneric _ = False
 
 isFullyGenericType :: Ty -> Bool
 isFullyGenericType (VarTy _) = True
+isFullyGenericType (StructTy name members) = isFullyGenericType name && all isFullyGenericType members
 isFullyGenericType _ = False
 
 isUnit :: Ty -> Bool

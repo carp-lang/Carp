@@ -35,9 +35,7 @@ lookupBinder path env = snd <$> lookupInEnv path env
 -- | Like 'lookupBinder' but return the Meta for the binder, or a default empty meta.
 lookupMeta :: SymPath -> Env -> MetaData
 lookupMeta path globalEnv =
-  case lookupBinder path globalEnv of
-    Just (Binder meta _) -> meta
-    Nothing -> emptyMeta
+  maybe emptyMeta Meta.fromBinder (lookupBinder path globalEnv)
 
 -- | Get the Env stored in a binder, if any.
 envFromBinder :: Binder -> Maybe Env
