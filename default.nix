@@ -17,7 +17,7 @@ let
       , cmark, containers, directory, edit-distance, filepath
       , haskeline, HUnit, mtl, optparse-applicative, parsec, process, split, text
       , darwin, glfw3, SDL2, SDL2_image, SDL2_gfx, SDL2_mixer, SDL2_ttf
-      , ghc-prof-flamegraph
+      , ghc-prof-flamegraph, ormolu
       , clang , makeWrapper
       , libXext, libXcursor, libXinerama, libXi, libXrandr, libXScrnSaver, libXxf86vm, libpthreadstubs, libXdmcp, libGL
 
@@ -47,7 +47,7 @@ let
           clang
         ];
         executableToolDepends = optionals pkgs.lib.inNixShell (
-          [ cabal-install clang gdb ]
+          [ cabal-install clang gdb ormolu ]
           ++ optionals stdenv.isLinux [ flamegraph linuxPackages.perf tinycc zig ]
         );
         executableFrameworkDepends = with darwin.apple_sdk.frameworks; optionals stdenv.isDarwin [
