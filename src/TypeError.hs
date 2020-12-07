@@ -17,6 +17,7 @@ data TypeError
   | ExpressionMissingType XObj
   | SymbolNotDefined SymPath XObj Env
   | InvalidObj Obj XObj
+  | InvalidObjExample Obj XObj String
   | CantUseDerefOutsideFunctionApplication XObj
   | NotAType XObj
   | WrongArgCount XObj Int Int
@@ -100,9 +101,13 @@ instance Show TypeError where
     "I didn’t understand the `if` statement at " ++ prettyInfoFromXObj xobj
       ++ ".\n\nIs it valid? Every `if` needs to follow the form `(if cond iftrue iffalse)`."
   show (InvalidObj o xobj) =
-    "I didn’t understand the form `" ++ show o ++ "` at "
+    "I didn’t understand the form `" ++ prettyObj o ++ "` at "
       ++ prettyInfoFromXObj xobj
       ++ ".\n\nIs it valid?"
+  show (InvalidObjExample o xobj example) =
+    "I didn’t understand the form `" ++ prettyObj o ++ "` at "
+      ++ prettyInfoFromXObj xobj
+      ++ ".\n\nIs it valid? It needs to follow the form `" ++ example ++ "`."
   show (WrongArgCount xobj expected actual) =
     "You used the wrong number of arguments in '" ++ getName xobj ++ "' at "
       ++ prettyInfoFromXObj xobj

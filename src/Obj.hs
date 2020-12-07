@@ -317,6 +317,13 @@ setPath (XObj (Lst [extr@(XObj (External _) _ _), XObj (Sym _ _) si st, ty]) i t
 setPath x _ =
   error ("Can't set path on " ++ show x)
 
+
+-- | Convert an Obj to a pretty string representation.
+-- | Reuses `pretty`.
+prettyObj :: Obj -> String
+prettyObj = pretty . buildXObj
+  where buildXObj o = XObj o Nothing Nothing
+
 -- | Convert an XObj to a pretty string representation.
 pretty :: XObj -> String
 pretty = visit 0
