@@ -709,12 +709,16 @@ toC toCMode (Binder meta root) = emitterSrc (execState (visit startingIndent roo
       do
         visited <- visit indent xobj
         appendToSrc
-          ( addIndent indent ++ "((" ++ tyToCLambdaFix innerTy ++ "*)" ++ arrayVar
-              ++ ".data)["
-              ++ show index
-              ++ "] = "
-              ++ visited
-              ++ ";\n"
+          ( case innerTy of
+              UnitTy -> "/* () */"
+              _ ->
+                ( addIndent indent ++ "((" ++ tyToCLambdaFix innerTy ++ "*)" ++ arrayVar
+                    ++ ".data)["
+                    ++ show index
+                    ++ "] = "
+                    ++ visited
+                    ++ ";\n"
+                )
           )
         pure ()
     visitStaticArray :: Int -> XObj -> State EmitterState String
