@@ -22,6 +22,7 @@ module Types
     Kind,
     tyToKind,
     isUnit,
+    areKindsConsistent,
   )
 where
 
@@ -75,6 +76,56 @@ tyToKind (PointerTy _) = Higher
 tyToKind (RefTy _ _) = Higher -- Refs may also be treated as a data constructor
 tyToKind _ = Base
 
+-- | Check whether or not the kinds of type variables are consistent.
+-- This function will return Left as soon as a variable is used inconsistently,
+-- reporting which variable triggered the issue.
+-- If all variables are used consistently, it will process the whole list and
+-- return ().
+--
+-- Kind arity matters; that is, `(f a b)` is not consistent with
+-- `(f b)`. So long as the kind of a variable is the same across its uses,
+-- everything is OK, for example:
+--     ((Foo f a b) [x (f a) y (f b)])
+-- is valid, and so is
+--     ((Foo f a b) [x f y a z b])
+-- But a definition such as:
+--     ((Foo f a b) [x (f a b) y (f a)])
+-- is inconsistent (kind of `f` differs) and so is
+--     ((Foo f a b) [x (f a) y b (b a)])
+-- (kind of `b` is inconsistent.
+areKindsConsistent :: [Ty] -> Either String ()
+areKindsConsistent typeVars =
+  assignKinds typeVars Map.empty
+  where
+    assignKinds :: [Ty] -> Map.Map String Int -> Either String ()
+    assignKinds (struct@(StructTy (VarTy name) vars) : rest) arityMap =
+      case Map.lookup name arityMap of
+        Nothing -> assignKinds next (Map.insert name kind arityMap)
+        Just k ->
+          if k == kind
+            then assignKinds next arityMap
+            else (Left name)
+      where
+        next = (vars ++ rest)
+        kind = (length vars)
+    assignKinds (var@(VarTy v) : rest) arityMap =
+      case Map.lookup v arityMap of
+        Nothing -> assignKinds rest (Map.insert v kind arityMap)
+        Just k ->
+          if k == kind
+            then assignKinds rest arityMap
+            else (Left v)
+      where
+        kind = 0
+    assignKinds (FuncTy args ret _ : rest) arityMap =
+      assignKinds (args ++ ret : rest) arityMap
+    assignKinds ((PointerTy p) : rest) arityMap =
+      assignKinds (p : rest) arityMap
+    assignKinds ((RefTy r _) : rest) arityMap =
+      assignKinds (r : rest) arityMap
+    assignKinds (_ : rest) arityMap = assignKinds rest arityMap
+    assignKinds [] _ = pure ()
+
 -- Exactly like '==' for Ty, but ignore lifetime parameter
 typeEqIgnoreLifetimes :: Ty -> Ty -> Bool
 typeEqIgnoreLifetimes (RefTy a _) (RefTy b _) = a == b
@@ -86,10 +137,11 @@ typeEqIgnoreLifetimes (StructTy a tyVarsA) (StructTy b tyVarsB) =
     && all (== True) (zipWith typeEqIgnoreLifetimes tyVarsA tyVarsB)
 typeEqIgnoreLifetimes a b = a == b
 
-data SumTyCase = SumTyCase
-  { caseName :: String,
-    caseMembers :: [(String, Ty)]
-  }
+data SumTyCase
+  = SumTyCase
+      { caseName :: String,
+        caseMembers :: [(String, Ty)]
+      }
   deriving (Show, Ord, Eq)
 
 fnOrLambda :: String

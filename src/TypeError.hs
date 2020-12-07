@@ -57,6 +57,7 @@ data TypeError
   | DefinitionsMustBeAtToplevel XObj
   | UsingDeadReference XObj String
   | UninhabitedConstructor Ty XObj Int Int
+  | InconsistentKinds String [XObj]
 
 instance Show TypeError where
   show (SymbolMissingType xobj env) =
@@ -311,6 +312,8 @@ instance Show TypeError where
     "The reference '" ++ pretty xobj ++ "' (depending on the variable '" ++ dependsOn ++ "') isn't alive at " ++ prettyInfoFromXObj xobj ++ "."
   show (UninhabitedConstructor ty xobj got wanted) =
     "Can't use a struct or sumtype constructor without arguments as a member type at " ++ prettyInfoFromXObj xobj ++ ". The type constructor " ++ show ty ++ " expects " ++ show wanted ++ " arguments but got " ++ show got
+  show (InconsistentKinds varName xobjs) =
+    " The type variable `" ++ varName ++ "` is used inconsistently: " ++ joinWithComma (map pretty (filter (doesTypeContainTyVarWithName varName . fromMaybe Universe . xobjToTy) xobjs)) ++ " Type variables must be applied to the same number of arguments."
 
 machineReadableErrorStrings :: FilePathPrintLength -> TypeError -> [String]
 machineReadableErrorStrings fppl err =
@@ -427,6 +430,8 @@ machineReadableErrorStrings fppl err =
       [machineReadableInfoFromXObj fppl xobj ++ " The reference '" ++ pretty xobj ++ "' isn't alive."]
     (UninhabitedConstructor ty xobj got wanted) ->
       [machineReadableInfoFromXObj fppl xobj ++ "Can't use a struct or sumtype constructor without arguments as a member type at " ++ prettyInfoFromXObj xobj ++ ". The type constructor " ++ show ty ++ " expects " ++ show wanted ++ " arguments but got " ++ show got]
+    (InconsistentKinds varName xobjs) ->
+      [machineReadableInfoFromXObj fppl (head xobjs) ++ " The type variable `" ++ varName ++ "` is used inconsistently: " ++ joinWithComma (map pretty (filter (doesTypeContainTyVarWithName varName . fromMaybe Universe . xobjToTy) xobjs)) ++ " Type variables must be applied to the same number of arguments."]
     _ ->
       [show err]
 
