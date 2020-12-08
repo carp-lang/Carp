@@ -10,6 +10,8 @@
 (defn ref-to-ptr [r]
   (the (Ptr a) (Unsafe.coerce (the (Ref a) r))))
 
+;; Just make sure the 'str' for a Pointer compiles
+;; (testing out its contents is platform specific)
 (defn pointer-to-str []
   (let [p (the (Ptr CChar) NULL)]
     (str p)))
@@ -47,9 +49,4 @@
                 123
                 "Pointer.to-value works as expected"
                 )
-  (assert-equal test
-                "0x0"
-                &(pointer-to-str)
-                "Pointer.str works as expected"
-  )
 )
