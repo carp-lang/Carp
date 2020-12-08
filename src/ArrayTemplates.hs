@@ -69,48 +69,34 @@ templateEFilter = defineTypeParameterizedTemplate templateCreator path t docs
     t = FuncTy [RefTy fTy (VarTy "w"), aTy] aTy StaticLifetimeTy
     docs = "filters array members using a function. This function takes ownership."
     elt = "&((($a*)a.data)[i])"
+    declaration :: String -> (String -> String) -> [Token]
+    declaration loopBody deleter =
+      multilineTemplate
+        [ "$DECL { ",
+          "    int insertIndex = 0;",
+          "    for(int i = 0; i < a.len; ++i) {",
+          "        if(" ++ templateCodeForCallingLambda "(*predicate)" fTy [elt] ++ ") {",
+          loopBody,
+          "        } else {",
+          "        " ++ deleter "i",
+          "        }",
+          "    }",
+          "    a.len = insertIndex;",
+          templateShrinkCheck "a",
+          "    return a;",
+          "}"
+        ]
     templateCreator = TemplateCreator $
       \typeEnv env ->
         Template
           t
           (const (toTemplate "Array $NAME(Lambda *predicate, Array a)")) -- Lambda used to be $(Fn [(Ref a)] Bool)
           ( \(FuncTy [RefTy (FuncTy [RefTy insideTy _] BoolTy _) _, _] _ _) ->
-              multilineTemplate
-                ( let deleter = insideArrayDeletion typeEnv env insideTy
-                   in ( case insideTy of
-                          UnitTy ->
-                            [ "$DECL { ",
-                              "    int insertIndex = 0;",
-                              "    for(int i = 0; i < a.len; ++i) {",
-                              "        if(" ++ templateCodeForCallingLambda "(*predicate)" fTy [elt] ++ ") {",
-                              "            /* ignore () member; just increment length. */",
-                              "            insertIndex++;",
-                              "        } else {",
-                              "        " ++ deleter "i",
-                              "        }",
-                              "    }",
-                              "    a.len = insertIndex;",
-                              templateShrinkCheck "a",
-                              "    return a;",
-                              "}"
-                            ]
-                          _ ->
-                            [ "$DECL { ",
-                              "    int insertIndex = 0;",
-                              "    for(int i = 0; i < a.len; ++i) {",
-                              "        if(" ++ templateCodeForCallingLambda "(*predicate)" fTy [elt] ++ ") {",
-                              "            ((($a*)a.data)[insertIndex++]) = (($a*)a.data)[i];",
-                              "        } else {",
-                              "        " ++ deleter "i",
-                              "        }",
-                              "    }",
-                              "    a.len = insertIndex;",
-                              templateShrinkCheck "a",
-                              "    return a;",
-                              "}"
-                            ]
-                      )
-                )
+              let deleteCall = insideArrayDeletion typeEnv env insideTy
+               in ( case insideTy of
+                      UnitTy -> declaration "           insertIndex++; /* ignore () member; just increment length. */" deleteCall
+                      _ -> declaration "            ((($a*)a.data)[insertIndex++]) = (($a*)a.data)[i];" deleteCall
+                  )
           )
           ( \(FuncTy [RefTy ft@(FuncTy fArgTys@[RefTy insideType _] BoolTy _) _, _] _ _) ->
               [defineFunctionTypeAlias ft, defineFunctionTypeAlias (FuncTy (lambdaEnvTy : fArgTys) BoolTy StaticLifetimeTy)]
