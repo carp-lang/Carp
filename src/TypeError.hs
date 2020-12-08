@@ -32,7 +32,6 @@ data TypeError
   | SeveralExactMatches XObj String Ty [(Ty, SymPath)]
   | NoMatchingSignature XObj String Ty [(Ty, SymPath)]
   | HolesFound [(String, Ty)]
-  | FailedToExpand XObj EvalError
   | NotAValidType XObj
   | FunctionsCantReturnRefTy XObj Ty
   | LetCantReturnRefTy XObj Ty
@@ -206,12 +205,6 @@ instance Show TypeError where
     "I found the following holes:\n\n    "
       ++ joinWith "\n    " (map (\(name, t) -> name ++ " : " ++ show t) holes)
       ++ "\n"
-  show (FailedToExpand xobj err@(EvalError _ hist _ _)) =
-    "I failed to expand a macro at " ++ prettyInfoFromXObj xobj
-      ++ ".\n\nThe error message I got was: "
-      ++ show err
-      ++ "\nTraceback:\n"
-      ++ unlines (map (prettyUpTo 60) hist)
   show (NotAValidType xobj) =
     pretty xobj ++ "is not a valid type at " ++ prettyInfoFromXObj xobj
   show (FunctionsCantReturnRefTy xobj t) =
@@ -380,8 +373,6 @@ machineReadableErrorStrings fppl err =
     -- (HolesFound holes) ->
     --   (map (\(name, t) -> machineReadableInfoFromXObj fppl xobj ++ " " ++ name ++ " : " ++ show t) holes)
 
-    (FailedToExpand xobj (EvalError errorMessage _ _ _)) ->
-      [machineReadableInfoFromXObj fppl xobj ++ "Failed to expand: " ++ errorMessage]
     -- TODO: Remove overlapping errors:
     (NotAValidType xobj) ->
       [machineReadableInfoFromXObj fppl xobj ++ " Not a valid type: " ++ pretty xobj ++ "."]
