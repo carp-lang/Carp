@@ -13,28 +13,42 @@ import TypesToC
 -- | "Endofunctor Map"
 templateEMap :: (String, Binder)
 templateEMap =
-  let fTy = FuncTy [VarTy "a"] (VarTy "a") (VarTy "fq")
-      aTy = StructTy (ConcreteNameTy "Array") [VarTy "a"]
-      bTy = StructTy (ConcreteNameTy "Array") [VarTy "a"]
-      elt = "((($a*)a.data)[i])"
-   in defineTemplate
-        (SymPath ["Array"] "endo-map")
-        (FuncTy [RefTy fTy (VarTy "q"), aTy] bTy StaticLifetimeTy)
-        "applies a function `f` to an array `a`. The type of the elements cannot change."
-        (toTemplate "Array $NAME(Lambda *f, Array a)") -- Lambda used to be $(Fn [a] a)
-        ( toTemplate $
-            unlines
-              [ "$DECL { ",
-                "    for(int i = 0; i < a.len; ++i) {",
-                "        (($a*)a.data)[i] = " ++ templateCodeForCallingLambda "(*f)" fTy [elt] ++ ";",
-                "    }",
-                "    return a;",
-                "}"
-              ]
+  defineTypeParameterizedTemplate
+    (TemplateCreator creatorFunc)
+    (SymPath ["Array"] "endo-map")
+    templateType
+    documentation
+  where
+    templateType =
+      (FuncTy [RefTy endomorphism (VarTy "q"), arrayTy] arrayTy StaticLifetimeTy)
+    endomorphism = FuncTy [VarTy "a"] (VarTy "a") (VarTy "fq")
+    arrayTy = StructTy (ConcreteNameTy "Array") [VarTy "a"]
+    documentation =
+      "applies a function `f` to an array `a`. The type of the elements cannot change."
+    creatorFunc :: TypeEnv -> Env -> Template
+    creatorFunc _ _ =
+      Template
+        templateType
+        (templateLiteral "Array $NAME(Lambda *f, Array a)")
+        ( \(FuncTy [_, (StructTy (ConcreteNameTy "Array") [memberTy])] _ _) ->
+            handleUnits memberTy
         )
         ( \(FuncTy [RefTy t@(FuncTy fArgTys fRetTy _) _, _] _ _) ->
             [defineFunctionTypeAlias t, defineFunctionTypeAlias (FuncTy (lambdaEnvTy : fArgTys) fRetTy StaticLifetimeTy)]
         )
+      where
+        elt = "((($a*)a.data)[i])"
+        handleUnits :: Ty -> [Token]
+        handleUnits UnitTy = templateReturn "a"
+        handleUnits _ =
+          multilineTemplate
+            [ "$DECL { ",
+              "    for(int i = 0; i < a.len; ++i) {",
+              "        (($a*)a.data)[i] = " ++ templateCodeForCallingLambda "(*f)" endomorphism [elt] ++ ";",
+              "    }",
+              "    return a;",
+              "}"
+            ]
 
 templateShrinkCheck :: String -> String
 templateShrinkCheck var =
@@ -55,29 +69,34 @@ templateEFilter = defineTypeParameterizedTemplate templateCreator path t docs
     t = FuncTy [RefTy fTy (VarTy "w"), aTy] aTy StaticLifetimeTy
     docs = "filters array members using a function. This function takes ownership."
     elt = "&((($a*)a.data)[i])"
+    declaration :: String -> (String -> String) -> [Token]
+    declaration loopBody deleter =
+      multilineTemplate
+        [ "$DECL { ",
+          "    int insertIndex = 0;",
+          "    for(int i = 0; i < a.len; ++i) {",
+          "        if(" ++ templateCodeForCallingLambda "(*predicate)" fTy [elt] ++ ") {",
+          loopBody,
+          "        } else {",
+          "        " ++ deleter "i",
+          "        }",
+          "    }",
+          "    a.len = insertIndex;",
+          templateShrinkCheck "a",
+          "    return a;",
+          "}"
+        ]
     templateCreator = TemplateCreator $
       \typeEnv env ->
         Template
           t
           (const (toTemplate "Array $NAME(Lambda *predicate, Array a)")) -- Lambda used to be $(Fn [(Ref a)] Bool)
           ( \(FuncTy [RefTy (FuncTy [RefTy insideTy _] BoolTy _) _, _] _ _) ->
-              toTemplate $
-                unlines $
-                  let deleter = insideArrayDeletion typeEnv env insideTy
-                   in [ "$DECL { ",
-                        "    int insertIndex = 0;",
-                        "    for(int i = 0; i < a.len; ++i) {",
-                        "        if(" ++ templateCodeForCallingLambda "(*predicate)" fTy [elt] ++ ") {",
-                        "            ((($a*)a.data)[insertIndex++]) = (($a*)a.data)[i];",
-                        "        } else {",
-                        "        " ++ deleter "i",
-                        "        }",
-                        "    }",
-                        "    a.len = insertIndex;",
-                        templateShrinkCheck "a",
-                        "    return a;",
-                        "}"
-                      ]
+              let deleteCall = insideArrayDeletion typeEnv env insideTy
+               in ( case insideTy of
+                      UnitTy -> declaration "           insertIndex++; /* ignore () member; just increment length. */" deleteCall
+                      _ -> declaration "            ((($a*)a.data)[insertIndex++]) = (($a*)a.data)[i];" deleteCall
+                  )
           )
           ( \(FuncTy [RefTy ft@(FuncTy fArgTys@[RefTy insideType _] BoolTy _) _, _] _ _) ->
               [defineFunctionTypeAlias ft, defineFunctionTypeAlias (FuncTy (lambdaEnvTy : fArgTys) BoolTy StaticLifetimeTy)]
@@ -86,50 +105,78 @@ templateEFilter = defineTypeParameterizedTemplate templateCreator path t docs
 
 templatePushBack :: (String, Binder)
 templatePushBack =
-  let aTy = StructTy (ConcreteNameTy "Array") [VarTy "a"]
-      valTy = VarTy "a"
-   in defineTemplate
-        (SymPath ["Array"] "push-back")
-        (FuncTy [aTy, valTy] aTy StaticLifetimeTy)
-        "adds an element `value` to the end of an array `a`."
-        (toTemplate "Array $NAME(Array a, $a value)")
-        ( toTemplate $
-            unlines
-              [ "$DECL { ",
-                "    a.len++;",
-                "    if(a.len > a.capacity) {",
-                "        a.capacity = a.len * 2;",
-                "        a.data = CARP_REALLOC(a.data, sizeof($a) * a.capacity);",
-                "    }",
-                "    (($a*)a.data)[a.len - 1] = value;",
-                "    return a;",
-                "}"
-              ]
-        )
-        (\(FuncTy [_, _] _ _) -> [])
+  defineTypeParameterizedTemplate creator path t docs
+  where
+    path = (SymPath ["Array"] "push-back")
+    aTy = StructTy (ConcreteNameTy "Array") [VarTy "a"]
+    valTy = VarTy "a"
+    t = (FuncTy [aTy, valTy] aTy StaticLifetimeTy)
+    docs = "adds an element `value` to the end of an array `a`."
+    declaration :: String -> [Token]
+    declaration setter =
+      multilineTemplate
+        [ "$DECL { ",
+          "    a.len++;",
+          "    if(a.len > a.capacity) {",
+          "        a.capacity = a.len * 2;",
+          "        a.data = CARP_REALLOC(a.data, sizeof($a) * a.capacity);",
+          "    }",
+          setter,
+          "    return a;",
+          "}"
+        ]
+    creator = TemplateCreator $
+      \_ _ ->
+        Template
+          t
+          ( \(FuncTy [_, valueTy] _ _) ->
+              case valueTy of
+                UnitTy -> toTemplate "Array $NAME(Array a)"
+                _ -> toTemplate "Array $NAME(Array a, $a value)"
+          )
+          ( \(FuncTy [_, valueTy] _ _) ->
+              case valueTy of
+                UnitTy -> declaration "    /* ignore () member */"
+                _ -> declaration "    (($a*)a.data)[a.len - 1] = value;"
+          )
+          (\(FuncTy [_, _] _ _) -> [])
 
 templatePushBackBang :: (String, Binder)
 templatePushBackBang =
-  let aTy = RefTy (StructTy (ConcreteNameTy "Array") [VarTy "a"]) (VarTy "q")
-      valTy = VarTy "a"
-   in defineTemplate
-        (SymPath ["Array"] "push-back!")
-        (FuncTy [aTy, valTy] UnitTy StaticLifetimeTy)
-        "adds an element `value` to the end of an array `a` in-place."
-        (toTemplate "void $NAME(Array *aRef, $a value)")
-        ( toTemplate $
-            unlines
-              [ "$DECL { ",
-                "    aRef->len++;",
-                "    if(aRef->len > aRef->capacity) {",
-                "        aRef->capacity = aRef->len * 2;",
-                "        aRef->data = CARP_REALLOC(aRef->data, sizeof($a) * aRef->capacity);",
-                "    }",
-                "    (($a*)aRef->data)[aRef->len - 1] = value;",
-                "}"
-              ]
-        )
-        (\(FuncTy [_, _] _ _) -> [])
+  defineTypeParameterizedTemplate creator path t docs
+  where
+    path = (SymPath ["Array"] "push-back!")
+    aTy = RefTy (StructTy (ConcreteNameTy "Array") [VarTy "a"]) (VarTy "q")
+    valTy = VarTy "a"
+    t = (FuncTy [aTy, valTy] UnitTy StaticLifetimeTy)
+    docs = "adds an element `value` to the end of an array `a` in-place."
+    declaration :: String -> [Token]
+    declaration setter =
+      multilineTemplate
+        [ "$DECL { ",
+          "    aRef->len++;",
+          "    if(aRef->len > aRef->capacity) {",
+          "        aRef->capacity = aRef->len * 2;",
+          "        aRef->data = CARP_REALLOC(aRef->data, sizeof($a) * aRef->capacity);",
+          "    }",
+          setter,
+          "}"
+        ]
+    creator = TemplateCreator $
+      \_ _ ->
+        Template
+          t
+          ( \(FuncTy [_, valueTy] _ _) ->
+              case valueTy of
+                UnitTy -> toTemplate "void $NAME(Array *aRef)"
+                _ -> toTemplate "void $NAME(Array *aRef, $a value)"
+          )
+          ( \(FuncTy [_, valueTy] _ _) ->
+              case valueTy of
+                UnitTy -> declaration "    /* ignore () member */"
+                _ -> declaration "    (($a*)aRef->data)[aRef->len - 1] = value;"
+          )
+          (\(FuncTy [_, _] _ _) -> [])
 
 templatePopBack :: (String, Binder)
 templatePopBack = defineTypeParameterizedTemplate templateCreator path t docs
@@ -164,24 +211,39 @@ templatePopBack = defineTypeParameterizedTemplate templateCreator path t docs
 
 templatePopBackBang :: (String, Binder)
 templatePopBackBang =
-  let aTy = RefTy (StructTy (ConcreteNameTy "Array") [VarTy "a"]) (VarTy "q")
-   in defineTemplate
-        (SymPath ["Array"] "pop-back!")
-        (FuncTy [aTy] (VarTy "a") StaticLifetimeTy)
-        "removes an element `value` from the end of an array `a` in-place and returns it."
-        (toTemplate "$a $NAME(Array *aRef)")
-        ( toTemplate $
-            unlines
-              [ "$DECL { ",
-                "  $a ret;",
-                "  assert(aRef->len > 0);",
-                "  ret = (($a*)aRef->data)[aRef->len - 1];",
-                "  aRef->len--;",
-                "  return ret;",
-                "}"
-              ]
-        )
-        (\(FuncTy [_] _ _) -> [])
+  defineTypeParameterizedTemplate creator path t docs
+  where
+    path = (SymPath ["Array"] "pop-back!")
+    aTy = RefTy (StructTy (ConcreteNameTy "Array") [VarTy "a"]) (VarTy "q")
+    t = (FuncTy [aTy] (VarTy "a") StaticLifetimeTy)
+    docs = "removes an element `value` from the end of an array `a` in-place and returns it."
+    creator =
+      TemplateCreator $
+        \_ _ ->
+          Template
+            t
+            (templateLiteral "$a $NAME(Array *aRef)")
+            ( \(FuncTy _ returnTy _) ->
+                case returnTy of
+                  UnitTy ->
+                    multilineTemplate
+                      [ "$DECL { ",
+                        "  assert(aRef->len > 0);",
+                        "  aRef->len--;",
+                        "}"
+                      ]
+                  _ ->
+                    multilineTemplate
+                      [ "$DECL { ",
+                        "  $a ret;",
+                        "  assert(aRef->len > 0);",
+                        "  ret = (($a*)aRef->data)[aRef->len - 1];",
+                        "  aRef->len--;",
+                        "  return ret;",
+                        "}"
+                      ]
+            )
+            (\(FuncTy [_] _ _) -> [])
 
 templateNth :: (String, Binder)
 templateNth =
@@ -225,6 +287,16 @@ templateUnsafeRaw =
     (toTemplate "$DECL { return a->data; }")
     (\(FuncTy [RefTy _ _] _ _) -> [])
 
+-- Several setter functions need to ensure the array's member type isn't Unit
+-- Such setters only run a side effect, so we can even drop bounds checks.
+unitSetterTemplate :: [Token]
+unitSetterTemplate =
+  multilineTemplate
+    [ "$DECL {",
+      "    /* () member, do nothing*/",
+      "}"
+    ]
+
 templateAset :: (String, Binder)
 templateAset = defineTypeParameterizedTemplate templateCreator path t docs
   where
@@ -235,19 +307,26 @@ templateAset = defineTypeParameterizedTemplate templateCreator path t docs
       \typeEnv env ->
         Template
           t
-          (\_ -> toTemplate "Array $NAME (Array a, int n, $t newValue)")
           ( \(FuncTy [_, _, insideTy] _ _) ->
-              let deleter = insideArrayDeletion typeEnv env insideTy
-               in toTemplate $
-                    unlines
-                      [ "$DECL {",
-                        "    assert(n >= 0);",
-                        "    assert(n < a.len);",
-                        deleter "n",
-                        "    (($t*)a.data)[n] = newValue;",
-                        "    return a;",
-                        "}"
-                      ]
+              case insideTy of
+                UnitTy -> toTemplate "Array $NAME (Array a, int n)"
+                _ -> toTemplate "Array $NAME (Array a, int n, $t newValue)"
+          )
+          ( \(FuncTy [_, _, insideTy] _ _) ->
+              case insideTy of
+                -- Just return the same array for unit members.
+                UnitTy -> toTemplate "$DECL { return a; }"
+                _ ->
+                  let deleter = insideArrayDeletion typeEnv env insideTy
+                   in multilineTemplate
+                        [ "$DECL {",
+                          "    assert(n >= 0);",
+                          "    assert(n < a.len);",
+                          deleter "n",
+                          "    (($t*)a.data)[n] = newValue;",
+                          "    return a;",
+                          "}"
+                        ]
           )
           ( \(FuncTy [_, _, insideTy] _ _) ->
               depsForDeleteFunc typeEnv env insideTy
@@ -263,20 +342,26 @@ templateAsetBang = defineTypeParameterizedTemplate templateCreator path t docs
       \typeEnv env ->
         Template
           t
-          (const (toTemplate "void $NAME (Array *aRef, int n, $t newValue)"))
+          ( \(FuncTy [_, _, valueType] _ _) ->
+              case valueType of
+                UnitTy -> toTemplate "void $NAME (Array *aRef, int n)"
+                _ -> toTemplate "void $NAME (Array *aRef, int n, $t newValue)"
+          )
           ( \(FuncTy [_, _, insideTy] _ _) ->
-              let deleter = insideArrayDeletion typeEnv env insideTy
-               in ( toTemplate $
-                      unlines
-                        [ "$DECL {",
-                          "    Array a = *aRef;",
-                          "    assert(n >= 0);",
-                          "    assert(n < a.len);",
-                          deleter "n",
-                          "    (($t*)a.data)[n] = newValue;",
-                          "}"
-                        ]
-                  )
+              case insideTy of
+                UnitTy -> unitSetterTemplate
+                _ ->
+                  let deleter = insideArrayDeletion typeEnv env insideTy
+                   in ( multilineTemplate
+                          [ "$DECL {",
+                            "    Array a = *aRef;",
+                            "    assert(n >= 0);",
+                            "    assert(n < a.len);",
+                            deleter "n",
+                            "    (($t*)a.data)[n] = newValue;",
+                            "}"
+                          ]
+                      )
           )
           ( \(FuncTy [RefTy arrayType _, _, _] _ _) ->
               depsForDeleteFunc typeEnv env arrayType
@@ -294,18 +379,24 @@ templateAsetUninitializedBang = defineTypeParameterizedTemplate templateCreator 
       \_ _ ->
         Template
           t
-          (const (toTemplate "void $NAME (Array *aRef, int n, $t newValue)"))
-          ( const
-              ( toTemplate $
-                  unlines
-                    [ "$DECL {",
-                      "    Array a = *aRef;",
-                      "    assert(n >= 0);",
-                      "    assert(n < a.len);",
-                      "    (($t*)a.data)[n] = newValue;",
-                      "}"
-                    ]
-              )
+          ( \(FuncTy [_, _, valueType] _ _) ->
+              case valueType of
+                UnitTy -> toTemplate "void $NAME (Array *aRef, int n)"
+                _ -> toTemplate "void $NAME (Array *aRef, int n, $t newValue)"
+          )
+          ( \(FuncTy [_, _, valueType] _ _) ->
+              case valueType of
+                UnitTy -> unitSetterTemplate
+                _ ->
+                  ( multilineTemplate
+                      [ "$DECL {",
+                        "    Array a = *aRef;",
+                        "    assert(n >= 0);",
+                        "    assert(n < a.len);",
+                        "    (($t*)a.data)[n] = newValue;",
+                        "}"
+                      ]
+                  )
           )
           (const [])
 
@@ -394,8 +485,12 @@ initTy (StructTy (ConcreteNameTy "Array") [innerType@FuncTy {}]) =
 initTy _ = []
 
 insideArrayInitLambda :: Ty -> String -> String
+insideArrayInitLambda (FuncTy _ UnitTy _) _ =
+  "break;"
 insideArrayInitLambda t indexer =
-  "    Lambda lambda = " ++ initLambda ++ "\n"
+  "    Lambda lambda = "
+    ++ initLambda
+    ++ "\n"
     ++ "        (("
     ++ tyToCLambdaFix t
     ++ "*)a.data)["
@@ -516,37 +611,52 @@ strTy typeEnv env (StructTy _ [innerType]) =
   ]
 strTy _ _ _ = []
 
+takeAddressOrNot :: TypeEnv -> Ty -> String
+takeAddressOrNot typeEnv t = if isManaged typeEnv t then "&" else ""
+
 calculateStrSize :: TypeEnv -> Env -> Ty -> String
 calculateStrSize typeEnv env t =
-  unlines
-    [ "  int size = 3; // opening and closing brackets and terminator",
-      "  for(int i = 0; i < a->len; i++) {",
-      arrayMemberSizeCalc ++ "  }",
-      ""
-    ]
+  case t of
+    -- If the member type is Unit, don't access the element.
+    UnitTy -> makeTemplate (\functionName -> (functionName ++ "();"))
+    _ -> makeTemplate (\functionName -> (functionName ++ "(" ++ (takeAddressOrNot typeEnv t) ++ "((" ++ tyToC t ++ "*)a->data)[i]);"))
   where
-    arrayMemberSizeCalc =
+    makeTemplate :: (String -> String) -> String
+    makeTemplate strcall =
+      unlines
+        [ "  int size = 3; // opening and closing brackets and terminator",
+          "  for(int i = 0; i < a->len; i++) {",
+          (arrayMemberSizeCalc strcall) ++ "  }",
+          ""
+        ]
+    -- Get the size of the member type's string representation
+    arrayMemberSizeCalc :: (String -> String) -> String
+    arrayMemberSizeCalc strcall =
       case findFunctionForMemberIncludePrimitives typeEnv env "prn" (typesStrFunctionType typeEnv t) ("Inside array.", t) of
         FunctionFound functionFullName ->
-          let takeAddressOrNot = if isManaged typeEnv t then "&" else ""
-           in unlines
-                [ "    temp = " ++ functionFullName ++ "(" ++ takeAddressOrNot ++ "((" ++ tyToC t ++ "*)a->data)[i]);",
-                  "    size += snprintf(NULL, 0, \"%s \", temp);",
-                  "    if(temp) {",
-                  "      CARP_FREE(temp);",
-                  "      temp = NULL;",
-                  "    }"
-                ]
+          unlines
+            [ "    temp = " ++ strcall functionFullName,
+              "    size += snprintf(NULL, 0, \"%s \", temp);",
+              "    if(temp) {",
+              "      CARP_FREE(temp);",
+              "      temp = NULL;",
+              "    }"
+            ]
         FunctionNotFound msg -> error msg
         FunctionIgnored -> "    /* Ignore type inside Array: '" ++ show t ++ "' ??? */\n"
 
 insideArrayStr :: TypeEnv -> Env -> Ty -> String
 insideArrayStr typeEnv env t =
-  case findFunctionForMemberIncludePrimitives typeEnv env "prn" (typesStrFunctionType typeEnv t) ("Inside array.", t) of
-    FunctionFound functionFullName ->
-      let takeAddressOrNot = if isManaged typeEnv t then "&" else ""
-       in unlines
-            [ "  temp = " ++ functionFullName ++ "(" ++ takeAddressOrNot ++ "((" ++ tyToC t ++ "*)a->data)[i]);",
+  case t of
+    UnitTy -> makeTemplate (\functionName -> functionName ++ "();")
+    _ -> makeTemplate (\functionName -> functionName ++ "(" ++ (takeAddressOrNot typeEnv t) ++ "((" ++ tyToC t ++ "*)a->data)[i]);")
+  where
+    makeTemplate :: (String -> String) -> String
+    makeTemplate strcall =
+      case findFunctionForMemberIncludePrimitives typeEnv env "prn" (typesStrFunctionType typeEnv t) ("Inside array.", t) of
+        FunctionFound functionFullName ->
+          unlines
+            [ "  temp = " ++ strcall functionFullName,
               "    sprintf(bufferPtr, \"%s \", temp);",
               "    bufferPtr += strlen(temp) + 1;",
               "    if(temp) {",
@@ -554,5 +664,5 @@ insideArrayStr typeEnv env t =
               "      temp = NULL;",
               "    }"
             ]
-    FunctionNotFound msg -> error msg
-    FunctionIgnored -> "    /* Ignore type inside Array: '" ++ show t ++ "' ??? */\n"
+        FunctionNotFound msg -> error msg
+        FunctionIgnored -> "    /* Ignore type inside Array: '" ++ show t ++ "' ??? */\n"
