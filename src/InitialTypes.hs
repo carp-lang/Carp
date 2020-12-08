@@ -142,6 +142,7 @@ initialTypes typeEnv rootEnv root = evalState (visit rootEnv root) 0
       do
         freshTy <- genVarTy
         pure (Right xobj {xobjTy = Just freshTy})
+    visitMultiSym _ _ _ = error "visitmultisym"
     visitInterfaceSym :: Env -> XObj -> State Integer (Either TypeError XObj)
     visitInterfaceSym _ xobj@(XObj (InterfaceSym name) _ _) =
       do
@@ -150,6 +151,7 @@ initialTypes typeEnv rootEnv root = evalState (visit rootEnv root) 0
           Just (Binder _ x) -> error ("A non-interface named '" ++ name ++ "' was found in the type environment: " ++ pretty x)
           Nothing -> genVarTy
         pure (Right xobj {xobjTy = Just freshTy})
+    visitInterfaceSym _ _ = error "visitinterfacesym"
     visitArray :: Env -> XObj -> State Integer (Either TypeError XObj)
     visitArray env (XObj (Arr xobjs) i _) =
       do
@@ -257,6 +259,7 @@ initialTypes typeEnv rootEnv root = evalState (visit rootEnv root) 0
             getDuplicate _ [] = Nothing
             getDuplicate names (o@(XObj (Sym (SymPath _ x) _) _ _) : _ : xs) =
               if x `elem` names then Just o else getDuplicate (x : names) xs
+            getDuplicate _ _ = error "getduplicate"
         [XObj Let _ _, XObj (Arr _) _ _] ->
           pure (Left (NoFormsInBody xobj))
         XObj Let _ _ : XObj (Arr _) _ _ : _ ->
