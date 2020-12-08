@@ -2,17 +2,17 @@ module Validate where
 
 import Control.Monad (foldM)
 import Data.Function (on)
-import Data.List ((\\), nubBy)
+import Data.List (nubBy, (\\))
 import Data.Maybe (fromJust)
 import Lookup
 import Managed
 import Obj
 import TypeError
-import Types
 import TypePredicates
+import Types
 import Util
 
-{-# ANN validateMembers "HLint: ignore Eta reduce" #-}
+{-# ANN validateMemberCases "HLint: ignore Eta reduce" #-}
 
 -- | Make sure that the member declarations in a type definition
 -- | Follow the pattern [<name> <type>, <name> <type>, ...]
@@ -33,7 +33,7 @@ validateMembers typeEnv typeVariables membersXObjs =
     -- Are the number of members even?
     checkUnevenMembers :: Either TypeError ()
     checkUnevenMembers =
-      if length membersXObjs `mod` 2 == 0
+      if even (length membersXObjs)
         then Right ()
         else Left (UnevenMembers membersXObjs)
     -- Are any members duplicated?
@@ -120,16 +120,17 @@ canBeUsedAsMemberType typeEnv typeVariables ty xobj =
       where
         checkInhabitants :: Ty -> Either TypeError ()
         checkInhabitants (StructTy _ vs) =
-          if (length vs == length vars)
+          if length vs == length vars
             then pure ()
             else Left (UninhabitedConstructor ty xobj (length vs) (length vars))
         checkInhabitants _ = Left (InvalidMemberType ty xobj)
     checkStruct v@(VarTy _) vars =
       canBeUsedAsMemberType typeEnv typeVariables v xobj
         >> foldM (\_ typ -> canBeUsedAsMemberType typeEnv typeVariables typ xobj) () vars
+    checkStruct _ _ = error "checkstruct"
     checkVar :: Ty -> Either TypeError ()
     checkVar variable =
-      if foldr (||) False (map (isCaptured variable) typeVariables)
+      if any (isCaptured variable) typeVariables
         then pure ()
         else Left (InvalidMemberType ty xobj)
       where
@@ -139,4 +140,5 @@ canBeUsedAsMemberType typeEnv typeVariables ty xobj =
         isCaptured :: Ty -> Ty -> Bool
         isCaptured t v@(VarTy _) = t == v
         isCaptured sa@(StructTy (VarTy _) _) sb@(StructTy (VarTy _) _) = sa == sb
-        isCaptured t (StructTy (VarTy _) vars) = any (== t) vars
+        isCaptured t (StructTy (VarTy _) vars) = t `elem` vars
+        isCaptured _ _ = error "canbeusedasmembertype iscaptured"

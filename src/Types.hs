@@ -95,7 +95,7 @@ areKindsConsistent typeVars =
   assignKinds typeVars Map.empty
   where
     assignKinds :: [Ty] -> Map.Map String Int -> Either String ()
-    assignKinds (struct@(StructTy (VarTy name) vars) : rest) arityMap =
+    assignKinds ((StructTy (VarTy name) vars) : rest) arityMap =
       case Map.lookup name arityMap of
         Nothing -> assignKinds next (Map.insert name kind arityMap)
         Just k ->
@@ -105,7 +105,7 @@ areKindsConsistent typeVars =
       where
         next = (vars ++ rest)
         kind = (length vars)
-    assignKinds (var@(VarTy v) : rest) arityMap =
+    assignKinds ((VarTy v) : rest) arityMap =
       case Map.lookup v arityMap of
         Nothing -> assignKinds rest (Map.insert v kind arityMap)
         Just k ->
@@ -134,11 +134,10 @@ typeEqIgnoreLifetimes (StructTy a tyVarsA) (StructTy b tyVarsB) =
     && all (== True) (zipWith typeEqIgnoreLifetimes tyVarsA tyVarsB)
 typeEqIgnoreLifetimes a b = a == b
 
-data SumTyCase
-  = SumTyCase
-      { caseName :: String,
-        caseMembers :: [(String, Ty)]
-      }
+data SumTyCase = SumTyCase
+  { caseName :: String,
+    caseMembers :: [(String, Ty)]
+  }
   deriving (Show, Ord, Eq)
 
 fnOrLambda :: String
