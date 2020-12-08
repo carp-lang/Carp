@@ -124,7 +124,7 @@ treatSpecialInput arg = arg
 repl :: String -> String -> InputT (StateT Context IO) ()
 repl readSoFar prompt =
   do
-    context <- lift $ get
+    context <- lift get
     input <- getInputLine (strWithColor Yellow prompt)
     case input of
       Nothing -> do

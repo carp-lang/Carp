@@ -122,7 +122,7 @@ templateGetter _ UnitTy =
     (FuncTy [RefTy (VarTy "p") (VarTy "q")] UnitTy StaticLifetimeTy)
     (const (toTemplate "void $NAME($(Ref p) p)"))
     -- Execution of the action passed as an argument is handled in Emit.hs.
-    (const $ toTemplate ("$DECL { return; }\n"))
+    (const $ toTemplate "$DECL { return; }\n")
     (const [])
 templateGetter member memberTy =
   Template
@@ -187,8 +187,8 @@ templateGenericSetter pathStrings originalStructTy@(StructTy (ConcreteNameTy typ
           t
           ( \(FuncTy [_, memberTy] _ _) ->
               case memberTy of
-                UnitTy -> (toTemplate "$p $NAME($p p)")
-                _ -> (toTemplate "$p $NAME($p p, $t newValue)")
+                UnitTy -> toTemplate "$p $NAME($p p)"
+                _ -> toTemplate "$p $NAME($p p, $t newValue)"
           )
           ( \(FuncTy [_, memberTy] _ _) ->
               let callToDelete = memberDeletion typeEnv env (memberName, memberTy)
@@ -242,7 +242,7 @@ templateMutatingSetter typeEnv env memberName memberTy =
 -- | The template for mutating setters of a generic deftype.
 templateGenericMutatingSetter :: [String] -> Ty -> Ty -> String -> (String, Binder)
 templateGenericMutatingSetter pathStrings originalStructTy@(StructTy (ConcreteNameTy typeName) _) membTy memberName =
-  defineTypeParameterizedTemplate templateCreator path (FuncTy [(RefTy originalStructTy (VarTy "q")), membTy] UnitTy StaticLifetimeTy) docs
+  defineTypeParameterizedTemplate templateCreator path (FuncTy [RefTy originalStructTy (VarTy "q"), membTy] UnitTy StaticLifetimeTy) docs
   where
     path = SymPath pathStrings ("set-" ++ memberName ++ "!")
     t = FuncTy [RefTy (VarTy "p") (VarTy "q"), VarTy "t"] UnitTy StaticLifetimeTy
@@ -253,13 +253,13 @@ templateGenericMutatingSetter pathStrings originalStructTy@(StructTy (ConcreteNa
           t
           ( \(FuncTy [_, memberTy] _ _) ->
               case memberTy of
-                UnitTy -> (toTemplate "void $NAME($p* pRef)")
-                _ -> (toTemplate "void $NAME($p* pRef, $t newValue)")
+                UnitTy -> toTemplate "void $NAME($p* pRef)"
+                _ -> toTemplate "void $NAME($p* pRef, $t newValue)"
           )
           ( \(FuncTy [_, memberTy] _ _) ->
               let callToDelete = memberRefDeletion typeEnv env (memberName, memberTy)
                in case memberTy of
-                    UnitTy -> (toTemplate "$DECL { return; }\n")
+                    UnitTy -> toTemplate "$DECL { return; }\n"
                     _ ->
                       toTemplate
                         ( unlines
@@ -327,7 +327,7 @@ binderForInit _ _ _ = error "binderforinit"
 -- | Generate a list of types from a deftype declaration.
 initArgListTypes :: [XObj] -> [Ty]
 initArgListTypes xobjs =
-  (map (fromJust . xobjToTy . snd) (pairwise xobjs))
+  map (fromJust . xobjToTy . snd) (pairwise xobjs)
 
 -- | The template for the 'init' and 'new' functions for a concrete deftype.
 concreteInit :: AllocationMode -> Ty -> [XObj] -> Template
@@ -343,7 +343,7 @@ concreteInit allocationMode originalStructTy@(StructTy (ConcreteNameTy typeName)
     ( \(FuncTy _ concreteStructTy _) ->
         let mappings = unifySignatures originalStructTy concreteStructTy
             correctedMembers = replaceGenericTypeSymbolsOnMembers mappings membersXObjs
-         in (tokensForInit allocationMode typeName correctedMembers)
+         in tokensForInit allocationMode typeName correctedMembers
     )
     (\FuncTy {} -> [])
   where
@@ -371,7 +371,7 @@ genericInit allocationMode pathStrings originalStructTy@(StructTy (ConcreteNameT
           ( \(FuncTy _ concreteStructTy _) ->
               let mappings = unifySignatures originalStructTy concreteStructTy
                   correctedMembers = replaceGenericTypeSymbolsOnMembers mappings membersXObjs
-               in (tokensForInit allocationMode typeName correctedMembers)
+               in tokensForInit allocationMode typeName correctedMembers
           )
           ( \(FuncTy _ concreteStructTy _) ->
               case concretizeType typeEnv concreteStructTy of
@@ -399,7 +399,7 @@ tokensForInit allocationMode typeName membersXObjs =
       ]
   where
     assignments [] = "    instance.__dummy = 0;"
-    assignments _ = go $ unitless
+    assignments _ = go unitless
       where
         go [] = ""
         go xobjs = joinLines $ memberAssignment allocationMode . fst <$> xobjs
@@ -480,7 +480,7 @@ genericStr pathStrings originalStructTy@(StructTy (ConcreteNameTy typeName) _) m
                in concatMap
                     (depsOfPolymorphicFunction typeEnv env [] "prn" . typesStrFunctionType typeEnv env)
                     (remove isFullyGenericType (map snd memberPairs))
-                    ++ (if isTypeGeneric concreteStructTy then [] else [defineFunctionTypeAlias ft])
+                    ++ [defineFunctionTypeAlias ft | not (isTypeGeneric concreteStructTy)]
           )
 genericStr _ _ _ _ = error "genericstr"
 

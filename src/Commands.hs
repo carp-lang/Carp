@@ -5,6 +5,7 @@ import Control.Exception
 import Control.Monad (join, when)
 import Control.Monad.IO.Class (MonadIO, liftIO)
 import Data.Bits (finiteBitSize)
+import Data.Functor ((<&>))
 import Data.Hashable (hash)
 import Data.List (elemIndex)
 import Data.List.Split (splitOn)
@@ -232,7 +233,7 @@ commandProjectGetConfig ctx xobj@(XObj (Str key) _ _) =
         _ -> Left key
    in pure $ case getVal ctx of
         Right val -> (ctx, Right $ xstr val)
-        Left k -> (evalError ctx (labelStr "CONFIG ERROR" ("Project.get-config can't understand the key '" ++ k)) (xobjInfo xobj))
+        Left k -> evalError ctx (labelStr "CONFIG ERROR" ("Project.get-config can't understand the key '" ++ k)) (xobjInfo xobj)
 commandProjectGetConfig ctx faultyKey =
   presentError ("First argument to 'Project.config' must be a string: " ++ pretty faultyKey) (ctx, dynamicNil)
 
@@ -337,7 +338,8 @@ commandBuild shutUp ctx = do
                  in liftIO $ do
                       when echoCompilationCommand (putStrLn cmd)
                       callCommand cmd
-                      when (execMode == Repl && not shutUp) $
+                      when
+                        (execMode == Repl && not shutUp)
                         (putStrLn ("Compiled to '" ++ outExe ++ (if hasMain then "' (executable)" else "' (shared library)")))
                       pure (setProjectCanExecute hasMain ctx, dynamicNil)
         liftIO $ createDirectoryIfMissing False outDir
@@ -377,12 +379,12 @@ commandProject ctx = do
 -- | Command for getting the name of the operating system you're on.
 commandHostOS :: NullaryCommandCallback
 commandHostOS ctx =
-  pure (ctx, (Right (XObj (Str os) (Just dummyInfo) (Just StringTy))))
+  pure (ctx, Right (XObj (Str os) (Just dummyInfo) (Just StringTy)))
 
 -- | Command for getting the native architecture.
 commandHostArch :: NullaryCommandCallback
 commandHostArch ctx =
-  pure (ctx, (Right (XObj (Str arch) (Just dummyInfo) (Just StringTy))))
+  pure (ctx, Right (XObj (Str arch) (Just dummyInfo) (Just StringTy)))
 
 -- | Command for adding a header file include to the project.
 commandAddInclude :: (String -> Includer) -> UnaryCommandCallback
@@ -446,9 +448,9 @@ commandLength :: UnaryCommandCallback
 commandLength ctx x =
   pure $ case x of
     XObj (Lst lst) _ _ ->
-      (ctx, (Right (XObj (Num IntTy (Integral (length lst))) Nothing Nothing)))
+      (ctx, Right (XObj (Num IntTy (Integral (length lst))) Nothing Nothing))
     XObj (Arr arr) _ _ ->
-      (ctx, (Right (XObj (Num IntTy (Integral (length arr))) Nothing Nothing)))
+      (ctx, Right (XObj (Num IntTy (Integral (length arr))) Nothing Nothing))
     _ -> evalError ctx ("Applying 'length' to non-list: " ++ pretty x) (xobjInfo x)
 
 commandCar :: UnaryCommandCallback
@@ -532,22 +534,22 @@ commandEq ctx a b =
     cmp (XObj (Chr ca) _ _, XObj (Chr cb) _ _) = Right $ ca == cb
     cmp (XObj (Sym sa _) _ _, XObj (Sym sb _) _ _) = Right $ sa == sb
     cmp (XObj (Bol xa) _ _, XObj (Bol xb) _ _) = Right $ xa == xb
-    cmp (XObj Def _ _, XObj Def _ _) = Right $ True
-    cmp (XObj Do _ _, XObj Do _ _) = Right $ True
-    cmp (XObj Let _ _, XObj Let _ _) = Right $ True
-    cmp (XObj While _ _, XObj While _ _) = Right $ True
-    cmp (XObj Break _ _, XObj Break _ _) = Right $ True
-    cmp (XObj If _ _, XObj If _ _) = Right $ True
-    cmp (XObj With _ _, XObj With _ _) = Right $ True
-    cmp (XObj MetaStub _ _, XObj MetaStub _ _) = Right $ True
-    cmp (XObj Address _ _, XObj Address _ _) = Right $ True
-    cmp (XObj SetBang _ _, XObj SetBang _ _) = Right $ True
-    cmp (XObj Macro _ _, XObj Macro _ _) = Right $ True
-    cmp (XObj Dynamic _ _, XObj Dynamic _ _) = Right $ True
-    cmp (XObj DefDynamic _ _, XObj DefDynamic _ _) = Right $ True
-    cmp (XObj The _ _, XObj The _ _) = Right $ True
-    cmp (XObj Ref _ _, XObj Ref _ _) = Right $ True
-    cmp (XObj Deref _ _, XObj Deref _ _) = Right $ True
+    cmp (XObj Def _ _, XObj Def _ _) = Right True
+    cmp (XObj Do _ _, XObj Do _ _) = Right True
+    cmp (XObj Let _ _, XObj Let _ _) = Right True
+    cmp (XObj While _ _, XObj While _ _) = Right True
+    cmp (XObj Break _ _, XObj Break _ _) = Right True
+    cmp (XObj If _ _, XObj If _ _) = Right True
+    cmp (XObj With _ _, XObj With _ _) = Right True
+    cmp (XObj MetaStub _ _, XObj MetaStub _ _) = Right True
+    cmp (XObj Address _ _, XObj Address _ _) = Right True
+    cmp (XObj SetBang _ _, XObj SetBang _ _) = Right True
+    cmp (XObj Macro _ _, XObj Macro _ _) = Right True
+    cmp (XObj Dynamic _ _, XObj Dynamic _ _) = Right True
+    cmp (XObj DefDynamic _ _, XObj DefDynamic _ _) = Right True
+    cmp (XObj The _ _, XObj The _ _) = Right True
+    cmp (XObj Ref _ _, XObj Ref _ _) = Right True
+    cmp (XObj Deref _ _, XObj Deref _ _) = Right True
     cmp (XObj (Lst []) _ _, XObj (Lst []) _ _) = Right True
     cmp (XObj (Lst elemsA) _ _, XObj (Lst elemsB) _ _) =
       if length elemsA == length elemsB
@@ -564,7 +566,7 @@ commandEq ctx a b =
     cmp' elt (Right True) = cmp elt
 
 commandComp :: (Number -> Number -> Bool) -> String -> BinaryCommandCallback
-commandComp op _ ctx (XObj (Num aTy aNum) _ _) (XObj (Num bTy bNum) _ _) | aTy == bTy = pure $ (ctx, Right (boolToXObj (op aNum bNum)))
+commandComp op _ ctx (XObj (Num aTy aNum) _ _) (XObj (Num bTy bNum) _ _) | aTy == bTy = pure (ctx, Right (boolToXObj (op aNum bNum)))
 commandComp _ opname ctx a b = pure $ evalError ctx ("Can't compare (" ++ opname ++ ") " ++ pretty a ++ " with " ++ pretty b) (xobjInfo a)
 
 commandLt :: BinaryCommandCallback
@@ -616,7 +618,7 @@ commandStringConcat ctx a =
 
 commandStringSplitOn :: BinaryCommandCallback
 commandStringSplitOn ctx (XObj (Str sep) _ _) (XObj (Str s) _ _) =
-  pure $ (ctx, Right (XObj (Arr (xstr <$> splitOn sep s)) (Just dummyInfo) Nothing))
+  pure (ctx, Right (XObj (Arr (xstr <$> splitOn sep s)) (Just dummyInfo) Nothing))
   where
     xstr o = XObj (Str o) (Just dummyInfo) (Just StringTy)
 commandStringSplitOn ctx sep s =
@@ -633,7 +635,7 @@ commandSymConcat ctx a =
 
 commandSymPrefix :: BinaryCommandCallback
 commandSymPrefix ctx (XObj (Sym (SymPath [] prefix) _) _ _) (XObj (Sym (SymPath [] suffix) _) i t) =
-  pure $ (ctx, Right (XObj (Sym (SymPath [prefix] suffix) (LookupGlobal CarpLand AVariable)) i t))
+  pure (ctx, Right (XObj (Sym (SymPath [prefix] suffix) (LookupGlobal CarpLand AVariable)) i t))
 commandSymPrefix ctx x (XObj (Sym (SymPath [] _) _) _ _) =
   pure $ evalError ctx ("Can’t call `prefix` with " ++ pretty x) (xobjInfo x)
 commandSymPrefix ctx _ x =
@@ -670,13 +672,13 @@ commandPathAbsolute ctx a =
   case a of
     XObj (Str s) _ _ -> do
       abs <- makeAbsolute s
-      pure $ (ctx, Right (XObj (Str abs) (Just dummyInfo) (Just StringTy)))
+      pure (ctx, Right (XObj (Str abs) (Just dummyInfo) (Just StringTy)))
     _ -> pure $ evalError ctx ("Can't call `absolute` with " ++ pretty a) (xobjInfo a)
 
 commandArith :: (Number -> Number -> Number) -> String -> BinaryCommandCallback
 commandArith op _ ctx (XObj (Num aTy aNum) _ _) (XObj (Num bTy bNum) _ _)
   | aTy == bTy =
-    pure $ (ctx, Right (XObj (Num aTy (op aNum bNum)) (Just dummyInfo) (Just aTy)))
+    pure (ctx, Right (XObj (Num aTy (op aNum bNum)) (Just dummyInfo) (Just aTy)))
 commandArith _ opname ctx a b = pure $ evalError ctx ("Can't call " ++ opname ++ " with " ++ pretty a ++ " and " ++ pretty b) (xobjInfo a)
 
 commandPlus :: BinaryCommandCallback
@@ -718,7 +720,7 @@ commandReadFile ctx filename =
       exceptional <- liftIO ((try $ slurp fname) :: (IO (Either IOException String)))
       pure $ case exceptional of
         Right contents -> (ctx, Right (XObj (Str contents) (Just dummyInfo) (Just StringTy)))
-        Left _ -> (evalError ctx ("The argument to `read-file` `" ++ fname ++ "` does not exist") (xobjInfo filename))
+        Left _ -> evalError ctx ("The argument to `read-file` `" ++ fname ++ "` does not exist") (xobjInfo filename)
     _ -> pure (evalError ctx ("The argument to `read-file` must be a string, I got `" ++ pretty filename ++ "`") (xobjInfo filename))
 
 commandWriteFile :: BinaryCommandCallback
@@ -769,7 +771,7 @@ saveDocs ctx pathsAndEnvBinders = do
   pure (ctx, dynamicNil)
 
 commandSexpression :: VariadicCommandCallback
-commandSexpression ctx [xobj, (XObj (Bol b) _ _)] =
+commandSexpression ctx [xobj, XObj (Bol b) _ _] =
   commandSexpressionInternal ctx xobj b
 commandSexpression ctx [xobj] =
   commandSexpressionInternal ctx xobj False
@@ -781,7 +783,7 @@ commandSexpressionInternal ctx xobj bol =
   let tyEnv = getTypeEnv $ contextTypeEnv ctx
    in case xobj of
         (XObj (Lst [inter@(XObj (Interface ty _) _ _), path]) i t) ->
-          pure (ctx, Right (XObj (Lst [(toSymbols inter), path, (reify ty)]) i t))
+          pure (ctx, Right (XObj (Lst [toSymbols inter, path, reify ty]) i t))
         (XObj (Lst forms) i t) ->
           pure (ctx, Right (XObj (Lst (map toSymbols forms)) i t))
         mdl@(XObj (Mod e) _ _) ->
@@ -796,21 +798,20 @@ commandSexpressionInternal ctx xobj bol =
                 getMod
           where
             getMod =
-              case (toSymbols mdl) of
+              case toSymbols mdl of
                 x@(XObj (Lst _) _ _) ->
                   bindingSyms e (ctx, Right x)
                 _ -> error "getmod"
               where
                 bindingSyms env start =
-                  ( mapM (\x -> commandSexpression ctx [x]) $
-                      map snd $
-                        Map.toList $
-                          Map.map binderXObj (envBindings env)
-                  )
-                    >>= pure . foldl combine start
-                combine (c, (Right (XObj (Lst xs) i t))) (_, (Right y@(XObj (Lst _) _ _))) =
+                  mapM
+                    (commandSexpression ctx . pure . snd)
+                    ( Map.toList $ Map.map binderXObj (envBindings env)
+                    )
+                    <&> foldl combine start
+                combine (c, Right (XObj (Lst xs) i t)) (_, Right y@(XObj (Lst _) _ _)) =
                   (c, Right (XObj (Lst (xs ++ [y])) i t))
-                combine _ (c, (Left err)) =
+                combine _ (c, Left err) =
                   (c, Left err)
                 combine (c, Left err) _ =
                   (c, Left err)
@@ -820,24 +821,23 @@ commandSexpressionInternal ctx xobj bol =
 
 toSymbols :: XObj -> XObj
 toSymbols (XObj (Mod e) i t) =
-  ( XObj
-      ( Lst
-          [ XObj (Sym (SymPath [] "defmodule") Symbol) i t,
-            XObj (Sym (SymPath [] (fromMaybe "" (envModuleName e))) Symbol) i t
-          ]
-      )
-      i
-      t
-  )
-toSymbols (XObj (Defn _) i t) = (XObj (Sym (SymPath [] "defn") Symbol) i t)
-toSymbols (XObj Def i t) = (XObj (Sym (SymPath [] "def") Symbol) i t)
-toSymbols (XObj (Deftype _) i t) = (XObj (Sym (SymPath [] "deftype") Symbol) i t)
-toSymbols (XObj (DefSumtype _) i t) = (XObj (Sym (SymPath [] "deftype") Symbol) i t)
-toSymbols (XObj (Interface _ _) i t) = (XObj (Sym (SymPath [] "definterface") Symbol) i t)
-toSymbols (XObj Macro i t) = (XObj (Sym (SymPath [] "defmacro") Symbol) i t)
-toSymbols (XObj (Command _) i t) = (XObj (Sym (SymPath [] "command") Symbol) i t)
-toSymbols (XObj (Primitive _) i t) = (XObj (Sym (SymPath [] "primitive") Symbol) i t)
-toSymbols (XObj (External _) i t) = (XObj (Sym (SymPath [] "external") Symbol) i t)
+  XObj
+    ( Lst
+        [ XObj (Sym (SymPath [] "defmodule") Symbol) i t,
+          XObj (Sym (SymPath [] (fromMaybe "" (envModuleName e))) Symbol) i t
+        ]
+    )
+    i
+    t
+toSymbols (XObj (Defn _) i t) = XObj (Sym (SymPath [] "defn") Symbol) i t
+toSymbols (XObj Def i t) = XObj (Sym (SymPath [] "def") Symbol) i t
+toSymbols (XObj (Deftype _) i t) = XObj (Sym (SymPath [] "deftype") Symbol) i t
+toSymbols (XObj (DefSumtype _) i t) = XObj (Sym (SymPath [] "deftype") Symbol) i t
+toSymbols (XObj (Interface _ _) i t) = XObj (Sym (SymPath [] "definterface") Symbol) i t
+toSymbols (XObj Macro i t) = XObj (Sym (SymPath [] "defmacro") Symbol) i t
+toSymbols (XObj (Command _) i t) = XObj (Sym (SymPath [] "command") Symbol) i t
+toSymbols (XObj (Primitive _) i t) = XObj (Sym (SymPath [] "primitive") Symbol) i t
+toSymbols (XObj (External _) i t) = XObj (Sym (SymPath [] "external") Symbol) i t
 toSymbols x = x
 
 commandHash :: UnaryCommandCallback

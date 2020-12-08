@@ -85,13 +85,12 @@ eval ctx xobj@(XObj o info ty) preference resolver =
         tryAllLookups =
           ( case preference of
                 PreferDynamic -> tryDynamicLookup
-                PreferGlobal -> (tryLookup spath <|> tryDynamicLookup)
+                PreferGlobal -> tryLookup spath <|> tryDynamicLookup
           )
             <|> (if null p then tryInternalLookup spath else tryLookup spath)
         tryDynamicLookup =
-          ( lookupBinder (SymPath ("Dynamic" : p) n) (contextGlobalEnv ctx)
-              >>= \(Binder _ found) -> pure (ctx, Right (resolveDef found))
-          )
+          lookupBinder (SymPath ("Dynamic" : p) n) (contextGlobalEnv ctx)
+            >>= \(Binder _ found) -> pure (ctx, Right (resolveDef found))
         tryInternalLookup path =
           ( contextInternalEnv ctx
               >>= lookupBinder path
@@ -209,7 +208,7 @@ eval ctx xobj@(XObj o info ty) preference resolver =
                 )
                 (xobjInfo defn)
             )
-        [(XObj Def _ _), name, _] ->
+        [XObj Def _ _, name, _] ->
           if isUnqualifiedSym name
             then specialCommandDefine ctx xobj
             else
@@ -287,7 +286,7 @@ eval ctx xobj@(XObj o info ty) preference resolver =
                   (newCtx, res) <- eval ctx' x preference ResolveLocal
                   case res of
                     Right okX -> do
-                      let binder = Binder emptyMeta (XObj (Lst [(XObj LetDef Nothing Nothing), XObj (Sym (SymPath [] n) Symbol) Nothing Nothing, okX]) Nothing (xobjTy okX))
+                      let binder = Binder emptyMeta (XObj (Lst [XObj LetDef Nothing Nothing, XObj (Sym (SymPath [] n) Symbol) Nothing Nothing, okX]) Nothing (xobjTy okX))
                           Just e = contextInternalEnv newCtx
                       pure $ Right (newCtx {contextInternalEnv = Just (envInsertAt e (SymPath [] n) binder)})
                     Left err -> pure $ Left err
@@ -473,7 +472,7 @@ macroExpand ctx xobj =
           (newCtx', res) <- evalDynamic ResolveLocal ctx (XObj (Lst (m : args)) i t)
           pure (newCtx', res)
         -- TODO: Determine a way to eval primitives generally and remove this special case.
-        Right p@(XObj (Lst [(XObj (Primitive prim) _ _), (XObj (Sym (SymPath _ "defmodule") _) _ _), _]) _ _) ->
+        Right p@(XObj (Lst [XObj (Primitive prim) _ _, XObj (Sym (SymPath _ "defmodule") _) _ _, _]) _ _) ->
           getPrimitive prim p next args
         _ -> do
           (newCtx, expanded) <- foldlM successiveExpand (ctx, Right []) args
@@ -594,9 +593,9 @@ executeCommand ctx@(Context env _ _ _ _ _ _ _) xobj =
       error ("Global env module name is " ++ fromJust (envModuleName env) ++ " (should be Nothing).")
     -- The s-expression command is a special case that prefers global/static bindings over dynamic bindings
     -- when given a naked binding (no path) as an argument; (s-expr inc)
-    (newCtx, result) <- if (xobjIsSexp xobj) then evalStatic ResolveGlobal ctx xobj else evalDynamic ResolveGlobal ctx xobj
+    (newCtx, result) <- if xobjIsSexp xobj then evalStatic ResolveGlobal ctx xobj else evalDynamic ResolveGlobal ctx xobj
     case result of
-      Left e@(EvalError _ _ _ _) -> do
+      Left e@EvalError {} -> do
         reportExecutionError newCtx (show e)
         pure (xobj, newCtx)
       -- special case: calling something static at the repl
@@ -776,16 +775,16 @@ primitiveDefmodule xobj ctx@(Context env i _ pathStrings _ _ _ _) (XObj (Sym (Sy
     >>= \(newCtx, result) ->
       case result of
         Left err -> pure (newCtx, Left err)
-        Right _ -> pure (popModulePath (newCtx {contextInternalEnv = (join (fmap envParent (contextInternalEnv newCtx)))}), dynamicNil)
+        Right _ -> pure (popModulePath (newCtx {contextInternalEnv = envParent =<< contextInternalEnv newCtx}), dynamicNil)
   where
     updateExistingModule :: Binder -> IO (Context, Either EvalError XObj)
     updateExistingModule (Binder _ (XObj (Mod innerEnv) _ _)) =
       let ctx' =
             ctx
               { contextInternalEnv = Just innerEnv {envParent = i},
-                contextPath = ((contextPath ctx) ++ [moduleName])
+                contextPath = contextPath ctx ++ [moduleName]
               }
-       in (pure (ctx', dynamicNil))
+       in pure (ctx', dynamicNil)
     updateExistingModule (Binder meta (XObj (Lst [XObj MetaStub _ _, _]) _ _)) =
       defineNewModule meta
     updateExistingModule _ =
@@ -800,7 +799,7 @@ primitiveDefmodule xobj ctx@(Context env i _ pathStrings _ _ _ _) (XObj (Sym (Sy
         updatedGlobalEnv = envInsertAt env (SymPath pathStrings moduleName) (Binder meta newModule)
         -- The parent of the internal env needs to be set to i here for contextual `use` calls to work.
         -- In theory this shouldn't be necessary; but for now it is.
-        ctx' = ctx {contextGlobalEnv = updatedGlobalEnv, contextInternalEnv = Just moduleEnv {envParent = i}, contextPath = ((contextPath ctx) ++ [moduleName])}
+        ctx' = ctx {contextGlobalEnv = updatedGlobalEnv, contextInternalEnv = Just moduleEnv {envParent = i}, contextPath = contextPath ctx ++ [moduleName]}
 
     defineModuleBindings :: (Context, Either EvalError XObj) -> IO (Context, Either EvalError XObj)
     defineModuleBindings (context, Left e) = pure (context, Left e)
@@ -810,7 +809,7 @@ primitiveDefmodule xobj ctx@(Context env i _ pathStrings _ _ _ _) (XObj (Sym (Sy
     step :: (Context, Either EvalError XObj) -> XObj -> IO (Context, Either EvalError XObj)
     step (ctx', Left e) _ = pure (ctx', Left e)
     step (ctx', Right _) expressions =
-      (macroExpand ctx' expressions)
+      macroExpand ctx' expressions
         >>= \(ctx'', res) -> case res of
           Left _ -> pure (ctx'', res)
           Right r -> evalDynamic ResolveLocal ctx'' r
@@ -882,14 +881,7 @@ loadInternal ctx xobj path i fileToLoad reloadMode = do
     Just firstPathFound ->
       do
         canonicalPath <- liftIO (canonicalizePath firstPathFound)
-        fileThatLoads <-
-          liftIO
-            ( canonicalizePath
-                ( case i of
-                    Just ii -> infoFile ii
-                    Nothing -> ""
-                )
-            )
+        fileThatLoads <- liftIO (canonicalizePath $ maybe "" infoFile i)
         if canonicalPath == fileThatLoads
           then pure $ cantLoadSelf ctx path
           else do
@@ -900,7 +892,7 @@ loadInternal ctx xobj path i fileToLoad reloadMode = do
                 contents <- liftIO $ slurp canonicalPath
                 let files = projectFiles proj
                     files' =
-                      if canonicalPath `elem` (map fst files)
+                      if canonicalPath `elem` map fst files
                         then files
                         else files ++ [(canonicalPath, reloadMode)]
                     prevStack = projectLoadStack proj
@@ -1023,7 +1015,7 @@ loadFilesOnce :: Context -> [FilePath] -> IO Context
 loadFilesOnce = loadFilesExt commandLoadOnce
 
 loadFilesExt :: VariadicCommandCallback -> Context -> [FilePath] -> IO Context
-loadFilesExt loadCmd ctxStart filesToLoad = foldM load ctxStart filesToLoad
+loadFilesExt loadCmd = foldM load
   where
     load :: Context -> FilePath -> IO Context
     load ctx file = do
@@ -1053,7 +1045,7 @@ commandReload ctx = do
 
 -- | Command for expanding a form and its macros.
 commandExpand :: UnaryCommandCallback
-commandExpand ctx xobj = macroExpand ctx xobj
+commandExpand = macroExpand
 
 -- | This function will show the resulting C code from an expression.
 -- | i.e. (Int.+ 2 3) => "_0 = 2 + 3"
@@ -1138,7 +1130,7 @@ primitiveDefdynamic _ ctx [notName, _] =
 primitiveDefdynamic _ _ _ = error "primitivedefdynamic"
 
 specialCommandSet :: Context -> [XObj] -> IO (Context, Either EvalError XObj)
-specialCommandSet ctx [(XObj (Sym path@(SymPath mod n) _) _ _), val] = do
+specialCommandSet ctx [XObj (Sym path@(SymPath mod n) _) _ _, val] = do
   (newCtx, result) <- evalDynamic ResolveLocal ctx val
   case result of
     Left err -> pure (newCtx, Left err)
@@ -1175,7 +1167,7 @@ specialCommandSet ctx [(XObj (Sym path@(SymPath mod n) _) _ _), val] = do
 specialCommandSet ctx [notName, _] =
   pure (evalError ctx ("`set!` expected a name as first argument, but got " ++ pretty notName) (xobjInfo notName))
 specialCommandSet ctx args =
-  pure (evalError ctx ("`set!` takes a name and a value, but got `" ++ intercalate " " (map pretty args)) (if null args then Nothing else xobjInfo (head args)))
+  pure (evalError ctx ("`set!` takes a name and a value, but got `" ++ unwords (map pretty args)) (if null args then Nothing else xobjInfo (head args)))
 
 -- | Convenience method for signifying failure in a given context.
 failure :: Context -> EvalError -> (Context, Either EvalError a)
@@ -1183,14 +1175,14 @@ failure ctx err = (ctx, Left err)
 
 -- | Given a context, value XObj and an existing binder, check whether or not
 -- the given value has a type matching the binder's in the given context.
-typeCheckValueAgainstBinder :: Context -> XObj -> Binder -> IO (Context, (Either EvalError XObj))
+typeCheckValueAgainstBinder :: Context -> XObj -> Binder -> IO (Context, Either EvalError XObj)
 typeCheckValueAgainstBinder ctx val binder = do
   (ctx', typedValue) <- annotateWithinContext False ctx val
   pure $ case typedValue of
     Right (val', _) -> go ctx' binderTy val'
     Left err -> (ctx', Left err)
   where
-    path = (getPath (binderXObj binder))
+    path = getPath (binderXObj binder)
     binderTy = xobjTy (binderXObj binder)
     typeErr x = evalError ctx ("can't `set!` " ++ show path ++ " to a value of type " ++ show (fromJust (xobjTy x)) ++ ", " ++ show path ++ " has type " ++ show (fromJust binderTy)) (xobjInfo x)
     go ctx'' (Just DynamicTy) x = (ctx'', Right x)

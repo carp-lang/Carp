@@ -203,7 +203,7 @@ initialTypes typeEnv rootEnv root = evalState (visit rootEnv root) 0
               okBody <- visitedBody
               okArgs <- sequence visitedArgs
               pure (XObj (Lst [defn, nameSymbol, XObj (Arr okArgs) argsi argst, okBody]) i funcTy)
-        [(XObj (Defn _) _ _), XObj (Sym _ _) _ _, XObj (Arr _) _ _] -> pure (Left (NoFormsInBody xobj))
+        [XObj (Defn _) _ _, XObj (Sym _ _) _ _, XObj (Arr _) _ _] -> pure (Left (NoFormsInBody xobj))
         XObj defn@(Defn _) _ _ : _ ->
           pure (Left (InvalidObjExample defn xobj "(defn <name> [<arguments>] <body>)"))
         -- Fn
@@ -419,7 +419,7 @@ initialTypes typeEnv rootEnv root = evalState (visit rootEnv root) 0
       let pairs = pairwise xobjs
           emptyInnerEnv =
             Env
-              { envBindings = Map.fromList [],
+              { envBindings = Map.empty,
                 envParent = Just env,
                 envModuleName = Nothing,
                 envUseModules = [],

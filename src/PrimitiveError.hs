@@ -23,15 +23,15 @@ instance Show PrimitiveError where
       ++ pretty actual
       ++ "`"
   show (ArgumentArityError fun numberExpected args) =
-    "`" ++ (show (getPath fun)) ++ "`" ++ "expected " ++ numberExpected
+    "`" ++ show (getPath fun) ++ "`" ++ "expected " ++ numberExpected
       ++ " arguments "
       ++ ", but got "
       ++ show (length args)
   show (MissingInfo x) =
     "No information about object: " ++ pretty x
-  show (ForewardImplementsMeta) =
+  show ForewardImplementsMeta =
     "Can't set the `implements` meta on a global definition before it is declared."
-  show (RegisterTypeError) =
+  show RegisterTypeError =
     "I don't understand this usage of `register-type`.\n\n"
       ++ "Valid usages :\n"
       ++ "  (register-type Name)\n"

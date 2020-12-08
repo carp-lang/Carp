@@ -99,7 +99,7 @@ concretizeXObj allowAmbiguityRoot typeEnv rootEnv visitedDefinitions root =
         pure $ do
           okBody <- visitedBody
           pure [defn, nameSymbol, args, okBody]
-    visitList _ Inside _ xobj@(XObj (Lst [(XObj (Defn _) _ _), _, (XObj (Arr _) _ _), _]) _ _) =
+    visitList _ Inside _ xobj@(XObj (Lst [XObj (Defn _) _ _, _, XObj (Arr _) _ _, _]) _ _) =
       pure (Left (DefinitionsMustBeAtToplevel xobj))
     visitList allowAmbig _ env (XObj (Lst [XObj (Fn _ _) fni fnt, args@(XObj (Arr argsArr) ai at), body]) i t) =
       -- The basic idea of this function is to first visit the body of the lambda ("in place"),
@@ -205,7 +205,7 @@ concretizeXObj allowAmbiguityRoot typeEnv rootEnv visitedDefinitions root =
         pure $ do
           okBody <- visitedBody
           pure [def, nameSymbol, okBody]
-    visitList _ Inside _ xobj@(XObj (Lst [(XObj Def _ _), _, _]) _ _) =
+    visitList _ Inside _ xobj@(XObj (Lst [XObj Def _ _, _, _]) _ _) =
       pure (Left (DefinitionsMustBeAtToplevel xobj))
     visitList allowAmbig level env (XObj (Lst [letExpr@(XObj Let _ _), XObj (Arr bindings) bindi bindt, body]) _ _) =
       do
@@ -390,12 +390,12 @@ collectCapturedVars root = removeDuplicates (map decreaseCaptureLevel (visit roo
           let (bound, bindingsCaptured) =
                 foldl
                   ( \(bound', captured) (XObj sym _ ty, expr) ->
-                      let capt = filter (\x -> Set.notMember x bound') (visit expr)
+                      let capt = filter (`Set.notMember` bound') (visit expr)
                        in (Set.insert (XObj sym (Just dummyInfo) ty) bound', capt ++ captured)
                   )
                   (Set.empty, [])
                   (pairwise bindings)
-           in let bodyCaptured = filter (\x -> Set.notMember x bound) (visit body)
+           in let bodyCaptured = filter (`Set.notMember` bound) (visit body)
                in bindingsCaptured ++ bodyCaptured
         (Lst _) -> visitList xobj
         (Arr _) -> visitArray xobj
@@ -567,9 +567,7 @@ replaceGenericTypeSymbols :: Map.Map String Ty -> XObj -> XObj
 replaceGenericTypeSymbols mappings xobj@(XObj (Sym (SymPath _ name) _) _ _) =
   let Just perhapsTyVar = xobjToTy xobj
    in if isFullyGenericType perhapsTyVar
-        then case Map.lookup name mappings of
-          Just found -> reify found
-          Nothing -> xobj -- error ("Failed to concretize member '" ++ name ++ "' at " ++ prettyInfoFromXObj xobj ++ ", mappings: " ++ show mappings)
+        then maybe xobj reify (Map.lookup name mappings)
         else xobj
 replaceGenericTypeSymbols mappings (XObj (Lst lst) i t) =
   XObj (Lst (map (replaceGenericTypeSymbols mappings) lst)) i t
@@ -860,7 +858,7 @@ manageMemory typeEnv globalEnv root =
             pure (Right xobj)
         case r of
           Right ok -> do
-            MemState _ _ _ <- get
+            MemState {} <- get
             r' <- checkThatRefTargetIsAlive ok -- trace ("CHECKING " ++ pretty ok ++ " : " ++ showMaybeTy (ty xobj) ++ ", mappings: " ++ prettyLifetimeMappings m) $
             addToLifetimesMappingsIfRef True ok -- (***)
             pure r'
@@ -897,7 +895,7 @@ manageMemory typeEnv globalEnv root =
               MemState deleters deps lifetimes <- get
               let newDeleters = Set.insert deleter deleters
                   newDeps = deps ++ depsForDeleteFunc typeEnv globalEnv t
-                  newState = (MemState newDeleters newDeps lifetimes)
+                  newState = MemState newDeleters newDeps lifetimes
               put newState --(trace (show newState) newState)
               pure (Right xobj)
     visitStaticArray _ = error "Must visit static array."
@@ -905,7 +903,7 @@ manageMemory typeEnv globalEnv root =
     visitList xobj@(XObj (Lst lst) i t) =
       case lst of
         [defn@(XObj (Defn maybeCaptures) _ _), nameSymbol@(XObj (Sym _ _) _ _), args@(XObj (Arr argList) _ _), body] ->
-          let captures = fromMaybe [] (fmap Set.toList maybeCaptures)
+          let captures = maybe [] Set.toList maybeCaptures
            in --case defnReturnType of
               -- RefTy _ _ ->
               --   pure (Left (FunctionsCantReturnRefTy xobj funcTy))
@@ -915,13 +913,15 @@ manageMemory typeEnv globalEnv root =
                 -- Add the captured variables (if any, only happens in lifted lambdas) as fake deleters
                 -- TODO: Use another kind of Deleter for this case since it's pretty special?
                 mapM_
-                  ( \cap ->
-                      modify
-                        ( \memState ->
-                            memState {memStateDeleters = Set.insert (FakeDeleter cap) (memStateDeleters memState)}
-                        )
+                  ( ( \cap ->
+                        modify
+                          ( \memState ->
+                              memState {memStateDeleters = Set.insert (FakeDeleter cap) (memStateDeleters memState)}
+                          )
+                    )
+                      . getName
                   )
-                  (map getName captures)
+                  captures
                 mapM_ (addToLifetimesMappingsIfRef False) argList
                 mapM_ (addToLifetimesMappingsIfRef False) captures -- For captured variables inside of lifted lambdas
                 visitedBody <- visit body
@@ -987,12 +987,12 @@ manageMemory typeEnv globalEnv root =
                 Right (okCorrectVariable, okMode) ->
                   do
                     MemState preDeleters _ _ <- get
-                    ownsTheVarBefore <- pure $ case createDeleter okCorrectVariable of
-                      Nothing -> Right ()
-                      Just d ->
-                        if Set.member d preDeleters || isLookupGlobal okMode
-                          then (Right ())
-                          else (Left (UsingUnownedValue variable))
+                    let ownsTheVarBefore = case createDeleter okCorrectVariable of
+                          Nothing -> Right ()
+                          Just d ->
+                            if Set.member d preDeleters || isLookupGlobal okMode
+                              then Right ()
+                              else Left (UsingUnownedValue variable)
                     visitedValue <- visit value
                     _ <- unmanage value -- The assigned value can't be used anymore
                     MemState managed _ _ <- get
@@ -1245,7 +1245,7 @@ manageMemory typeEnv globalEnv root =
         [] -> pure (Right xobj)
     visitList _ = error "Must visit list."
     visitMatchCase :: (XObj, XObj) -> State MemState (Either TypeError ((Set.Set Deleter, (XObj, XObj)), [XObj]))
-    visitMatchCase (lhs@(XObj _ _ _), rhs@XObj {}) =
+    visitMatchCase (lhs@XObj {}, rhs@XObj {}) =
       do
         MemState preDeleters _ _ <- get
         _ <- visitCaseLhs lhs

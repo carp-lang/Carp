@@ -269,9 +269,7 @@ instance Eq TemplateCreator where
   _ == _ = True
 
 prettyInfoFromXObj :: XObj -> String
-prettyInfoFromXObj xobj = case xobjInfo xobj of
-  Just i -> prettyInfo i
-  Nothing -> "no info"
+prettyInfoFromXObj xobj = maybe "no info" prettyInfo (xobjInfo xobj)
 
 machineReadableInfoFromXObj :: FilePathPrintLength -> XObj -> String
 machineReadableInfoFromXObj fppl xobj =
@@ -504,7 +502,7 @@ prettyUpTo lim xobj =
 
 prettyCaptures :: Set.Set XObj -> String
 prettyCaptures captures =
-  joinWithComma (map (\x -> getName x ++ " : " ++ fromMaybe "" (fmap show (xobjTy x))) (Set.toList captures))
+  joinWithComma (map (\x -> getName x ++ " : " ++ maybe "" show (xobjTy x)) (Set.toList captures))
 
 data EvalError
   = EvalError String [XObj] FilePathPrintLength (Maybe Info)
@@ -512,7 +510,7 @@ data EvalError
   deriving (Eq)
 
 instance Show EvalError where
-  show (HasStaticCall xobj info) = "Expression " ++ (pretty xobj) ++ " has unexpected static call" ++ showInfo info
+  show (HasStaticCall xobj info) = "Expression " ++ pretty xobj ++ " has unexpected static call" ++ showInfo info
     where
       showInfo (Just i) = " at " ++ prettyInfo i ++ "."
       showInfo Nothing = ""
@@ -576,8 +574,7 @@ prettyTyped = visit 0
         ++ suffix
 
 spaces :: Int -> String
-spaces n =
-  join (take n (repeat " "))
+spaces n = replicate n ' '
 
 -- | Datatype for holding meta data about a binder, like type annotation or docstring.
 newtype MetaData = MetaData {getMeta :: Map.Map String XObj} deriving (Eq, Show, Generic)
@@ -619,7 +616,7 @@ showBinderIndented indent _ (name, Binder _ (XObj (Lst [XObj (Interface t paths)
     ++ replicate indent ' '
     ++ "}"
 showBinderIndented indent showHidden (name, Binder meta xobj) =
-  if (not showHidden) && metaIsTrue meta "hidden"
+  if not showHidden && metaIsTrue meta "hidden"
     then ""
     else
       replicate indent ' ' ++ name
@@ -693,10 +690,7 @@ safeEnvModuleName env =
     Just name -> name ++ ", with parent " ++ parent
     Nothing -> "???, with parent " ++ parent
   where
-    parent =
-      case envParent env of
-        Just p -> safeEnvModuleName p
-        Nothing -> "Global"
+    parent = maybe "Global" safeEnvModuleName (envParent env)
 
 -- | Used by the compiler command "(env)"
 prettyEnvironment :: Env -> String
@@ -740,10 +734,7 @@ pathToEnv rootEnv = reverse (visit rootEnv)
         Just name -> name : parent
         Nothing -> parent
       where
-        parent =
-          case envParent env of
-            Just p -> visit p
-            Nothing -> []
+        parent = maybe [] visit (envParent env)
 
 showImportIndented :: Int -> SymPath -> String
 showImportIndented indent path = replicate indent ' ' ++ " * " ++ show path
