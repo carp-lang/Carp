@@ -75,10 +75,12 @@ instance Real Number where
 instance Enum Number where
   toEnum a = Integral (toEnum a)
   fromEnum (Integral a) = fromEnum a
+  fromEnum (Floating _) = error "floating fromenum"
 
 instance Fractional Number where
   fromRational a = Floating (fromRational a)
   recip (Floating a) = Floating (recip a)
+  recip (Integral _) = error "integral recip"
 
 instance Integral Number where
   quotRem (Integral a) (Integral b) = let (q, r) = quotRem a b in (Integral q, Integral r)
@@ -369,6 +371,7 @@ pretty = visit 0
         Instantiate _ -> "instantiate"
         External Nothing -> "external"
         External (Just override) -> "external (override: " ++ show override ++ ")"
+        ExternalType Nothing -> "external-type"
         ExternalType (Just override) -> "external-type (override: " ++ show override ++ ")"
         MetaStub -> "meta-stub"
         Defalias _ -> "defalias"
@@ -398,6 +401,7 @@ prettyUpTo lim xobj =
       case xobjObj xobj of
         Lst _ -> ")"
         Arr _ -> "]"
+        StaticArr _ -> "]"
         Dict _ -> "}"
         Num LongTy _ -> "l"
         Num IntTy _ -> ""
@@ -937,6 +941,7 @@ wrapInParens xobj@(XObj _ i t) =
 isVarName :: String -> Bool
 isVarName (firstLetter : _) =
   not (isUpper firstLetter) -- This allows names beginning with special chars etc. to be OK for vars
+isVarName _ = False
 
 -- construct an empty list xobj
 emptyList :: XObj
