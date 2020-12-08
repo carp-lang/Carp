@@ -168,7 +168,7 @@ concreteStr typeEnv env insidePath concreteStructTy@(StructTy (ConcreteNameTy ty
         )
         ( \(FuncTy [RefTy (StructTy _ _) _] StringTy _) ->
             concatMap
-              (depsOfPolymorphicFunction typeEnv env [] "prn" . typesStrFunctionType typeEnv)
+              (depsOfPolymorphicFunction typeEnv env [] "prn" . typesStrFunctionType typeEnv env)
               (filter (\t -> (not . isExternalType typeEnv) t && (not . isFullyGenericType) t) (concatMap caseTys cases))
         )
 
@@ -196,7 +196,7 @@ genericStr insidePath originalStructTy@(StructTy (ConcreteNameTy typeName) _) ca
               let mappings = unifySignatures originalStructTy concreteStructTy
                   correctedCases = replaceGenericTypesOnCases mappings cases
                   tys = filter (\t' -> (not . isExternalType typeEnv) t' && (not . isFullyGenericType) t') (concatMap caseTys correctedCases)
-               in concatMap (depsOfPolymorphicFunction typeEnv env [] "prn" . typesStrFunctionType typeEnv) tys
+               in concatMap (depsOfPolymorphicFunction typeEnv env [] "prn" . typesStrFunctionType typeEnv env) tys
                     ++ (if isTypeGeneric concreteStructTy then [] else [defineFunctionTypeAlias ft])
           )
 
@@ -292,7 +292,7 @@ genericSumtypeDelete pathStrings originalStructTy cases =
                     else
                       concatMap
                         (depsOfPolymorphicFunction typeEnv env [] "delete" . typesDeleterFunctionType)
-                        (filter (isManaged typeEnv) (concatMap caseTys correctedCases))
+                        (filter (isManaged typeEnv env) (concatMap caseTys correctedCases))
           )
 
 -- | The template for the 'delete' function of a concrete sumtype
@@ -317,7 +317,7 @@ concreteSumtypeDelete insidePath typeEnv env structTy@(StructTy (ConcreteNameTy 
         ( \_ ->
             concatMap
               (depsOfPolymorphicFunction typeEnv env [] "delete" . typesDeleterFunctionType)
-              (filter (isManaged typeEnv) (concatMap caseTys cases))
+              (filter (isManaged typeEnv env) (concatMap caseTys cases))
         )
 
 deleteCase :: TypeEnv -> Env -> Ty -> (SumtypeCase, Bool) -> String
@@ -363,7 +363,7 @@ genericSumtypeCopy pathStrings originalStructTy cases =
                     else
                       concatMap
                         (depsOfPolymorphicFunction typeEnv env [] "copy" . typesCopyFunctionType)
-                        (filter (isManaged typeEnv) (concatMap caseTys correctedCases))
+                        (filter (isManaged typeEnv env) (concatMap caseTys correctedCases))
           )
 
 -- | The template for the 'copy' function of a concrete sumtype
@@ -380,7 +380,7 @@ concreteSumtypeCopy insidePath typeEnv env structTy@(StructTy (ConcreteNameTy ty
         ( \_ ->
             concatMap
               (depsOfPolymorphicFunction typeEnv env [] "copy" . typesCopyFunctionType)
-              (filter (isManaged typeEnv) (concatMap caseTys cases))
+              (filter (isManaged typeEnv env) (concatMap caseTys cases))
         )
 
 tokensForSumtypeCopy :: TypeEnv -> Env -> Ty -> [SumtypeCase] -> [Token]

@@ -167,7 +167,7 @@ templateSetter typeEnv env memberName memberTy =
         )
         ( \_ ->
             if
-                | isManaged typeEnv memberTy -> depsOfPolymorphicFunction typeEnv env [] "delete" (typesDeleterFunctionType memberTy)
+                | isManaged typeEnv env memberTy -> depsOfPolymorphicFunction typeEnv env [] "delete" (typesDeleterFunctionType memberTy)
                 | isFunctionType memberTy -> [defineFunctionTypeAlias memberTy]
                 | otherwise -> []
         )
@@ -205,7 +205,7 @@ templateGenericSetter pathStrings originalStructTy@(StructTy (ConcreteNameTy typ
                         )
           )
           ( \(FuncTy [_, memberTy] _ _) ->
-              if isManaged typeEnv memberTy
+              if isManaged typeEnv env memberTy
                 then depsOfPolymorphicFunction typeEnv env [] "delete" (typesDeleterFunctionType memberTy)
                 else []
           )
@@ -269,7 +269,7 @@ templateGenericMutatingSetter pathStrings originalStructTy@(StructTy (ConcreteNa
                         )
           )
           ( \(FuncTy [_, memberTy] _ _) ->
-              if isManaged typeEnv memberTy
+              if isManaged typeEnv env memberTy
                 then depsOfPolymorphicFunction typeEnv env [] "delete" (typesDeleterFunctionType memberTy)
                 else []
           )
@@ -440,7 +440,7 @@ concreteStr typeEnv env concreteStructTy@(StructTy (ConcreteNameTy typeName) _) 
     )
     ( \(FuncTy [RefTy (StructTy _ _) (VarTy "q")] StringTy _) ->
         concatMap
-          (depsOfPolymorphicFunction typeEnv env [] "prn" . typesStrFunctionType typeEnv)
+          (depsOfPolymorphicFunction typeEnv env [] "prn" . typesStrFunctionType typeEnv env)
           (remove isFullyGenericType (map snd memberPairs))
     )
 
@@ -470,7 +470,7 @@ genericStr pathStrings originalStructTy@(StructTy (ConcreteNameTy typeName) _) m
                   correctedMembers = replaceGenericTypeSymbolsOnMembers mappings membersXObjs
                   memberPairs = memberXObjsToPairs correctedMembers
                in concatMap
-                    (depsOfPolymorphicFunction typeEnv env [] "prn" . typesStrFunctionType typeEnv)
+                    (depsOfPolymorphicFunction typeEnv env [] "prn" . typesStrFunctionType typeEnv env)
                     (remove isFullyGenericType (map snd memberPairs))
                     ++ (if isTypeGeneric concreteStructTy then [] else [defineFunctionTypeAlias ft])
           )
@@ -560,7 +560,7 @@ genericDelete pathStrings originalStructTy@(StructTy (ConcreteNameTy typeName) _
                     else
                       concatMap
                         (depsOfPolymorphicFunction typeEnv env [] "delete" . typesDeleterFunctionType)
-                        (filter (isManaged typeEnv) (map snd memberPairs))
+                        (filter (isManaged typeEnv env) (map snd memberPairs))
           )
 
 -- | Helper function to create the binder for the 'copy' template.
@@ -605,5 +605,5 @@ genericCopy pathStrings originalStructTy@(StructTy (ConcreteNameTy typeName) _) 
                     else
                       concatMap
                         (depsOfPolymorphicFunction typeEnv env [] "copy" . typesCopyFunctionType)
-                        (filter (isManaged typeEnv) (map snd memberPairs))
+                        (filter (isManaged typeEnv env) (map snd memberPairs))
           )

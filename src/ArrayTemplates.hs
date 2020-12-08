@@ -526,9 +526,9 @@ calculateStrSize typeEnv env t =
     ]
   where
     arrayMemberSizeCalc =
-      case findFunctionForMemberIncludePrimitives typeEnv env "prn" (typesStrFunctionType typeEnv t) ("Inside array.", t) of
+      case findFunctionForMemberIncludePrimitives typeEnv env "prn" (typesStrFunctionType typeEnv env t) ("Inside array.", t) of
         FunctionFound functionFullName ->
-          let takeAddressOrNot = if isManaged typeEnv t then "&" else ""
+          let takeAddressOrNot = if isManaged typeEnv env t then "&" else ""
            in unlines
                 [ "    temp = " ++ functionFullName ++ "(" ++ takeAddressOrNot ++ "((" ++ tyToC t ++ "*)a->data)[i]);",
                   "    size += snprintf(NULL, 0, \"%s \", temp);",
@@ -542,9 +542,9 @@ calculateStrSize typeEnv env t =
 
 insideArrayStr :: TypeEnv -> Env -> Ty -> String
 insideArrayStr typeEnv env t =
-  case findFunctionForMemberIncludePrimitives typeEnv env "prn" (typesStrFunctionType typeEnv t) ("Inside array.", t) of
+  case findFunctionForMemberIncludePrimitives typeEnv env "prn" (typesStrFunctionType typeEnv env t) ("Inside array.", t) of
     FunctionFound functionFullName ->
-      let takeAddressOrNot = if isManaged typeEnv t then "&" else ""
+      let takeAddressOrNot = if isManaged typeEnv env t then "&" else ""
        in unlines
             [ "  temp = " ++ functionFullName ++ "(" ++ takeAddressOrNot ++ "((" ++ tyToC t ++ "*)a->data)[i]);",
               "    sprintf(bufferPtr, \"%s \", temp);",

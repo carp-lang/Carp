@@ -5,15 +5,15 @@ import Obj
 import Polymorphism
 import Types
 
-memberInfo :: TypeEnv -> Ty -> (Ty, String, Ty)
-memberInfo typeEnv memberTy =
-  let refOrNotRefType = if isManaged typeEnv memberTy then RefTy memberTy (VarTy "w") else memberTy -- OBS! The VarTy "w" here is dubious
-   in (refOrNotRefType, if isManaged typeEnv memberTy then "&" else "", FuncTy [refOrNotRefType] StringTy StaticLifetimeTy)
+memberInfo :: TypeEnv -> Env -> Ty -> (Ty, String, Ty)
+memberInfo typeEnv globalEnv memberTy =
+  let refOrNotRefType = if isManaged typeEnv globalEnv memberTy then RefTy memberTy (VarTy "w") else memberTy -- OBS! The VarTy "w" here is dubious
+   in (refOrNotRefType, if isManaged typeEnv globalEnv memberTy then "&" else "", FuncTy [refOrNotRefType] StringTy StaticLifetimeTy)
 
 -- | Generate C code for converting a member variable to a string and appending it to a buffer.
 memberPrn :: TypeEnv -> Env -> (String, Ty) -> String
 memberPrn typeEnv env (memberName, memberTy) =
-  let (_, maybeTakeAddress, strFuncType) = memberInfo typeEnv memberTy
+  let (_, maybeTakeAddress, strFuncType) = memberInfo typeEnv env memberTy
    in case nameOfPolymorphicFunction typeEnv env strFuncType "prn" of
         Just strFunctionPath ->
           case strFuncType of
@@ -46,7 +46,7 @@ memberPrn typeEnv env (memberName, memberTy) =
 -- | Calculate the size for prn:ing a member of a struct
 memberPrnSize :: TypeEnv -> Env -> (String, Ty) -> String
 memberPrnSize typeEnv env (memberName, memberTy) =
-  let (_, maybeTakeAddress, strFuncType) = memberInfo typeEnv memberTy
+  let (_, maybeTakeAddress, strFuncType) = memberInfo typeEnv env memberTy
    in case nameOfPolymorphicFunction typeEnv env strFuncType "prn" of
         Just strFunctionPath ->
           case strFuncType of

@@ -421,6 +421,11 @@ startingTypeEnv =
     bindings =
       Map.fromList
         [ interfaceBinder
+            "delete"
+            (FuncTy [VarTy "a"] UnitTy StaticLifetimeTy)
+            ([SymPath ["Array"] "delete", SymPath ["Pointer"] "delete"] ++ registerFunctionFunctionsWithInterface "delete")
+            builtInSymbolInfo,
+          interfaceBinder
             "copy"
             (FuncTy [RefTy (VarTy "a") (VarTy "q")] (VarTy "a") StaticLifetimeTy)
             ([SymPath ["Array"] "copy", SymPath ["Pointer"] "copy"] ++ registerFunctionFunctionsWithInterface "copy")
