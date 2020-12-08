@@ -179,6 +179,7 @@ instance Show Ty where
   show StaticLifetimeTy = "StaticLifetime"
   show MacroTy = "Macro"
   show DynamicTy = "Dynamic"
+  show Universe = "Universe"
 
 showMaybeTy :: Maybe Ty -> String
 showMaybeTy (Just t) = show t
