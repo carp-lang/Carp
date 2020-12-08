@@ -74,6 +74,7 @@ platform =
     "darwin" -> MacOS
     "mingw32" -> Windows
     "freebsd" -> FreeBSD
+    p -> error ("Unknown platform: " ++ p)
 
 unionOfSetsInList :: Ord a => [Set.Set a] -> Set.Set a
 unionOfSetsInList (x : xs) =
