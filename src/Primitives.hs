@@ -402,6 +402,7 @@ primitiveInfo _ ctx [target@(XObj (Sym path@(SymPath _ name) _) _ _)] = do
       case Meta.get "doc" metaData of
         Just (XObj (Str val) _ _) -> liftIO $ putStrLn ("Documentation: " ++ val)
         Nothing -> pure ()
+        _ -> error "printdoc"
       case Meta.get "implements" metaData of
         Just xobj@(XObj _ info _) -> do
           case info of
@@ -412,6 +413,7 @@ primitiveInfo _ ctx [target@(XObj (Sym path@(SymPath _ name) _) _ _)] = do
       pure (ctx, dynamicNil)
 primitiveInfo _ ctx [notName] =
   argumentErr ctx "info" "a name" "first" notName
+primitiveInfo _ _ _ = error "primitiveinfo"
 
 dynamicOrMacroWith :: Context -> (SymPath -> [XObj]) -> Ty -> String -> XObj -> IO (Context, Either EvalError XObj)
 dynamicOrMacroWith ctx producer ty name body = do
@@ -483,6 +485,7 @@ primitiveMembers _ ctx [target] = do
             Just (Binder _ _) -> bottomedTarget
             _ -> target
         _ -> target
+primitiveMembers _ _ _ = error "primitivemembers"
 
 -- | Set meta data for a Binder
 primitiveMetaSet :: Primitive
@@ -534,6 +537,7 @@ primitiveMetaSet _ ctx [XObj (Sym _ _) _ _, key, _] =
   argumentErr ctx "meta-set!" "a string" "second" key
 primitiveMetaSet _ ctx [target, _, _] =
   argumentErr ctx "meta-set!" "a symbol" "first" target
+primitiveMetaSet _ _ _ = error "primitivemetaset"
 
 primitiveDefinterface :: Primitive
 primitiveDefinterface xobj ctx [nameXObj@(XObj (Sym path@(SymPath [] name) _) _ _), ty] =
@@ -564,8 +568,11 @@ primitiveDefinterface xobj ctx [nameXObj@(XObj (Sym path@(SymPath [] name) _) _ 
                       ++ "`"
                   )
                   (xobjInfo xobj)
+          _ -> error "updateinterface"
+
 primitiveDefinterface _ ctx [name, _] =
   pure (evalError ctx ("`definterface` expects a name as first argument, but got `" ++ pretty name ++ "`") (xobjInfo name))
+primitiveDefinterface _ _ _ = error "primitivedefinterface"
 
 registerInternal :: Context -> String -> XObj -> Maybe String -> IO (Context, Either EvalError XObj)
 registerInternal ctx name ty override =
@@ -745,6 +752,8 @@ primitiveDeftype xobj ctx (name : rest) =
               pure (makeEvalError ctx (Just err) ("Invalid type definition for '" ++ pretty nameXObj ++ "':\n\n" ++ show err) Nothing)
         (_, Nothing) ->
           pure (makeEvalError ctx Nothing ("Invalid type variables for type definition: " ++ pretty nameXObj) (xobjInfo nameXObj))
+        _ -> error "primitiveDeftype1"
+primitiveDeftype _ _ _ = error "primitivedeftype"
 
 primitiveUse :: Primitive
 primitiveUse xobj ctx [XObj (Sym path _) _ _] =
@@ -761,6 +770,7 @@ primitiveUse xobj ctx [XObj (Sym path _) _ _] =
     useModule _ = (ctx {contextGlobalEnv = envReplaceEnvAt env pathStrings e'}, dynamicNil)
 primitiveUse _ ctx [x] =
   argumentErr ctx "use" "a symbol" "first" x
+primitiveUse _ _ _ = error "primitiveuse"
 
 -- | Get meta data for a Binder
 primitiveMeta :: Primitive
@@ -780,6 +790,7 @@ primitiveMeta _ ctx [XObj (Sym _ _) _ _, key] =
   argumentErr ctx "meta" "a string" "second" key
 primitiveMeta _ ctx [path, _] =
   argumentErr ctx "meta" "a symbol" "first" path
+primitiveMeta _ _ _ = error "primitivemeta"
 
 primitiveDefined :: Primitive
 primitiveDefined _ ctx [XObj (Sym path _) _ _] = do
@@ -787,6 +798,7 @@ primitiveDefined _ ctx [XObj (Sym path _) _ _] = do
   pure $ maybe (ctx, Right falseXObj) (\_ -> (ctx, Right trueXObj)) (lookupInEnv path env)
 primitiveDefined _ ctx [arg] =
   argumentErr ctx "defined" "a symbol" "first" arg
+primitiveDefined _ _ _ = error "primitivedefined"
 
 primitiveDeftemplate :: Primitive
 -- deftemplate can't receive a dependency function, as Ty aren't exposed in Carp
@@ -812,6 +824,7 @@ primitiveDeftemplate _ ctx [XObj (Sym (SymPath [] name) _) _ _, ty, XObj (Str de
                 meta = lookupMeta (getPath registration) globalEnv
                 env' = envInsertAt globalEnv p (Binder meta registration)
              in (ctx {contextGlobalEnv = env'}, dynamicNil)
+      _ -> error "primitivedeftemplate1"
 primitiveDeftemplate _ ctx [XObj (Sym (SymPath [] _) _) _ _, _, XObj (Str _) _ _, x] =
   argumentErr ctx "deftemplate" "a string" "fourth" x
 primitiveDeftemplate _ ctx [XObj (Sym (SymPath [] _) _) _ _, _, x, _] =
@@ -820,6 +833,7 @@ primitiveDeftemplate _ ctx [s@(XObj (Sym (SymPath _ _) _) _ _), _, _, _] = do
   argumentErr ctx "deftemplate" "a symbol without prefix" "first" s
 primitiveDeftemplate _ ctx [x, _, _, _] =
   argumentErr ctx "deftemplate" "a symbol" "first" x
+primitiveDeftemplate _ _ _ = error "primitivedeftemplate"
 
 noTypeError :: Context -> XObj -> IO (Context, Either EvalError XObj)
 noTypeError ctx x = pure $ evalError ctx ("Can't get the type of: " ++ pretty x) (xobjInfo x)
@@ -875,6 +889,7 @@ primitiveType _ ctx [x@(XObj _ _ _)] =
     fail' _ = pure (evalError ctx ("Can't get the type of: " ++ pretty x) (xobjInfo x))
     ok ((XObj _ _ (Just t)), _) = pure (ctx, Right $ reify t)
     ok (_, _) = pure (evalError ctx ("Can't get the type of: " ++ pretty x) (xobjInfo x))
+primitiveType _ _ _ = error "primitivetype"
 
 primitiveKind :: Primitive
 primitiveKind _ ctx [x@(XObj _ _ _)] =
@@ -885,6 +900,7 @@ primitiveKind _ ctx [x@(XObj _ _ _)] =
     fail' _ = (evalError ctx ("Can't get the kind of: " ++ pretty x) (xobjInfo x))
     ok (XObj _ _ (Just t), _) = (ctx, Right $ reify (tyToKind t))
     ok (_, _) = (evalError ctx ("Can't get the kind of: " ++ pretty x) (xobjInfo x))
+primitiveKind _ _ _ = error "primitivekind"
 
 -- | Primitive for printing help.
 primitiveHelp :: Primitive
