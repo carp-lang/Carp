@@ -113,6 +113,7 @@ templatesForSingleMember typeEnv env insidePath p@(StructTy (ConcreteNameTy type
           (templateUpdater (mangle memberName) t)
           ("updates the `" ++ memberName ++ "` property of a `" ++ typeName ++ "` using a function `f`.")
       ]
+templatesForSingleMember _ _ _ _ _ = error "templatesforsinglemember"
 
 -- | The template for getters of a deftype.
 templateGetter :: String -> Ty -> Template
@@ -209,6 +210,7 @@ templateGenericSetter pathStrings originalStructTy@(StructTy (ConcreteNameTy typ
                 then depsOfPolymorphicFunction typeEnv env [] "delete" (typesDeleterFunctionType memberTy)
                 else []
           )
+templateGenericSetter _ _ _ _ = error "templategenericsetter"
 
 -- | The template for mutating setters of a deftype.
 templateMutatingSetter :: TypeEnv -> Env -> String -> Ty -> Template
@@ -273,6 +275,7 @@ templateGenericMutatingSetter pathStrings originalStructTy@(StructTy (ConcreteNa
                 then depsOfPolymorphicFunction typeEnv env [] "delete" (typesDeleterFunctionType memberTy)
                 else []
           )
+templateGenericMutatingSetter _ _ _ _ = error "templategenericmutatingsetter"
 
 -- | The template for updater functions of a deftype.
 -- | (allows changing a variable by passing an transformation function).
@@ -319,6 +322,7 @@ binderForInit insidePath structTy@(StructTy (ConcreteNameTy typeName) _) [XObj (
           (FuncTy (initArgListTypes membersXObjs) structTy StaticLifetimeTy)
           (concreteInit StackAlloc structTy membersXObjs)
           ("creates a `" ++ typeName ++ "`.")
+binderForInit _ _ _ = error "binderforinit"
 
 -- | Generate a list of types from a deftype declaration.
 initArgListTypes :: [XObj] -> [Ty]
@@ -344,6 +348,7 @@ concreteInit allocationMode originalStructTy@(StructTy (ConcreteNameTy typeName)
     (\FuncTy {} -> [])
   where
     unitless = remove (isUnit . snd)
+concreteInit _ _ _ = error "concreteinit"
 
 -- | The template for the 'init' and 'new' functions for a generic deftype.
 genericInit :: AllocationMode -> [String] -> Ty -> [XObj] -> (String, Binder)
@@ -373,6 +378,7 @@ genericInit allocationMode pathStrings originalStructTy@(StructTy (ConcreteNameT
                 Left err -> error (show err ++ ". This error should not crash the compiler - change return type to Either here.")
                 Right ok -> ok
           )
+genericInit _ _ _ _ = error "genericinit"
 
 tokensForInit :: AllocationMode -> String -> [XObj] -> [Token]
 tokensForInit allocationMode typeName membersXObjs =
@@ -428,6 +434,7 @@ binderForStrOrPrn typeEnv env insidePath structTy@(StructTy (ConcreteNameTy type
             (concreteStr typeEnv env structTy (memberXObjsToPairs membersXObjs) strOrPrn)
             ("converts a `" ++ typeName ++ "` to a string.")
         )
+binderForStrOrPrn _ _ _ _ _ _ = error "binderforstrorprn"
 
 -- | The template for the 'str' function for a concrete deftype.
 concreteStr :: TypeEnv -> Env -> Ty -> [(String, Ty)] -> String -> Template
@@ -443,6 +450,7 @@ concreteStr typeEnv env concreteStructTy@(StructTy (ConcreteNameTy typeName) _) 
           (depsOfPolymorphicFunction typeEnv env [] "prn" . typesStrFunctionType typeEnv)
           (remove isFullyGenericType (map snd memberPairs))
     )
+concreteStr _ _ _ _ _ = error "concretestr"
 
 -- | The template for the 'str' function for a generic deftype.
 genericStr :: [String] -> Ty -> [XObj] -> String -> (String, Binder)
@@ -474,6 +482,7 @@ genericStr pathStrings originalStructTy@(StructTy (ConcreteNameTy typeName) _) m
                     (remove isFullyGenericType (map snd memberPairs))
                     ++ (if isTypeGeneric concreteStructTy then [] else [defineFunctionTypeAlias ft])
           )
+genericStr _ _ _ _ = error "genericstr"
 
 tokensForStr :: TypeEnv -> Env -> String -> [(String, Ty)] -> Ty -> [Token]
 tokensForStr typeEnv env typeName memberPairs concreteStructTy =
@@ -502,6 +511,7 @@ calculateStructStrSize :: TypeEnv -> Env -> [(String, Ty)] -> Ty -> String
 calculateStructStrSize typeEnv env members (StructTy (ConcreteNameTy name) _) =
   "  int size = snprintf(NULL, 0, \"(%s )\", \"" ++ name ++ "\");\n"
     ++ unlines (map (memberPrnSize typeEnv env) members)
+calculateStructStrSize _ _ _ _ = error "calculatestructstrsize"
 
 -- | Generate C code for assigning to a member variable.
 -- | Needs to know if the instance is a pointer or stack variable.
@@ -525,6 +535,7 @@ binderForDelete typeEnv env insidePath structTy@(StructTy (ConcreteNameTy typeNa
             (concreteDelete typeEnv env (memberXObjsToPairs membersXObjs))
             ("deletes a `" ++ typeName ++ "`.")
         )
+binderForDelete _ _ _ _ _ = error "binderfordelete"
 
 -- | The template for the 'delete' function of a generic deftype.
 genericDelete :: [String] -> Ty -> [XObj] -> (String, Binder)
@@ -562,6 +573,7 @@ genericDelete pathStrings originalStructTy@(StructTy (ConcreteNameTy typeName) _
                         (depsOfPolymorphicFunction typeEnv env [] "delete" . typesDeleterFunctionType)
                         (filter (isManaged typeEnv) (map snd memberPairs))
           )
+genericDelete _ _ _ = error "genericdelete"
 
 -- | Helper function to create the binder for the 'copy' template.
 binderForCopy :: TypeEnv -> Env -> [String] -> Ty -> [XObj] -> Either TypeError ((String, Binder), [XObj])
@@ -576,6 +588,7 @@ binderForCopy typeEnv env insidePath structTy@(StructTy (ConcreteNameTy typeName
             (concreteCopy typeEnv env (memberXObjsToPairs membersXObjs))
             ("copies a `" ++ typeName ++ "`.")
         )
+binderForCopy _ _ _ _ _ = error "binderforcopy"
 
 -- | The template for the 'copy' function of a generic deftype.
 genericCopy :: [String] -> Ty -> [XObj] -> (String, Binder)
@@ -607,3 +620,4 @@ genericCopy pathStrings originalStructTy@(StructTy (ConcreteNameTy typeName) _) 
                         (depsOfPolymorphicFunction typeEnv env [] "copy" . typesCopyFunctionType)
                         (filter (isManaged typeEnv) (map snd memberPairs))
           )
+genericCopy _ _ _ = error "genericcopy"

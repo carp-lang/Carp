@@ -28,6 +28,8 @@ scoreTypeBinder typeEnv b@(Binder _ (XObj (Lst (XObj x _ _ : XObj (Sym _ _) _ _ 
       case lookupBinder (SymPath [] structName) (getTypeEnv typeEnv) of
         Just (Binder _ typedef) -> (depthOfDeftype typeEnv Set.empty typedef varTys + 1, b)
         Nothing -> error ("Can't find user defined type '" ++ structName ++ "' in type env.")
+    depthOfStruct _ = error "depthofstruct"
+
 scoreTypeBinder _ b@(Binder _ (XObj (Mod _) _ _)) =
   (1000, b)
 scoreTypeBinder _ x = error ("Can't score: " ++ show x)
@@ -124,7 +126,9 @@ scoreBody globalEnv visited root = visit root
       0
     visitList (XObj (Lst xobjs) _ _) =
       maximum (fmap visit xobjs)
+    visitList _ = error "visitlist"
     visitArray (XObj (Arr []) _ _) =
       0
     visitArray (XObj (Arr xobjs) _ _) =
       maximum (fmap visit xobjs)
+    visitArray _ = error "visitarray"

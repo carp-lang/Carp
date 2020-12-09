@@ -111,6 +111,7 @@ envBinderToHtml envBinder ctx moduleName moduleNames =
       moduleDescription = case Meta.get "doc" meta of
         Just (XObj (Str s) _ _) -> s
         Nothing -> ""
+        _ -> error "moduledescription"
       moduleDescriptionHtml = commonmarkToHtml [optSafe] $ Text.pack moduleDescription
    in H.docTypeHtml $
         do
