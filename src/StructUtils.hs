@@ -5,10 +5,20 @@ import Obj
 import Polymorphism
 import Types
 
+-- | The 'str'/'prn' functions for primitive types don't take refs, while other types do
+-- so we need to adjust for that when finding and calling them in compound types
 memberInfo :: TypeEnv -> Env -> Ty -> (Ty, String, Ty)
 memberInfo typeEnv globalEnv memberTy =
-  let refOrNotRefType = if isManaged typeEnv globalEnv memberTy then RefTy memberTy (VarTy "w") else memberTy -- OBS! The VarTy "w" here is dubious
-   in (refOrNotRefType, if isManaged typeEnv globalEnv memberTy then "&" else "", FuncTy [refOrNotRefType] StringTy StaticLifetimeTy)
+  let refOrNotRefType =
+        if isManaged typeEnv globalEnv memberTy
+          then RefTy memberTy (VarTy "w") -- OBS! The VarTy "w" here is dubious
+          else memberTy
+   in ( refOrNotRefType,
+        if isManaged typeEnv globalEnv memberTy
+          then "&"
+          else "",
+        FuncTy [refOrNotRefType] StringTy StaticLifetimeTy
+      )
 
 -- | Generate C code for converting a member variable to a string and appending it to a buffer.
 memberPrn :: TypeEnv -> Env -> (String, Ty) -> String
