@@ -20,6 +20,8 @@ isExternalType _ _ =
 
 -- | Is this type managed - does it need to be freed?
 isManaged :: TypeEnv -> Env -> Ty -> Bool
-isManaged typeEnv globalEnv structTy@(StructTy _ _) =
+isManaged typeEnv globalEnv structTy@StructTy{} =
   interfaceImplementedForTy typeEnv globalEnv "delete" (FuncTy [structTy] UnitTy StaticLifetimeTy)
+isManaged typeEnv globalEnv funcTy@FuncTy{} =
+  interfaceImplementedForTy typeEnv globalEnv "delete" (FuncTy [funcTy] UnitTy StaticLifetimeTy)
 isManaged _ _ _ = False
