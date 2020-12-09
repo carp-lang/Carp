@@ -33,6 +33,7 @@
   (implements copy String.copy)
   (implements prn String.prn)
   (implements str String.str)
+  (implements delete String.delete)
 
   (doc head "Returns the character at start of string.")
   (defn head [s]
