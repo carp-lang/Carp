@@ -362,7 +362,7 @@ int String_index_MINUS_of(const String *s, char c) {
     return String_index_MINUS_of_MINUS_from(s, c, -1);
 }
 
-String Pointer_str(void *in) {
+String Pointer_strp(void *in) {
     int size = snprintf(NULL, 0, "%p", in) + 1;
     String buffer = CARP_MALLOC(size);
     sprintf(buffer, "%p", in);
