@@ -423,7 +423,7 @@ startingTypeEnv =
         [ interfaceBinder
             "delete"
             (FuncTy [VarTy "a"] UnitTy StaticLifetimeTy)
-            ([SymPath ["Array"] "delete", SymPath ["Pointer"] "delete"] ++ registerFunctionFunctionsWithInterface "delete")
+            ([SymPath ["Array"] "delete"] ++ registerFunctionFunctionsWithInterface "delete")
             builtInSymbolInfo,
           interfaceBinder
             "copy"
