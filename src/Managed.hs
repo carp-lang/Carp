@@ -1,7 +1,5 @@
 module Managed where
 
-import Data.Maybe (mapMaybe)
-import Debug.Trace
 import Lookup
 import Obj
 import Types
@@ -18,15 +16,6 @@ isExternalType typeEnv (StructTy (ConcreteNameTy name) _) =
     _ -> False
 isExternalType _ _ =
   False
-
-implements :: TypeEnv -> Env -> String -> Ty -> Bool
-implements (TypeEnv typeEnv) globalEnv interfaceName matchingTy =
-  case lookupBinder (SymPath [] interfaceName) typeEnv of
-    Just (Binder _ (XObj (Lst (XObj (Interface _ paths) _ _ : _)) _ _)) ->
-      let lookupType path = forceTy . binderXObj <$> lookupBinder path globalEnv
-          matches = filter (areUnifiable matchingTy) (mapMaybe lookupType paths)
-       in not . null $ matches
-    _ -> False
 
 -- | Is this type managed - does it need to be freed?
 isManaged :: TypeEnv -> Env -> Ty -> Bool
