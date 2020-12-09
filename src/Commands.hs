@@ -184,6 +184,7 @@ commandProjectConfig ctx [xobj@(XObj (Str key) _ _), value] = do
     Right ok -> pure (ctx {contextProj = ok}, dynamicNil)
 commandProjectConfig ctx [faultyKey, _] =
   presentError ("First argument to 'Project.config' must be a string: " ++ pretty faultyKey) (ctx, dynamicNil)
+commandProjectConfig _ _ = error "commandprojectconfig"
 
 -- | Command for changing various project settings.
 commandProjectGetConfig :: CommandCallback
@@ -219,6 +220,7 @@ commandProjectGetConfig ctx [xobj@(XObj (Str key) _ _)] =
         Left k -> (evalError ctx (labelStr "CONFIG ERROR" ("Project.get-config can't understand the key '" ++ k)) (xobjInfo xobj))
 commandProjectGetConfig ctx [faultyKey] =
   presentError ("First argument to 'Project.config' must be a string: " ++ pretty faultyKey) (ctx, dynamicNil)
+commandProjectGetConfig _ _ = error "commandprojectgetconfig"
 
 -- | Command for exiting the REPL/compiler
 commandQuit :: CommandCallback
@@ -370,6 +372,7 @@ commandAddInclude includerConstructor ctx [x] =
       pure (ctx {contextProj = proj'}, dynamicNil)
     _ ->
       pure (evalError ctx ("Argument to 'include' must be a string, but was `" ++ pretty x ++ "`") (xobjInfo x))
+commandAddInclude _ _ _ = error "commandaddinclude"
 
 commandAddSystemInclude :: CommandCallback
 commandAddSystemInclude = commandAddInclude SystemInclude
@@ -386,24 +389,28 @@ commandAddRelativeInclude ctx [x] =
             ]
     _ ->
       pure (evalError ctx ("Argument to 'include' must be a string, but was `" ++ pretty x ++ "`") (xobjInfo x))
+commandAddRelativeInclude _ _ = error "commandaddrelativeinclude"
 
 commandIsList :: CommandCallback
 commandIsList ctx [x] =
   pure $ case x of
     XObj (Lst _) _ _ -> (ctx, Right trueXObj)
     _ -> (ctx, Right falseXObj)
+commandIsList _ _ = error "commandislist"
 
 commandIsArray :: CommandCallback
 commandIsArray ctx [x] =
   pure $ case x of
     XObj (Arr _) _ _ -> (ctx, Right trueXObj)
     _ -> (ctx, Right falseXObj)
+commandIsArray _ _ = error "commandisarray"
 
 commandIsSymbol :: CommandCallback
 commandIsSymbol ctx [x] =
   pure $ case x of
     XObj (Sym _ _) _ _ -> (ctx, Right trueXObj)
     _ -> (ctx, Right falseXObj)
+commandIsSymbol _ _ = error "commandissymbol"
 
 commandArray :: CommandCallback
 commandArray ctx args =
@@ -421,6 +428,7 @@ commandLength ctx [x] =
     XObj (Arr arr) _ _ ->
       (ctx, (Right (XObj (Num IntTy (Integral (length arr))) Nothing Nothing)))
     _ -> evalError ctx ("Applying 'length' to non-list: " ++ pretty x) (xobjInfo x)
+commandLength _ _ = error "commandlength"
 
 commandCar :: CommandCallback
 commandCar ctx [x] =
@@ -428,6 +436,7 @@ commandCar ctx [x] =
     XObj (Lst (car : _)) _ _ -> (ctx, Right car)
     XObj (Arr (car : _)) _ _ -> (ctx, Right car)
     _ -> evalError ctx ("Applying 'car' to non-list: " ++ pretty x) (xobjInfo x)
+commandCar _ _ = error "commandcar"
 
 commandCdr :: CommandCallback
 commandCdr ctx [x] =
@@ -435,6 +444,7 @@ commandCdr ctx [x] =
     XObj (Lst (_ : cdr)) i _ -> (ctx, Right (XObj (Lst cdr) i Nothing))
     XObj (Arr (_ : cdr)) i _ -> (ctx, Right (XObj (Arr cdr) i Nothing))
     _ -> evalError ctx "Applying 'cdr' to non-list or empty list" (xobjInfo x)
+commandCdr _ _ = error "commandcdr"
 
 commandLast :: CommandCallback
 commandLast ctx [x] =
@@ -442,6 +452,7 @@ commandLast ctx [x] =
     XObj (Lst lst@(_ : _)) _ _ -> (ctx, Right (last lst))
     XObj (Arr arr@(_ : _)) _ _ -> (ctx, Right (last arr))
     _ -> evalError ctx "Applying 'last' to non-list or empty list." (xobjInfo x)
+commandLast _ _ = error "commandlast"
 
 commandAllButLast :: CommandCallback
 commandAllButLast ctx [x] =
@@ -449,6 +460,7 @@ commandAllButLast ctx [x] =
     XObj (Lst lst) i _ -> (ctx, Right (XObj (Lst (init lst)) i Nothing))
     XObj (Arr arr) i _ -> (ctx, Right (XObj (Arr (init arr)) i Nothing))
     _ -> evalError ctx "Applying 'all-but-last' to non-list or empty list." (xobjInfo x)
+commandAllButLast _ _ = error "commandallbutlast"
 
 commandCons :: CommandCallback
 commandCons ctx [x, xs] =
@@ -457,6 +469,7 @@ commandCons ctx [x, xs] =
       (ctx, Right (XObj (Lst (x : lst)) (xobjInfo x) (xobjTy x))) -- TODO: probably not correct to just copy 'i' and 't'?
     XObj (Arr arr) _ _ -> (ctx, Right (XObj (Arr (x : arr)) (xobjInfo x) (xobjTy x)))
     _ -> evalError ctx "Applying 'cons' to non-list or empty list." (xobjInfo xs)
+commandCons _ _ = error "commandcons"
 
 commandConsLast :: CommandCallback
 commandConsLast ctx [x, xs] =
@@ -464,6 +477,7 @@ commandConsLast ctx [x, xs] =
     XObj (Lst lst) i t ->
       (ctx, Right (XObj (Lst (lst ++ [x])) i t)) -- TODO: should they get their own i:s and t:s
     _ -> evalError ctx "Applying 'cons-last' to non-list or empty list." (xobjInfo xs)
+commandConsLast _ _ = error "commandconslast"
 
 commandAppend :: CommandCallback
 commandAppend ctx [xs, ys] =
@@ -472,12 +486,14 @@ commandAppend ctx [xs, ys] =
       (ctx, Right (XObj (Lst (lst1 ++ lst2)) i t)) -- TODO: should they get their own i:s and t:s
     (XObj (Arr arr1) i t, XObj (Arr arr2) _ _) -> (ctx, Right (XObj (Arr (arr1 ++ arr2)) i t))
     _ -> evalError ctx "Applying 'append' to non-array/list or empty list." (xobjInfo xs)
+commandAppend _ _ = error "commandappend"
 
 commandMacroError :: CommandCallback
 commandMacroError ctx [msg] =
   pure $ case msg of
     XObj (Str smsg) _ _ -> evalError ctx smsg (xobjInfo msg)
     x -> evalError ctx (pretty x) (xobjInfo msg)
+commandMacroError _ _ = error "commandmacroerror"
 
 commandMacroLog :: CommandCallback
 commandMacroLog ctx msgs = do
@@ -533,10 +549,12 @@ commandEq ctx [a, b] =
     cmp' _ invalid@(Left _) = invalid
     cmp' _ (Right False) = Right False
     cmp' elt (Right True) = cmp elt
+commandEq _ _ = error "commandeq"
 
 commandComp :: (Number -> Number -> Bool) -> String -> CommandCallback
 commandComp op _ ctx [XObj (Num aTy aNum) _ _, XObj (Num bTy bNum) _ _] | aTy == bTy = pure $ (ctx, Right (boolToXObj (op aNum bNum)))
 commandComp _ opname ctx [a, b] = pure $ evalError ctx ("Can't compare (" ++ opname ++ ") " ++ pretty a ++ " with " ++ pretty b) (xobjInfo a)
+commandComp _ _ _ _ = error "commandcomp"
 
 commandLt :: CommandCallback
 commandLt = commandComp (<) "<"
@@ -552,6 +570,7 @@ commandCharAt ctx [a, b] =
         then (ctx, Right (XObj (Chr (s !! i)) (Just dummyInfo) (Just IntTy)))
         else evalError ctx ("Can't call char-at with " ++ pretty a ++ " and " ++ show i ++ ", index too large") (xobjInfo a)
     _ -> evalError ctx ("Can't call char-at with " ++ pretty a ++ " and " ++ pretty b) (xobjInfo a)
+commandCharAt _ _ = error "commandcharat"
 
 commandIndexOf :: CommandCallback
 commandIndexOf ctx [a, b] =
@@ -561,6 +580,7 @@ commandIndexOf ctx [a, b] =
     _ -> evalError ctx ("Can't call index-of with " ++ pretty a ++ " and " ++ pretty b) (xobjInfo a)
   where
     getIdx c s = fromMaybe (-1) $ elemIndex c s
+commandIndexOf _ _ = error "commandindexof"
 
 commandSubstring :: CommandCallback
 commandSubstring ctx [a, b, c] =
@@ -568,6 +588,7 @@ commandSubstring ctx [a, b, c] =
     (XObj (Str s) _ _, XObj (Num IntTy (Integral f)) _ _, XObj (Num IntTy (Integral t)) _ _) ->
       (ctx, Right (XObj (Str (take t (drop f s))) (Just dummyInfo) (Just StringTy)))
     _ -> evalError ctx ("Can't call substring with " ++ pretty a ++ ", " ++ pretty b ++ " and " ++ pretty c) (xobjInfo a)
+commandSubstring _ _ = error "commandsubstring"
 
 commandStringLength :: CommandCallback
 commandStringLength ctx [a] =
@@ -575,6 +596,7 @@ commandStringLength ctx [a] =
     XObj (Str s) _ _ ->
       (ctx, Right (XObj (Num IntTy (Integral (length s))) (Just dummyInfo) (Just IntTy)))
     _ -> evalError ctx ("Can't call length with " ++ pretty a) (xobjInfo a)
+commandStringLength _ _ = error "commandstringlength"
 
 commandStringConcat :: CommandCallback
 commandStringConcat ctx [a] =
@@ -584,6 +606,7 @@ commandStringConcat ctx [a] =
         Left err -> evalError ctx err (xobjInfo a)
         Right result -> (ctx, Right (XObj (Str (join result)) (Just dummyInfo) (Just StringTy)))
     _ -> evalError ctx ("Can't call concat with " ++ pretty a) (xobjInfo a)
+commandStringConcat _ _ = error "commandconcat"
 
 commandStringSplitOn :: CommandCallback
 commandStringSplitOn ctx [XObj (Str sep) _ _, XObj (Str s) _ _] =
@@ -592,6 +615,7 @@ commandStringSplitOn ctx [XObj (Str sep) _ _, XObj (Str s) _ _] =
     xstr o = XObj (Str o) (Just dummyInfo) (Just StringTy)
 commandStringSplitOn ctx [sep, s] =
   pure $ evalError ctx ("Can't call split-on with " ++ pretty sep ++ ", " ++ pretty s) (xobjInfo sep)
+commandStringSplitOn _ _ = error "commandstringspliton"
 
 commandSymConcat :: CommandCallback
 commandSymConcat ctx [a] =
@@ -601,6 +625,7 @@ commandSymConcat ctx [a] =
         Left err -> evalError ctx err (xobjInfo a)
         Right result -> (ctx, Right (XObj (Sym (SymPath [] (join (map show result))) (LookupGlobal CarpLand AVariable)) (Just dummyInfo) Nothing))
     _ -> evalError ctx ("Can't call concat with " ++ pretty a) (xobjInfo a)
+commandSymConcat _ _ = error "commandsymconcat"
 
 commandSymPrefix :: CommandCallback
 commandSymPrefix ctx [XObj (Sym (SymPath [] prefix) _) _ _, XObj (Sym (SymPath [] suffix) _) i t] =
@@ -609,6 +634,7 @@ commandSymPrefix ctx [x, XObj (Sym (SymPath [] _) _) _ _] =
   pure $ evalError ctx ("Can’t call `prefix` with " ++ pretty x) (xobjInfo x)
 commandSymPrefix ctx [_, x] =
   pure $ evalError ctx ("Can’t call `prefix` with " ++ pretty x) (xobjInfo x)
+commandSymPrefix _ _ = error "commandsymprefix"
 
 commandSymFrom :: CommandCallback
 commandSymFrom ctx [x@(XObj (Sym _ _) _ _)] = pure (ctx, Right x)
@@ -619,12 +645,14 @@ commandSymFrom ctx [XObj (Num _ v) i t] = pure (ctx, Right $ XObj (sFrom_ (show 
 commandSymFrom ctx [XObj (Bol b) i t] = pure (ctx, Right $ XObj (sFrom_ (show b)) i t)
 commandSymFrom ctx [x] =
   pure $ evalError ctx ("Can’t call `from` with " ++ pretty x) (xobjInfo x)
+commandSymFrom _ _ = error "commandsymfrom"
 
 commandSymStr :: CommandCallback
 commandSymStr ctx [XObj (Sym s _) i _] =
   pure (ctx, Right $ XObj (Str (show s)) i (Just StringTy))
 commandSymStr ctx [x] =
   pure $ evalError ctx ("Can’t call `str` with " ++ pretty x) (xobjInfo x)
+commandSymStr _ _ = error "commandsymstr"
 
 sFrom_ :: String -> Obj
 sFrom_ s = Sym (SymPath [] s) (LookupGlobal CarpLand AVariable)
@@ -635,6 +663,7 @@ commandPathDirectory ctx [a] =
     XObj (Str s) _ _ ->
       (ctx, Right (XObj (Str (takeDirectory s)) (Just dummyInfo) (Just StringTy)))
     _ -> evalError ctx ("Can't call `directory` with " ++ pretty a) (xobjInfo a)
+commandPathDirectory _ _ = error "commandpathdirectory"
 
 commandPathAbsolute :: CommandCallback
 commandPathAbsolute ctx [a] =
@@ -643,12 +672,14 @@ commandPathAbsolute ctx [a] =
       abs <- makeAbsolute s
       pure $ (ctx, Right (XObj (Str abs) (Just dummyInfo) (Just StringTy)))
     _ -> pure $ evalError ctx ("Can't call `absolute` with " ++ pretty a) (xobjInfo a)
+commandPathAbsolute _ _ = error "commandpathabsolute"
 
 commandArith :: (Number -> Number -> Number) -> String -> CommandCallback
 commandArith op _ ctx [XObj (Num aTy aNum) _ _, XObj (Num bTy bNum) _ _]
   | aTy == bTy =
     pure $ (ctx, Right (XObj (Num aTy (op aNum bNum)) (Just dummyInfo) (Just aTy)))
 commandArith _ opname ctx [a, b] = pure $ evalError ctx ("Can't call " ++ opname ++ " with " ++ pretty a ++ " and " ++ pretty b) (xobjInfo a)
+commandArith _ _ _ _ = error "commandarith"
 
 commandPlus :: CommandCallback
 commandPlus = commandArith (+) "+"
@@ -681,6 +712,7 @@ commandNot ctx [x] =
   pure $ case x of
     XObj (Bol ab) _ _ -> (ctx, Right (boolToXObj (not ab)))
     _ -> evalError ctx ("Can't perform logical operation (not) on " ++ pretty x) (xobjInfo x)
+commandNot _ _ = error "commandnot"
 
 commandReadFile :: CommandCallback
 commandReadFile ctx [filename] =
@@ -691,6 +723,7 @@ commandReadFile ctx [filename] =
         Right contents -> (ctx, Right (XObj (Str contents) (Just dummyInfo) (Just StringTy)))
         Left _ -> (evalError ctx ("The argument to `read-file` `" ++ fname ++ "` does not exist") (xobjInfo filename))
     _ -> pure (evalError ctx ("The argument to `read-file` must be a string, I got `" ++ pretty filename ++ "`") (xobjInfo filename))
+commandReadFile _ _ = error "commandreadfile"
 
 commandWriteFile :: CommandCallback
 commandWriteFile ctx [filename, contents] =
@@ -704,11 +737,13 @@ commandWriteFile ctx [filename, contents] =
             Left _ -> evalError ctx ("Cannot write to argument to `" ++ fname ++ "`, an argument to `write-file`") (xobjInfo filename)
         _ -> pure (evalError ctx ("The second argument to `write-file` must be a string, I got `" ++ pretty contents ++ "`") (xobjInfo contents))
     _ -> pure (evalError ctx ("The first argument to `write-file` must be a string, I got `" ++ pretty filename ++ "`") (xobjInfo filename))
+commandWriteFile _ _ = error "commandwritefile"
 
 commandHostBitWidth :: CommandCallback
 commandHostBitWidth ctx [] =
   let bitSize = Integral (finiteBitSize (undefined :: Int))
    in pure (ctx, Right (XObj (Num IntTy bitSize) (Just dummyInfo) (Just IntTy)))
+commandHostBitWidth _ _ = error "commandhostbitwidth"
 
 commandSaveDocsInternal :: CommandCallback
 commandSaveDocsInternal ctx [modulePath] = do
@@ -733,6 +768,7 @@ commandSaveDocsInternal ctx [modulePath] = do
           Left ("I can’t generate documentation for `" ++ pretty x ++ "` because it isn’t a module")
         Nothing ->
           Left ("I can’t find the module `" ++ show path ++ "`")
+commandSaveDocsInternal _ _ = error "commandsavedocsinternal"
 
 saveDocs :: Context -> [(SymPath, Binder)] -> IO (Context, Either a XObj)
 saveDocs ctx pathsAndEnvBinders = do
@@ -770,6 +806,7 @@ commandSexpressionInternal ctx [xobj] bol =
               case (toSymbols mdl) of
                 x@(XObj (Lst _) _ _) ->
                   bindingSyms e (ctx, Right x)
+                _ -> error "getmod"
               where
                 bindingSyms env start =
                   ( mapM (\x -> commandSexpression ctx [x]) $
@@ -784,8 +821,10 @@ commandSexpressionInternal ctx [xobj] bol =
                   (c, Left err)
                 combine (c, Left err) _ =
                   (c, Left err)
+                combine _ _ = error "combine"
         _ ->
           pure $ evalError ctx ("can't get an s-expression for: " ++ pretty xobj ++ " is it a bound symbol or literal s-expression?") (Just dummyInfo)
+commandSexpressionInternal _ _ _ = error "commandsexpressioninternal"
 
 toSymbols :: XObj -> XObj
 toSymbols (XObj (Mod e) i t) =

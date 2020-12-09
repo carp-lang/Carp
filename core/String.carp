@@ -461,9 +461,13 @@
 )
 
 (defmodule Pointer
-  (register str (Fn [(Ptr a)] String) "Pointer_str")
+  (register strp (Fn [(Ptr a)] String) "Pointer_strp")
+
+  (defn str [a] (Pointer.strp a))
   (implements str Pointer.str)
-  (defn prn [a] (Pointer.str a))
+
+  (defn prn [a] (Pointer.strp a))
+  (implements prn Pointer.prn)
   )
 
 (defndynamic build-str* [forms]

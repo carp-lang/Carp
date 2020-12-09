@@ -248,6 +248,7 @@ concretizeXObj allowAmbiguityRoot typeEnv rootEnv visitedDefinitions root =
           okF <- f
           okA <- a
           pure (okF : okA)
+    visitList _ _ _ _ = error "visitlist"
     visitMatchCase :: Bool -> Level -> Env -> (XObj, XObj) -> State [XObj] (Either TypeError [XObj])
     visitMatchCase allowAmbig level env (lhs, rhs) =
       do
@@ -346,8 +347,10 @@ concretizeXObj allowAmbiguityRoot typeEnv rootEnv visitedDefinitions root =
                     allowAmbig
                     env -- trace ("Replacing symbol " ++ pretty xobj ++ " with type " ++ show theType ++ " to single path " ++ show singlePath)
                     normalSymbol
+        Just _ -> error "visitinterfacesym1"
         Nothing ->
           error ("No interface named '" ++ name ++ "' found.")
+    visitInterfaceSym _ _ _ = error "visitinterfacesym"
 
 toGeneralSymbol :: XObj -> XObj
 toGeneralSymbol (XObj (Sym path _) _ t) = XObj (Sym path Symbol) (Just dummyInfo) t
@@ -371,10 +374,12 @@ collectCapturedVars root = removeDuplicates (map decreaseCaptureLevel (visit roo
                   if n <= 1
                     then Symbol
                     else LookupLocal (Capture (n -1))
+                _ -> error "decreasecapturelevel1"
             )
         )
         (Just dummyInfo)
         ty
+    decreaseCaptureLevel _ = error "decreasecapturelevel"
     visit xobj =
       case xobjObj xobj of
         -- don't peek inside lambdas, trust their capture lists:
@@ -498,6 +503,7 @@ instantiateGenericStructType typeEnv originalStructTy@(StructTy _ originalTyVars
                               (Just dummyInfo)
                               (Just TypeTy) :
                             concat okDeps
+instantiateGenericStructType _ _ _ _ = error "instantiategenericstructtype"
 
 depsForStructMemberPair :: TypeEnv -> (XObj, XObj) -> Either TypeError [XObj]
 depsForStructMemberPair typeEnv (_, tyXObj) =
@@ -533,6 +539,7 @@ instantiateGenericSumtype typeEnv originalStructTy@(StructTy _ originalTyVars) g
                           (Just TypeTy) :
                         concat okDeps
                     Left err -> Left err
+instantiateGenericSumtype _ _ _ _ = error "instantiategenericsumtype"
 
 -- Resolves dependencies for sumtype cases.
 -- NOTE: This function only accepts cases that are in "canonical form"
@@ -670,6 +677,7 @@ allFunctionsWithNameAndSignature env functionName functionType =
     predicate (Just t) =
       --trace ("areUnifiable? " ++ show functionType ++ " == " ++ show t ++ " " ++ show (areUnifiable functionType t)) $
       areUnifiable functionType t
+    predicate Nothing = error "allfunctionswithnameandsignature"
 
 -- | Find all the dependencies of a polymorphic function with a name and a desired concrete type.
 depsOfPolymorphicFunction :: TypeEnv -> Env -> [SymPath] -> String -> Ty -> [XObj]
@@ -998,6 +1006,7 @@ manageMemory typeEnv globalEnv root =
                                 else variable -- don't add the new info = no deleter
                             LookupGlobal _ _ ->
                               variable {xobjInfo = setDeletersOnInfo varInfo deleters}
+                            _ -> error "managememory set! 1"
                     -- traceDeps = trace ("SET!-deleters for " ++ pretty xobj ++ " at " ++ prettyInfoFromXObj xobj ++ ":\n" ++
                     --                    "unmanaged " ++ pretty value ++ "\n" ++
                     --                    "managed: " ++ show managed ++ "\n" ++
@@ -1007,6 +1016,7 @@ manageMemory typeEnv globalEnv root =
                       Symbol -> error "Should only be be a global/local lookup symbol."
                       LookupLocal _ -> manage okCorrectVariable
                       LookupGlobal _ _ -> pure ()
+                      _ -> error "managememory set! 2"
                     pure $ case okMode of
                       LookupLocal (Capture _) ->
                         Left (CannotSetVariableFromLambda variable setbangExpr)

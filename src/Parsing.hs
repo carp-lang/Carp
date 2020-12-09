@@ -280,6 +280,7 @@ escaped = do
   pure $ case c of
     '\\' -> "\\\\"
     '\"' -> "\""
+    _ -> error "escaped"
 
 escapedQuoteChar :: Parsec.Parsec String ParseState Char
 escapedQuoteChar = do

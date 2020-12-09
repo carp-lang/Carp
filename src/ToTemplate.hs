@@ -88,3 +88,17 @@ toTokTy mode s =
       Just ok -> TokTy ok mode
       Nothing -> error ("toTokTy failed to convert this s-expression to a type: " ++ pretty xobj)
     Right xobjs -> error ("toTokTy parsed too many s-expressions: " ++ joinWithSpace (map pretty xobjs))
+
+templateLiteral :: String -> (a -> [Token])
+templateLiteral = const . toTemplate
+
+multilineTemplate :: [String] -> [Token]
+multilineTemplate = toTemplate . unlines
+
+templateReturn :: String -> [Token]
+templateReturn x =
+  multilineTemplate
+    [ "$DECL { ",
+      "    return " ++ x ++ ";",
+      "}"
+    ]

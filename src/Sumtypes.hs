@@ -62,6 +62,7 @@ binderForCaseInit insidePath structTy@(StructTy (ConcreteNameTy _) _) sumtypeCas
   if isTypeGeneric structTy
     then Right (genericCaseInit StackAlloc insidePath structTy sumtypeCase)
     else Right (concreteCaseInit StackAlloc insidePath structTy sumtypeCase)
+binderForCaseInit _ _ _ = error "binderforcaseinit"
 
 concreteCaseInit :: AllocationMode -> [String] -> Ty -> SumtypeCase -> (String, Binder)
 concreteCaseInit allocationMode insidePath structTy sumtypeCase =
@@ -122,6 +123,7 @@ tokensForCaseInit allocationMode sumTy@(StructTy (ConcreteNameTy typeName) _) su
   where
     correctedName = caseName sumtypeCase
     unitless = zip anonMemberNames $ remove isUnit (caseTys sumtypeCase)
+tokensForCaseInit _ _ _ = error "tokensforcaseinit"
 
 caseMemberAssignment :: AllocationMode -> String -> String -> String
 caseMemberAssignment allocationMode caseNm memberName =
@@ -144,6 +146,7 @@ binderForTag insidePath originalStructTy@(StructTy (ConcreteNameTy typeName) _) 
         (\_ -> [])
     proto structTy = "int $NAME(" ++ tyToCLambdaFix structTy ++ " *p)"
     doc = "Gets the tag from a `" ++ typeName ++ "`."
+binderForTag _ _ = error "binderfortag"
 
 -- | Helper function to create the binder for the 'str' template.
 binderForStrOrPrn :: TypeEnv -> Env -> [String] -> Ty -> [SumtypeCase] -> String -> Either TypeError ((String, Binder), [XObj])
@@ -152,6 +155,7 @@ binderForStrOrPrn typeEnv env insidePath structTy@(StructTy (ConcreteNameTy _) _
     if isTypeGeneric structTy
       then (genericStr insidePath structTy cases strOrPrn, [])
       else concreteStr typeEnv env insidePath structTy cases strOrPrn
+binderForStrOrPrn _ _ _ _ _ _ = error "binderforstrorprn"
 
 -- | The template for the 'str' function for a concrete deftype.
 concreteStr :: TypeEnv -> Env -> [String] -> Ty -> [SumtypeCase] -> String -> ((String, Binder), [XObj])
@@ -171,6 +175,7 @@ concreteStr typeEnv env insidePath concreteStructTy@(StructTy (ConcreteNameTy ty
               (depsOfPolymorphicFunction typeEnv env [] "prn" . typesStrFunctionType typeEnv env)
               (filter (\t -> (not . isExternalType typeEnv) t && (not . isFullyGenericType) t) (concatMap caseTys cases))
         )
+concreteStr _ _ _ _ _ _ = error "concretestr"
 
 -- | The template for the 'str' function for a generic deftype.
 genericStr :: [String] -> Ty -> [SumtypeCase] -> String -> (String, Binder)
@@ -199,6 +204,7 @@ genericStr insidePath originalStructTy@(StructTy (ConcreteNameTy typeName) _) ca
                in concatMap (depsOfPolymorphicFunction typeEnv env [] "prn" . typesStrFunctionType typeEnv env) tys
                     ++ (if isTypeGeneric concreteStructTy then [] else [defineFunctionTypeAlias ft])
           )
+genericStr _ _ _ _ = error "genericstr"
 
 tokensForStr :: TypeEnv -> Env -> String -> [SumtypeCase] -> Ty -> [Token]
 tokensForStr typeEnv env _ cases concreteStructTy =
@@ -235,12 +241,14 @@ strCase typeEnv env concreteStructTy@(StructTy _ _) theCase =
           "    sprintf(bufferPtr, \")\");",
           "  }"
         ]
+strCase _ _ _ _ = error "strcase"
 
 -- | Figure out how big the string needed for the string representation of the struct has to be.
 calculateStructStrSize :: TypeEnv -> Env -> [SumtypeCase] -> Ty -> String
 calculateStructStrSize typeEnv env cases structTy@(StructTy (ConcreteNameTy _) _) =
   "  int size = 1;\n"
     ++ concatMap (strSizeCase typeEnv env structTy) cases
+calculateStructStrSize _ _ _ _ = error "calculatestructstrsize"
 
 strSizeCase :: TypeEnv -> Env -> Ty -> SumtypeCase -> String
 strSizeCase typeEnv env concreteStructTy@(StructTy _ _) theCase =
@@ -251,6 +259,7 @@ strSizeCase typeEnv env concreteStructTy@(StructTy _ _) theCase =
           joinLines $ memberPrnSize typeEnv env <$> unionMembers name tys,
           "  }"
         ]
+strSizeCase _ _ _ _ = error "strsizecase"
 
 -- | Helper function to create the binder for the 'delete' template.
 binderForDelete :: TypeEnv -> Env -> [String] -> Ty -> [SumtypeCase] -> Either TypeError (String, Binder)
@@ -259,6 +268,7 @@ binderForDelete typeEnv env insidePath structTy@(StructTy (ConcreteNameTy _) _) 
     if isTypeGeneric structTy
       then genericSumtypeDelete insidePath structTy cases
       else concreteSumtypeDelete insidePath typeEnv env structTy cases
+binderForDelete _ _ _ _ _ = error "binderfordelete"
 
 -- | The template for the 'delete' function of a generic sumtype.
 genericSumtypeDelete :: [String] -> Ty -> [SumtypeCase] -> (String, Binder)
@@ -319,6 +329,7 @@ concreteSumtypeDelete insidePath typeEnv env structTy@(StructTy (ConcreteNameTy 
               (depsOfPolymorphicFunction typeEnv env [] "delete" . typesDeleterFunctionType)
               (filter (isManaged typeEnv env) (concatMap caseTys cases))
         )
+concreteSumtypeDelete _ _ _ _ _ = error "concretesumtypedelete"
 
 deleteCase :: TypeEnv -> Env -> Ty -> (SumtypeCase, Bool) -> String
 deleteCase typeEnv env concreteStructTy@(StructTy _ _) (theCase, isFirstCase) =
@@ -328,6 +339,7 @@ deleteCase typeEnv env concreteStructTy@(StructTy _ _) (theCase, isFirstCase) =
           joinLines $ memberDeletion typeEnv env <$> unionMembers name tys,
           "  }"
         ]
+deleteCase _ _ _ _ = error "deletecase"
 
 -- | Helper function to create the binder for the 'copy' template.
 binderForCopy :: TypeEnv -> Env -> [String] -> Ty -> [SumtypeCase] -> Either TypeError ((String, Binder), [XObj])
@@ -336,6 +348,7 @@ binderForCopy typeEnv env insidePath structTy@(StructTy (ConcreteNameTy _) _) ca
     if isTypeGeneric structTy
       then (genericSumtypeCopy insidePath structTy cases, [])
       else concreteSumtypeCopy insidePath typeEnv env structTy cases
+binderForCopy _ _ _ _ _ = error "binderforcopy"
 
 -- | The template for the 'copy' function of a generic sumtype.
 genericSumtypeCopy :: [String] -> Ty -> [SumtypeCase] -> (String, Binder)
@@ -382,6 +395,7 @@ concreteSumtypeCopy insidePath typeEnv env structTy@(StructTy (ConcreteNameTy ty
               (depsOfPolymorphicFunction typeEnv env [] "copy" . typesCopyFunctionType)
               (filter (isManaged typeEnv env) (concatMap caseTys cases))
         )
+concreteSumtypeCopy _ _ _ _ _ = error "concretesumtypecopy"
 
 tokensForSumtypeCopy :: TypeEnv -> Env -> Ty -> [SumtypeCase] -> [Token]
 tokensForSumtypeCopy typeEnv env concreteStructTy cases =
@@ -402,6 +416,7 @@ copyCase typeEnv env concreteStructTy@(StructTy _ _) (theCase, isFirstCase) =
           joinLines $ memberCopy typeEnv env <$> unionMembers name tys,
           "    }"
         ]
+copyCase _ _ _ _ = error "copycase"
 
 anonMemberName :: String -> String -> String
 anonMemberName name anon = "u." ++ name ++ "." ++ anon

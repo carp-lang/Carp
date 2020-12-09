@@ -6,6 +6,7 @@ module Interfaces
   ( registerInInterfaceIfNeeded,
     registerInInterface,
     retroactivelyRegisterInInterface,
+    interfaceImplementedForTy,
   )
 where
 

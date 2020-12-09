@@ -50,6 +50,8 @@ defineTypeParameterizedTemplate :: TemplateCreator -> SymPath -> Ty -> String ->
 defineTypeParameterizedTemplate templateCreator path t docs =
   let (SymPath _ name) = path
       i = Info 0 0 (show path ++ ".parameterizedTemplate") Set.empty 0
+      -- TODO: The templateCreator's template holds a type signature which should likely always
+      -- be === to `t` here.
       defLst = [XObj (Deftemplate templateCreator) Nothing Nothing, XObj (Sym path Symbol) Nothing Nothing]
       docObj = XObj (Str docs) (Just dummyInfo) Nothing
       meta = Meta.set "doc" docObj emptyMeta

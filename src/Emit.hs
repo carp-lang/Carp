@@ -81,16 +81,19 @@ instance Show ToCError where
       ++ "\n\nPossibilities:\n  "
       ++ joinWith "\n  " (map show symPaths)
       ++ "\n\nAll possibilities have the correct type."
+  show (UnresolvedMultiSymbol _) = error "show unresolvedmultisymbol"
   show (UnresolvedInterfaceSymbol xobj@(XObj (InterfaceSym symName) _ _)) =
     "I found an interface `" ++ symName
       ++ "` that is unresolved in the context at "
       ++ prettyInfoFromXObj xobj
+  show (UnresolvedInterfaceSymbol _) = error "show unresolvedinterfacesymbol"
   show (UnresolvedGenericType xobj@(XObj _ _ (Just t))) =
     "I found an unresolved generic type `" ++ show t
       ++ "` for the expression `"
       ++ show xobj
       ++ "` at "
       ++ prettyInfoFromXObj xobj
+  show (UnresolvedGenericType _) = error "show unresolvedgenerictype"
   show (CannotSet xobj) =
     "I can’t emit code for setting `" ++ pretty xobj ++ "` at "
       ++ prettyInfoFromXObj xobj
@@ -111,7 +114,7 @@ toC toCMode (Binder meta root) = emitterSrc (execState (visit startingIndent roo
       Globals -> 4
       All -> 0
     visit :: Int -> XObj -> State EmitterState String
-    visit indent xobj =
+    visit indent xobj = let dontVisit = error (show (DontVisitObj xobj)) in
       case xobjObj xobj of
         Lst _ -> visitList indent xobj
         Arr _ -> visitArray indent xobj
@@ -132,34 +135,40 @@ toC toCMode (Binder meta root) = emitterSrc (execState (visit startingIndent roo
           x -> show (ord x) ++ "/*" ++ show x ++ "*/" -- ['U', '\'', x, '\'']
         Closure elt _ -> visit indent elt
         Sym _ _ -> visitSymbol indent xobj
-        (Defn _) -> error (show (DontVisitObj xobj))
-        Def -> error (show (DontVisitObj xobj))
-        Let -> error (show (DontVisitObj xobj))
-        If -> error (show (DontVisitObj xobj))
-        Break -> error (show (DontVisitObj xobj))
-        While -> error (show (DontVisitObj xobj))
-        Do -> error (show (DontVisitObj xobj))
-        (Deftype _) -> error (show (DontVisitObj xobj))
-        (DefSumtype _) -> error (show (DontVisitObj xobj))
         Mod _ -> error (show (CannotEmitModKeyword xobj))
         External _ -> error (show (CannotEmitExternal xobj))
-        ExternalType _ -> error (show (DontVisitObj xobj))
-        (Command _) -> error (show (DontVisitObj xobj))
-        (Primitive _) -> error (show (DontVisitObj xobj))
-        (Deftemplate _) -> error (show (DontVisitObj xobj))
-        (Instantiate _) -> error (show (DontVisitObj xobj))
-        (Defalias _) -> error (show (DontVisitObj xobj))
-        (MultiSym _ _) -> error (show (DontVisitObj xobj))
-        (InterfaceSym _) -> error (show (DontVisitObj xobj))
-        Address -> error (show (DontVisitObj xobj))
-        SetBang -> error (show (DontVisitObj xobj))
-        Macro -> error (show (DontVisitObj xobj))
-        Dynamic -> error (show (DontVisitObj xobj))
-        DefDynamic -> error (show (DontVisitObj xobj))
-        The -> error (show (DontVisitObj xobj))
-        Ref -> error (show (DontVisitObj xobj))
-        Deref -> error (show (DontVisitObj xobj))
-        (Interface _ _) -> error (show (DontVisitObj xobj))
+        (Defn _) -> dontVisit
+        Def -> dontVisit
+        Let -> dontVisit
+        If -> dontVisit
+        Break -> dontVisit
+        While -> dontVisit
+        Do -> dontVisit
+        (Deftype _) -> dontVisit
+        (DefSumtype _) -> dontVisit
+        ExternalType _ -> dontVisit
+        (Command _) -> dontVisit
+        (Primitive _) -> dontVisit
+        (Deftemplate _) -> dontVisit
+        (Instantiate _) -> dontVisit
+        (Defalias _) -> dontVisit
+        (MultiSym _ _) -> dontVisit
+        (InterfaceSym _) -> dontVisit
+        Address -> dontVisit
+        SetBang -> dontVisit
+        Macro -> dontVisit
+        Dynamic -> dontVisit
+        DefDynamic -> dontVisit
+        The -> dontVisit
+        Ref -> dontVisit
+        Deref -> dontVisit
+        (Interface _ _) -> dontVisit
+        (Dict _) -> dontVisit
+        (Fn _ _) -> dontVisit
+        LetDef -> dontVisit
+        (Match _) -> dontVisit
+        With -> dontVisit
+        MetaStub -> dontVisit
     visitStr' indent str i =
       -- This will allocate a new string every time the code runs:
       -- do let var = freshVar i
@@ -709,12 +718,16 @@ toC toCMode (Binder meta root) = emitterSrc (execState (visit startingIndent roo
       do
         visited <- visit indent xobj
         appendToSrc
-          ( addIndent indent ++ "((" ++ tyToCLambdaFix innerTy ++ "*)" ++ arrayVar
-              ++ ".data)["
-              ++ show index
-              ++ "] = "
-              ++ visited
-              ++ ";\n"
+          ( case innerTy of
+              UnitTy -> "/* () */"
+              _ ->
+                ( addIndent indent ++ "((" ++ tyToCLambdaFix innerTy ++ "*)" ++ arrayVar
+                    ++ ".data)["
+                    ++ show index
+                    ++ "] = "
+                    ++ visited
+                    ++ ";\n"
+                )
           )
         pure ()
     visitStaticArray :: Int -> XObj -> State EmitterState String
@@ -815,6 +828,7 @@ defStructToDeclaration structTy@(StructTy _ _) _ rest =
    in if isTypeGeneric structTy
         then "" -- ("// " ++ show structTy ++ "\n")
         else emitterSrc (execState visit (EmitterState ""))
+defStructToDeclaration _ _ _ = error "defstructtodeclaration"
 
 defSumtypeToDeclaration :: Ty -> [XObj] -> String
 defSumtypeToDeclaration sumTy@(StructTy _ _) rest =
@@ -840,14 +854,17 @@ defSumtypeToDeclaration sumTy@(StructTy _ _) rest =
           appendToSrc (addIndent ind ++ "} " ++ caseName ++ ";\n")
       emitSumtypeCase ind (XObj (Sym (SymPath [] caseName) _) _ _) =
         appendToSrc (addIndent ind ++ "// " ++ caseName ++ "\n")
+      emitSumtypeCase _ _ = error "emitsumtypecase"
       emitSumtypeCaseTagDefinition :: (Int, XObj) -> State EmitterState ()
       emitSumtypeCaseTagDefinition (tagIndex, (XObj (Lst [XObj (Sym (SymPath [] caseName) _) _ _, _]) _ _)) =
         appendToSrc ("#define " ++ tagName sumTy caseName ++ " " ++ show tagIndex ++ "\n")
       emitSumtypeCaseTagDefinition (tagIndex, (XObj (Sym (SymPath [] caseName) _) _ _)) =
         appendToSrc ("#define " ++ tagName sumTy caseName ++ " " ++ show tagIndex ++ "\n")
+      emitSumtypeCaseTagDefinition _ = error "emitsumtypecasetagdefinition"
    in if isTypeGeneric sumTy
         then ""
         else emitterSrc (execState visit (EmitterState ""))
+defSumtypeToDeclaration _ _ = error "defsumtypetodeclaration"
 
 defaliasToDeclaration :: Ty -> SymPath -> String
 defaliasToDeclaration t path =

@@ -1,5 +1,6 @@
 module Managed where
 
+import Interfaces
 import Lookup
 import Obj
 import Types
@@ -20,5 +21,5 @@ isExternalType _ _ =
 -- | Is this type managed - does it need to be freed?
 isManaged :: TypeEnv -> Env -> Ty -> Bool
 isManaged typeEnv globalEnv structTy@(StructTy _ _) =
-  implements typeEnv globalEnv "delete" (FuncTy [structTy] UnitTy StaticLifetimeTy)
+  interfaceImplementedForTy typeEnv globalEnv "delete" (FuncTy [structTy] UnitTy StaticLifetimeTy)
 isManaged _ _ _ = False

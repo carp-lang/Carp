@@ -267,6 +267,7 @@ eval ctx xobj@(XObj o info ty) preference =
           where
             unwrapVar [] acc = acc
             unwrapVar ((XObj (Sym (SymPath [] x) _) _ _, y) : xs) acc = unwrapVar xs ((x, y) : acc)
+            unwrapVar _ _ = error "unwrapvar"
             successiveEval' (n, x) =
               \case
                 err@(Left _) -> pure err
@@ -776,12 +777,14 @@ commandLoad ctx [xobj@(XObj (Str path) i _)] =
   loadInternal ctx xobj path i DoesReload
 commandLoad ctx [x] =
   pure $ evalError ctx ("Invalid args to `load`: " ++ pretty x) (xobjInfo x)
+commandLoad _ _ = error "commandload"
 
 commandLoadOnce :: CommandCallback
 commandLoadOnce ctx [xobj@(XObj (Str path) i _)] =
   loadInternal ctx xobj path i Frozen
 commandLoadOnce ctx [x] =
   pure $ evalError ctx ("Invalid args to `load-once`: " ++ pretty x) (xobjInfo x)
+commandLoadOnce _ _ = error "commandloadonce"
 
 loadInternal :: Context -> XObj -> String -> Maybe Info -> ReloadMode -> IO (Context, Either EvalError XObj)
 loadInternal ctx xobj path i reloadMode = do
@@ -983,6 +986,7 @@ commandReload ctx _ = do
 -- | Command for expanding a form and its macros.
 commandExpand :: CommandCallback
 commandExpand ctx [xobj] = macroExpand ctx xobj
+commandExpand  _ _ = error "commandexpand"
 
 -- | This function will show the resulting C code from an expression.
 -- | i.e. (Int.+ 2 3) => "_0 = 2 + 3"
@@ -1003,6 +1007,7 @@ commandC ctx [xobj] = do
                 c = cDeps ++ cXObj
             liftIO (putStr c)
             pure (newCtx, dynamicNil)
+commandC _ _ = error "commandc"
 
 -- | Helper function for commandC
 printC :: XObj -> String
@@ -1024,6 +1029,7 @@ buildMainFunction xobj =
             ( Lst
                 [ XObj Do di Nothing,
                   case xobjTy xobj of
+                    Nothing -> error "buildmainfunction"
                     Just UnitTy -> xobj
                     Just (RefTy _ _) ->
                       XObj
@@ -1063,6 +1069,7 @@ primitiveDefdynamic _ ctx [XObj (Sym (SymPath [] name) _) _ _, value] = do
       dynamicOrMacroWith newCtx (\path -> [XObj DefDynamic Nothing Nothing, XObj (Sym path Symbol) Nothing Nothing, evaledBody]) DynamicTy name value
 primitiveDefdynamic _ ctx [notName, _] =
   pure (evalError ctx ("`defndynamic` expected a name as first argument, but got " ++ pretty notName) (xobjInfo notName))
+primitiveDefdynamic _ _ _ = error "primitivedefdynamic"
 
 specialCommandSet :: Context -> [XObj] -> IO (Context, Either EvalError XObj)
 specialCommandSet ctx [(XObj (Sym path@(SymPath mod n) _) _ _), val] = do
@@ -1154,6 +1161,7 @@ primitiveEval _ ctx [val] = do
           pure $ case res of
             Left (HasStaticCall x i) -> evalError ctx ("Unexpected static call in " ++ pretty x) i
             _ -> (finalCtx, res)
+primitiveEval _ _ _ = error "primitiveeval"
 
 dynamicOrMacro :: Context -> Obj -> Ty -> String -> XObj -> XObj -> IO (Context, Either EvalError XObj)
 dynamicOrMacro ctx pat ty name params body = do
@@ -1168,12 +1176,14 @@ primitiveDefndynamic _ ctx [XObj (Sym (SymPath [] name) _) _ _, params, body] =
   dynamicOrMacro ctx Dynamic DynamicTy name params body
 primitiveDefndynamic _ ctx [notName, _, _] =
   argumentErr ctx "defndynamic" "a name" "first" notName
+primitiveDefndynamic _ _ _ = error "primitivedefndynamic"
 
 primitiveDefmacro :: Primitive
 primitiveDefmacro _ ctx [XObj (Sym (SymPath [] name) _) _ _, params, body] =
   dynamicOrMacro ctx Macro MacroTy name params body
 primitiveDefmacro _ ctx [notName, _, _] =
   argumentErr ctx "defmacro" "a name" "first" notName
+primitiveDefmacro _ _ _ = error "primitivedefmacro"
 
 primitiveAnd :: Primitive
 primitiveAnd _ ctx [a, b] = do
@@ -1191,6 +1201,7 @@ primitiveAnd _ ctx [a, b] = do
             Right b' -> evalError ctx ("Can’t call `or` on " ++ pretty b') (xobjInfo b')
         else pure (newCtx, Right falseXObj)
     Right a' -> pure (evalError ctx ("Can’t call `or` on " ++ pretty a') (xobjInfo a'))
+primitiveAnd _ _ _ = error "primitiveand"
 
 primitiveOr :: Primitive
 primitiveOr _ ctx [a, b] = do
@@ -1210,3 +1221,4 @@ primitiveOr _ ctx [a, b] = do
     Right o -> pure (err o)
   where
     err o = evalError ctx ("Can’t call `or` on " ++ pretty o) (xobjInfo o)
+primitiveOr _ _ _ = error "primitiveor"
