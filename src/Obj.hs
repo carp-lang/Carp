@@ -203,15 +203,32 @@ instance Eq PrimitiveFunctionType where
 instance Show PrimitiveFunctionType where
   show _ = "Primitive { ... }"
 
-type CommandCallback = Context -> [XObj] -> IO (Context, Either EvalError XObj)
+type NullaryCommandCallback = Context -> IO (Context, Either EvalError XObj)
 
-newtype CommandFunctionType = CommandFunction {getCommand :: CommandCallback}
+type UnaryCommandCallback = Context -> XObj -> IO (Context, Either EvalError XObj)
+
+type BinaryCommandCallback = Context -> XObj -> XObj -> IO (Context, Either EvalError XObj)
+
+type TernaryCommandCallback = Context -> XObj -> XObj -> XObj -> IO (Context, Either EvalError XObj)
+
+type VariadicCommandCallback = Context -> [XObj] -> IO (Context, Either EvalError XObj)
+
+data CommandFunctionType
+  = NullaryCommandFunction NullaryCommandCallback
+  | UnaryCommandFunction UnaryCommandCallback
+  | BinaryCommandFunction BinaryCommandCallback
+  | TernaryCommandFunction TernaryCommandCallback
+  | VariadicCommandFunction VariadicCommandCallback
 
 instance Eq CommandFunctionType where
   _ == _ = True
 
 instance Show CommandFunctionType where
-  show _ = "CommandFunction { ... }"
+  show (NullaryCommandFunction _) = "NullaryCommandFunction { ... }"
+  show (UnaryCommandFunction _) = "UnaryCommandFunction { ... }"
+  show (BinaryCommandFunction _) = "BinaryCommandFunction { ... }"
+  show (TernaryCommandFunction _) = "TernaryCommandFunction { ... }"
+  show (VariadicCommandFunction _) = "VariadicCommandFunction { ... }"
 
 newtype TemplateCreator = TemplateCreator {getTemplateCreator :: TypeEnv -> Env -> Template}
 
@@ -319,12 +336,12 @@ setPath (XObj (Lst [extr@(XObj (External _) _ _), XObj (Sym _ _) si st, ty]) i t
 setPath x _ =
   error ("Can't set path on " ++ show x)
 
-
 -- | Convert an Obj to a pretty string representation.
 -- | Reuses `pretty`.
 prettyObj :: Obj -> String
 prettyObj = pretty . buildXObj
-  where buildXObj o = XObj o Nothing Nothing
+  where
+    buildXObj o = XObj o Nothing Nothing
 
 -- | Convert an XObj to a pretty string representation.
 pretty :: XObj -> String

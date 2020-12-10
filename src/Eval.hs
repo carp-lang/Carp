@@ -315,13 +315,43 @@ eval ctx xobj@(XObj o info ty) preference =
               case res of
                 Right xobj' -> macroExpand ctx' xobj'
                 Left _ -> pure (ctx, res)
-        XObj (Lst [XObj (Command callback) _ _, _, _]) _ _ : args ->
+        [XObj (Lst [XObj (Command (NullaryCommandFunction nullary)) _ _, _, _]) _ _] ->
+          do
+            (_, evaledArgs) <- foldlM successiveEval (ctx, Right []) []
+            case evaledArgs of
+              Right [] -> nullary ctx
+              Right _ -> error "eval nullary"
+              Left err -> pure (ctx, Left err)
+        [XObj (Lst [XObj (Command (UnaryCommandFunction unary)) _ _, _, _]) _ _, x] ->
+          do
+            (_, evaledArgs) <- foldlM successiveEval (ctx, Right []) [x]
+            case evaledArgs of
+              Right [x'] -> unary ctx x'
+              Right _ -> error "eval unary"
+              Left err -> pure (ctx, Left err)
+        [XObj (Lst [XObj (Command (BinaryCommandFunction binary)) _ _, _, _]) _ _, x, y] ->
+          do
+            (_, evaledArgs) <- foldlM successiveEval (ctx, Right []) [x, y]
+            case evaledArgs of
+              Right [x', y'] -> binary ctx x' y'
+              Right _ -> error "eval binary"
+              Left err -> pure (ctx, Left err)
+        [XObj (Lst [XObj (Command (TernaryCommandFunction ternary)) _ _, _, _]) _ _, x, y, z] ->
+          do
+            (_, evaledArgs) <- foldlM successiveEval (ctx, Right []) [x, y, z]
+            case evaledArgs of
+              Right [x', y', z'] -> ternary ctx x' y' z'
+              Right _ -> error "eval ternary"
+              Left err -> pure (ctx, Left err)
+        XObj (Lst [XObj (Command (VariadicCommandFunction variadic)) _ _, _, _]) _ _ : args ->
           do
             (_, evaledArgs) <- foldlM successiveEval (ctx, Right []) args
             case evaledArgs of
-              Right okArgs -> getCommand callback ctx okArgs
+              Right xs -> variadic ctx xs
               Left err -> pure (ctx, Left err)
-        x@(XObj (Lst [XObj (Primitive prim) _ _, _, _]) _ _) : args -> (getPrimitive prim) x ctx args
+        XObj (Lst [XObj (Command _) _ _, _, XObj (Arr params) _ _]) i _ : args ->
+          badArity params args i
+        x@(XObj (Lst [XObj (Primitive prim) _ _, _, _]) _ _) : args -> getPrimitive prim x ctx args
         XObj (Lst (XObj (Defn _) _ _ : _)) _ _ : _ -> pure (ctx, Left (HasStaticCall xobj info))
         XObj (Lst (XObj (Interface _ _) _ _ : _)) _ _ : _ -> pure (ctx, Left (HasStaticCall xobj info))
         XObj (Lst (XObj (Instantiate _) _ _ : _)) _ _ : _ -> pure (ctx, Left (HasStaticCall xobj info))
@@ -361,8 +391,10 @@ eval ctx xobj@(XObj o info ty) preference =
         [XObj Address _ _, value] ->
           specialCommandAddress ctx value
         [] -> pure (ctx, dynamicNil)
-        _ -> do
-          pure (evalError ctx ("I did not understand the form `" ++ pretty xobj ++ "`") (xobjInfo xobj))
+        _ -> pure (evalError ctx ("I did not understand the form `" ++ pretty xobj ++ "`") (xobjInfo xobj))
+    badArity params args i = case checkArity params args of
+      Left err -> pure (evalError ctx err i)
+      Right () -> error "badarity"
     checkArity params args =
       let la = length args
           withRest = any ((":rest" ==) . getName) params
@@ -772,19 +804,17 @@ primitiveDefmodule _ ctx [] =
 -- | "NORMAL" COMMANDS (just like the ones in Command.hs, but these need access to 'eval', etc.)
 
 -- | Command for loading a Carp file.
-commandLoad :: CommandCallback
-commandLoad ctx [xobj@(XObj (Str path) i _)] =
+commandLoad :: UnaryCommandCallback
+commandLoad ctx xobj@(XObj (Str path) i _) =
   loadInternal ctx xobj path i DoesReload
-commandLoad ctx [x] =
+commandLoad ctx x =
   pure $ evalError ctx ("Invalid args to `load`: " ++ pretty x) (xobjInfo x)
-commandLoad _ _ = error "commandload"
 
-commandLoadOnce :: CommandCallback
-commandLoadOnce ctx [xobj@(XObj (Str path) i _)] =
+commandLoadOnce :: UnaryCommandCallback
+commandLoadOnce ctx xobj@(XObj (Str path) i _) =
   loadInternal ctx xobj path i Frozen
-commandLoadOnce ctx [x] =
+commandLoadOnce ctx x =
   pure $ evalError ctx ("Invalid args to `load-once`: " ++ pretty x) (xobjInfo x)
-commandLoadOnce _ _ = error "commandloadonce"
 
 loadInternal :: Context -> XObj -> String -> Maybe Info -> ReloadMode -> IO (Context, Either EvalError XObj)
 loadInternal ctx xobj path i reloadMode = do
@@ -942,10 +972,10 @@ loadInternal ctx xobj path i reloadMode = do
           fileToLoad = fpath </> realName
           mainToLoad = fpath </> "main.carp"
        in do
-            (newCtx, res) <- commandLoad ctx [XObj (Str fileToLoad) Nothing Nothing]
+            (newCtx, res) <- commandLoad ctx (XObj (Str fileToLoad) Nothing Nothing)
             case res of
               ret@(Right _) -> pure (newCtx, ret)
-              Left _ -> commandLoad ctx [XObj (Str mainToLoad) Nothing Nothing]
+              Left _ -> commandLoad ctx (XObj (Str mainToLoad) Nothing Nothing)
 
 -- | Load several files in order.
 loadFiles :: Context -> [FilePath] -> IO Context
@@ -954,19 +984,19 @@ loadFiles = loadFilesExt commandLoad
 loadFilesOnce :: Context -> [FilePath] -> IO Context
 loadFilesOnce = loadFilesExt commandLoadOnce
 
-loadFilesExt :: CommandCallback -> Context -> [FilePath] -> IO Context
+loadFilesExt :: UnaryCommandCallback -> Context -> [FilePath] -> IO Context
 loadFilesExt loadCmd ctxStart filesToLoad = foldM load ctxStart filesToLoad
   where
     load :: Context -> FilePath -> IO Context
     load ctx file = do
-      (newCtx, ret) <- loadCmd ctx [XObj (Str file) Nothing Nothing]
+      (newCtx, ret) <- loadCmd ctx (XObj (Str file) Nothing Nothing)
       case ret of
         Left err -> throw (EvalException err)
         Right _ -> pure newCtx
 
 -- | Command for reloading all files in the project (= the files that has been loaded before).
-commandReload :: CommandCallback
-commandReload ctx _ = do
+commandReload :: NullaryCommandCallback
+commandReload ctx = do
   let paths = projectFiles (contextProj ctx)
       f :: Context -> (FilePath, ReloadMode) -> IO Context
       f context (_, Frozen) | not (projectForceReload (contextProj context)) = pure context
@@ -984,14 +1014,13 @@ commandReload ctx _ = do
   pure (newCtx, dynamicNil)
 
 -- | Command for expanding a form and its macros.
-commandExpand :: CommandCallback
-commandExpand ctx [xobj] = macroExpand ctx xobj
-commandExpand  _ _ = error "commandexpand"
+commandExpand :: UnaryCommandCallback
+commandExpand ctx xobj = macroExpand ctx xobj
 
 -- | This function will show the resulting C code from an expression.
 -- | i.e. (Int.+ 2 3) => "_0 = 2 + 3"
-commandC :: CommandCallback
-commandC ctx [xobj] = do
+commandC :: UnaryCommandCallback
+commandC ctx xobj = do
   let globalEnv = contextGlobalEnv ctx
       typeEnv = contextTypeEnv ctx
   (newCtx, result) <- expandAll evalDynamic ctx xobj
@@ -1007,7 +1036,6 @@ commandC ctx [xobj] = do
                 c = cDeps ++ cXObj
             liftIO (putStr c)
             pure (newCtx, dynamicNil)
-commandC _ _ = error "commandc"
 
 -- | Helper function for commandC
 printC :: XObj -> String
