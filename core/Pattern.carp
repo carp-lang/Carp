@@ -43,6 +43,7 @@ If you want to replace all occurrences of the pattern, use `-1`.")
   (register =    (Fn [&Pattern &Pattern] Bool))
   (implements = Pattern.=)
   (register delete     (Fn [Pattern] ()))
+  (implements delete Pattern.delete)
   (register copy       (Fn [&Pattern] Pattern))
   (implements copy Pattern.copy)
 
