@@ -285,7 +285,7 @@ eval ctx xobj@(XObj o info ty) preference =
               then (ctx, Right (XObj (Closure (XObj (Lst l) info ty) (CCtx ctx)) info ty))
               else evalError ctx ("`fn` requires all arguments to be unqualified symbols, but it got `" ++ pretty args ++ "`") (xobjInfo args)
         XObj (Closure (XObj (Lst [XObj (Fn _ _) _ _, XObj (Arr params) _ _, body]) _ _) (CCtx c)) _ _ : args ->
-          case checkArity params args of
+          case checkArity "<closure>" params args of
             Left err -> pure (evalError ctx err (xobjInfo xobj))
             Right () ->
               do
@@ -295,8 +295,8 @@ eval ctx xobj@(XObj o info ty) preference =
                     (_, res) <- apply c body params okArgs
                     pure (newCtx, res)
                   Left err -> pure (newCtx, Left err)
-        XObj (Lst [XObj Dynamic _ _, _, XObj (Arr params) _ _, body]) i _ : args ->
-          case checkArity params args of
+        XObj (Lst [XObj Dynamic _ _, sym, XObj (Arr params) _ _, body]) i _ : args ->
+          case checkArity (getName sym) params args of
             Left err ->
               pure (evalError ctx err i)
             Right () ->
@@ -305,8 +305,8 @@ eval ctx xobj@(XObj o info ty) preference =
                 case evaledArgs of
                   Right okArgs -> apply newCtx body params okArgs
                   Left err -> pure (newCtx, Left err)
-        XObj (Lst [XObj Macro _ _, _, XObj (Arr params) _ _, body]) i _ : args ->
-          case checkArity params args of
+        XObj (Lst [XObj Macro _ _, sym, XObj (Arr params) _ _, body]) i _ : args ->
+          case checkArity (getName sym) params args of
             Left err -> pure (evalError ctx err i)
             Right () -> do
               -- Replace info so that the macro which is called gets the source location info of the expansion site.
@@ -349,8 +349,8 @@ eval ctx xobj@(XObj o info ty) preference =
             case evaledArgs of
               Right xs -> variadic ctx xs
               Left err -> pure (ctx, Left err)
-        XObj (Lst [XObj (Command _) _ _, _, XObj (Arr params) _ _]) i _ : args ->
-          badArity params args i
+        XObj (Lst [XObj (Command _) _ _, sym, XObj (Arr params) _ _]) i _ : args ->
+          badArity (getName sym) params args i
         x@(XObj (Lst [XObj (Primitive prim) _ _, _, _]) _ _) : args -> getPrimitive prim x ctx args
         XObj (Lst (XObj (Defn _) _ _ : _)) _ _ : _ -> pure (ctx, Left (HasStaticCall xobj info))
         XObj (Lst (XObj (Interface _ _) _ _ : _)) _ _ : _ -> pure (ctx, Left (HasStaticCall xobj info))
@@ -392,10 +392,10 @@ eval ctx xobj@(XObj o info ty) preference =
           specialCommandAddress ctx value
         [] -> pure (ctx, dynamicNil)
         _ -> pure (evalError ctx ("I did not understand the form `" ++ pretty xobj ++ "`") (xobjInfo xobj))
-    badArity params args i = case checkArity params args of
+    badArity name params args i = case checkArity name params args of
       Left err -> pure (evalError ctx err i)
       Right () -> error "badarity"
-    checkArity params args =
+    checkArity name params args =
       let la = length args
           withRest = any ((":rest" ==) . getName) params
           lp = length params - (if withRest then 2 else 0)
@@ -405,7 +405,9 @@ eval ctx xobj@(XObj o info ty) preference =
               if la < lp
                 then
                   Left
-                    ( "expected " ++ show lp
+                    ( name
+                        ++ " expected "
+                        ++ show lp
                         ++ " arguments but received only "
                         ++ show la
                         ++ ".\n\nYou’ll have to provide "
@@ -414,7 +416,10 @@ eval ctx xobj@(XObj o info ty) preference =
                     )
                 else
                   Left
-                    ( "expected " ++ show lp ++ " arguments, but received "
+                    ( name
+                        ++ " expected "
+                        ++ show lp
+                        ++ " arguments, but received "
                         ++ show la
                         ++ ".\n\nThe arguments "
                         ++ intercalate ", " (map pretty (drop lp args))
