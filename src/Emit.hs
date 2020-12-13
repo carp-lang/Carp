@@ -114,61 +114,62 @@ toC toCMode (Binder meta root) = emitterSrc (execState (visit startingIndent roo
       Globals -> 4
       All -> 0
     visit :: Int -> XObj -> State EmitterState String
-    visit indent xobj = let dontVisit = error (show (DontVisitObj xobj)) in
-      case xobjObj xobj of
-        Lst _ -> visitList indent xobj
-        Arr _ -> visitArray indent xobj
-        StaticArr _ -> visitStaticArray indent xobj
-        Num IntTy num -> pure (show num)
-        Num LongTy num -> pure (show num ++ "l")
-        Num ByteTy num -> pure (show num)
-        Num FloatTy num -> pure (show num ++ "f")
-        Num DoubleTy num -> pure (show num)
-        Num _ _ -> error "Can't emit invalid number type."
-        Bol b -> pure (if b then "true" else "false")
-        Str _ -> visitString indent xobj
-        Pattern _ -> visitString indent xobj
-        Chr c -> pure $ case c of
-          '\t' -> "'\\t'"
-          '\n' -> "'\\n'"
-          '\\' -> "'\\\\'"
-          x -> show (ord x) ++ "/*" ++ show x ++ "*/" -- ['U', '\'', x, '\'']
-        Closure elt _ -> visit indent elt
-        Sym _ _ -> visitSymbol indent xobj
-        Mod _ -> error (show (CannotEmitModKeyword xobj))
-        External _ -> error (show (CannotEmitExternal xobj))
-        (Defn _) -> dontVisit
-        Def -> dontVisit
-        Let -> dontVisit
-        If -> dontVisit
-        Break -> dontVisit
-        While -> dontVisit
-        Do -> dontVisit
-        (Deftype _) -> dontVisit
-        (DefSumtype _) -> dontVisit
-        ExternalType _ -> dontVisit
-        (Command _) -> dontVisit
-        (Primitive _) -> dontVisit
-        (Deftemplate _) -> dontVisit
-        (Instantiate _) -> dontVisit
-        (Defalias _) -> dontVisit
-        (MultiSym _ _) -> dontVisit
-        (InterfaceSym _) -> dontVisit
-        Address -> dontVisit
-        SetBang -> dontVisit
-        Macro -> dontVisit
-        Dynamic -> dontVisit
-        DefDynamic -> dontVisit
-        The -> dontVisit
-        Ref -> dontVisit
-        Deref -> dontVisit
-        (Interface _ _) -> dontVisit
-        (Dict _) -> dontVisit
-        (Fn _ _) -> dontVisit
-        LetDef -> dontVisit
-        (Match _) -> dontVisit
-        With -> dontVisit
-        MetaStub -> dontVisit
+    visit indent xobj =
+      let dontVisit = error (show (DontVisitObj xobj))
+       in case xobjObj xobj of
+            Lst _ -> visitList indent xobj
+            Arr _ -> visitArray indent xobj
+            StaticArr _ -> visitStaticArray indent xobj
+            Num IntTy num -> pure (show num)
+            Num LongTy num -> pure (show num ++ "l")
+            Num ByteTy num -> pure (show num)
+            Num FloatTy num -> pure (show num ++ "f")
+            Num DoubleTy num -> pure (show num)
+            Num _ _ -> error "Can't emit invalid number type."
+            Bol b -> pure (if b then "true" else "false")
+            Str _ -> visitString indent xobj
+            Pattern _ -> visitString indent xobj
+            Chr c -> pure $ case c of
+              '\t' -> "'\\t'"
+              '\n' -> "'\\n'"
+              '\\' -> "'\\\\'"
+              x -> show (ord x) ++ "/*" ++ show x ++ "*/" -- ['U', '\'', x, '\'']
+            Closure elt _ -> visit indent elt
+            Sym _ _ -> visitSymbol indent xobj
+            Mod _ -> error (show (CannotEmitModKeyword xobj))
+            External _ -> error (show (CannotEmitExternal xobj))
+            (Defn _) -> dontVisit
+            Def -> dontVisit
+            Let -> dontVisit
+            If -> dontVisit
+            Break -> dontVisit
+            While -> dontVisit
+            Do -> dontVisit
+            (Deftype _) -> dontVisit
+            (DefSumtype _) -> dontVisit
+            ExternalType _ -> dontVisit
+            (Command _) -> dontVisit
+            (Primitive _) -> dontVisit
+            (Deftemplate _) -> dontVisit
+            (Instantiate _) -> dontVisit
+            (Defalias _) -> dontVisit
+            (MultiSym _ _) -> dontVisit
+            (InterfaceSym _) -> dontVisit
+            Address -> dontVisit
+            SetBang -> dontVisit
+            Macro -> dontVisit
+            Dynamic -> dontVisit
+            DefDynamic -> dontVisit
+            The -> dontVisit
+            Ref -> dontVisit
+            Deref -> dontVisit
+            (Interface _ _) -> dontVisit
+            (Dict _) -> dontVisit
+            (Fn _ _) -> dontVisit
+            LetDef -> dontVisit
+            (Match _) -> dontVisit
+            With -> dontVisit
+            MetaStub -> dontVisit
     visitStr' indent str i =
       -- This will allocate a new string every time the code runs:
       -- do let var = freshVar i
