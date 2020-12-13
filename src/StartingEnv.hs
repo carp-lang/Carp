@@ -280,6 +280,7 @@ dynamicModule =
       let f = addVariadicCommand . spath
        in [ f "array" commandArray "creates an array from a collection of elements." "(array 1 2 3) ; => [1 2 3]",
             f "run-with-args" commandRunWithArgs "runs the built executable with arguments." "(run-with-args 1 2 3)",
+            f "run-exe-with-args" commandRunExeWithArgs "runs an executable with arguments." "(run-exe-with-args \"path-to-executable\" 1 2 3)",
             f "list" commandList "creates an array from a collection of elements." "(list 1 2 3) ; => (1 2 3)",
             f "macro-log" commandMacroLog "logs a message in a macro." "(macro-log \"this will be printed at compile time\")",
             f "str" commandStr "stringifies its arguments." "(str 1 \" \" 2 \" \" 3) ; => \"1 2 3\"",
