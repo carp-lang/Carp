@@ -138,7 +138,8 @@ canBeUsedAsMemberType typeEnv typeVariables ty xobj =
         -- `a` may be used as a member, sans `f`, but `f` may not appear
         -- without `a`.
         isCaptured :: Ty -> Ty -> Bool
-        isCaptured t v@(VarTy _) = t == v
+        isCaptured v@(VarTy _) t@(VarTy _) = t == v
         isCaptured sa@(StructTy (VarTy _) _) sb@(StructTy (VarTy _) _) = sa == sb
-        isCaptured t (StructTy (VarTy _) vars) = t `elem` vars
-        isCaptured _ _ = error "canbeusedasmembertype iscaptured"
+        isCaptured v@(VarTy _) (StructTy _ vars) = v `elem` vars
+        -- Not a variable.
+        isCaptured _ _ = True
