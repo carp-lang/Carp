@@ -254,8 +254,6 @@ dynamicModule =
             f "macro-error" commandMacroError "logs an error and errors out of a macro." "(macro-error \"this is wrong\")",
             f "not" commandNot "negates its boolean argument." "(not false) ; => true",
             f "c" commandC "prints the C code emitted for a binding." "(c '(+ 2 3)) ; => int _3 = Int__PLUS_(2, 3);",
-            f "load" commandLoad "loads a file into the current environment." "(load \"myfile.carp\")",
-            f "load-once" commandLoadOnce "loads a file and prevents it from being reloaded (see `reload`)." "(load-once \"myfile.carp\")",
             f "expand" commandExpand "expands a macro and prints the result." "(expand '(when true 1)) ; => (if true 1 ())",
             f "system-include" commandAddSystemInclude "adds a system include, i.e. a C `#include` with angle brackets (`<>`)." "(system-include \"stdint.h\")",
             f "relative-include" commandAddRelativeInclude "adds a relative include, i.e. a C `include` with quotes. It also prepends the current directory." "(relative-include \"myheader.h\")",
@@ -282,7 +280,9 @@ dynamicModule =
             f "list" commandList "creates an array from a collection of elements." "(list 1 2 3) ; => (1 2 3)",
             f "macro-log" commandMacroLog "logs a message in a macro." "(macro-log \"this will be printed at compile time\")",
             f "str" commandStr "stringifies its arguments." "(str 1 \" \" 2 \" \" 3) ; => \"1 2 3\"",
-            f "s-expr" commandSexpression "returns the s-expression associated with a binding. When the binding is a type, the deftype form is returned instead of the type's module by default. Pass an optional bool argument to explicitly request the module for a type instead of its definition form. If the bool is true, the module for the type will be returned. Returns an error when no definition is found for the binding." "(s-expr foo), (s-expr foo true)"
+            f "s-expr" commandSexpression "returns the s-expression associated with a binding. When the binding is a type, the deftype form is returned instead of the type's module by default. Pass an optional bool argument to explicitly request the module for a type instead of its definition form. If the bool is true, the module for the type will be returned. Returns an error when no definition is found for the binding." "(s-expr foo), (s-expr foo true)",
+            f "load" commandLoad "loads a file into the current environment." "(load \"myfile.carp\")\n(load \"myrepo@version\" \"myfile\")",
+            f "load-once" commandLoadOnce "loads a file and prevents it from being reloaded (see `reload`)." "(load-once \"myfile.carp\")\n(load \"myrepo@version\" \"myfile\")"
           ]
     prims =
       [ makePrim "quote" 1 "quotes any value." "(quote x) ; where x is an actual symbol" (\_ ctx [x] -> pure (ctx, Right x)),

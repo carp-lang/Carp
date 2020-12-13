@@ -809,20 +809,36 @@ primitiveDefmodule _ ctx [] =
 -- | "NORMAL" COMMANDS (just like the ones in Command.hs, but these need access to 'eval', etc.)
 
 -- | Command for loading a Carp file.
-commandLoad :: UnaryCommandCallback
-commandLoad ctx xobj@(XObj (Str path) i _) =
-  loadInternal ctx xobj path i DoesReload
-commandLoad ctx x =
+commandLoad :: VariadicCommandCallback
+commandLoad ctx [xobj@(XObj (Str path) i _), XObj (Str toLoad) _ _] =
+  loadInternal ctx xobj path i (Just toLoad) DoesReload
+commandLoad ctx [XObj (Str _) _ _, x] =
   pure $ evalError ctx ("Invalid args to `load`: " ++ pretty x) (xobjInfo x)
+commandLoad ctx [x, _] =
+  pure $ evalError ctx ("Invalid args to `load`: " ++ pretty x) (xobjInfo x)
+commandLoad ctx [xobj@(XObj (Str path) i _)] =
+  loadInternal ctx xobj path i Nothing DoesReload
+commandLoad ctx [x] =
+  pure $ evalError ctx ("Invalid args to `load`: " ++ pretty x) (xobjInfo x)
+commandLoad ctx _ =
+  pure $ evalError ctx "Invalid args to `load`, expected (load str optional:fileFromRepo)" Nothing
 
-commandLoadOnce :: UnaryCommandCallback
-commandLoadOnce ctx xobj@(XObj (Str path) i _) =
-  loadInternal ctx xobj path i Frozen
-commandLoadOnce ctx x =
+commandLoadOnce :: VariadicCommandCallback
+commandLoadOnce ctx [xobj@(XObj (Str path) i _), XObj (Str toLoad) _ _] =
+  loadInternal ctx xobj path i (Just toLoad) Frozen
+commandLoadOnce ctx [XObj (Str _) _ _, x] =
   pure $ evalError ctx ("Invalid args to `load-once`: " ++ pretty x) (xobjInfo x)
+commandLoadOnce ctx [x, _] =
+  pure $ evalError ctx ("Invalid args to `load-once`: " ++ pretty x) (xobjInfo x)
+commandLoadOnce ctx [xobj@(XObj (Str path) i _)] =
+  loadInternal ctx xobj path i Nothing Frozen
+commandLoadOnce ctx [x] =
+  pure $ evalError ctx ("Invalid args to `load-once`: " ++ pretty x) (xobjInfo x)
+commandLoadOnce ctx _ =
+  pure $ evalError ctx "Invalid args to `load-once`, expected `(load-once str optional:fileFromRepo)`" Nothing
 
-loadInternal :: Context -> XObj -> String -> Maybe Info -> ReloadMode -> IO (Context, Either EvalError XObj)
-loadInternal ctx xobj path i reloadMode = do
+loadInternal :: Context -> XObj -> String -> Maybe Info -> Maybe String -> ReloadMode -> IO (Context, Either EvalError XObj)
+loadInternal ctx xobj path i fileToLoad reloadMode = do
   let proj = contextProj ctx
   libDir <- liftIO $ cachePath $ projectLibDir proj
   let relativeTo = case i of
@@ -965,22 +981,26 @@ loadInternal ctx xobj path i reloadMode = do
                 ExitSuccess -> doGitLoad path' fpath
                 ExitFailure _ -> invalidPathWith ctx path' stderr1 cleanup fpath
     doGitLoad path' fpath =
-      let fName = last (splitOn "/" path')
-          realName' =
-            if ".git" `isSuffixOf` fName
-              then take (length fName - 4) fName
-              else fName
-          realName =
-            if ".carp" `isSuffixOf` realName'
-              then realName'
-              else realName' ++ ".carp"
-          fileToLoad = fpath </> realName
-          mainToLoad = fpath </> "main.carp"
-       in do
-            (newCtx, res) <- commandLoad ctx (XObj (Str fileToLoad) Nothing Nothing)
-            case res of
-              ret@(Right _) -> pure (newCtx, ret)
-              Left _ -> commandLoad ctx (XObj (Str mainToLoad) Nothing Nothing)
+      case fileToLoad of
+        Just file -> commandLoad ctx [XObj (Str (fpath </> file)) Nothing Nothing]
+        Nothing ->
+          -- we’re guessing what file to use here
+          let fName = last (splitOn "/" path')
+              realName' =
+                if ".git" `isSuffixOf` fName
+                  then take (length fName - 4) fName
+                  else fName
+              realName =
+                if ".carp" `isSuffixOf` realName'
+                  then realName'
+                  else realName' ++ ".carp"
+              fileToLoad' = fpath </> realName
+              mainToLoad = fpath </> "main.carp"
+           in do
+                (newCtx, res) <- commandLoad ctx [XObj (Str fileToLoad') Nothing Nothing]
+                case res of
+                  ret@(Right _) -> pure (newCtx, ret)
+                  Left _ -> commandLoad ctx [XObj (Str mainToLoad) Nothing Nothing]
 
 -- | Load several files in order.
 loadFiles :: Context -> [FilePath] -> IO Context
@@ -989,12 +1009,12 @@ loadFiles = loadFilesExt commandLoad
 loadFilesOnce :: Context -> [FilePath] -> IO Context
 loadFilesOnce = loadFilesExt commandLoadOnce
 
-loadFilesExt :: UnaryCommandCallback -> Context -> [FilePath] -> IO Context
+loadFilesExt :: VariadicCommandCallback -> Context -> [FilePath] -> IO Context
 loadFilesExt loadCmd ctxStart filesToLoad = foldM load ctxStart filesToLoad
   where
     load :: Context -> FilePath -> IO Context
     load ctx file = do
-      (newCtx, ret) <- loadCmd ctx (XObj (Str file) Nothing Nothing)
+      (newCtx, ret) <- loadCmd ctx [XObj (Str file) Nothing Nothing]
       case ret of
         Left err -> throw (EvalException err)
         Right _ -> pure newCtx
