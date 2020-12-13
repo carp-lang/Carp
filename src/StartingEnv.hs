@@ -225,82 +225,96 @@ dynamicModule =
     }
   where
     path = ["Dynamic"]
+    spath = SymPath path
     bindings =
-      Map.fromList $
-        [ addCommand (SymPath path "list?") 1 commandIsList "checks whether the argument is a list." "(list? '()) ; => true",
-          addCommand (SymPath path "array?") 1 commandIsArray "checks whether the arguments is an array." "(array? []) ; => true",
-          addCommand (SymPath path "symbol?") 1 commandIsSymbol "checks whether the argument is a symbol." "(symbol? 'x) ; => true",
-          addCommand (SymPath path "length") 1 commandLength "returns the length of the argument (must be an array, string or list)." "(length '(1 2 3)) ; => 3",
-          addCommand (SymPath path "car") 1 commandCar "gets the head of a list or array." "(car '(1 2 3)) ; => 1",
-          addCommand (SymPath path "cdr") 1 commandCdr "gets the tail of a list or array." "(cdr '(1 2 3)) ; => '(2 3)",
-          addCommand (SymPath path "last") 1 commandLast "gets the last element of a list or array." "(last '(1 2 3)) ; => 3",
-          addCommand (SymPath path "all-but-last") 1 commandAllButLast "gets all elements except for the last one of a list or array." "(all-but-last '(1 2 3)) ; => '(1 2)",
-          addCommand (SymPath path "cons") 2 commandCons "adds an element to the front of an array or list" "(cons 1 '(2 3)) ; => '(1 2 3)",
-          addCommand (SymPath path "cons-last") 2 commandConsLast "adds an element to the back of an array or list" "(cons-last 3 '(1 2)) ; => '(1 2 3)",
-          addCommand (SymPath path "append") 2 commandAppend "appends two lists or arrays." "(append '(1 2) '(3 4)) ; => '(1 2 3 4)",
-          addCommandConfigurable (SymPath path "array") Nothing commandArray "creates an array from a collection of elements." "(array 1 2 3) ; => [1 2 3]",
-          addCommandConfigurable (SymPath path "list") Nothing commandList "creates an array from a collection of elements." "(list 1 2 3) ; => (1 2 3)",
-          addCommand (SymPath path "macro-error") 1 commandMacroError "logs an error and errors out of a macro." "(macro-error \"this is wrong\")",
-          addCommandConfigurable (SymPath path "macro-log") Nothing commandMacroLog "logs a message in a macro." "(macro-log \"this will be printed at compile time\")",
-          addCommandConfigurable (SymPath path "str") Nothing commandStr "stringifies its arguments." "(str 1 \" \" 2 \" \" 3) ; => \"1 2 3\"",
-          addCommand (SymPath path "not") 1 commandNot "negates its boolean argument." "(not false) ; => true",
-          addCommand (SymPath path "=") 2 commandEq "compares its arguments for equality." "(= 1 2) ; => false",
-          addCommand (SymPath path "<") 2 commandLt "checks whether its first argument is less than its second." "(< 1 2) ; => true",
-          addCommand (SymPath path ">") 2 commandGt "checks whether its first argument is greater than its second." "(> 1 2) ; => false",
-          addCommand (SymPath path "+") 2 commandPlus "adds its two arguments." "(+ 1 2) ; => 3",
-          addCommand (SymPath path "-") 2 commandMinus "subtracts its second argument from its first." "(- 1 2) ; => -1",
-          addCommand (SymPath path "/") 2 commandDiv "divides its first argument by its second." "(/ 4 2) ; => 2",
-          addCommand (SymPath path "*") 2 commandMul "multiplies its two arguments." "(* 2 3) ; => 6",
-          addCommand (SymPath path "c") 1 commandC "prints the C code emitted for a binding." "(c '(+ 2 3)) ; => int _3 = Int__PLUS_(2, 3);",
-          addCommand (SymPath path "quit") 0 commandQuit "quits the program." "(quit)",
-          addCommand (SymPath path "cat") 0 commandCat "spits out the generated C code." "(cat)",
-          addCommand (SymPath path "run") 0 commandRunExe "runs the built executable." "(run)",
-          addCommand (SymPath path "build") 0 (commandBuild False) "builds the current code to an executable." "(build)",
-          addCommand (SymPath path "reload") 0 commandReload "reloads all currently loaded files that weren’t marked as only loading once (see `load` and `load-once`)." "(reload)",
-          addCommand (SymPath path "env") 0 commandListBindings "lists all current bindings." "(env)",
-          addCommand (SymPath path "project") 0 commandProject "prints the current project state." "(project)",
-          addCommand (SymPath path "load") 1 commandLoad "loads a file into the current environment." "(load \"myfile.carp\")",
-          addCommand (SymPath path "load-once") 1 commandLoadOnce "loads a file and prevents it from being reloaded (see `reload`)." "(load-once \"myfile.carp\")",
-          addCommand (SymPath path "expand") 1 commandExpand "expands a macro and prints the result." "(expand '(when true 1)) ; => (if true 1 ())",
-          addCommand (SymPath path "host-arch") 0 commandHostArch "prints the host architecture (as returned by the Haskell function `System.Info.arch`)." "(host-arch)",
-          addCommand (SymPath path "host-os") 0 commandHostOS "prints the host operating system (as returned by the Haskell function `System.Info.os`)." "(host-os)",
-          addCommand (SymPath path "system-include") 1 commandAddSystemInclude "adds a system include, i.e. a C `#include` with angle brackets (`<>`)." "(system-include \"stdint.h\")",
-          addCommand (SymPath path "relative-include") 1 commandAddRelativeInclude "adds a relative include, i.e. a C `include` with quotes. It also prepends the current directory." "(relative-include \"myheader.h\")",
-          addCommand (SymPath path "save-docs-internal") 1 commandSaveDocsInternal "is the internal companion command to `save-docs`. `save-docs` should be called instead." "(save-docs-internal 'Module)",
-          addCommand (SymPath path "read-file") 1 commandReadFile "reads a file into a string." "(read-file \"myfile.txt\")",
-          addCommand (SymPath path "write-file") 2 commandWriteFile "writes a string to a file." "(write-file \"myfile\" \"hello there!\")",
-          addCommand (SymPath path "host-bit-width") 0 commandHostBitWidth "gets the bit width of the host platform." "(host-bit-width) ; => your host machine’s bit width, e.g. 32 or 64",
-          addCommandConfigurable (SymPath path "s-expr") Nothing commandSexpression "returns the s-expression associated with a binding. When the binding is a type, the deftype form is returned instead of the type's module by default. Pass an optional bool argument to explicitly request the module for a type instead of its definition form. If the bool is true, the module for the type will be returned. Returns an error when no definition is found for the binding." "(s-expr foo), (s-expr foo true)",
-          makePrim "quote" 1 "quotes any value." "(quote x) ; where x is an actual symbol" (\_ ctx [x] -> pure (ctx, Right x)),
-          makeVarPrim "file" "returns the file a symbol was defined in." "(file mysymbol)" primitiveFile,
-          makeVarPrim "line" "returns the line a symbol was defined on." "(line mysymbol)" primitiveLine,
-          makeVarPrim "column" "returns the column a symbol was defined on." "(column mysymbol)" primitiveColumn,
-          makePrim "info" 1 "prints all information associated with a symbol." "(info mysymbol)" primitiveInfo,
-          makeVarPrim "register-type" "registers a new type from C." "(register-type Name <optional: c-name> <optional: members>)" primitiveRegisterType,
-          makePrim "defmacro" 3 "defines a new macro." "(defmacro name [args :rest restargs] body)" primitiveDefmacro,
-          makePrim "defndynamic" 3 "defines a new dynamic function, i.e. a function available at compile time." "(defndynamic name [args] body)" primitiveDefndynamic,
-          makePrim "defdynamic" 2 "defines a new dynamic value, i.e. a value available at compile time." "(defdynamic name value)" primitiveDefdynamic,
-          makePrim "members" 1 "returns the members of a type as an array." "(members MyType)" primitiveMembers,
-          makeVarPrim "defmodule" "defines a new module in which `expressions` are defined." "(defmodule MyModule <expressions>)" primitiveDefmodule,
-          makePrim "meta-set!" 3 "sets a new key and value pair on the meta map associated with a symbol." "(meta-set! mysymbol \"mykey\" \"myval\")" primitiveMetaSet,
-          makePrim "meta" 2 "gets the value under `\"mykey\"` in the meta map associated with a symbol. It returns `()` if the key isn’t found." "(meta mysymbol \"mykey\")" primitiveMeta,
-          makePrim "definterface" 2 "defines a new interface (which could be a function or symbol)." "(definterface mysymbol MyType)" primitiveDefinterface,
-          makeVarPrim "register" "registers a new function. This is used to define C functions and other symbols that will be available at link time." "(register name <signature> <optional: override>)" primitiveRegister,
-          makeVarPrim "deftype" "defines a new sumtype or struct." "(deftype Name <members>)" primitiveDeftype,
-          makePrim "use" 1 "uses a module, i.e. imports the symbols inside that module into the current module." "(use MyModule)" primitiveUse,
-          makePrim "eval" 1 "evaluates a list." "(eval mycode)" primitiveEval,
-          makePrim "defined?" 1 "checks whether a symbol is defined." "(defined? mysymbol)" primitiveDefined,
-          makePrim "deftemplate" 4 "defines a new C template." "(deftemplate symbol Type declString defString)" primitiveDeftemplate,
-          makePrim "implements" 2 "designates a function as an implementation of an interface." "(implements zero Maybe.zero)" primitiveImplements,
-          makePrim "type" 1 "prints the type of a symbol." "(type mysymbol)" primitiveType,
-          makePrim "kind" 1 "prints the kind of a symbol." "(kind mysymbol)" primitiveKind,
-          makeVarPrim "help" "prints help." "(help)" primitiveHelp
-        ]
-          ++ [ ("String", Binder emptyMeta (XObj (Mod dynamicStringModule) Nothing Nothing)),
-               ("Symbol", Binder emptyMeta (XObj (Mod dynamicSymModule) Nothing Nothing)),
-               ("Project", Binder emptyMeta (XObj (Mod dynamicProjectModule) Nothing Nothing)),
-               ("Path", Binder emptyMeta (XObj (Mod dynamicPathModule) Nothing Nothing))
-             ]
+      Map.fromList $ nullaries ++ unaries ++ binaries ++ variadics ++ prims
+    nullaries =
+      let f = addNullaryCommand . spath
+       in [ f "quit" commandQuit "quits the program." "(quit)",
+            f "cat" commandCat "spits out the generated C code." "(cat)",
+            f "run" commandRunExe "runs the built executable." "(run)",
+            f "build" (commandBuild False) "builds the current code to an executable." "(build)",
+            f "reload" commandReload "reloads all currently loaded files that weren’t marked as only loading once (see `load` and `load-once`)." "(reload)",
+            f "env" commandListBindings "lists all current bindings." "(env)",
+            f "project" commandProject "prints the current project state." "(project)",
+            f "host-arch" commandHostArch "prints the host architecture (as returned by the Haskell function `System.Info.arch`)." "(host-arch)",
+            f "host-os" commandHostOS "prints the host operating system (as returned by the Haskell function `System.Info.os`)." "(host-os)",
+            f "host-bit-width" commandHostBitWidth "gets the bit width of the host platform." "(host-bit-width) ; => your host machine’s bit width, e.g. 32 or 64"
+          ]
+    unaries =
+      let f = addUnaryCommand . spath
+       in [ f "list?" commandIsList "checks whether the argument is a list." "(list? '()) ; => true",
+            f "array?" commandIsArray "checks whether the arguments is an array." "(array? []) ; => true",
+            f "symbol?" commandIsSymbol "checks whether the argument is a symbol." "(symbol? 'x) ; => true",
+            f "length" commandLength "returns the length of the argument (must be an array, string or list)." "(length '(1 2 3)) ; => 3",
+            f "car" commandCar "gets the head of a list or array." "(car '(1 2 3)) ; => 1",
+            f "cdr" commandCdr "gets the tail of a list or array." "(cdr '(1 2 3)) ; => '(2 3)",
+            f "last" commandLast "gets the last element of a list or array." "(last '(1 2 3)) ; => 3",
+            f "all-but-last" commandAllButLast "gets all elements except for the last one of a list or array." "(all-but-last '(1 2 3)) ; => '(1 2)",
+            f "macro-error" commandMacroError "logs an error and errors out of a macro." "(macro-error \"this is wrong\")",
+            f "not" commandNot "negates its boolean argument." "(not false) ; => true",
+            f "c" commandC "prints the C code emitted for a binding." "(c '(+ 2 3)) ; => int _3 = Int__PLUS_(2, 3);",
+            f "load" commandLoad "loads a file into the current environment." "(load \"myfile.carp\")",
+            f "load-once" commandLoadOnce "loads a file and prevents it from being reloaded (see `reload`)." "(load-once \"myfile.carp\")",
+            f "expand" commandExpand "expands a macro and prints the result." "(expand '(when true 1)) ; => (if true 1 ())",
+            f "system-include" commandAddSystemInclude "adds a system include, i.e. a C `#include` with angle brackets (`<>`)." "(system-include \"stdint.h\")",
+            f "relative-include" commandAddRelativeInclude "adds a relative include, i.e. a C `include` with quotes. It also prepends the current directory." "(relative-include \"myheader.h\")",
+            f "save-docs-internal" commandSaveDocsInternal "is the internal companion command to `save-docs`. `save-docs` should be called instead." "(save-docs-internal 'Module)",
+            f "read-file" commandReadFile "reads a file into a string." "(read-file \"myfile.txt\")"
+          ]
+    binaries =
+      let f = addBinaryCommand . spath
+       in [ f "cons" commandCons "adds an element to the front of an array or list" "(cons 1 '(2 3)) ; => '(1 2 3)",
+            f "cons-last" commandConsLast "adds an element to the back of an array or list" "(cons-last 3 '(1 2)) ; => '(1 2 3)",
+            f "append" commandAppend "appends two lists or arrays." "(append '(1 2) '(3 4)) ; => '(1 2 3 4)",
+            f "=" commandEq "compares its arguments for equality." "(= 1 2) ; => false",
+            f "<" commandLt "checks whether its first argument is less than its second." "(< 1 2) ; => true",
+            f ">" commandGt "checks whether its first argument is greater than its second." "(> 1 2) ; => false",
+            f "+" commandPlus "adds its two arguments." "(+ 1 2) ; => 3",
+            f "-" commandMinus "subtracts its second argument from its first." "(- 1 2) ; => -1",
+            f "/" commandDiv "divides its first argument by its second." "(/ 4 2) ; => 2",
+            f "*" commandMul "multiplies its two arguments." "(* 2 3) ; => 6",
+            f "write-file" commandWriteFile "writes a string to a file." "(write-file \"myfile\" \"hello there!\")"
+          ]
+    variadics =
+      let f = addVariadicCommand . spath
+       in [ f "array" commandArray "creates an array from a collection of elements." "(array 1 2 3) ; => [1 2 3]",
+            f "list" commandList "creates an array from a collection of elements." "(list 1 2 3) ; => (1 2 3)",
+            f "macro-log" commandMacroLog "logs a message in a macro." "(macro-log \"this will be printed at compile time\")",
+            f "str" commandStr "stringifies its arguments." "(str 1 \" \" 2 \" \" 3) ; => \"1 2 3\"",
+            f "s-expr" commandSexpression "returns the s-expression associated with a binding. When the binding is a type, the deftype form is returned instead of the type's module by default. Pass an optional bool argument to explicitly request the module for a type instead of its definition form. If the bool is true, the module for the type will be returned. Returns an error when no definition is found for the binding." "(s-expr foo), (s-expr foo true)"
+          ]
+    prims =
+      [ makePrim "quote" 1 "quotes any value." "(quote x) ; where x is an actual symbol" (\_ ctx [x] -> pure (ctx, Right x)),
+        makeVarPrim "file" "returns the file a symbol was defined in." "(file mysymbol)" primitiveFile,
+        makeVarPrim "line" "returns the line a symbol was defined on." "(line mysymbol)" primitiveLine,
+        makeVarPrim "column" "returns the column a symbol was defined on." "(column mysymbol)" primitiveColumn,
+        makePrim "info" 1 "prints all information associated with a symbol." "(info mysymbol)" primitiveInfo,
+        makeVarPrim "register-type" "registers a new type from C." "(register-type Name <optional: c-name> <optional: members>)" primitiveRegisterType,
+        makePrim "defmacro" 3 "defines a new macro." "(defmacro name [args :rest restargs] body)" primitiveDefmacro,
+        makePrim "defndynamic" 3 "defines a new dynamic function, i.e. a function available at compile time." "(defndynamic name [args] body)" primitiveDefndynamic,
+        makePrim "defdynamic" 2 "defines a new dynamic value, i.e. a value available at compile time." "(defdynamic name value)" primitiveDefdynamic,
+        makePrim "members" 1 "returns the members of a type as an array." "(members MyType)" primitiveMembers,
+        makeVarPrim "defmodule" "defines a new module in which `expressions` are defined." "(defmodule MyModule <expressions>)" primitiveDefmodule,
+        makePrim "meta-set!" 3 "sets a new key and value pair on the meta map associated with a symbol." "(meta-set! mysymbol \"mykey\" \"myval\")" primitiveMetaSet,
+        makePrim "meta" 2 "gets the value under `\"mykey\"` in the meta map associated with a symbol. It returns `()` if the key isn’t found." "(meta mysymbol \"mykey\")" primitiveMeta,
+        makePrim "definterface" 2 "defines a new interface (which could be a function or symbol)." "(definterface mysymbol MyType)" primitiveDefinterface,
+        makeVarPrim "register" "registers a new function. This is used to define C functions and other symbols that will be available at link time." "(register name <signature> <optional: override>)" primitiveRegister,
+        makeVarPrim "deftype" "defines a new sumtype or struct." "(deftype Name <members>)" primitiveDeftype,
+        makePrim "use" 1 "uses a module, i.e. imports the symbols inside that module into the current module." "(use MyModule)" primitiveUse,
+        makePrim "eval" 1 "evaluates a list." "(eval mycode)" primitiveEval,
+        makePrim "defined?" 1 "checks whether a symbol is defined." "(defined? mysymbol)" primitiveDefined,
+        makePrim "deftemplate" 4 "defines a new C template." "(deftemplate symbol Type declString defString)" primitiveDeftemplate,
+        makePrim "implements" 2 "designates a function as an implementation of an interface." "(implements zero Maybe.zero)" primitiveImplements,
+        makePrim "type" 1 "prints the type of a symbol." "(type mysymbol)" primitiveType,
+        makePrim "kind" 1 "prints the kind of a symbol." "(kind mysymbol)" primitiveKind,
+        makeVarPrim "help" "prints help." "(help)" primitiveHelp
+      ]
+        ++ [ ("String", Binder emptyMeta (XObj (Mod dynamicStringModule) Nothing Nothing)),
+             ("Symbol", Binder emptyMeta (XObj (Mod dynamicSymModule) Nothing Nothing)),
+             ("Project", Binder emptyMeta (XObj (Mod dynamicProjectModule) Nothing Nothing)),
+             ("Path", Binder emptyMeta (XObj (Mod dynamicPathModule) Nothing Nothing))
+           ]
 
 -- | A submodule of the Dynamic module. Contains functions for working with strings in the repl or during compilation.
 dynamicStringModule :: Env
@@ -316,14 +330,22 @@ dynamicStringModule =
   where
     path = ["Dynamic", "String"]
     bindings =
-      Map.fromList
-        [ addCommand (SymPath path "char-at") 2 commandCharAt "gets the nth character of a string." "(String.char-at \"hi\" 1) ; => \\i",
-          addCommand (SymPath path "index-of") 2 commandIndexOf "gets the index of a character in a string (or returns `-1` if the character is not found)." "(index-of \"hi\" \\i) ; => 1",
-          addCommand (SymPath path "slice") 3 commandSubstring "creates a substring from a beginning index to an end index." "(String.slice \"hello\" 1 3) ; => \"ell\"",
-          addCommand (SymPath path "length") 1 commandStringLength "gets the length of a string." "(String.length \"hi\") ; => 2",
-          addCommand (SymPath path "concat") 1 commandStringConcat "concatenates a list of strings together." "(String.concat [\"hi \" \"there\"]) ; => \"hi there\"",
-          addCommand (SymPath path "split-on") 2 commandStringSplitOn "split a string at separator." "(String.split-on \"-\" \"hi-there\") ; => [\"hi \" \"there\"]"
-        ]
+      Map.fromList $unaries ++ binaries ++ ternaries
+    spath = SymPath path
+    unaries =
+      let f = addUnaryCommand . spath
+       in [ f "length" commandStringLength "gets the length of a string." "(String.length \"hi\") ; => 2",
+            f "concat" commandStringConcat "concatenates a list of strings together." "(String.concat [\"hi \" \"there\"]) ; => \"hi there\""
+          ]
+    binaries =
+      let f = addBinaryCommand . spath
+       in [ f "char-at" commandCharAt "gets the nth character of a string." "(String.char-at \"hi\" 1) ; => \\i",
+            f "index-of" commandIndexOf "gets the index of a character in a string (or returns `-1` if the character is not found)." "(index-of \"hi\" \\i) ; => 1",
+            f "split-on" commandStringSplitOn "split a string at separator." "(String.split-on \"-\" \"hi-there\") ; => [\"hi \" \"there\"]"
+          ]
+    ternaries =
+      let f = addTernaryCommand . spath
+       in [f "slice" commandSubstring "creates a substring from a beginning index to an end index." "(String.slice \"hello\" 1 3) ; => \"ell\""]
 
 -- | A submodule of the Dynamic module. Contains functions for working with symbols in the repl or during compilation.
 dynamicSymModule :: Env
@@ -338,13 +360,18 @@ dynamicSymModule =
     }
   where
     path = ["Dynamic", "Symbol"]
-    bindings =
-      Map.fromList
-        [ addCommand (SymPath path "concat") 1 commandSymConcat "concatenates a list of symbols together." "(Symbol.concat ['x 'y 'z]) ; => 'xyz",
-          addCommand (SymPath path "prefix") 2 commandSymPrefix "prefixes a symbol with a module." "(Symbol.prefix 'Module 'fun) ; => Module.fun",
-          addCommand (SymPath path "from") 1 commandSymFrom "converts a variety of types to a symbol." "(Symbol.from true) ; => True",
-          addCommand (SymPath path "str") 1 commandSymStr "converts a symbol to a string." "(Symbol.str 'x) ; => \"x\""
-        ]
+    bindings = Map.fromList $unaries ++ binaries
+    spath = SymPath path
+    unaries =
+      let f = addUnaryCommand . spath
+       in [ f "concat" commandSymConcat "concatenates a list of symbols together." "(Symbol.concat ['x 'y 'z]) ; => 'xyz",
+            f "from" commandSymFrom "converts a variety of types to a symbol." "(Symbol.from true) ; => True",
+            f "str" commandSymStr "converts a symbol to a string." "(Symbol.str 'x) ; => \"x\""
+          ]
+    binaries =
+      let f = addBinaryCommand . spath
+       in [ f "prefix" commandSymPrefix "prefixes a symbol with a module." "(Symbol.prefix 'Module 'fun) ; => Module.fun"
+          ]
 
 -- | A submodule of the Dynamic module. Contains functions for working with the active Carp project.
 dynamicProjectModule :: Env
@@ -359,11 +386,16 @@ dynamicProjectModule =
     }
   where
     path = ["Dynamic", "Project"]
-    bindings =
-      Map.fromList
-        [ addCommand (SymPath path "config") 2 commandProjectConfig "sets a project config key." "(Project.config \"paren-balance-hints\" false)",
-          addCommand (SymPath path "get-config") 1 commandProjectGetConfig "gets a project config value under a key." "(Project.get-config \"paren-balance-hints\")"
-        ]
+    bindings = Map.fromList $unaries ++ binaries
+    spath = SymPath path
+    unaries =
+      let f = addUnaryCommand . spath
+       in [ f "get-config" commandProjectGetConfig "gets a project config value under a key." "(Project.get-config \"paren-balance-hints\")"
+          ]
+    binaries =
+      let f = addBinaryCommand . spath
+       in [ f "config" commandProjectConfig "sets a project config key." "(Project.config \"paren-balance-hints\" false)"
+          ]
 
 -- | A submodule of the Dynamic module. Contains functions for working with paths.
 dynamicPathModule :: Env
@@ -378,11 +410,13 @@ dynamicPathModule =
     }
   where
     path = ["Dynamic", "Path"]
-    bindings =
-      Map.fromList
-        [ addCommand (SymPath path "directory") 1 commandPathDirectory "takes the basename of a string taken to be a filepath.\n\nHistorical note: this is a command because it used to power one of the `include` macros." "(Path.directory \"dir/file\") ; => \"dir\"",
-          addCommand (SymPath path "absolute") 1 commandPathAbsolute "converts a filepath to absolute." "(Path.absolute \"dir/file\") ; => \"/home/foo/dir/file\""
-        ]
+    bindings = Map.fromList unaries
+    spath = SymPath path
+    unaries =
+      let f = addUnaryCommand . spath
+       in [ f "directory" commandPathDirectory "takes the basename of a string taken to be a filepath.\n\nHistorical note: this is a command because it used to power one of the `include` macros." "(Path.directory \"dir/file\") ; => \"dir\"",
+            f "absolute" commandPathAbsolute "converts a filepath to absolute." "(Path.absolute \"dir/file\") ; => \"/home/foo/dir/file\""
+          ]
 
 -- | The global environment before any code is run.
 startingGlobalEnv :: Bool -> Env

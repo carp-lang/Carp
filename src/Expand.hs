@@ -201,8 +201,24 @@ expand eval ctx xobj =
               Right (XObj (Lst [XObj Macro _ _, _, XObj (Arr _) _ _, _]) _ _) ->
                 --trace ("Found macro: " ++ pretty xobj ++ " at " ++ prettyInfoFromXObj xobj)
                 eval ctx'' xobj
-              Right (XObj (Lst [XObj (Command callback) _ _, _]) _ _) ->
-                getCommand callback ctx args
+              Right (XObj (Lst [XObj (Command (NullaryCommandFunction nullary)) _ _, _, _]) _ _) ->
+                nullary ctx''
+              Right (XObj (Lst [XObj (Command (UnaryCommandFunction unary)) _ _, _, _]) _ _) ->
+                case expandedArgs of
+                  Right [x] -> unary ctx'' x
+                  _ -> error "expanding args"
+              Right (XObj (Lst [XObj (Command (BinaryCommandFunction binary)) _ _, _, _]) _ _) ->
+                case expandedArgs of
+                  Right [x, y] -> binary ctx'' x y
+                  _ -> error "expanding args"
+              Right (XObj (Lst [XObj (Command (TernaryCommandFunction ternary)) _ _, _, _]) _ _) ->
+                case expandedArgs of
+                  Right [x, y, z] -> ternary ctx'' x y z
+                  _ -> error "expanding args"
+              Right (XObj (Lst [XObj (Command (VariadicCommandFunction variadic)) _ _, _, _]) _ _) ->
+                case expandedArgs of
+                  Right ea -> variadic ctx'' ea
+                  _ -> error "expanding args"
               Right _ ->
                 pure
                   ( ctx'',
