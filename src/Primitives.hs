@@ -18,6 +18,7 @@ import Interfaces
 import Lookup
 import qualified Meta as Meta
 import Obj
+import PrimitiveError
 import Project
 import Reify
 import Sumtypes
@@ -28,7 +29,6 @@ import TypePredicates
 import Types
 import Util
 import Web.Browser (openBrowser)
-import PrimitiveError
 
 -- found :: (MonadIO m, Show a1) => a2 -> a1 -> m (a2, Either a3 XObj)
 -- found ctx binder =
@@ -92,7 +92,7 @@ makePrim' name maybeArity docString example callback =
            in XObj (Arr (map (tosym . intToArgName) [1 .. arity])) Nothing Nothing
         Nothing -> XObj (Arr [(XObj (Sym (SymPath [] "") Symbol) Nothing Nothing)]) Nothing Nothing
 
-infoXObjOrError ::  Context -> (Context, Either EvalError XObj) -> Maybe Info -> Maybe XObj-> (Context, Either EvalError XObj)
+infoXObjOrError :: Context -> (Context, Either EvalError XObj) -> Maybe Info -> Maybe XObj -> (Context, Either EvalError XObj)
 infoXObjOrError ctx err i = maybe err (\xobj -> (ctx, Right xobj {xobjInfo = i}))
 
 primitiveFile :: Primitive
@@ -296,9 +296,12 @@ primitiveInfo _ ctx [target@(XObj (Sym path@(SymPath _ _) _) _ _)] = do
   case path of
     SymPath [] _ ->
       (printIfFound (lookupInterfaceOrType ctx path))
-      >> maybe (notFound ctx target path) (\binders -> foldM (\_ binder -> printer binder) (ctx, dynamicNil) binders)
-           ((fmap (:[]) (lookupContextualBinding ctx path))
-           <|> (lookupEverywhere ctx path))
+        >> maybe
+          (notFound ctx target path)
+          (\binders -> foldM (\_ binder -> printer binder) (ctx, dynamicNil) binders)
+          ( (fmap (: []) (lookupContextualBinding ctx path))
+              <|> (lookupEverywhere ctx path)
+          )
     _ ->
       case lookupContextualBinding ctx path of
         Nothing -> notFound ctx target path
@@ -308,16 +311,20 @@ primitiveInfo _ ctx [target@(XObj (Sym path@(SymPath _ _) _) _ _)] = do
     printIfFound binder = maybe (pure (ctx, dynamicNil)) printer binder
 
     printer (binder@(Binder metaData x@(XObj _ (Just i) _))) =
-      unless (isHidden binder)
-        ((putStrLnWithColor Blue (show binder))
-        >> putStrLn ("  Defined at " ++ prettyInfo i)
-        >> printMeta metaData (contextProj ctx) x)
-      >> pure (ctx, dynamicNil)
+      unless
+        (isHidden binder)
+        ( (putStrLnWithColor Blue (show binder))
+            >> putStrLn ("  Defined at " ++ prettyInfo i)
+            >> printMeta metaData (contextProj ctx) x
+        )
+        >> pure (ctx, dynamicNil)
     printer (binder@(Binder metaData x)) =
-      unless (isHidden binder)
-        ((print binder)
-        >> printMeta metaData (contextProj ctx) x)
-      >> pure (ctx, dynamicNil)
+      unless
+        (isHidden binder)
+        ( (print binder)
+            >> printMeta metaData (contextProj ctx) x
+        )
+        >> pure (ctx, dynamicNil)
     isHidden :: Binder -> Bool
     isHidden binder =
       case Meta.getBinderMetaValue "hidden" binder of
@@ -326,10 +333,10 @@ primitiveInfo _ ctx [target@(XObj (Sym path@(SymPath _ _) _) _ _)] = do
     printMeta :: MetaData -> Project -> XObj -> IO ()
     printMeta metaData proj x =
       (maybe (pure ()) printDoc (Meta.get "doc" metaData))
-      >> maybe (pure ()) printImplements (Meta.get "implements" metaData)
-      >> maybe (pure ()) printPrivacy (Meta.get "private" metaData)
-      >> maybe (pure ()) printSig (Meta.get "sig" metaData)
-      >> when (projectPrintTypedAST proj) (putStrLnWithColor Yellow (prettyTyped x))
+        >> maybe (pure ()) printImplements (Meta.get "implements" metaData)
+        >> maybe (pure ()) printPrivacy (Meta.get "private" metaData)
+        >> maybe (pure ()) printSig (Meta.get "sig" metaData)
+        >> when (projectPrintTypedAST proj) (putStrLnWithColor Yellow (prettyTyped x))
 
     printDoc :: XObj -> IO ()
     printDoc (XObj (Str val) _ _) = putStrLn ("  Documentation: " ++ val)
@@ -501,7 +508,6 @@ primitiveDefinterface xobj ctx [nameXObj@(XObj (Sym path@(SymPath [] name) _) _ 
                   )
                   (xobjInfo xobj)
           _ -> error "updateinterface"
-
 primitiveDefinterface _ ctx [name, _] =
   pure (evalError ctx ("`definterface` expects a name as first argument, but got `" ++ pretty name ++ "`") (xobjInfo name))
 primitiveDefinterface _ _ _ = error "primitivedefinterface"

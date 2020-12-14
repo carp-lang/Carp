@@ -2,10 +2,10 @@ module Lookup where
 
 import qualified Data.Map as Map
 import Data.Maybe (catMaybes, mapMaybe)
+import Env
 import qualified Meta
 import Obj
 import Types
-import Env
 
 -- | The type of generic lookup functions.
 type LookupFunc a b = a -> Env -> [b]
@@ -32,17 +32,17 @@ lookupInEnv path@(SymPath (p : ps) name) env =
 lookupInterfaceOrType :: Context -> SymPath -> Maybe Binder
 lookupInterfaceOrType ctx path =
   let typeEnv = (getTypeEnv (contextTypeEnv ctx))
-  in  lookupBinder path typeEnv
+   in lookupBinder path typeEnv
 
 lookupGlobalBinding :: Context -> SymPath -> Maybe Binder
 lookupGlobalBinding ctx path =
   let global = (contextGlobalEnv ctx)
-  in lookupBinder path global
+   in lookupBinder path global
 
 lookupContextualBinding :: Context -> SymPath -> Maybe Binder
 lookupContextualBinding ctx path =
   let ctxEnv = contextEnv ctx
-  in lookupBinder path ctxEnv
+   in lookupBinder path ctxEnv
 
 lookupEverywhere :: Context -> SymPath -> Maybe [Binder]
 lookupEverywhere ctx (SymPath _ name) =
