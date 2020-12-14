@@ -18,7 +18,6 @@ import Interfaces
 import Lookup
 import qualified Meta as Meta
 import Obj
-import Path (takeFileName)
 import Project
 import Reify
 import Sumtypes
@@ -29,6 +28,7 @@ import TypePredicates
 import Types
 import Util
 import Web.Browser (openBrowser)
+import PrimitiveError
 
 -- found :: (MonadIO m, Show a1) => a2 -> a1 -> m (a2, Either a3 XObj)
 -- found ctx binder =
@@ -45,16 +45,7 @@ makeVarPrim name doc example callback =
 
 argumentErr :: Context -> String -> String -> String -> XObj -> IO (Context, Either EvalError XObj)
 argumentErr ctx fun ty number actual =
-  pure
-    ( evalError
-        ctx
-        ( "`" ++ fun ++ "` expected " ++ ty ++ " as its " ++ number
-            ++ " argument, but got `"
-            ++ pretty actual
-            ++ "`"
-        )
-        (xobjInfo actual)
-    )
+  pure (toEvalError ctx actual (ArgumentTypeError fun ty number actual))
 
 makePrim' :: String -> Maybe Int -> String -> String -> Primitive -> (String, Binder)
 makePrim' name maybeArity docString example callback =
@@ -101,66 +92,45 @@ makePrim' name maybeArity docString example callback =
            in XObj (Arr (map (tosym . intToArgName) [1 .. arity])) Nothing Nothing
         Nothing -> XObj (Arr [(XObj (Sym (SymPath [] "") Symbol) Nothing Nothing)]) Nothing Nothing
 
+infoXObjOrError ::  Context -> (Context, Either EvalError XObj) -> Maybe Info -> Maybe XObj-> (Context, Either EvalError XObj)
+infoXObjOrError ctx err i = maybe err (\xobj -> (ctx, Right xobj {xobjInfo = i}))
+
 primitiveFile :: Primitive
-primitiveFile x@(XObj _ i t) ctx args =
+primitiveFile x@(XObj _ i _) ctx args =
   pure $ case args of
-    [] -> go i
-    [XObj _ mi _] -> go mi
-    _ ->
-      evalError
-        ctx
-        ("`file` expected 0 or 1 arguments, but got " ++ show (length args))
-        (xobjInfo x)
+    [] -> infoXObjOrError ctx err i (getFileAsXObj fppl i)
+    [XObj _ mi _] -> infoXObjOrError ctx err i (getFileAsXObj fppl mi)
+    _ -> toEvalError ctx x (ArgumentArityError x "0 or 1" args)
   where
-    err = evalError ctx ("No information about object " ++ pretty x) (xobjInfo x)
-    go =
-      maybe
-        err
-        ( \info ->
-            let fppl = projectFilePathPrintLength (contextProj ctx)
-                file = infoFile info
-                file' = case fppl of
-                  FullPath -> file
-                  ShortPath -> takeFileName file
-             in (ctx, Right (XObj (Str file') i t))
-        )
+    fppl = projectFilePathPrintLength (contextProj ctx)
+    err = toEvalError ctx x (MissingInfo x)
 
 primitiveLine :: Primitive
-primitiveLine x@(XObj _ i t) ctx args =
+primitiveLine x@(XObj _ i _) ctx args =
   pure $ case args of
-    [] -> go i
-    [XObj _ mi _] -> go mi
-    _ ->
-      evalError
-        ctx
-        ("`line` expected 0 or 1 arguments, but got " ++ show (length args))
-        (xobjInfo x)
+    [] -> infoXObjOrError ctx err i (getLineAsXObj i)
+    [XObj _ mi _] -> infoXObjOrError ctx err i (getLineAsXObj mi)
+    _ -> toEvalError ctx x (ArgumentArityError x "0 or 1" args)
   where
-    err = evalError ctx ("No information about object " ++ pretty x) (xobjInfo x)
-    go = maybe err (\info -> (ctx, Right (XObj (Num IntTy (fromIntegral (infoLine info))) i t)))
+    err = toEvalError ctx x (MissingInfo x)
 
 primitiveColumn :: Primitive
-primitiveColumn x@(XObj _ i t) ctx args =
+primitiveColumn x@(XObj _ i _) ctx args =
   pure $ case args of
-    [] -> go i
-    [XObj _ mi _] -> go mi
-    _ ->
-      evalError
-        ctx
-        ("`column` expected 0 or 1 arguments, but got " ++ show (length args))
-        (xobjInfo x)
+    [] -> infoXObjOrError ctx err i (getColumnAsXObj i)
+    [XObj _ mi _] -> infoXObjOrError ctx err i (getColumnAsXObj mi)
+    _ -> toEvalError ctx x (ArgumentArityError x "0 or 1" args)
   where
-    err = evalError ctx ("No information about object " ++ pretty x) (xobjInfo x)
-    go = maybe err (\info -> (ctx, Right (XObj (Num IntTy (fromIntegral (infoColumn info))) i t)))
+    err = toEvalError ctx x (MissingInfo x)
 
 primitiveImplements :: Primitive
-primitiveImplements _ ctx [x@(XObj (Sym interface@(SymPath _ _) _) _ _), (XObj (Sym (SymPath prefixes name) _) info _)] =
+primitiveImplements call ctx [x@(XObj (Sym interface@(SymPath _ _) _) _ _), (XObj (Sym (SymPath prefixes name) _) _ _)] =
   do
     (maybeInterface, maybeImpl) <- pure ((lookupBinder interface tyEnv), (lookupBinder (SymPath modules name) global))
     case (maybeInterface, maybeImpl) of
       (_, Nothing) ->
         if null modules
-          then pure (evalError ctx "Can't set the `implements` meta on a global definition before it is declared." info)
+          then pure (toEvalError ctx call ForewardImplementsMeta)
           else updateMeta (Meta.stub (SymPath modules name)) ctx
       (Nothing, Just implBinder) ->
         (warn >> updateMeta implBinder ctx)
@@ -170,13 +140,8 @@ primitiveImplements _ ctx [x@(XObj (Sym interface@(SymPath _ _) _) _ _), (XObj (
     global = contextGlobalEnv ctx
     tyEnv = getTypeEnv . contextTypeEnv $ ctx
     (SymPath modules _) = consPath (union (contextPath ctx) prefixes) (SymPath [] name)
-    warn =
-      emitWarning
-        ( "The interface "
-            ++ show (getPath x)
-            ++ " is not defined."
-            ++ " Did you define it using `definterface`?"
-        )
+    warn :: IO ()
+    warn = emitWarning (show (NonExistentInterfaceWarning x))
     addToInterface :: Binder -> Binder -> IO (Context, Either EvalError XObj)
     addToInterface inter impl =
       either
@@ -210,14 +175,12 @@ primitiveImplements _ ctx [x@(XObj (Sym interface@(SymPath _ _) _) _ _), (XObj (
             else Meta.updateBinderMeta implBinder "implements" (XObj (Lst (x : impls)) inf ty)
         updateImplementations implBinder _ =
           Meta.updateBinderMeta implBinder "implements" (XObj (Lst [x]) (Just dummyInfo) (Just DynamicTy))
+primitiveImplements x ctx [(XObj (Sym _ _) _ _), y] =
+  pure $ toEvalError ctx x (ArgumentTypeError "implements" "a symbol" "second" y)
 primitiveImplements _ ctx [x, _] =
-  pure $ evalError ctx ("`implements` expects symbol arguments.") (xobjInfo x)
+  pure $ toEvalError ctx x (ArgumentTypeError "implements" "a symbol" "first" x)
 primitiveImplements x@(XObj _ _ _) ctx args =
-  pure $
-    evalError
-      ctx
-      ("`implements` expected 2 arguments, but got " ++ show (length args))
-      (xobjInfo x)
+  pure $ toEvalError ctx x (ArgumentArityError x "2" args)
 
 define :: Bool -> Context -> XObj -> IO Context
 define hidden ctx@(Context globalEnv _ typeEnv _ proj _ _ _) annXObj =
@@ -255,14 +218,9 @@ define hidden ctx@(Context globalEnv _ typeEnv _ proj _ _ _) annXObj =
       unless (areUnifiable (forceTy annXObj) previousType) warn
       where
         previousType = forceTy (binderXObj binder)
+        warn :: IO ()
         warn =
-          emitWarning
-            ( "Definition at " ++ prettyInfoFromXObj annXObj ++ " changed type of '" ++ show (getPath annXObj)
-                ++ "' from "
-                ++ show previousType
-                ++ " to "
-                ++ show (forceTy annXObj)
-            )
+          emitWarning (show (DefinitionTypeChangeWarning annXObj previousType))
     implementInterfaces :: Binder -> IO Context
     implementInterfaces binder =
       pure
@@ -293,19 +251,7 @@ primitiveRegisterType _ ctx [x@(XObj (Sym (SymPath [] t) _) _ _), (XObj (Str ove
   primitiveRegisterTypeWithFields ctx x t (Just override) members
 primitiveRegisterType _ ctx [x@(XObj (Sym (SymPath [] t) _) _ _), members] =
   primitiveRegisterTypeWithFields ctx x t Nothing members
-primitiveRegisterType _ ctx _ =
-  pure
-    ( evalError
-        ctx
-        ( "I don't understand this usage of `register-type`.\n\n"
-            ++ "Valid usages :\n"
-            ++ "  (register-type Name)\n"
-            ++ "  (register-type Name [field0 Type, ...])\n"
-            ++ "  (register-type Name c-name)\n"
-            ++ "  (register-type Name c-name [field0 Type, ...]"
-        )
-        Nothing
-    )
+primitiveRegisterType x ctx _ = pure (toEvalError ctx x RegisterTypeError)
 
 primitiveRegisterTypeWithoutFields :: Context -> String -> (Maybe String) -> IO (Context, Either EvalError XObj)
 primitiveRegisterTypeWithoutFields ctx t override = do
@@ -343,77 +289,63 @@ primitiveRegisterTypeWithFields ctx x t override members =
       _ -> Nothing
 
 notFound :: Context -> XObj -> SymPath -> IO (Context, Either EvalError XObj)
-notFound ctx x path =
-  pure (evalError ctx ("I can’t find the symbol `" ++ show path ++ "`") (xobjInfo x))
+notFound ctx x path = pure (toEvalError ctx x (SymbolNotFoundError path))
 
 primitiveInfo :: Primitive
-primitiveInfo _ ctx [target@(XObj (Sym path@(SymPath _ name) _) _ _)] = do
-  let env = contextEnv ctx
-      typeEnv = contextTypeEnv ctx
+primitiveInfo _ ctx [target@(XObj (Sym path@(SymPath _ _) _) _ _)] = do
   case path of
     SymPath [] _ ->
-      -- First look in the type env, then in the global env:
-      case lookupBinder path (getTypeEnv typeEnv) of
-        Nothing -> printer env True True (lookupBinder path env)
-        found -> do
-          _ <- printer env True True found -- this will print the interface itself
-          printer env True False (lookupBinder path env) -- this will print the locations of the implementers of the interface
+      (printIfFound (lookupInterfaceOrType ctx path))
+      >> maybe (notFound ctx target path) (\binders -> foldM (\_ binder -> printer binder) (ctx, dynamicNil) binders)
+           ((fmap (:[]) (lookupContextualBinding ctx path))
+           <|> (lookupEverywhere ctx path))
     _ ->
-      case lookupBinder path env of
+      case lookupContextualBinding ctx path of
         Nothing -> notFound ctx target path
-        found -> printer env False True found
+        Just found -> printer found
   where
-    printer env allowLookupEverywhere errNotFound binderPair = do
-      let proj = contextProj ctx
-      case binderPair of
-        Just (binder@(Binder metaData x@(XObj _ (Just i) _))) ->
-          do
-            liftIO $ putStrLn (show binder ++ "\nDefined at " ++ prettyInfo i)
-            printDoc metaData proj x
-        Just (binder@(Binder metaData x)) ->
-          do
-            liftIO $ print binder
-            printDoc metaData proj x
-        Nothing
-          | allowLookupEverywhere ->
-            case multiLookupEverywhere name env of
-              [] ->
-                if errNotFound
-                  then notFound ctx target path
-                  else pure (ctx, dynamicNil)
-              binders -> do
-                liftIO $
-                  mapM_
-                    ( \(_, binder@(Binder metaData x@(XObj _ i _))) ->
-                        case i of
-                          Just i' -> do
-                            putStrLnWithColor
-                              White
-                              (show binder ++ "\nDefined at " ++ prettyInfo i')
-                            _ <- printDoc metaData proj x
-                            pure ()
-                          Nothing -> putStrLnWithColor White (show binder)
-                    )
-                    binders
-                pure (ctx, dynamicNil)
-          | errNotFound -> notFound ctx target path
-          | otherwise -> pure (ctx, dynamicNil)
-    printDoc metaData proj x = do
-      case Meta.get "doc" metaData of
-        Just (XObj (Str val) _ _) -> liftIO $ putStrLn ("Documentation: " ++ val)
-        Nothing -> pure ()
-        _ -> error "printdoc"
-      case Meta.get "implements" metaData of
-        Just xobj@(XObj _ info _) -> do
-          case info of
-            Just _ -> putStrLn $ "Implementing: " ++ getName xobj
-            Nothing -> pure ()
-        Nothing -> pure ()
-      liftIO $ when (projectPrintTypedAST proj) $ putStrLnWithColor Yellow (prettyTyped x)
-      pure (ctx, dynamicNil)
+    printIfFound :: Maybe Binder -> IO (Context, Either EvalError XObj)
+    printIfFound binder = maybe (pure (ctx, dynamicNil)) printer binder
+
+    printer (binder@(Binder metaData x@(XObj _ (Just i) _))) =
+      unless (isHidden binder)
+        ((putStrLnWithColor Blue (show binder))
+        >> putStrLn ("  Defined at " ++ prettyInfo i)
+        >> printMeta metaData (contextProj ctx) x)
+      >> pure (ctx, dynamicNil)
+    printer (binder@(Binder metaData x)) =
+      unless (isHidden binder)
+        ((print binder)
+        >> printMeta metaData (contextProj ctx) x)
+      >> pure (ctx, dynamicNil)
+    isHidden :: Binder -> Bool
+    isHidden binder =
+      case Meta.getBinderMetaValue "hidden" binder of
+        Just (XObj (Bol True) _ _) -> True
+        _ -> False
+    printMeta :: MetaData -> Project -> XObj -> IO ()
+    printMeta metaData proj x =
+      (maybe (pure ()) printDoc (Meta.get "doc" metaData))
+      >> maybe (pure ()) printImplements (Meta.get "implements" metaData)
+      >> maybe (pure ()) printPrivacy (Meta.get "private" metaData)
+      >> maybe (pure ()) printSig (Meta.get "sig" metaData)
+      >> when (projectPrintTypedAST proj) (putStrLnWithColor Yellow (prettyTyped x))
+
+    printDoc :: XObj -> IO ()
+    printDoc (XObj (Str val) _ _) = putStrLn ("  Documentation: " ++ val)
+    printDoc _ = pure ()
+
+    printImplements :: XObj -> IO ()
+    printImplements xobj = putStrLn ("  Implementing: " ++ getName xobj)
+
+    printPrivacy :: XObj -> IO ()
+    printPrivacy xobj = putStrLn ("  Private: " ++ pretty xobj)
+
+    printSig :: XObj -> IO ()
+    printSig xobj = putStrLn ("  Signature: " ++ pretty xobj)
 primitiveInfo _ ctx [notName] =
   argumentErr ctx "info" "a name" "first" notName
-primitiveInfo _ _ _ = error "primitiveinfo"
+primitiveInfo x ctx xs = pure $ toEvalError ctx x (ArgumentArityError x "1" xs)
 
 dynamicOrMacroWith :: Context -> (SymPath -> [XObj]) -> Ty -> String -> XObj -> IO (Context, Either EvalError XObj)
 dynamicOrMacroWith ctx producer ty name body = do

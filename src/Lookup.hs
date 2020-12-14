@@ -5,6 +5,7 @@ import Data.Maybe (catMaybes, mapMaybe)
 import qualified Meta
 import Obj
 import Types
+import Env
 
 -- | The type of generic lookup functions.
 type LookupFunc a b = a -> Env -> [b]
@@ -27,6 +28,27 @@ lookupInEnv path@(SymPath (p : ps) name) env =
       case envParent env of
         Just parent -> lookupInEnv path parent
         Nothing -> Nothing
+
+lookupInterfaceOrType :: Context -> SymPath -> Maybe Binder
+lookupInterfaceOrType ctx path =
+  let typeEnv = (getTypeEnv (contextTypeEnv ctx))
+  in  lookupBinder path typeEnv
+
+lookupGlobalBinding :: Context -> SymPath -> Maybe Binder
+lookupGlobalBinding ctx path =
+  let global = (contextGlobalEnv ctx)
+  in lookupBinder path global
+
+lookupContextualBinding :: Context -> SymPath -> Maybe Binder
+lookupContextualBinding ctx path =
+  let ctxEnv = contextEnv ctx
+  in lookupBinder path ctxEnv
+
+lookupEverywhere :: Context -> SymPath -> Maybe [Binder]
+lookupEverywhere ctx (SymPath _ name) =
+  case map snd (multiLookupEverywhere name (contextEnv ctx)) of
+    [] -> Nothing
+    xs -> Just xs
 
 -- | Like 'lookupInEnv' but only returns the Binder (no Env)
 lookupBinder :: SymPath -> Env -> Maybe Binder
