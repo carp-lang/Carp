@@ -311,45 +311,25 @@ primitiveInfo _ ctx [target@(XObj (Sym path@(SymPath _ _) _) _ _)] = do
     printIfFound binder = maybe (pure (ctx, dynamicNil)) printer binder
 
     printer (binder@(Binder metaData x@(XObj _ (Just i) _))) =
-      unless
-        (isHidden binder)
-        ( (putStrLnWithColor Blue (show binder))
-            >> putStrLn ("  Defined at " ++ prettyInfo i)
-            >> printMeta metaData (contextProj ctx) x
-        )
+      (putStrLnWithColor Blue (forceShowBinder binder))
+        >> putStrLn ("  Defined at " ++ prettyInfo i)
+        >> printMeta metaData (contextProj ctx) x
         >> pure (ctx, dynamicNil)
     printer (binder@(Binder metaData x)) =
-      unless
-        (isHidden binder)
-        ( (print binder)
-            >> printMeta metaData (contextProj ctx) x
-        )
+      (print binder)
+        >> printMeta metaData (contextProj ctx) x
         >> pure (ctx, dynamicNil)
-    isHidden :: Binder -> Bool
-    isHidden binder =
-      case Meta.getBinderMetaValue "hidden" binder of
-        Just (XObj (Bol True) _ _) -> True
-        _ -> False
     printMeta :: MetaData -> Project -> XObj -> IO ()
     printMeta metaData proj x =
-      (maybe (pure ()) printDoc (Meta.get "doc" metaData))
-        >> maybe (pure ()) printImplements (Meta.get "implements" metaData)
-        >> maybe (pure ()) printPrivacy (Meta.get "private" metaData)
-        >> maybe (pure ()) printSig (Meta.get "sig" metaData)
+      (maybe (pure ()) (printMetaVal "Documentation" ((either (const "") id) . unwrapStringXObj)) (Meta.get "doc" metaData))
+        >> maybe (pure ()) (printMetaVal "Implements" getName) (Meta.get "implements" metaData)
+        >> maybe (pure ()) (printMetaVal "Private" pretty) (Meta.get "private" metaData)
+        >> maybe (pure ()) (printMetaVal "Hidden" pretty) (Meta.get "hidden" metaData)
+        >> maybe (pure ()) (printMetaVal "Signature" pretty) (Meta.get "sig" metaData)
         >> when (projectPrintTypedAST proj) (putStrLnWithColor Yellow (prettyTyped x))
 
-    printDoc :: XObj -> IO ()
-    printDoc (XObj (Str val) _ _) = putStrLn ("  Documentation: " ++ val)
-    printDoc _ = pure ()
-
-    printImplements :: XObj -> IO ()
-    printImplements xobj = putStrLn ("  Implementing: " ++ getName xobj)
-
-    printPrivacy :: XObj -> IO ()
-    printPrivacy xobj = putStrLn ("  Private: " ++ pretty xobj)
-
-    printSig :: XObj -> IO ()
-    printSig xobj = putStrLn ("  Signature: " ++ pretty xobj)
+    printMetaVal :: String -> (XObj -> String) -> XObj -> IO ()
+    printMetaVal s f xobj = putStrLn ("  " ++ s ++ ": " ++ (f xobj))
 primitiveInfo _ ctx [notName] =
   argumentErr ctx "info" "a name" "first" notName
 primitiveInfo x ctx xs = pure $ toEvalError ctx x (ArgumentArityError x "1" xs)
