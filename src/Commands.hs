@@ -840,4 +840,4 @@ toSymbols (XObj (External _) i t) = (XObj (Sym (SymPath [] "external") Symbol) i
 toSymbols x = x
 
 commandHash :: UnaryCommandCallback
-commandHash ctx v = pure (ctx, Right (XObj (Num IntTy (Integral (hash v))) (Just dummyInfo) (Just IntTy)))
+commandHash ctx v = pure (ctx, Right (XObj (Num LongTy (Integral (hash v))) (Just dummyInfo) (Just LongTy)))
