@@ -29,23 +29,28 @@ lookupInEnv path@(SymPath (p : ps) name) env =
         Just parent -> lookupInEnv path parent
         Nothing -> Nothing
 
-lookupInterfaceOrType :: Context -> SymPath -> Maybe Binder
-lookupInterfaceOrType ctx path =
+-- | Lookup a binder in a context's typeEnv.
+lookupBinderInTypeEnv :: Context -> SymPath -> Maybe Binder
+lookupBinderInTypeEnv ctx path =
   let typeEnv = (getTypeEnv (contextTypeEnv ctx))
    in lookupBinder path typeEnv
 
-lookupGlobalBinding :: Context -> SymPath -> Maybe Binder
-lookupGlobalBinding ctx path =
+-- | Lookup a binder in a context's globalEnv.
+lookupBinderInGlobalEnv :: Context -> SymPath -> Maybe Binder
+lookupBinderInGlobalEnv ctx path =
   let global = (contextGlobalEnv ctx)
    in lookupBinder path global
 
-lookupContextualBinding :: Context -> SymPath -> Maybe Binder
-lookupContextualBinding ctx path =
+-- | Lookup a binder in a context's contextEnv.
+lookupBinderInContextEnv :: Context -> SymPath -> Maybe Binder
+lookupBinderInContextEnv ctx path =
   let ctxEnv = contextEnv ctx
    in lookupBinder path ctxEnv
 
-lookupEverywhere :: Context -> SymPath -> Maybe [Binder]
-lookupEverywhere ctx (SymPath _ name) =
+-- | Performs a multiLookupEverywhere but drops envs from the result and wraps
+-- the results in a Maybe.
+multiLookupBinderEverywhere :: Context -> SymPath -> Maybe [Binder]
+multiLookupBinderEverywhere ctx (SymPath _ name) =
   case map snd (multiLookupEverywhere name (contextEnv ctx)) of
     [] -> Nothing
     xs -> Just xs

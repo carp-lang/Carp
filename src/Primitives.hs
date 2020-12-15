@@ -295,15 +295,15 @@ primitiveInfo :: Primitive
 primitiveInfo _ ctx [target@(XObj (Sym path@(SymPath _ _) _) _ _)] = do
   case path of
     SymPath [] _ ->
-      (printIfFound (lookupInterfaceOrType ctx path))
+      (printIfFound (lookupBinderInTypeEnv ctx path))
         >> maybe
           (notFound ctx target path)
           (\binders -> foldM (\_ binder -> printer binder) (ctx, dynamicNil) binders)
-          ( (fmap (: []) (lookupContextualBinding ctx path))
-              <|> (lookupEverywhere ctx path)
+          ( (fmap (: []) (lookupBinderInContextEnv ctx path))
+              <|> (multiLookupBinderEverywhere ctx path)
           )
     _ ->
-      case lookupContextualBinding ctx path of
+      case lookupBinderInContextEnv ctx path of
         Nothing -> notFound ctx target path
         Just found -> printer found
   where
