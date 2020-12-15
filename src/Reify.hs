@@ -1,8 +1,13 @@
+{-# LANGUAGE FlexibleInstances #-}
+{-# LANGUAGE TypeSynonymInstances #-}
+
 -- | Module Reify provides a typeclass and instances for turning internal compiler types and data into
 -- corresponding representations in the Carp language.
 module Reify where
 
+import Info
 import Obj
+import System.FilePath
 import Types
 
 -- | The Reifiable class ranges over internal Carp compiler types that
@@ -37,3 +42,22 @@ instance Reifiable Ty where
   reify TypeTy = XObj (Sym (SymPath [] (show TypeTy)) Symbol) Nothing (Just Universe)
   reify UnitTy = XObj (Sym (SymPath [] "Unit") Symbol) Nothing (Just TypeTy)
   reify t = XObj (Sym (SymPath [] (show t)) Symbol) Nothing (Just TypeTy)
+
+instance Reifiable String where
+  reify s = (XObj (Str s) Nothing (Just StringTy))
+
+instance Reifiable Int where
+  reify i = (XObj (Num IntTy (fromIntegral i)) Nothing (Just IntTy))
+
+getInfoAsXObj :: (Reifiable a) => (Info -> a) -> Maybe Info -> Maybe XObj
+getInfoAsXObj f i = fmap (reify . f) i
+
+getFileAsXObj :: FilePathPrintLength -> Maybe Info -> Maybe XObj
+getFileAsXObj FullPath = getInfoAsXObj infoFile
+getFileAsXObj ShortPath = getInfoAsXObj (takeFileName . infoFile)
+
+getLineAsXObj :: Maybe Info -> Maybe XObj
+getLineAsXObj = getInfoAsXObj infoLine
+
+getColumnAsXObj :: Maybe Info -> Maybe XObj
+getColumnAsXObj = getInfoAsXObj infoColumn

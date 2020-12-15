@@ -564,23 +564,27 @@ metaIsTrue metaData key =
 data Binder = Binder {binderMeta :: MetaData, binderXObj :: XObj} deriving (Eq)
 
 instance Show Binder where
-  show binder = showBinderIndented 0 (getName (binderXObj binder), binder)
+  show binder = showBinderIndented 0 False (getName (binderXObj binder), binder)
 
-showBinderIndented :: Int -> (String, Binder) -> String
-showBinderIndented indent (name, Binder _ (XObj (Mod env) _ _)) =
+-- | Show a binder even if its hidden.
+forceShowBinder :: Binder -> String
+forceShowBinder binder = showBinderIndented 0 True (getName (binderXObj binder), binder)
+
+showBinderIndented :: Int -> Bool -> (String, Binder) -> String
+showBinderIndented indent _ (name, Binder _ (XObj (Mod env) _ _)) =
   replicate indent ' ' ++ name ++ " : Module = {\n"
     ++ prettyEnvironmentIndented (indent + 4) env
     ++ "\n"
     ++ replicate indent ' '
     ++ "}"
-showBinderIndented indent (name, Binder _ (XObj (Lst [XObj (Interface t paths) _ _, _]) _ _)) =
+showBinderIndented indent _ (name, Binder _ (XObj (Lst [XObj (Interface t paths) _ _, _]) _ _)) =
   replicate indent ' ' ++ name ++ " : " ++ show t ++ " = {\n    "
     ++ joinWith "\n    " (map show paths)
     ++ "\n"
     ++ replicate indent ' '
     ++ "}"
-showBinderIndented indent (name, Binder meta xobj) =
-  if metaIsTrue meta "hidden"
+showBinderIndented indent showHidden (name, Binder meta xobj) =
+  if (not showHidden) && metaIsTrue meta "hidden"
     then ""
     else
       replicate indent ' ' ++ name
@@ -658,7 +662,7 @@ prettyEnvironment = prettyEnvironmentIndented 0
 prettyEnvironmentIndented :: Int -> Env -> String
 prettyEnvironmentIndented indent env =
   joinLines $
-    filter (/= "") (map (showBinderIndented indent) (Map.toList (envBindings env)))
+    filter (/= "") (map (showBinderIndented indent False) (Map.toList (envBindings env)))
       ++ let modules = envUseModules env
           in if null modules
                then []
@@ -676,7 +680,7 @@ prettyEnvironmentChain env =
               ++ joinLines
                 ( filter
                     (/= "")
-                    (map (showBinderIndented 4) (Map.toList (envBindings env)))
+                    (map (showBinderIndented 4 False) (Map.toList (envBindings env)))
                 )
           else "'" ++ name ++ "' " ++ otherInfo ++ ":\n    Too big to show bindings."
       )
