@@ -55,6 +55,7 @@ library
                        StructUtils,
                        Path,
                        Interfaces,
+                       PrimitiveError
                        Primitives,
                        Validate,
                        Reify,
