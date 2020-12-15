@@ -1,12 +1,12 @@
 module TestConstraints where
 
 import Constraints
-import qualified Data.Map as Map
-import qualified Data.Set as Set
 import Eval
 import Infer
+import qualified Map
 import Obj
 import Parsing
+import qualified Set
 import Test.HUnit
 import TestLookup
 import Types

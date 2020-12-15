@@ -10,8 +10,8 @@ module Meta
   )
 where
 
-import Data.Map as Map
 import Info
+import qualified Map
 import Obj
 import SymPath
 import Types

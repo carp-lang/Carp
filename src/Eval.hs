@@ -10,7 +10,6 @@ import Control.Monad.State
 import Data.Foldable (foldlM, foldrM)
 import Data.List (foldl', intercalate, isSuffixOf)
 import Data.List.Split (splitOn, splitWhen)
-import qualified Data.Map as Map
 import Data.Maybe (fromJust, fromMaybe, isJust)
 import Emit
 import Env
@@ -18,6 +17,7 @@ import Expand
 import Infer
 import Info
 import Lookup
+import qualified Map
 import qualified Meta
 import Obj
 import Parsing

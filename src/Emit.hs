@@ -13,15 +13,15 @@ where
 import Control.Monad.State
 import Data.Char (ord)
 import Data.List (intercalate, sortOn)
-import qualified Data.Map as Map
 import Data.Maybe (fromJust, fromMaybe)
-import qualified Data.Set as Set
 import Env
 import Info
+import qualified Map
 import qualified Meta
 import Obj
 import Project
 import Scoring
+import qualified Set
 import Template
 import TypePredicates
 import Types

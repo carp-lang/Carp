@@ -8,11 +8,11 @@ module Deftype
 where
 
 import Concretize
-import qualified Data.Map as Map
 import Data.Maybe
 import Env
 import Info
 import Managed
+import qualified Map
 import Obj
 import StructUtils
 import Template

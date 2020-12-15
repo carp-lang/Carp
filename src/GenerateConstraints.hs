@@ -5,9 +5,9 @@ import Control.Arrow hiding (arr)
 import Control.Monad.State
 import Data.List as List
 import Data.Maybe (fromMaybe, mapMaybe)
-import Data.Set as Set
 import Info
 import Obj
+import qualified Set
 import TypeError
 import Types
 import Util

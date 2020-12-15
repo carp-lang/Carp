@@ -5,13 +5,14 @@ import Control.Exception
 import Control.Monad (join, when)
 import Control.Monad.IO.Class (MonadIO, liftIO)
 import Data.Bits (finiteBitSize)
+import Data.Hashable (hash)
 import Data.List (elemIndex)
 import Data.List.Split (splitOn)
-import qualified Data.Map as Map
 import Data.Maybe (fromMaybe)
 import Emit
 import Info
 import Lookup
+import qualified Map
 import qualified Meta
 import Obj
 import Path
@@ -837,3 +838,6 @@ toSymbols (XObj (Command _) i t) = (XObj (Sym (SymPath [] "command") Symbol) i t
 toSymbols (XObj (Primitive _) i t) = (XObj (Sym (SymPath [] "primitive") Symbol) i t)
 toSymbols (XObj (External _) i t) = (XObj (Sym (SymPath [] "external") Symbol) i t)
 toSymbols x = x
+
+commandHash :: UnaryCommandCallback
+commandHash ctx v = pure (ctx, Right (XObj (Num IntTy (Integral (hash v))) (Just dummyInfo) (Just IntTy)))
