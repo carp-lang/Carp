@@ -208,8 +208,8 @@
   (doc resize "Resize a map `m` to size `s`.")
   (defn resize [m s]
     (let-do [n (init 0 s (Array.repeat s &Bucket.empty))]
-      (for [i 0 @(n-buckets m)]
-        (let [bucket (Array.unsafe-nth (buckets m) i)
+      (for [i 0 @(n-buckets &m)]
+        (let [bucket (Array.unsafe-nth (buckets &m) i)
               len (Array.length (Bucket.entries bucket))
               entries (Bucket.entries bucket)]
           (for [j 0 len]
@@ -218,14 +218,18 @@
         n))
 
   (doc grow "Grow a map `m`. Should usually be handled automatically.")
-  (defn grow [m] (resize m (* @(n-buckets m) 2)))
+  (defn grow [m] (resize m (* @(n-buckets &m) 2)))
   (doc shrink "Shrink a map `m`. Should usually be handled automatically.")
-  (defn shrink [m] (resize m (/ @(n-buckets m) 2)))
+  (defn shrink [m]
+    (let [new-size (/ @(n-buckets &m) 2)]
+      (if (< new-size dflt-len)
+        m
+        (resize m new-size))))
 
   (doc put "Put a value v into map m, using the key k.")
   (defn put [m k v]
     (if (> (/ (* @(len &m) 100) @(n-buckets &m)) min-load)
-      (put (grow &m) k v)
+      (put (grow m) k v)
       (let [idx (Int.positive-mod (hash k) @(n-buckets &m))]
         (update-len
           (update-buckets m &(fn [b]
@@ -288,7 +292,7 @@
   (doc remove "Remove the value under the key k from the map m.")
   (defn remove [m k]
     (if (> (/ (* @(len &m) 100) @(n-buckets &m)) min-load)
-      (remove (shrink &m) k)
+      (remove (shrink m) k)
       (let [idx (Int.positive-mod (hash k) @(n-buckets &m))]
         (update-len
           (update-buckets m &(fn [b]
@@ -460,8 +464,8 @@
   (doc resize "Resize a set `s` to size `size`.")
   (defn resize [s size]
     (let-do [n (init 0 size (Array.repeat size &SetBucket.empty))]
-      (for [i 0 @(n-buckets s)]
-        (let [bucket (Array.unsafe-nth (buckets s) i)
+      (for [i 0 @(n-buckets &s)]
+        (let [bucket (Array.unsafe-nth (buckets &s) i)
               len (Array.length (SetBucket.entries bucket))
               entries (SetBucket.entries bucket)]
           (for [j 0 len]
@@ -470,9 +474,13 @@
         n))
 
   (doc grow "Grow a set `s`. Should usually be handled automatically.")
-  (defn grow [s] (resize s (* @(n-buckets s) 2)))
+  (defn grow [s] (resize s (* @(n-buckets &s) 2)))
   (doc shrink "Shrink a set `s`. Should usually be handled automatically.")
-  (defn shrink [s] (resize s (/ @(n-buckets s) 2)))
+  (defn shrink [s]
+    (let [new-size (/ @(n-buckets &s) 2)]
+      (if (< new-size dflt-len)
+        s
+        (resize s new-size))))
 
   (doc contains? "Check whether the set `s` contains the value `v`.")
   (defn contains? [s v]
@@ -485,7 +493,7 @@
       (contains? &s v)
         s
       (> (/ (* @(len &s) 100) @(n-buckets &s)) min-load)
-        (put (grow &s) v)
+        (put (grow s) v)
       (let [idx (Int.positive-mod (hash v) @(n-buckets &s))
             ;; The lifetime system really doesn't like this function, had to put in a bunch of copying to make it compile:
             ]
@@ -515,7 +523,7 @@
       (not (contains? &s v))
         s
       (> (/ (* @(len &s) 100) @(n-buckets &s)) min-load)
-        (remove (shrink &s) v)
+        (remove (shrink s) v)
       (let [idx (Int.positive-mod (hash v) @(n-buckets &s))]
         (update-len
           (update-buckets s &(fn [b]
