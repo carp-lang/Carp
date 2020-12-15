@@ -16,6 +16,7 @@ import Infer
 import Info
 import Interfaces
 import Lookup
+import Managed
 import qualified Meta as Meta
 import Obj
 import Path (takeFileName)
@@ -980,3 +981,15 @@ openBrowserHelper ctx url =
   liftIO $ do
     _ <- openBrowser url
     return (ctx, dynamicNil)
+
+primitiveIsManaged :: Primitive
+primitiveIsManaged _ ctx [xobj@(XObj (Sym _ _) i _)] =
+  let tenv = contextTypeEnv ctx
+      genv = contextEnv ctx
+   in case xobjToTy xobj of
+        Just ty ->
+          if isManaged tenv genv ty
+            then pure (ctx, Right trueXObj)
+            else pure (ctx, Right falseXObj)
+        Nothing -> pure (evalError ctx ("Can't take type of " ++ pretty xobj) i)
+primitiveIsManaged _ _ _ = error "primitiveIsManaged"
