@@ -10,10 +10,10 @@ module Constraints
 where
 
 import Control.Monad
-import qualified Data.Map as Map
-import qualified Data.Set as Set
 import Debug.Trace
+import qualified Map
 import Obj
+import qualified Set
 import Types
 
 data ConstraintOrder

@@ -1,9 +1,9 @@
 module TypeError where
 
 import Constraints
-import qualified Data.Map as Map
 import Data.Maybe (fromMaybe)
 import Info
+import qualified Map
 import Obj
 import Project
 import Text.EditDistance (defaultEditCosts, levenshteinDistance)
@@ -107,7 +107,9 @@ instance Show TypeError where
   show (InvalidObjExample o xobj example) =
     "I didn’t understand the form `" ++ prettyObj o ++ "` at "
       ++ prettyInfoFromXObj xobj
-      ++ ".\n\nIs it valid? It needs to follow the form `" ++ example ++ "`."
+      ++ ".\n\nIs it valid? It needs to follow the form `"
+      ++ example
+      ++ "`."
   show (WrongArgCount xobj expected actual) =
     "You used the wrong number of arguments in '" ++ getName xobj ++ "' at "
       ++ prettyInfoFromXObj xobj

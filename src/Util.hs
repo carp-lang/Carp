@@ -1,9 +1,9 @@
 module Util where
 
 import Data.List
-import qualified Data.Map as Map
 import Data.Maybe (fromMaybe)
-import qualified Data.Set as Set
+import qualified Map
+import qualified Set
 import System.Info (os)
 
 joinWith :: String -> [String] -> String

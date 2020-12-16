@@ -1,7 +1,7 @@
 module AssignTypes where
 
 import Data.List (nub)
-import qualified Data.Map as Map
+import qualified Map
 import Obj
 import TypeError
 import Types

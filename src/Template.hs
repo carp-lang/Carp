@@ -1,9 +1,9 @@
 module Template where
 
-import qualified Data.Set as Set
 import Info
 import qualified Meta
 import Obj
+import qualified Set
 import ToTemplate
 import Types
 import Util

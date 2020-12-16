@@ -6,9 +6,9 @@ import AssignTypes (typeVariablesInOrderOfAppearance)
 import CMark
 import Control.Monad (when)
 import qualified Data.List as List
-import qualified Data.Map as Map
 import Data.Maybe (fromMaybe)
 import Data.Text as Text
+import qualified Map
 import qualified Meta
 import Obj
 import Path

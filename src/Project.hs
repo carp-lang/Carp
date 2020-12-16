@@ -1,7 +1,10 @@
+{-# LANGUAGE DeriveGeneric #-}
 {-# LANGUAGE RecordWildCards #-}
 
 module Project where
 
+import Data.Hashable
+import GHC.Generics (Generic)
 import Info
 import Util
 
@@ -50,7 +53,7 @@ projectFlags :: Project -> String
 projectFlags proj = joinWithSpace (projectCFlags proj ++ projectLibFlags proj)
 
 instance Show Project where
-  show (Project {..}) =
+  show Project {..} =
     unlines
       [ "Title: " ++ projectTitle,
         "Compiler: " ++ projectCompiler,
@@ -92,7 +95,9 @@ instance Show Project where
 data Includer
   = SystemInclude String
   | RelativeInclude String
-  deriving (Eq)
+  deriving (Eq, Generic)
+
+instance Hashable Includer
 
 instance Show Includer where
   show (SystemInclude file) = "<" ++ file ++ ">"
