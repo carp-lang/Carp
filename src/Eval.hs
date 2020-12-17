@@ -455,11 +455,14 @@ macroExpand ctx xobj =
         )
     XObj (Lst [XObj (Lst (XObj Macro _ _ : _)) _ _]) _ _ -> evalDynamic ctx xobj
     XObj (Lst (x@(XObj (Sym _ _) _ _) : args)) i t -> do
-      (_, f) <- evalDynamic ctx x
+      (next, f) <- evalDynamic ctx x
       case f of
         Right m@(XObj (Lst (XObj Macro _ _ : _)) _ _) -> do
           (newCtx', res) <- evalDynamic ctx (XObj (Lst (m : args)) i t)
           pure (newCtx', res)
+        -- TODO: Determine a way to eval primitives generally and remove this special case.
+        Right p@(XObj (Lst [(XObj (Primitive prim) _ _) , (XObj (Sym (SymPath _ "defmodule") _) _ _) , _]) _ _) ->
+          getPrimitive prim p next args
         _ -> do
           (newCtx, expanded) <- foldlM successiveExpand (ctx, Right []) args
           pure
