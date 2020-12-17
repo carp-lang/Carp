@@ -1,8 +1,8 @@
 module Lookup where
 
-import qualified Data.Map as Map
 import Data.Maybe (catMaybes, mapMaybe)
 import Env
+import qualified Map
 import qualified Meta
 import Obj
 import Types

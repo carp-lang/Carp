@@ -1,3 +1,5 @@
+{-# LANGUAGE DeriveGeneric #-}
+
 module SymPath
   ( SymPath (..),
     mangle,
@@ -7,11 +9,15 @@ module SymPath
 where
 
 import Data.Char (isAscii, ord)
-import qualified Data.Map as Map
+import Data.Hashable
+import GHC.Generics (Generic)
+import qualified Map
 import Util
 
 -- | The path to a binding
-data SymPath = SymPath [String] String deriving (Ord, Eq)
+data SymPath = SymPath [String] String deriving (Ord, Eq, Generic)
+
+instance Hashable SymPath
 
 instance Show SymPath where
   show (SymPath modulePath symName) =

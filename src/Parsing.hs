@@ -12,10 +12,10 @@ import Data.Bits (shift)
 -- import Text.Parsec.Pos (newPos)
 
 import Data.Char (ord)
-import qualified Data.Set as Set
 import Info
 import Numeric (readHex)
 import Obj
+import qualified Set
 import Text.Parsec ((<|>))
 import qualified Text.Parsec as Parsec
 import Types

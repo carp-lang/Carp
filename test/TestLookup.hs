@@ -1,7 +1,7 @@
 module TestLookup where
 
-import qualified Data.Map as Map
 import qualified Lookup as Lookup
+import qualified Map
 import Obj
 import Test.HUnit
 import Types

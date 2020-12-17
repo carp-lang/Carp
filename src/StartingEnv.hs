@@ -2,12 +2,12 @@ module StartingEnv where
 
 import qualified ArrayTemplates
 import Commands
-import qualified Data.Map as Map
-import qualified Data.Set as Set
 import Eval
 import Info
+import qualified Map
 import Obj
 import Primitives
+import qualified Set
 import qualified StaticArrayTemplates
 import Template
 import ToTemplate
@@ -258,7 +258,8 @@ dynamicModule =
             f "system-include" commandAddSystemInclude "adds a system include, i.e. a C `#include` with angle brackets (`<>`)." "(system-include \"stdint.h\")",
             f "relative-include" commandAddRelativeInclude "adds a relative include, i.e. a C `include` with quotes. It also prepends the current directory." "(relative-include \"myheader.h\")",
             f "save-docs-internal" commandSaveDocsInternal "is the internal companion command to `save-docs`. `save-docs` should be called instead." "(save-docs-internal 'Module)",
-            f "read-file" commandReadFile "reads a file into a string." "(read-file \"myfile.txt\")"
+            f "read-file" commandReadFile "reads a file into a string." "(read-file \"myfile.txt\")",
+            f "hash" commandHash "calculates the hash associated with a value." "(hash '('my 'value)) ; => 3175346968842793108"
           ]
     binaries =
       let f = addBinaryCommand . spath

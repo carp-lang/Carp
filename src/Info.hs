@@ -13,8 +13,8 @@ module Info
   )
 where
 
-import qualified Data.Set as Set
 import Path (takeFileName)
+import qualified Set
 import SymPath
 
 -- | Information about where the Obj originated from.
