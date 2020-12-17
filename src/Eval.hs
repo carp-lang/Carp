@@ -767,18 +767,21 @@ annotateWithinContext qualifyDefn ctx xobj = do
 
 primitiveDefmodule :: Primitive
 primitiveDefmodule xobj ctx@(Context env i _ pathStrings _ _ _ _) (XObj (Sym (SymPath [] moduleName) _) _ _ : innerExpressions) = do
-  maybe (defineNewModule emptyMeta) updateExistingModule (lookupBinder (SymPath pathStrings moduleName) env)
+  -- N.B. The `envParent` rewrite at the end of this line is important!
+  -- lookups delve into parent envs by default, which is normally what we want, but in this case it leads to problems
+  -- when submodules happen to share a name with an existing module or type at the global level.
+  maybe (defineNewModule emptyMeta) updateExistingModule (lookupBinder (SymPath [] moduleName) ((getEnv env pathStrings){envParent = Nothing}))
   >>= defineModuleBindings
   >>= \(newCtx, result) ->
          case result of
            Left err -> pure (newCtx, Left err)
-           Right _ -> pure (popModulePath newCtx {contextInternalEnv = (join (fmap envParent (contextInternalEnv newCtx)))}, dynamicNil)
+           Right _ -> pure (popModulePath (newCtx {contextInternalEnv = (join (fmap envParent (contextInternalEnv newCtx)))}), dynamicNil)
 
   where updateExistingModule :: Binder -> IO (Context, Either EvalError XObj)
         updateExistingModule (Binder _ (XObj (Mod innerEnv) _ _)) =
-          let ctx' = ctx{contextInternalEnv = (Just innerEnv {envParent = i}),
-                         contextPath = (pathStrings ++ [moduleName])}
-           in pure (ctx', dynamicNil)
+          let ctx' = ctx{contextInternalEnv = Just innerEnv{envParent = i},
+                         contextPath = ((contextPath ctx) ++ [moduleName])}
+           in (pure (ctx', dynamicNil))
         updateExistingModule (Binder meta (XObj (Lst [XObj MetaStub _ _, _]) _ _)) =
           defineNewModule meta
         updateExistingModule _ =
@@ -787,20 +790,22 @@ primitiveDefmodule xobj ctx@(Context env i _ pathStrings _ _ _ _) (XObj (Sym (Sy
         defineNewModule :: MetaData -> IO (Context, Either EvalError XObj)
         defineNewModule meta =
           pure (ctx', dynamicNil)
-          where moduleEnv = Env (Map.fromList []) i (Just moduleName) [] ExternalEnv 0
+          where moduleEnv = Env (Map.fromList []) (Just (getEnv env pathStrings)) (Just moduleName) [] ExternalEnv 0
                 newModule = XObj (Mod moduleEnv) (xobjInfo xobj) (Just ModuleTy)
                 updatedGlobalEnv = envInsertAt env (SymPath pathStrings moduleName) (Binder meta newModule)
-                ctx' = ctx{contextGlobalEnv = updatedGlobalEnv, contextInternalEnv = Just moduleEnv, contextPath = (pathStrings ++ [moduleName])}
+                -- The parent of the internal env needs to be set to i here for contextual `use` calls to work.
+                -- In theory this shouldn't be necessary; but for now it is.
+                ctx' = ctx{contextGlobalEnv = updatedGlobalEnv, contextInternalEnv = Just moduleEnv{envParent = i}, contextPath = ((contextPath ctx) ++ [moduleName])}
 
         defineModuleBindings :: (Context, Either EvalError XObj) -> IO (Context, Either EvalError XObj)
         defineModuleBindings (context, Left e) = pure (context, Left e)
         defineModuleBindings (context, _) =
-          liftIO $ foldM step (context, dynamicNil) innerExpressions
+          foldM step (context, dynamicNil) innerExpressions
 
         step :: (Context, Either EvalError XObj) -> XObj -> IO (Context, Either EvalError XObj)
         step (ctx', Left e) _ = pure (ctx', Left e)
         step (ctx', Right _) expressions =
-          macroExpand ctx' expressions
+          (macroExpand ctx' expressions)
           >>= \(ctx'', res) -> case res of
                                 Left _ -> pure (ctx'', res)
                                 Right r -> evalDynamic ctx'' r
@@ -1209,7 +1214,7 @@ primitiveEval _ ctx [val] = do
   case arg of
     Left err -> pure (newCtx, Left err)
     Right evald -> do
-      (newCtx', expanded) <- macroExpand ctx evald
+      (newCtx', expanded) <- macroExpand newCtx evald
       case expanded of
         Left err -> pure (newCtx', Left err)
         Right ok -> do
