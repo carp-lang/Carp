@@ -901,6 +901,9 @@ openBrowserHelper ctx url =
     _ <- openBrowser url
     return (ctx, dynamicNil)
 
+-- | Checks if a type is managed. Note that it probably could be implemented in terms
+-- of `(implements? <sym>)` but to be 100% sure that we use the same lookup as the
+-- type system, I've done it this way -- at least for now.
 primitiveIsManaged :: Primitive
 primitiveIsManaged _ ctx [xobj@(XObj (Sym _ _) i _)] =
   let tenv = contextTypeEnv ctx
