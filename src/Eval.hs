@@ -455,11 +455,14 @@ macroExpand ctx xobj =
         )
     XObj (Lst [XObj (Lst (XObj Macro _ _ : _)) _ _]) _ _ -> evalDynamic ctx xobj
     XObj (Lst (x@(XObj (Sym _ _) _ _) : args)) i t -> do
-      (_, f) <- evalDynamic ctx x
+      (next, f) <- evalDynamic ctx x
       case f of
         Right m@(XObj (Lst (XObj Macro _ _ : _)) _ _) -> do
           (newCtx', res) <- evalDynamic ctx (XObj (Lst (m : args)) i t)
           pure (newCtx', res)
+        -- TODO: Determine a way to eval primitives generally and remove this special case.
+        Right p@(XObj (Lst [(XObj (Primitive prim) _ _), (XObj (Sym (SymPath _ "defmodule") _) _ _), _]) _ _) ->
+          getPrimitive prim p next args
         _ -> do
           (newCtx, expanded) <- foldlM successiveExpand (ctx, Right []) args
           pure
@@ -763,44 +766,54 @@ annotateWithinContext qualifyDefn ctx xobj = do
                 Right ok -> pure (ctx, Right ok)
 
 primitiveDefmodule :: Primitive
-primitiveDefmodule xobj ctx@(Context env i typeEnv pathStrings proj lastInput execMode history) (XObj (Sym (SymPath [] moduleName) _) _ _ : innerExpressions) = do
-  let defineIt :: MetaData -> IO (Context, Either EvalError XObj)
-      defineIt meta = do
-        let parentEnv = getEnv env pathStrings
-            innerEnv = Env (Map.fromList []) (Just parentEnv) (Just moduleName) [] ExternalEnv 0
-            newModule = XObj (Mod innerEnv) (xobjInfo xobj) (Just ModuleTy)
-            globalEnvWithModuleAdded = envInsertAt env (SymPath pathStrings moduleName) (Binder meta newModule)
-            ctx' = Context globalEnvWithModuleAdded (Just (innerEnv {envParent = i})) typeEnv (pathStrings ++ [moduleName]) proj lastInput execMode history
-        (ctxAfterModuleDef, res) <- liftIO $ foldM step (ctx', dynamicNil) innerExpressions
-        pure (popModulePath ctxAfterModuleDef {contextInternalEnv = i}, res)
-  (newCtx, result) <-
-    case lookupBinder (SymPath pathStrings moduleName) env of
-      Just (Binder _ (XObj (Mod innerEnv) _ _)) -> do
-        let ctx' = Context env (Just innerEnv {envParent = i}) typeEnv (pathStrings ++ [moduleName]) proj lastInput execMode history -- TODO: use { = } syntax instead
-        (ctxAfterModuleAdditions, res) <- liftIO $ foldM step (ctx', dynamicNil) innerExpressions
-        pure (popModulePath ctxAfterModuleAdditions {contextInternalEnv = i}, res) -- TODO: propagate errors...
-      Just (Binder meta (XObj (Lst [XObj MetaStub _ _, _]) _ _)) ->
-        defineIt meta
-      Just (Binder _ _) ->
-        pure (evalError ctx ("Can't redefine '" ++ moduleName ++ "' as module") (xobjInfo xobj))
-      Nothing ->
-        defineIt emptyMeta
-  pure $ case result of
-    Left err -> (newCtx, Left err)
-    Right _ -> (newCtx, dynamicNil)
+primitiveDefmodule xobj ctx@(Context env i _ pathStrings _ _ _ _) (XObj (Sym (SymPath [] moduleName) _) _ _ : innerExpressions) =
+  do
+    -- N.B. The `envParent` rewrite at the end of this line is important!
+    -- lookups delve into parent envs by default, which is normally what we want, but in this case it leads to problems
+    -- when submodules happen to share a name with an existing module or type at the global level.
+    maybe (defineNewModule emptyMeta) updateExistingModule (lookupBinder (SymPath [] moduleName) ((getEnv env pathStrings) {envParent = Nothing}))
+    >>= defineModuleBindings
+    >>= \(newCtx, result) ->
+      case result of
+        Left err -> pure (newCtx, Left err)
+        Right _ -> pure (popModulePath (newCtx {contextInternalEnv = (join (fmap envParent (contextInternalEnv newCtx)))}), dynamicNil)
   where
-    step (ctx', r) x =
-      case r of
-        Left _ -> pure (ctx', r)
-        Right _ -> do
-          (newCtx, res) <- macroExpand ctx' x
-          case res of
-            Left err -> pure (newCtx, Left err)
-            Right e -> do
-              (newCtx', res') <- evalDynamic newCtx e
-              case res' of
-                Left err -> pure (newCtx', Left err)
-                Right _ -> pure (newCtx', r)
+    updateExistingModule :: Binder -> IO (Context, Either EvalError XObj)
+    updateExistingModule (Binder _ (XObj (Mod innerEnv) _ _)) =
+      let ctx' =
+            ctx
+              { contextInternalEnv = Just innerEnv {envParent = i},
+                contextPath = ((contextPath ctx) ++ [moduleName])
+              }
+       in (pure (ctx', dynamicNil))
+    updateExistingModule (Binder meta (XObj (Lst [XObj MetaStub _ _, _]) _ _)) =
+      defineNewModule meta
+    updateExistingModule _ =
+      pure (evalError ctx ("Can't redefine '" ++ moduleName ++ "' as module") (xobjInfo xobj))
+
+    defineNewModule :: MetaData -> IO (Context, Either EvalError XObj)
+    defineNewModule meta =
+      pure (ctx', dynamicNil)
+      where
+        moduleEnv = Env (Map.fromList []) (Just (getEnv env pathStrings)) (Just moduleName) [] ExternalEnv 0
+        newModule = XObj (Mod moduleEnv) (xobjInfo xobj) (Just ModuleTy)
+        updatedGlobalEnv = envInsertAt env (SymPath pathStrings moduleName) (Binder meta newModule)
+        -- The parent of the internal env needs to be set to i here for contextual `use` calls to work.
+        -- In theory this shouldn't be necessary; but for now it is.
+        ctx' = ctx {contextGlobalEnv = updatedGlobalEnv, contextInternalEnv = Just moduleEnv {envParent = i}, contextPath = ((contextPath ctx) ++ [moduleName])}
+
+    defineModuleBindings :: (Context, Either EvalError XObj) -> IO (Context, Either EvalError XObj)
+    defineModuleBindings (context, Left e) = pure (context, Left e)
+    defineModuleBindings (context, _) =
+      foldM step (context, dynamicNil) innerExpressions
+
+    step :: (Context, Either EvalError XObj) -> XObj -> IO (Context, Either EvalError XObj)
+    step (ctx', Left e) _ = pure (ctx', Left e)
+    step (ctx', Right _) expressions =
+      (macroExpand ctx' expressions)
+        >>= \(ctx'', res) -> case res of
+          Left _ -> pure (ctx'', res)
+          Right r -> evalDynamic ctx'' r
 primitiveDefmodule _ ctx (x : _) =
   pure (evalError ctx ("`defmodule` expects a symbol, got '" ++ pretty x ++ "' instead.") (xobjInfo x))
 primitiveDefmodule _ ctx [] =
@@ -1206,7 +1219,7 @@ primitiveEval _ ctx [val] = do
   case arg of
     Left err -> pure (newCtx, Left err)
     Right evald -> do
-      (newCtx', expanded) <- macroExpand ctx evald
+      (newCtx', expanded) <- macroExpand newCtx evald
       case expanded of
         Left err -> pure (newCtx', Left err)
         Right ok -> do
