@@ -3,8 +3,8 @@
 module ArrayTemplates where
 
 import Concretize
-import Managed
 import Obj
+import StructUtils
 import Template
 import ToTemplate
 import Types
@@ -611,15 +611,16 @@ strTy typeEnv env (StructTy _ [innerType]) =
   ]
 strTy _ _ _ = []
 
-takeAddressOrNot :: TypeEnv -> Env -> Ty -> String
-takeAddressOrNot typeEnv env t = if isManaged typeEnv env t then "&" else ""
+strTakesRefOrNot :: TypeEnv -> Env -> Ty -> String
+strTakesRefOrNot typeEnv env t =
+  fst $ memberStrCallingConvention "str" typeEnv env t
 
 calculateStrSize :: TypeEnv -> Env -> Ty -> String
 calculateStrSize typeEnv env t =
   case t of
     -- If the member type is Unit, don't access the element.
     UnitTy -> makeTemplate (\functionName -> (functionName ++ "();"))
-    _ -> makeTemplate (\functionName -> (functionName ++ "(" ++ (takeAddressOrNot typeEnv env t) ++ "((" ++ tyToC t ++ "*)a->data)[i]);"))
+    _ -> makeTemplate (\functionName -> (functionName ++ "(" ++ (strTakesRefOrNot typeEnv env t) ++ "((" ++ tyToC t ++ "*)a->data)[i]);"))
   where
     makeTemplate :: (String -> String) -> String
     makeTemplate strcall =
@@ -649,7 +650,7 @@ insideArrayStr :: TypeEnv -> Env -> Ty -> String
 insideArrayStr typeEnv env t =
   case t of
     UnitTy -> makeTemplate (\functionName -> functionName ++ "();")
-    _ -> makeTemplate (\functionName -> functionName ++ "(" ++ (takeAddressOrNot typeEnv env t) ++ "((" ++ tyToC t ++ "*)a->data)[i]);")
+    _ -> makeTemplate (\functionName -> functionName ++ "(" ++ (strTakesRefOrNot typeEnv env t) ++ "((" ++ tyToC t ++ "*)a->data)[i]);")
   where
     makeTemplate :: (String -> String) -> String
     makeTemplate strcall =
