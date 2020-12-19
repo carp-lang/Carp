@@ -16,6 +16,7 @@
 (system-include "carp_memory.h")
 
 (load-once "Interfaces.carp")
+(load-once "Blitable.carp")
 (load-once "Bool.carp")
 (load-once "Macros.carp")
 (load-once "List.carp")

@@ -65,3 +65,5 @@
 (definterface tanh (λ [a] a))
 
 (definterface slice (Fn [&a Int Int] a))
+
+(definterface blitable (Fn [a] a)) ; For types that can be freely memcopied

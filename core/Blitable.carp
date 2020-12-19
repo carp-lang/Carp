@@ -1,0 +1,59 @@
+(defmodule Int
+  (defn id [x] (the Int x))
+  (implements blitable Int.id))
+
+(defmodule Long
+  (defn id [x] (the Long x))
+  (implements blitable Long.id))
+
+(defmodule Float
+  (defn id [x] (the Float x))
+  (implements blitable Float.id))
+
+(defmodule Double
+  (defn id [x] (the Double x))
+  (implements blitable Double.id))
+
+(defmodule Char
+  (defn id [x] (the Char x))
+  (implements blitable Char.id))
+
+(defmodule Bool
+  (defn id [x] (the Bool x))
+  (implements blitable Bool.id))
+
+(defmodule Byte
+  (defn id [x] (the Byte x))
+  (implements blitable Byte.id))
+
+(defmodule Int8
+  (defn id [x] (the Int8 x))
+  (implements blitable Int8.id))
+
+(defmodule Int16
+  (defn id [x] (the Int16 x))
+  (implements blitable Int16.id))
+
+(defmodule Int32
+  (defn id [x] (the Int32 x))
+  (implements blitable Int32.id))
+
+(defmodule Int64
+  (defn id [x] (the Int64 x))
+  (implements blitable Int64.id))
+
+(defmodule Uint8
+  (defn id [x] (the Uint8 x))
+  (implements blitable Uint8.id))
+
+(defmodule Uint16
+  (defn id [x] (the Uint16 x))
+  (implements blitable Uint16.id))
+
+(defmodule Uint32
+  (defn id [x] (the Uint32 x))
+  (implements blitable Uint32.id))
+
+(defmodule Uint64
+  (defn id [x] (the Uint64 x))
+  (implements blitable Uint64.id))
