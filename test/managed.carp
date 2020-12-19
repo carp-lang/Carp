@@ -52,6 +52,14 @@
         b2 @&b]
     ()))
 
+(eval ;; temporary workaround to force evaluation of top-level 'when'
+ (when (not (managed? A))
+   (macro-error "Fail - A should be managed.")))
+
+(eval
+ (when (managed? B)
+   (macro-error "Fail - B should not be managed.")))
+
 (deftest test
   (assert-memory-balance test f-a 0l "f-a correct, does not leak")
   (assert-memory-balance test f-b 1l "f-b correct, leaks 1 value")
