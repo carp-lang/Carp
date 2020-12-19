@@ -1,5 +1,4 @@
 (load-and-use Test)
-(Debug.sanitize-addresses)
 
 (defn assert-memory-balance [state f expected-balance descr]
     (do
