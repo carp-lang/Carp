@@ -236,7 +236,6 @@
       (register window-take-focus   SDL_WindowEventID "SDL_WINDOWEVENT_TAKE_FOCUS")
       (register window-hit-test     SDL_WindowEventID "SDL_WINDOWEVENT_HIT_TEST")
 
-      (register = (Fn [SDL_WindowEventID SDL_WindowEventID] Bool))
       (defn = [a b]
         (Int.= (enum-to-int (the SDL_WindowEventID a))
                (enum-to-int (the SDL_WindowEventID b))))
