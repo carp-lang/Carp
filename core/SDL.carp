@@ -68,6 +68,7 @@
     (register mouse-button-down SDL_EventType "SDL_MOUSEBUTTONDOWN")
     (register mouse-button-up   SDL_EventType "SDL_MOUSEBUTTONUP")
     (register mouse-wheel       SDL_EventType "SDL_MOUSEWHEEL")
+    (register window            SDL_EventType "SDL_WINDOWEVENT")
 
     (defn all []
       (let-do [events []
@@ -204,6 +205,25 @@
             l (/= 0 (Int.bit-and state (SDL.Mouse.button SDL.Mouse.button-left)))
             r (/= 0 (Int.bit-and state (SDL.Mouse.button SDL.Mouse.button-right)))]
         (SDL.MouseState.init x y l r))))
+
+  ;; Window Event
+  (defmodule WindowEvent
+    (register window-shown        SDL_WindowEvent Int "SDL_WINDOWEVENT_SHOWN")
+    (register window-hidden       SDL_WindowEvent Int "SDL_WINDOWEVENT_HIDDEN")
+    (register window-exposed      SDL_WindowEvent Int "SDL_WINDOWEVENT_EXPOSED")
+    (register window-moved        SDL_WindowEvent Int "SDL_WINDOWEVENT_MOVED")
+    (register window-resized      SDL_WindowEvent Int "SDL_WINDOWEVENT_RESIZED")
+    (register window-size-changed SDL_WindowEvent Int "SDL_WINDOWEVENT_SIZE_CHANGED")
+    (register window-minimized    SDL_WindowEvent Int "SDL_WINDOWEVENT_MINIMIZED")
+    (register window-mximized     SDL_WindowEvent Int "SDL_WINDOWEVENT_MAXIMIZED")
+    (register window-restored     SDL_WindowEvent Int "SDL_WINDOWEVENT_RESTORED")
+    (register window-enter        SDL_WindowEvent Int "SDL_WINDOWEVENT_ENTER")
+    (register window-leave        SDL_WindowEvent Int "SDL_WINDOWEVENT_LEAVE")
+    (register window-focus-gained SDL_WindowEvent Int "SDL_WINDOWEVENT_FOCUS_GAINED")
+    (register window-focus-lost   SDL_WindowEvent Int "SDL_WINDOWEVENT_FOCUS_LOST")
+    (register window-close        SDL_WindowEvent Int "SDL_WINDOWEVENT_CLOSE")
+    (register window-take-focus   SDL_WindowEvent Int "SDL_WINDOWEVENT_TAKE_FOCUS")
+    (register window-hit-test     SDL_WindowEvent Int "SDL_WINDOWEVENT_HIT_TEST"))
 
   ;; Time
   (register get-ticks (Fn [] Int) "SDL_GetTicks")
