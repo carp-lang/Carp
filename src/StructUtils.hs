@@ -42,16 +42,7 @@ memberPrn typeEnv env (memberName, memberTy) =
                   "  if(temp) { CARP_FREE(temp); temp = NULL; }"
                 ]
         Nothing ->
-          if isExternalType typeEnv memberTy
-            then
-              unlines
-                [ "  temp = malloc(11);",
-                  "  sprintf(temp, \"<external>\");",
-                  "  sprintf(bufferPtr, \"%s \", temp);",
-                  "  bufferPtr += strlen(temp) + 1;",
-                  "  if(temp) { CARP_FREE(temp); temp = NULL; }"
-                ]
-            else "  // Failed to find str function for " ++ memberName ++ " : " ++ show memberTy ++ "\n"
+          "  // Failed to find str function for " ++ memberName ++ " : " ++ show memberTy ++ "\n"
 
 -- | Calculate the size for prn:ing a member of a struct
 memberPrnSize :: TypeEnv -> Env -> (String, Ty) -> String
@@ -73,10 +64,4 @@ memberPrnSize typeEnv env (memberName, memberTy) =
                   "  if(temp) { CARP_FREE(temp); temp = NULL; }"
                 ]
         Nothing ->
-          if isExternalType typeEnv memberTy
-            then
-              unlines
-                [ "  size +=  11;",
-                  "  if(temp) { CARP_FREE(temp); temp = NULL; }"
-                ]
-            else "  // Failed to find str function for " ++ memberName ++ " : " ++ show memberTy ++ "\n"
+          "  // Failed to find str function for " ++ memberName ++ " : " ++ show memberTy ++ "\n"
