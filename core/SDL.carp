@@ -59,6 +59,7 @@
     (register init (Fn [] SDL_Event))
     (register type (Fn [(Ref SDL_Event)] SDL_EventType))
     (register keycode (Fn [(Ref SDL_Event)] SDL_Keycode))
+    ;This is intentionally left here to note that in the future we shouldn't need deftemplate for this.
     ;(register window (Fn [(Ref SDL_Event)] SDL_WindowEvent))
     (deftemplate window (Fn [(Ref SDL_Event)] SDL_WindowEvent)
       "SDL_WindowEvent $NAME(SDL_Event* event)"
