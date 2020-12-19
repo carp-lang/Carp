@@ -20,7 +20,7 @@ memberStrCallingConvention strOrPrn typeEnv globalEnv memberTy =
       -- If these interfaces are not implemented we assume ref signature is fine.
       -- Blitable is required to not accicentally pass a value owned by the struct to
       -- a non-ref str/prn function implemented on one of its memeber types.
-      let blitable = interfaceImplementedForTy typeEnv globalEnv "blitable" (FuncTy [memberTy] memberTy StaticLifetimeTy)
+      let blitable = interfaceImplementedForTy typeEnv globalEnv "blit" (FuncTy [memberTy] memberTy StaticLifetimeTy)
           strTakesValue = interfaceImplementedForTy typeEnv globalEnv strOrPrn withValueSig
        in blitable && strTakesValue
 

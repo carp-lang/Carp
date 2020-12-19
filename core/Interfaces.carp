@@ -66,4 +66,4 @@
 
 (definterface slice (Fn [&a Int Int] a))
 
-(definterface blitable (Fn [a] a)) ; For types that can be freely memcopied
+(definterface blit (Fn [a] a)) ; For types that can be freely memcopied -- exact name is up for discussion
