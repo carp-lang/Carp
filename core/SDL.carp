@@ -43,6 +43,7 @@
   (register init                       (Fn [Int] ()) "SDL_Init")
   (register create-window-and-renderer (Fn [Int Int Int (Ptr (Ptr SDL_Window)) (Ptr (Ptr SDL_Renderer))] ()) "SDL_CreateWindowAndRenderer")
   (register set-window-title           (Fn [(Ptr SDL_Window) (Ptr CChar)] ()) "SDL_SetWindowTitle")
+  (register set-window-size            (Fn [(Ptr SDL_Window) Int Int] ()) "SDL_SetWindowSize")
   (register delay                      (Fn [Int] ()) "SDL_Delay")
   (register destroy-window             (Fn [(Ptr SDL_Window)] ()) "SDL_DestroyWindow")
   (register quit                       (Fn [] ()) "SDL_Quit")
