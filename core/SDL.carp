@@ -243,6 +243,7 @@
       (implements = SDL.WindowEvent.WindowEventID.=)
       (register copy (Fn [(Ref SDL_WindowEventID)] SDL_WindowEventID))
       (implements copy SDL.WindowEvent.WindowEventID.copy))
+    ;This is intentionally left here to note that in the future we shouldn't need deftemplate for this.
     ;(register event (Fn [SDL_WindowEvent] SDL_WindowEventID))
     (deftemplate event (Fn [SDL_WindowEvent] SDL_WindowEventID)
       "SDL_WindowEventID $NAME(SDL_WindowEvent window_event)"
