@@ -44,6 +44,7 @@ jobs:
         run: scoop install llvm --global
 
       - name: Build and zip
+        shell: bash
         run: "./scripts/release.sh ${{ steps.get_tag_name.outputs.VERSION }} --noprompt"
 
       - name: Create Github Release

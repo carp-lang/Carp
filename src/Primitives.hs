@@ -613,7 +613,7 @@ primitiveDeftype xobj ctx (name : rest) =
     deftype' nameXObj typeName typeVariableXObjs = do
       let pathStrings = contextPath ctx
           env = contextGlobalEnv ctx
-          innerEnv = fromMaybe env (contextInternalEnv ctx)
+          innerEnv = (contextInternalEnv ctx)
           typeEnv = contextTypeEnv ctx
           typeVariables = mapM xobjToTy typeVariableXObjs
           (preExistingModule, preExistingMeta) =
@@ -630,6 +630,7 @@ primitiveDeftype xobj ctx (name : rest) =
           case creatorFunction innerEnv typeEnv env pathStrings tyName okTypeVariables rest i preExistingModule of
             Right (typeModuleName, typeModuleXObj, deps) ->
               let structTy = StructTy (ConcreteNameTy tyName) okTypeVariables
+                  updatedGlobal = envInsertAt env (SymPath pathStrings typeModuleName) (Binder preExistingMeta typeModuleXObj)
                   typeDefinition =
                     -- NOTE: The type binding is needed to emit the type definition and all the member functions of the type.
                     XObj
@@ -643,7 +644,7 @@ primitiveDeftype xobj ctx (name : rest) =
                       (Just TypeTy)
                   ctx' =
                     ( ctx
-                        { contextGlobalEnv = envInsertAt env (SymPath pathStrings typeModuleName) (Binder preExistingMeta typeModuleXObj),
+                        { contextGlobalEnv = updatedGlobal,
                           contextTypeEnv = TypeEnv (extendEnv (getTypeEnv typeEnv) tyName typeDefinition)
                         }
                     )

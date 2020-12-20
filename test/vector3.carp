@@ -14,7 +14,7 @@
   (assert-op test
              &(init 1.0 2.0 3.0) &(init 1.0 1.0 3.0)
              "/= operator works"
-             Vector3./=)
+             /=)
   (assert-op test
              &(init 1.0 2.0 3.0) &(init 1.000001 2.000001 3.000001)
              "approx works"
