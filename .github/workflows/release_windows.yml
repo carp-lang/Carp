@@ -28,6 +28,7 @@ jobs:
         run: scoop install stack
 
       - name: Install Zip
+        shell: bash
         run: scoop install zip
 
       - uses: actions/cache@v1
