@@ -12,6 +12,7 @@ jobs:
     steps:
       - name: Get tag name
         id: get_tag_name
+        shell: bash
         run: echo ::set-output name=VERSION::${GITHUB_REF/refs\/tags\//}
 
       - name: Check out
