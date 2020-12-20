@@ -1,12 +1,12 @@
 module Scoring (scoreTypeBinder, scoreValueBinder) where
 
+import Data.List (intercalate)
 import Data.Maybe (fromJust)
 import Lookup
 import Obj
 import qualified Set
 import Types
 import TypesToC
-import Data.List (intercalate)
 
 -- | Scoring of types.
 -- | The score is used for sorting the bindings before emitting them.
@@ -29,8 +29,9 @@ scoreTypeBinder typeEnv b@(Binder _ (XObj (Lst (XObj x _ _ : XObj (Sym _ _) _ _ 
       case lookupBinder (SymPath lookupPath name) (getTypeEnv typeEnv) of
         Just (Binder _ typedef) -> ((depthOfDeftype typeEnv Set.empty typedef varTys + 1), b)
         Nothing -> error ("Can't find user defined type '" ++ structName ++ "' in type env.")
-      where lookupPath = getPathFromStructName structName
-            name = getNameFromStructName structName
+      where
+        lookupPath = getPathFromStructName structName
+        name = getNameFromStructName structName
     depthOfStruct _ = error "depthofstruct"
 scoreTypeBinder _ b@(Binder _ (XObj (Mod _) _ _)) =
   (1000, b)
@@ -81,7 +82,8 @@ depthOfType typeEnv visited selfName theType =
             | otherwise ->
               case lookupBinder (SymPath lookupPath s) (getTypeEnv typeEnv) of
                 Just (Binder _ typedef) -> moduleDepth + depthOfDeftype typeEnv (Set.insert theType visited) typedef varTys
-                  where moduleDepth = ((length lookupPath)*1000) -- modules have score 1000
+                  where
+                    moduleDepth = ((length lookupPath) * 1000) -- modules have score 1000
                 Nothing ->
                   --trace ("Unknown type: " ++ name) $
                   depthOfVarTys -- The problem here is that generic types don't generate

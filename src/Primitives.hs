@@ -8,7 +8,6 @@ import Control.Monad (foldM, unless, when)
 import Control.Monad.IO.Class (MonadIO, liftIO)
 import Data.Either (rights)
 import Data.List (union)
-import qualified Map as Map
 import Data.Maybe (fromJust, fromMaybe, mapMaybe, maybeToList)
 import Deftype
 import Emit
@@ -17,6 +16,7 @@ import Infer
 import Info
 import Interfaces
 import Lookup
+import qualified Map as Map
 import qualified Meta as Meta
 import Obj
 import PrimitiveError
@@ -305,10 +305,10 @@ primitiveInfo _ ctx [target@(XObj (Sym path@(SymPath _ _) _) _ _)] = do
           )
     _ ->
       (printIfFound (lookupBinderInTypeEnv ctx path))
-      >>
-      ( case lookupBinderInContextEnv ctx path of
-        Nothing -> notFound ctx target path
-        Just found -> printer found)
+        >> ( case lookupBinderInContextEnv ctx path of
+               Nothing -> notFound ctx target path
+               Just found -> printer found
+           )
   where
     printIfFound :: Maybe Binder -> IO (Context, Either EvalError XObj)
     printIfFound binder = maybe (pure (ctx, dynamicNil)) printer binder
@@ -619,7 +619,7 @@ primitiveDeftype xobj ctx (name : rest) =
           typeEnv = contextTypeEnv ctx
           typeVariables = mapM xobjToTy typeVariableXObjs
           (preExistingModule, preExistingMeta) =
-            case lookupBinder (SymPath pathStrings typeName) (fromMaybe env innerEnv){envParent = Nothing} of
+            case lookupBinder (SymPath pathStrings typeName) (fromMaybe env innerEnv) {envParent = Nothing} of
               Just (Binder meta (XObj (Mod found) _ _)) -> (Just found, meta)
               Just (Binder meta _) -> (Nothing, meta)
               _ -> (Nothing, emptyMeta)
@@ -646,10 +646,10 @@ primitiveDeftype xobj ctx (name : rest) =
                       (Just TypeTy)
                   holderEnv = \name' prev -> Env (Map.fromList []) (Just prev) (Just name') [] ExternalEnv 0
                   holderModule = \name'' prevEnv -> (Binder emptyMeta (XObj (Mod (holderEnv name'' prevEnv)) (Just dummyInfo) (Just ModuleTy)))
-                  folder = \(contx,prev) pathstring -> (contx{contextTypeEnv = TypeEnv $ envInsertAt (getTypeEnv typeEnv) (SymPath (maybeToList (envModuleName prev)) pathstring) (holderModule pathstring prev)}, (holderEnv pathstring prev))
-                  wHolders = (fst (foldl folder (ctx,(getTypeEnv typeEnv)) pathStrings))
+                  folder = \(contx, prev) pathstring -> (contx {contextTypeEnv = TypeEnv $ envInsertAt (getTypeEnv typeEnv) (SymPath (maybeToList (envModuleName prev)) pathstring) (holderModule pathstring prev)}, (holderEnv pathstring prev))
+                  wHolders = (fst (foldl folder (ctx, (getTypeEnv typeEnv)) pathStrings))
                   ctx' =
-                    ( (fst (foldl folder (ctx,(getTypeEnv typeEnv)) pathStrings))
+                    ( (fst (foldl folder (ctx, (getTypeEnv typeEnv)) pathStrings))
                         { contextGlobalEnv = updatedGlobal,
                           contextTypeEnv = TypeEnv (envInsertAt (getTypeEnv (contextTypeEnv wHolders)) (SymPath pathStrings tyName) (Binder emptyMeta typeDefinition))
                         }

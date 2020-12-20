@@ -466,8 +466,9 @@ concretizeType typeEnv genericStructTy@(StructTy (ConcreteNameTy name) _) =
       error ("Non-deftype found in type env: " ++ show x)
     Nothing ->
       Right []
-    where lookupPath = getPathFromStructName name
-          structName = getNameFromStructName name
+  where
+    lookupPath = getPathFromStructName name
+    structName = getNameFromStructName name
 concretizeType env (RefTy rt _) =
   concretizeType env rt
 concretizeType env (PointerTy pt) =

@@ -30,13 +30,13 @@ module Types
 where
 
 import Data.Hashable
+import Data.List (intercalate)
 import Data.Maybe (fromMaybe)
+import Data.Text (pack, splitOn, unpack)
 import GHC.Generics (Generic)
 import qualified Map
 import SymPath
 import Util
-import Data.Text (splitOn, pack, unpack)
-import Data.List (intercalate)
 
 --import Debug.Trace
 
