@@ -7,9 +7,9 @@ module Repl where
 import ColorText
 import Control.Monad.State.Strict
 import Data.List (isPrefixOf)
-import qualified Data.Map as Map
 import Env
 import Eval
+import qualified Map
 import Obj
 import Parsing (balance)
 import Path

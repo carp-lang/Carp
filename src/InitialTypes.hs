@@ -1,10 +1,10 @@
 module InitialTypes where
 
 import Control.Monad.State
-import qualified Data.Map as Map
 import Env
 import Info
 import Lookup
+import qualified Map
 import Obj
 import TypeError
 import Types

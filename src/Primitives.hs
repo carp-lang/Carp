@@ -8,7 +8,7 @@ import Control.Monad (foldM, unless, when)
 import Control.Monad.IO.Class (MonadIO, liftIO)
 import Data.Either (rights)
 import Data.List (union)
-import qualified Data.Map as Map
+import qualified Map as Map
 import Data.Maybe (fromJust, fromMaybe, mapMaybe, maybeToList)
 import Deftype
 import Emit

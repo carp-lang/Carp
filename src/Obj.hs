@@ -1,13 +1,18 @@
+{-# LANGUAGE DeriveGeneric #-}
+{-# LANGUAGE RecordWildCards #-}
+
 module Obj where
 
 import Control.Monad.State
 import Data.Char
+import Data.Hashable
 import Data.List (intercalate)
-import qualified Data.Map as Map
 import Data.Maybe (fromMaybe)
-import qualified Data.Set as Set
+import GHC.Generics (Generic)
 import Info
+import qualified Map
 import Project
+import qualified Set
 import SymPath
 import Types
 import TypesToC
@@ -17,19 +22,25 @@ import Util
 data GlobalMode
   = CarpLand
   | ExternalCode
-  deriving (Eq, Show, Ord)
+  deriving (Eq, Show, Ord, Generic)
+
+instance Hashable GlobalMode
 
 -- | Will the lookup look at a global variable
 data DefinitionMode
   = AVariable
   | AFunction
-  deriving (Eq, Show, Ord)
+  deriving (Eq, Show, Ord, Generic)
+
+instance Hashable DefinitionMode
 
 -- | For local lookups, does the variable live in the current function or is it captured from outside it's body?
 data CaptureMode
   = NoCapture
   | Capture Int
-  deriving (Eq, Show, Ord)
+  deriving (Eq, Show, Ord, Generic)
+
+instance Hashable CaptureMode
 
 -- | A symbol knows a bit about what it refers to - is it a local scope or a global one? (the latter include modules).
 -- | A symbol that is not used for looking up things will use the 'Symbol' case.
@@ -39,7 +50,9 @@ data SymbolMode
   | LookupRecursive
   | LookupGlobal GlobalMode DefinitionMode
   | LookupGlobalOverride String -- Used to emit another name than the one used in the Carp program.
-  deriving (Eq, Show, Ord)
+  deriving (Eq, Show, Ord, Generic)
+
+instance Hashable SymbolMode
 
 isLookupGlobal :: SymbolMode -> Bool
 isLookupGlobal (LookupGlobal _ _) = True
@@ -49,9 +62,13 @@ isLookupLocal :: SymbolMode -> Bool
 isLookupLocal (LookupLocal _) = True
 isLookupLocal _ = False
 
-data MatchMode = MatchValue | MatchRef deriving (Eq, Show)
+data MatchMode = MatchValue | MatchRef deriving (Eq, Show, Generic)
 
-data Number = Floating Double | Integral Int deriving (Eq, Ord)
+instance Hashable MatchMode
+
+data Number = Floating Double | Integral Int deriving (Eq, Ord, Generic)
+
+instance Hashable Number
 
 instance Num Number where
   (Floating a) + (Floating b) = Floating (a + b)
@@ -138,7 +155,9 @@ data Obj
   | Ref
   | Deref
   | Interface Ty [SymPath]
-  deriving (Show, Eq)
+  deriving (Show, Eq, Generic)
+
+instance Hashable Obj
 
 isGlobalFunc :: XObj -> Bool
 isGlobalFunc xobj =
@@ -197,6 +216,9 @@ type Primitive = XObj -> Context -> [XObj] -> IO (Context, Either EvalError XObj
 
 newtype PrimitiveFunctionType = PrimitiveFunction {getPrimitive :: Primitive}
 
+instance Hashable PrimitiveFunctionType where
+  hashWithSalt s = const s
+
 instance Eq PrimitiveFunctionType where
   _ == _ = True
 
@@ -220,6 +242,9 @@ data CommandFunctionType
   | TernaryCommandFunction TernaryCommandCallback
   | VariadicCommandFunction VariadicCommandCallback
 
+instance Hashable CommandFunctionType where
+  hashWithSalt s = const s
+
 instance Eq CommandFunctionType where
   _ == _ = True
 
@@ -231,6 +256,9 @@ instance Show CommandFunctionType where
   show (VariadicCommandFunction _) = "VariadicCommandFunction { ... }"
 
 newtype TemplateCreator = TemplateCreator {getTemplateCreator :: TypeEnv -> Env -> Template}
+
+instance Hashable TemplateCreator where
+  hashWithSalt s = const s
 
 instance Show TemplateCreator where
   show _ = "TemplateCreator"
@@ -258,6 +286,9 @@ data XObj = XObj
     xobjTy :: Maybe Ty
   }
   deriving (Show, Eq, Ord)
+
+instance Hashable XObj where
+  hashWithSalt s XObj {..} = s `hashWithSalt` xobjObj
 
 getBinderDescription :: XObj -> String
 getBinderDescription (XObj (Lst (XObj (Defn _) _ _ : XObj (Sym _ _) _ _ : _)) _ _) = "defn"
@@ -549,7 +580,9 @@ spaces n =
   join (take n (repeat " "))
 
 -- | Datatype for holding meta data about a binder, like type annotation or docstring.
-newtype MetaData = MetaData {getMeta :: Map.Map String XObj} deriving (Eq, Show)
+newtype MetaData = MetaData {getMeta :: Map.Map String XObj} deriving (Eq, Show, Generic)
+
+instance Hashable MetaData
 
 emptyMeta :: MetaData
 emptyMeta = MetaData Map.empty
@@ -561,7 +594,9 @@ metaIsTrue metaData key =
     _ -> False
 
 -- | Wraps and holds an XObj in an environment.
-data Binder = Binder {binderMeta :: MetaData, binderXObj :: XObj} deriving (Eq)
+data Binder = Binder {binderMeta :: MetaData, binderXObj :: XObj} deriving (Eq, Generic)
+
+instance Hashable Binder
 
 instance Show Binder where
   show binder = showBinderIndented 0 False (getName (binderXObj binder), binder)
@@ -620,7 +655,9 @@ register name t =
       )
   )
 
-data EnvMode = ExternalEnv | InternalEnv | RecursionEnv deriving (Show, Eq)
+data EnvMode = ExternalEnv | InternalEnv | RecursionEnv deriving (Show, Eq, Generic)
+
+instance Hashable EnvMode
 
 -- | Environment
 data Env = Env
@@ -631,15 +668,21 @@ data Env = Env
     envMode :: EnvMode,
     envFunctionNestingLevel :: Int -- Normal defn:s have 0, lambdas get +1 for each level of nesting
   }
-  deriving (Show, Eq)
+  deriving (Show, Eq, Generic)
+
+instance Hashable Env
 
 newtype ClosureContext = CCtx Context
-  deriving (Show)
+  deriving (Show, Generic)
+
+instance Hashable ClosureContext
 
 instance Eq ClosureContext where
   _ == _ = True
 
-newtype TypeEnv = TypeEnv {getTypeEnv :: Env}
+newtype TypeEnv = TypeEnv {getTypeEnv :: Env} deriving (Generic)
+
+instance Hashable TypeEnv
 
 instance Show TypeEnv where
   show (TypeEnv env) = "(TypeEnv " ++ show env ++ ")"
@@ -819,6 +862,9 @@ data Template = Template
     templateDependencies :: Ty -> [XObj]
   }
 
+instance Hashable Template where
+  hashWithSalt s Template {..} = s `hashWithSalt` templateSignature
+
 instance Show Template where
   show _ = "Template"
 
@@ -902,7 +948,14 @@ data Context = Context
     contextExecMode :: ExecutionMode,
     contextHistory :: ![XObj]
   }
-  deriving (Show)
+  deriving (Show, Generic)
+
+instance Hashable Context where
+  hashWithSalt s Context {..} =
+    s
+      `hashWithSalt` contextGlobalEnv
+      `hashWithSalt` contextInternalEnv
+      `hashWithSalt` contextTypeEnv
 
 popModulePath :: Context -> Context
 popModulePath ctx = ctx {contextPath = init (contextPath ctx)}

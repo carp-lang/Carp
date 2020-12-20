@@ -1,3 +1,5 @@
+{-# LANGUAGE DeriveGeneric #-}
+
 module Types
   ( TypeMappings,
     Ty (..),
@@ -27,8 +29,10 @@ module Types
   )
 where
 
-import qualified Data.Map as Map
+import Data.Hashable
 import Data.Maybe (fromMaybe)
+import GHC.Generics (Generic)
+import qualified Map
 import SymPath
 import Util
 import Data.Text (splitOn, pack, unpack)
@@ -61,7 +65,9 @@ data Ty
   | DynamicTy -- the type of dynamic functions (used in REPL and macros)
   | InterfaceTy
   | Universe -- the type of types of types (the type of TypeTy)
-  deriving (Eq, Ord)
+  deriving (Eq, Ord, Generic)
+
+instance Hashable Ty
 
 -- | Kinds checking
 -- Carp's system is simple enough that we do not need to describe kinds by their airty.

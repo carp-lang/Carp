@@ -7,7 +7,7 @@
       (Map.put! &m &i &1))))
 
 (defn insert-collisions []
-  (let [m (Map.create-with-len 1)]
+  (let [m {}]
     (for [i 0 100]
       (Map.put! &m &1 &1))))
 
@@ -23,11 +23,6 @@
 (defn retrieve []
   (Map.get &m &10))
 
-(defn setup-big-map-collisions []
-  (do
-    (set! m (Map.create-with-len 1))
-    (setup-big-map)))
-
 (defn map-tests []
   (do
     (println "Testing single map insert:")
@@ -42,10 +37,6 @@
     (setup-big-map)
     (println "Testing map retrieval:")
     (bench retrieve)
-    (println "")
-    (setup-big-map-collisions)
-    (println "Testing map retrieval with maximum collisions:")
-    (bench retrieve)
     (println "")))
 
 
@@ -55,7 +46,7 @@
       (Set.put! &m &i))))
 
 (defn insert-set-collisions []
-  (let [m (Set.create-with-len 1)]
+  (let [m (Set.create)]
     (for [i 0 100]
       (Set.put! &m &i))))
 
@@ -71,11 +62,6 @@
 (defn contains-set []
   (Set.contains? &s &10))
 
-(defn setup-big-set-collisions []
-  (do
-    (set! s (Set.create-with-len 1))
-    (setup-big-set)))
-
 (defn set-tests []
   (do
     (println "Testing single set insert:")
@@ -89,10 +75,6 @@
     (println "")
     (setup-big-set)
     (println "Testing set contains:")
-    (bench contains-set)
-    (println "")
-    (setup-big-set-collisions)
-    (println "Testing set contains with maximum collisions:")
     (bench contains-set)
     (println "")))
 

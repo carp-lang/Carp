@@ -12,6 +12,7 @@ jobs:
     steps:
       - name: Get tag name
         id: get_tag_name
+        shell: bash
         run: echo ::set-output name=VERSION::${GITHUB_REF/refs\/tags\//}
 
       - name: Check out
@@ -25,6 +26,10 @@ jobs:
 
       - name: Install Stack
         run: scoop install stack
+
+      - name: Install Zip
+        shell: bash
+        run: scoop install zip
 
       - uses: actions/cache@v1
         name: Cache stack dependencies
@@ -44,6 +49,7 @@ jobs:
         run: scoop install llvm --global
 
       - name: Build and zip
+        shell: bash
         run: "./scripts/release.sh ${{ steps.get_tag_name.outputs.VERSION }} --noprompt"
 
       - name: Create Github Release

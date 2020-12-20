@@ -46,4 +46,4 @@ means that Carp will ensure any memory associated with them has proper
 ownership and is deleted when they are no longer needed. Not all types are
 managed. `Int`, for example, is not a managed type, and so the issue described
 above won't be relevant for `Int` arguments. For more information see
-[docs/memory.md](docs/memory.md)
+[docs/memory.md](Memory.md)

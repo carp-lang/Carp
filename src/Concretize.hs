@@ -6,18 +6,18 @@ import AssignTypes
 import Constraints
 import Control.Monad.State
 import Data.List (foldl')
-import qualified Data.Map as Map
 import Data.Maybe (fromMaybe)
-import Data.Set ((\\))
-import qualified Data.Set as Set
 import Debug.Trace
 import Env
 import Info
 import Lookup
 import Managed
+import qualified Map
 import Obj
 import Polymorphism
 import Reify
+import Set ((\\))
+import qualified Set
 import SumtypeCase
 import ToTemplate
 import TypeError

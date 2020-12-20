@@ -25,13 +25,13 @@ else
     fi
 fi
 
-./scripts/carp.sh ./docs/core/generate_core_docs.carp
-
 mkdir -p "$fullPath"
 
 echo
 echo "Building Haskell Stack project..."
 stack build
+
+./scripts/carp.sh ./docs/core/generate_core_docs.carp
 
 mkdir "$fullPath/bin"
 echo "Copying executable..."

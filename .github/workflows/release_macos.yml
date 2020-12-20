@@ -17,13 +17,7 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v2
 
-      - uses: actions/setup-haskell@v1.1
-        with:
-          ghc-version: '8.8.2'
-          stack-version: '2.3.1'
-          enable-stack: true
-          stack-no-global: true
-          stack-setup-ghc: true
+      - uses: actions/setup-haskell@v1
 
       - name: Build and zip
         run: ./scripts/release.sh ${{ steps.get_tag_name.outputs.VERSION }} --noprompt

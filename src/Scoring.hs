@@ -1,9 +1,9 @@
 module Scoring (scoreTypeBinder, scoreValueBinder) where
 
 import Data.Maybe (fromJust)
-import qualified Data.Set as Set
 import Lookup
 import Obj
+import qualified Set
 import Types
 import TypesToC
 import Data.List (intercalate)

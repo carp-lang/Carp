@@ -14,7 +14,7 @@ let
 
   f = { mkDerivation, stdenv
       , ansi-terminal, open-browser, base, blaze-html, blaze-markup
-      , cmark, containers, directory, edit-distance, filepath
+      , cmark, containers, directory, edit-distance, filepath, hashable
       , haskeline, HUnit, mtl, optparse-applicative, parsec, process, split, text
       , darwin, glfw3, SDL2, SDL2_image, SDL2_gfx, SDL2_mixer, SDL2_ttf
       , ghc-prof-flamegraph, ormolu, hlint
@@ -37,7 +37,7 @@ let
         libraryHaskellDepends = [
           ansi-terminal open-browser base blaze-html blaze-markup cmark containers
           directory edit-distance filepath haskeline mtl parsec process split
-          text
+          text hashable
         ] ++ optionals profiling [ ghc-prof-flamegraph ];
         pkgconfigDepends =
           [ glfw3 SDL2 SDL2_image SDL2_gfx SDL2_mixer SDL2_ttf ]
