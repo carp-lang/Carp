@@ -27,6 +27,9 @@ jobs:
       - name: Install Stack
         run: scoop install stack
 
+      - name: Install Zip
+        run: scoop install zip
+
       - uses: actions/cache@v1
         name: Cache stack dependencies
         with:
