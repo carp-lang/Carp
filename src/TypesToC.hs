@@ -8,6 +8,8 @@ where
 import SymPath
 import Types
 import Util
+import Data.Text (pack, unpack, splitOn)
+import Data.List
 
 tyToC :: Ty -> String
 tyToC = tyToCManglePtr False
@@ -41,7 +43,7 @@ tyToCManglePtr _ ty = f ty
         f (FuncTy argTys retTy _) = "Fn__" ++ joinWithUnderscore (map (tyToCManglePtr True) argTys) ++ "_" ++ tyToCManglePtr True retTy
         f (StructTy s []) = tyToCManglePtr False s
         f (StructTy s typeArgs) = tyToCManglePtr False s ++ "__" ++ joinWithUnderscore (map (tyToCManglePtr True) typeArgs)
-        f (ConcreteNameTy name) = mangle name
+        f (ConcreteNameTy name) = mangle (intercalate "" (map unpack (splitOn (pack ".") (pack name))))
         f ModuleTy = err "modules"
         f TypeTy = err "types"
         f MacroTy = err "macros"

@@ -38,7 +38,7 @@ moduleForDeftype innerEnv typeEnv env pathStrings typeName typeVariables rest i 
       insidePath = pathStrings ++ [typeModuleName]
    in do
         validateMemberCases typeEnv typeVariables rest
-        let structTy = StructTy (ConcreteNameTy typeName) typeVariables
+        let structTy = StructTy (ConcreteNameTy (createStructName pathStrings typeName)) typeVariables
         (okMembers, membersDeps) <- templatesForMembers typeEnv env insidePath structTy rest
         okInit <- binderForInit insidePath structTy rest
         (okStr, strDeps) <- binderForStrOrPrn typeEnv env insidePath structTy rest "str"

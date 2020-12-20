@@ -8,7 +8,8 @@ import Control.Monad (foldM, unless, when)
 import Control.Monad.IO.Class (MonadIO, liftIO)
 import Data.Either (rights)
 import Data.List (union)
-import Data.Maybe (fromJust, fromMaybe, mapMaybe)
+import qualified Data.Map as Map
+import Data.Maybe (fromJust, fromMaybe, mapMaybe, maybeToList)
 import Deftype
 import Emit
 import Env
@@ -303,9 +304,11 @@ primitiveInfo _ ctx [target@(XObj (Sym path@(SymPath _ _) _) _ _)] = do
               <|> (multiLookupBinderEverywhere ctx path)
           )
     _ ->
-      case lookupBinderInContextEnv ctx path of
+      (printIfFound (lookupBinderInTypeEnv ctx path))
+      >>
+      ( case lookupBinderInContextEnv ctx path of
         Nothing -> notFound ctx target path
-        Just found -> printer found
+        Just found -> printer found)
   where
     printIfFound :: Maybe Binder -> IO (Context, Either EvalError XObj)
     printIfFound binder = maybe (pure (ctx, dynamicNil)) printer binder
@@ -616,7 +619,7 @@ primitiveDeftype xobj ctx (name : rest) =
           typeEnv = contextTypeEnv ctx
           typeVariables = mapM xobjToTy typeVariableXObjs
           (preExistingModule, preExistingMeta) =
-            case lookupBinder (SymPath pathStrings typeName) env of
+            case lookupBinder (SymPath pathStrings typeName) (fromMaybe env innerEnv){envParent = Nothing} of
               Just (Binder meta (XObj (Mod found) _ _)) -> (Just found, meta)
               Just (Binder meta _) -> (Nothing, meta)
               _ -> (Nothing, emptyMeta)
@@ -626,9 +629,9 @@ primitiveDeftype xobj ctx (name : rest) =
               else (moduleForSumtype, DefSumtype)
       case (nameXObj, typeVariables) of
         (XObj (Sym (SymPath _ tyName) _) i _, Just okTypeVariables) ->
-          case creatorFunction innerEnv typeEnv env pathStrings tyName okTypeVariables rest i preExistingModule of
+          case creatorFunction (Just (getEnv env pathStrings)) typeEnv env pathStrings tyName okTypeVariables rest i preExistingModule of
             Right (typeModuleName, typeModuleXObj, deps) ->
-              let structTy = StructTy (ConcreteNameTy tyName) okTypeVariables
+              let structTy = StructTy (ConcreteNameTy (createStructName pathStrings tyName)) okTypeVariables
                   updatedGlobal = envInsertAt env (SymPath pathStrings typeModuleName) (Binder preExistingMeta typeModuleXObj)
                   typeDefinition =
                     -- NOTE: The type binding is needed to emit the type definition and all the member functions of the type.
@@ -641,10 +644,14 @@ primitiveDeftype xobj ctx (name : rest) =
                       )
                       i
                       (Just TypeTy)
+                  holderEnv = \name' prev -> Env (Map.fromList []) (Just prev) (Just name') [] ExternalEnv 0
+                  holderModule = \name'' prevEnv -> (Binder emptyMeta (XObj (Mod (holderEnv name'' prevEnv)) (Just dummyInfo) (Just ModuleTy)))
+                  folder = \(contx,prev) pathstring -> (contx{contextTypeEnv = TypeEnv $ envInsertAt (getTypeEnv typeEnv) (SymPath (maybeToList (envModuleName prev)) pathstring) (holderModule pathstring prev)}, (holderEnv pathstring prev))
+                  wHolders = (fst (foldl folder (ctx,(getTypeEnv typeEnv)) pathStrings))
                   ctx' =
-                    ( ctx
+                    ( (fst (foldl folder (ctx,(getTypeEnv typeEnv)) pathStrings))
                         { contextGlobalEnv = updatedGlobal,
-                          contextTypeEnv = TypeEnv (extendEnv (getTypeEnv typeEnv) tyName typeDefinition)
+                          contextTypeEnv = TypeEnv (envInsertAt (getTypeEnv (contextTypeEnv wHolders)) (SymPath pathStrings tyName) (Binder emptyMeta typeDefinition))
                         }
                     )
                in do
@@ -676,7 +683,7 @@ primitiveDeftype _ _ _ = error "primitivedeftype"
 
 primitiveUse :: Primitive
 primitiveUse xobj ctx [XObj (Sym path _) _ _] =
-  pure $ maybe lookupInGlobal useModule (lookupInEnv path e)
+  (pure $ maybe lookupInGlobal useModule (lookupInEnv path e))
   where
     pathStrings = contextPath ctx
     env = contextGlobalEnv ctx

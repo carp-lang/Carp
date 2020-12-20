@@ -29,7 +29,7 @@
     (get-tag k))
   (implements hash Color.hash)
   (defn = [a b]
-    (= (hash (the (Ref Id) a)) (hash b)))
+    (= (hash (the (Ref Color.Id) a)) (hash b)))
   (implements = Color.=)
 
   (def table

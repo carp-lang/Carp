@@ -111,13 +111,15 @@ canBeUsedAsMemberType typeEnv typeVariables ty xobj =
       canBeUsedAsMemberType typeEnv typeVariables innerType xobj
         >> pure ()
     checkStruct (ConcreteNameTy n) vars =
-      case lookupBinder (SymPath [] n) (getTypeEnv typeEnv) of
+      case lookupBinder (SymPath lookupPath name) (getTypeEnv typeEnv) of
         Just (Binder _ (XObj (Lst (XObj (Deftype t) _ _ : _)) _ _)) ->
           checkInhabitants t >> foldM (\_ typ -> canBeUsedAsMemberType typeEnv typeVariables typ xobj) () vars
         Just (Binder _ (XObj (Lst (XObj (DefSumtype t) _ _ : _)) _ _)) ->
           checkInhabitants t >> foldM (\_ typ -> canBeUsedAsMemberType typeEnv typeVariables typ xobj) () vars
         _ -> Left (NotAmongRegisteredTypes ty xobj)
       where
+        lookupPath = getPathFromStructName n
+        name = getNameFromStructName n
         checkInhabitants :: Ty -> Either TypeError ()
         checkInhabitants (StructTy _ vs) =
           if length vs == length vars

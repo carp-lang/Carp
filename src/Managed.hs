@@ -21,13 +21,15 @@ isExternalType _ _ =
 isManaged :: TypeEnv -> Ty -> Bool
 isManaged typeEnv (StructTy (ConcreteNameTy name) _) =
   (name == "Array") || (name == "StaticArray") || (name == "Dictionary")
-    || ( case lookupBinder (SymPath [] name) (getTypeEnv typeEnv) of
+    || ( case lookupBinder (SymPath lookupPath sname) (getTypeEnv typeEnv) of
            Just (Binder _ (XObj (Lst (XObj (ExternalType _) _ _ : _)) _ _)) -> False
            Just (Binder _ (XObj (Lst (XObj (Deftype _) _ _ : _)) _ _)) -> True
            Just (Binder _ (XObj (Lst (XObj (DefSumtype _) _ _ : _)) _ _)) -> True
            Just (Binder _ (XObj wrong _ _)) -> error ("Invalid XObj in type env: " ++ show wrong)
            Nothing -> error ("Can't find " ++ name ++ " in type env.") -- TODO: Please don't crash here!
        )
+   where lookupPath = getPathFromStructName name
+         sname = getNameFromStructName name
 isManaged _ StringTy = True
 isManaged _ PatternTy = True
 isManaged _ FuncTy {} = True

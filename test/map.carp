@@ -78,12 +78,12 @@
   )
   (assert-equal test
                 0
-                (Map.length &(the (Map.Map Int Int) (Map.create)))
+                (Map.length &(the (Map Int Int) (Map.create)))
                 "length works on empty map"
   )
   (assert-equal test
                 false
-                (Map.contains? &(the (Map.Map String Int) (Map.create)) "1")
+                (Map.contains? &(the (Map String Int) (Map.create)) "1")
                 "contains? works on empty map"
   )
   (assert-equal test
@@ -232,12 +232,12 @@
   )
   (assert-equal test
                 0
-                (Set.length &(the (Set.Set Int) (Set.create)))
+                (Set.length &(the (Set Int) (Set.create)))
                 "length works on empty map"
   )
   (assert-equal test
                 false
-                (Set.contains? &(the (Set.Set String) (Set.create)) "1")
+                (Set.contains? &(the (Set String) (Set.create)) "1")
                 "contains? works on empty map"
   )
   (assert-equal test

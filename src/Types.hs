@@ -20,6 +20,10 @@ module Types
     Kind,
     tyToKind,
     areKindsConsistent,
+    createStructName,
+    getStructName,
+    getPathFromStructName,
+    getNameFromStructName,
   )
 where
 
@@ -27,6 +31,8 @@ import qualified Data.Map as Map
 import Data.Maybe (fromMaybe)
 import SymPath
 import Util
+import Data.Text (splitOn, pack, unpack)
+import Data.List (intercalate)
 
 --import Debug.Trace
 
@@ -322,3 +328,19 @@ typesDeleterFunctionType memberType = FuncTy [memberType] UnitTy StaticLifetimeT
 -- | The type of environments sent to Lambdas (used in emitted C code)
 lambdaEnvTy :: Ty
 lambdaEnvTy = StructTy (ConcreteNameTy "LambdaEnv") []
+
+createStructName :: [String] -> String -> String
+createStructName path name = (intercalate "." (path ++ [name]))
+
+getStructName :: Ty -> String
+getStructName (StructTy (ConcreteNameTy name) _) = name
+getStructName (StructTy (VarTy name) _) = name
+getStructName _ = ""
+
+getPathFromStructName :: String -> [String]
+getPathFromStructName structName =
+  let path = (map unpack (splitOn (pack ".") (pack structName)))
+   in if ((length path) > 1) then init path else []
+
+getNameFromStructName :: String -> String
+getNameFromStructName structName = last (map unpack (splitOn (pack ".") (pack structName)))
