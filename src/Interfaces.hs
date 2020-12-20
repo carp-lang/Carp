@@ -6,6 +6,7 @@ module Interfaces
   ( registerInInterfaceIfNeeded,
     registerInInterface,
     retroactivelyRegisterInInterface,
+    interfaceImplementedForTy,
   )
 where
 
@@ -15,6 +16,7 @@ import Control.Monad (foldM)
 import Env
 import Lookup
 import Obj
+import Data.Maybe (mapMaybe)
 import Types
 import Util
 
@@ -98,3 +100,14 @@ retroactivelyRegisterInInterface ctx interface =
     env = contextGlobalEnv ctx
     impls = lookupMany Everywhere lookupImplementations (getPath (binderXObj interface)) env
     resultCtx = foldM (\context binder -> registerInInterface context binder interface) ctx impls
+
+-- | Checks whether an interface is implemented for a certain type signature,
+-- | e.g. Is "delete" implemented for `(Fn [String] ())` ?
+interfaceImplementedForTy :: TypeEnv -> Env -> String -> Ty -> Bool
+interfaceImplementedForTy (TypeEnv typeEnv) globalEnv interfaceName matchingTy =
+  case lookupBinder (SymPath [] interfaceName) typeEnv of
+    Just (Binder _ (XObj (Lst (XObj (Interface _ paths) _ _ : _)) _ _)) ->
+      let lookupType path = forceTy . binderXObj <$> lookupBinder path globalEnv
+          matches = filter (areUnifiable matchingTy) (mapMaybe lookupType paths)
+       in not . null $ matches
+    _ -> False

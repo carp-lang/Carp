@@ -700,28 +700,28 @@ depsOfPolymorphicFunction typeEnv env visitedDefinitions functionName functionTy
 -- | Helper for finding the 'delete' function for a type.
 depsForDeleteFunc :: TypeEnv -> Env -> Ty -> [XObj]
 depsForDeleteFunc typeEnv env t =
-  if isManaged typeEnv t
+  if isManaged typeEnv env t
     then depsOfPolymorphicFunction typeEnv env [] "delete" (FuncTy [t] UnitTy StaticLifetimeTy)
     else []
 
 -- | Helper for finding the 'copy' function for a type.
 depsForCopyFunc :: TypeEnv -> Env -> Ty -> [XObj]
 depsForCopyFunc typeEnv env t =
-  if isManaged typeEnv t
+  if isManaged typeEnv env t
     then depsOfPolymorphicFunction typeEnv env [] "copy" (FuncTy [RefTy t (VarTy "q")] t StaticLifetimeTy)
     else []
 
 -- | Helper for finding the 'str' function for a type.
 depsForPrnFunc :: TypeEnv -> Env -> Ty -> [XObj]
 depsForPrnFunc typeEnv env t =
-  if isManaged typeEnv t
+  if isManaged typeEnv env t
     then depsOfPolymorphicFunction typeEnv env [] "prn" (FuncTy [RefTy t (VarTy "q")] StringTy StaticLifetimeTy)
     else depsOfPolymorphicFunction typeEnv env [] "prn" (FuncTy [t] StringTy StaticLifetimeTy)
 
 -- | The type of a type's str function.
-typesStrFunctionType :: TypeEnv -> Ty -> Ty
-typesStrFunctionType typeEnv memberType =
-  if isManaged typeEnv memberType
+typesStrFunctionType :: TypeEnv -> Env -> Ty -> Ty
+typesStrFunctionType typeEnv env memberType =
+  if isManaged typeEnv env memberType
     then FuncTy [RefTy memberType (VarTy "q")] StringTy StaticLifetimeTy
     else FuncTy [memberType] StringTy StaticLifetimeTy
 
@@ -743,7 +743,7 @@ getConcretizedPath single functionType =
 -- | Used for finding functions like 'delete' or 'copy' for members of a Deftype (or Array).
 findFunctionForMember :: TypeEnv -> Env -> String -> Ty -> (String, Ty) -> FunctionFinderResult
 findFunctionForMember typeEnv env functionName functionType (memberName, memberType)
-  | isManaged typeEnv memberType =
+  | isManaged typeEnv env memberType =
     case allFunctionsWithNameAndSignature env functionName functionType of
       [] ->
         FunctionNotFound
@@ -1379,7 +1379,7 @@ manageMemory typeEnv globalEnv root =
       visit xobj
     unmanageArg :: XObj -> State MemState (Either TypeError XObj)
     unmanageArg xobj@(XObj _ _ (Just t)) =
-      if isManaged typeEnv t
+      if isManaged typeEnv globalEnv t
         then do
           r <- unmanage xobj
           pure $ case r of
@@ -1394,17 +1394,14 @@ manageMemory typeEnv globalEnv root =
         Just (RefTy _ _) -> Just (RefDeleter (varOfXObj xobj))
         Just t ->
           let var = varOfXObj xobj
-           in if isExternalType typeEnv t
-                then Just (FakeDeleter var)
-                else
-                  if isManaged typeEnv t
-                    then case nameOfPolymorphicFunction typeEnv globalEnv (FuncTy [t] UnitTy StaticLifetimeTy) "delete" of
-                      Just pathOfDeleteFunc ->
-                        Just (ProperDeleter pathOfDeleteFunc var)
-                      Nothing ->
-                        --trace ("Found no delete function for " ++ var ++ " : " ++ (showMaybeTy (ty xobj)))
-                        Just (FakeDeleter var)
-                    else Just (PrimDeleter var)
+           in if isManaged typeEnv globalEnv t
+                then case nameOfPolymorphicFunction typeEnv globalEnv (FuncTy [t] UnitTy StaticLifetimeTy) "delete" of
+                  Just pathOfDeleteFunc ->
+                    Just (ProperDeleter pathOfDeleteFunc var)
+                  Nothing ->
+                    --trace ("Found no delete function for " ++ var ++ " : " ++ (showMaybeTy (ty xobj)))
+                    Just (FakeDeleter var)
+                else Just (PrimDeleter var)
         Nothing -> error ("No type, can't manage " ++ show xobj)
     manage :: XObj -> State MemState ()
     manage xobj =
@@ -1438,7 +1435,7 @@ manageMemory typeEnv globalEnv root =
     unmanage :: XObj -> State MemState (Either TypeError ())
     unmanage xobj =
       let Just t = xobjTy xobj
-       in if isManaged typeEnv t && not (isGlobalFunc xobj) && not (isExternalType typeEnv t)
+       in if isManaged typeEnv globalEnv t && not (isGlobalFunc xobj)
             then do
               MemState deleters deps lifetimes <- get
               case deletersMatchingXObj xobj deleters of
@@ -1460,7 +1457,7 @@ manageMemory typeEnv globalEnv root =
           isGlobalVariable = case xobj of
             XObj (Sym _ (LookupGlobal _ _)) _ _ -> True
             _ -> False
-       in if not isGlobalVariable && not (isGlobalFunc xobj) && isManaged typeEnv t && not (isExternalType typeEnv t) && not (isSymbolThatCaptures xobj) -- TODO: The 'isManaged typeEnv t' boolean check should be removed!
+       in if not isGlobalVariable && not (isGlobalFunc xobj) && isManaged typeEnv globalEnv t && not (isSymbolThatCaptures xobj) -- TODO: The 'isManaged typeEnv t' boolean check should be removed!
             then do
               MemState deleters _ _ <- get
               pure $ case deletersMatchingXObj xobj deleters of
@@ -1517,7 +1514,7 @@ concreteDelete typeEnv env members =
     ( \_ ->
         concatMap
           (depsOfPolymorphicFunction typeEnv env [] "delete" . typesDeleterFunctionType)
-          (filter (isManaged typeEnv) (map snd members))
+          (filter (isManaged typeEnv env) (map snd members))
     )
 
 -- | The template for the 'delete' function of a concrete deftype BUT it takes a pointer.
@@ -1538,7 +1535,7 @@ concreteDeleteTakePtr typeEnv env members =
     ( \_ ->
         concatMap
           (depsOfPolymorphicFunction typeEnv env [] "delete" . typesDeleterFunctionType)
-          (filter (isManaged typeEnv) (map snd members))
+          (filter (isManaged typeEnv env) (map snd members))
     )
 
 -- | Generate the C code for deleting a single member of the deftype.
@@ -1566,7 +1563,7 @@ concreteCopy typeEnv env memberPairs =
     ( \_ ->
         concatMap
           (depsOfPolymorphicFunction typeEnv env [] "copy" . typesCopyFunctionType)
-          (filter (isManaged typeEnv) (map snd memberPairs))
+          (filter (isManaged typeEnv env) (map snd memberPairs))
     )
 
 tokensForCopy :: TypeEnv -> Env -> [(String, Ty)] -> [Token]
@@ -1599,7 +1596,7 @@ concreteCopyPtr typeEnv env memberPairs =
     ( \_ ->
         concatMap
           (depsOfPolymorphicFunction typeEnv env [] "copy" . typesCopyFunctionType)
-          (filter (isManaged typeEnv) (map snd memberPairs))
+          (filter (isManaged typeEnv env) (map snd memberPairs))
     )
 
 tokensForCopyPtr :: TypeEnv -> Env -> [(String, Ty)] -> [Token]

@@ -4,7 +4,7 @@
 (use-all Double Test Statistics)
 
 (defn all-eq [a b]
-  (if (Int./= (Array.length a) (Array.length b))
+  (if (/= (Array.length a) (Array.length b))
     false
     (let [res true]
       (do
@@ -15,7 +15,7 @@
         res))))
 
 (defn all-approx [a b]
-  (if (Int./= (Array.length a) (Array.length b))
+  (if (/= (Array.length a) (Array.length b))
     false
     (let [res true]
       (do

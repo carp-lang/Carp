@@ -1,0 +1,66 @@
+(load-and-use Test)
+
+(defn assert-memory-balance [state f expected-balance descr]
+    (do
+      (Debug.reset-memory-balance!)
+      (f)
+      (assert-equal state expected-balance (Debug.memory-balance) descr)))
+
+(register-type A "void*")
+(register-type B "void*")
+
+(defmodule A
+  (deftemplate init (Fn [] A)
+    "void* $NAME()" "$DECL { return CARP_MALLOC(128); }")
+
+  (deftemplate copy (Fn [&A] A)
+    "void* $NAME(void **p)" "$DECL { return CARP_MALLOC(128); }")
+  (implements copy A.copy)
+
+  (deftemplate delete (Fn [A] ())
+    "void $NAME(void *p)" "$DECL { CARP_FREE(p); }")
+  (implements delete A.delete))
+
+(defmodule B
+  (deftemplate init (Fn [] B)
+    "void* $NAME()" "$DECL { return CARP_MALLOC(128); }")
+
+  (deftemplate copy (Fn [&B] B)
+    "void* $NAME(void **p)" "$DECL { return CARP_MALLOC(128); }")
+  (implements copy B.copy)
+
+  ;; 'B' does *not* implement delete!
+  ;; The user would have to call delete / free on it manually to avoid a leak.
+  )
+
+(defn f-a []
+  (let [a (A)]
+    ()))
+
+(defn f-b []
+  (let [b (B)]
+    ()))
+
+(defn f-copy-a []
+  (let [a (A)
+        a2 @&a]
+    ()))
+
+(defn f-copy-b []
+  (let [b (B)
+        b2 @&b]
+    ()))
+
+(eval ;; temporary workaround to force evaluation of top-level 'when'
+ (when (not (managed? A))
+   (macro-error "Fail - A should be managed.")))
+
+(eval
+ (when (managed? B)
+   (macro-error "Fail - B should not be managed.")))
+
+(deftest test
+  (assert-memory-balance test f-a 0l "f-a correct, does not leak")
+  (assert-memory-balance test f-b 1l "f-b correct, leaks 1 value")
+  (assert-memory-balance test f-copy-a 0l "f-copy-a correct, does not leak")
+  (assert-memory-balance test f-copy-b 2l "f-copy-b correct, leaks 2 values"))

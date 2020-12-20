@@ -1,0 +1,59 @@
+(defmodule Int
+  (defn blit [x] (the Int x))
+  (implements blit Int.blit))
+
+(defmodule Long
+  (defn blit [x] (the Long x))
+  (implements blit Long.blit))
+
+(defmodule Float
+  (defn blit [x] (the Float x))
+  (implements blit Float.blit))
+
+(defmodule Double
+  (defn blit [x] (the Double x))
+  (implements blit Double.blit))
+
+(defmodule Char
+  (defn blit [x] (the Char x))
+  (implements blit Char.blit))
+
+(defmodule Bool
+  (defn blit [x] (the Bool x))
+  (implements blit Bool.blit))
+
+(defmodule Byte
+  (defn blit [x] (the Byte x))
+  (implements blit Byte.blit))
+
+(defmodule Int8
+  (defn blit [x] (the Int8 x))
+  (implements blit Int8.blit))
+
+(defmodule Int16
+  (defn blit [x] (the Int16 x))
+  (implements blit Int16.blit))
+
+(defmodule Int32
+  (defn blit [x] (the Int32 x))
+  (implements blit Int32.blit))
+
+(defmodule Int64
+  (defn blit [x] (the Int64 x))
+  (implements blit Int64.blit))
+
+(defmodule Uint8
+  (defn blit [x] (the Uint8 x))
+  (implements blit Uint8.blit))
+
+(defmodule Uint16
+  (defn blit [x] (the Uint16 x))
+  (implements blit Uint16.blit))
+
+(defmodule Uint32
+  (defn blit [x] (the Uint32 x))
+  (implements blit Uint32.blit))
+
+(defmodule Uint64
+  (defn blit [x] (the Uint64 x))
+  (implements blit Uint64.blit))
