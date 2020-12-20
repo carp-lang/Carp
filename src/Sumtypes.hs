@@ -173,7 +173,7 @@ concreteStr typeEnv env insidePath concreteStructTy@(StructTy (ConcreteNameTy ty
         ( \(FuncTy [RefTy (StructTy _ _) _] StringTy _) ->
             concatMap
               (depsOfPolymorphicFunction typeEnv env [] "prn" . typesStrFunctionType typeEnv env)
-              (filter (not . isFullyGenericType) (concatMap caseTys cases))
+              (remove isFullyGenericType (concatMap caseTys cases))
         )
 concreteStr _ _ _ _ _ _ = error "concretestr"
 
@@ -200,7 +200,7 @@ genericStr insidePath originalStructTy@(StructTy (ConcreteNameTy typeName) _) ca
           ( \ft@(FuncTy [RefTy concreteStructTy@(StructTy _ _) _] StringTy _) ->
               let mappings = unifySignatures originalStructTy concreteStructTy
                   correctedCases = replaceGenericTypesOnCases mappings cases
-                  tys = filter (not . isFullyGenericType) (concatMap caseTys correctedCases)
+                  tys = remove isFullyGenericType (concatMap caseTys correctedCases)
                in concatMap (depsOfPolymorphicFunction typeEnv env [] "prn" . typesStrFunctionType typeEnv env) tys
                     ++ (if isTypeGeneric concreteStructTy then [] else [defineFunctionTypeAlias ft])
           )
