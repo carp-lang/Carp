@@ -21,13 +21,15 @@
 (register-type SDL_Keycode)
 (register-type SDL_Rect [x Int, y Int, w Int, h Int])
 (register-type SDL_Point [x Int, y Int])
-(register-type SDL_Event)
 (register-type SDL_EventType)
 (register-type SDL_Texture)
 (register-type SDL_Renderer)
 (register-type SDL_BlendMode)
 (register-type SDL_RendererFlip)
 (register-type SDL_Window)
+(register-type SDL_WindowEventID)
+(register-type SDL_WindowEvent)
+(register-type SDL_Event)
 (register-type Uint8)
 (register-type SDL_Color)
 
@@ -43,6 +45,7 @@
   (register init                       (Fn [Int] ()) "SDL_Init")
   (register create-window-and-renderer (Fn [Int Int Int (Ptr (Ptr SDL_Window)) (Ptr (Ptr SDL_Renderer))] ()) "SDL_CreateWindowAndRenderer")
   (register set-window-title           (Fn [(Ptr SDL_Window) (Ptr CChar)] ()) "SDL_SetWindowTitle")
+  (register set-window-size            (Fn [(Ptr SDL_Window) Int Int] ()) "SDL_SetWindowSize")
   (register delay                      (Fn [Int] ()) "SDL_Delay")
   (register destroy-window             (Fn [(Ptr SDL_Window)] ()) "SDL_DestroyWindow")
   (register quit                       (Fn [] ()) "SDL_Quit")
@@ -56,6 +59,13 @@
     (register init (Fn [] SDL_Event))
     (register type (Fn [(Ref SDL_Event)] SDL_EventType))
     (register keycode (Fn [(Ref SDL_Event)] SDL_Keycode))
+    ;This is intentionally left here to note that in the future we shouldn't need deftemplate for this.
+    ;(register window (Fn [(Ref SDL_Event)] SDL_WindowEvent))
+    (deftemplate window (Fn [(Ref SDL_Event)] SDL_WindowEvent)
+      "SDL_WindowEvent $NAME(SDL_Event* event)"
+      "$DECL {
+         return event->window;
+       }")
     (register poll (Fn [(Ptr SDL_Event)] Bool) "SDL_PollEvent")
     (register = (Fn [SDL_EventType SDL_EventType] Bool))
     (register copy (Fn [&SDL_Event] SDL_Event))
@@ -68,6 +78,7 @@
     (register mouse-button-down SDL_EventType "SDL_MOUSEBUTTONDOWN")
     (register mouse-button-up   SDL_EventType "SDL_MOUSEBUTTONUP")
     (register mouse-wheel       SDL_EventType "SDL_MOUSEWHEEL")
+    (register window-event      SDL_EventType "SDL_WINDOWEVENT")
 
     (defn all []
       (let-do [events []
@@ -205,6 +216,66 @@
             r (/= 0 (Int.bit-and state (SDL.Mouse.button SDL.Mouse.button-right)))]
         (SDL.MouseState.init x y l r))))
 
+  ;; Window Event
+  (defmodule WindowEvent
+    (defmodule WindowEventID
+      (register window-shown        SDL_WindowEventID "SDL_WINDOWEVENT_SHOWN")
+      (register window-exposed      SDL_WindowEventID "SDL_WINDOWEVENT_EXPOSED")
+      (register window-hidden       SDL_WindowEventID "SDL_WINDOWEVENT_HIDDEN")
+      (register window-moved        SDL_WindowEventID "SDL_WINDOWEVENT_MOVED")
+      (register window-resized      SDL_WindowEventID "SDL_WINDOWEVENT_RESIZED")
+      (register window-size-changed SDL_WindowEventID "SDL_WINDOWEVENT_SIZE_CHANGED")
+      (register window-minimized    SDL_WindowEventID "SDL_WINDOWEVENT_MINIMIZED")
+      (register window-mximized     SDL_WindowEventID "SDL_WINDOWEVENT_MAXIMIZED")
+      (register window-restored     SDL_WindowEventID "SDL_WINDOWEVENT_RESTORED")
+      (register window-enter        SDL_WindowEventID "SDL_WINDOWEVENT_ENTER")
+      (register window-leave        SDL_WindowEventID "SDL_WINDOWEVENT_LEAVE")
+      (register window-focus-gained SDL_WindowEventID "SDL_WINDOWEVENT_FOCUS_GAINED")
+      (register window-focus-lost   SDL_WindowEventID "SDL_WINDOWEVENT_FOCUS_LOST")
+      (register window-close        SDL_WindowEventID "SDL_WINDOWEVENT_CLOSE")
+      (register window-take-focus   SDL_WindowEventID "SDL_WINDOWEVENT_TAKE_FOCUS")
+      (register window-hit-test     SDL_WindowEventID "SDL_WINDOWEVENT_HIT_TEST")
+
+      (defn = [a b]
+        (Int.= (enum-to-int (the SDL_WindowEventID a))
+               (enum-to-int (the SDL_WindowEventID b))))
+      (implements = SDL.WindowEvent.WindowEventID.=)
+      (register copy (Fn [(Ref SDL_WindowEventID)] SDL_WindowEventID))
+      (implements copy SDL.WindowEvent.WindowEventID.copy))
+    ;This is intentionally left here to note that in the future we shouldn't need deftemplate for this.
+    ;(register event (Fn [SDL_WindowEvent] SDL_WindowEventID))
+    (deftemplate event (Fn [SDL_WindowEvent] SDL_WindowEventID)
+      "SDL_WindowEventID $NAME(SDL_WindowEvent window_event)"
+      "$DECL {
+         return window_event.event;
+       }")
+    (register = (Fn [SDL_WindowEvent SDL_WindowEvent] Bool))
+    (implements = SDL.WindowEvent.=))
+
+  ;; Window manager flags
+  (defmodule WindowFlags
+   (register window-fullscreen          Int "SDL_WINDOW_FULLSCREEN")
+   (register window-fullscreen-desktop  Int "SDL_WINDOW_FULLSCREEN_DESKTOP")
+   (register window-opengl              Int "SDL_WINDOW_OPENGL")
+   (register window-vulkan              Int "SDL_WINDOW_VULKAN")
+   (register window-shown               Int "SDL_WINDOW_SHOWN")
+   (register window-hidden              Int "SDL_WINDOW_HIDDEN")
+   (register window-borderless          Int "SDL_WINDOW_BORDERLESS")
+   (register window-resizable           Int "SDL_WINDOW_RESIZABLE")
+   (register window-minimized           Int "SDL_WINDOW_MINIMIZED")
+   (register window-maximized           Int "SDL_WINDOW_MAXIMIZED")
+   (register window-input-grabbed       Int "SDL_WINDOW_INPUT_GRABBED")
+   (register window-input-focus         Int "SDL_WINDOW_INPUT_FOCUS")
+   (register window-mouse-focus         Int "SDL_WINDOW_MOUSE_FOCUS")
+   (register window-foreign             Int "SDL_WINDOW_FOREIGN")
+   (register window-allow-highdpi       Int "SDL_WINDOW_ALLOW_HIGHDPI")
+   (register window-mouse-capture       Int "SDL_WINDOW_MOUSE_CAPTURE")
+   (register window-always-on-top       Int "SDL_WINDOW_ALWAYS_ON_TOP")
+   (register window-skip-taskbar        Int "SDL_WINDOW_SKIP_TASKBAR")
+   (register window-utility             Int "SDL_WINDOW_UTILITY")
+   (register window-tooltip             Int "SDL_WINDOW_TOOLTIP")
+   (register window-popup-menu          Int "SDL_WINDOW_POPUP_MENU"))
+
   ;; Time
   (register get-ticks (Fn [] Int) "SDL_GetTicks")
 
@@ -261,7 +332,7 @@
           ren NULL]
       (do (SDL.init SDL.INIT_EVERYTHING)
           (SDL.Hint.set SDL.Hint.render-vsync (cstr "1"))
-          (SDL.create-window-and-renderer width height 0 (address win) (address ren))
+          (SDL.create-window-and-renderer width height (bit-or SDL.WindowFlags.window-shown SDL.WindowFlags.window-resizable) (address win) (address ren))
           (SDL.set-window-title win (cstr title))
           (SDLApp.init win ren 60))))
 
