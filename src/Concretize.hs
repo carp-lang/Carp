@@ -640,7 +640,7 @@ concretizeDefinition allowAmbiguity typeEnv globalEnv visitedDefinitions definit
            in case assignTypes mappings withNewPath of
                 Right typed ->
                   if newPath `elem` visitedDefinitions
-                    then pure (trace ("Already visited " ++ show newPath) (withNewPath, []))
+                    then pure (withNewPath, [])
                     else do
                       (concrete, deps) <- concretizeXObj allowAmbiguity typeEnv globalEnv (newPath : visitedDefinitions) typed
                       (managed, memDeps) <- manageMemory typeEnv globalEnv concrete
