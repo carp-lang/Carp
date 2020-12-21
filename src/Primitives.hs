@@ -689,7 +689,7 @@ primitiveDeftype _ _ _ = error "primitivedeftype"
 
 primitiveUse :: Primitive
 primitiveUse xobj ctx [XObj (Sym path _) _ _] =
-  (pure $ maybe lookupInGlobal useModule (lookupInEnv path e))
+  pure $ maybe lookupInGlobal useModule (lookupInEnv path e)
   where
     pathStrings = contextPath ctx
     env = contextGlobalEnv ctx
