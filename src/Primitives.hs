@@ -311,6 +311,7 @@ primitiveInfo _ ctx [target@(XObj (Sym path@(SymPath _ _) _) _ _)] = do
                Just found -> printer found
            )
   where
+    -- TODO: Return IO () here
     printIfFound :: Maybe Binder -> IO (Context, Either EvalError XObj)
     printIfFound binder = maybe (pure (ctx, dynamicNil)) printer binder
 
