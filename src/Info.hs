@@ -35,6 +35,11 @@ data Deleter
       { deleterPath :: SymPath,
         deleterVariable :: String
       }
+  | -- used for facilitating "drop", code that runs before a deleter
+    Drop
+      { dropPath :: SymPath,
+        dropVariable :: String
+      }
   | -- used for external types with no delete function
     FakeDeleter
       { deleterVariable :: String
@@ -50,6 +55,7 @@ data Deleter
 
 instance Show Deleter where
   show (ProperDeleter path var) = "(ProperDel " ++ show path ++ " " ++ show var ++ ")"
+  show (Drop path var) = "(Drop " ++ show path ++ " " ++ show var ++ ")"
   show (FakeDeleter var) = "(FakeDel " ++ show var ++ ")"
   show (PrimDeleter var) = "(PrimDel " ++ show var ++ ")"
   show (RefDeleter var) = "(RefDel " ++ show var ++ ")"

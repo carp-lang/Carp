@@ -773,6 +773,8 @@ delete indent i = mapM_ deleterToC (infoDelete i)
       pure ()
     deleterToC deleter@ProperDeleter {} =
       appendToSrc $ addIndent indent ++ "" ++ pathToC (deleterPath deleter) ++ "(" ++ mangle (deleterVariable deleter) ++ ");\n"
+    deleterToC dropfun@Drop {} =
+      appendToSrc $ addIndent indent ++ "" ++ pathToC (dropPath dropfun) ++ "(&" ++ mangle (dropVariable dropfun) ++ ");\n"
 
 defnToDeclaration :: MetaData -> SymPath -> [XObj] -> Ty -> String
 defnToDeclaration meta path@(SymPath _ name) argList retTy =
