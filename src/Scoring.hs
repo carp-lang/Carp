@@ -1,6 +1,5 @@
 module Scoring (scoreTypeBinder, scoreValueBinder) where
 
-import Data.List (intercalate)
 import Data.Maybe (fromJust)
 import Lookup
 import Obj
@@ -43,14 +42,14 @@ depthOfDeftype typeEnv visited (XObj (Lst (_ : XObj (Sym (SymPath path selfName)
     [] -> 100
     xs -> maximum xs
   where
-    depthsFromVarTys = map (depthOfType typeEnv visited (intercalate "" (path ++ [selfName]))) varTys
+    depthsFromVarTys = map (depthOfType typeEnv visited (concat (path ++ [selfName]))) varTys
     expandCase :: XObj -> [Int]
     expandCase (XObj (Arr arr) _ _) =
       let members = memberXObjsToPairs arr
-          depthsFromMembers = map (depthOfType typeEnv visited (intercalate "" (path ++ [selfName])) . snd) members
+          depthsFromMembers = map (depthOfType typeEnv visited (concat (path ++ [selfName])) . snd) members
        in depthsFromMembers ++ depthsFromVarTys
     expandCase (XObj (Lst [XObj {}, XObj (Arr sumtypeCaseTys) _ _]) _ _) =
-      let depthsFromCaseTys = map (depthOfType typeEnv visited (intercalate "" (path ++ [selfName])) . fromJust . xobjToTy) sumtypeCaseTys
+      let depthsFromCaseTys = map (depthOfType typeEnv visited (concat (path ++ [selfName])) . fromJust . xobjToTy) sumtypeCaseTys
        in depthsFromCaseTys ++ depthsFromVarTys
     expandCase (XObj (Sym _ _) _ _) =
       []
