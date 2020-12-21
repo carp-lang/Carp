@@ -136,7 +136,7 @@ main = do
   _ <-
     ifCarpDirSet
       ( pure startingContext
-          >>= load [carpProfile | hasProfile]
+          >>= load [carpProfile | hasProfile && profile]
           >>= execStrs "Preload" preloads
           >>= loadOnce coreModulesToLoad
           >>= load argFilesToLoad
