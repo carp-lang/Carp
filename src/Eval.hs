@@ -65,17 +65,24 @@ eval ctx xobj@(XObj o info ty) preference =
     Lst body -> eval' body
     Sym spath@(SymPath p n) _ ->
       pure $
-        fromMaybe
-          (evalError ctx ("Can't find symbol '" ++ show n ++ "'") info) -- all else failed, error.
-          -- Certain contexts prefer looking up bindings in the dynamic environment (e.g. defdyanmic) while others
-          -- prefer the static global environment.
-          ( ( case preference of
+        case tryAllLookups of
+          Just (_, (Right (XObj (Lst ((XObj Def _ _) : _)) _ _))) ->
+            (ctx, Left (HasStaticCall xobj info))
+          Just (_, (Right (XObj (Lst ((XObj (Defn _) _ _) : _)) _ _))) ->
+            (ctx, Left (HasStaticCall xobj info))
+          Just (_, (Right (XObj (Lst ((XObj (External _) _ _) : _)) _ _))) ->
+            (ctx, Left (HasStaticCall xobj info))
+          val ->
+            fromMaybe
+              (evalError ctx ("Can't find symbol '" ++ show n ++ "'") info) -- all else failed, error.
+              val
+      where
+        tryAllLookups =
+          ( case preference of
                 PreferDynamic -> tryDynamicLookup
                 PreferGlobal -> (tryLookup spath <|> tryDynamicLookup)
-            )
-              <|> (if null p then tryInternalLookup spath else tryLookup spath)
           )
-      where
+            <|> (if null p then tryInternalLookup spath else tryLookup spath)
         tryDynamicLookup =
           ( lookupBinder (SymPath ("Dynamic" : p) n) (contextGlobalEnv ctx)
               >>= \(Binder _ found) -> pure (ctx, Right (resolveDef found))
@@ -576,18 +583,6 @@ folder context xobj = do
 
 -- | Take a repl command and execute it.
 executeCommand :: Context -> XObj -> IO (XObj, Context)
-executeCommand ctx s@(XObj (Sym _ _) _ _) =
-  executeCommand
-    ctx
-    ( XObj
-        ( Lst
-            [ XObj (Sym (SymPath [] "info") Symbol) (Just dummyInfo) Nothing,
-              s
-            ]
-        )
-        (Just dummyInfo)
-        Nothing
-    )
 executeCommand ctx@(Context env _ _ _ _ _ _ _) xobj =
   do
     when (isJust (envModuleName env)) $
