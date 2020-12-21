@@ -293,6 +293,7 @@ dynamicModule =
         makeVarPrim "line" "returns the line a symbol was defined on." "(line mysymbol)" primitiveLine,
         makeVarPrim "column" "returns the column a symbol was defined on." "(column mysymbol)" primitiveColumn,
         makePrim "info" 1 "prints all information associated with a symbol." "(info mysymbol)" primitiveInfo,
+        makePrim "managed?" 1 "" "" primitiveIsManaged,
         makeVarPrim "register-type" "registers a new type from C." "(register-type Name <optional: c-name> <optional: members>)" primitiveRegisterType,
         makePrim "defmacro" 3 "defines a new macro." "(defmacro name [args :rest restargs] body)" primitiveDefmacro,
         makePrim "defndynamic" 3 "defines a new dynamic function, i.e. a function available at compile time." "(defndynamic name [args] body)" primitiveDefndynamic,
@@ -458,6 +459,11 @@ startingTypeEnv =
     bindings =
       Map.fromList
         [ interfaceBinder
+            "delete"
+            (FuncTy [VarTy "a"] UnitTy StaticLifetimeTy)
+            ([SymPath ["Array"] "delete", SymPath ["StaticArray"] "delete"] ++ registerFunctionFunctionsWithInterface "delete")
+            builtInSymbolInfo,
+          interfaceBinder
             "copy"
             (FuncTy [RefTy (VarTy "a") (VarTy "q")] (VarTy "a") StaticLifetimeTy)
             ([SymPath ["Array"] "copy", SymPath ["Pointer"] "copy"] ++ registerFunctionFunctionsWithInterface "copy")

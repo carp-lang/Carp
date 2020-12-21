@@ -3,8 +3,8 @@
 module ArrayTemplates where
 
 import Concretize
-import Managed
 import Obj
+import StructUtils
 import Template
 import ToTemplate
 import Types
@@ -611,15 +611,16 @@ strTy typeEnv env (StructTy _ [innerType]) =
   ]
 strTy _ _ _ = []
 
-takeAddressOrNot :: TypeEnv -> Ty -> String
-takeAddressOrNot typeEnv t = if isManaged typeEnv t then "&" else ""
+strTakesRefOrNot :: TypeEnv -> Env -> Ty -> String
+strTakesRefOrNot typeEnv env t =
+  fst $ memberStrCallingConvention "str" typeEnv env t
 
 calculateStrSize :: TypeEnv -> Env -> Ty -> String
 calculateStrSize typeEnv env t =
   case t of
     -- If the member type is Unit, don't access the element.
     UnitTy -> makeTemplate (\functionName -> (functionName ++ "();"))
-    _ -> makeTemplate (\functionName -> (functionName ++ "(" ++ (takeAddressOrNot typeEnv t) ++ "((" ++ tyToC t ++ "*)a->data)[i]);"))
+    _ -> makeTemplate (\functionName -> (functionName ++ "(" ++ (strTakesRefOrNot typeEnv env t) ++ "((" ++ tyToC t ++ "*)a->data)[i]);"))
   where
     makeTemplate :: (String -> String) -> String
     makeTemplate strcall =
@@ -632,7 +633,7 @@ calculateStrSize typeEnv env t =
     -- Get the size of the member type's string representation
     arrayMemberSizeCalc :: (String -> String) -> String
     arrayMemberSizeCalc strcall =
-      case findFunctionForMemberIncludePrimitives typeEnv env "prn" (typesStrFunctionType typeEnv t) ("Inside array.", t) of
+      case findFunctionForMemberIncludePrimitives typeEnv env "prn" (typesStrFunctionType typeEnv env t) ("Inside array.", t) of
         FunctionFound functionFullName ->
           unlines
             [ "    temp = " ++ strcall functionFullName,
@@ -649,11 +650,11 @@ insideArrayStr :: TypeEnv -> Env -> Ty -> String
 insideArrayStr typeEnv env t =
   case t of
     UnitTy -> makeTemplate (\functionName -> functionName ++ "();")
-    _ -> makeTemplate (\functionName -> functionName ++ "(" ++ (takeAddressOrNot typeEnv t) ++ "((" ++ tyToC t ++ "*)a->data)[i]);")
+    _ -> makeTemplate (\functionName -> functionName ++ "(" ++ (strTakesRefOrNot typeEnv env t) ++ "((" ++ tyToC t ++ "*)a->data)[i]);")
   where
     makeTemplate :: (String -> String) -> String
     makeTemplate strcall =
-      case findFunctionForMemberIncludePrimitives typeEnv env "prn" (typesStrFunctionType typeEnv t) ("Inside array.", t) of
+      case findFunctionForMemberIncludePrimitives typeEnv env "prn" (typesStrFunctionType typeEnv env t) ("Inside array.", t) of
         FunctionFound functionFullName ->
           unlines
             [ "  temp = " ++ strcall functionFullName,

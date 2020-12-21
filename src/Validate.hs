@@ -5,7 +5,6 @@ import Data.Function (on)
 import Data.List (nubBy, (\\))
 import Data.Maybe (fromJust)
 import Lookup
-import Managed
 import Obj
 import TypeError
 import TypePredicates
@@ -66,45 +65,43 @@ okXObjForType typeEnv typeVariables xobj =
 -- | Can this type be used as a member for a deftype?
 canBeUsedAsMemberType :: TypeEnv -> [Ty] -> Ty -> XObj -> Either TypeError ()
 canBeUsedAsMemberType typeEnv typeVariables ty xobj =
-  if isExternalType typeEnv ty
-    then pure ()
-    else case ty of
-      UnitTy -> pure ()
-      IntTy -> pure ()
-      FloatTy -> pure ()
-      DoubleTy -> pure ()
-      ByteTy -> pure ()
-      LongTy -> pure ()
-      BoolTy -> pure ()
-      StringTy -> pure ()
-      PatternTy -> pure ()
-      CharTy -> pure ()
-      FuncTy {} -> pure ()
-      PointerTy UnitTy -> pure ()
-      PointerTy inner ->
-        canBeUsedAsMemberType typeEnv typeVariables inner xobj
-          >> pure ()
-      -- Struct variables may appear as complete applications or individual
-      -- components in the head of a definition; that is the forms:
-      --     ((Foo (f a b)) [x (f a b)])
-      --     ((Foo f a b) [x f y a z b])
-      -- are both valid, but restrict their types differently. In the former,
-      -- `f` may only appear in complete applications over `a` and `b`, in
-      -- other words, `f` is closed over `a` and `b`. In the latter, f may
-      -- flexibly be used as a type variable of nullary kind, or as a type
-      -- variable of unary kind `(Foo f a b) [x (f a) y (f b)])` so long as
-      -- the kinds of each occasion of `f` are consistent.
-      --
-      -- Likewise, the types denoted by:
-      --     ((Foo (f a) b) ...)
-      -- and
-      --     ((Foo (f a) (f b)) ...)
-      -- differ.
-      -- Attempt the first, more restrictive formulation first.
-      struct@(StructTy name tyVars) ->
-        checkVar struct <> checkStruct name tyVars
-      v@(VarTy _) -> checkVar v
-      _ -> Left (InvalidMemberType ty xobj)
+  case ty of
+    UnitTy -> pure ()
+    IntTy -> pure ()
+    FloatTy -> pure ()
+    DoubleTy -> pure ()
+    ByteTy -> pure ()
+    LongTy -> pure ()
+    BoolTy -> pure ()
+    StringTy -> pure ()
+    PatternTy -> pure ()
+    CharTy -> pure ()
+    FuncTy {} -> pure ()
+    PointerTy UnitTy -> pure ()
+    PointerTy inner ->
+      canBeUsedAsMemberType typeEnv typeVariables inner xobj
+        >> pure ()
+    -- Struct variables may appear as complete applications or individual
+    -- components in the head of a definition; that is the forms:
+    --     ((Foo (f a b)) [x (f a b)])
+    --     ((Foo f a b) [x f y a z b])
+    -- are both valid, but restrict their types differently. In the former,
+    -- `f` may only appear in complete applications over `a` and `b`, in
+    -- other words, `f` is closed over `a` and `b`. In the latter, f may
+    -- flexibly be used as a type variable of nullary kind, or as a type
+    -- variable of unary kind `(Foo f a b) [x (f a) y (f b)])` so long as
+    -- the kinds of each occasion of `f` are consistent.
+    --
+    -- Likewise, the types denoted by:
+    --     ((Foo (f a) b) ...)
+    -- and
+    --     ((Foo (f a) (f b)) ...)
+    -- differ.
+    -- Attempt the first, more restrictive formulation first.
+    struct@(StructTy name tyVars) ->
+      checkVar struct <> checkStruct name tyVars
+    v@(VarTy _) -> checkVar v
+    _ -> Left (InvalidMemberType ty xobj)
   where
     checkStruct :: Ty -> [Ty] -> Either TypeError ()
     checkStruct (ConcreteNameTy "Array") [innerType] =
@@ -112,6 +109,8 @@ canBeUsedAsMemberType typeEnv typeVariables ty xobj =
         >> pure ()
     checkStruct (ConcreteNameTy n) vars =
       case lookupBinder (SymPath lookupPath name) (getTypeEnv typeEnv) of
+        Just (Binder _ (XObj (Lst (XObj (ExternalType _) _ _ : _)) _ _)) ->
+          pure ()
         Just (Binder _ (XObj (Lst (XObj (Deftype t) _ _ : _)) _ _)) ->
           checkInhabitants t >> foldM (\_ typ -> canBeUsedAsMemberType typeEnv typeVariables typ xobj) () vars
         Just (Binder _ (XObj (Lst (XObj (DefSumtype t) _ _ : _)) _ _)) ->
