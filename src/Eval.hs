@@ -64,19 +64,18 @@ eval ctx xobj@(XObj o info ty) preference shouldResolve =
   case o of
     Lst body -> eval' body
     Sym spath@(SymPath p n) _ ->
-      if shouldResolve
-      then
-        pure $
-          case tryAllLookups of
-            Just (_, (Right (XObj (Lst ((XObj Def _ _) : _)) _ _))) ->
-              (ctx, Left (HasStaticCall xobj info))
-            Just (_, (Right (XObj (Lst ((XObj (Defn _) _ _) : _)) _ _))) ->
-              (ctx, Left (HasStaticCall xobj info))
-            Just (_, (Right (XObj (Lst ((XObj (External _) _ _) : _)) _ _))) ->
-              (ctx, Left (HasStaticCall xobj info))
-            val -> unwrapLookup val
-      else pure $ unwrapLookup tryAllLookups
+      pure $
+        if shouldResolve
+        then unwrapLookup (tryAllLookups >>= checkStatic)
+        else unwrapLookup tryAllLookups
       where
+        checkStatic (_, (Right (XObj (Lst ((XObj Def _ _) : _)) _ _))) =
+          pure (ctx, Left (HasStaticCall xobj info))
+        checkStatic (_, (Right (XObj (Lst ((XObj (Defn _) _ _) : _)) _ _))) =
+          pure (ctx, Left (HasStaticCall xobj info))
+        checkStatic (_, (Right (XObj (Lst ((XObj (External _) _ _) : _)) _ _))) =
+          pure (ctx, Left (HasStaticCall xobj info))
+        checkStatic v = pure v
         unwrapLookup v =
           fromMaybe
             (evalError ctx ("Can't find symbol '" ++ show n ++ "'") info) -- all else failed, error.
