@@ -1024,3 +1024,14 @@ emptyList = XObj (Lst []) Nothing Nothing
 wrapInRefTyIfMatchRef :: MatchMode -> Ty -> Ty
 wrapInRefTyIfMatchRef MatchRef t = RefTy t (VarTy "whatever") -- TODO: Better name for the lifetime variable.
 wrapInRefTyIfMatchRef MatchValue t = t
+
+-- | Check if the Obj is static and resolvable
+isResolvableStaticObj :: Obj -> Bool
+isResolvableStaticObj Def = True
+isResolvableStaticObj (Defn _) = True
+isResolvableStaticObj (External _) = True
+isResolvableStaticObj (Deftemplate _) = True
+isResolvableStaticObj (Instantiate _) = True
+isResolvableStaticObj (Fn _ _) = True
+isResolvableStaticObj (Interface _ _) = True
+isResolvableStaticObj _ = False
