@@ -1,7 +1,8 @@
 #!/usr/bin/env sh
 
 # Runs the executable and compares its output to the .expected file
-./scripts/carp.sh $1 --log-memory -b && \
+export CARP_OPTS="$CARP_OPTS  $1 --log-memory -b --no-profile"
+./scripts/carp.sh && \
   ./out/Untitled > test/output/$1.output.actual 2>&1
 echo $1
 
