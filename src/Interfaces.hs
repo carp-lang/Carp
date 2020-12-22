@@ -13,10 +13,10 @@ where
 import ColorText
 import Constraints
 import Control.Monad (foldM)
+import Data.Maybe (mapMaybe)
 import Env
 import Lookup
 import Obj
-import Data.Maybe (mapMaybe)
 import Types
 import Util
 
@@ -64,7 +64,7 @@ registerInInterfaceIfNeeded ctx implementation interface definitionSignature =
     _ ->
       Left (show $ NonInterface (getBinderPath interface))
   where
-    implPath = (getBinderPath implementation)
+    implPath = getBinderPath implementation
     typeEnv = getTypeEnv (contextTypeEnv ctx)
     (SymPath _ name) = getBinderPath interface
 
@@ -72,7 +72,7 @@ registerInInterfaceIfNeeded ctx implementation interface definitionSignature =
 -- registered with the interface.
 registerInInterface :: Context -> Binder -> Binder -> Either String Context
 registerInInterface ctx implementation interface =
-  case (binderXObj implementation) of
+  case binderXObj implementation of
     XObj (Lst [XObj (Defn _) _ _, _, _, _]) _ (Just t) ->
       -- This is a function, does it belong to an interface?
       registerInInterfaceIfNeeded ctx implementation interface t
@@ -95,7 +95,7 @@ registerInInterface ctx implementation interface =
 retroactivelyRegisterInInterface :: Context -> Binder -> Context
 retroactivelyRegisterInInterface ctx interface =
   -- TODO: Don't use error here?
-  either (\e -> error e) id resultCtx
+  either error id resultCtx
   where
     env = contextGlobalEnv ctx
     impls = lookupMany Everywhere lookupImplementations (getPath (binderXObj interface)) env

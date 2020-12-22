@@ -439,7 +439,7 @@ startingGlobalEnv noArray =
       Map.fromList $
         [ register "NULL" (PointerTy (VarTy "a"))
         ]
-          ++ (if noArray then [] else [("Array", Binder emptyMeta (XObj (Mod arrayModule) Nothing Nothing))])
+          ++ [("Array", Binder emptyMeta (XObj (Mod arrayModule) Nothing Nothing)) | not noArray]
           ++ [("StaticArray", Binder emptyMeta (XObj (Mod staticArrayModule) Nothing Nothing))]
           ++ [("Pointer", Binder emptyMeta (XObj (Mod pointerModule) Nothing Nothing))]
           ++ [("Dynamic", Binder emptyMeta (XObj (Mod dynamicModule) Nothing Nothing))]
@@ -472,12 +472,12 @@ startingTypeEnv =
           interfaceBinder
             "str"
             (FuncTy [VarTy "a"] StringTy StaticLifetimeTy)
-            ((SymPath ["Array"] "str") : (SymPath ["StaticArray"] "str") : registerFunctionFunctionsWithInterface "str")
+            (SymPath ["Array"] "str" : SymPath ["StaticArray"] "str" : registerFunctionFunctionsWithInterface "str")
             builtInSymbolInfo,
           interfaceBinder
             "prn"
             (FuncTy [VarTy "a"] StringTy StaticLifetimeTy)
-            ((SymPath ["StaticArray"] "str") : (registerFunctionFunctionsWithInterface "prn")) -- QUESTION: Where is 'prn' for dynamic Array:s registered? Can't find it... (but it is)
+            (SymPath ["StaticArray"] "str" : registerFunctionFunctionsWithInterface "prn") -- QUESTION: Where is 'prn' for dynamic Array:s registered? Can't find it... (but it is)
             builtInSymbolInfo
         ]
     builtInSymbolInfo = Info (-1) (-1) "Built-in." Set.empty (-1)

@@ -12,6 +12,7 @@ where
 
 import Control.Monad.State
 import Data.Char (ord)
+import Data.Functor ((<&>))
 import Data.List (intercalate, sortOn)
 import Data.Maybe (fromJust, fromMaybe)
 import Env
@@ -314,7 +315,7 @@ toC toCMode (Binder meta root) = emitterSrc (execState (visit startingIndent roo
                       do
                         ret <- visit indent' expr
                         let Just bindingTy = xobjTy expr
-                        when ((not . isUnit) bindingTy) $
+                        unless (isUnit bindingTy) $
                           appendToSrc (addIndent indent' ++ tyToCLambdaFix bindingTy ++ " " ++ mangle symName ++ " = " ++ ret ++ ";\n")
                     letBindingToC _ _ = error "Invalid binding."
                 mapM_ (uncurry letBindingToC) (pairwise bindings)
@@ -360,8 +361,8 @@ toC toCMode (Binder meta root) = emitterSrc (execState (visit startingIndent roo
                 -- A better idea is to not specialise the names, which happens when calling 'concretize' on the lhs
                 -- This requires a bunch of extra machinery though, so this will do for now...
 
-                [var ++ periodOrArrow ++ "_tag == " ++ tagName caseTy (removeSuffix caseName)]
-                  ++ concat (zipWith (\c i -> tagCondition (var ++ periodOrArrow ++ "u." ++ removeSuffix caseName ++ ".member" ++ show i) "." (forceTy c) c) unitless ([0 ..] :: [Int]))
+                (var ++ periodOrArrow ++ "_tag == " ++ tagName caseTy (removeSuffix caseName)) :
+                concat (zipWith (\c i -> tagCondition (var ++ periodOrArrow ++ "u." ++ removeSuffix caseName ++ ".member" ++ show i) "." (forceTy c) c) unitless ([0 ..] :: [Int]))
                 where
                   unitless = remove (isUnit . forceTy) caseMatchers
               tagCondition _ _ _ _ =
@@ -679,7 +680,7 @@ toC toCMode (Binder meta root) = emitterSrc (execState (visit startingIndent roo
         let argTypes = map forceTy args
             unitless = remove isUnit argTypes
             -- Run side effects
-            sideEffects = mapM (visit indent) (filter (isUnit . forceTy) args) >>= pure . intercalate ";\n"
+            sideEffects = mapM (visit indent) (filter (isUnit . forceTy) args) <&> intercalate ";\n"
             unwrapped =
               joinWithComma $
                 if unwrapLambdas
@@ -722,13 +723,12 @@ toC toCMode (Binder meta root) = emitterSrc (execState (visit startingIndent roo
           ( case innerTy of
               UnitTy -> "/* () */"
               _ ->
-                ( addIndent indent ++ "((" ++ tyToCLambdaFix innerTy ++ "*)" ++ arrayVar
-                    ++ ".data)["
-                    ++ show index
-                    ++ "] = "
-                    ++ visited
-                    ++ ";\n"
-                )
+                addIndent indent ++ "((" ++ tyToCLambdaFix innerTy ++ "*)" ++ arrayVar
+                  ++ ".data)["
+                  ++ show index
+                  ++ "] = "
+                  ++ visited
+                  ++ ";\n"
           )
         pure ()
     visitStaticArray :: Int -> XObj -> State EmitterState String
@@ -850,16 +850,16 @@ defSumtypeToDeclaration sumTy@(StructTy _ _) rest =
       emitSumtypeCase ind (XObj (Lst [XObj (Sym (SymPath [] caseName) _) _ _, XObj (Arr memberTys) _ _]) _ _) =
         do
           appendToSrc (addIndent ind ++ "struct {\n")
-          let members = zipWith (\anonName tyXObj -> (anonName, tyXObj)) anonMemberSymbols (remove (isUnit . fromJust . xobjToTy) memberTys)
+          let members = zip anonMemberSymbols (remove (isUnit . fromJust . xobjToTy) memberTys)
           mapM_ (memberToDecl (ind + indentAmount)) members
           appendToSrc (addIndent ind ++ "} " ++ caseName ++ ";\n")
       emitSumtypeCase ind (XObj (Sym (SymPath [] caseName) _) _ _) =
         appendToSrc (addIndent ind ++ "// " ++ caseName ++ "\n")
       emitSumtypeCase _ _ = error "emitsumtypecase"
       emitSumtypeCaseTagDefinition :: (Int, XObj) -> State EmitterState ()
-      emitSumtypeCaseTagDefinition (tagIndex, (XObj (Lst [XObj (Sym (SymPath [] caseName) _) _ _, _]) _ _)) =
+      emitSumtypeCaseTagDefinition (tagIndex, XObj (Lst [XObj (Sym (SymPath [] caseName) _) _ _, _]) _ _) =
         appendToSrc ("#define " ++ tagName sumTy caseName ++ " " ++ show tagIndex ++ "\n")
-      emitSumtypeCaseTagDefinition (tagIndex, (XObj (Sym (SymPath [] caseName) _) _ _)) =
+      emitSumtypeCaseTagDefinition (tagIndex, XObj (Sym (SymPath [] caseName) _) _ _) =
         appendToSrc ("#define " ++ tagName sumTy caseName ++ " " ++ show tagIndex ++ "\n")
       emitSumtypeCaseTagDefinition _ = error "emitsumtypecasetagdefinition"
    in if isTypeGeneric sumTy

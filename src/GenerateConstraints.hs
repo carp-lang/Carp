@@ -4,7 +4,7 @@ import Constraints
 import Control.Arrow hiding (arr)
 import Control.Monad.State
 import Data.List as List
-import Data.Maybe (fromMaybe, mapMaybe)
+import Data.Maybe (catMaybes, fromMaybe, mapMaybe)
 import Info
 import Obj
 import qualified Set
@@ -35,8 +35,7 @@ genConstraints _ root rootSig = fmap sort (gen root)
             captureList :: [XObj]
             captureList = Set.toList captures
             capturesConstrs =
-              mapMaybe
-                id
+              catMaybes
                 ( zipWith
                     ( \captureTy captureObj ->
                         case captureTy of

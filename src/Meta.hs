@@ -22,18 +22,17 @@ import Types
 --   (def foo 0)
 stub :: SymPath -> Binder
 stub path =
-  ( Binder
-      emptyMeta
-      ( XObj
-          ( Lst
-              [ XObj MetaStub Nothing Nothing,
-                XObj (Sym path Symbol) Nothing Nothing
-              ]
-          )
-          (Just dummyInfo)
-          (Just (VarTy "a"))
-      )
-  )
+  Binder
+    emptyMeta
+    ( XObj
+        ( Lst
+            [ XObj MetaStub Nothing Nothing,
+              XObj (Sym path Symbol) Nothing Nothing
+            ]
+        )
+        (Just dummyInfo)
+        (Just (VarTy "a"))
+    )
 
 get :: String -> MetaData -> Maybe XObj
 get key meta = Map.lookup key $ getMeta meta
@@ -42,7 +41,7 @@ set :: String -> XObj -> MetaData -> MetaData
 set key value meta = MetaData $ Map.insert key value $ getMeta meta
 
 fromBinder :: Binder -> MetaData
-fromBinder binder = binderMeta binder
+fromBinder = binderMeta
 
 getBinderMetaValue :: String -> Binder -> Maybe XObj
 getBinderMetaValue key binder =
