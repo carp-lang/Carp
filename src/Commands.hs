@@ -15,6 +15,7 @@ import Lookup
 import qualified Map
 import qualified Meta
 import Obj
+import Parsing (parse)
 import Path
 import Project
 import Reify
@@ -841,3 +842,13 @@ toSymbols x = x
 
 commandHash :: UnaryCommandCallback
 commandHash ctx v = pure (ctx, Right (XObj (Num LongTy (Integral (hash v))) (Just dummyInfo) (Just LongTy)))
+
+commandParse :: UnaryCommandCallback
+commandParse ctx (XObj (Str s) i _) =
+  case parse s "command:parse" of
+    Left e -> pure $ evalError ctx (show e) i
+    Right [] -> pure $ evalError ctx "parse did not return an object" i
+    Right [e] -> pure (ctx, Right e)
+    Right (_:_) -> pure $ evalError ctx "parse returned multiple objects" i
+commandParse ctx x =
+  pure (evalError ctx ("Argument to `parse` must be a string, but was `" ++ pretty x ++ "`") (xobjInfo x))
