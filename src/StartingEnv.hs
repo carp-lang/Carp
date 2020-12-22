@@ -243,7 +243,8 @@ dynamicModule =
           ]
     unaries =
       let f = addUnaryCommand . spath
-       in [ f "list?" commandIsList "checks whether the argument is a list." "(list? '()) ; => true",
+       in [ f "parse" commandParse "parses a string into an expression" "(parse \"(+ 1 2)\") ; => (+ 1 2)",
+            f "list?" commandIsList "checks whether the argument is a list." "(list? '()) ; => true",
             f "array?" commandIsArray "checks whether the arguments is an array." "(array? []) ; => true",
             f "symbol?" commandIsSymbol "checks whether the argument is a symbol." "(symbol? 'x) ; => true",
             f "length" commandLength "returns the length of the argument (must be an array, string or list)." "(length '(1 2 3)) ; => 3",
