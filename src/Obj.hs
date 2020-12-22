@@ -766,9 +766,9 @@ xobjToTy (XObj (Sym (SymPath _ "Pattern") _) _ _) = Just PatternTy
 xobjToTy (XObj (Sym (SymPath _ "Char") _) _ _) = Just CharTy
 xobjToTy (XObj (Sym (SymPath _ "Bool") _) _ _) = Just BoolTy
 xobjToTy (XObj (Sym (SymPath _ "Static") _) _ _) = Just StaticLifetimeTy
-xobjToTy (XObj (Sym (SymPath _ s@(firstLetter : _)) _) _ _)
+xobjToTy (XObj (Sym (SymPath prefixes s@(firstLetter : _)) _) _ _)
   | isLower firstLetter = Just (VarTy s)
-  | otherwise = Just (StructTy (ConcreteNameTy s) [])
+  | otherwise = Just (StructTy (ConcreteNameTy (createStructName prefixes s)) [])
 xobjToTy (XObj (Lst [XObj (Sym (SymPath _ "Ptr") _) _ _, innerTy]) _ _) =
   do
     okInnerTy <- xobjToTy innerTy

@@ -17,7 +17,7 @@ scoreTypeBinder typeEnv b@(Binder _ (XObj (Lst (XObj x _ _ : XObj (Sym _ _) _ _ 
       let selfName = ""
        in -- we add 1 here because deftypes generate aliases that
           -- will at least have the same score as the type, but
-          -- need to come after. the increment represents this dependency
+          -- need to come after. The increment represents this dependency
           (depthOfType typeEnv Set.empty selfName aliasedType + 1, b)
     Deftype s -> depthOfStruct s
     DefSumtype s -> depthOfStruct s
@@ -25,28 +25,31 @@ scoreTypeBinder typeEnv b@(Binder _ (XObj (Lst (XObj x _ _ : XObj (Sym _ _) _ _ 
     _ -> (500, b)
   where
     depthOfStruct (StructTy (ConcreteNameTy structName) varTys) =
-      case lookupBinder (SymPath [] structName) (getTypeEnv typeEnv) of
-        Just (Binder _ typedef) -> (depthOfDeftype typeEnv Set.empty typedef varTys + 1, b)
+      case lookupBinder (SymPath lookupPath name) (getTypeEnv typeEnv) of
+        Just (Binder _ typedef) -> ((depthOfDeftype typeEnv Set.empty typedef varTys + 1), b)
         Nothing -> error ("Can't find user defined type '" ++ structName ++ "' in type env.")
+      where
+        lookupPath = getPathFromStructName structName
+        name = getNameFromStructName structName
     depthOfStruct _ = error "depthofstruct"
 scoreTypeBinder _ b@(Binder _ (XObj (Mod _) _ _)) =
   (1000, b)
 scoreTypeBinder _ x = error ("Can't score: " ++ show x)
 
 depthOfDeftype :: TypeEnv -> Set.Set Ty -> XObj -> [Ty] -> Int
-depthOfDeftype typeEnv visited (XObj (Lst (_ : XObj (Sym (SymPath _ selfName) _) _ _ : rest)) _ _) varTys =
+depthOfDeftype typeEnv visited (XObj (Lst (_ : XObj (Sym (SymPath path selfName) _) _ _ : rest)) _ _) varTys =
   case concatMap expandCase rest of
     [] -> 100
     xs -> maximum xs
   where
-    depthsFromVarTys = map (depthOfType typeEnv visited selfName) varTys
+    depthsFromVarTys = map (depthOfType typeEnv visited (concat (path ++ [selfName]))) varTys
     expandCase :: XObj -> [Int]
     expandCase (XObj (Arr arr) _ _) =
       let members = memberXObjsToPairs arr
-          depthsFromMembers = map (depthOfType typeEnv visited selfName . snd) members
+          depthsFromMembers = map (depthOfType typeEnv visited (concat (path ++ [selfName])) . snd) members
        in depthsFromMembers ++ depthsFromVarTys
     expandCase (XObj (Lst [XObj {}, XObj (Arr sumtypeCaseTys) _ _]) _ _) =
-      let depthsFromCaseTys = map (depthOfType typeEnv visited selfName . fromJust . xobjToTy) sumtypeCaseTys
+      let depthsFromCaseTys = map (depthOfType typeEnv visited (concat (path ++ [selfName])) . fromJust . xobjToTy) sumtypeCaseTys
        in depthsFromCaseTys ++ depthsFromVarTys
     expandCase (XObj (Sym _ _) _ _) =
       []
@@ -61,31 +64,35 @@ depthOfType typeEnv visited selfName theType =
     else visitType theType + 1
   where
     visitType :: Ty -> Int
-    visitType t@(StructTy _ varTys) = depthOfStructType (tyToC t) varTys
+    visitType t@(StructTy _ varTys) = depthOfStructType t varTys
     visitType (FuncTy argTys retTy ltTy) =
       -- trace ("Depth of args of " ++ show argTys ++ ": " ++ show (map (visitType . Just) argTys))
       maximum (visitType ltTy : visitType retTy : fmap visitType argTys)
     visitType (PointerTy p) = visitType p
     visitType (RefTy r lt) = max (visitType r) (visitType lt)
     visitType _ = 1
-    depthOfStructType :: String -> [Ty] -> Int
-    depthOfStructType name varTys =
+    depthOfStructType :: Ty -> [Ty] -> Int
+    depthOfStructType struct varTys =
       1
-        + case name of
+        + case (getStructName struct) of
           "Array" -> depthOfVarTys
           _
-            | name == selfName -> 1
+            | (tyToC struct) == selfName -> 1
             | otherwise ->
-              case lookupBinder (SymPath [] name) (getTypeEnv typeEnv) of
-                Just (Binder _ typedef) -> depthOfDeftype typeEnv (Set.insert theType visited) typedef varTys
+              case lookupBinder (SymPath lookupPath s) (getTypeEnv typeEnv) of
+                Just (Binder _ typedef) -> moduleDepth + depthOfDeftype typeEnv (Set.insert theType visited) typedef varTys
+                  where
+                    moduleDepth = ((length lookupPath) * 1000) -- modules have score 1000
                 Nothing ->
                   --trace ("Unknown type: " ++ name) $
                   depthOfVarTys -- The problem here is that generic types don't generate
                   -- their definition in time so we get nothing for those.
                   -- Instead, let's try the type vars.
       where
+        lookupPath = getPathFromStructName (getStructName struct)
+        s = getNameFromStructName (getStructName struct)
         depthOfVarTys =
-          case fmap (depthOfType typeEnv visited name) varTys of
+          case fmap (depthOfType typeEnv visited (getStructName struct)) varTys of
             [] -> 1
             xs -> maximum xs + 1
 

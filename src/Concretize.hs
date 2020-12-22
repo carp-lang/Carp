@@ -451,7 +451,7 @@ concretizeType typeEnv arrayTy@(StructTy (ConcreteNameTy "StaticArray") varTys) 
       Right (defineStaticArrayTypeAlias arrayTy : concat deps)
 -- TODO: handle polymorphic constructors (a b)
 concretizeType typeEnv genericStructTy@(StructTy (ConcreteNameTy name) _) =
-  case lookupInEnv (SymPath [] name) (getTypeEnv typeEnv) of
+  case lookupInEnv (SymPath lookupPath structName) (getTypeEnv typeEnv) of
     Just (_, Binder _ (XObj (Lst (XObj (Deftype originalStructTy) _ _ : _ : rest)) _ _)) ->
       if isTypeGeneric originalStructTy
         then instantiateGenericStructType typeEnv originalStructTy genericStructTy rest
@@ -466,6 +466,9 @@ concretizeType typeEnv genericStructTy@(StructTy (ConcreteNameTy name) _) =
       error ("Non-deftype found in type env: " ++ show x)
     Nothing ->
       Right []
+  where
+    lookupPath = getPathFromStructName name
+    structName = getNameFromStructName name
 concretizeType env (RefTy rt _) =
   concretizeType env rt
 concretizeType env (PointerTy pt) =

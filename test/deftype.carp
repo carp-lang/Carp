@@ -16,11 +16,11 @@
     (ref (str (ref (A))))
     "implicit .init for global type works")
   (assert-equal test
-    "(B)"
+    "(Wrap.B)"
     (ref (str (ref (Wrap.B))))
     "implicit .init for qualified type defined inside module works")
   (assert-equal test
-    "(C)"
+    "(Wrap2.C)"
     (ref (str (ref (C))))
     "implicit .init for 'use':d type defined inside module works")
   )

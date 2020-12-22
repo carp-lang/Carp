@@ -30,7 +30,7 @@ moduleForSumtype innerEnv typeEnv env pathStrings typeName typeVariables rest i 
       typeModuleEnv = fromMaybe (Env (Map.fromList []) innerEnv (Just typeModuleName) [] ExternalEnv 0) existingEnv
       insidePath = pathStrings ++ [typeModuleName]
    in do
-        let structTy = StructTy (ConcreteNameTy typeName) typeVariables
+        let structTy = StructTy (ConcreteNameTy (createStructName pathStrings typeName)) typeVariables
         cases <- toCases typeEnv typeVariables rest
         okIniters <- initers insidePath structTy cases
         okTag <- binderForTag insidePath structTy
