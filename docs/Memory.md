@@ -13,7 +13,7 @@ This is achieved through a linear type system where memory is owned by the funct
   (println &s))
 ```
 
-In the example above s is of type String and it's contents are temporarily borrowed by 'println'. When the let-scope ends Carp will make sure that a call to (String.delete s) is inserted at the correct position. To avoid 's' being deleted, the let-expression could return it:
+In the example above s is of type String and it's contents are temporarily borrowed by 'println'. When the let-scope ends Carp will make sure that a call to `(String.delete s)` is inserted at the correct position. To avoid 's' being deleted, the let-expression could return it:
 
 ```
 (let [s (make-string)]
@@ -129,3 +129,54 @@ string say_MINUS_what(string text) {
     return _5;
 }
 ```
+
+## Custom deletion functions
+
+The Carp compiler will autogenerate a deletion function for your types unless
+you specify your own—`delete` is an interface like any other. Sometimes you
+might want to do some work of your own when a value goes out of scope, be it
+because it’s an value defined in C or because it references an OS resource that
+needs a cleanup action, like a file or socket.
+
+The `delete` function is responsible for cleaning up any memory associated with
+the value—otherwise the program will leak memory. It can execute arbitrary
+code, however, and can thus be used for other purposes as well.
+
+Let’s look at an example program:
+
+```clojure
+(register-type Foo)
+(register-type Bar)
+
+(defmodule Foo
+  (register init (Fn [] Foo))
+  (register delete (Fn [Foo] ()))
+  (implements delete Foo.delete))
+
+(defmodule Bar
+  (register init (Fn [] Bar)))
+
+(defn f []
+  (let [a (Foo.init)
+        b (Bar.init)]
+    ()))
+```
+
+The code for `f` will look like this:
+
+```c
+void f() {
+    /* let */ {
+        Foo _6 = Foo_init();
+        Foo a = _6;
+        Bar _9 = Bar_init();
+        Bar b = _9;
+        /* () */
+        Foo_delete(a);
+    }
+}
+```
+
+Note that a deleter is emitted for the value of type `Foo` once the `let` block
+ends and it goes out of scope, but not for the value of type `Bar`, which has
+no deleter associated with it.
