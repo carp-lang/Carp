@@ -43,11 +43,11 @@ data Resolver
 
 -- Prefer dynamic bindings
 evalDynamic :: Resolver -> Context -> XObj -> IO (Context, Either EvalError XObj)
-evalDynamic shouldResolve ctx xobj = eval ctx xobj PreferDynamic shouldResolve
+evalDynamic resolver ctx xobj = eval ctx xobj PreferDynamic resolver
 
 -- Prefer global bindings
 evalStatic :: Resolver -> Context -> XObj -> IO (Context, Either EvalError XObj)
-evalStatic shouldResolve ctx xobj = eval ctx xobj PreferGlobal shouldResolve
+evalStatic resolver ctx xobj = eval ctx xobj PreferGlobal resolver
 
 -- | Dynamic (REPL) evaluation of XObj:s (s-expressions)
 -- Note: You might find a bunch of code of the following form both here and in
@@ -64,16 +64,16 @@ evalStatic shouldResolve ctx xobj = eval ctx xobj PreferGlobal shouldResolve
 -- remnant of us using StateT, and might not be necessary anymore since we
 -- switched to more explicit state-passing.)
 eval :: Context -> XObj -> LookupPreference -> Resolver -> IO (Context, Either EvalError XObj)
-eval ctx xobj@(XObj o info ty) preference shouldResolve =
+eval ctx xobj@(XObj o info ty) preference resolver =
   case o of
     Lst body -> eval' body
     Sym spath@(SymPath p n) _ ->
       pure $
-        case shouldResolve of
+        case resolver of
           ResolveGlobal -> unwrapLookup (tryAllLookups >>= checkStatic)
           ResolveLocal -> unwrapLookup tryAllLookups
       where
-        checkStatic v@(_, (Right (XObj (Lst ((XObj obj _ _) : _)) _ _))) =
+        checkStatic v@(_, Right (XObj (Lst ((XObj obj _ _) : _)) _ _)) =
           if isResolvableStaticObj obj
           then pure (ctx, Left (HasStaticCall xobj info))
           else pure v
