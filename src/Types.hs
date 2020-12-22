@@ -80,7 +80,7 @@ data Kind
 
 tyToKind :: Ty -> Kind
 tyToKind (StructTy _ _) = Higher
-tyToKind (FuncTy _ _ _) = Higher -- the type of functions, consider the (->) constructor in Haskell
+tyToKind FuncTy {} = Higher -- the type of functions, consider the (->) constructor in Haskell
 tyToKind (PointerTy _) = Higher
 tyToKind (RefTy _ _) = Higher -- Refs may also be treated as a data constructor
 tyToKind _ = Base
@@ -113,17 +113,17 @@ areKindsConsistent typeVars =
         Just k ->
           if k == kind
             then assignKinds next arityMap
-            else (Left name)
+            else Left name
       where
-        next = (vars ++ rest)
-        kind = (length vars)
+        next = vars ++ rest
+        kind = length vars
     assignKinds ((VarTy v) : rest) arityMap =
       case Map.lookup v arityMap of
         Nothing -> assignKinds rest (Map.insert v kind arityMap)
         Just k ->
           if k == kind
             then assignKinds rest arityMap
-            else (Left v)
+            else Left v
       where
         kind = 0
     assignKinds (FuncTy args ret _ : rest) arityMap =
@@ -175,8 +175,8 @@ instance Show Ty where
   show ModuleTy = "Module"
   show TypeTy = "Type"
   show InterfaceTy = "Interface"
-  show (StructTy s []) = (show s)
-  show (StructTy s typeArgs) = "(" ++ (show s) ++ " " ++ joinWithSpace (map show typeArgs) ++ ")"
+  show (StructTy s []) = show s
+  show (StructTy s typeArgs) = "(" ++ show s ++ " " ++ joinWithSpace (map show typeArgs) ++ ")"
   show (ConcreteNameTy name) = name
   show (PointerTy p) = "(Ptr " ++ show p ++ ")"
   show (RefTy r lt) =
@@ -212,8 +212,8 @@ doesTypeContainTyVarWithName _ _ = False
 replaceConflicted :: String -> Ty -> Ty
 replaceConflicted name (VarTy n) =
   if n == name
-    then (VarTy (n ++ "conflicted"))
-    else (VarTy n)
+    then VarTy (n ++ "conflicted")
+    else VarTy n
 replaceConflicted name (FuncTy argTys retTy lt) =
   FuncTy
     (map (replaceConflicted name) argTys)
@@ -311,13 +311,13 @@ replaceTyVars mappings t =
     (VarTy key) -> fromMaybe t (Map.lookup key mappings)
     (FuncTy argTys retTy lt) -> FuncTy (map (replaceTyVars mappings) argTys) (replaceTyVars mappings retTy) (replaceTyVars mappings lt)
     (StructTy name tyArgs) ->
-      case (replaceTyVars mappings name) of
+      case replaceTyVars mappings name of
         -- special case, struct (f a b) mapped to (RefTy a lt)
         -- We f in such a case to the full (Ref a lt) in constraints; we also still map
         -- individual members a and b, as these need mappings since they may be
         -- referred to in other places (e.g. (Fn [(f a b)] a)--without a mapping,
         -- a would remain generic here.
-        (RefTy a lt) -> (replaceTyVars mappings (RefTy a lt))
+        (RefTy a lt) -> replaceTyVars mappings (RefTy a lt)
         _ -> StructTy (replaceTyVars mappings name) (fmap (replaceTyVars mappings) tyArgs)
     (PointerTy x) -> PointerTy (replaceTyVars mappings x)
     (RefTy x lt) -> RefTy (replaceTyVars mappings x) (replaceTyVars mappings lt)
@@ -336,7 +336,7 @@ lambdaEnvTy :: Ty
 lambdaEnvTy = StructTy (ConcreteNameTy "LambdaEnv") []
 
 createStructName :: [String] -> String -> String
-createStructName path name = (intercalate "." (path ++ [name]))
+createStructName path name = intercalate "." (path ++ [name])
 
 getStructName :: Ty -> String
 getStructName (StructTy (ConcreteNameTy name) _) = name
@@ -345,8 +345,8 @@ getStructName _ = ""
 
 getPathFromStructName :: String -> [String]
 getPathFromStructName structName =
-  let path = (map unpack (splitOn (pack ".") (pack structName)))
-   in if ((length path) > 1) then init path else []
+  let path = map unpack (splitOn (pack ".") (pack structName))
+   in if length path > 1 then init path else []
 
 getNameFromStructName :: String -> String
 getNameFromStructName structName = last (map unpack (splitOn (pack ".") (pack structName)))

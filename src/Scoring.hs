@@ -26,7 +26,7 @@ scoreTypeBinder typeEnv b@(Binder _ (XObj (Lst (XObj x _ _ : XObj (Sym _ _) _ _ 
   where
     depthOfStruct (StructTy (ConcreteNameTy structName) varTys) =
       case lookupBinder (SymPath lookupPath name) (getTypeEnv typeEnv) of
-        Just (Binder _ typedef) -> ((depthOfDeftype typeEnv Set.empty typedef varTys + 1), b)
+        Just (Binder _ typedef) -> (depthOfDeftype typeEnv Set.empty typedef varTys + 1, b)
         Nothing -> error ("Can't find user defined type '" ++ structName ++ "' in type env.")
       where
         lookupPath = getPathFromStructName structName
@@ -74,15 +74,15 @@ depthOfType typeEnv visited selfName theType =
     depthOfStructType :: Ty -> [Ty] -> Int
     depthOfStructType struct varTys =
       1
-        + case (getStructName struct) of
+        + case getStructName struct of
           "Array" -> depthOfVarTys
           _
-            | (tyToC struct) == selfName -> 1
+            | tyToC struct == selfName -> 1
             | otherwise ->
               case lookupBinder (SymPath lookupPath s) (getTypeEnv typeEnv) of
                 Just (Binder _ typedef) -> moduleDepth + depthOfDeftype typeEnv (Set.insert theType visited) typedef varTys
                   where
-                    moduleDepth = ((length lookupPath) * 1000) -- modules have score 1000
+                    moduleDepth = length lookupPath * 1000 -- modules have score 1000
                 Nothing ->
                   --trace ("Unknown type: " ++ name) $
                   depthOfVarTys -- The problem here is that generic types don't generate
@@ -110,7 +110,7 @@ scoreValueBinder _ _ binder =
   (0, binder)
 
 scoreBody :: Env -> Set.Set SymPath -> XObj -> Int
-scoreBody globalEnv visited root = visit root
+scoreBody globalEnv visited = visit
   where
     visit xobj =
       case xobjObj xobj of

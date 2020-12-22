@@ -457,7 +457,7 @@ showTypeFromXObj mappings xobj =
     Nothing -> "Type missing"
 
 evalError :: Context -> String -> Maybe Info -> (Context, Either EvalError a)
-evalError ctx msg i = makeEvalError ctx Nothing msg i
+evalError ctx = makeEvalError ctx Nothing
 
 -- | Print type errors correctly when running the compiler in 'Check' mode
 makeEvalError :: Context -> Maybe TypeError.TypeError -> String -> Maybe Info -> (Context, Either EvalError a)

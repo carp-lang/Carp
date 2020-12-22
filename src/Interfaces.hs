@@ -96,7 +96,7 @@ registerInInterfaceIfNeeded ctx implementation interface definitionSignature =
     _ ->
       (ctx, Just (NonInterface (getBinderPath interface)))
   where
-    implPath = (getBinderPath implementation)
+    implPath = getBinderPath implementation
     typeEnv = getTypeEnv (contextTypeEnv ctx)
     (SymPath _ name) = getBinderPath interface
 
@@ -104,7 +104,7 @@ registerInInterfaceIfNeeded ctx implementation interface definitionSignature =
 -- registered with the interface.
 registerInInterface :: Context -> Binder -> Binder -> (Context, Maybe InterfaceError)
 registerInInterface ctx implementation interface =
-  case (binderXObj implementation) of
+  case binderXObj implementation of
     XObj (Lst [XObj (Defn _) _ _, _, _, _]) _ (Just t) ->
       -- This is a function, does it belong to an interface?
       registerInInterfaceIfNeeded ctx implementation interface t

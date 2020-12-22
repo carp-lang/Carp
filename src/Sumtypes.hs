@@ -47,15 +47,14 @@ memberDeps :: TypeEnv -> [SumtypeCase] -> Either TypeError [XObj]
 memberDeps typeEnv cases = fmap concat (mapM (concretizeType typeEnv) (concatMap caseTys cases))
 
 replaceGenericTypesOnCases :: TypeMappings -> [SumtypeCase] -> [SumtypeCase]
-replaceGenericTypesOnCases mappings cases =
-  map replaceOnCase cases
+replaceGenericTypesOnCases mappings = map replaceOnCase
   where
     replaceOnCase theCase =
-      let newTys = (map (replaceTyVars mappings) (caseTys theCase))
+      let newTys = map (replaceTyVars mappings) (caseTys theCase)
        in theCase {caseTys = newTys}
 
 initers :: [String] -> Ty -> [SumtypeCase] -> Either TypeError [(String, Binder)]
-initers insidePath structTy cases = mapM (binderForCaseInit insidePath structTy) cases
+initers insidePath structTy = mapM (binderForCaseInit insidePath structTy)
 
 binderForCaseInit :: [String] -> Ty -> SumtypeCase -> Either TypeError (String, Binder)
 binderForCaseInit insidePath structTy@(StructTy (ConcreteNameTy _) _) sumtypeCase =
@@ -143,7 +142,7 @@ binderForTag insidePath originalStructTy@(StructTy (ConcreteNameTy typeName) _) 
         (FuncTy [RefTy originalStructTy (VarTy "q")] IntTy StaticLifetimeTy)
         (\(FuncTy [RefTy structTy _] IntTy _) -> toTemplate $ proto structTy)
         (\(FuncTy [RefTy structTy _] IntTy _) -> toTemplate $ proto structTy ++ " { return p->_tag; }")
-        (\_ -> [])
+        (const [])
     proto structTy = "int $NAME(" ++ tyToCLambdaFix structTy ++ " *p)"
     doc = "Gets the tag from a `" ++ typeName ++ "`."
 binderForTag _ _ = error "binderfortag"
@@ -202,7 +201,7 @@ genericStr insidePath originalStructTy@(StructTy (ConcreteNameTy typeName) _) ca
                   correctedCases = replaceGenericTypesOnCases mappings cases
                   tys = remove isFullyGenericType (concatMap caseTys correctedCases)
                in concatMap (depsOfPolymorphicFunction typeEnv env [] "prn" . typesStrFunctionType typeEnv env) tys
-                    ++ (if isTypeGeneric concreteStructTy then [] else [defineFunctionTypeAlias ft])
+                    ++ [defineFunctionTypeAlias ft | not (isTypeGeneric concreteStructTy)]
           )
 genericStr _ _ _ _ = error "genericstr"
 
@@ -227,7 +226,7 @@ tokensForStr typeEnv env _ cases concreteStructTy =
 namesFromCase :: SumtypeCase -> Ty -> (String, [Ty], String)
 namesFromCase theCase concreteStructTy =
   let name = caseName theCase
-   in (name, caseTys theCase {caseTys = (remove isUnit (caseTys theCase))}, tagName concreteStructTy name)
+   in (name, caseTys theCase {caseTys = remove isUnit (caseTys theCase)}, tagName concreteStructTy name)
 
 strCase :: TypeEnv -> Env -> Ty -> SumtypeCase -> String
 strCase typeEnv env concreteStructTy@(StructTy _ _) theCase =
@@ -403,7 +402,11 @@ tokensForSumtypeCopy typeEnv env concreteStructTy cases =
     unlines
       [ "$DECL {",
         "    $p copy = *pRef;",
-        joinLines $ map (copyCase typeEnv env concreteStructTy) (zip cases (True : repeat False)),
+        joinLines $
+          zipWith
+            (curry (copyCase typeEnv env concreteStructTy))
+            cases
+            (True : repeat False),
         "    return copy;",
         "}"
       ]

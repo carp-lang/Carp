@@ -138,7 +138,7 @@ expand eval ctx xobj =
                   do
                     okExpandedExpr <- expandedExpr
                     okExpandedPairs <- expandedPairs
-                    Right (XObj (Lst (matchExpr : okExpandedExpr : (concat okExpandedPairs))) i t)
+                    Right (XObj (Lst (matchExpr : okExpandedExpr : concat okExpandedPairs)) i t)
                 )
           | otherwise ->
             pure
@@ -165,7 +165,7 @@ expand eval ctx xobj =
                   okExpression <- expandedExpression
                   Right (XObj (Lst [withExpr, pathExpr, okExpression]) i t) -- Replace the with-expression with just the expression!
               )
-        [(XObj With _ _), _, _] ->
+        [XObj With _ _, _, _] ->
           pure
             ( evalError
                 ctx
@@ -322,7 +322,7 @@ setNewIdentifiers root =
 
 -- | Replaces the file, line and column info on an XObj an all its children.
 replaceSourceInfo :: FilePath -> Int -> Int -> XObj -> XObj
-replaceSourceInfo newFile newLine newColumn root = visit root
+replaceSourceInfo newFile newLine newColumn = visit
   where
     visit :: XObj -> XObj
     visit xobj =
