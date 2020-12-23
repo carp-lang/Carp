@@ -174,12 +174,12 @@
                     "swap! works as expected")
   (assert-ref-equal test
                     [1 3]
-                    (aupdate [1 2] 1 &inc-ref)
+                    (aupdate [1 2] 1 &inc)
                     "aupdate works as expected")
   (assert-ref-equal test
                     [1 3]
                     (let-do [arr [1 2]]
-                      (aupdate! &arr 1 &inc-ref)
+                      (aupdate! &arr 1 &inc)
                       arr)
                     "aupdate! works as expected")
   (assert-ref-equal test
@@ -331,4 +331,3 @@
                     [1 2 3]
                     (from-static $[1 2 3])
                     "from-static works"))
-

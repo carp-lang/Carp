@@ -221,13 +221,27 @@ If the element is not found, returns `Nothing`")
       c))
 
   (doc aupdate "transmutes (i.e. updates) the element at index `i` of an array `a` using the function `f`.")
-  (defn aupdate [a i f]
-    (let [new-value (~f (unsafe-nth &a i))]
-      (aset a i new-value)))
+  (deftemplate aupdate
+    (Fn [(Array a) Int &(Fn [a] a)] (Array a))
+    "Array $NAME(Array a, int i, Lambda *f)"
+    r"$DECL
+{
+  $a old = (($a*)a.data)[i];
+  (($a*)a.data)[i] = f->env ? (($a(*)(LambdaEnv, $a))f->callback)(f->env, old) : (($a(*)())f->callback)(old);
+  return a;
+}
+")
 
   (doc aupdate! "transmutes (i.e. updates) the element at index `i` of an array `a` using the function `f` in place.")
-  (defn aupdate! [a i f]
-    (aset! a i (~f (unsafe-nth a i))))
+  (deftemplate aupdate!
+    (Fn [(Ref (Array a)) Int &(Fn [a] a)] ())
+    "void $NAME(Array *a, int i, Lambda *f)"
+    r"$DECL
+{
+  $a old = (($a*)a->data)[i];
+  (($a*)a->data)[i] = f->env ? (($a(*)(LambdaEnv, $a))f->callback)(f->env, old) : (($a(*)())f->callback)(old);
+}
+")
 
   (doc swap "swaps the indices `i` and `j` of an array `a`.")
   (defn swap [a i j]
