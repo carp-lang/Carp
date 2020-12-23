@@ -14,7 +14,7 @@ where
 import ColorText
 import Constraints
 import Data.List (delete)
-import Data.Maybe (fromMaybe, mapMaybe)
+import Data.Maybe (mapMaybe)
 import Env
 import Lookup
 import Obj
@@ -65,11 +65,11 @@ instance Show InterfaceError where
 -- | Get the first path of an interface implementation that matches a given type signature
 getFirstMatchingImplementation :: Context -> [SymPath] -> Ty -> Maybe SymPath
 getFirstMatchingImplementation ctx paths ty =
-  case filter predicate (mapMaybe ((flip lookupBinder) global) paths) of
+  case filter predicate (mapMaybe (`lookupBinder` global) paths) of
     [] -> Nothing
     (x : _) -> Just ((getPath . binderXObj) x)
   where
-    predicate = fromMaybe False . fmap (== ty) . (xobjTy . binderXObj)
+    predicate = (== Just ty) . (xobjTy . binderXObj)
     global = contextGlobalEnv ctx
 
 -- TODO: This is currently called once outside of this module--try to remove that call and make this internal.
@@ -84,7 +84,7 @@ registerInInterfaceIfNeeded ctx implementation interface definitionSignature =
           Right _ -> case getFirstMatchingImplementation ctx paths definitionSignature of
             Nothing -> (updatedCtx, Nothing)
             Just x ->
-              if (x == implPath)
+              if x == implPath
                 then (updatedCtx, Nothing)
                 else (implReplacedCtx x, Just (AlreadyImplemented (getBinderPath interface) x implPath definitionSignature))
         else (ctx, Just (KindMismatch implPath definitionSignature interfaceSignature))
@@ -127,7 +127,7 @@ registerInInterface ctx implementation interface =
 retroactivelyRegisterInInterface :: Context -> Binder -> Context
 retroactivelyRegisterInInterface ctx interface =
   -- TODO: Propagate error
-  maybe resultCtx (\e -> error (show e)) err
+  maybe resultCtx (error . show) err
   where
     env = contextGlobalEnv ctx
     impls = lookupMany Everywhere lookupImplementations (getPath (binderXObj interface)) env
