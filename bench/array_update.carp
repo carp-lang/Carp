@@ -10,7 +10,7 @@
 
 (defn some-updating []
   (let-do [a (replicate n &12345)
-           b (aupdate a 0 &inc-ref)]
+           b (aupdate a 0 &inc)]
     (assert (= (unsafe-nth &b 0) &12346))
     (assert (= (unsafe-nth &b 1) &12345))))
 
