@@ -75,17 +75,16 @@ eval ctx xobj@(XObj o info ty) preference resolver =
       where
         checkStatic v@(_, Right (XObj (Lst ((XObj obj _ _) : _)) _ _)) =
           if isResolvableStaticObj obj
-          then pure (ctx, Left (HasStaticCall xobj info))
-          else pure v
+            then pure (ctx, Left (HasStaticCall xobj info))
+            else pure v
         checkStatic v = pure v
-        unwrapLookup v =
+        unwrapLookup =
           fromMaybe
             (evalError ctx ("Can't find symbol '" ++ show n ++ "'") info) -- all else failed, error.
-            v
         tryAllLookups =
           ( case preference of
-                PreferDynamic -> tryDynamicLookup
-                PreferGlobal -> tryLookup spath <|> tryDynamicLookup
+              PreferDynamic -> tryDynamicLookup
+              PreferGlobal -> tryLookup spath <|> tryDynamicLookup
           )
             <|> (if null p then tryInternalLookup spath else tryLookup spath)
         tryDynamicLookup =
@@ -570,8 +569,8 @@ executeString doCatch printResult ctx input fileName =
           (printResult && xobjTy res /= Just UnitTy)
           (putStrLnWithColor Yellow ("=> " ++ pretty res))
         pure ctx'
-    interactiveFolder (_, context) xobj =
-      executeCommand context xobj
+    interactiveFolder (_, context) =
+      executeCommand context
     treatErr ctx' e xobj = do
       let fppl = projectFilePathPrintLength (contextProj ctx')
       case contextExecMode ctx' of
@@ -766,11 +765,10 @@ annotateWithinContext qualifyDefn ctx xobj = do
 
 primitiveDefmodule :: Primitive
 primitiveDefmodule xobj ctx@(Context env i _ pathStrings _ _ _ _) (XObj (Sym (SymPath [] moduleName) _) _ _ : innerExpressions) =
-  do
-    -- N.B. The `envParent` rewrite at the end of this line is important!
-    -- lookups delve into parent envs by default, which is normally what we want, but in this case it leads to problems
-    -- when submodules happen to share a name with an existing module or type at the global level.
-    maybe (defineNewModule emptyMeta) updateExistingModule (lookupBinder (SymPath [] moduleName) ((getEnv env pathStrings) {envParent = Nothing}))
+  -- N.B. The `envParent` rewrite at the end of this line is important!
+  -- lookups delve into parent envs by default, which is normally what we want, but in this case it leads to problems
+  -- when submodules happen to share a name with an existing module or type at the global level.
+  maybe (defineNewModule emptyMeta) updateExistingModule (lookupBinder (SymPath [] moduleName) ((getEnv env pathStrings) {envParent = Nothing}))
     >>= defineModuleBindings
     >>= \(newCtx, result) ->
       case result of
@@ -1130,48 +1128,55 @@ primitiveDefdynamic _ ctx [notName, _] =
 primitiveDefdynamic _ _ _ = error "primitivedefdynamic"
 
 specialCommandSet :: Context -> [XObj] -> IO (Context, Either EvalError XObj)
-specialCommandSet ctx [XObj (Sym path@(SymPath mod n) _) _ _, val] = do
-  (newCtx, result) <- evalDynamic ResolveLocal ctx val
-  case result of
-    Left err -> pure (newCtx, Left err)
-    Right evald -> do
-      let globalEnv = contextGlobalEnv ctx
-      case contextInternalEnv ctx of
-        Nothing -> setGlobal newCtx globalEnv evald
-        Just env -> setInternal newCtx env evald
+specialCommandSet ctx [orig@(XObj (Sym path@(SymPath _ n) _) _ _), val] =
+  let lookupInternal =
+        contextInternalEnv ctx
+          >>= \e ->
+            lookupBinder path e
+              >>= \binder -> pure (binder, setInternal, e)
+      lookupGlobal =
+        Just (contextGlobalEnv ctx)
+          >>= \e ->
+            lookupBinder path e
+              >>= \binder -> pure (binder, setGlobal, e)
+   in maybe
+        (pure $ evalError ctx ("I couldn't find the variable " ++ pretty orig ++ ", did you define it using `def` or `defdynamic`?") (xobjInfo orig))
+        (\(binder', setter', env') -> evalAndSet binder' setter' env')
+        (lookupInternal <|> lookupGlobal)
   where
-    setGlobal ctx' env value =
-      case lookupBinder path env of
-        Just binder -> do
-          (ctx'', typedVal) <- typeCheckValueAgainstBinder ctx' value binder
-          pure $ either (failure ctx'') (success ctx'') typedVal
-          where
-            success c xo = (c {contextGlobalEnv = setStaticOrDynamicVar path env binder xo}, dynamicNil)
-        Nothing -> pure (ctx, Right value)
-    setInternal ctx' env value =
-      case lookupInEnv path env of
-        Just (_, binder) -> do
-          -- TODO: Type check local bindings.
-          -- At the moment, let bindings are not structured the same as global defs or dynamic defs.
-          -- This makes calls to the type check problematic, as we cannot work against a common binding form.
-          -- Once we better support let bindings, type check them.
-          (ctx'', typedVal) <- typeCheckValueAgainstBinder ctx' value binder
-          pure $
-            if contextPath ctx'' == mod
-              then either (failure ctx'') (success ctx'') typedVal
-              else (ctx'', dynamicNil)
-          where
-            success c xo = (c {contextInternalEnv = Just (setStaticOrDynamicVar (SymPath [] n) env binder xo)}, dynamicNil)
-        -- If the def isn't found in the internal environment, check the global environment.
-        Nothing -> setGlobal ctx' (contextGlobalEnv ctx') value
+    evalAndSet :: Binder -> (Context -> Env -> Either EvalError XObj -> Binder -> IO (Context, Either EvalError XObj)) -> Env -> IO (Context, Either EvalError XObj)
+    evalAndSet binder setter env =
+      case xobjTy (binderXObj binder) of
+        -- don't type check dynamic bindings
+        Just DynamicTy ->
+          evalDynamic ResolveLocal ctx val
+            >>= \(newCtx, result) -> setter newCtx env result binder
+        _ ->
+          evalDynamic ResolveLocal ctx val
+            >>= \(newCtx, result) ->
+              case result of
+                Right evald -> typeCheckValueAgainstBinder newCtx evald binder >>= \(nctx, typedVal) -> setter nctx env typedVal binder
+                left -> pure (newCtx, left)
+
+    setGlobal :: Context -> Env -> Either EvalError XObj -> Binder -> IO (Context, Either EvalError XObj)
+    setGlobal ctx' env value binder =
+      pure $ either (failure ctx' orig) (success ctx') value
+      where
+        success c xo = (c {contextGlobalEnv = setStaticOrDynamicVar path env binder xo}, dynamicNil)
+
+    setInternal :: Context -> Env -> Either EvalError XObj -> Binder -> IO (Context, Either EvalError XObj)
+    setInternal ctx' env value binder =
+      pure $ either (failure ctx' orig) (success ctx') value
+      where
+        success c xo = (c {contextInternalEnv = Just (setStaticOrDynamicVar (SymPath [] n) env binder xo)}, dynamicNil)
 specialCommandSet ctx [notName, _] =
   pure (evalError ctx ("`set!` expected a name as first argument, but got " ++ pretty notName) (xobjInfo notName))
 specialCommandSet ctx args =
   pure (evalError ctx ("`set!` takes a name and a value, but got `" ++ unwords (map pretty args)) (if null args then Nothing else xobjInfo (head args)))
 
 -- | Convenience method for signifying failure in a given context.
-failure :: Context -> EvalError -> (Context, Either EvalError a)
-failure ctx err = (ctx, Left err)
+failure :: Context -> XObj -> EvalError -> (Context, Either EvalError a)
+failure ctx orig err = evalError ctx (show err) (xobjInfo orig)
 
 -- | Given a context, value XObj and an existing binder, check whether or not
 -- the given value has a type matching the binder's in the given context.
