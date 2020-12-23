@@ -62,7 +62,7 @@ instance Show InterfaceError where
       ++ show replacementPath
       ++ "."
       ++ "\n"
-      ++ "This may break a bunch of upstream code!"
+      ++ "This may result in unexpected behavior."
 
 -- | Get the first path of an interface implementation that matches a given type signature
 getFirstMatchingImplementation :: Context -> [SymPath] -> Ty -> Maybe SymPath
