@@ -7,16 +7,18 @@ module Interfaces
     registerInInterface,
     retroactivelyRegisterInInterface,
     interfaceImplementedForTy,
+    removeInterfaceFromImplements,
     InterfaceError (..),
   )
 where
 
 import ColorText
 import Constraints
-import Data.List (delete)
-import Data.Maybe (mapMaybe)
+import Data.List (delete, deleteBy)
+import Data.Maybe (fromMaybe, mapMaybe)
 import Env
 import Lookup
+import qualified Meta
 import Obj
 import Types
 import Util
@@ -72,6 +74,25 @@ getFirstMatchingImplementation ctx paths ty =
     predicate = (== Just ty) . (xobjTy . binderXObj)
     global = contextGlobalEnv ctx
 
+-- | Remove an interface from a binder's list of implemented interfaces
+removeInterfaceFromImplements :: SymPath -> XObj -> Context -> Context
+removeInterfaceFromImplements oldImplPath interface ctx =
+  fromMaybe
+    ctx
+    ( lookupBinder oldImplPath (contextGlobalEnv ctx)
+        >>= \binder ->
+          Meta.getBinderMetaValue "implements" binder
+            >>= ( \x ->
+                    case x of
+                      (XObj (Lst impls) i t) ->
+                        pure $ Meta.updateBinderMeta binder "implements" (XObj (Lst (deleteBy matchPath interface impls)) i t)
+                      _ -> Nothing
+                )
+            >>= (\b -> pure $ ctx {contextGlobalEnv = envInsertAt (contextGlobalEnv ctx) oldImplPath b})
+    )
+  where
+    matchPath xobj xobj' = getPath xobj == getPath xobj'
+
 -- TODO: This is currently called once outside of this module--try to remove that call and make this internal.
 -- Checks whether a given form's type matches an interface, and if so, registers the form with the interface.
 registerInInterfaceIfNeeded :: Context -> Binder -> Binder -> Ty -> (Context, Maybe InterfaceError)
@@ -86,7 +107,7 @@ registerInInterfaceIfNeeded ctx implementation interface definitionSignature =
             Just x ->
               if x == implPath
                 then (updatedCtx, Nothing)
-                else (implReplacedCtx x, Just (AlreadyImplemented (getBinderPath interface) x implPath definitionSignature))
+                else (implReplacedCtx x, Just (AlreadyImplemented ipath x implPath definitionSignature))
         else (ctx, Just (KindMismatch implPath definitionSignature interfaceSignature))
       where
         updatedInterface = XObj (Lst [XObj (Interface interfaceSignature (addIfNotPresent implPath paths)) ii it, isym]) i t
@@ -98,7 +119,7 @@ registerInInterfaceIfNeeded ctx implementation interface definitionSignature =
   where
     implPath = getBinderPath implementation
     typeEnv = getTypeEnv (contextTypeEnv ctx)
-    (SymPath _ name) = getBinderPath interface
+    ipath@(SymPath _ name) = getBinderPath interface
 
 -- | Given a binder and an interface path, ensure that the form is
 -- registered with the interface.

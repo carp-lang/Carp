@@ -19,8 +19,8 @@ import Infer
 import Info
 import Interfaces
 import Lookup
-import qualified Map
 import Managed
+import qualified Map
 import qualified Meta
 import Obj
 import PrimitiveError
@@ -152,8 +152,8 @@ primitiveImplements call ctx [x@(XObj (Sym interface@(SymPath _ _) _) _ _), XObj
        in maybe (updateMeta impl newCtx) (handleError newCtx impl) maybeErr
 
     handleError :: Context -> Binder -> InterfaceError -> IO (Context, Either EvalError XObj)
-    handleError context impl e@AlreadyImplemented {} =
-      emitWarning (show e) >> updateMeta impl context
+    handleError context impl e@(AlreadyImplemented _ oldImplPath _ _) =
+      emitWarning (show e) >> pure (removeInterfaceFromImplements oldImplPath x context) >>= updateMeta impl
     handleError context _ e =
       emitError (show e) >> pure (evalError context (show e) (xobjInfo x))
 
@@ -167,7 +167,7 @@ primitiveImplements call ctx [x@(XObj (Sym interface@(SymPath _ _) _) _ _), XObj
             )
               <|> Just (updateImplementations binder (XObj (Lst []) (Just dummyInfo) (Just DynamicTy)))
           )
-            >>= \newBinder -> pure (context {contextGlobalEnv = envInsertAt global (getBinderPath binder) newBinder})
+            >>= \newBinder -> pure (context {contextGlobalEnv = envInsertAt (contextGlobalEnv context) (getBinderPath binder) newBinder})
         updateImplementations :: Binder -> XObj -> Binder
         updateImplementations implBinder (XObj (Lst impls) inf ty) =
           if x `elem` impls
@@ -295,33 +295,62 @@ primitiveInfo :: Primitive
 primitiveInfo _ ctx [target@(XObj (Sym path@(SymPath _ _) _) _ _)] =
   case path of
     SymPath [] _ ->
-      printIfFound (lookupBinderInTypeEnv ctx path)
-        >> maybe
-          (notFound ctx target path)
-          (foldM (\_ binder -> printer binder) (ctx, dynamicNil))
-          ( fmap (: []) (lookupBinderInContextEnv ctx path)
-              <|> multiLookupBinderEverywhere ctx path
-          )
+      do
+        found <- pure (lookupBinderInTypeEnv ctx path)
+        _ <- printIfFound found
+        _ <- printInterfaceImplementationsOrAll found otherBindings
+        maybe (notFound ctx target path) (const ok) (found <|> fmap head otherBindings)
+      where
+        otherBindings =
+          fmap (: []) (lookupBinderInContextEnv ctx path)
+            <|> multiLookupBinderEverywhere ctx path
     _ ->
-      printIfFound (lookupBinderInTypeEnv ctx path)
-        >> ( case lookupBinderInContextEnv ctx path of
-               Nothing -> notFound ctx target path
-               Just found -> printer found
-           )
+      do
+        found <- pure (lookupBinderInTypeEnv ctx path)
+        others <- pure (lookupBinderInContextEnv ctx path)
+        _ <- printIfFound found
+        _ <- maybe (pure ()) printer others
+        maybe (notFound ctx target path) (const ok) (found <|> others)
   where
-    -- TODO: Return IO () here
-    printIfFound :: Maybe Binder -> IO (Context, Either EvalError XObj)
-    printIfFound = maybe (pure (ctx, dynamicNil)) printer
+    ok :: IO (Context, Either EvalError XObj)
+    ok = pure (ctx, dynamicNil)
 
+    printInterfaceImplementationsOrAll :: Maybe Binder -> Maybe [Binder] -> IO ()
+    printInterfaceImplementationsOrAll interface impls =
+      maybe
+        (pure ())
+        (foldM (\_ binder -> printer binder) ())
+        ( ( interface
+              >>= \binder ->
+                pure (xobjObj (binderXObj binder))
+                  >>= \obj ->
+                    case obj of
+                      (Lst [XObj (Interface _ _) _ _, _]) ->
+                        fmap (filter (implementsInterface binder)) impls
+                      _ -> impls
+          )
+            <|> impls
+        )
+
+    implementsInterface :: Binder -> Binder -> Bool
+    implementsInterface binder binder' =
+      maybe
+        False
+        (\(XObj (Lst impls) _ _) -> getBinderPath binder `elem` map getPath impls)
+        (Meta.getBinderMetaValue "implements" binder')
+
+    printIfFound :: Maybe Binder -> IO ()
+    printIfFound = maybe (pure ()) printer
+
+    printer :: Binder -> IO ()
     printer binder@(Binder metaData x@(XObj _ (Just i) _)) =
       putStrLnWithColor Blue (forceShowBinder binder)
         >> putStrLn ("  Defined at " ++ prettyInfo i)
         >> printMeta metaData (contextProj ctx) x
-        >> pure (ctx, dynamicNil)
     printer binder@(Binder metaData x) =
       print binder
         >> printMeta metaData (contextProj ctx) x
-        >> pure (ctx, dynamicNil)
+
     printMeta :: MetaData -> Project -> XObj -> IO ()
     printMeta metaData proj x =
       maybe (pure ()) (printMetaVal "Documentation" (either (const "") id . unwrapStringXObj)) (Meta.get "doc" metaData)
