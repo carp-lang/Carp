@@ -183,7 +183,7 @@ If the array is empty, returns `Nothing`")
 
   (doc rest "gets all but the first element from the array.")
   (defn rest [xs]
-    (slice xs 1 (length xs)))
+    (suffix xs 1))
 
   (doc reverse "reverses an array.")
   (defn reverse [a]
