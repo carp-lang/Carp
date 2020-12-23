@@ -20,7 +20,7 @@ External librares can be loaded by using their relative or absolute location in 
 (Project.config "search-path" "~/Projects/carp-ncurses")
 ```
 
-This line of configuration can be put into [config.carp](Manual.md#Profile-settings) to make it apply in all your projects.
+This line of configuration can be put into [profile.carp](Manual.md#Profile-settings) to make it apply in all your projects.
 
 ## Loading via git
 
