@@ -226,3 +226,41 @@
      "of those interfaces.")
 (defmacro implements-all [mod :rest interfaces]
   (cons 'do (map (curry implement-declaration mod) interfaces)))
+
+(defndynamic make-derive [t f args body]
+  (eval
+    (list 'defmodule t
+      (list 'defn f args
+        body)
+      (list 'implements f (Symbol.prefix t f)))))
+
+(defmacro derive-eq [t]
+  (make-derive t '= ['o1 'o2]
+    (reduce
+      (fn [acc m]
+        (list 'and (list '= (list (car m) 'o1) (list (car m) 'o2)) acc))
+      true
+      (members t))))
+
+(defmacro derive-zero [t]
+  (make-derive t 'zero []
+    (cons 'init
+      (map (fn [_] '(zero)) (members t)))))
+
+(defmacro derive-str [t]
+  (make-derive t 'str ['o]
+    (list 'String.join " "
+      (list 'ref
+        (append
+          [(list 'copy (String.concat ["(" (str t)]))]
+          (append
+            (collect-into (map (fn [m] (list 'str (list (car m) 'o))) (members t)) array)
+            [(list 'copy ")")]))))))
+
+(defmacro derive [t f]
+  (make-derive t f ['o]
+      (reduce
+        (fn [acc m]
+          (list (Symbol.concat ['update- (car m)]) acc (list 'ref f)))
+        'o
+        (members t))))
