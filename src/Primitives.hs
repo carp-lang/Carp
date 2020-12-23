@@ -1,4 +1,3 @@
-{-# LANGUAGE LambdaCase #-}
 {-# LANGUAGE TupleSections #-}
 
 module Primitives where
@@ -20,8 +19,8 @@ import Infer
 import Info
 import Interfaces
 import Lookup
-import qualified Map
 import Managed
+import qualified Map
 import qualified Meta
 import Obj
 import PrimitiveError
@@ -146,21 +145,18 @@ primitiveImplements call ctx [x@(XObj (Sym interface@(SymPath _ _) _) _ _), XObj
     SymPath modules _ = consPath (contextPath ctx `union` prefixes) (SymPath [] name)
     warn :: IO ()
     warn = emitWarning (show (NonExistentInterfaceWarning x))
+
     addToInterface :: Binder -> Binder -> IO (Context, Either EvalError XObj)
     addToInterface inter impl =
-      either
-        (addToInterfaceError (contextExecMode ctx))
-        (updateMeta impl)
-        (registerInInterface ctx impl inter)
-    addToInterfaceError :: ExecutionMode -> String -> IO (Context, Either EvalError XObj)
-    addToInterfaceError Check e =
-      putStrLn (machineReadableInfoFromXObj fppl x ++ " " ++ e)
-        >> pure (evalError ctx e (xobjInfo x))
-      where
-        fppl = projectFilePathPrintLength (contextProj ctx)
-    addToInterfaceError _ e =
-      putStrLnWithColor Red e
-        >> pure (evalError ctx e (xobjInfo x))
+      let (newCtx, maybeErr) = registerInInterface ctx impl inter
+       in maybe (updateMeta impl newCtx) (handleError newCtx impl) maybeErr
+
+    handleError :: Context -> Binder -> InterfaceError -> IO (Context, Either EvalError XObj)
+    handleError context impl e@(AlreadyImplemented _ oldImplPath _ _) =
+      emitWarning (show e) >> pure (removeInterfaceFromImplements oldImplPath x context) >>= updateMeta impl
+    handleError context _ e =
+      emitError (show e) >> pure (evalError context (show e) (xobjInfo x))
+
     updateMeta :: Binder -> Context -> IO (Context, Either EvalError XObj)
     updateMeta binder context =
       pure (fromJust update, dynamicNil)
@@ -171,7 +167,7 @@ primitiveImplements call ctx [x@(XObj (Sym interface@(SymPath _ _) _) _ _), XObj
             )
               <|> Just (updateImplementations binder (XObj (Lst []) (Just dummyInfo) (Just DynamicTy)))
           )
-            >>= \newBinder -> pure (context {contextGlobalEnv = envInsertAt global (getBinderPath binder) newBinder})
+            >>= \newBinder -> pure (context {contextGlobalEnv = envInsertAt (contextGlobalEnv context) (getBinderPath binder) newBinder})
         updateImplementations :: Binder -> XObj -> Binder
         updateImplementations implBinder (XObj (Lst impls) inf ty) =
           if x `elem` impls
@@ -234,10 +230,10 @@ define hidden ctx@(Context globalEnv _ typeEnv _ proj _ _ _) annXObj =
         >>= \maybeinterfaces ->
           pure (mapMaybe (`lookupBinder` getTypeEnv typeEnv) (fromMaybe [] maybeinterfaces))
             >>= \interfaceBinders ->
-              pure (foldM (`registerInInterface` binder) ctx interfaceBinders)
-                >>= \case
-                  Left e -> printError (contextExecMode ctx) e >> pure ctx
-                  Right newCtx -> pure newCtx
+              pure (foldl (\(ctx', _) interface -> registerInInterface ctx' binder interface) (ctx, Nothing) interfaceBinders)
+                >>= \(newCtx, err) -> case err of
+                  Just e -> printError (contextExecMode ctx) (show e) >> pure ctx
+                  Nothing -> pure newCtx
     printError :: ExecutionMode -> String -> IO ()
     printError Check e =
       let fppl = projectFilePathPrintLength (contextProj ctx)
@@ -296,36 +292,65 @@ notFound :: Context -> XObj -> SymPath -> IO (Context, Either EvalError XObj)
 notFound ctx x path = pure (toEvalError ctx x (SymbolNotFoundError path))
 
 primitiveInfo :: Primitive
-primitiveInfo _ ctx [target@(XObj (Sym path@(SymPath _ _) _) _ _)] = do
+primitiveInfo _ ctx [target@(XObj (Sym path@(SymPath _ _) _) _ _)] =
   case path of
     SymPath [] _ ->
-      printIfFound (lookupBinderInTypeEnv ctx path)
-        >> maybe
-          (notFound ctx target path)
-          (foldM (\_ binder -> printer binder) (ctx, dynamicNil))
-          ( fmap (: []) (lookupBinderInContextEnv ctx path)
-              <|> multiLookupBinderEverywhere ctx path
-          )
+      do
+        found <- pure (lookupBinderInTypeEnv ctx path)
+        _ <- printIfFound found
+        _ <- printInterfaceImplementationsOrAll found otherBindings
+        maybe (notFound ctx target path) (const ok) (found <|> fmap head otherBindings)
+      where
+        otherBindings =
+          fmap (: []) (lookupBinderInContextEnv ctx path)
+            <|> multiLookupBinderEverywhere ctx path
     _ ->
-      printIfFound (lookupBinderInTypeEnv ctx path)
-        >> ( case lookupBinderInContextEnv ctx path of
-               Nothing -> notFound ctx target path
-               Just found -> printer found
-           )
+      do
+        found <- pure (lookupBinderInTypeEnv ctx path)
+        others <- pure (lookupBinderInContextEnv ctx path)
+        _ <- printIfFound found
+        _ <- maybe (pure ()) printer others
+        maybe (notFound ctx target path) (const ok) (found <|> others)
   where
-    -- TODO: Return IO () here
-    printIfFound :: Maybe Binder -> IO (Context, Either EvalError XObj)
-    printIfFound binder = maybe (pure (ctx, dynamicNil)) printer binder
+    ok :: IO (Context, Either EvalError XObj)
+    ok = pure (ctx, dynamicNil)
 
+    printInterfaceImplementationsOrAll :: Maybe Binder -> Maybe [Binder] -> IO ()
+    printInterfaceImplementationsOrAll interface impls =
+      maybe
+        (pure ())
+        (foldM (\_ binder -> printer binder) ())
+        ( ( interface
+              >>= \binder ->
+                pure (xobjObj (binderXObj binder))
+                  >>= \obj ->
+                    case obj of
+                      (Lst [XObj (Interface _ _) _ _, _]) ->
+                        fmap (filter (implementsInterface binder)) impls
+                      _ -> impls
+          )
+            <|> impls
+        )
+
+    implementsInterface :: Binder -> Binder -> Bool
+    implementsInterface binder binder' =
+      maybe
+        False
+        (\(XObj (Lst impls) _ _) -> getBinderPath binder `elem` map getPath impls)
+        (Meta.getBinderMetaValue "implements" binder')
+
+    printIfFound :: Maybe Binder -> IO ()
+    printIfFound = maybe (pure ()) printer
+
+    printer :: Binder -> IO ()
     printer binder@(Binder metaData x@(XObj _ (Just i) _)) =
       putStrLnWithColor Blue (forceShowBinder binder)
         >> putStrLn ("  Defined at " ++ prettyInfo i)
         >> printMeta metaData (contextProj ctx) x
-        >> pure (ctx, dynamicNil)
     printer binder@(Binder metaData x) =
       print binder
         >> printMeta metaData (contextProj ctx) x
-        >> pure (ctx, dynamicNil)
+
     printMeta :: MetaData -> Project -> XObj -> IO ()
     printMeta metaData proj x =
       maybe (pure ()) (printMetaVal "Documentation" (either (const "") id . unwrapStringXObj)) (Meta.get "doc" metaData)
@@ -646,9 +671,9 @@ primitiveDeftype xobj ctx (name : rest) =
                       )
                       i
                       (Just TypeTy)
-                  holderEnv = \name' prev -> Env (Map.fromList []) (Just prev) (Just name') [] ExternalEnv 0
-                  holderModule = \name'' prevEnv -> Binder emptyMeta (XObj (Mod (holderEnv name'' prevEnv)) (Just dummyInfo) (Just ModuleTy))
-                  folder = \(contx, prev) pathstring -> (contx {contextTypeEnv = TypeEnv $ envInsertAt (getTypeEnv typeEnv) (SymPath (maybeToList (envModuleName prev)) pathstring) (holderModule pathstring prev)}, holderEnv pathstring prev)
+                  holderEnv name' prev = Env (Map.fromList []) (Just prev) (Just name') [] ExternalEnv 0
+                  holderModule name'' prevEnv = Binder emptyMeta (XObj (Mod (holderEnv name'' prevEnv)) (Just dummyInfo) (Just ModuleTy))
+                  folder (contx, prev) pathstring = (contx {contextTypeEnv = TypeEnv $ envInsertAt (getTypeEnv typeEnv) (SymPath (maybeToList (envModuleName prev)) pathstring) (holderModule pathstring prev)}, holderEnv pathstring prev)
                   wHolders = fst (foldl folder (ctx, getTypeEnv typeEnv) pathStrings)
                   ctx' =
                     ( (fst (foldl folder (ctx, getTypeEnv typeEnv) pathStrings))
@@ -666,21 +691,24 @@ primitiveDeftype xobj ctx (name : rest) =
                         Just strInterface = lookupBinder (SymPath [] "str") (getTypeEnv typeEnv)
                         Just copyInterface = lookupBinder (SymPath [] "copy") (getTypeEnv typeEnv)
                         modulePath = SymPath (pathStrings ++ [typeModuleName])
-                        ctxWithInterfaceRegistrations =
+                        (ctxWithInterfaceRegistrations, err) =
                           -- Since these functions are autogenerated, we treat them as a special case
                           -- and automatically implement the interfaces.
-                          foldM
-                            (\context (path, sig, interface) -> registerInInterfaceIfNeeded context path interface sig)
-                            ctxWithDeps
+                          foldl
+                            (\(context, _) (path, sig, interface) -> registerInInterfaceIfNeeded context path interface sig)
+                            (ctxWithDeps, Nothing)
                             [ (fakeImplBinder (modulePath "delete") deleteSig, deleteSig, deleteInterface),
                               (fakeImplBinder (modulePath "str") strSig, strSig, strInterface),
                               (fakeImplBinder (modulePath "copy") copySig, copySig, copyInterface)
                             ]
-                    case ctxWithInterfaceRegistrations of
-                      Left err -> do
-                        liftIO (putStrLnWithColor Red err)
-                        pure (ctx, dynamicNil)
-                      Right ok -> pure (ok, dynamicNil)
+                    case err of
+                      Just e@AlreadyImplemented {} ->
+                        emitWarning (show e)
+                          >> pure (ctxWithInterfaceRegistrations, dynamicNil)
+                      Just e ->
+                        putStrLnWithColor Red (show e)
+                          >> pure (ctx, dynamicNil)
+                      Nothing -> pure (ctxWithInterfaceRegistrations, dynamicNil)
             Left err ->
               pure (makeEvalError ctx (Just err) ("Invalid type definition for '" ++ pretty nameXObj ++ "':\n\n" ++ show err) Nothing)
         (_, Nothing) ->
@@ -707,7 +735,7 @@ primitiveUse _ _ _ = error "primitiveuse"
 
 -- | Get meta data for a Binder
 primitiveMeta :: Primitive
-primitiveMeta (XObj _ i _) ctx [XObj (Sym (SymPath prefixes name) _) _ _, XObj (Str key) _ _] = do
+primitiveMeta (XObj _ i _) ctx [XObj (Sym (SymPath prefixes name) _) _ _, XObj (Str key) _ _] =
   pure $ maybe errNotFound foundBinder lookup'
   where
     global = contextGlobalEnv ctx
@@ -762,7 +790,7 @@ primitiveDeftemplate _ ctx [XObj (Sym (SymPath [] _) _) _ _, _, XObj (Str _) _ _
   argumentErr ctx "deftemplate" "a string" "fourth" x
 primitiveDeftemplate _ ctx [XObj (Sym (SymPath [] _) _) _ _, _, x, _] =
   argumentErr ctx "deftemplate" "a string" "third" x
-primitiveDeftemplate _ ctx [s@(XObj (Sym (SymPath _ _) _) _ _), _, _, _] = do
+primitiveDeftemplate _ ctx [s@(XObj (Sym (SymPath _ _) _) _ _), _, _, _] =
   argumentErr ctx "deftemplate" "a symbol without prefix" "first" s
 primitiveDeftemplate _ ctx [x, _, _, _] =
   argumentErr ctx "deftemplate" "a symbol" "first" x
