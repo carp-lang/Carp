@@ -91,7 +91,7 @@ instance Show ToCError where
   show (UnresolvedGenericType xobj@(XObj _ _ (Just t))) =
     "I found an unresolved generic type `" ++ show t
       ++ "` for the expression `"
-      ++ show xobj
+      ++ pretty xobj
       ++ "` at "
       ++ prettyInfoFromXObj xobj
   show (UnresolvedGenericType _) = error "show unresolvedgenerictype"
