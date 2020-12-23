@@ -177,7 +177,8 @@ and other static analysis. The first three of them are also available in dynamic
 (while <expression> <body>) ;; Loop until expression is false
 (use <module>) ;; Brings all symbols inside <module> into the scope
 (with <module> <expr1> <expr2> ...) ;; Locally scoped `use` statement where all expressions after it will look up symbols in the <module>
-(match <expression> <case1> <expr1> <case2> <expr2> ...) ;; Pattern matches <expression> against a set of sumtype constructors
+(match <expression> <case1> <expr1> <case2> <expr2> ...) ;; Pattern matches an <expression> against a set of sumtype constructors
+(match-ref <expression> <case1> <expr1> <case2> <expr2> ...) ;; Pattern matches an <expression> of reference type, not taking ownership of its members
 (ref <expression>) ;; Borrow an owned value
 (address <expression>) ;; Takes the memory address of a value, returns a C-style pointer
 (set! <variable> <expression>) ;; Mutate a variable
@@ -367,6 +368,17 @@ You can use pattern matching to extract values in a safe way:
     (Kind1) (logic1)
     _ (logic-other)))
 ```
+
+Note that match works with *values* (not references) takes ownership over the value being matched on. If you instead want to match on a reference, you can use `match-ref`:
+
+```clojure
+(match-ref &might-be-a-string
+  (Just s) (IO.println s)
+  Nothing (IO.println "Got nothing"))
+```
+
+Note that this code would not take ownership over `might-be-a-string`. Also, the `s` in the first case is a reference, since it wouldn't be safe to destructure the `Maybe` into values in this situation.
+
 
 ### C Interop
 ```clojure
