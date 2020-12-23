@@ -220,28 +220,20 @@ If the element is not found, returns `Nothing`")
           (set! c (Int.inc c))))
       c))
 
+  (doc unsafe-nth-value "returns the value at index `i` of an array `a` (just like unsafe-nth) but does not take its reference, and does *not* copy the value. Should only be used for optimizations and when you know what you're doing, circumvents the borrow checker!")
+  (deftemplate unsafe-nth-value (Fn [(Ref (Array a)) Int] a)
+    "$a $NAME(Array *a, int i)"
+    "$DECL { return (($a*)a->data)[i]; }")
+
   (doc aupdate "transmutes (i.e. updates) the element at index `i` of an array `a` using the function `f`.")
-  (deftemplate aupdate
-    (Fn [(Array a) Int &(Fn [a] a)] (Array a))
-    "Array $NAME(Array a, int i, Lambda *f)"
-    r"$DECL
-{
-  $a old = (($a*)a.data)[i];
-  (($a*)a.data)[i] = f->env ? (($a(*)(LambdaEnv, $a))f->callback)(f->env, old) : (($a(*)())f->callback)(old);
-  return a;
-}
-")
+  (defn aupdate [a i f]
+    (do
+      (aset-uninitialized! &a i (~f (unsafe-nth-value &a i)))
+      a))
 
   (doc aupdate! "transmutes (i.e. updates) the element at index `i` of an array `a` using the function `f` in place.")
-  (deftemplate aupdate!
-    (Fn [(Ref (Array a)) Int &(Fn [a] a)] ())
-    "void $NAME(Array *a, int i, Lambda *f)"
-    r"$DECL
-{
-  $a old = (($a*)a->data)[i];
-  (($a*)a->data)[i] = f->env ? (($a(*)(LambdaEnv, $a))f->callback)(f->env, old) : (($a(*)())f->callback)(old);
-}
-")
+  (defn aupdate! [a i f]
+    (aset-uninitialized! a i (~f (unsafe-nth-value a i))))
 
   (doc swap "swaps the indices `i` and `j` of an array `a`.")
   (defn swap [a i j]
