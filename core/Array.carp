@@ -181,6 +181,10 @@ If the array is empty, returns `Nothing`")
   (defn suffix [xs start-index]
     (slice xs start-index (length xs)))
 
+  (doc rest "gets all but the first element from the array.")
+  (defn rest [xs]
+    (suffix xs 1))
+
   (doc reverse "reverses an array.")
   (defn reverse [a]
     (let-do [i 0
