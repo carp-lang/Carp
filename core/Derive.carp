@@ -91,3 +91,9 @@ derivable.")
           (append
             (collect-into (map (fn [m] (list 'str (list (car m) 'o))) (members t)) array)
             [(list 'copy ")")]))))))
+
+(defmacro derive [t f]
+  (let [deriver (get-deriver f derivers)]
+    (if (empty? deriver)
+      (macro-error (String.concat ["no deriver found for interface " (str f) "!"]))
+      ((cadr deriver) t))))
