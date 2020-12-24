@@ -20,6 +20,7 @@
 (load-once "Bool.carp")
 (load-once "Macros.carp")
 (load-once "List.carp")
+(load-once "Derive.carp")
 (load-once "Gensym.carp")
 (load-once "ControlMacros.carp")
 (load-once "Project.carp")

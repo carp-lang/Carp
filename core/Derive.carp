@@ -1,0 +1,58 @@
+(defdynamic derivers '())
+
+(defndynamic make-deriver [f args body]
+  (set! derivers
+    (cons
+      (list f
+        (fn [t]
+          (eval
+            (list 'defmodule t
+              (list 'defn f args
+                (body t))
+              (list 'implements f (Symbol.prefix t f))))))
+      derivers)))
+
+(defndynamic make-update-deriver [f]
+  (make-deriver f ['o]
+    (fn [t]
+      (reduce
+        (fn [acc m]
+          (list (Symbol.concat ['update- (car m)]) acc (list 'ref f)))
+        'o
+        (members t)))))
+
+(defndynamic get-deriver [f derivers]
+  (if (empty? derivers)
+    '()
+    (if (= (caar derivers) f)
+      (car derivers)
+      (get-deriver f (cdr derivers)))))
+
+(make-deriver '= ['o1 'o2]
+  (fn [t]
+    (reduce
+      (fn [acc m]
+        (list 'and (list '= (list (car m) 'o1) (list (car m) 'o2)) acc))
+      true
+      (members t))))
+
+(make-deriver 'zero []
+  (fn [t]
+    (cons 'init
+      (map (fn [_] '(zero)) (members t)))))
+
+(make-deriver 'str ['o]
+  (fn [t]
+    (list 'String.join " "
+      (list 'ref
+        (append
+          [(list 'copy (String.concat ["(" (str t)]))]
+          (append
+            (collect-into (map (fn [m] (list 'str (list (car m) 'o))) (members t)) array)
+            [(list 'copy ")")]))))))
+
+(defmacro derive [t f]
+  (let [deriver (get-deriver f derivers)]
+    (if (empty? deriver)
+      (macro-error (String.concat ["no deriver found for interface " (str f) "!"]))
+      ((cadr deriver) t))))

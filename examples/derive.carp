@@ -1,9 +1,13 @@
+; let’s make inc and dec derivable
+(make-update-deriver 'inc)
+(make-update-deriver 'dec)
+
 (deftype T [x Int y Int z Int])
 (derive T inc)
 (derive T dec)
-(derive-eq T)
-(derive-zero T)
-(derive-str T)
+(derive T zero)
+(derive T str)
+(derive T =)
 
 (defn main []
 (do
