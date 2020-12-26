@@ -11,7 +11,7 @@ import Control.Monad.IO.Class (MonadIO, liftIO)
 import Data.Either (rights)
 import Data.Functor ((<&>))
 import Data.List (union)
-import Data.Maybe (fromJust, fromMaybe, mapMaybe, maybeToList)
+import Data.Maybe (fromJust, fromMaybe, mapMaybe)
 import Deftype
 import Emit
 import Env
@@ -672,11 +672,15 @@ primitiveDeftype xobj ctx (name : rest) =
                       i
                       (Just TypeTy)
                   holderEnv name' prev = Env (Map.fromList []) (Just prev) (Just name') [] ExternalEnv 0
-                  holderModule name'' prevEnv = Binder emptyMeta (XObj (Mod (holderEnv name'' prevEnv)) (Just dummyInfo) (Just ModuleTy))
-                  folder (contx, prev) pathstring = (contx {contextTypeEnv = TypeEnv $ envInsertAt (getTypeEnv typeEnv) (SymPath (maybeToList (envModuleName prev)) pathstring) (holderModule pathstring prev)}, holderEnv pathstring prev)
-                  wHolders = fst (foldl folder (ctx, getTypeEnv typeEnv) pathStrings)
+                  holderModule name'' prevEnv priorPaths tyenv =
+                    case lookupBinder (SymPath priorPaths name'') tyenv of
+                      Just existing@(Binder _ (XObj (Mod _) _ _)) -> existing
+                      _ -> Binder emptyMeta (XObj (Mod (holderEnv name'' prevEnv)) (Just dummyInfo) (Just ModuleTy))
+                  folder (contx, prev, priorPaths) pathstring =
+                    (contx {contextTypeEnv = TypeEnv $ envInsertAt (getTypeEnv (contextTypeEnv contx)) (SymPath priorPaths pathstring) (holderModule pathstring prev priorPaths (getTypeEnv (contextTypeEnv contx)))}, holderEnv pathstring prev, priorPaths ++ [pathstring])
+                  (wHolders, _, _) = (foldl folder (ctx, getTypeEnv typeEnv, []) pathStrings)
                   ctx' =
-                    ( (fst (foldl folder (ctx, getTypeEnv typeEnv) pathStrings))
+                    ( wHolders
                         { contextGlobalEnv = updatedGlobal,
                           contextTypeEnv = TypeEnv (envInsertAt (getTypeEnv (contextTypeEnv wHolders)) (SymPath pathStrings tyName) (Binder emptyMeta typeDefinition))
                         }
