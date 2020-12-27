@@ -14,7 +14,7 @@ where
 
 import ColorText
 import Constraints
-import Data.List (delete, deleteBy)
+import Data.List (delete, deleteBy, foldl')
 import Data.Maybe (fromMaybe, mapMaybe)
 import Env
 import Lookup
@@ -152,7 +152,7 @@ retroactivelyRegisterInInterface ctx interface =
   where
     env = contextGlobalEnv ctx
     impls = lookupMany Everywhere lookupImplementations (getPath (binderXObj interface)) env
-    (resultCtx, err) = foldl (\(context, _) binder -> registerInInterface context binder interface) (ctx, Nothing) impls
+    (resultCtx, err) = foldl' (\(context, _) binder -> registerInInterface context binder interface) (ctx, Nothing) impls
 
 -- | Checks whether an interface is implemented for a certain type signature,
 -- | e.g. Is "delete" implemented for `(Fn [String] ())` ?
