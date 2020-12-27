@@ -67,11 +67,7 @@ addCmd path callback doc example =
         ( Lst
             [ XObj (Command callback) (Just dummyInfo) Nothing,
               XObj (Sym path Symbol) Nothing Nothing,
-              XObj
-                ( Arr args
-                )
-                Nothing
-                Nothing
+              XObj (Arr args) Nothing Nothing
             ]
         )
         (Just dummyInfo)
@@ -849,6 +845,6 @@ commandParse ctx (XObj (Str s) i _) =
     Left e -> evalError ctx (show e) i
     Right [] -> evalError ctx "parse did not return an object" i
     Right [e] -> (ctx, Right e)
-    Right (_:_) -> evalError ctx "parse returned multiple objects" i
+    Right (_ : _) -> evalError ctx "parse returned multiple objects" i
 commandParse ctx x =
   pure (evalError ctx ("Argument to `parse` must be a string, but was `" ++ pretty x ++ "`") (xobjInfo x))
