@@ -361,7 +361,13 @@ eval ctx xobj@(XObj o info ty) preference resolver =
               Left err -> pure (ctx, Left err)
         XObj (Lst [XObj (Command _) _ _, sym, XObj (Arr params) _ _]) i _ : args ->
           badArity (getName sym) params args i
-        x@(XObj (Lst [XObj (Primitive prim) _ _, _, _]) _ _) : args -> getPrimitive prim x ctx args
+        [e@(XObj (Lst [XObj (Primitive (NullaryPrimitive nullary)) _ _, _, _]) _ _)] -> nullary e ctx
+        [e@(XObj (Lst [XObj (Primitive (UnaryPrimitive unary)) _ _, _, _]) _ _), x] -> unary e ctx x
+        [e@(XObj (Lst [XObj (Primitive (BinaryPrimitive binary)) _ _, _, _]) _ _), x, y] -> binary e ctx x y
+        [e@(XObj (Lst [XObj (Primitive (TernaryPrimitive ternary)) _ _, _, _]) _ _), x, y, z] -> ternary e ctx x y z
+        [e@(XObj (Lst [XObj (Primitive (QuaternaryPrimitive quaternary)) _ _, _, _]) _ _), x, y, z, w] -> quaternary e ctx x y z w
+        e@(XObj (Lst [XObj (Primitive (VariadicPrimitive variadic)) _ _, _, _]) _ _) : args -> variadic e ctx args
+        XObj (Lst [XObj (Primitive _) _ _, sym, XObj (Arr params) _ _]) i _ : args -> badArity (getName sym) params args i
         XObj (Lst (XObj (Defn _) _ _ : _)) _ _ : _ -> pure (ctx, Left (HasStaticCall xobj info))
         XObj (Lst (XObj (Interface _ _) _ _ : _)) _ _ : _ -> pure (ctx, Left (HasStaticCall xobj info))
         XObj (Lst (XObj (Instantiate _) _ _ : _)) _ _ : _ -> pure (ctx, Left (HasStaticCall xobj info))
@@ -471,8 +477,8 @@ macroExpand ctx xobj =
           (newCtx', res) <- evalDynamic ResolveLocal ctx (XObj (Lst (m : args)) i t)
           pure (newCtx', res)
         -- TODO: Determine a way to eval primitives generally and remove this special case.
-        Right p@(XObj (Lst [XObj (Primitive prim) _ _, XObj (Sym (SymPath _ "defmodule") _) _ _, _]) _ _) ->
-          getPrimitive prim p next args
+        Right p@(XObj (Lst [XObj (Primitive (VariadicPrimitive variadic)) _ _, XObj (Sym (SymPath _ "defmodule") _) _ _, _]) _ _) ->
+          variadic p next args
         _ -> do
           (newCtx, expanded) <- foldlM successiveExpand (ctx, Right []) args
           pure
@@ -763,7 +769,7 @@ annotateWithinContext qualifyDefn ctx xobj = do
                       pure (evalError ctx (show err) (xobjInfo xobj))
                 Right ok -> pure (ctx, Right ok)
 
-primitiveDefmodule :: Primitive
+primitiveDefmodule :: VariadicPrimitiveCallback
 primitiveDefmodule xobj ctx@(Context env i _ pathStrings _ _ _ _) (XObj (Sym (SymPath [] moduleName) _) _ _ : innerExpressions) =
   -- N.B. The `envParent` rewrite at the end of this line is important!
   -- lookups delve into parent envs by default, which is normally what we want, but in this case it leads to problems
@@ -1116,16 +1122,15 @@ buildMainFunction xobj =
   where
     di = Just dummyInfo
 
-primitiveDefdynamic :: Primitive
-primitiveDefdynamic _ ctx [XObj (Sym (SymPath [] name) _) _ _, value] = do
+primitiveDefdynamic :: BinaryPrimitiveCallback
+primitiveDefdynamic _ ctx (XObj (Sym (SymPath [] name) _) _ _) value = do
   (newCtx, result) <- evalDynamic ResolveLocal ctx value
   case result of
     Left err -> pure (newCtx, Left err)
     Right evaledBody ->
       dynamicOrMacroWith newCtx (\path -> [XObj DefDynamic Nothing Nothing, XObj (Sym path Symbol) Nothing Nothing, evaledBody]) DynamicTy name value
-primitiveDefdynamic _ ctx [notName, _] =
+primitiveDefdynamic _ ctx notName _ =
   pure (evalError ctx ("`defndynamic` expected a name as first argument, but got " ++ pretty notName) (xobjInfo notName))
-primitiveDefdynamic _ _ _ = error "primitivedefdynamic"
 
 specialCommandSet :: Context -> [XObj] -> IO (Context, Either EvalError XObj)
 specialCommandSet ctx [orig@(XObj (Sym path@(SymPath _ n) _) _ _), val] =
@@ -1209,8 +1214,8 @@ setStaticOrDynamicVar path env binder value =
     -- TODO: Return an either here to propagate error.
     _ -> env
 
-primitiveEval :: Primitive
-primitiveEval _ ctx [val] = do
+primitiveEval :: UnaryPrimitiveCallback
+primitiveEval _ ctx val = do
   -- primitives don’t evaluate their arguments, so this needs to double-evaluate
   (newCtx, arg) <- evalDynamic ResolveLocal ctx val
   case arg of
@@ -1224,7 +1229,6 @@ primitiveEval _ ctx [val] = do
           pure $ case res of
             Left (HasStaticCall x i) -> evalError ctx ("Unexpected static call in " ++ pretty x) i
             _ -> (finalCtx, res)
-primitiveEval _ _ _ = error "primitiveeval"
 
 dynamicOrMacro :: Context -> Obj -> Ty -> String -> XObj -> XObj -> IO (Context, Either EvalError XObj)
 dynamicOrMacro ctx pat ty name params body = do
@@ -1234,54 +1238,14 @@ dynamicOrMacro ctx pat ty name params body = do
       dynamicOrMacroWith ctx' (\path -> [XObj pat Nothing Nothing, XObj (Sym path Symbol) Nothing Nothing, params, expanded]) ty name body
     Left _ -> pure (ctx, exp)
 
-primitiveDefndynamic :: Primitive
-primitiveDefndynamic _ ctx [XObj (Sym (SymPath [] name) _) _ _, params, body] =
+primitiveDefndynamic :: TernaryPrimitiveCallback
+primitiveDefndynamic _ ctx (XObj (Sym (SymPath [] name) _) _ _) params body =
   dynamicOrMacro ctx Dynamic DynamicTy name params body
-primitiveDefndynamic _ ctx [notName, _, _] =
+primitiveDefndynamic _ ctx notName _ _ =
   argumentErr ctx "defndynamic" "a name" "first" notName
-primitiveDefndynamic _ _ _ = error "primitivedefndynamic"
 
-primitiveDefmacro :: Primitive
-primitiveDefmacro _ ctx [XObj (Sym (SymPath [] name) _) _ _, params, body] =
+primitiveDefmacro :: TernaryPrimitiveCallback
+primitiveDefmacro _ ctx (XObj (Sym (SymPath [] name) _) _ _) params body =
   dynamicOrMacro ctx Macro MacroTy name params body
-primitiveDefmacro _ ctx [notName, _, _] =
+primitiveDefmacro _ ctx notName _ _ =
   argumentErr ctx "defmacro" "a name" "first" notName
-primitiveDefmacro _ _ _ = error "primitivedefmacro"
-
-primitiveAnd :: Primitive
-primitiveAnd _ ctx [a, b] = do
-  (newCtx, evaledA) <- evalDynamic ResolveLocal ctx a
-  case evaledA of
-    Left e -> pure (ctx, Left e)
-    Right (XObj (Bol ab) _ _) ->
-      if ab
-        then do
-          (newCtx', evaledB) <- evalDynamic ResolveLocal newCtx b
-          pure $ case evaledB of
-            Left e -> (newCtx, Left e)
-            Right (XObj (Bol bb) _ _) ->
-              (newCtx', Right (boolToXObj bb))
-            Right b' -> evalError ctx ("Can’t call `or` on " ++ pretty b') (xobjInfo b')
-        else pure (newCtx, Right falseXObj)
-    Right a' -> pure (evalError ctx ("Can’t call `or` on " ++ pretty a') (xobjInfo a'))
-primitiveAnd _ _ _ = error "primitiveand"
-
-primitiveOr :: Primitive
-primitiveOr _ ctx [a, b] = do
-  (newCtx, evaledA) <- evalDynamic ResolveLocal ctx a
-  case evaledA of
-    Left e -> pure (ctx, Left e)
-    Right (XObj (Bol ab) _ _) ->
-      if ab
-        then pure (newCtx, Right trueXObj)
-        else do
-          (newCtx', evaledB) <- evalDynamic ResolveLocal newCtx b
-          pure $ case evaledB of
-            Left e -> (newCtx, Left e)
-            Right (XObj (Bol bb) _ _) ->
-              (newCtx', Right (boolToXObj bb))
-            Right o -> err o
-    Right o -> pure (err o)
-  where
-    err o = evalError ctx ("Can’t call `or` on " ++ pretty o) (xobjInfo o)
-primitiveOr _ _ _ = error "primitiveor"

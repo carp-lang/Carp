@@ -227,7 +227,7 @@ dynamicModule =
     path = ["Dynamic"]
     spath = SymPath path
     bindings =
-      Map.fromList $ nullaries ++ unaries ++ binaries ++ variadics ++ prims
+      Map.fromList $ nullaries ++ unaries ++ binaries ++ variadics ++ unaries' ++ binaries' ++ ternaries' ++ quaternaries' ++ variadics' ++ mods
     nullaries =
       let f = addNullaryCommand . spath
        in [ f "quit" commandQuit "quits the program." "(quit)",
@@ -288,38 +288,52 @@ dynamicModule =
             f "load" commandLoad "loads a file into the current environment." "(load \"myfile.carp\")\n(load \"myrepo@version\" \"myfile\")",
             f "load-once" commandLoadOnce "loads a file and prevents it from being reloaded (see `reload`)." "(load-once \"myfile.carp\")\n(load \"myrepo@version\" \"myfile\")"
           ]
-    prims =
-      [ makePrim "quote" 1 "quotes any value." "(quote x) ; where x is an actual symbol" (\_ ctx [x] -> pure (ctx, Right x)),
-        makeVarPrim "file" "returns the file a symbol was defined in." "(file mysymbol)" primitiveFile,
-        makeVarPrim "line" "returns the line a symbol was defined on." "(line mysymbol)" primitiveLine,
-        makeVarPrim "column" "returns the column a symbol was defined on." "(column mysymbol)" primitiveColumn,
-        makePrim "info" 1 "prints all information associated with a symbol." "(info mysymbol)" primitiveInfo,
-        makePrim "managed?" 1 "" "" primitiveIsManaged,
-        makeVarPrim "register-type" "registers a new type from C." "(register-type Name <optional: c-name> <optional: members>)" primitiveRegisterType,
-        makePrim "defmacro" 3 "defines a new macro." "(defmacro name [args :rest restargs] body)" primitiveDefmacro,
-        makePrim "defndynamic" 3 "defines a new dynamic function, i.e. a function available at compile time." "(defndynamic name [args] body)" primitiveDefndynamic,
-        makePrim "defdynamic" 2 "defines a new dynamic value, i.e. a value available at compile time." "(defdynamic name value)" primitiveDefdynamic,
-        makePrim "members" 1 "returns the members of a type as an array." "(members MyType)" primitiveMembers,
-        makeVarPrim "defmodule" "defines a new module in which `expressions` are defined." "(defmodule MyModule <expressions>)" primitiveDefmodule,
-        makePrim "meta-set!" 3 "sets a new key and value pair on the meta map associated with a symbol." "(meta-set! mysymbol \"mykey\" \"myval\")" primitiveMetaSet,
-        makePrim "meta" 2 "gets the value under `\"mykey\"` in the meta map associated with a symbol. It returns `()` if the key isn’t found." "(meta mysymbol \"mykey\")" primitiveMeta,
-        makePrim "definterface" 2 "defines a new interface (which could be a function or symbol)." "(definterface mysymbol MyType)" primitiveDefinterface,
-        makeVarPrim "register" "registers a new function. This is used to define C functions and other symbols that will be available at link time." "(register name <signature> <optional: override>)" primitiveRegister,
-        makeVarPrim "deftype" "defines a new sumtype or struct." "(deftype Name <members>)" primitiveDeftype,
-        makePrim "use" 1 "uses a module, i.e. imports the symbols inside that module into the current module." "(use MyModule)" primitiveUse,
-        makePrim "eval" 1 "evaluates a list." "(eval mycode)" primitiveEval,
-        makePrim "defined?" 1 "checks whether a symbol is defined." "(defined? mysymbol)" primitiveDefined,
-        makePrim "deftemplate" 4 "defines a new C template." "(deftemplate symbol Type declString defString)" primitiveDeftemplate,
-        makePrim "implements" 2 "designates a function as an implementation of an interface." "(implements zero Maybe.zero)" primitiveImplements,
-        makePrim "type" 1 "prints the type of a symbol." "(type mysymbol)" primitiveType,
-        makePrim "kind" 1 "prints the kind of a symbol." "(kind mysymbol)" primitiveKind,
-        makeVarPrim "help" "prints help." "(help)" primitiveHelp
+    unaries' =
+      let f = makeUnaryPrim . spath
+       in [ f "quote" (\_ ctx x -> pure (ctx, Right x)) "quotes any value." "(quote x) ; where x is an actual symbol",
+            f "info" primitiveInfo "prints all information associated with a symbol." "(info mysymbol)",
+            f "managed?" primitiveIsManaged "" "",
+            f "members" primitiveMembers "returns the members of a type as an array." "(members MyType)",
+            f "use" primitiveUse "uses a module, i.e. imports the symbols inside that module into the current module." "(use MyModule)",
+            f "eval" primitiveEval "evaluates a list." "(eval mycode)",
+            f "defined?" primitiveDefined "checks whether a symbol is defined." "(defined? mysymbol)",
+            f "type" primitiveType "prints the type of a symbol." "(type mysymbol)",
+            f "kind" primitiveKind "prints the kind of a symbol." "(kind mysymbol)"
+          ]
+    binaries' =
+      let f = makeBinaryPrim . spath
+       in [ f "defdynamic" primitiveDefdynamic "defines a new dynamic value, i.e. a value available at compile time." "(defdynamic name value)",
+            f "meta" primitiveMeta "gets the value under `\"mykey\"` in the meta map associated with a symbol. It returns `()` if the key isn’t found." "(meta mysymbol \"mykey\")",
+            f "definterface" primitiveDefinterface "defines a new interface (which could be a function or symbol)." "(definterface mysymbol MyType)",
+            f "implements" primitiveImplements "designates a function as an implementation of an interface." "(implements zero Maybe.zero)"
+          ]
+    ternaries' =
+      let f = makeTernaryPrim . spath
+       in [ f "defmacro" primitiveDefmacro "defines a new macro." "(defmacro name [args :rest restargs] body)",
+            f "defndynamic" primitiveDefndynamic "defines a new dynamic function, i.e. a function available at compile time." "(defndynamic name [args] body)",
+            f "meta-set!" primitiveMetaSet "sets a new key and value pair on the meta map associated with a symbol." "(meta-set! mysymbol \"mykey\" \"myval\")"
+          ]
+    quaternaries' =
+      let f = makeQuaternaryPrim . spath
+       in [ f "deftemplate" primitiveDeftemplate "defines a new C template." "(deftemplate symbol Type declString defString)"
+          ]
+    variadics' =
+      let f = makeVariadicPrim . spath
+       in [ f "file" primitiveFile "returns the file a symbol was defined in." "(file mysymbol)",
+            f "line" primitiveLine "returns the line a symbol was defined on." "(line mysymbol)",
+            f "column" primitiveColumn "returns the column a symbol was defined on." "(column mysymbol)",
+            f "register-type" primitiveRegisterType "registers a new type from C." "(register-type Name <optional: c-name> <optional: members>)",
+            f "defmodule" primitiveDefmodule "defines a new module in which `expressions` are defined." "(defmodule MyModule <expressions>)",
+            f "register" primitiveRegister "registers a new function. This is used to define C functions and other symbols that will be available at link time." "(register name <signature> <optional: override>)",
+            f "deftype" primitiveDeftype "defines a new sumtype or struct." "(deftype Name <members>)",
+            f "help" primitiveHelp "prints help." "(help)"
+          ]
+    mods =
+      [ ("String", Binder emptyMeta (XObj (Mod dynamicStringModule) Nothing Nothing)),
+        ("Symbol", Binder emptyMeta (XObj (Mod dynamicSymModule) Nothing Nothing)),
+        ("Project", Binder emptyMeta (XObj (Mod dynamicProjectModule) Nothing Nothing)),
+        ("Path", Binder emptyMeta (XObj (Mod dynamicPathModule) Nothing Nothing))
       ]
-        ++ [ ("String", Binder emptyMeta (XObj (Mod dynamicStringModule) Nothing Nothing)),
-             ("Symbol", Binder emptyMeta (XObj (Mod dynamicSymModule) Nothing Nothing)),
-             ("Project", Binder emptyMeta (XObj (Mod dynamicProjectModule) Nothing Nothing)),
-             ("Path", Binder emptyMeta (XObj (Mod dynamicPathModule) Nothing Nothing))
-           ]
 
 -- | A submodule of the Dynamic module. Contains functions for working with strings in the repl or during compilation.
 dynamicStringModule :: Env

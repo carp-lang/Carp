@@ -211,10 +211,26 @@ instance Ord Obj where
 
 -- TODO: handle comparison of lists, arrays and dictionaries
 
--- | The type of primitive functions. See Primitives.hs
-type Primitive = XObj -> Context -> [XObj] -> IO (Context, Either EvalError XObj)
+type NullaryPrimitiveCallback = XObj -> Context -> IO (Context, Either EvalError XObj)
 
-newtype PrimitiveFunctionType = PrimitiveFunction {getPrimitive :: Primitive}
+type UnaryPrimitiveCallback = XObj -> Context -> XObj -> IO (Context, Either EvalError XObj)
+
+type BinaryPrimitiveCallback = XObj -> Context -> XObj -> XObj -> IO (Context, Either EvalError XObj)
+
+type TernaryPrimitiveCallback = XObj -> Context -> XObj -> XObj -> XObj -> IO (Context, Either EvalError XObj)
+
+type QuaternaryPrimitiveCallback = XObj -> Context -> XObj -> XObj -> XObj -> XObj -> IO (Context, Either EvalError XObj)
+
+type VariadicPrimitiveCallback = XObj -> Context -> [XObj] -> IO (Context, Either EvalError XObj)
+
+-- | The type of primitive functions. See Primitives.hs
+data PrimitiveFunctionType
+  = NullaryPrimitive NullaryPrimitiveCallback
+  | UnaryPrimitive UnaryPrimitiveCallback
+  | BinaryPrimitive BinaryPrimitiveCallback
+  | TernaryPrimitive TernaryPrimitiveCallback
+  | QuaternaryPrimitive QuaternaryPrimitiveCallback
+  | VariadicPrimitive VariadicPrimitiveCallback
 
 instance Hashable PrimitiveFunctionType where
   hashWithSalt s = const s
