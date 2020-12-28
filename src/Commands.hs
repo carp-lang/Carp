@@ -72,7 +72,7 @@ addCmd path callback doc example =
         )
         (Just dummyInfo)
         (Just DynamicTy)
-    args = (\x -> XObj (Arr [XObj (Sym (SymPath [] x) Symbol) Nothing Nothing]) Nothing Nothing) <$> argnames
+    args = (\x -> XObj (Sym (SymPath [] x) Symbol) Nothing Nothing) <$> argnames
     argnames = case callback of
       NullaryCommandFunction _ -> []
       UnaryCommandFunction _ -> ["x"]

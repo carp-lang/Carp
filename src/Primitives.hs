@@ -41,29 +41,29 @@ import Web.Browser (openBrowser)
 --               pure (ctx, dynamicNil)
 
 makeNullaryPrim :: SymPath -> NullaryPrimitiveCallback -> String -> String -> (String, Binder)
-makeNullaryPrim p = makePrim' p . NullaryPrimitive
+makeNullaryPrim p = makePrim p . NullaryPrimitive
 
 makeUnaryPrim :: SymPath -> UnaryPrimitiveCallback -> String -> String -> (String, Binder)
-makeUnaryPrim p = makePrim' p . UnaryPrimitive
+makeUnaryPrim p = makePrim p . UnaryPrimitive
 
 makeBinaryPrim :: SymPath -> BinaryPrimitiveCallback -> String -> String -> (String, Binder)
-makeBinaryPrim p = makePrim' p . BinaryPrimitive
+makeBinaryPrim p = makePrim p . BinaryPrimitive
 
 makeTernaryPrim :: SymPath -> TernaryPrimitiveCallback -> String -> String -> (String, Binder)
-makeTernaryPrim p = makePrim' p . TernaryPrimitive
+makeTernaryPrim p = makePrim p . TernaryPrimitive
 
 makeQuaternaryPrim :: SymPath -> QuaternaryPrimitiveCallback -> String -> String -> (String, Binder)
-makeQuaternaryPrim p = makePrim' p . QuaternaryPrimitive
+makeQuaternaryPrim p = makePrim p . QuaternaryPrimitive
 
 makeVariadicPrim :: SymPath -> VariadicPrimitiveCallback -> String -> String -> (String, Binder)
-makeVariadicPrim p = makePrim' p . VariadicPrimitive
+makeVariadicPrim p = makePrim p . VariadicPrimitive
 
 argumentErr :: Context -> String -> String -> String -> XObj -> IO (Context, Either EvalError XObj)
 argumentErr ctx fun ty number actual =
   pure (toEvalError ctx actual (ArgumentTypeError fun ty number actual))
 
-makePrim' :: SymPath -> PrimitiveFunctionType -> String -> String -> (String, Binder)
-makePrim' path callback doc example =
+makePrim :: SymPath -> PrimitiveFunctionType -> String -> String -> (String, Binder)
+makePrim path callback doc example =
   (name, Binder meta prim)
   where
     SymPath _ name = path
@@ -80,7 +80,7 @@ makePrim' path callback doc example =
         )
         (Just dummyInfo)
         (Just DynamicTy)
-    args = (\x -> XObj (Arr [XObj (Sym (SymPath [] x) Symbol) Nothing Nothing]) Nothing Nothing) <$> argnames
+    args = (\x -> XObj (Sym (SymPath [] x) Symbol) Nothing Nothing) <$> argnames
     argnames = case callback of
       NullaryPrimitive _ -> []
       UnaryPrimitive _ -> ["x"]
