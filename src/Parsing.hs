@@ -12,6 +12,7 @@ import Data.Bits (shift)
 -- import Text.Parsec.Pos (newPos)
 
 import Data.Char (ord)
+import Data.List (foldl')
 import Info
 import Numeric (readHex)
 import Obj
@@ -54,7 +55,7 @@ otherBases = do
       digits <- Parsec.many1 (Parsec.oneOf "01")
       incColumn (length digits)
       pure (binToDec digits)
-    binToDec = show . foldl f 0
+    binToDec = show . foldl' f 0
       where
         f :: Int -> Char -> Int
         f x '0' = shift x 1

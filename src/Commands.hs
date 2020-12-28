@@ -7,7 +7,7 @@ import Control.Monad.IO.Class (MonadIO, liftIO)
 import Data.Bits (finiteBitSize)
 import Data.Functor ((<&>))
 import Data.Hashable (hash)
-import Data.List (elemIndex)
+import Data.List (elemIndex, foldl')
 import Data.List.Split (splitOn)
 import Data.Maybe (fromMaybe)
 import Emit
@@ -808,7 +808,7 @@ commandSexpressionInternal ctx xobj bol =
                     (commandSexpression ctx . pure . snd)
                     ( Map.toList $ Map.map binderXObj (envBindings env)
                     )
-                    <&> foldl combine start
+                    <&> foldl' combine start
                 combine (c, Right (XObj (Lst xs) i t)) (_, Right y@(XObj (Lst _) _ _)) =
                   (c, Right (XObj (Lst (xs ++ [y])) i t))
                 combine _ (c, Left err) =
@@ -849,6 +849,6 @@ commandParse ctx (XObj (Str s) i _) =
     Left e -> evalError ctx (show e) i
     Right [] -> evalError ctx "parse did not return an object" i
     Right [e] -> (ctx, Right e)
-    Right (_:_) -> evalError ctx "parse returned multiple objects" i
+    Right (_ : _) -> evalError ctx "parse returned multiple objects" i
 commandParse ctx x =
   pure (evalError ctx ("Argument to `parse` must be a string, but was `" ++ pretty x ++ "`") (xobjInfo x))

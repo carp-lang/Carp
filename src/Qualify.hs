@@ -213,7 +213,7 @@ setFullyQualifiedSymbols typeEnv globalEnv localEnv xobj@(XObj (Sym path _) i t)
     removeThoseShadowedByRecursiveSymbol allBinders = visit allBinders allBinders
       where
         visit bs res =
-          foldl
+          foldl'
             ( \result b ->
                 case b of
                   (Env {envMode = RecursionEnv}, Binder _ xobj') ->

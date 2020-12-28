@@ -388,7 +388,7 @@ collectCapturedVars root = removeDuplicates (map decreaseCaptureLevel (visit roo
         -- including the ones captured in later bindings
         (Lst [XObj Let _ _, XObj (Arr bindings) _ _, body]) ->
           let (bound, bindingsCaptured) =
-                foldl
+                foldl'
                   ( \(bound', captured) (XObj sym _ ty, expr) ->
                       let capt = filter (`Set.notMember` bound') (visit expr)
                        in (Set.insert (XObj sym (Just dummyInfo) ty) bound', capt ++ captured)
