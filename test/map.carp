@@ -209,6 +209,11 @@
                 &(Map.reverse &{@"hi" 1 @"bye" 2})
                 "reverse works"
   )
+  (assert-equal test
+                &{1 @"hi" 2 @"bye" 3 @"!"}
+                &(Map.merge {1 @"bye" 3 @"!"} &{2 @"bye" 1 @"hi"})
+                "merge works"
+  )
   (assert-true test
                (let-do [s (Set.create)]
                  (Set.put! &s "1")
