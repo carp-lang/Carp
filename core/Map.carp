@@ -241,7 +241,7 @@
           (update-buckets m &(fn [b]
                                (let [n (Array.unsafe-nth &b idx)]
                                  (Array.aset b idx (Bucket.put @n k v)))))
-           (if in? &id &Int.inc)))))
+           &(if in? id Int.inc)))))
 
   (doc put! "Put a value v into map m, using the key k, in place.")
   (defn put! [m k v]
