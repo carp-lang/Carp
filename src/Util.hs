@@ -65,7 +65,7 @@ enumerate 5 = "sixth"
 enumerate 6 = "seventh"
 enumerate n = show n ++ ":th"
 
-data Platform = Linux | MacOS | Windows | FreeBSD deriving (Show, Eq)
+data Platform = Linux | MacOS | Windows | FreeBSD | NetBSD deriving (Show, Eq)
 
 platform :: Platform
 platform =
@@ -74,6 +74,7 @@ platform =
     "darwin" -> MacOS
     "mingw32" -> Windows
     "freebsd" -> FreeBSD
+    "netbsd" -> NetBSD
     p -> error ("Unknown platform: " ++ p)
 
 unionOfSetsInList :: Ord a => [Set.Set a] -> Set.Set a
