@@ -316,7 +316,7 @@ Any structure type defined in Carp has an init method that can be used to create
 
 ;; Additionally, a 'lens' is automatically generated for each member; signatures for reference:
 ;; Vector2.x (Fn [(Ref Vector2)] (Ref Int))
-(Vector2.x my-pos) ;; => 10
+(Vector2.x &my-pos) ;; => 10
 ;; Vector2.set-x (Fn [Vector2 Int] Vector2)
 (Vector2.set-x my-pos 30) ;; => (Vector2 30 20)
 ;; Vector2.set-x! (Fn [(Ref Vector2), Int] ())
