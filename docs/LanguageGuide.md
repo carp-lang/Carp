@@ -325,7 +325,7 @@ Any structure type defined in Carp has an init method that can be used to create
 ;; Vector2.update-x (Fn [Vector2, (Ref (Fn [Int] Int))] Vector2)
 (Vector2.update-x my-pos inc) ;; => (Vector2 11 20)
 ;; This can also be a lambda
-(Vector2.update-x my-pos (fn [n] (* n 3))) ;; => (Vector2 30 20)
+(Vector2.update-x my-pos &(fn [n] (* n 3))) ;; => (Vector2 30 20)
 ```
 
 ### Sumtypes
