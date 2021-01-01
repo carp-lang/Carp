@@ -404,8 +404,6 @@ eval ctx xobj@(XObj o info ty) preference resolver =
                 Right _ -> eval ctx' x preference ResolveLocal
         [XObj While _ _, cond, body] ->
           specialCommandWhile ctx cond body
-        [XObj Address _ _, value] ->
-          specialCommandAddress ctx value
         [] -> pure (ctx, dynamicNil)
         _ -> pure (evalError ctx ("I did not understand the form `" ++ pretty xobj ++ "`") (xobjInfo xobj))
     badArity name params args i = case checkArity name params args of

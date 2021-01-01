@@ -144,7 +144,6 @@ data Obj
   | Deftemplate TemplateCreator
   | Instantiate Template
   | Defalias Ty
-  | Address
   | SetBang
   | Macro
   | Dynamic -- DefnDynamic
@@ -437,7 +436,6 @@ pretty = visit 0
         ExternalType (Just override) -> "external-type (override: " ++ show override ++ ")"
         MetaStub -> "meta-stub"
         Defalias _ -> "defalias"
-        Address -> "address"
         SetBang -> "set!"
         Macro -> "macro"
         Dynamic -> "dynamic"
@@ -502,7 +500,6 @@ prettyUpTo lim xobj =
         ExternalType (Just _) -> ")"
         MetaStub -> ""
         Defalias _ -> ""
-        Address -> ""
         SetBang -> ""
         Macro -> ""
         Dynamic -> ""

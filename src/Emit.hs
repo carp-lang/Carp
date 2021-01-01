@@ -156,7 +156,6 @@ toC toCMode (Binder meta root) = emitterSrc (execState (visit startingIndent roo
             (Defalias _) -> dontVisit
             (MultiSym _ _) -> dontVisit
             (InterfaceSym _) -> dontVisit
-            Address -> dontVisit
             SetBang -> dontVisit
             Macro -> dontVisit
             Dynamic -> dontVisit
@@ -503,11 +502,6 @@ toC toCMode (Binder meta root) = emitterSrc (execState (visit startingIndent roo
                 lastRet <- visit indent lastExpr
                 appendToSrc (addIndent indent ++ tyToCLambdaFix lastTy ++ " " ++ retVar ++ " = " ++ lastRet ++ ";\n")
                 pure retVar
-        -- Address
-        [XObj Address _ _, value] ->
-          do
-            valueVar <- visit indent value
-            pure ("&" ++ valueVar)
         -- Set!
         [XObj SetBang _ _, variable, value] ->
           do

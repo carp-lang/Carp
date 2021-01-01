@@ -399,7 +399,6 @@ symbol = do
       "match-ref" -> XObj (Match MatchRef) i Nothing
       "true" -> XObj (Bol True) i Nothing
       "false" -> XObj (Bol False) i Nothing
-      "address" -> XObj Address i Nothing
       "set!" -> XObj SetBang i Nothing
       "the" -> XObj The i Nothing
       "ref" -> XObj Ref i Nothing

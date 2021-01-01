@@ -538,7 +538,6 @@ commandEq ctx a b =
     cmp (XObj If _ _, XObj If _ _) = Right True
     cmp (XObj With _ _, XObj With _ _) = Right True
     cmp (XObj MetaStub _ _, XObj MetaStub _ _) = Right True
-    cmp (XObj Address _ _, XObj Address _ _) = Right True
     cmp (XObj SetBang _ _, XObj SetBang _ _) = Right True
     cmp (XObj Macro _ _, XObj Macro _ _) = Right True
     cmp (XObj Dynamic _ _, XObj Dynamic _ _) = Right True
