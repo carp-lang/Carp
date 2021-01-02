@@ -20,6 +20,7 @@ import Info
 import qualified Map
 import qualified Meta
 import Obj
+import Path (takeFileName)
 import Project
 import Scoring
 import qualified Set
@@ -445,16 +446,8 @@ toC toCMode (Binder meta root) = emitterSrc (execState (visit startingIndent roo
                   let Just t = ty
                    in appendToSrc (addIndent indent ++ tyToCLambdaFix t ++ " " ++ retVar ++ ";\n")
                 zipWithM_ (emitCase exprVar) (True : repeat False) (pairwise rest)
-                appendToSrc (addIndent indent ++ "else {\n")
-                appendToSrc (addIndent indent ++ "  // This will not be needed with static exhaustiveness checking in 'match' expressions:\n")
-                appendToSrc (addIndent indent ++ "  fprintf(stderr, \"Unhandled case in 'match' expression at " ++ quoteBackslashes (prettyInfo info) ++ "\\n\");\n")
-                appendToSrc (addIndent indent ++ "  exit(1);\n")
-                appendToSrc (addIndent indent ++ "}\n")
+                appendToSrc (addIndent indent ++ "else UNHANDLED(\"" ++ takeFileName (infoFile info) ++ "\", " ++ show (infoLine info) ++ ");\n")
                 pure retVar
-          where
-            quoteBackslashes [] = []
-            quoteBackslashes ('\\' : r) = "\\\\" ++ quoteBackslashes r
-            quoteBackslashes (x : r) = x : quoteBackslashes r
         XObj (Match _) _ _ : _ ->
           error "Fell through match."
         -- While

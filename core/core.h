@@ -34,6 +34,12 @@ typedef char CChar;
     } while (0)
 #endif
 
+#define UNHANDLED(file, line)                                                  \
+    do {                                                                       \
+        printf("Unhandled case in 'match' expression at %s:%d\n", file, line); \
+        abort();                                                               \
+    } while (0)
+
 // Array
 typedef struct {
     size_t len;
