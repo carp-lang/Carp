@@ -36,6 +36,9 @@
 (doc freebsd-target? "are we targeting FreeBSD?")
 (defdynamic freebsd-target? (target-os? "freebsd"))
 
+(doc netbsd-target? "are we targeting NetBSD?")
+(defdynamic netbsd-target? (target-os? "netbsd"))
+
 (doc posix-target? "are we targeting a POSIX platform?")
 (defdynamic posix-target? (= false windows-target?))
 
@@ -55,6 +58,10 @@
 (doc freebsd-only "compile forms only on FreeBSD.")
 (defmacro freebsd-only [:rest forms]
   (target-only freebsd-target? forms))
+
+(doc netbsd-only "compile forms only on NetBSD.")
+(defmacro netbsd-only [:rest forms]
+  (target-only netbsd-target? forms))
 
 (doc windows-only "compile forms only on Windows.")
 (defmacro windows-only [:rest forms]
