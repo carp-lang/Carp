@@ -369,7 +369,7 @@ dynamicOrMacroWith ctx producer ty name body = do
 primitiveMembers :: UnaryPrimitiveCallback
 primitiveMembers _ ctx target = do
   let typeEnv = contextTypeEnv ctx
-  case bottomedTarget of
+  case bottomedTarget target of
     XObj (Sym path@(SymPath _ name) _) _ _ ->
       case lookupBinder path (getTypeEnv typeEnv) of
         Just
@@ -415,16 +415,16 @@ primitiveMembers _ ctx target = do
     _ -> pure (evalError ctx ("Can't get the members of non-symbol: " ++ pretty target) (xobjInfo target))
   where
     env = contextEnv ctx
-    bottomedTarget =
-      case target of
+    bottomedTarget t =
+      case t of
         XObj (Sym targetPath _) _ _ ->
           case lookupBinder targetPath env of
             -- this is a trick: every type generates a module in the env;
             -- we’re special-casing here because we need the parent of the
             -- module
-            Just (Binder _ (XObj (Mod _) _ _)) -> target
+            Just (Binder _ (XObj (Mod _) _ _)) -> t
             -- if we’re recursing into a non-sym, we’ll stop one level down
-            Just (Binder _ _) -> bottomedTarget
+            Just (Binder _ x) -> bottomedTarget x
             _ -> target
         _ -> target
 
