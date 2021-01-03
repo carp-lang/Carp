@@ -226,16 +226,22 @@
         m
         (resize m new-size))))
 
+  (doc contains? "Check whether the map m contains the key k.")
+  (defn contains? [m k]
+    (let [idx (Int.positive-mod (hash k) @(n-buckets m))]
+      (Bucket.contains? (Array.unsafe-nth (buckets m) idx) k)))
+
   (doc put "Put a value v into map m, using the key k.")
   (defn put [m k v]
     (if (> (/ (* @(len &m) 100) @(n-buckets &m)) min-load)
       (put (grow m) k v)
-      (let [idx (Int.positive-mod (hash k) @(n-buckets &m))]
+      (let [idx (Int.positive-mod (hash k) @(n-buckets &m))
+            in? (contains? &m k)]
         (update-len
           (update-buckets m &(fn [b]
                                (let [n (Array.unsafe-nth &b idx)]
                                  (Array.aset b idx (Bucket.put @n k v)))))
-           &Int.inc))))
+           &(if in? id Int.inc)))))
 
   (doc put! "Put a value v into map m, using the key k, in place.")
   (defn put! [m k v]
@@ -283,11 +289,6 @@
   (doc empty? "Check whether the map m is empty.")
   (defn empty? [m]
     (= @(len m) 0))
-
-  (doc contains? "Check whether the map m contains the key k.")
-  (defn contains? [m k]
-    (let [idx (Int.positive-mod (hash k) @(n-buckets m))]
-      (Bucket.contains? (Array.unsafe-nth (buckets m) idx) k)))
 
   (doc remove "Remove the value under the key k from the map m.")
   (defn remove [m k]
@@ -353,6 +354,10 @@
             (let [e (Array.unsafe-nth entries j)]
               (set! init (~f init (Pair.a e) (Pair.b e)))))))
       init))
+
+  (doc merge "Merge two maps `m1` and `m2`. On collision the value from `m2` is preferred.")
+  (defn merge [m1 m2]
+    (kv-reduce &(fn [m k v] (put m k v)) m1 m2))
 
   (doc vals "Return an array of the values of the map. Order corresponds to order of (keys m)")
   (defn vals [m]
