@@ -307,17 +307,25 @@ Sometimes, it's more convenient to bring a module's declarations into scope only
 ```
 
 ### Structs
+Any structure type defined in Carp has an init method that can be used to create a new instance. It must be called with all the arguments in the order they are defined.
 ```clojure
 (deftype Vector2 [x Int, y Int])
 
 (let [my-pos (Vector2.init 10 20)]
   ...)
 
-;; A 'lens' is automatically generated for each member:
-(Vector2.x my-pos) ;; => 10
+;; Additionally, a 'lens' is automatically generated for each member; signatures for reference:
+;; Vector2.x (Fn [(Ref Vector2)] (Ref Int))
+(Vector2.x &my-pos) ;; => 10
+;; Vector2.set-x (Fn [Vector2 Int] Vector2)
 (Vector2.set-x my-pos 30) ;; => (Vector2 30 20)
+;; Vector2.set-x! (Fn [(Ref Vector2), Int] ())
 (Vector2.set-x! &my-pos 30) ;; => Will update the vector my-pos in place and return ()
+;; Note the inner reference to a function
+;; Vector2.update-x (Fn [Vector2, (Ref (Fn [Int] Int))] Vector2)
 (Vector2.update-x my-pos inc) ;; => (Vector2 11 20)
+;; This can also be a lambda
+(Vector2.update-x my-pos &(fn [n] (* n 3))) ;; => (Vector2 30 20)
 ```
 
 ### Sumtypes
