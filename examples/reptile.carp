@@ -36,17 +36,17 @@
         (if (= i 0)
           (do
             (SDL.set-render-draw-color rend 200 255 (+ 100 (* body-length 10)) 255)
-            (SDL.render-fill-rect rend (address (SDL.rect x y grid-size grid-size))))
+            (SDL.render-fill-rect rend (address &(SDL.rect x y grid-size grid-size))))
           (do
             (SDL.set-render-draw-color rend 200 (+ 50 (* i (/ 200 body-length))) 100 255)
-            (SDL.render-fill-rect rend (address (SDL.rect x y grid-size grid-size)))))))))
+            (SDL.render-fill-rect rend (address &(SDL.rect x y grid-size grid-size)))))))))
 
 (defn draw-human [rend human]
   (do
     (SDL.set-render-draw-color rend 100 100 250 255)
     (let [x (* grid-size (to-int @(Vector2.x human)))
           y (* grid-size (to-int @(Vector2.y human)))]
-      (SDL.render-fill-rect rend (address (SDL.rect x y grid-size grid-size))))))
+      (SDL.render-fill-rect rend (address &(SDL.rect x y grid-size grid-size))))))
 
 (defn draw [rend world]
   (do
@@ -62,7 +62,7 @@
 
 (defn handle-events [app rend world]
   (let [event (SDL.Event.init)]
-    (while (SDL.Event.poll (address event))
+    (while (SDL.Event.poll (address &event))
       (let [et (SDL.Event.type &event)]
         (cond (= et SDL.Event.quit) (SDLApp.stop app)
               (= et SDL.Event.key-down) (let [key (SDL.Event.keycode &event)]

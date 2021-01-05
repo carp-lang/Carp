@@ -35,7 +35,7 @@
   (let [event (init)
         new-play play]
     (do
-      (while (poll (address event))
+      (while (poll (address &event))
         (let [et (type (ref event))]
           (cond (= et quit) (stop app)
                 (= et key-down) (set! new-play (handle-key app (ref event) play))
@@ -59,7 +59,7 @@
             (if @(unsafe-nth world (cell-index x y))
               (set-render-draw-color rend 255 255 255 255)
               (set-render-draw-color rend 50 50 50 255))
-            (render-fill-rect rend (address square))
+            (render-fill-rect rend (address &square))
             ))))
     (render-present rend)))
 
