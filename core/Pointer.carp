@@ -1,6 +1,10 @@
 (defmodule Pointer
   (doc eq "checks two pointers for equality.")
   (deftemplate eq (Fn [(Ptr p) (Ptr p)] Bool) "bool $NAME($p *p1, $p *p2)" " $DECL { return p1 == p2; }")
+  (implements = Pointer.eq)
+  (doc eq "checks two pointer references for equality.")
+  (deftemplate ref-eq (Fn [(Ref (Ptr p)) (Ref (Ptr p))] Bool) "bool $NAME($p **p1, $p **p2)" " $DECL { return *p1 == *p2; }")
+  (implements = Pointer.ref-eq)
   (doc to-ref "converts a pointer to a reference type.
 
 The user will have to ensure themselves that this is a safe operation.")

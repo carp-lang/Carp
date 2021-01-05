@@ -73,7 +73,7 @@
             (x)
             0)
           (do
-            (ignore (System.wait (address status)))
+            (ignore (System.wait (address &status)))
             (System.get-exit-status status)))))
 
     (hidden handle-signal)
@@ -93,7 +93,7 @@
             (x)
             0)
           (do
-            (ignore (System.wait (address status)))
+            (ignore (System.wait (address &status)))
             (System.get-exit-status status)))))
 
     (doc assert-exit "Assert that function f exits with exit code exit-code.")
