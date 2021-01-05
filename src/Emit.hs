@@ -13,7 +13,7 @@ where
 import Control.Monad.State
 import Data.Char (ord)
 import Data.Functor ((<&>))
-import Data.List (intercalate, sortOn)
+import Data.List (intercalate, isPrefixOf, sortOn)
 import Data.Maybe (fromJust, fromMaybe)
 import Env
 import Info
@@ -798,7 +798,9 @@ templateToDeclaration template path actualTy =
       e = error "Can't refer to declaration in declaration."
       declaration = templateDeclaration template actualTy
       tokens = concatMap (concretizeTypesInToken mappings (pathToC path) e) declaration
-   in concatMap show tokens ++ ";\n"
+      stokens = concatMap show tokens
+      term = if "#define" `isPrefixOf` stokens then "\n" else ";\n"
+   in stokens ++ term
 
 memberToDecl :: Int -> (XObj, XObj) -> State EmitterState ()
 memberToDecl indent (memberName, memberType) =
