@@ -18,6 +18,7 @@
            Byte
            Char
            Debug
+           Derive
            Double
            Dynamic
            Float
