@@ -1,0 +1,10 @@
+(Project.config "file-path-print-length" "short")
+
+(deftype T1 [])
+
+(deftype T2 [
+  t T1
+])
+
+(make-update-deriver 'inc)
+(derive T2 inc)
