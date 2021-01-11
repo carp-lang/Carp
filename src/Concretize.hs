@@ -671,8 +671,12 @@ concretizeDefinition allowAmbiguity typeEnv globalEnv visitedDefinitions definit
           Left $ CannotConcretize definition
 
 -- | Find ALL functions with a certain name, matching a type signature.
-allFunctionsWithNameAndSignature :: TypeEnv -> Env -> String -> Ty -> [(Env, Binder)]
-allFunctionsWithNameAndSignature typeEnv env functionName functionType =
+-- When the functionName argument denotes an interface, the name will match iff either:
+--   1. The name of the binding matches functionName exactly OR
+--   2. The name of the binding matches one of the names in the interface's implementation paths
+-- For all other functions, the name must match exactly, and in all cases, the signature must match.
+allImplementations :: TypeEnv -> Env -> String -> Ty -> [(Env, Binder)]
+allImplementations typeEnv env functionName functionType =
   filter (predicate . xobjTy . binderXObj . snd) foundBindings
   where
     predicate (Just t) =
@@ -697,7 +701,7 @@ allFunctionsWithNameAndSignature typeEnv env functionName functionType =
 -- | Find all the dependencies of a polymorphic function with a name and a desired concrete type.
 depsOfPolymorphicFunction :: TypeEnv -> Env -> [SymPath] -> String -> Ty -> [XObj]
 depsOfPolymorphicFunction typeEnv env visitedDefinitions functionName functionType =
-  case allFunctionsWithNameAndSignature typeEnv env functionName functionType of
+  case allImplementations typeEnv env functionName functionType of
     [] ->
       (trace $ "[Warning] No '" ++ functionName ++ "' function found with type " ++ show functionType ++ ".")
         []
@@ -759,7 +763,7 @@ getConcretizedPath single functionType =
 findFunctionForMember :: TypeEnv -> Env -> String -> Ty -> (String, Ty) -> FunctionFinderResult
 findFunctionForMember typeEnv env functionName functionType (memberName, memberType)
   | isManaged typeEnv env memberType =
-    case allFunctionsWithNameAndSignature typeEnv env functionName functionType of
+    case allImplementations typeEnv env functionName functionType of
       [] ->
         FunctionNotFound
           ( "Can't find any '" ++ functionName ++ "' function for member '"
@@ -782,7 +786,7 @@ findFunctionForMember typeEnv env functionName functionType (memberName, memberT
 -- | TODO: should this be the default and 'findFunctionForMember' be the specific one
 findFunctionForMemberIncludePrimitives :: TypeEnv -> Env -> String -> Ty -> (String, Ty) -> FunctionFinderResult
 findFunctionForMemberIncludePrimitives typeEnv env functionName functionType (memberName, _) =
-  case allFunctionsWithNameAndSignature typeEnv env functionName functionType of
+  case allImplementations typeEnv env functionName functionType of
     [] ->
       FunctionNotFound
         ( "Can't find any '" ++ functionName ++ "' function for member '"
