@@ -103,6 +103,12 @@ eval ctx xobj@(XObj o info ty) preference resolver =
             <|> ( lookupBinder path (getTypeEnv (contextTypeEnv ctx))
                     >>= \(Binder _ found) -> pure (ctx, Right (resolveDef found))
                 )
+            <|> ( foldl (<|>) Nothing
+                  (
+                    map (\(SymPath p' n') ->
+                      lookupBinder (SymPath (p' ++ (n' : p)) n) (contextGlobalEnv ctx)
+                        >>= \(Binder meta found) -> checkPrivate meta found
+                    ) (envUseModules (contextGlobalEnv ctx))))
         checkPrivate meta found =
           pure $
             if metaIsTrue meta "private"
