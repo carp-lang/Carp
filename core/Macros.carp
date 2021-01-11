@@ -188,9 +188,10 @@
 
 (doc defdynamic-once "Creates a dynamic variable and sets its value if it's not already defined.")
 (defmacro defdynamic-once [var expr]
-  (list 'if (list 'defined? var)
-        ()
-        (list 'defdynamic var expr)))
+  (eval
+    (list 'if (list 'defined? var)
+          ()
+          (list 'defdynamic var expr))))
 
 (doc inline-c "Inlines some custom C code.")
 (defmacro inline-c [name defcode :rest declcode]
