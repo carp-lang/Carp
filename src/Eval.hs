@@ -103,12 +103,17 @@ eval ctx xobj@(XObj o info ty) preference resolver =
             <|> ( lookupBinder path (getTypeEnv (contextTypeEnv ctx))
                     >>= \(Binder _ found) -> pure (ctx, Right (resolveDef found))
                 )
-            <|> ( foldl (<|>) Nothing
-                  (
-                    map (\(SymPath p' n') ->
-                      lookupBinder (SymPath (p' ++ (n' : p)) n) (contextGlobalEnv ctx)
-                        >>= \(Binder meta found) -> checkPrivate meta found
-                    ) (envUseModules (contextGlobalEnv ctx))))
+            <|> ( foldl
+                    (<|>)
+                    Nothing
+                    ( map
+                        ( \(SymPath p' n') ->
+                            lookupBinder (SymPath (p' ++ (n' : p)) n) (contextGlobalEnv ctx)
+                              >>= \(Binder meta found) -> checkPrivate meta found
+                        )
+                        (envUseModules (contextGlobalEnv ctx))
+                    )
+                )
         checkPrivate meta found =
           pure $
             if metaIsTrue meta "private"
@@ -799,7 +804,6 @@ primitiveDefmodule xobj ctx@(Context env i _ pathStrings _ _ _ _) (XObj (Sym (Sy
       defineNewModule meta
     updateExistingModule _ =
       pure (evalError ctx ("Can't redefine '" ++ moduleName ++ "' as module") (xobjInfo xobj))
-
     defineNewModule :: MetaData -> IO (Context, Either EvalError XObj)
     defineNewModule meta =
       pure (ctx', dynamicNil)
@@ -810,12 +814,10 @@ primitiveDefmodule xobj ctx@(Context env i _ pathStrings _ _ _ _) (XObj (Sym (Sy
         -- The parent of the internal env needs to be set to i here for contextual `use` calls to work.
         -- In theory this shouldn't be necessary; but for now it is.
         ctx' = ctx {contextGlobalEnv = updatedGlobalEnv, contextInternalEnv = Just moduleEnv {envParent = i}, contextPath = contextPath ctx ++ [moduleName]}
-
     defineModuleBindings :: (Context, Either EvalError XObj) -> IO (Context, Either EvalError XObj)
     defineModuleBindings (context, Left e) = pure (context, Left e)
     defineModuleBindings (context, _) =
       foldM step (context, dynamicNil) innerExpressions
-
     step :: (Context, Either EvalError XObj) -> XObj -> IO (Context, Either EvalError XObj)
     step (ctx', Left e) _ = pure (ctx', Left e)
     step (ctx', Right _) expressions =
@@ -1168,13 +1170,11 @@ specialCommandSet ctx [orig@(XObj (Sym path@(SymPath _ n) _) _ _), val] =
               case result of
                 Right evald -> typeCheckValueAgainstBinder newCtx evald binder >>= \(nctx, typedVal) -> setter nctx env typedVal binder
                 left -> pure (newCtx, left)
-
     setGlobal :: Context -> Env -> Either EvalError XObj -> Binder -> IO (Context, Either EvalError XObj)
     setGlobal ctx' env value binder =
       pure $ either (failure ctx' orig) (success ctx') value
       where
         success c xo = (c {contextGlobalEnv = setStaticOrDynamicVar path env binder xo}, dynamicNil)
-
     setInternal :: Context -> Env -> Either EvalError XObj -> Binder -> IO (Context, Either EvalError XObj)
     setInternal ctx' env value binder =
       pure $ either (failure ctx' orig) (success ctx') value
