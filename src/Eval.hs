@@ -282,7 +282,7 @@ eval ctx xobj@(XObj o info ty) preference resolver =
               \case
                 err@(Left _) -> pure err
                 Right ctx' -> do
-                  (newCtx, res) <- eval ctx' x preference ResolveLocal
+                  (newCtx, res) <- eval ctx' x preference resolver
                   case res of
                     Right okX -> do
                       let binder = Binder emptyMeta (XObj (Lst [XObj LetDef Nothing Nothing, XObj (Sym (SymPath [] n) Symbol) Nothing Nothing, okX]) Nothing (xobjTy okX))
@@ -302,7 +302,7 @@ eval ctx xobj@(XObj o info ty) preference resolver =
                 (newCtx, evaledArgs) <- foldlM successiveEval (ctx, Right []) args
                 case evaledArgs of
                   Right okArgs -> do
-                    (_, res) <- apply c body params okArgs
+                    (_, res) <- apply c{contextHistory=contextHistory ctx} body params okArgs
                     pure (newCtx, res)
                   Left err -> pure (newCtx, Left err)
         XObj (Lst [XObj Dynamic _ _, sym, XObj (Arr params) _ _, body]) i _ : args ->
@@ -383,10 +383,10 @@ eval ctx xobj@(XObj o info ty) preference resolver =
               pure (popFrame newCtx', res)
             x -> pure (newCtx, x)
         x@(XObj (Sym _ _) i _) : args -> do
-          (newCtx, f) <- eval ctx x preference ResolveLocal
+          (newCtx, f) <- eval ctx x preference resolver
           case f of
             Right fun -> do
-              (newCtx', res) <- eval (pushFrame ctx xobj) (XObj (Lst (fun : args)) i ty) preference ResolveLocal
+              (newCtx', res) <- eval (pushFrame ctx xobj) (XObj (Lst (fun : args)) i ty) preference resolver
               pure (popFrame newCtx', res)
             Left err -> pure (newCtx, Left err)
         XObj With _ _ : xobj'@(XObj (Sym path _) _ _) : forms ->
@@ -401,7 +401,7 @@ eval ctx xobj@(XObj o info ty) preference resolver =
             successiveEval' (ctx', acc) x =
               case acc of
                 err@(Left _) -> pure (ctx', err)
-                Right _ -> eval ctx' x preference ResolveLocal
+                Right _ -> eval ctx' x preference resolver
         [XObj While _ _, cond, body] ->
           specialCommandWhile ctx cond body
         [XObj Address _ _, value] ->
@@ -445,7 +445,7 @@ eval ctx xobj@(XObj o info ty) preference resolver =
       case acc of
         Left _ -> pure (ctx', acc)
         Right l -> do
-          (newCtx, evald) <- eval ctx' x preference ResolveLocal
+          (newCtx, evald) <- eval ctx' x preference resolver
           pure $ case evald of
             Right res -> (newCtx, Right (l ++ [res]))
             Left err -> (newCtx, Left err)
