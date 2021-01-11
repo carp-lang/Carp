@@ -688,7 +688,7 @@ allFunctionsWithNameAndSignature typeEnv env functionName functionType =
         -- implementations, or hangs). We should be able to use
         -- those here instead of looking up all interface paths
         -- directly, but for now we are stuck with this.
-        case sequence $ map (\p -> lookupInEnv p env) paths of
+        case sequence $ map (\p -> lookupInEnv p env) (paths ++ [(SymPath [] functionName)]) of
           Just found -> found
           Nothing -> (multiLookupEverywhere functionName env)
       -- just a regular function; look for it
