@@ -7,7 +7,7 @@ import Control.Applicative
 import Control.Monad.State
 import Data.Char
 import Data.Hashable
-import Data.List (intercalate)
+import Data.List (intercalate, nub)
 import Data.Maybe (fromMaybe)
 import GHC.Generics (Generic)
 import Info
@@ -1052,7 +1052,7 @@ instance Semigroup Env where
         joinedParents =
           (envParent e >>= \p -> (pure p <|> (envParent e' >>= \p' -> pure (p <> p'))))
             <|> envParent e'
-        joinedUseModules = envUseModules e <> envUseModules e'
+        joinedUseModules = nub $ envUseModules e <> envUseModules e'
      in e
           { envBindings = Map.union bindings bindings',
             envParent = joinedParents,
