@@ -1,6 +1,7 @@
 module Env where
 
 import Data.List (foldl')
+import Data.Maybe (fromMaybe)
 import qualified Map
 import Obj
 import Types
@@ -70,7 +71,12 @@ envReplaceBinding s@(SymPath [] name) binder env =
       case envParent env of
         Just parent -> env {envParent = Just (envReplaceBinding s binder parent)}
         Nothing -> env
-envReplaceBinding (SymPath _ _) _ _ = error "TODO: cannot replace qualified bindings"
+envReplaceBinding s@(SymPath (p : ps) name) binder env =
+  case Map.lookup p (envBindings env) of
+    Just b@(Binder _ (XObj (Mod innerEnv) i t)) ->
+      envReplaceBinding (SymPath [] p) b {binderXObj = (XObj (Mod (envReplaceBinding (SymPath ps name) binder innerEnv)) i t)} env
+    _ ->
+      fromMaybe env (envParent env >>= \parent -> Just (env {envParent = Just (envReplaceBinding s binder parent)}))
 
 envBindingNames :: Env -> [String]
 envBindingNames = concatMap select . envBindings
