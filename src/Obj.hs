@@ -1059,7 +1059,14 @@ instance Semigroup Env where
             envUseModules = joinedUseModules
           }
 
--- | Left biased semigroup instance for Contexts
+-- | Semigroup instance for Contexts
+--   - Left biased in internal env combination
+--   - Right biased in global env combination
+--   - Right biased in type env combination
+--  The assumption here is that the context on the LHS is the *older* context
+--  in the case of conflicts, we prefer the bindings on the RHS *except* for
+--  the internal environment, since retaining some bindings from the internal
+--  env is typically the reason you'd call this function.
 instance Semigroup Context where
   c <> c' =
     let global = contextGlobalEnv c
@@ -1069,7 +1076,7 @@ instance Semigroup Context where
         typeEnv = getTypeEnv (contextTypeEnv c)
         typeEnv' = getTypeEnv (contextTypeEnv c')
      in c
-          { contextGlobalEnv = global <> global',
+          { contextGlobalEnv = global' <> global,
             contextInternalEnv = internal <> internal',
-            contextTypeEnv = TypeEnv (typeEnv <> typeEnv')
+            contextTypeEnv = TypeEnv (typeEnv' <> typeEnv)
           }
