@@ -315,8 +315,8 @@ eval ctx xobj@(XObj o info ty) preference resolver =
                   Right okArgs -> do
                     let newGlobals = (contextGlobalEnv newCtx) <> (contextGlobalEnv c)
                         newTypes = TypeEnv $ (getTypeEnv (contextTypeEnv newCtx)) <> (getTypeEnv (contextTypeEnv c))
-                    (_, res) <- apply (c {contextHistory = contextHistory ctx, contextGlobalEnv = newGlobals, contextTypeEnv = newTypes}) body params okArgs
-                    pure (newCtx, res)
+                    (ct, res) <- apply (c {contextHistory = contextHistory ctx, contextGlobalEnv = newGlobals, contextTypeEnv = newTypes}) body params okArgs
+                    pure (ct {contextInternalEnv = (contextInternalEnv newCtx)}, res)
                   Left err -> pure (newCtx, Left err)
         XObj (Lst [XObj Dynamic _ _, sym, XObj (Arr params) _ _, body]) i _ : args ->
           case checkArity (getName sym) params args of
