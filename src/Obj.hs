@@ -3,6 +3,7 @@
 
 module Obj where
 
+import Control.Applicative
 import Control.Monad.State
 import Data.Char
 import Data.Hashable
@@ -1042,3 +1043,40 @@ isResolvableStaticObj (Instantiate _) = True
 isResolvableStaticObj (Fn _ _) = True
 isResolvableStaticObj (Interface _ _) = True
 isResolvableStaticObj _ = False
+
+-- | Left biased semigroup instance for Envs.
+instance Semigroup Env where
+  e <> e' =
+    let bindings = envBindings e
+        bindings' = envBindings e'
+        joinedParents =
+          (envParent e >>= \p -> (pure p <|> (envParent e' >>= \p' -> pure (p <> p'))))
+            <|> envParent e'
+        joinedUseModules = envUseModules e <> envUseModules e'
+     in e
+          { envBindings = Map.union bindings bindings',
+            envParent = joinedParents,
+            envUseModules = joinedUseModules
+          }
+
+-- | Semigroup instance for Contexts
+--   - Left biased in internal env combination
+--   - Right biased in global env combination
+--   - Right biased in type env combination
+--  The assumption here is that the context on the LHS is the *older* context
+--  in the case of conflicts, we prefer the bindings on the RHS *except* for
+--  the internal environment, since retaining some bindings from the internal
+--  env is typically the reason you'd call this function.
+instance Semigroup Context where
+  c <> c' =
+    let global = contextGlobalEnv c
+        global' = contextGlobalEnv c'
+        internal = contextInternalEnv c
+        internal' = contextInternalEnv c'
+        typeEnv = getTypeEnv (contextTypeEnv c)
+        typeEnv' = getTypeEnv (contextTypeEnv c')
+     in c
+          { contextGlobalEnv = global' <> global,
+            contextInternalEnv = internal <> internal',
+            contextTypeEnv = TypeEnv (typeEnv' <> typeEnv)
+          }
