@@ -671,19 +671,37 @@ concretizeDefinition allowAmbiguity typeEnv globalEnv visitedDefinitions definit
           Left $ CannotConcretize definition
 
 -- | Find ALL functions with a certain name, matching a type signature.
-allFunctionsWithNameAndSignature :: Env -> String -> Ty -> [(Env, Binder)]
-allFunctionsWithNameAndSignature env functionName functionType =
-  filter (predicate . xobjTy . binderXObj . snd) (multiLookupEverywhere functionName env)
+-- When the functionName argument denotes an interface, the name will match iff either:
+--   1. The name of the binding matches functionName exactly OR
+--   2. The name of the binding matches one of the names in the interface's implementation paths
+-- For all other functions, the name must match exactly, and in all cases, the signature must match.
+allImplementations :: TypeEnv -> Env -> String -> Ty -> [(Env, Binder)]
+allImplementations typeEnv env functionName functionType =
+  filter (predicate . xobjTy . binderXObj . snd) foundBindings
   where
     predicate (Just t) =
       --trace ("areUnifiable? " ++ show functionType ++ " == " ++ show t ++ " " ++ show (areUnifiable functionType t)) $
       areUnifiable functionType t
     predicate Nothing = error "allfunctionswithnameandsignature"
+    foundBindings = case lookupBinder (SymPath [] functionName) (getTypeEnv typeEnv) of
+      -- this function is an interface; lookup implementations
+      Just (Binder _ (XObj (Lst (XObj (Interface _ paths) _ _ : _)) _ _)) ->
+        -- N.B./TODO: There are functions designed for this
+        -- scenario--e.g. lookupImplementations, but they cause
+        -- either entirely unacceptable behavior (not finding
+        -- implementations, or hangs). We should be able to use
+        -- those here instead of looking up all interface paths
+        -- directly, but for now we are stuck with this.
+        case sequence $ map (\p -> lookupInEnv p env) (paths ++ [(SymPath [] functionName)]) of
+          Just found -> found
+          Nothing -> (multiLookupEverywhere functionName env)
+      -- just a regular function; look for it
+      _ -> (multiLookupEverywhere functionName env)
 
 -- | Find all the dependencies of a polymorphic function with a name and a desired concrete type.
 depsOfPolymorphicFunction :: TypeEnv -> Env -> [SymPath] -> String -> Ty -> [XObj]
 depsOfPolymorphicFunction typeEnv env visitedDefinitions functionName functionType =
-  case allFunctionsWithNameAndSignature env functionName functionType of
+  case allImplementations typeEnv env functionName functionType of
     [] ->
       (trace $ "[Warning] No '" ++ functionName ++ "' function found with type " ++ show functionType ++ ".")
         []
@@ -745,7 +763,7 @@ getConcretizedPath single functionType =
 findFunctionForMember :: TypeEnv -> Env -> String -> Ty -> (String, Ty) -> FunctionFinderResult
 findFunctionForMember typeEnv env functionName functionType (memberName, memberType)
   | isManaged typeEnv env memberType =
-    case allFunctionsWithNameAndSignature env functionName functionType of
+    case allImplementations typeEnv env functionName functionType of
       [] ->
         FunctionNotFound
           ( "Can't find any '" ++ functionName ++ "' function for member '"
@@ -767,8 +785,8 @@ findFunctionForMember typeEnv env functionName functionType (memberName, memberT
 
 -- | TODO: should this be the default and 'findFunctionForMember' be the specific one
 findFunctionForMemberIncludePrimitives :: TypeEnv -> Env -> String -> Ty -> (String, Ty) -> FunctionFinderResult
-findFunctionForMemberIncludePrimitives _ env functionName functionType (memberName, _) =
-  case allFunctionsWithNameAndSignature env functionName functionType of
+findFunctionForMemberIncludePrimitives typeEnv env functionName functionType (memberName, _) =
+  case allImplementations typeEnv env functionName functionType of
     [] ->
       FunctionNotFound
         ( "Can't find any '" ++ functionName ++ "' function for member '"
