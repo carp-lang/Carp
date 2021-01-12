@@ -109,6 +109,17 @@
       (set! acc (+ acc i)))
     (= acc 45)))
 
+(defmodule TestDyn
+  (defndynamic x [] true))
+
+(defndynamic test-dynamic-use- []
+  (do
+    (use TestDyn)
+    (x)))
+
+(defmacro test-dynamic-use []
+  (test-dynamic-use-))
+
 
 (deftest test
   (assert-true test
@@ -322,4 +333,7 @@
                       (string-set! 0 \o)
                       (string-set! 1 \y))
                     "doto-ref works as expected")
+  (assert-true test
+               (test-dynamic-use)
+               "use works as expected in dynamic contexts")
 )
