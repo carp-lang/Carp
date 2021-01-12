@@ -1,18 +1,18 @@
 (load "Test.carp")
 (use Test)
 
-(def x 400)
+(defdynamic x 400)
 
 ;; close over a global variable
-(def closure-one
+(defdynamic closure-one
   (fn [] x))
 
 ;; close over an argument
-(def closure-two
-  (the (Fn [Int] Int) (fn [x] x)))
+(defdynamic closure-two
+  (fn [x] x))
 
 ;; close over a let binding
-(def closure-three
+(defdynamic closure-three
   (fn [] (let [x 4] x)))
 
 ;; dynamics can close over a global variable before it is defined
@@ -20,12 +20,16 @@
   (fn [] y))
 
 ;; nested closures prefer closed-over internal environments
-(def closure-five
+(defdynamic closure-five
   (fn [] (let [x 5] (fn [] x))))
 
 (defdynamic y 500)
 
+(defmacro test-closure-one [] (closure-one))
+(defmacro test-closure-two [] (closure-two 3))
+(defmacro test-closure-three [] (closure-three))
 (defmacro test-closure-four [] (closure-four))
+(defmacro test-closure-five [] ((closure-five)))
 
 ;; Change the global value of x (closed over in closure-one)
 (set! x 1000)
@@ -33,15 +37,15 @@
 (deftest test
   (assert-equal test
     1000
-    (closure-one)
+    (test-closure-one)
     "closures over global variables get the global variable's latest state.")
   (assert-equal test
     3
-    (closure-two 3)
+    (test-closure-two)
     "closures with arguments use argument values")
   (assert-equal test
     4
-    (closure-three)
+    (test-closure-three)
     "closures with let bindings prefer let bindings over global names")
   (assert-equal test
     500
@@ -49,6 +53,6 @@
     "dynamic closures can refer to global bindings delcared after the closure")
   (assert-equal test
     5
-    ((closure-five))
+    (test-closure-five)
     "nested closures prefer closed-over bindings")
 )
