@@ -40,3 +40,6 @@ keys (Map m) = M.keys m
 
 map :: (a -> b) -> Map k a -> Map k b
 map f (Map m) = Map $ M.map f m
+
+union :: Ord k => Map k v -> Map k v -> Map k v
+union (Map m) (Map m') = (Map (M.union m m'))
