@@ -7,7 +7,7 @@
 (derive T dec)
 (derive T zero)
 (derive T str)
-(derive T =)
+(derive T = eq)
 
 (defn main []
   (do

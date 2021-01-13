@@ -21,11 +21,11 @@ Example:
     (set! Derive.derivers
       (cons
         (list f
-          (fn [t]
+          (fn [t name]
             (list 'defmodule t
-              (list 'defn f args
+              (list 'defn name args
                 (body t))
-              (list 'implements f (Symbol.prefix t f)))))
+              (list 'implements f (Symbol.prefix t name)))))
         Derive.derivers)))
 
   (doc make-update-deriver "is a convenience function for creating a deriver
@@ -57,12 +57,16 @@ derivable.")
   (defndynamic derivables []
     (map car Derive.derivers))
 
-  (doc derive "derives an interface function `f` for a type `t`.")
-  (defmacro derive [t f]
-    (let [deriver (get-deriver f Derive.derivers)]
+  (doc derive "derives an interface function `f` for a type `t`.
+
+Optionally, it also takes an argument `overrride` that overrides the name of
+the generated function to avoid collisions.")
+  (defmacro derive [t f :rest override]
+    (let [name (if (empty? override) f (car override))
+          deriver (get-deriver f Derive.derivers)]
       (if (empty? deriver)
         (macro-error (String.concat ["no deriver found for interface " (str f) "!"]))
-        (eval ((cadr deriver) t))))))
+        (eval ((cadr deriver) t name))))))
 
 (use Derive)
 
