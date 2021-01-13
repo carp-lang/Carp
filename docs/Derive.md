@@ -2,12 +2,12 @@
 
 `derive` is a mechanism that automatically determines how to implement
 interfaces for datatypes based on their members. It also allows you to write
-your own rules for `derive`, called a `deriver`, but most users will likely
-not use that feature.
+your own rules for `derive`, called a `deriver`.
 
 If you’d like to learn how to `derive` interfaces for your types, read the
-first section of this document. If you’d like to provide a deriver for an
-interface, read the second section of this document.
+[first section](#i-using-derive) of this document. If you’d like to provide a
+deriver for an interface, read [the second section](#ii-writing-derivers) of
+this document.
 
 ## I: Using `derive`
 
@@ -23,8 +23,8 @@ name and interface to implement:
 (derive Point =)
 ```
 
-The code above will enrich the type `Point` by providing implementations for
-`zero` and `=` to it, based on its members. The prerequisites for this to work
+The code above wil provide implementations of `zero` and `=` for the type
+`Point` based on its members. The prerequisites for this to work
 are that types are *concrete*—there are no type variables present—and *its
 members implement the interface*. This is because the definition of both
 functions hinges on the definition of its members: `zero` on a type is just
@@ -44,11 +44,12 @@ Some users might want to be able to derive update interfaces that take a type,
 do the same thing to all its members, and return it. A good example for this
 in the context of `Point` is `inc`.
 
-While generally this might require you to write your own deriver—see section II
-of this document to learn how to do that—, Carp provides you with a special
-dynamic function called `make-update-deriver`. It takes a unary interface that
-updates a value and returns it, and extrapolates a definition for the
-encompassing type. This is what this would look like for `Point`:
+While generally this might require you to write your own deriver—see [section
+II](#ii-writing-derivers) of this document to learn how to do that—, Carp
+provides a special dynamic function called `make-update-deriver`. It takes a
+unary interface that updates a value and returns it, and extrapolates a
+definition for the encompassing type. This is what this would look like for
+`Point`:
 
 ```clojure
 (make-update-deriver 'inc) ; notice the quote
