@@ -10,9 +10,9 @@
 (derive T =)
 
 (defn main []
-(do
-  (println* &(T.inc (T.init 1 2 3)))
-  (println* &(T.dec (T.init 1 2 3)))
-  (println* &(T.zero))
-  (println* (= &(T.init 1 2 3) &(T.init 1 2 3)))
-  (println* (= &(T.init 1 2 3) &(T.init 1 3 2)))))
+  (do
+    (println* &(T.inc (T.init 1 2 3)))
+    (println* &(T.dec (T.init 1 2 3)))
+    (println* &(T.zero))
+    (println* (= &(T.init 1 2 3) &(T.init 1 2 3)))
+    (println* (= &(T.init 1 2 3) &(T.init 1 3 2)))))
