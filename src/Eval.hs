@@ -313,7 +313,9 @@ eval ctx xobj@(XObj o info ty) preference resolver =
                 (newCtx, evaledArgs) <- foldlM successiveEval (ctx, Right []) args
                 case evaledArgs of
                   Right okArgs -> do
-                    (_, res) <- apply (c {contextHistory = contextHistory ctx} <> ctx) body params okArgs
+                    let newGlobals = (contextGlobalEnv newCtx) <> (contextGlobalEnv c)
+                        newTypes = TypeEnv $ (getTypeEnv (contextTypeEnv newCtx)) <> (getTypeEnv (contextTypeEnv c))
+                    (_, res) <- apply (c {contextHistory = contextHistory ctx, contextGlobalEnv = newGlobals, contextTypeEnv = newTypes}) body params okArgs
                     pure (newCtx, res)
                   Left err -> pure (newCtx, Left err)
         XObj (Lst [XObj Dynamic _ _, sym, XObj (Arr params) _ _, body]) i _ : args ->
