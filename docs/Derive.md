@@ -28,7 +28,7 @@ name and interface to implement:
 (derive Point str my-str)
 ```
 
-The code above wil provide implementations of `zero` and `=` for the type
+The code above will provide implementations of `zero` and `=` for the type
 `Point` based on its members. The prerequisites for this to work
 are that types are *concrete*—there are no type variables present—and *its
 members implement the interface*. This is because the definition of both
