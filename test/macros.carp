@@ -122,6 +122,11 @@
 (defmacro test-dynamic-use []
   (test-dynamic-use-))
 
+(defmacro test-quasiquote []
+  (quasiquote
+    (+ (unquote global-x)
+       (+ (unquote-splicing (map inc [1 2]))))))
+
 
 (deftest test
   (assert-true test
@@ -340,8 +345,6 @@
                "use works as expected in dynamic contexts")
   (assert-equal test
                 6
-                (quasiquote
-                  (+ (unquote global-x)
-                     (+ (unquote-splicing (map inc [1 2])))))
+                (test-quasiquote)
                 "quasiquote works as expected")
 )
