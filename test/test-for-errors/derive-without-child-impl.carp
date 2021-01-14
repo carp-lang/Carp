@@ -7,4 +7,4 @@
 ])
 
 (make-update-deriver 'inc)
-(derive inc T2)
+(derive T2 inc)
