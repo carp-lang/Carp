@@ -25,6 +25,7 @@
 (load-once "Project.carp")
 (load-once "Platform.carp")
 (load-once "Introspect.carp")
+(load-once "Quasiquote.carp")
 (load-once "Pointer.carp")
 (load-once "Unsafe.carp")
 (load-once "Function.carp")
