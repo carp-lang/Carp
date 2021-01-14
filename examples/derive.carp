@@ -3,11 +3,11 @@
 (make-update-deriver 'dec)
 
 (deftype T [x Int y Int z Int])
-(derive T inc)
-(derive T dec)
-(derive T zero)
-(derive T str)
-(derive T = eq)
+(derive inc T)
+(derive dec T)
+(derive zero T)
+(derive str T)
+(derive = T eq)
 
 (defn main []
   (do

@@ -61,7 +61,7 @@ derivable.")
 
 Optionally, it also takes an argument `overrride` that overrides the name of
 the generated function to avoid collisions.")
-  (defmacro derive [t f :rest override]
+  (defmacro derive [f t :rest override]
     (let [name (if (empty? override) f (car override))
           deriver (get-deriver f Derive.derivers)]
       (if (empty? deriver)

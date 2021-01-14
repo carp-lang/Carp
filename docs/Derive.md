@@ -19,8 +19,13 @@ name and interface to implement:
   x Int
   y Int
 ])
-(derive Point zero)
-(derive Point =)
+(derive zero Point)
+(derive = Point)
+
+; if you’d like to generate a different function name
+; pass it as a third argument. This is useful to avoid
+; name collisions
+(derive str Point my-str)
 ```
 
 The code above wil provide implementations of `zero` and `=` for the type
