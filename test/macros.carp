@@ -127,6 +127,10 @@
     (+ (unquote global-x)
        (+ (unquote-splicing (map inc [1 2]))))))
 
+(defmacro test-quasiquote-reader []
+  `(+ %global-x
+      (+ %@(map inc [1 2]))))
+
 
 (deftest test
   (assert-true test
@@ -347,4 +351,8 @@
                 6
                 (test-quasiquote)
                 "quasiquote works as expected")
+  (assert-equal test
+                6
+                (test-quasiquote-reader)
+                "quasiquote reader works as expected")
 )

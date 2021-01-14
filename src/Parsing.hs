@@ -560,27 +560,33 @@ deref = do
   expr <- sexpr
   pure (XObj (Lst [XObj Deref Nothing Nothing, expr]) i Nothing)
 
-copy :: Parsec.Parsec String ParseState XObj
-copy = do
+readerMacro :: String -> String -> Parsec.Parsec String ParseState XObj
+readerMacro macroStr sym = do
   i1 <- createInfo
+  s <- Parsec.try (Parsec.string macroStr)
+  incColumn (length s)
   i2 <- createInfo
-  _ <- Parsec.char '@'
-  incColumn 1
   expr <- sexpr
-  pure (XObj (Lst [XObj (Sym (SymPath [] "copy") Symbol) i1 Nothing, expr]) i2 Nothing)
+  pure (XObj (Lst [XObj (Sym (SymPath [] sym) Symbol) i1 Nothing, expr]) i2 Nothing)
+
+copy :: Parsec.Parsec String ParseState XObj
+copy = readerMacro "@" "copy"
 
 quote :: Parsec.Parsec String ParseState XObj
-quote = do
-  i1 <- createInfo
-  i2 <- createInfo
-  _ <- Parsec.char '\''
-  incColumn 1
-  expr <- sexpr
-  pure (XObj (Lst [XObj (Sym (SymPath [] "quote") Symbol) i1 Nothing, expr]) i2 Nothing)
+quote = readerMacro "'" "quote"
+
+quasiquote :: Parsec.Parsec String ParseState XObj
+quasiquote = readerMacro "`" "quasiquote"
+
+unquoteSplicing :: Parsec.Parsec String ParseState XObj
+unquoteSplicing = readerMacro "%@" "unquote-splicing"
+
+unquote :: Parsec.Parsec String ParseState XObj
+unquote = readerMacro "%" "unquote"
 
 sexpr :: Parsec.Parsec String ParseState XObj
 sexpr = do
-  x <- Parsec.choice [ref, deref, copy, quote, list, staticArray, array, dictionary, atom]
+  x <- Parsec.choice [ref, deref, copy, quote, quasiquote, unquoteSplicing, unquote, list, staticArray, array, dictionary, atom]
   _ <- whitespaceOrNothing
   pure x
 
