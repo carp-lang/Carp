@@ -544,45 +544,38 @@ dictionary = do
       fromArraySexp = XObj (Lst [fromArraySymbol, reffedArrayLiteral]) i Nothing
   pure fromArraySexp
 
-ref :: Parsec.Parsec String ParseState XObj
-ref = do
-  i <- createInfo
-  _ <- Parsec.char '&'
-  incColumn 1
-  expr <- sexpr
-  pure (XObj (Lst [XObj Ref Nothing Nothing, expr]) i Nothing)
-
-deref :: Parsec.Parsec String ParseState XObj
-deref = do
-  i <- createInfo
-  _ <- Parsec.char '~'
-  incColumn 1
-  expr <- sexpr
-  pure (XObj (Lst [XObj Deref Nothing Nothing, expr]) i Nothing)
-
-readerMacro :: String -> String -> Parsec.Parsec String ParseState XObj
-readerMacro macroStr sym = do
+readerMacro :: String -> Obj -> Parsec.Parsec String ParseState XObj
+readerMacro macroStr obj = do
   i1 <- createInfo
   s <- Parsec.try (Parsec.string macroStr)
   incColumn (length s)
   i2 <- createInfo
   expr <- sexpr
-  pure (XObj (Lst [XObj (Sym (SymPath [] sym) Symbol) i1 Nothing, expr]) i2 Nothing)
+  pure (XObj (Lst [XObj obj i1 Nothing, expr]) i2 Nothing)
+
+symReaderMacro :: String -> String -> Parsec.Parsec String ParseState XObj
+symReaderMacro macroStr sym = readerMacro macroStr (Sym (SymPath [] sym) Symbol)
+
+ref :: Parsec.Parsec String ParseState XObj
+ref = readerMacro "&" Ref
+
+deref :: Parsec.Parsec String ParseState XObj
+deref = readerMacro "~" Deref
 
 copy :: Parsec.Parsec String ParseState XObj
-copy = readerMacro "@" "copy"
+copy = symReaderMacro "@" "copy"
 
 quote :: Parsec.Parsec String ParseState XObj
-quote = readerMacro "'" "quote"
+quote = symReaderMacro "'" "quote"
 
 quasiquote :: Parsec.Parsec String ParseState XObj
-quasiquote = readerMacro "`" "quasiquote"
+quasiquote = symReaderMacro "`" "quasiquote"
 
 unquoteSplicing :: Parsec.Parsec String ParseState XObj
-unquoteSplicing = readerMacro "%@" "unquote-splicing"
+unquoteSplicing = symReaderMacro "%@" "unquote-splicing"
 
 unquote :: Parsec.Parsec String ParseState XObj
-unquote = readerMacro "%" "unquote"
+unquote = symReaderMacro "%" "unquote"
 
 sexpr :: Parsec.Parsec String ParseState XObj
 sexpr = do
