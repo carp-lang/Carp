@@ -39,7 +39,7 @@ Example:
           (and* (symbol? app)
                 (= app 'unquote)
                 (= (length arg) 2))
-            (eval (cadr arg))
+            (cadr arg)
           (and (symbol? app) (= (car arg) 'quasiquote)) arg
           (and (symbol? app) (= (car arg) 'unquote))
             (macro-error "unquote takes exactly one argument.")
@@ -51,11 +51,11 @@ Example:
                         (= (length elem) 2)
                         (symbol? (car elem))
                         (= (car elem) 'unquote-splicing))
-                (append acc (eval (cadr elem)))
-                (cons-last (quasiquote- elem) acc)))
+                (list 'append acc (cadr elem))
+                (list 'cons-last (quasiquote- elem) acc)))
             '()
             arg)))
-        arg))
+        (list 'quote arg)))
 
   (doc quasiquote "is a quotation that may have expressions inside it in the
 form of [`unquote](#unquote) and [`unquote-splicing`](#unquote-splicing).
