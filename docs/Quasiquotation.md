@@ -7,9 +7,9 @@ Quasiquotation enables the user to intersperse evaluated or “unquoted” porti
 into a unevaluated or “quoted” list.
 
 ```clojure
-(defdynamic x 1)
+(defdynamic x 2)
 
-(quasiquote (+ (unquote x) 1)) ; => (+ 1 1)
+(quasiquote (+ (unquote x) 1)) ; => (+ 2 1)
 ```
 
 Note that unquoting only makes sense inside `quasiquote` forms and using it

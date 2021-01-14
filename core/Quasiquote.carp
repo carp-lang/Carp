@@ -10,9 +10,9 @@ quasiquote. It will generate an error message when used outside a
 Example:
 
 ```
-(defdynamic x 1)
+(defdynamic x 2)
 
-(quasiquote (+ (unquote x) 1)) ; => (+ 1 1)
+(quasiquote (+ (unquote x) 1)) ; => (+ 2 1)
 ```")
   (defmacro unquote [arg]
     (macro-error "unquotes need to be wrapped inside quasiquotes."))
