@@ -1,0 +1,43 @@
+(make-update-deriver 'inc)
+(make-update-deriver 'dec)
+
+(deftype T [x Int y Int z Int])
+(derive inc T)
+(derive dec T)
+(derive zero T)
+(derive str T)
+(derive = T eq)
+
+(load "Test.carp")
+(use Test)
+
+(deftest test
+  (assert-true test
+               (= &(T.init 0 0 0) &(T.init 0 0 0))
+               "deriving = works I"
+  )
+  (assert-false test
+                (= &(T.init 0 0 0) &(T.init 1 0 0))
+                "deriving = works II"
+  )
+  (assert-equal test
+                &(T.init 0 0 0)
+                &(T.zero)
+                "deriving zero works"
+  )
+  (assert-equal test
+                &(T.init 2 3 4)
+                &(T.inc (T.init 1 2 3))
+                "deriving inc works"
+  )
+  (assert-equal test
+                &(T.init 0 1 2)
+                &(T.dec (T.init 1 2 3))
+                "deriving dec works"
+  )
+  (assert-equal test
+                "(T 0 0 0)"
+                &(T.str &(T.zero))
+                "deriving str works"
+  )
+)
