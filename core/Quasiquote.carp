@@ -17,7 +17,7 @@ Example:
   (defmacro unquote [arg]
     (macro-error "unquotes need to be wrapped inside quasiquotes."))
 
-  (doc unquote "unquotes (i.e. evaluates) an expression `arg` inside a
+  (doc unquote-splicing "unquotes (i.e. evaluates) an expression `arg` inside a
 quasiquote and splices it in, i.e. flattens the expression. It will
 generate an error message when used outside a `quasiquote` form.
 
