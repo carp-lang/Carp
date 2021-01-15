@@ -544,43 +544,42 @@ dictionary = do
       fromArraySexp = XObj (Lst [fromArraySymbol, reffedArrayLiteral]) i Nothing
   pure fromArraySexp
 
-ref :: Parsec.Parsec String ParseState XObj
-ref = do
-  i <- createInfo
-  _ <- Parsec.char '&'
-  incColumn 1
+readerMacro :: String -> Obj -> Parsec.Parsec String ParseState XObj
+readerMacro macroStr obj = do
+  i1 <- createInfo
+  s <- Parsec.try (Parsec.string macroStr)
+  incColumn (length s)
+  i2 <- createInfo
   expr <- sexpr
-  pure (XObj (Lst [XObj Ref Nothing Nothing, expr]) i Nothing)
+  pure (XObj (Lst [XObj obj i1 Nothing, expr]) i2 Nothing)
+
+symReaderMacro :: String -> String -> Parsec.Parsec String ParseState XObj
+symReaderMacro macroStr sym = readerMacro macroStr (Sym (SymPath [] sym) Symbol)
+
+ref :: Parsec.Parsec String ParseState XObj
+ref = readerMacro "&" Ref
 
 deref :: Parsec.Parsec String ParseState XObj
-deref = do
-  i <- createInfo
-  _ <- Parsec.char '~'
-  incColumn 1
-  expr <- sexpr
-  pure (XObj (Lst [XObj Deref Nothing Nothing, expr]) i Nothing)
+deref = readerMacro "~" Deref
 
 copy :: Parsec.Parsec String ParseState XObj
-copy = do
-  i1 <- createInfo
-  i2 <- createInfo
-  _ <- Parsec.char '@'
-  incColumn 1
-  expr <- sexpr
-  pure (XObj (Lst [XObj (Sym (SymPath [] "copy") Symbol) i1 Nothing, expr]) i2 Nothing)
+copy = symReaderMacro "@" "copy"
 
 quote :: Parsec.Parsec String ParseState XObj
-quote = do
-  i1 <- createInfo
-  i2 <- createInfo
-  _ <- Parsec.char '\''
-  incColumn 1
-  expr <- sexpr
-  pure (XObj (Lst [XObj (Sym (SymPath [] "quote") Symbol) i1 Nothing, expr]) i2 Nothing)
+quote = symReaderMacro "'" "quote"
+
+quasiquote :: Parsec.Parsec String ParseState XObj
+quasiquote = symReaderMacro "`" "quasiquote"
+
+unquoteSplicing :: Parsec.Parsec String ParseState XObj
+unquoteSplicing = symReaderMacro "%@" "unquote-splicing"
+
+unquote :: Parsec.Parsec String ParseState XObj
+unquote = symReaderMacro "%" "unquote"
 
 sexpr :: Parsec.Parsec String ParseState XObj
 sexpr = do
-  x <- Parsec.choice [ref, deref, copy, quote, list, staticArray, array, dictionary, atom]
+  x <- Parsec.choice [ref, deref, copy, quote, quasiquote, unquoteSplicing, unquote, list, staticArray, array, dictionary, atom]
   _ <- whitespaceOrNothing
   pure x
 

@@ -1,0 +1,73 @@
+(doc Quasiquote "is a mechanism for quotation with code interspersed. See
+the documentation of [`quasiquote`](#quasiquote) or the [high level
+overview](https://github.com/carp-lang/Carp/blob/master/docs/Quasiquotation.md)
+for details.")
+(defmodule Quasiquote
+  (doc unquote "unquotes (i.e. evaluates) an expression `arg` inside a
+quasiquote. It will generate an error message when used outside a
+`quasiquote` form.
+
+Example:
+
+```
+(defdynamic x 2)
+
+(quasiquote (+ (unquote x) 1)) ; => (+ 2 1)
+```")
+  (defmacro unquote [arg]
+    (macro-error "unquotes need to be wrapped inside quasiquotes."))
+
+  (doc unquote-splicing "unquotes (i.e. evaluates) an expression `arg` inside a
+quasiquote and splices it in, i.e. flattens the expression. It will
+generate an error message when used outside a `quasiquote` form.
+
+Example:
+
+```
+(defdynamic x '(1 2)
+
+(quasiquote (+ (unquote-splicing x))) ; => (+ 1 2)
+```")
+  (defmacro unquote-splicing [arg]
+    (macro-error "unquotes need to be wrapped inside quasiquotes."))
+
+  (hidden quasiquote-)
+  (defndynamic quasiquote- [arg]
+    (if (and (list? arg) (> (length arg) 0))
+      (let [app (car arg)]
+        (cond
+          (and* (symbol? app)
+                (= app 'unquote)
+                (= (length arg) 2))
+            (cadr arg)
+          (and (symbol? app) (= (car arg) 'quasiquote)) arg
+          (and (symbol? app) (= (car arg) 'unquote))
+            (macro-error "unquote takes exactly one argument.")
+          (and (symbol? app) (= (car arg) 'unquote-splicing))
+            (macro-error "unquote-splicing takes exactly one argument.")
+          (reduce
+            (fn [acc elem]
+              (if (and* (list? elem)
+                        (= (length elem) 2)
+                        (symbol? (car elem))
+                        (= (car elem) 'unquote-splicing))
+                (list 'append acc (cadr elem))
+                (list 'cons-last (quasiquote- elem) acc)))
+            '()
+            arg)))
+        (list 'quote arg)))
+
+  (doc quasiquote "is a quotation that may have expressions inside it in the
+form of [`unquote](#unquote) and [`unquote-splicing`](#unquote-splicing).
+
+Example:
+```
+(defdynamic x 1)
+(defdynamic y '(2 3 4))
+
+(quasiquote (1 (unquote x) (unquote-splicing y))) ; => (1 1 2 3 4)
+```")
+  (defmacro quasiquote [arg]
+    (quasiquote- arg)))
+
+(use Quasiquote)

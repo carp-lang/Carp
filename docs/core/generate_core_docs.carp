@@ -24,6 +24,7 @@
            Float
            Function
            Geometry
+           Quasiquote
            Int
            IO
            Long
