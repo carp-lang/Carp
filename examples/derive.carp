@@ -1,0 +1,18 @@
+; let’s make inc and dec derivable
+(make-update-deriver 'inc)
+(make-update-deriver 'dec)
+
+(deftype T [x Int y Int z Int])
+(derive T inc)
+(derive T dec)
+(derive T zero)
+(derive T str)
+(derive T = eq)
+
+(defn main []
+  (do
+    (println* &(T.inc (T.init 1 2 3)))
+    (println* &(T.dec (T.init 1 2 3)))
+    (println* &(T.zero))
+    (println* (= &(T.init 1 2 3) &(T.init 1 2 3)))
+    (println* (= &(T.init 1 2 3) &(T.init 1 3 2)))))
