@@ -521,36 +521,12 @@ commandEq :: BinaryCommandCallback
 commandEq ctx a b =
   pure (ctx, Right (boolToXObj (cmp (a, b))))
   where
-    cmp (XObj (Num aTy aNum) _ _, XObj (Num bTy bNum) _ _)
-      | aTy == bTy =
-        aNum == bNum
-    cmp (XObj (Str sa) _ _, XObj (Str sb) _ _) = sa == sb
-    cmp (XObj (Chr ca) _ _, XObj (Chr cb) _ _) = ca == cb
     cmp (XObj (Sym sa _) _ _, XObj (Sym sb _) _ _) = sa == sb
-    cmp (XObj (Bol xa) _ _, XObj (Bol xb) _ _) = xa == xb
-    cmp (XObj Def _ _, XObj Def _ _) = True
-    cmp (XObj Do _ _, XObj Do _ _) = True
-    cmp (XObj Let _ _, XObj Let _ _) = True
-    cmp (XObj While _ _, XObj While _ _) = True
-    cmp (XObj Break _ _, XObj Break _ _) = True
-    cmp (XObj If _ _, XObj If _ _) = True
-    cmp (XObj With _ _, XObj With _ _) = True
-    cmp (XObj MetaStub _ _, XObj MetaStub _ _) = True
-    cmp (XObj Address _ _, XObj Address _ _) = True
-    cmp (XObj SetBang _ _, XObj SetBang _ _) = True
-    cmp (XObj Macro _ _, XObj Macro _ _) = True
-    cmp (XObj Dynamic _ _, XObj Dynamic _ _) = True
-    cmp (XObj DefDynamic _ _, XObj DefDynamic _ _) = True
-    cmp (XObj The _ _, XObj The _ _) = True
-    cmp (XObj Ref _ _, XObj Ref _ _) = True
-    cmp (XObj Deref _ _, XObj Deref _ _) = True
-    cmp (XObj (Lst []) _ _, XObj (Lst []) _ _) = True
     cmp (XObj (Lst elemsA) _ _, XObj (Lst elemsB) _ _) =
       length elemsA == length elemsB && all cmp (zip elemsA elemsB)
-    cmp (XObj (Arr []) _ _, XObj (Arr []) _ _) = True
     cmp (XObj (Arr elemsA) _ _, XObj (Arr elemsB) _ _) =
       length elemsA == length elemsB && all cmp (zip elemsA elemsB)
-    cmp _ = False
+    cmp (XObj x _ _, XObj y _ _) = x == y
 
 commandComp :: (Number -> Number -> Bool) -> String -> BinaryCommandCallback
 commandComp op _ ctx (XObj (Num aTy aNum) _ _) (XObj (Num bTy bNum) _ _) | aTy == bTy = pure (ctx, Right (boolToXObj (op aNum bNum)))
