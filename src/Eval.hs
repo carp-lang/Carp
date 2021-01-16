@@ -300,11 +300,15 @@ eval ctx xobj@(XObj o info ty) preference resolver =
                           Just e = contextInternalEnv newCtx
                       pure $ Right (newCtx {contextInternalEnv = Just (envInsertAt e (SymPath [] n) binder)})
                     Left err -> pure $ Left err
-        l@[XObj Fn {} _ _, args@(XObj (Arr a) _ _), _] ->
+        [f@(XObj Fn {} _ _), args@(XObj (Arr a) _ _), body] -> do
+          (newCtx, expanded) <- macroExpand ctx body
           pure $
-            if all isUnqualifiedSym a
-              then (ctx, Right (XObj (Closure (XObj (Lst l) info ty) (CCtx ctx)) info ty))
-              else evalError ctx ("`fn` requires all arguments to be unqualified symbols, but it got `" ++ pretty args ++ "`") (xobjInfo args)
+            case expanded of
+              Right b ->
+                if all isUnqualifiedSym a
+                  then (newCtx, Right (XObj (Closure (XObj (Lst [f, args, b]) info ty) (CCtx newCtx)) info ty))
+                  else evalError ctx ("`fn` requires all arguments to be unqualified symbols, but it got `" ++ pretty args ++ "`") (xobjInfo args)
+              Left err -> (ctx, Left err)
         XObj (Closure (XObj (Lst [XObj (Fn _ _) _ _, XObj (Arr params) _ _, body]) _ _) (CCtx c)) _ _ : args ->
           case checkArity "<closure>" params args of
             Left err -> pure (evalError ctx err (xobjInfo xobj))
