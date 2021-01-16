@@ -131,6 +131,17 @@
   `(+ %global-x
       (+ %@(map inc [1 2]))))
 
+(defmacro test-postwalk []
+  (eval (postwalk (fn [x] (if (symbol? x) (if (= x '+) '* x) x)) 
+                  '(+ 2 (+ 2 3)))))
+
+(defmacro test-prewalk []
+  (eval (prewalk (fn [x] (if (symbol? x) (if (= x '+) '* x) x)) 
+                 '(+ 2 (+ 2 3)))))
+
+(defmacro test-walk-replace []
+  (eval (walk-replace '((+ *)) '(+ 2 (+ 2 3)))))
+
 
 (deftest test
   (assert-true test
@@ -355,4 +366,16 @@
                 6
                 (test-quasiquote-reader)
                 "quasiquote reader works as expected")
+  (assert-equal test
+                12
+                (test-postwalk)
+                "postwalk works as expected")
+  (assert-equal test
+                12
+                (test-prewalk)
+                "prewalk works as expected")
+  (assert-equal test
+                12
+                (test-walk-replace)
+                "walk-replace works as expected")
 )

@@ -238,4 +238,68 @@
             '()
             l))
 
+  (doc walk "traverses `form`, an arbitrary data structure, using the functions
+`inner` and `outer` are. It will apply `inner` to each element of `form`,
+building up a data structure of the same type, then applies `outer` to the
+result. It recognizes arrays and lists. Other data structures will just be
+passed to `outer`.
+
+Example:
+```
+(walk car reverse [[1 2] [3 4] [5 6]]) ; => [5 3 1]
+```")
+  (defndynamic walk [inner outer form]
+    (cond
+      (list? form) (outer (map inner form))
+      (array? form) (outer (collect-into (map inner form) array))
+      (outer form)))
+
+  (doc postwalk "Performs a depth-first, post-order traversal of `form` and
+calls `f` on each subform, collecting the result.
+
+Example:
+```
+; note: this could be achieved using `walk-replace` as well
+(postwalk (fn [x]
+            (cond
+              (and (symbol? x) (= x '+)) '*
+              (and (symbol? x) (= x '-)) '/
+              x))
+          '(+ 1 (- 2 3))) ; => (* 1 (/ 2 3))
+```")
+  (defndynamic postwalk [f form]
+    (walk (curry postwalk f) f form))
+
+  (doc prewalk "behaves like [`postwalk`](#postwalk), but does pre-order
+traversal.
+
+Example:
+```
+(prewalk (fn [x] (if (number? x) (* x 4) x)) '(+ 1 (- 2 3))) ; => (+ 4 (- 8 12))
+```")
+  (defndynamic prewalk [f form]
+    (walk (curry prewalk f) (fn [x] x) (f form)))
+
+  (hidden walk-replace-finder)
+  (defndynamic walk-replace-finder [p el]
+    (if (empty? p)
+      p
+      (let [f (car p)]
+        (if (= (car f) el)
+          f
+          (walk-replace-finder (cdr p) el)))))
+
+  (doc walk-replace "Performs a depth-first, pre-order traversal of `form` and
+finds a matchin replacement for each subform in the replacement pairs `pairs`,
+if applicable, collecting the result.
+
+Example:
+```
+(walk-replace '((+ *) (- /)) '(+ 1 (- 2 3))) ; => (* 1 (/ 2 3))
+```")
+  (defndynamic walk-replace [pairs form]
+    (prewalk (fn [x]
+               (let [r (walk-replace-finder pairs x)]
+                 (if (empty? r) x (cadr r))))
+             form))
   )
