@@ -519,47 +519,14 @@ commandMacroLog ctx msgs = do
 
 commandEq :: BinaryCommandCallback
 commandEq ctx a b =
-  pure $ case cmp (a, b) of
-    Left (a', b') -> evalError ctx ("Can't compare " ++ pretty a' ++ " with " ++ pretty b') (xobjInfo a')
-    Right b' -> (ctx, Right (boolToXObj b'))
+  pure (ctx, Right (boolToXObj (cmp (a, b))))
   where
-    cmp (XObj (Num aTy aNum) _ _, XObj (Num bTy bNum) _ _)
-      | aTy == bTy =
-        Right $ aNum == bNum
-    cmp (XObj (Str sa) _ _, XObj (Str sb) _ _) = Right $ sa == sb
-    cmp (XObj (Chr ca) _ _, XObj (Chr cb) _ _) = Right $ ca == cb
-    cmp (XObj (Sym sa _) _ _, XObj (Sym sb _) _ _) = Right $ sa == sb
-    cmp (XObj (Bol xa) _ _, XObj (Bol xb) _ _) = Right $ xa == xb
-    cmp (XObj Def _ _, XObj Def _ _) = Right True
-    cmp (XObj Do _ _, XObj Do _ _) = Right True
-    cmp (XObj Let _ _, XObj Let _ _) = Right True
-    cmp (XObj While _ _, XObj While _ _) = Right True
-    cmp (XObj Break _ _, XObj Break _ _) = Right True
-    cmp (XObj If _ _, XObj If _ _) = Right True
-    cmp (XObj With _ _, XObj With _ _) = Right True
-    cmp (XObj MetaStub _ _, XObj MetaStub _ _) = Right True
-    cmp (XObj Address _ _, XObj Address _ _) = Right True
-    cmp (XObj SetBang _ _, XObj SetBang _ _) = Right True
-    cmp (XObj Macro _ _, XObj Macro _ _) = Right True
-    cmp (XObj Dynamic _ _, XObj Dynamic _ _) = Right True
-    cmp (XObj DefDynamic _ _, XObj DefDynamic _ _) = Right True
-    cmp (XObj The _ _, XObj The _ _) = Right True
-    cmp (XObj Ref _ _, XObj Ref _ _) = Right True
-    cmp (XObj Deref _ _, XObj Deref _ _) = Right True
-    cmp (XObj (Lst []) _ _, XObj (Lst []) _ _) = Right True
+    cmp (XObj (Sym sa _) _ _, XObj (Sym sb _) _ _) = sa == sb
     cmp (XObj (Lst elemsA) _ _, XObj (Lst elemsB) _ _) =
-      if length elemsA == length elemsB
-        then foldr cmp' (Right True) (zip elemsA elemsB)
-        else Right False
-    cmp (XObj (Arr []) _ _, XObj (Arr []) _ _) = Right True
+      length elemsA == length elemsB && all cmp (zip elemsA elemsB)
     cmp (XObj (Arr elemsA) _ _, XObj (Arr elemsB) _ _) =
-      if length elemsA == length elemsB
-        then foldr cmp' (Right True) (zip elemsA elemsB)
-        else Right False
-    cmp invalid = Left invalid
-    cmp' _ invalid@(Left _) = invalid
-    cmp' _ (Right False) = Right False
-    cmp' elt (Right True) = cmp elt
+      length elemsA == length elemsB && all cmp (zip elemsA elemsB)
+    cmp (XObj x _ _, XObj y _ _) = x == y
 
 commandComp :: (Number -> Number -> Bool) -> String -> BinaryCommandCallback
 commandComp op _ ctx (XObj (Num aTy aNum) _ _) (XObj (Num bTy bNum) _ _) | aTy == bTy = pure (ctx, Right (boolToXObj (op aNum bNum)))
