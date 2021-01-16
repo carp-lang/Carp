@@ -432,6 +432,18 @@ commandIsSymbol ctx x =
     XObj (Sym _ _) _ _ -> (ctx, Right trueXObj)
     _ -> (ctx, Right falseXObj)
 
+commandIsNumber :: UnaryCommandCallback
+commandIsNumber ctx x =
+  pure $ case x of
+    XObj (Num _ _) _ _ -> (ctx, Right trueXObj)
+    _ -> (ctx, Right falseXObj)
+
+commandIsString :: UnaryCommandCallback
+commandIsString ctx x =
+  pure $ case x of
+    XObj (Str _) _ _ -> (ctx, Right trueXObj)
+    _ -> (ctx, Right falseXObj)
+
 commandArray :: VariadicCommandCallback
 commandArray ctx args =
   pure (ctx, Right (XObj (Arr args) (Just dummyInfo) Nothing))
