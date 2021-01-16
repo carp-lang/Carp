@@ -239,10 +239,10 @@
             l))
 
   (doc walk "traverses `form`, an arbitrary data structure, using the functions
-`inner` and `outer` are. It will apply `inner` to each element of `form`,
-building up a data structure of the same type, then applies `outer` to the
-result. It recognizes arrays and lists. Other data structures will just be
-passed to `outer`.
+`inner` and `outer`. It will apply `inner` to each element of `form`, building
+up a data structure of the same type, then applies `outer` to the result. It
+recognizes arrays and lists. Other data structures will just be passed to
+`outer`.
 
 Example:
 ```
@@ -290,7 +290,7 @@ Example:
           (walk-replace-finder (cdr p) el)))))
 
   (doc walk-replace "Performs a depth-first, pre-order traversal of `form` and
-finds a matchin replacement for each subform in the replacement pairs `pairs`,
+finds a matching replacement for each subform in the replacement pairs `pairs`,
 if applicable, collecting the result.
 
 Example:
