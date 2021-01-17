@@ -262,8 +262,8 @@ Example:
 ; note: this could be achieved using `walk-replace` as well
 (postwalk (fn [x]
             (cond
-              (and (symbol? x) (= x '+)) '*
-              (and (symbol? x) (= x '-)) '/
+              (= x '+) '*
+              (= x '-) '/
               x))
           '(+ 1 (- 2 3))) ; => (* 1 (/ 2 3))
 ```")

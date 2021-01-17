@@ -132,11 +132,11 @@
       (+ %@(map inc [1 2]))))
 
 (defmacro test-postwalk []
-  (eval (postwalk (fn [x] (if (symbol? x) (if (= x '+) '* x) x)) 
+  (eval (postwalk (fn [x] (if (= x '+) '* x))
                   '(+ 2 (+ 2 3)))))
 
 (defmacro test-prewalk []
-  (eval (prewalk (fn [x] (if (symbol? x) (if (= x '+) '* x) x)) 
+  (eval (prewalk (fn [x] (if (= x '+) '* x))
                  '(+ 2 (+ 2 3)))))
 
 (defmacro test-walk-replace []
