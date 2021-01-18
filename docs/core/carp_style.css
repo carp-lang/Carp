@@ -75,6 +75,14 @@ h3 {
     margin: 3.5em 0em 0em 0em;
 }
 
+.deprecation {
+  background-color: #f99;
+  text-transform: uppercase;
+  float: right;
+  padding: 5px;
+  margin: -5px;
+}
+
 .sig {
     font-family: "Hasklig", "Source Code Pro", "Lucida Console", monospace;
 }

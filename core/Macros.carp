@@ -102,6 +102,10 @@
 (defmacro annotate [name annotation]
   (eval (list 'meta-set! name "annotations" (eval (annotate-helper name annotation)))))
 
+(doc deprecated "Declares that a binding is deprecated.")
+(defmacro deprecated [name]
+  (eval (list 'meta-set! name "deprecated" true)))
+
 (defmodule Dynamic
 
   (defndynamic quoted [x]

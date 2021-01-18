@@ -22,9 +22,11 @@
       (cons-last (thread-last-internal (all-but-last xs)) (last xs))
       (list (last xs) (thread-last-internal (all-but-last xs))))))
 
+(deprecated =>)
 (defmacro => [:rest forms]
   (thread-first-internal forms))
 
+(deprecated ==>)
 (defmacro ==> [:rest forms]
   (thread-last-internal forms))
 

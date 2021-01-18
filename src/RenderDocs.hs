@@ -152,6 +152,9 @@ binderToHtml (Binder meta xobj) =
       typeSignature = case xobjTy xobj of
         Just t -> show (beautifyType t) -- NOTE: This destroys user-defined names of type variables!
         Nothing -> ""
+      deprecated = case Meta.get "deprecated" meta of
+        Just (XObj (Bol True) _ _) -> True
+        _ -> False
       docString = case Meta.get "doc" meta of
         Just (XObj (Str s) _ _) -> s
         Just found -> pretty found
@@ -161,7 +164,11 @@ binderToHtml (Binder meta xobj) =
         do
           H.a ! A.class_ "anchor" ! A.href (H.stringValue ("#" ++ name)) $
             H.h3 ! A.id (H.stringValue name) $
-              H.toHtml name
+              do
+                H.toHtml name
+                when deprecated $
+                  H.span ! A.class_ "deprecation" $
+                    H.toHtml ("deprecated" :: String)
           H.div ! A.class_ "description" $ H.toHtml description
           H.p ! A.class_ "sig" $ H.toHtml typeSignature
           case maybeNameAndArgs of
