@@ -340,11 +340,16 @@ primitiveInfo _ ctx target@(XObj (Sym path@(SymPath _ _) _) _ _) =
     printMeta metaData proj x =
       maybe (pure ()) (printMetaVal "Documentation" (either (const "") id . unwrapStringXObj)) (Meta.get "doc" metaData)
         >> maybe (pure ()) (printMetaVal "Implements" getName) (Meta.get "implements" metaData)
-        >> maybe (pure ()) (printMetaVal "Private" pretty) (Meta.get "private" metaData)
-        >> maybe (pure ()) (printMetaVal "Hidden" pretty) (Meta.get "hidden" metaData)
+        >> maybe (pure ()) (printMetaBool "Private") (Meta.get "private" metaData)
+        >> maybe (pure ()) (printMetaBool "Hidden") (Meta.get "hidden" metaData)
         >> maybe (pure ()) (printMetaVal "Signature" pretty) (Meta.get "sig" metaData)
-        >> maybe (pure ()) (printMetaVal "Deprecated" pretty) (Meta.get "deprecated" metaData)
+        >> maybe (pure ()) (printMetaBool "Deprecated") (Meta.get "deprecated" metaData)
         >> when (projectPrintTypedAST proj) (putStrLnWithColor Yellow (prettyTyped x))
+
+    printMetaBool :: String -> XObj -> IO ()
+    printMetaBool s (XObj (Bol True) _ _) = putStrLn ("  " ++ s)
+    printMetaBool _ _ = return ()
+
     printMetaVal :: String -> (XObj -> String) -> XObj -> IO ()
     printMetaVal s f xobj = putStrLn ("  " ++ s ++ ": " ++ f xobj)
 primitiveInfo _ ctx notName =
