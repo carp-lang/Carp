@@ -51,7 +51,6 @@
 (load-once "IO.carp")
 (load-once "Pattern.carp")
 (load-once "Debug.carp")
-(load-once "Format.carp")
 (load-once "Random.carp")
 (load-once "Map.carp")
 (load-once "Heap.carp")

@@ -55,7 +55,9 @@ Example:
                 (list 'cons-last (quasiquote- elem) acc)))
             '()
             arg)))
-        (list 'quote arg)))
+        (if (array? arg)
+          (collect-into (map quasiquote- arg) array)
+          (list 'quote arg))))
 
   (doc quasiquote "is a quotation that may have expressions inside it in the
 form of [`unquote](#unquote) and [`unquote-splicing`](#unquote-splicing).

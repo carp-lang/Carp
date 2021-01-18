@@ -19,37 +19,35 @@ immediately, raising a `SIGABRT` if it fails.")
 
   (doc memory-logged "logs all calls to memory allocation within the form. Requires the flag `--log-memory` to be passed during compilation.")
   (defmacro memory-logged [form]
-    (list 'do
-          '(Debug.log-memory-balance! true)
-          form
-          '(Debug.log-memory-balance! false)))
+    `(do
+       (Debug.log-memory-balance! true)
+       %form
+       (Debug.log-memory-balance! false)))
 
   (doc assert-balanced "raises an error if the memory balance (number of `alloc`s - number of `free`s) isn't `0`. Requires the flag `--log-memory` to be passed durng compilation.")
   (defmacro assert-balanced [form]
-    (list 'let '[balance (Debug.memory-balance)]
-          (list 'do
-                (list 'let []
-                      form)
-                '(if (= balance (Debug.memory-balance))
-                   ()
-                   (do (IO.println &(fmt "Invalid memory balance: %d" (Debug.memory-balance)))
-                       (System.exit 1)))
-                ())))
+    `(let [balance (Debug.memory-balance)]
+       (do
+         (let [] %form)
+         (unless (= balance (Debug.memory-balance))
+           (do
+             (IO.println &(fmt "Invalid memory balance: %d" (Debug.memory-balance)))
+             (System.exit 1))))))
 
   (doc trace "prints the value of an expression to `stdout`, then returns its value.")
   (defmacro trace [x]
     (let [sym (gensym)]
-      (list 'let-do [sym x]
+      `(let-do [%sym %x]
         ; we use eval here to ensure we resolve the symbol before putting it
         ; into file, line, and column
-        (list 'IO.println
-          (list 'ref
-            (list 'fmt "%s:%d:%d: %s"
-              (eval (list 'file x))
-              (eval (list 'line x))
-              (eval (list 'column x))
-              (list 'ref (list 'str sym)))))
-        sym)
+        (IO.println
+          (ref
+            (fmt "%s:%d:%d: %s"
+              %(eval (list 'file x))
+              %(eval (list 'line x))
+              %(eval (list 'column x))
+              (list 'ref (list 'str %sym)))))
+        %sym)
     )
   )
 
@@ -60,8 +58,7 @@ immediately, raising a `SIGABRT` if it fails.")
 
 ;; Crash the program with an error message unless the expression evaluates to 'true'.
 (defmacro assert [expr]
-  (list 'if (list '= true expr)
-        ()
-        (list 'do
-              (list 'println* (list 'fmt "Assertion '%s' failed at line %d, column %d in file %s" (str expr) (line) (column) (file)))
-              '(System.abort))))
+  `(unless (= true %expr)
+     (do
+       (println* (fmt "Assertion '%s' failed at line %d, column %d in file %s" %(str expr) %(line) %(column) %(file)))
+       (System.abort))))
