@@ -17,6 +17,7 @@
   (register < (Fn [Float Float] Bool))
   (register > (Fn [Float Float] Bool))
 
+  (implements pi Float.pi)
   (implements + Float.+)
   (implements - Float.-)
   (implements * Float.*)
