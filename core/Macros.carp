@@ -104,7 +104,7 @@
 
 (doc deprecated "Declares that a binding is deprecated, using an optional explanation.")
 (defmacro deprecated [name :rest explanation]
-  (let [v (if (empty? explanation) true (car explanation))]
+  (let [v (if (= (length explanation) 0) true (car explanation))]
     (eval (list 'meta-set! name "deprecated" v))))
 
 (defmodule Dynamic
