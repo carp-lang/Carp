@@ -73,6 +73,7 @@
   (doc empty? "Check if the string is the empty string.")
   (defn empty? [s]
     (Int.= (length s) 0))
+  (implements empty? String.empty?)
 
   (doc slice "Return part of a string, beginning at index `a` and ending at index `b`.")
   (defn slice [s a b]

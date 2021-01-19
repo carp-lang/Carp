@@ -46,6 +46,7 @@ It will sum the previous sum with each new value, starting at `0`.")
   (doc empty? "checks whether the array `a` is empty.")
   (defn empty? [a]
     (= (Array.length a) 0))
+  (implements empty? Array.empty?)
 
   (doc any? "checks whether any of the elements in `a` match the function `f`.")
   (defn any? [f a]

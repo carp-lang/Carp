@@ -67,3 +67,5 @@
 (definterface slice (Fn [&a Int Int] a))
 
 (definterface blit (Fn [a] a)) ; For types that can be freely memcopied -- exact name is up for discussion
+
+(definterface empty? (Fn [&a] Bool))

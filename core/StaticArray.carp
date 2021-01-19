@@ -52,6 +52,7 @@
   (doc empty? "checks whether the array `a` is empty.")
   (defn empty? [a]
     (= (StaticArray.length a) 0))
+  (implements empty? StaticArray.empty?)
 
   (doc any? "checks whether any of the elements in `a` match the function `f`.")
   (defn any? [f a]
