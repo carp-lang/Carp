@@ -75,12 +75,18 @@ h3 {
     margin: 3.5em 0em 0em 0em;
 }
 
-.deprecation {
+.deprecation-notice {
   background-color: #f99;
   text-transform: uppercase;
   float: right;
   padding: 5px;
   margin: -5px;
+}
+
+.deprecation-text {
+  background-color: #f99;
+  padding-left: 5px;
+  padding-right: 5px;
 }
 
 .sig {

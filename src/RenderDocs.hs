@@ -152,9 +152,13 @@ binderToHtml (Binder meta xobj) =
       typeSignature = case xobjTy xobj of
         Just t -> show (beautifyType t) -- NOTE: This destroys user-defined names of type variables!
         Nothing -> ""
-      deprecated = case Meta.get "deprecated" meta of
+      isDeprecated = case Meta.get "deprecated" meta of
         Just (XObj (Bol True) _ _) -> True
+        Just (XObj (Str _) _ _) -> True
         _ -> False
+      deprecationStr = case Meta.get "deprecated" meta of
+        Just (XObj (Str s) _ _) -> commonmarkToHtml [optSafe] $ Text.pack s
+        _ -> ""
       docString = case Meta.get "doc" meta of
         Just (XObj (Str s) _ _) -> s
         Just found -> pretty found
@@ -166,8 +170,8 @@ binderToHtml (Binder meta xobj) =
             H.h3 ! A.id (H.stringValue name) $
               do
                 H.toHtml name
-                when deprecated $
-                  H.span ! A.class_ "deprecation" $
+                when isDeprecated $
+                  H.span ! A.class_ "deprecation-notice" $
                     H.toHtml ("deprecated" :: String)
           H.div ! A.class_ "description" $ H.toHtml description
           H.p ! A.class_ "sig" $ H.toHtml typeSignature
@@ -175,5 +179,8 @@ binderToHtml (Binder meta xobj) =
             Just nameAndArgs -> H.pre ! A.class_ "args" $ H.toHtml nameAndArgs
             Nothing -> H.span $ H.toHtml ("" :: String)
           H.p ! A.class_ "doc" $ H.preEscapedToHtml htmlDoc
+          when isDeprecated $
+            H.div ! A.class_ "deprecation-text" $
+              H.preEscapedToHtml deprecationStr
 
 --p_ (toHtml (description))
