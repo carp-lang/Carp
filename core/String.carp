@@ -478,10 +478,10 @@
 
 (defndynamic build-str* [forms]
   (if (= (length forms) 0)
-    (list "")
+    '("")
     (if (= (length forms) 1)
-      (list 'ref (list 'str (car forms)))
-      (list 'ref (list 'String.append (list 'ref (list 'str (car forms))) (build-str* (cdr forms)))))))
+      `&(str %(car forms))
+      `&(String.append &(str %(car forms)) %(build-str* (cdr forms))))))
 
 (defmacro str* [:rest forms]
-  (list 'copy (build-str* forms)))
+  `(copy %(build-str* forms)))

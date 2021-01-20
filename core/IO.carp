@@ -83,7 +83,7 @@
 )
 
 (defmacro println* [:rest forms]
-  (list 'IO.println (build-str* forms)))
+  `(IO.println %(build-str* forms)))
 
 (defmacro print* [:rest forms]
-  (list 'IO.print (build-str* forms)))
+  `(IO.print %(build-str* forms)))

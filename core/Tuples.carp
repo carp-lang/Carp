@@ -2,8 +2,8 @@
   (private deftuple-type-)
   (hidden deftuple-type-)
   (defndynamic deftuple-type- [name props]
-    (list 'deftype (cons name props)
-      (collect-into (flatten (map (fn [x] (list x x)) props)) array)))
+    `(deftype (%name %@props)
+      %(collect-into (flatten (map (fn [x] `(%x %x)) props)) array)))
 
   (private deftuple-lt-)
   (hidden deftuple-lt-)
@@ -12,10 +12,10 @@
       'false
       (let [fst (Symbol.prefix name (car props))]
         (if (= (length props) 1)
-          (list '< (list fst 't1) (list fst 't2))
-          (list 'if (list '= (list fst 't1) (list fst 't2))
-            (deftuple-lt- name (cdr props))
-            (list '< (list fst 't1) (list fst 't2)))))))
+          `(< (%fst t1) (%fst t2))
+          `(if (= (%fst t1) (%fst t2))
+            %(deftuple-lt- name (cdr props))
+            (< (%fst t1) (%fst t2)))))))
 
   ; this is basically just a giant template
   (private deftuple-module-)
@@ -23,55 +23,33 @@
   (defndynamic deftuple-module- [name props]
     (let [sname (Symbol.str name)
           module-name (Symbol.concat [name 'Ref])]
-      (list 'do
-        (list 'defmodule module-name
-          (list 'defn '= ['t1 't2]
-            (cons 'and*
-              (map (fn [p]
-                    (list '=
-                      (list (Symbol.prefix name p) 't1)
-                      (list (Symbol.prefix name p) 't2)))
-                   props)))
-          (list 'implements '= (Symbol.prefix module-name '=))
+      `(do
+        (defmodule %module-name
+          (defn < [t1 t2] %(deftuple-lt- name props))
+          (implements < %(Symbol.prefix module-name '<))
 
-          (list 'defn '< ['t1 't2] (deftuple-lt- name props))
-          (list 'implements '< (Symbol.prefix module-name '<))
+          (defn > [t1 t2] (%(Symbol.prefix module-name '<) t2 t1))
+          (implements > %(Symbol.prefix module-name '>)))
 
-          (list 'defn '> ['t1 't2] (list (Symbol.prefix module-name '<) 't2 't1))
-          (list 'implements '> (Symbol.prefix module-name '>)))
+        (defmodule %name
+          (doc init-from-refs
+            %(String.concat ["initializes a `" sname "` from member references."]))
+          %(let [prop-vars (map (fn [x] (Symbol.concat [x '-val])) props)]
+            `(defn init-from-refs %(collect-into prop-vars array)
+              (init %@(map (fn [x] `(copy %x)) prop-vars))))
 
-        (list 'defmodule name
-          (list 'doc 'init-from-refs
-            (String.concat ["initializes a `" sname "` from member references."]))
-          (let [prop-vars (map (fn [x] (Symbol.concat [x '-val])) props)]
-            (list 'defn 'init-from-refs (collect-into prop-vars array)
-              (cons 'init (map (fn [x] (list 'copy x)) prop-vars))))
+          (defn < [t1 t2]
+            (%(Symbol.prefix module-name '<) &t1 &t2))
+          (implements < %(Symbol.prefix name '<))
 
-          (list 'defn '= ['t1 't2]
-            (cons 'and*
-              (map (fn [p] (list '= (list p '(ref t1)) (list p '(ref t2)))) props)))
-          (list 'implements '= (Symbol.prefix name '=))
+          (defn > [t1 t2]
+            (%(Symbol.prefix module-name '>) &t1 &t2))
+          (implements > %(Symbol.prefix name '>))
 
-          (list 'defn '< ['t1 't2]
-            (list (Symbol.prefix module-name '<) '(ref t1) '(ref t2)))
-          (list 'implements '< (Symbol.prefix name '<))
-
-          (list 'defn '> ['t1 't2]
-            (list (Symbol.prefix module-name '>) '(ref t1) '(ref t2)))
-          (list 'implements '> (Symbol.prefix name '>))
-
-          (list 'doc 'reverse
-            (String.concat ["reverses a `" sname "` by reversing its member positions."]))
-          (list 'defn 'reverse ['t]
-            (cons 'init (map (fn [x] (list 'copy (list x 't))) (reverse props))))
-
-          (list 'meta-set! 'zero "doc"
-            (String.concat [
-              "initializes a `" sname
-              "` by calling `zero` for all its members. `zero` must be defined for all member types."]))
-          (list 'defn 'zero [] (cons 'init (map (fn [_] '(zero)) props))))
-          (list 'implements 'zero (Symbol.prefix name 'zero))
-    )))
+          (doc reverse
+            %(String.concat ["reverses a `" sname "` by reversing its member positions."]))
+          (defn reverse [t]
+            (init %@(map (fn [x] `(copy (%x t))) (reverse props))))))))
 
   (doc deftuple "defines a tuple type.
 
@@ -83,6 +61,8 @@ For example:
   (defmacro deftuple [name :rest props]
     (do
       (eval (deftuple-type- name props))
+      (eval `(derive %name zero))
+      (eval `(derive %name =))
       (eval (deftuple-module- name props))
     ))
 )

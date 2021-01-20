@@ -20,11 +20,11 @@
     (let [xsym (gensym-with 'xs)
           len (gensym-with 'len)
           i (gensym-with 'i)]
-      (list 'let [xsym xs
-                  len (list 'StaticArray.length xsym)]
-            (list 'for [i 0 len]
-                  (list 'let [var (list 'StaticArray.unsafe-nth xsym i)]
-                        expr)))))
+      `(let [%xsym %xs
+             %len (StaticArray.length %xsym)]
+         (for [%i 0 %len]
+           (let [%var (StaticArray.unsafe-nth %xsym %i)]
+             %expr)))))
 
   (defmacro foreach [binding expr]
     (StaticArray.foreach-internal (car binding) (cadr binding) expr))

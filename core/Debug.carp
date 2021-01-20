@@ -43,10 +43,10 @@ immediately, raising a `SIGABRT` if it fails.")
         (IO.println
           (ref
             (fmt "%s:%d:%d: %s"
-              %(eval (list 'file x))
-              %(eval (list 'line x))
-              %(eval (list 'column x))
-              (list 'ref (list 'str %sym)))))
+              %(eval `(file %x))
+              %(eval `(line %x))
+              %(eval `(column %x))
+              &(str %sym))))
         %sym)
     )
   )
