@@ -288,7 +288,8 @@
 
   (doc empty? "Check whether the map m is empty.")
   (defn empty? [m]
-    (= @(len m) 0))
+    (= (Map.length m) 0))
+  (implements empty? Map.empty?)
 
   (doc remove "Remove the value under the key k from the map m.")
   (defn remove [m k]
@@ -520,7 +521,8 @@
 
   (doc empty? "Check whether the set s is empty.")
   (defn empty? [s]
-    (= (length s) 0))
+    (= (Set.length s) 0))
+  (implements empty? Set.empty?)
 
   (doc remove "Remove the value `v` from the set `s`.")
   (defn remove [s v]
