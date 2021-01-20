@@ -142,6 +142,12 @@
 (defmacro test-walk-replace []
   (eval (walk-replace '((+ *)) '(+ 2 (+ 2 3)))))
 
+(defmacro test-cxr [ins l]
+  (eval (cxr ins l)))
+
+(defmacro test-neg [x]
+  (neg x))
+
 
 (deftest test
   (assert-true test
@@ -207,6 +213,12 @@
   (assert-false test
                 (test-< 2.0f 2.0f)
                 "< macro works as expected on floats II")
+  (assert-false test
+                (test-< 3.0 2.0f)
+                "< macro works as expected across types I")
+  (assert-true test
+               (test-< 1l 2.0f)
+               "< macro works as expected across types II")
   (assert-true test
                (test-> 2 1)
                "> macro works as expected on ints I")
@@ -231,6 +243,12 @@
   (assert-false test
                 (test-> 2.0f 2.0f)
                 "> macro works as expected on floats II")
+  (assert-true test
+               (test-> 2 1.0f)
+               "> macro works as expected across types I")
+  (assert-false test
+                (test-> 2.0 3l)
+                "> macro works as expected across types II")
 
   (assert-true test
                (test-= 2 2)
@@ -257,6 +275,12 @@
                 (test-= 2.0f 1.0f)
                 "= macro works as expected on floats II")
   (assert-true test
+               (test-= 2.0f 2)
+               "= macro works as expected across numeric types I")
+  (assert-false test
+                (test-= 2.0 1l)
+                "= macro works as expected across numeric types II")
+  (assert-true test
                (test-= "erik" "erik")
                "= macro works as expected on strings I")
   (assert-false test
@@ -268,6 +292,9 @@
   (assert-false test
                 (test-= veit heller)
                 "= macro works as expected on symbols II")
+  (assert-false test
+                (test-= veit "veit")
+                "= macro works as expected across types")
   (assert-false test
                 (and* true true false)
                 "and* macro works as expected I")
@@ -378,4 +405,16 @@
                 12
                 (test-walk-replace)
                 "walk-replace works as expected")
+  (assert-equal test
+                -1
+                (test-neg 1)
+                "Dynamic.neg works as expected")
+  (assert-equal test
+                4
+                (test-cxr (1 a 3 d) (1 2 3 4))
+                "Dynamic.cxr works as expected I")
+  (assert-equal test
+                1
+                (test-cxr (0 d 1 a) (1 2 3 4))
+                "Dynamic.cxr works as expected I")
 )
