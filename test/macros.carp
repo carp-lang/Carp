@@ -148,6 +148,9 @@
 (defmacro test-neg [x]
   (neg x))
 
+(defmacro test-round [n]
+  (round n))
+
 
 (deftest test
   (assert-true test
@@ -417,4 +420,12 @@
                 1
                 (test-cxr (0 d 1 a) (1 2 3 4))
                 "Dynamic.cxr works as expected I")
+  (assert-equal test
+                3
+                (test-round 3.4)
+                "Dynamic.round works as expected I")
+  (assert-equal test
+                3
+                (test-round 2.51)
+                "Dynamic.round works as expected II")
 )
