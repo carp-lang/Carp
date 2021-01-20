@@ -26,6 +26,7 @@ module Types
     getStructName,
     getPathFromStructName,
     getNameFromStructName,
+    promoteNumber,
   )
 where
 
@@ -350,3 +351,19 @@ getPathFromStructName structName =
 
 getNameFromStructName :: String -> String
 getNameFromStructName structName = last (map unpack (splitOn (pack ".") (pack structName)))
+
+-- N.B.: promoteNumber is only safe for numeric types!
+promoteNumber :: Ty -> Ty -> Ty
+promoteNumber a b | a == b = a
+promoteNumber ByteTy other = other
+promoteNumber other ByteTy = other
+promoteNumber IntTy other = other
+promoteNumber other IntTy = other
+promoteNumber LongTy other = other
+promoteNumber other LongTy = other
+promoteNumber FloatTy other = other
+promoteNumber other FloatTy = other
+promoteNumber DoubleTy _ = DoubleTy
+promoteNumber _ DoubleTy = DoubleTy
+promoteNumber a b =
+  error ("promoteNumber called with non-numbers: " ++ show a ++ ", " ++ show b)
