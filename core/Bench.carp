@@ -109,16 +109,16 @@ If your functions takes a large amount of time, experimenting with this might ma
 
 
 (defmacro benchn [n form]
-  (list 'let ['before (Bench.get-time-elapsed)
-              'times []]
-    (list 'do
-      (list 'for ['i 0 n]
-        (list 'let ['before-once (Bench.get-time-elapsed)]
-          (list 'do
-            form
-            (list 'set! &times (Array.push-back (Array.copy &times) (Double.- (Bench.get-time-elapsed) before-once))))))
-      (list 'let ['total (Double.- (Bench.get-time-elapsed) before)
-                  'per (list 'Double./ 'total (list 'Double.from-int n))]
+  `(let [before (Bench.get-time-elapsed)
+         times []]
+    (do
+      (for [i 0 %n]
+        (let [before-once (Bench.get-time-elapsed)]
+          (do
+            %form
+            (set! &times (Array.push-back (Array.copy &times) (Double.- (Bench.get-time-elapsed) before-once))))))
+      (let [total (Double.- (Bench.get-time-elapsed) before)
+            per (Double./ total (Double.from-int %n))]
         (do
           (Bench.print "Total time elapsed: " total)
           (Bench.print "Time elapsed per run (average): " per)

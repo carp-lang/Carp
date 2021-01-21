@@ -137,26 +137,26 @@
 
 (defndynamic with-test-internal [name forms]
   (if (= (length forms) 1)
-    (list (list 'set! name (list 'ref (car forms))))
-    (cons (list 'set! name (list 'ref (car forms)))
+    `((set! %name &%(car forms)))
+    (cons `(set! %name &%(car forms))
           (with-test-internal name (cdr forms)))))
 
 
 (defmacro with-test [name :rest forms]
-  (list 'let (array name '&(Test.State.init 0 0))
-    (cons-last
-      (list 'Int.copy (list 'Test.State.failed name))
+  `(let [%name &(Test.State.init 0 0)]
+    %(cons-last
+      `@(Test.State.failed %name)
       (cons-last
-        (list 'Test.print-test-results name)
-        (cons 'do (with-test-internal name forms))))
+        `(Test.print-test-results %name)
+        `(do %@(with-test-internal name forms))))
     ))
 
 (defmacro deftest [name :rest forms]
   (eval
-    (list 'defn 'main (array)
-      (list 'let (array name '&(Test.State.init 0 0))
-        (cons-last
-          (list 'Int.copy (list 'Test.State.failed name))
+    `(defn main []
+      (let [%name &(Test.State.init 0 0)]
+        %(cons-last
+          `@(Test.State.failed %name)
           (cons-last
-            (list 'Test.print-test-results name)
-            (cons 'do (with-test-internal name forms))))))))
+            `(Test.print-test-results %name)
+            `(do %@(with-test-internal name forms))))))))
