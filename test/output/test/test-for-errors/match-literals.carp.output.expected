@@ -1,0 +1,1 @@
+match-literals.carp:5:18 I can’t use `0` in match, only lists and symbols are allowed

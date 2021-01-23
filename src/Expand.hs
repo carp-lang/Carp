@@ -132,7 +132,7 @@ expand eval ctx xobj =
           | even (length rest) ->
             do
               (ctx', expandedExpr) <- expand eval ctx expr
-              (newCtx, expandedPairs) <- foldlM successiveExpandLR (ctx', Right []) (pairwise rest)
+              (newCtx, expandedPairs) <- foldlM successiveExpandLRMatch (ctx', Right []) (pairwise rest)
               pure
                 ( newCtx,
                   do
@@ -274,6 +274,17 @@ expand eval ctx xobj =
           case expandedR of
             Right v -> pure (newCtx, Right (lst ++ [[l, v]]))
             Left err -> pure (newCtx, Left err)
+    successiveExpandLRMatch a (l, r) =
+      case traverseExpandLiteral l of
+          Left (err, x) -> pure (evalError ctx err (xobjInfo x))
+          _ -> successiveExpandLR a (l, r)
+    traverseExpandLiteral (XObj (Lst objs) _ _) =
+      case mapM traverseExpandLiteral objs of
+        Left e -> Left e
+        _ -> Right ()
+    traverseExpandLiteral (XObj (Sym _ _) _ _) = Right ()
+    traverseExpandLiteral other =
+      Left ("I can’t use `" ++ pretty other ++ "` in match, only lists and symbols are allowed", other)
 
 -- | Replace all the infoIdentifier:s on all nested XObj:s
 setNewIdentifiers :: XObj -> XObj
