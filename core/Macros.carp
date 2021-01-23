@@ -47,7 +47,31 @@
   (defndynamic cddaar [pair] (cdr (cdr (car (car pair)))))
   (defndynamic cddadr [pair] (cdr (cdr (car (cdr pair)))))
   (defndynamic cdddar [pair] (cdr (cdr (cdr (car pair)))))
-  (defndynamic cddddr [pair] (cdr (cdr (cdr (cdr pair))))))
+  (defndynamic cddddr [pair] (cdr (cdr (cdr (cdr pair)))))
+
+  (defmodule List
+    (defndynamic in? [elem l]
+      (cond
+        (empty? l) false
+        (= elem (car l)) true
+        (in? elem (cdr l)))))
+
+  (defndynamic string? [s]
+    (= (dynamic-type s) "string"))
+
+  (defndynamic symbol? [s]
+    (= (dynamic-type s) "symbol"))
+
+  (defndynamic list? [s]
+    (= (dynamic-type s) "list"))
+
+  (defndynamic array? [s]
+    (= (dynamic-type s) "array"))
+
+  (defndynamic number? [s]
+    (List.in? (dynamic-type s) '("int" "long" "double" "float" "byte")))
+
+)
 
 
 (meta-set! doc "doc" "Set documentation for a binding.")
