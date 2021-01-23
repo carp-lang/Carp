@@ -172,7 +172,7 @@ toC toCMode (Binder meta root) = emitterSrc (execState (visit startingIndent roo
             (Match _) -> dontVisit
             With -> dontVisit
             MetaStub -> dontVisit
-    visitStr' indent str i =
+    visitStr' indent str i shouldEscape =
       -- This will allocate a new string every time the code runs:
       -- do let var = freshVar i
       --    appendToSrc (addIndent indent ++ "String " ++ var ++ " = strdup(\"" ++ str ++ "\");\n")
@@ -181,14 +181,21 @@ toC toCMode (Binder meta root) = emitterSrc (execState (visit startingIndent roo
       do
         let var = freshVar i
             varRef = freshVar i ++ "_ref"
-        appendToSrc (addIndent indent ++ "static String " ++ var ++ " = \"" ++ escapeString str ++ "\";\n")
+        appendToSrc (addIndent indent ++ "static String " ++ var ++ " = \"" ++ (if shouldEscape then escapeString str else str) ++ "\";\n")
         appendToSrc (addIndent indent ++ "String *" ++ varRef ++ " = &" ++ var ++ ";\n")
         pure varRef
-    visitString indent (XObj (Str str) (Just i) _) = visitStr' indent str i
-    visitString indent (XObj (Pattern str) (Just i) _) = visitStr' indent str i
+    visitString indent (XObj (Str str) (Just i) _) = visitStr' indent str i True
+    visitString indent (XObj (Pattern str) (Just i) _) = visitStr' indent str i False
     visitString _ _ = error "Not a string."
     escaper '\"' acc = "\\\"" ++ acc
+    escaper '\\' acc = "\\\\" ++ acc
     escaper '\n' acc = "\\n" ++ acc
+    escaper '\a' acc = "\\a" ++ acc
+    escaper '\b' acc = "\\b" ++ acc
+    escaper '\f' acc = "\\f" ++ acc
+    escaper '\r' acc = "\\r" ++ acc
+    escaper '\t' acc = "\\t" ++ acc
+    escaper '\v' acc = "\\v" ++ acc
     escaper x acc = x : acc
     escapeString = foldr escaper ""
     visitSymbol :: Int -> XObj -> State EmitterState String

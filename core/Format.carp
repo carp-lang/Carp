@@ -42,18 +42,57 @@
 (defmacro fmt [s :rest args]
   (list 'copy (fmt-internal s args)))
 
+(hidden f-parse-expr-string)
+(defndynamic f-parse-expr-string [s r]
+  (if (= (String.length s) 0)
+    -1
+    (let [h (String.head s)]
+      (if (= h "\"")
+        (inc r)
+        (let [i (if (= h "\\") 2 1)]
+          (f-parse-expr-string
+            (String.suffix s i)
+            (+ r i)))))))
+
+(hidden f-parse-expr)
+(defndynamic f-parse-expr [s idx r]
+  (cond
+    (= idx 0) r
+    (= (String.length s) 0) -1
+
+    (let [h (String.head s)
+          t (String.tail s)]
+      (if (= h "\"")
+        (let [l (f-parse-expr-string t 0)]
+          (if (= l -1)
+            -1
+            (f-parse-expr (String.suffix s (inc l)) idx (+ r (inc l)))))
+        (f-parse-expr
+          t
+          (cond
+            (= h "{") (inc idx)
+            (= h "}") (dec idx)
+            idx)
+          (inc r))))))
+
 (hidden f-internal)
 (defndynamic f-internal [s]
   (let [idx (String.index-of s \{)
         len (String.length s)]
-    (if (= idx -1)
-      [(list 'copy s)]
+    (cond
+      (= idx -1) [(list 'copy s)]
+
+      (= len 1) (macro-error "error in format string: expected expression after last {")
+
+      (= \{ (String.char-at s (inc idx)))
+        (append [(list 'copy (String.prefix s (inc idx)))] (f-internal (String.suffix s (+ 2 idx))))
+
       (let [ss (String.suffix s (inc idx))
-            endx (String.index-of ss \})]
+            endx (f-parse-expr ss 1 0)]
         (if (= endx -1)
           (macro-error "error in format string: unclosed open bracket")
-          (append [(list 'copy (String.prefix s idx)) (list 'str (parse (String.prefix ss endx)))]
-            (f-internal (String.suffix ss (inc endx)))))))))
+          (append [(list 'copy (String.prefix s idx)) (list 'str (parse (String.prefix ss (dec endx))))]
+            (f-internal (String.suffix ss endx))))))))
 
 (doc fstr "formats a string. It allows arbitrary expression to be intercalated.
 

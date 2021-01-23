@@ -40,4 +40,8 @@
                        y [2 3]
                        z "hi"]
                   (fstr "{x} {&y} {(head z)}"))
-                "fstr works"))
+                "fstr works")
+  (assert-equal test
+                "{}"
+                &(fstr "{{}")
+                "fstr escaping works"))

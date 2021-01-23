@@ -26,7 +26,10 @@
     (defndynamic suffix [s from]
       (String.slice s from (String.length s)))
 
-    (defndynamic tail [s ]
+    (defndynamic head [s]
+      (String.prefix s 1))
+
+    (defndynamic tail [s]
       (String.suffix s 1))
   )
 )
