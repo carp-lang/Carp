@@ -26,6 +26,8 @@
            Geometry
            Quasiquote
            Int
+           Introspect
+           Unit
            IO
            Long
            Map
