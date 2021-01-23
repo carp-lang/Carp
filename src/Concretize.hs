@@ -6,7 +6,7 @@ import AssignTypes
 import Constraints
 import Control.Monad.State
 import Data.List (foldl')
-import Data.Maybe (fromMaybe, catMaybes)
+import Data.Maybe (fromMaybe)
 import Debug.Trace
 import Env
 import Info
@@ -907,7 +907,7 @@ manageMemory typeEnv globalEnv root =
                   Just (RefTy t@(StructTy (ConcreteNameTy "StaticArray") [_]) _) = xobjTy xobj
                   deleter = case nameOfPolymorphicFunction typeEnv globalEnv (FuncTy [t] UnitTy StaticLifetimeTy) "delete" of
                     Just pathOfDeleteFunc ->
-                      ProperDeleter pathOfDeleteFunc var
+                      ProperDeleter pathOfDeleteFunc (getDropFunc t) var
                     Nothing ->
                       error ("No deleter found for Static Array : " ++ show t) --Just (FakeDeleter var)
               MemState deleters deps lifetimes <- get
@@ -1015,7 +1015,9 @@ manageMemory typeEnv globalEnv root =
                     _ <- unmanage value -- The assigned value can't be used anymore
                     MemState managed _ _ <- get
                     -- Delete the value previously stored in the variable, if it's still alive
-                    let deleters = createDeleterAndDrop okCorrectVariable
+                    let deleters = case createDeleter okCorrectVariable of
+                          Just d -> Set.fromList [d]
+                          Nothing -> Set.empty
                         newVariable =
                           case okMode of
                             Symbol -> error "How to handle this?"
@@ -1136,7 +1138,9 @@ manageMemory typeEnv globalEnv root =
                 deletedInBoth = Set.intersection deletedInTrue deletedInFalse
                 createdInTrue = memStateDeleters stillAliveTrue \\ preDeleters
                 createdInFalse = memStateDeleters stillAliveFalse \\ preDeleters
-                selfDeleter = createDeleterAndDrop xobj
+                selfDeleter = case createDeleter xobj of
+                  Just ok -> Set.fromList [ok]
+                  Nothing -> Set.empty
                 createdAndDeletedInTrue = createdInTrue \\ selfDeleter
                 createdAndDeletedInFalse = createdInFalse \\ selfDeleter
                 delsTrue = Set.union (deletedInFalse \\ deletedInBoth) createdAndDeletedInTrue
@@ -1349,7 +1353,6 @@ manageMemory typeEnv globalEnv root =
                               FakeDeleter {deleterVariable = dv} -> dv == deleterName
                               PrimDeleter {aliveVariable = dv} -> dv == deleterName
                               RefDeleter {refVariable = dv} -> dv == deleterName
-                              Drop {} -> False
                           )
                           deleters
                  in case matchingDeleters of
@@ -1406,21 +1409,7 @@ manageMemory typeEnv globalEnv root =
         else pure (Right xobj)
     unmanageArg xobj@XObj {} =
       pure (Right xobj)
-    createDeleterAndDrop :: XObj -> Set.Set Deleter
-    createDeleterAndDrop xobj = Set.fromList $ catMaybes [createDrop xobj, createDeleter xobj]
-    createDrop :: XObj -> Maybe Deleter
-    createDrop xobj =
-      case xobjTy xobj of
-        Just (RefTy _ _) -> Nothing
-        Just t ->
-          let var = varOfXObj xobj
-           in if isManaged typeEnv globalEnv t
-                then case nameOfPolymorphicFunction typeEnv globalEnv (FuncTy [(RefTy t (VarTy "w"))] UnitTy StaticLifetimeTy) "drop" of -- TODO: var is not sound
-                  Just pathOfDropFunc ->
-                    Just (Drop pathOfDropFunc var)
-                  Nothing -> Nothing
-                else Nothing
-        Nothing -> error ("No type, can't manage " ++ show xobj)
+    getDropFunc t = nameOfPolymorphicFunction typeEnv globalEnv (FuncTy [(RefTy t (VarTy "w"))] UnitTy StaticLifetimeTy) "drop" -- TODO: var is not sound
     createDeleter xobj =
       case xobjTy xobj of
         Just (RefTy _ _) -> Just (RefDeleter (varOfXObj xobj))
@@ -1429,7 +1418,7 @@ manageMemory typeEnv globalEnv root =
            in if isManaged typeEnv globalEnv t
                 then case nameOfPolymorphicFunction typeEnv globalEnv (FuncTy [t] UnitTy StaticLifetimeTy) "delete" of
                   Just pathOfDeleteFunc ->
-                    Just (ProperDeleter pathOfDeleteFunc var)
+                    Just (ProperDeleter pathOfDeleteFunc (getDropFunc t) var)
                   Nothing ->
                     --trace ("Found no delete function for " ++ var ++ " : " ++ (showMaybeTy (ty xobj)))
                     Just (FakeDeleter var)
@@ -1439,13 +1428,14 @@ manageMemory typeEnv globalEnv root =
     manage xobj =
       if isSymbolThatCaptures xobj -- When visiting lifted lambdas, don't manage symbols that capture (they are owned by the environment).
         then pure ()
-        else
-          let dels = createDeleterAndDrop xobj
-          in do MemState deleters deps lifetimes <- get
-                let newDeleters = Set.union dels deleters
-                    Just t = xobjTy xobj
-                    newDeps = deps ++ depsForDeleteFunc typeEnv globalEnv t
-                put (MemState newDeleters newDeps lifetimes)
+        else case createDeleter xobj of
+          Just deleter -> do
+            MemState deleters deps lifetimes <- get
+            let newDeleters = Set.insert deleter deleters
+                Just t = xobjTy xobj
+                newDeps = deps ++ depsForDeleteFunc typeEnv globalEnv t
+            put (MemState newDeleters newDeps lifetimes)
+          Nothing -> pure ()
     deletersMatchingXObj :: XObj -> Set.Set Deleter -> [Deleter]
     deletersMatchingXObj xobj deleters =
       let var = varOfXObj xobj
@@ -1456,7 +1446,6 @@ manageMemory typeEnv globalEnv root =
                   FakeDeleter {deleterVariable = dv} -> dv == var
                   PrimDeleter {aliveVariable = dv} -> dv == var
                   RefDeleter {refVariable = dv} -> dv == var
-                  Drop {} -> False
               )
               deleters
     isSymbolThatCaptures :: XObj -> Bool

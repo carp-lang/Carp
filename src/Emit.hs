@@ -763,19 +763,8 @@ toC toCMode (Binder meta root) = emitterSrc (execState (visit startingIndent roo
 
 -- the chaining here ensures that drop is emitted before delete
 delete :: Int -> Info -> State EmitterState ()
-delete indent i = mapM_ dropToC (infoDelete i) >> mapM_ deleterToC (infoDelete i)
+delete indent i = mapM_ deleterToC (infoDelete i)
   where
-    dropToC :: Deleter -> State EmitterState ()
-    dropToC FakeDeleter {} =
-      pure ()
-    dropToC PrimDeleter {} =
-      pure ()
-    dropToC RefDeleter {} =
-      pure ()
-    dropToC ProperDeleter {} =
-      pure ()
-    dropToC dropfun@Drop {} =
-      appendToSrc $ addIndent indent ++ "" ++ pathToC (dropPath dropfun) ++ "(&" ++ mangle (dropVariable dropfun) ++ ");\n"
     deleterToC :: Deleter -> State EmitterState ()
     deleterToC FakeDeleter {} =
       pure ()
@@ -783,10 +772,13 @@ delete indent i = mapM_ dropToC (infoDelete i) >> mapM_ deleterToC (infoDelete i
       pure ()
     deleterToC RefDeleter {} =
       pure ()
-    deleterToC Drop {} =
-      pure ()
-    deleterToC deleter@ProperDeleter {} =
-      appendToSrc $ addIndent indent ++ "" ++ pathToC (deleterPath deleter) ++ "(" ++ mangle (deleterVariable deleter) ++ ");\n"
+    deleterToC deleter@ProperDeleter {} = do
+      let v = mangle (deleterVariable deleter)
+      case dropPath deleter of
+        Just path ->
+          appendToSrc $ addIndent indent ++ "" ++ pathToC path ++ "(&" ++ v ++ ");\n"
+        Nothing -> pure ()
+      appendToSrc $ addIndent indent ++ "" ++ pathToC (deleterPath deleter) ++ "(" ++ v ++ ");\n"
 
 defnToDeclaration :: MetaData -> SymPath -> [XObj] -> Ty -> String
 defnToDeclaration meta path@(SymPath _ name) argList retTy =
