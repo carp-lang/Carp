@@ -301,7 +301,13 @@ escaped = do
       hex <- Parsec.count 8 (Parsec.oneOf "0123456789abcdefABCDEF")
       let [(p, "")] = readHex hex
       return [chr p]
-    _ -> pure ('\\' : [c])
+    _ ->
+      if elem c "01234567"
+      then do
+        hex <- Parsec.many1 (Parsec.oneOf "01234567")
+        let [(p, "")] = readHex (c : hex)
+        return [chr p]
+      else pure ('\\' : [c])
 
 escapedQuoteChar :: Parsec.Parsec String ParseState Char
 escapedQuoteChar = do
