@@ -3,7 +3,7 @@ the documentation of [`quasiquote`](#quasiquote) or the [high level
 overview](https://github.com/carp-lang/Carp/blob/master/docs/Quasiquotation.md)
 for details.")
 (defmodule Quasiquote
-  (doc unquote "unquotes (i.e. evaluates) an expression `arg` inside a
+  (doc unquote "unquotes (i.e. evaluates) an expression `form` inside a
 quasiquote. It will generate an error message when used outside a
 `quasiquote` form.
 
@@ -14,10 +14,10 @@ Example:
 
 (quasiquote (+ (unquote x) 1)) ; => (+ 2 1)
 ```")
-  (defmacro unquote [arg]
+  (defmacro unquote [form]
     (macro-error "unquotes need to be wrapped inside quasiquotes."))
 
-  (doc unquote-splicing "unquotes (i.e. evaluates) an expression `arg` inside a
+  (doc unquote-splicing "unquotes (i.e. evaluates) an expression `form` inside a
 quasiquote and splices it in, i.e. flattens the expression. It will
 generate an error message when used outside a `quasiquote` form.
 
@@ -28,39 +28,43 @@ Example:
 
 (quasiquote (+ (unquote-splicing x))) ; => (+ 1 2)
 ```")
-  (defmacro unquote-splicing [arg]
+  (defmacro unquote-splicing [form]
     (macro-error "unquotes need to be wrapped inside quasiquotes."))
 
+  (hidden quasiquote-list)
+  (defndynamic quasiquote-list [form]
+    (let [app (car form)]
+     (cond
+       (= app 'quasiquote) form
+       (and (= app 'unquote) (= (length form) 2))
+         (cadr form)
+       (= app 'unquote)
+         (macro-error "unquote takes exactly one argument.")
+       (and (= app 'unquote-splicing) (= (length form) 2))
+         (macro-error "unquote-splicing needs an enclosing list.")
+       (= app 'unquote-splicing)
+         (macro-error "unquote-splicing takes exactly one argument.")
+       (reduce
+         (fn [acc elem]
+           (if (and* (list? elem)
+                     (= (length elem) 2)
+                     (= (car elem) 'unquote-splicing))
+             (list 'append acc (cadr elem))
+             (list 'cons-last (quasiquote- elem) acc)))
+         '()
+         form))))
+
   (hidden quasiquote-)
-  (defndynamic quasiquote- [arg]
-    (if (and (list? arg) (> (length arg) 0))
-      (let [app (car arg)]
-        (cond
-          (and* (symbol? app)
-                (= app 'unquote)
-                (= (length arg) 2))
-            (cadr arg)
-          (and (symbol? app) (= (car arg) 'quasiquote)) arg
-          (and (symbol? app) (= (car arg) 'unquote))
-            (macro-error "unquote takes exactly one argument.")
-          (and (symbol? app) (= (car arg) 'unquote-splicing))
-            (macro-error "unquote-splicing takes exactly one argument.")
-          (reduce
-            (fn [acc elem]
-              (if (and* (list? elem)
-                        (= (length elem) 2)
-                        (symbol? (car elem))
-                        (= (car elem) 'unquote-splicing))
-                (list 'append acc (cadr elem))
-                (list 'cons-last (quasiquote- elem) acc)))
-            '()
-            arg)))
-        (if (array? arg)
-          (collect-into (map quasiquote- arg) array)
-          (list 'quote arg))))
+  (defndynamic quasiquote- [form]
+    (cond
+      (and (list? form) (> (length form) 0))
+        (quasiquote-list form)
+      (array? form)
+        (collect-into (map quasiquote- form) array)
+      (list 'quote form)))
 
   (doc quasiquote "is a quotation that may have expressions inside it in the
-form of [`unquote](#unquote) and [`unquote-splicing`](#unquote-splicing).
+form of [`unquote`](#unquote) and [`unquote-splicing`](#unquote-splicing).
 
 Example:
 ```
@@ -68,8 +72,10 @@ Example:
 (defdynamic y '(2 3 4))
 
 (quasiquote (1 (unquote x) (unquote-splicing y))) ; => (1 1 2 3 4)
+; using the reader macros
+`(1 %x %@y)) ; => (1 1 2 3 4)
 ```")
-  (defmacro quasiquote [arg]
-    (quasiquote- arg)))
+  (defmacro quasiquote [form]
+    (quasiquote- form)))
 
 (use Quasiquote)
