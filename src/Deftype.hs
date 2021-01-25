@@ -14,6 +14,7 @@ import Info
 import Managed
 import qualified Map
 import Obj
+import qualified Set
 import StructUtils
 import Template
 import ToTemplate
@@ -32,7 +33,7 @@ import Validate
 moduleForDeftype :: Maybe Env -> TypeEnv -> Env -> [String] -> String -> [Ty] -> [XObj] -> Maybe Info -> Maybe Env -> Either TypeError (String, XObj, [XObj])
 moduleForDeftype innerEnv typeEnv env pathStrings typeName typeVariables rest i existingEnv =
   let typeModuleName = typeName
-      typeModuleEnv = fromMaybe (Env (Map.fromList []) innerEnv (Just typeModuleName) [] ExternalEnv 0) existingEnv
+      typeModuleEnv = fromMaybe (Env (Map.fromList []) innerEnv (Just typeModuleName) Set.empty ExternalEnv 0) existingEnv
       -- The variable 'insidePath' is the path used for all member functions inside the 'typeModule'.
       -- For example (module Vec2 [x Float]) creates bindings like Vec2.create, Vec2.x, etc.
       insidePath = pathStrings ++ [typeModuleName]
@@ -57,7 +58,7 @@ moduleForDeftype innerEnv typeEnv env pathStrings typeName typeVariables rest i 
 bindingsForRegisteredType :: TypeEnv -> Env -> [String] -> String -> [XObj] -> Maybe Info -> Maybe Env -> Either TypeError (String, XObj, [XObj])
 bindingsForRegisteredType typeEnv env pathStrings typeName rest i existingEnv =
   let typeModuleName = typeName
-      typeModuleEnv = fromMaybe (Env (Map.fromList []) (Just env) (Just typeModuleName) [] ExternalEnv 0) existingEnv
+      typeModuleEnv = fromMaybe (Env (Map.fromList []) (Just env) (Just typeModuleName) Set.empty ExternalEnv 0) existingEnv
       insidePath = pathStrings ++ [typeModuleName]
    in do
         validateMemberCases typeEnv [] rest

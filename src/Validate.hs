@@ -144,4 +144,3 @@ canBeUsedAsMemberType typeEnv typeVariables ty xobj =
         isCaptured v@(VarTy _) (StructTy _ vars) = v `elem` vars
         -- Not a variable.
         isCaptured _ _ = True
-

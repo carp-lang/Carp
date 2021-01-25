@@ -2,6 +2,7 @@ module TestLookup where
 
 import qualified Lookup as Lookup
 import qualified Map
+import qualified Set
 import Obj
 import Test.HUnit
 import Types
@@ -13,7 +14,7 @@ testLookup =
 
 b1 = Binder emptyMeta (XObj (Str "b1") Nothing (Just StringTy))
 
-emptyRootEnv = Env (Map.fromList []) Nothing Nothing [] ExternalEnv 0
+emptyRootEnv = Env (Map.fromList []) Nothing Nothing Set.empty ExternalEnv 0
 
 assertNotFound :: Maybe Binder -> Test
 assertNotFound Nothing = TestCase (assertBool "assertNotFound" True) -- Better way?

@@ -24,7 +24,7 @@ arrayModule =
     { envBindings = bindings,
       envParent = Nothing,
       envModuleName = Just "Array",
-      envUseModules = [],
+      envUseModules = Set.empty,
       envMode = ExternalEnv,
       envFunctionNestingLevel = 0
     }
@@ -57,7 +57,7 @@ staticArrayModule =
     { envBindings = bindings,
       envParent = Nothing,
       envModuleName = Just "StaticArray",
-      envUseModules = [],
+      envUseModules = Set.empty,
       envMode = ExternalEnv,
       envFunctionNestingLevel = 0
     }
@@ -78,7 +78,7 @@ pointerModule =
     { envBindings = bindings,
       envParent = Nothing,
       envModuleName = Just "Pointer",
-      envUseModules = [],
+      envUseModules = Set.empty,
       envMode = ExternalEnv,
       envFunctionNestingLevel = 0
     }
@@ -115,7 +115,7 @@ functionModule =
     { envBindings = bindings,
       envParent = Nothing,
       envModuleName = Just "Function",
-      envUseModules = [],
+      envUseModules = Set.empty,
       envMode = ExternalEnv,
       envFunctionNestingLevel = 0
     }
@@ -132,7 +132,7 @@ generateInnerFunctionModule arity =
     { envBindings = bindings,
       envParent = Nothing,
       envModuleName = Just ("Arity" ++ show arity),
-      envUseModules = [],
+      envUseModules = Set.empty,
       envMode = ExternalEnv,
       envFunctionNestingLevel = 0
     }
@@ -219,7 +219,7 @@ dynamicModule =
     { envBindings = bindings,
       envParent = Nothing,
       envModuleName = Just "Dynamic",
-      envUseModules = [],
+      envUseModules = Set.empty,
       envMode = ExternalEnv,
       envFunctionNestingLevel = 0
     }
@@ -344,7 +344,7 @@ dynamicStringModule =
     { envBindings = bindings,
       envParent = Nothing,
       envModuleName = Just "String",
-      envUseModules = [],
+      envUseModules = Set.empty,
       envMode = ExternalEnv,
       envFunctionNestingLevel = 0
     }
@@ -375,7 +375,7 @@ dynamicSymModule =
     { envBindings = bindings,
       envParent = Nothing,
       envModuleName = Just "Symbol",
-      envUseModules = [],
+      envUseModules = Set.empty,
       envMode = ExternalEnv,
       envFunctionNestingLevel = 0
     }
@@ -401,7 +401,7 @@ dynamicProjectModule =
     { envBindings = bindings,
       envParent = Nothing,
       envModuleName = Just "Project",
-      envUseModules = [],
+      envUseModules = Set.empty,
       envMode = ExternalEnv,
       envFunctionNestingLevel = 0
     }
@@ -425,7 +425,7 @@ dynamicPathModule =
     { envBindings = bindings,
       envParent = Nothing,
       envModuleName = Just "Path",
-      envUseModules = [],
+      envUseModules = Set.empty,
       envMode = ExternalEnv,
       envFunctionNestingLevel = 0
     }
@@ -446,7 +446,7 @@ startingGlobalEnv noArray =
     { envBindings = bindings,
       envParent = Nothing,
       envModuleName = Nothing,
-      envUseModules = [SymPath [] "String"],
+      envUseModules = Set.fromList [SymPath [] "String"],
       envMode = ExternalEnv,
       envFunctionNestingLevel = 0
     }
@@ -468,7 +468,7 @@ startingTypeEnv =
     { envBindings = bindings,
       envParent = Nothing,
       envModuleName = Nothing,
-      envUseModules = [],
+      envUseModules = Set.empty,
       envMode = ExternalEnv,
       envFunctionNestingLevel = 0
     }

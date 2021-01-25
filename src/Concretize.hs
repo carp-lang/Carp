@@ -84,7 +84,7 @@ concretizeXObj allowAmbiguityRoot typeEnv rootEnv visitedDefinitions root =
     visitList _ Toplevel env (XObj (Lst [defn@(XObj (Defn _) _ _), nameSymbol, args@(XObj (Arr argsArr) _ _), body]) _ t) =
       do
         mapM_ (concretizeTypeOfXObj typeEnv) argsArr
-        let functionEnv = Env Map.empty (Just env) Nothing [] InternalEnv 0
+        let functionEnv = Env Map.empty (Just env) Nothing Set.empty InternalEnv 0
             envWithArgs =
               foldl'
                 ( \e arg@(XObj (Sym (SymPath _ argSymName) _) _ _) ->
@@ -112,7 +112,7 @@ concretizeXObj allowAmbiguityRoot typeEnv rootEnv visitedDefinitions root =
             Just funcTy = t
             argObjs = map xobjObj argsArr
             -- TODO: This code is a copy of the one above in Defn, remove duplication:
-            functionEnv = Env Map.empty (Just env) Nothing [] InternalEnv (envFunctionNestingLevel env)
+            functionEnv = Env Map.empty (Just env) Nothing Set.empty InternalEnv (envFunctionNestingLevel env)
             envWithArgs =
               foldl'
                 ( \e arg@(XObj (Sym (SymPath _ argSymName) _) _ _) ->

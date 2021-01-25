@@ -25,6 +25,7 @@ import Path
 import Primitives
 import Project
 import Qualify
+import qualified Set
 import System.Exit (ExitCode (..), exitSuccess, exitWith)
 import System.Process (readProcessWithExitCode)
 import qualified Text.Parsec as Parsec
@@ -111,7 +112,7 @@ eval ctx xobj@(XObj o info ty) preference resolver =
                             lookupBinder (SymPath (p' ++ (n' : p)) n) (contextGlobalEnv ctx)
                               >>= \(Binder meta found) -> checkPrivate meta found
                         )
-                        (envUseModules (contextGlobalEnv ctx))
+                        (Set.toList (envUseModules (contextGlobalEnv ctx)))
                     )
                 )
         checkPrivate meta found =
@@ -272,7 +273,7 @@ eval ctx xobj@(XObj o info ty) preference resolver =
           | otherwise ->
             do
               let binds = unwrapVar (pairwise bindings) []
-                  ni = Env Map.empty (contextInternalEnv ctx) Nothing [] InternalEnv 0
+                  ni = Env Map.empty (contextInternalEnv ctx) Nothing Set.empty InternalEnv 0
               eitherCtx <- foldrM successiveEval' (Right ctx {contextInternalEnv = Just ni}) binds
               case eitherCtx of
                 Left err -> pure (ctx, Left err)
@@ -543,7 +544,7 @@ apply ctx@Context {contextInternalEnv = internal} body params args =
   where
     callWith _ proper rest = do
       let n = length proper
-          insideEnv = Env Map.empty internal Nothing [] InternalEnv 0
+          insideEnv = Env Map.empty internal Nothing Set.empty InternalEnv 0
           insideEnv' =
            foldl'
               (\e (p, x) -> extendEnv e p (toLocalDef p x))
@@ -685,7 +686,7 @@ specialCommandWith :: Context -> XObj -> SymPath -> [XObj] -> IO (Context, Eithe
 specialCommandWith ctx _ path forms = do
   let env = contextEnv ctx
       useThese = envUseModules env
-      env' = if path `elem` useThese then env else env {envUseModules = path : useThese}
+      env' = env {envUseModules = Set.insert path useThese}
       ctx' = ctx {contextGlobalEnv = env'}
   ctxAfter <- liftIO $ foldM folder ctx' forms
   let envAfter = contextEnv ctxAfter
@@ -814,7 +815,7 @@ primitiveDefmodule xobj ctx@(Context env i _ pathStrings _ _ _ _) (XObj (Sym (Sy
     defineNewModule meta =
       pure (ctx', dynamicNil)
       where
-        moduleEnv = Env (Map.fromList []) (Just (getEnv env pathStrings)) (Just moduleName) [] ExternalEnv 0
+        moduleEnv = Env (Map.fromList []) (Just (getEnv env pathStrings)) (Just moduleName) Set.empty ExternalEnv 0
         newModule = XObj (Mod moduleEnv) (xobjInfo xobj) (Just ModuleTy)
         updatedGlobalEnv = envInsertAt env (SymPath pathStrings moduleName) (Binder meta newModule)
         -- The parent of the internal env needs to be set to i here for contextual `use` calls to work.

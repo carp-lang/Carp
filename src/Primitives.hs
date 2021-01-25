@@ -26,6 +26,7 @@ import Obj
 import PrimitiveError
 import Project
 import Reify
+import qualified Set
 import Sumtypes
 import Template
 import ToTemplate
@@ -139,18 +140,15 @@ primitiveImplements call ctx x@(XObj (Sym interface@(SymPath _ _) _) _ _) (XObj 
     SymPath modules _ = consPath (contextPath ctx `union` prefixes) (SymPath [] name)
     warn :: IO ()
     warn = emitWarning (show (NonExistentInterfaceWarning x))
-
     addToInterface :: Binder -> Binder -> IO (Context, Either EvalError XObj)
     addToInterface inter impl =
       let (newCtx, maybeErr) = registerInInterface ctx impl inter
        in maybe (updateMeta impl newCtx) (handleError newCtx impl) maybeErr
-
     handleError :: Context -> Binder -> InterfaceError -> IO (Context, Either EvalError XObj)
     handleError context impl e@(AlreadyImplemented _ oldImplPath _ _) =
       emitWarning (show e) >> pure (removeInterfaceFromImplements oldImplPath x context) >>= updateMeta impl
     handleError context _ e =
       emitError (show e) >> pure (evalError context (show e) (xobjInfo x))
-
     updateMeta :: Binder -> Context -> IO (Context, Either EvalError XObj)
     updateMeta binder context =
       pure (fromJust update, dynamicNil)
@@ -306,7 +304,6 @@ primitiveInfo _ ctx target@(XObj (Sym path@(SymPath _ _) _) _ _) =
   where
     ok :: IO (Context, Either EvalError XObj)
     ok = pure (ctx, dynamicNil)
-
     printInterfaceImplementationsOrAll :: Maybe Binder -> Maybe [Binder] -> IO ()
     printInterfaceImplementationsOrAll interface impls =
       maybe
@@ -323,17 +320,14 @@ primitiveInfo _ ctx target@(XObj (Sym path@(SymPath _ _) _) _ _) =
           )
             <|> impls
         )
-
     implementsInterface :: Binder -> Binder -> Bool
     implementsInterface binder binder' =
       maybe
         False
         (\(XObj (Lst impls) _ _) -> getBinderPath binder `elem` map getPath impls)
         (Meta.getBinderMetaValue "implements" binder')
-
     printIfFound :: Maybe Binder -> IO ()
     printIfFound = maybe (pure ()) printer
-
     printer :: Binder -> IO ()
     printer binder@(Binder metaData x@(XObj _ (Just i) _)) =
       putStrLnWithColor Blue (forceShowBinder binder)
@@ -342,7 +336,6 @@ primitiveInfo _ ctx target@(XObj (Sym path@(SymPath _ _) _) _ _) =
     printer binder@(Binder metaData x) =
       print binder
         >> printMeta metaData (contextProj ctx) x
-
     printMeta :: MetaData -> Project -> XObj -> IO ()
     printMeta metaData proj x =
       maybe (pure ()) (printMetaVal "Documentation" (either (const "") id . unwrapStringXObj)) (Meta.get "doc" metaData)
@@ -351,7 +344,6 @@ primitiveInfo _ ctx target@(XObj (Sym path@(SymPath _ _) _) _ _) =
         >> maybe (pure ()) (printMetaVal "Hidden" pretty) (Meta.get "hidden" metaData)
         >> maybe (pure ()) (printMetaVal "Signature" pretty) (Meta.get "sig" metaData)
         >> when (projectPrintTypedAST proj) (putStrLnWithColor Yellow (prettyTyped x))
-
     printMetaVal :: String -> (XObj -> String) -> XObj -> IO ()
     printMetaVal s f xobj = putStrLn ("  " ++ s ++ ": " ++ f xobj)
 primitiveInfo _ ctx notName =
@@ -659,7 +651,7 @@ primitiveDeftype xobj ctx (name : rest) =
                       )
                       i
                       (Just TypeTy)
-                  holderEnv name' prev = Env (Map.fromList []) (Just prev) (Just name') [] ExternalEnv 0
+                  holderEnv name' prev = Env (Map.fromList []) (Just prev) (Just name') Set.empty ExternalEnv 0
                   holderModule name'' prevEnv priorPaths tyenv =
                     case lookupBinder (SymPath priorPaths name'') tyenv of
                       Just existing@(Binder _ (XObj (Mod _) _ _)) -> existing
@@ -716,7 +708,7 @@ primitiveUse xobj ctx (XObj (Sym path _) _ _) =
     env = contextGlobalEnv ctx
     e = getEnv env pathStrings
     useThese = envUseModules e
-    e' = if path `elem` useThese then e else e {envUseModules = path : useThese}
+    e' = e {envUseModules = Set.insert path useThese}
     lookupInGlobal = maybe missing useModule (lookupInEnv path env)
       where
         missing = evalError ctx ("Can't find a module named '" ++ show path ++ "'") (xobjInfo xobj)

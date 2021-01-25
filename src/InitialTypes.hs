@@ -6,6 +6,7 @@ import Info
 import Lookup
 import qualified Map
 import Obj
+import qualified Set
 import TypeError
 import Types
 import Util
@@ -422,7 +423,7 @@ initialTypes typeEnv rootEnv root = evalState (visit rootEnv root) 0
               { envBindings = Map.empty,
                 envParent = Just env,
                 envModuleName = Nothing,
-                envUseModules = [],
+                envUseModules = Set.empty,
                 envMode = InternalEnv,
                 envFunctionNestingLevel = envFunctionNestingLevel env
               }
@@ -449,7 +450,7 @@ initialTypes typeEnv rootEnv root = evalState (visit rootEnv root) 0
             { envBindings = Map.fromList binders,
               envParent = Just env,
               envModuleName = Nothing,
-              envUseModules = [],
+              envUseModules = Set.empty,
               envMode = InternalEnv,
               envFunctionNestingLevel = envFunctionNestingLevel env
             }
@@ -472,7 +473,7 @@ initialTypes typeEnv rootEnv root = evalState (visit rootEnv root) 0
             { envBindings = Map.fromList binders,
               envParent = Just env,
               envModuleName = Nothing,
-              envUseModules = [],
+              envUseModules = Set.empty,
               envMode = InternalEnv,
               envFunctionNestingLevel = envFunctionNestingLevel env
             }

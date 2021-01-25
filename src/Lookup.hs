@@ -5,6 +5,7 @@ import Env
 import qualified Map
 import qualified Meta
 import Obj
+import qualified Set
 import Types
 
 -- | The type of generic lookup functions.
@@ -73,7 +74,7 @@ envFromBinder _ = Nothing
 -- imported modules.
 importedEnvs :: Env -> [Env]
 importedEnvs env =
-  catMaybes $ mapMaybe (\path -> fmap envFromBinder (lookupBinder path env)) (envUseModules env)
+  catMaybes $ mapMaybe (\path -> fmap envFromBinder (lookupBinder path env)) (Set.toList (envUseModules env))
 
 -- | Given an environment, returns the list of all environments of its binders.
 allEnvs :: Env -> [Env]
@@ -155,6 +156,6 @@ multiLookupQualified path@(SymPath (p : _) _) rootEnv =
             Nothing -> []
           fromUsedModules =
             let usedModules = envUseModules rootEnv
-                envs = catMaybes $ mapMaybe (\path' -> fmap envFromBinder (lookupBinder path' rootEnv)) usedModules
+                envs = catMaybes $ mapMaybe (\path' -> fmap envFromBinder (lookupBinder path' rootEnv)) (Set.toList usedModules)
              in concatMap (multiLookupQualified path) envs
        in fromParent ++ fromUsedModules

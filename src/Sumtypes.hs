@@ -8,6 +8,7 @@ import Info
 import Managed
 import qualified Map
 import Obj
+import qualified Set
 import StructUtils
 import SumtypeCase
 import Template
@@ -27,7 +28,7 @@ getCase cases caseNameToFind =
 moduleForSumtype :: Maybe Env -> TypeEnv -> Env -> [String] -> String -> [Ty] -> [XObj] -> Maybe Info -> Maybe Env -> Either TypeError (String, XObj, [XObj])
 moduleForSumtype innerEnv typeEnv env pathStrings typeName typeVariables rest i existingEnv =
   let typeModuleName = typeName
-      typeModuleEnv = fromMaybe (Env (Map.fromList []) innerEnv (Just typeModuleName) [] ExternalEnv 0) existingEnv
+      typeModuleEnv = fromMaybe (Env (Map.fromList []) innerEnv (Just typeModuleName) Set.empty ExternalEnv 0) existingEnv
       insidePath = pathStrings ++ [typeModuleName]
    in do
         let structTy = StructTy (ConcreteNameTy (createStructName pathStrings typeName)) typeVariables
