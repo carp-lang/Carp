@@ -130,7 +130,7 @@ data Obj
   | Fn (Maybe SymPath) (Set.Set XObj) -- the name of the lifted function, the set of variables this lambda captures, and a dynamic environment
   | Do
   | Let
-  | LetDef
+  | LocalDef
   | While
   | Break
   | If
@@ -352,7 +352,7 @@ getSimpleNameWithArgs _ = Nothing
 getPath :: XObj -> SymPath
 getPath (XObj (Lst (XObj (Defn _) _ _ : XObj (Sym path _) _ _ : _)) _ _) = path
 getPath (XObj (Lst (XObj Def _ _ : XObj (Sym path _) _ _ : _)) _ _) = path
-getPath (XObj (Lst (XObj LetDef _ _ : XObj (Sym path _) _ _ : _)) _ _) = path
+getPath (XObj (Lst (XObj LocalDef _ _ : XObj (Sym path _) _ _ : _)) _ _) = path
 getPath (XObj (Lst (XObj Macro _ _ : XObj (Sym path _) _ _ : _)) _ _) = path
 getPath (XObj (Lst (XObj Dynamic _ _ : XObj (Sym path _) _ _ : _)) _ _) = path
 getPath (XObj (Lst (XObj DefDynamic _ _ : XObj (Sym path _) _ _ : _)) _ _) = path
@@ -426,7 +426,7 @@ pretty = visit 0
         While -> "while"
         Do -> "do"
         Let -> "let"
-        LetDef -> "let"
+        LocalDef -> "local-binding"
         Mod env -> fromMaybe "module" (envModuleName env)
         Deftype _ -> "deftype"
         DefSumtype _ -> "deftype"
@@ -491,7 +491,7 @@ prettyUpTo lim xobj =
         While -> ""
         Do -> ""
         Let -> ""
-        LetDef -> ""
+        LocalDef -> ""
         Mod _ -> ""
         Deftype _ -> ""
         DefSumtype _ -> ""
@@ -1080,3 +1080,7 @@ instance Semigroup Context where
             contextInternalEnv = internal <> internal',
             contextTypeEnv = TypeEnv (typeEnv' <> typeEnv)
           }
+
+toLocalDef :: String -> XObj -> XObj
+toLocalDef var value =
+  (XObj (Lst [XObj LocalDef Nothing Nothing, XObj (Sym (SymPath [] var) Symbol) Nothing Nothing, value]) (xobjInfo value) (xobjTy value))

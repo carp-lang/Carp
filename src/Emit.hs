@@ -168,7 +168,7 @@ toC toCMode (Binder meta root) = emitterSrc (execState (visit startingIndent roo
             (Interface _ _) -> dontVisit
             (Dict _) -> dontVisit
             (Fn _ _) -> dontVisit
-            LetDef -> dontVisit
+            LocalDef -> dontVisit
             (Match _) -> dontVisit
             With -> dontVisit
             MetaStub -> dontVisit
