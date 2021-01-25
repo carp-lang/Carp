@@ -678,7 +678,7 @@ data Env = Env
   { envBindings :: Map.Map String Binder,
     envParent :: Maybe Env,
     envModuleName :: Maybe String,
-    envUseModules :: [SymPath],
+    envUseModules :: Set.Set SymPath,
     envMode :: EnvMode,
     envFunctionNestingLevel :: Int -- Normal defn:s have 0, lambdas get +1 for each level of nesting
   }
@@ -720,7 +720,7 @@ prettyEnvironmentIndented indent env =
       ++ let modules = envUseModules env
           in if null modules
                then []
-               else ("\n" ++ replicate indent ' ' ++ "Used modules:") : map (showImportIndented indent) modules
+               else ("\n" ++ replicate indent ' ' ++ "Used modules:") : Set.toList (Set.map (showImportIndented indent) modules)
 
 -- | For debugging nested environments
 prettyEnvironmentChain :: Env -> String

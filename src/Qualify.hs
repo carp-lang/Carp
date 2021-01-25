@@ -7,6 +7,7 @@ import Info
 import Lookup
 import qualified Map
 import Obj
+import qualified Set
 import Types
 import Util
 
@@ -42,9 +43,9 @@ setFullyQualifiedSymbols
     -- It is marked as RecursionEnv basically is the same thing as external to not mess up lookup.
     -- Inside the recursion env is the function env that contains bindings for the arguments of the function.
     -- Note: These inner envs is ephemeral since they are not stored in a module or global scope.
-    let recursionEnv = Env Map.empty (Just env) (Just (functionName ++ "-recurse-env")) [] RecursionEnv 0
+    let recursionEnv = Env Map.empty (Just env) (Just (functionName ++ "-recurse-env")) Set.empty RecursionEnv 0
         envWithSelf = extendEnv recursionEnv functionName sym
-        functionEnv = Env Map.empty (Just envWithSelf) Nothing [] InternalEnv 0
+        functionEnv = Env Map.empty (Just envWithSelf) Nothing Set.empty InternalEnv 0
         envWithArgs = foldl' (\e arg@(XObj (Sym (SymPath _ argSymName) _) _ _) -> extendEnv e argSymName arg) functionEnv argsArr
      in XObj (Lst [defn, sym, args, setFullyQualifiedSymbols typeEnv globalEnv envWithArgs body]) i t
 setFullyQualifiedSymbols
@@ -62,7 +63,7 @@ setFullyQualifiedSymbols
       t
     ) =
     let lvl = envFunctionNestingLevel env
-        functionEnv = Env Map.empty (Just env) Nothing [] InternalEnv (lvl + 1)
+        functionEnv = Env Map.empty (Just env) Nothing Set.empty InternalEnv (lvl + 1)
         envWithArgs = foldl' (\e arg@(XObj (Sym (SymPath _ argSymName) _) _ _) -> extendEnv e argSymName arg) functionEnv argsArr
      in XObj (Lst [fn, args, setFullyQualifiedSymbols typeEnv globalEnv envWithArgs body]) i t
 setFullyQualifiedSymbols typeEnv globalEnv env (XObj (Lst [the@(XObj The _ _), typeXObj, value]) i t) =
@@ -77,7 +78,7 @@ setFullyQualifiedSymbols typeEnv globalEnv env (XObj (Lst [letExpr@(XObj Let _ _
   | otherwise =
     let Just ii = i
         lvl = envFunctionNestingLevel env
-        innerEnv = Env Map.empty (Just env) (Just ("let-env-" ++ show (infoIdentifier ii))) [] InternalEnv lvl
+        innerEnv = Env Map.empty (Just env) (Just ("let-env-" ++ show (infoIdentifier ii))) Set.empty InternalEnv lvl
         (innerEnv', bindings') =
           foldl'
             ( \(e, bs) (s@(XObj (Sym (SymPath _ binderName) _) _ _), o) ->
@@ -94,7 +95,7 @@ setFullyQualifiedSymbols typeEnv globalEnv env (XObj (Lst (matchExpr@(XObj (Matc
       let newExpr = setFullyQualifiedSymbols typeEnv globalEnv env expr
           Just ii = i
           lvl = envFunctionNestingLevel env
-          innerEnv = Env Map.empty (Just env) (Just ("case-env-" ++ show (infoIdentifier ii))) [] InternalEnv lvl
+          innerEnv = Env Map.empty (Just env) (Just ("case-env-" ++ show (infoIdentifier ii))) Set.empty InternalEnv lvl
           newCasesXObjs =
             map
               ( \(l, r) ->
@@ -124,7 +125,7 @@ setFullyQualifiedSymbols typeEnv globalEnv env (XObj (Lst (matchExpr@(XObj (Matc
     else XObj (Lst (matchExpr : expr : casesXObjs)) i t -- Leave it untouched for the compiler to find the error.
 setFullyQualifiedSymbols typeEnv globalEnv env (XObj (Lst [XObj With _ _, XObj (Sym path _) _ _, expression]) _ _) =
   let useThese = envUseModules env
-      env' = if path `elem` useThese then env else env {envUseModules = path : useThese}
+      env' = env {envUseModules = Set.insert path useThese}
    in setFullyQualifiedSymbols typeEnv globalEnv env' expression
 setFullyQualifiedSymbols typeEnv globalEnv env (XObj (Lst xobjs) i t) =
   -- TODO: Perhaps this general case can be sufficient? No need with all the cases above..?
