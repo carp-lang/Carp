@@ -142,7 +142,7 @@ eval ctx xobj@(XObj o info ty) preference resolver =
         Right (val, _) -> (nctx, Right val)
   where
     resolveDef (XObj (Lst [XObj DefDynamic _ _, _, value]) _ _) = value
-    resolveDef (XObj (Lst [XObj LetDef _ _, _, value]) _ _) = value
+    resolveDef (XObj (Lst [XObj LocalDef _ _, _, value]) _ _) = value
     resolveDef x = x
     eval' form =
       case form of
@@ -296,7 +296,7 @@ eval ctx xobj@(XObj o info ty) preference resolver =
                   (newCtx, res) <- eval ctx' x preference resolver
                   case res of
                     Right okX -> do
-                      let binder = Binder emptyMeta (XObj (Lst [XObj LetDef Nothing Nothing, XObj (Sym (SymPath [] n) Symbol) Nothing Nothing, okX]) Nothing (xobjTy okX))
+                      let binder = Binder emptyMeta (toLocalDef n okX)
                           Just e = contextInternalEnv newCtx
                       pure $ Right (newCtx {contextInternalEnv = Just (envInsertAt e (SymPath [] n) binder)})
                     Left err -> pure $ Left err
@@ -545,8 +545,8 @@ apply ctx@Context {contextInternalEnv = internal} body params args =
       let n = length proper
           insideEnv = Env Map.empty internal Nothing [] InternalEnv 0
           insideEnv' =
-            foldl'
-              (\e (p, x) -> extendEnv e p x)
+           foldl'
+              (\e (p, x) -> extendEnv e p (toLocalDef p x))
               insideEnv
               (zip proper (take n args))
           insideEnv'' =
@@ -1220,7 +1220,7 @@ setStaticOrDynamicVar path env binder value =
       envReplaceBinding path (Binder meta (XObj (Lst [def, sym, value]) (xobjInfo value) t)) env
     (Binder meta (XObj (Lst (defdy@(XObj DefDynamic _ _) : sym : _)) _ _)) ->
       envReplaceBinding path (Binder meta (XObj (Lst [defdy, sym, value]) (xobjInfo value) (Just DynamicTy))) env
-    (Binder meta (XObj (Lst (lett@(XObj LetDef _ _) : sym : _)) _ t)) ->
+    (Binder meta (XObj (Lst (lett@(XObj LocalDef _ _) : sym : _)) _ t)) ->
       envReplaceBinding path (Binder meta (XObj (Lst [lett, sym, value]) (xobjInfo value) t)) env
     -- shouldn't happen, errors are thrown at call sites.
     -- TODO: Return an either here to propagate error.
