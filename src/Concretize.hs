@@ -1,3 +1,4 @@
+{-# LANGUAGE BangPatterns #-}
 {-# LANGUAGE LambdaCase #-}
 
 module Concretize where
@@ -813,6 +814,10 @@ findFunctionForMemberIncludePrimitives typeEnv env functionName functionType (me
 setDeletersOnInfo :: Maybe Info -> Set.Set Deleter -> Maybe Info
 setDeletersOnInfo i deleters = fmap (\i' -> i' {infoDelete = deleters}) i
 
+addDeletersToInfo :: Maybe Info -> Set.Set Deleter -> Maybe Info
+addDeletersToInfo i deleters =
+  fmap (\i' -> i' {infoDelete = Set.union (infoDelete i') deleters}) i
+
 -- | Helper function for setting the deleters for an XObj.
 del :: XObj -> Set.Set Deleter -> XObj
 del xobj deleters = xobj {xobjInfo = setDeletersOnInfo (xobjInfo xobj) deleters}
@@ -989,8 +994,9 @@ manageMemory typeEnv globalEnv root =
                   manage xobj
                   pure $ do
                     okBody <- visitedBody
+                    let finalBody = searchBreak diff okBody
                     okBindings <- fmap (concatMap (\(n, x) -> [n, x])) (sequence visitedBindings)
-                    pure (XObj (Lst [letExpr, XObj (Arr okBindings) bindi bindt, okBody]) newInfo t)
+                    pure (XObj (Lst [letExpr, XObj (Arr okBindings) bindi bindt, finalBody]) newInfo t)
         -- Set!
         [setbangExpr@(XObj SetBang _ _), variable, value] ->
           let varInfo = xobjInfo variable
@@ -1108,7 +1114,8 @@ manageMemory typeEnv globalEnv root =
                   XObj objExpr objInfo objTy = okExpr
                   newExprInfo = setDeletersOnInfo objInfo (afterExprDeleters \\ preDeleters)
                   newExpr = XObj objExpr newExprInfo objTy
-              pure (XObj (Lst [whileExpr, newExpr, okBody]) newInfo t)
+                  finalBody = searchBreak diff okBody
+              pure (XObj (Lst [whileExpr, newExpr, finalBody]) newInfo t)
         [ifExpr@(XObj If _ _), expr, ifTrue, ifFalse] ->
           do
             visitedExpr <- visit expr
@@ -1262,6 +1269,15 @@ manageMemory typeEnv globalEnv root =
                   Right (XObj (Lst (okF : okArgs)) i t)
         [] -> pure (Right xobj)
     visitList _ = error "Must visit list."
+    searchBreak :: Set.Set Deleter -> XObj -> XObj
+    searchBreak diff (XObj (Lst [(XObj Break i' t')]) xi xt) =
+      let ni = addDeletersToInfo i' diff
+      in XObj (Lst [(XObj Break ni t')]) xi xt
+    searchBreak _ x@(XObj (Lst ((XObj While _ _): _)) _ _) = x
+    searchBreak diff (XObj (Lst elems) i' t') =
+      let newElems = map (searchBreak diff) elems
+      in XObj (Lst newElems) i' t'
+    searchBreak _ e = e
     visitMatchCase :: (XObj, XObj) -> State MemState (Either TypeError ((Set.Set Deleter, (XObj, XObj)), [XObj]))
     visitMatchCase (lhs@XObj {}, rhs@XObj {}) =
       do
