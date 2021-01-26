@@ -414,36 +414,6 @@ commandAddRelativeInclude ctx x =
     _ ->
       pure (evalError ctx ("Argument to 'include' must be a string, but was `" ++ pretty x ++ "`") (xobjInfo x))
 
-commandIsList :: UnaryCommandCallback
-commandIsList ctx x =
-  pure $ case x of
-    XObj (Lst _) _ _ -> (ctx, Right trueXObj)
-    _ -> (ctx, Right falseXObj)
-
-commandIsArray :: UnaryCommandCallback
-commandIsArray ctx x =
-  pure $ case x of
-    XObj (Arr _) _ _ -> (ctx, Right trueXObj)
-    _ -> (ctx, Right falseXObj)
-
-commandIsSymbol :: UnaryCommandCallback
-commandIsSymbol ctx x =
-  pure $ case x of
-    XObj (Sym _ _) _ _ -> (ctx, Right trueXObj)
-    _ -> (ctx, Right falseXObj)
-
-commandIsNumber :: UnaryCommandCallback
-commandIsNumber ctx x =
-  pure $ case x of
-    XObj (Num _ _) _ _ -> (ctx, Right trueXObj)
-    _ -> (ctx, Right falseXObj)
-
-commandIsString :: UnaryCommandCallback
-commandIsString ctx x =
-  pure $ case x of
-    XObj (Str _) _ _ -> (ctx, Right trueXObj)
-    _ -> (ctx, Right falseXObj)
-
 commandArray :: VariadicCommandCallback
 commandArray ctx args =
   pure (ctx, Right (XObj (Arr args) (Just dummyInfo) Nothing))
@@ -835,3 +805,56 @@ commandParse ctx (XObj (Str s) i _) =
     Right (_ : _) -> evalError ctx "parse returned multiple objects" i
 commandParse ctx x =
   pure (evalError ctx ("Argument to `parse` must be a string, but was `" ++ pretty x ++ "`") (xobjInfo x))
+
+commandType :: UnaryCommandCallback
+commandType ctx (XObj x _ _) =
+  pure (ctx, Right (XObj (Sym (SymPath [] (typeOf x)) Symbol) Nothing Nothing))
+  where typeOf (Str _) = "string"
+        typeOf (Sym _ _) = "symbol"
+        typeOf (MultiSym _ _) = "multi-symbol"
+        typeOf (InterfaceSym _) = "interface-symbol"
+        typeOf (Arr _) = "array"
+        typeOf (StaticArr _) = "static-array"
+        typeOf (Lst _) = "list"
+        typeOf (Num IntTy _) = "int"
+        typeOf (Num LongTy _) = "long"
+        typeOf (Num ByteTy _) = "byte"
+        typeOf (Num FloatTy _) = "float"
+        typeOf (Num DoubleTy _) = "double"
+        typeOf (Num _ _) = error "invalid number type for `type` command!"
+        typeOf (Pattern _) = "pattern"
+        typeOf (Chr _) = "char"
+        typeOf (Bol _) = "bool"
+        typeOf (Dict _) = "map"
+        typeOf (Closure _ _) = "closure"
+        typeOf (Defn _) = "defn"
+        typeOf Def = "def"
+        typeOf (Fn _ _) = "fn"
+        typeOf Do = "do"
+        typeOf Let = "let"
+        typeOf LocalDef = "local-def"
+        typeOf While = "while"
+        typeOf Break = "dreak"
+        typeOf If = "if"
+        typeOf (Match _) = "matxch"
+        typeOf (Mod _) = "module"
+        typeOf (Deftype _) = "deftype"
+        typeOf (DefSumtype _) = "def-sum-type"
+        typeOf With = "with"
+        typeOf (External _) = "external"
+        typeOf (ExternalType _) = "external-type"
+        typeOf MetaStub = "meta-stub"
+        typeOf (Deftemplate _) = "deftemplate"
+        typeOf (Instantiate _) = "instantiate"
+        typeOf (Defalias _) = "defalias"
+        typeOf Address = "address"
+        typeOf SetBang = "set!"
+        typeOf Macro = "macro"
+        typeOf Dynamic = "dynamic"
+        typeOf DefDynamic = "defdynamic"
+        typeOf (Command _) = "command"
+        typeOf (Primitive _) = "primitive"
+        typeOf The = "the"
+        typeOf Ref = "ref"
+        typeOf Deref = "deref"
+        typeOf (Interface _ _) = "interface"

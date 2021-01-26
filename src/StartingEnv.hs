@@ -244,11 +244,6 @@ dynamicModule =
     unaries =
       let f = addUnaryCommand . spath
        in [ f "parse" commandParse "parses a string into an expression" "(parse \"(+ 1 2)\") ; => (+ 1 2)",
-            f "list?" commandIsList "checks whether the argument is a list." "(list? '()) ; => true",
-            f "array?" commandIsArray "checks whether the arguments is an array." "(array? []) ; => true",
-            f "symbol?" commandIsSymbol "checks whether the argument is a symbol." "(symbol? 'x) ; => true",
-            f "number?" commandIsNumber "checks whether the argument is a number." "(number? 1) ; => true",
-            f "string?" commandIsString "checks whether the argument is a string." "(string? \"hi\") ; => true",
             f "length" commandLength "returns the length of the argument (must be an array, string or list)." "(length '(1 2 3)) ; => 3",
             f "car" commandCar "gets the head of a list or array." "(car '(1 2 3)) ; => 1",
             f "cdr" commandCdr "gets the tail of a list or array." "(cdr '(1 2 3)) ; => '(2 3)",
@@ -263,7 +258,8 @@ dynamicModule =
             f "save-docs-internal" commandSaveDocsInternal "is the internal companion command to `save-docs`. `save-docs` should be called instead." "(save-docs-internal 'Module)",
             f "read-file" commandReadFile "reads a file into a string." "(read-file \"myfile.txt\")",
             f "hash" commandHash "calculates the hash associated with a value." "(hash '('my 'value)) ; => 3175346968842793108",
-            f "round" commandRound "rounds its numeric argument." "(round 2.4) ; => 2"
+            f "round" commandRound "rounds its numeric argument." "(round 2.4) ; => 2",
+            f "dynamic-type" commandType "Gets the dynamic type as a string." "(dynamic-type '()) ; => \"list\""
           ]
     binaries =
       let f = addBinaryCommand . spath
