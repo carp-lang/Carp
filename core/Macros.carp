@@ -57,19 +57,19 @@
         (in? elem (cdr l)))))
 
   (defndynamic string? [s]
-    (= (dynamic-type s) "string"))
+    (= (dynamic-type s) 'string))
 
   (defndynamic symbol? [s]
-    (= (dynamic-type s) "symbol"))
+    (= (dynamic-type s) 'symbol))
 
   (defndynamic list? [s]
-    (= (dynamic-type s) "list"))
+    (= (dynamic-type s) 'list))
 
   (defndynamic array? [s]
-    (= (dynamic-type s) "array"))
+    (= (dynamic-type s) 'array))
 
   (defndynamic number? [s]
-    (List.in? (dynamic-type s) '("int" "long" "double" "float" "byte")))
+    (List.in? (dynamic-type s) '(int long double float byte)))
 
 )
 

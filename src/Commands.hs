@@ -808,7 +808,7 @@ commandParse ctx x =
 
 commandType :: UnaryCommandCallback
 commandType ctx (XObj x _ _) =
-  pure (ctx, Right (XObj (Str (typeOf x)) Nothing Nothing))
+  pure (ctx, Right (XObj (Sym (SymPath [] (typeOf x)) Symbol) Nothing Nothing))
   where typeOf (Str _) = "string"
         typeOf (Sym _ _) = "symbol"
         typeOf (MultiSym _ _) = "multi-symbol"
@@ -832,7 +832,7 @@ commandType ctx (XObj x _ _) =
         typeOf (Fn _ _) = "fn"
         typeOf Do = "do"
         typeOf Let = "let"
-        typeOf LetDef = "let-def"
+        typeOf LocalDef = "local-def"
         typeOf While = "while"
         typeOf Break = "dreak"
         typeOf If = "if"
