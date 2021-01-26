@@ -1,5 +1,7 @@
 # Format Strings
 
+{% raw %}
+
 Carp as to ways to format strings, `fmt` and `fstr`. In this document, we
 explore both functions in detail.
 
@@ -57,3 +59,5 @@ literal `{` need to be escaped as `{{`.
 
 While possible, it is discouraged to use complicated or even multiline
 expressions inside `fstr`.
+
+{% endraw %}
