@@ -3,15 +3,17 @@
   (defndynamic cxr [x pair]
     (if (= (length x) 0)
       (list 'quote pair)
-      (list
-        (if (= 'a (cadr x))
-          'car
-          (if (= 'd (cadr x))
-            'cdr
-            (macro-error "`cxr` expects either `a` or `d` symbols, got " (cadr x))))
-        (if (= 1 (car x))
-          (cxr (cddr x) pair)
-          (cxr (cons (- (car x) 1) (cdr x)) pair)))))
+      (if (= 0 (car x))
+        (cxr (cddr x) pair)
+        (list
+          (if (= 'a (cadr x))
+            'car
+            (if (= 'd (cadr x))
+              'cdr
+              (macro-error "`cxr` expects either `a` or `d` symbols, got " (cadr x))))
+          (if (= 1 (car x))
+            (cxr (cddr x) pair)
+            (cxr (cons (- (car x) 1) (cdr x)) pair))))))
 
   (defndynamic nthcdr [n pair]
     (cxr (list (+ n 1) 'd) pair))

@@ -262,7 +262,8 @@ dynamicModule =
             f "relative-include" commandAddRelativeInclude "adds a relative include, i.e. a C `include` with quotes. It also prepends the current directory." "(relative-include \"myheader.h\")",
             f "save-docs-internal" commandSaveDocsInternal "is the internal companion command to `save-docs`. `save-docs` should be called instead." "(save-docs-internal 'Module)",
             f "read-file" commandReadFile "reads a file into a string." "(read-file \"myfile.txt\")",
-            f "hash" commandHash "calculates the hash associated with a value." "(hash '('my 'value)) ; => 3175346968842793108"
+            f "hash" commandHash "calculates the hash associated with a value." "(hash '('my 'value)) ; => 3175346968842793108",
+            f "round" commandRound "rounds its numeric argument." "(round 2.4) ; => 2"
           ]
     binaries =
       let f = addBinaryCommand . spath

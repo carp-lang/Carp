@@ -9,8 +9,16 @@
   (defndynamic dec [x]
     (- x 1))
 
+  (defndynamic neg [x]
+    (* -1 x))
+
   (defndynamic mod [x y]
-    (- x (* y (/ x y))))
+    (let-do [a (if (< x 0) (neg x) x)
+             b (if (< y 0) (neg y) y)
+             m a]
+      (while (or (> m b) (= m b))
+        (set! m (- m b)))
+      (if (< a 0) (neg m) m)))
 
   (defmodule Project
     (doc no-echo "Turn off debug printing in the compiler.")

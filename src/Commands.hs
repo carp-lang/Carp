@@ -534,6 +534,7 @@ commandEq ctx a b =
   pure (ctx, Right (boolToXObj (cmp (a, b))))
   where
     cmp (XObj (Sym sa _) _ _, XObj (Sym sb _) _ _) = sa == sb
+    cmp (XObj (Num _ na) _ _, XObj (Num _ nb) _ _) = na == nb
     cmp (XObj (Lst elemsA) _ _, XObj (Lst elemsB) _ _) =
       length elemsA == length elemsB && all cmp (zip elemsA elemsB)
     cmp (XObj (Arr elemsA) _ _, XObj (Arr elemsB) _ _) =
@@ -541,7 +542,7 @@ commandEq ctx a b =
     cmp (XObj x _ _, XObj y _ _) = x == y
 
 commandComp :: (Number -> Number -> Bool) -> String -> BinaryCommandCallback
-commandComp op _ ctx (XObj (Num aTy aNum) _ _) (XObj (Num bTy bNum) _ _) | aTy == bTy = pure (ctx, Right (boolToXObj (op aNum bNum)))
+commandComp op _ ctx (XObj (Num _ aNum) _ _) (XObj (Num _ bNum) _ _) = pure (ctx, Right (boolToXObj (op aNum bNum)))
 commandComp _ opname ctx a b = pure $ evalError ctx ("Can't compare (" ++ opname ++ ") " ++ pretty a ++ " with " ++ pretty b) (xobjInfo a)
 
 commandLt :: BinaryCommandCallback
@@ -549,6 +550,14 @@ commandLt = commandComp (<) "<"
 
 commandGt :: BinaryCommandCallback
 commandGt = commandComp (>) ">"
+
+commandRound :: UnaryCommandCallback
+commandRound ctx (XObj (Num _ (Floating i)) _ _) =
+  pure (ctx, Right (XObj (Num IntTy (Integral (round i))) (Just dummyInfo) (Just IntTy)))
+commandRound ctx i@(XObj (Num _ (Integral _)) _ _) =
+  pure (ctx, Right i)
+commandRound ctx a =
+  pure $ evalError ctx ("Can’t call round with " ++ pretty a) (xobjInfo a)
 
 commandCharAt :: BinaryCommandCallback
 commandCharAt ctx a b =
@@ -651,9 +660,9 @@ commandPathAbsolute ctx a =
     _ -> pure $ evalError ctx ("Can't call `absolute` with " ++ pretty a) (xobjInfo a)
 
 commandArith :: (Number -> Number -> Number) -> String -> BinaryCommandCallback
-commandArith op _ ctx (XObj (Num aTy aNum) _ _) (XObj (Num bTy bNum) _ _)
-  | aTy == bTy =
-    pure (ctx, Right (XObj (Num aTy (op aNum bNum)) (Just dummyInfo) (Just aTy)))
+commandArith op _ ctx (XObj (Num aTy aNum) _ _) (XObj (Num bTy bNum) _ _) =
+  let newTy = promoteNumber aTy bTy
+  in pure (ctx, Right (XObj (Num newTy (op aNum bNum)) (Just dummyInfo) (Just newTy)))
 commandArith _ opname ctx a b = pure $ evalError ctx ("Can't call " ++ opname ++ " with " ++ pretty a ++ " and " ++ pretty b) (xobjInfo a)
 
 commandPlus :: BinaryCommandCallback
@@ -664,8 +673,7 @@ commandMinus = commandArith (-) "-"
 
 commandDiv :: BinaryCommandCallback
 commandDiv ctx p@(XObj (Num _ (Integral _)) _ _) q@(XObj (Num _ (Integral _)) _ _) = commandArith div "/" ctx p q
-commandDiv ctx p@(XObj (Num _ (Floating _)) _ _) q@(XObj (Num _ (Floating _)) _ _) = commandArith (/) "/" ctx p q
-commandDiv ctx p q = commandArith (error "div") "/" ctx p q
+commandDiv ctx p q = commandArith (/) "/" ctx p q
 
 commandMul :: BinaryCommandCallback
 commandMul = commandArith (*) "*"

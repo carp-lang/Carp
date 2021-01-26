@@ -67,17 +67,31 @@ data MatchMode = MatchValue | MatchRef deriving (Eq, Show, Generic)
 
 instance Hashable MatchMode
 
-data Number = Floating Double | Integral Int deriving (Eq, Ord, Generic)
+data Number = Floating Double | Integral Int deriving (Generic)
 
 instance Hashable Number
+
+instance Eq Number where
+  (Floating a) == (Floating b) = a == b
+  (Integral a) == (Integral b) = a == b
+  (Floating a) == (Integral b) = a == fromIntegral b
+  (Integral a) == (Floating b) = fromIntegral a == b
+
+instance Ord Number where
+  (Floating a) <= (Floating b) = a <= b
+  (Integral a) <= (Integral b) = a <= b
+  (Floating a) <= (Integral b) = a <= fromIntegral b
+  (Integral a) <= (Floating b) = fromIntegral a <= b
 
 instance Num Number where
   (Floating a) + (Floating b) = Floating (a + b)
   (Integral a) + (Integral b) = Integral (a + b)
-  _ + _ = error "+"
-  (Floating a) * (Floating b) = Floating (a * b)
+  (Floating a) + (Integral b) = Floating (a + fromIntegral b)
+  (Integral a) + (Floating b) = Floating (fromIntegral a + b)
   (Integral a) * (Integral b) = Integral (a * b)
-  _ * _ = error "*"
+  (Floating a) * (Floating b) = Floating (a * b)
+  (Integral a) * (Floating b) = Floating (fromIntegral a * b)
+  (Floating a) * (Integral b) = Floating (a * fromIntegral b)
   negate (Floating a) = Floating (negate a)
   negate (Integral a) = Integral (negate a)
   abs (Floating a) = Floating (abs a)
