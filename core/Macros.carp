@@ -18,6 +18,8 @@
         (list-to-array-internal (cdr xs) (append acc (array (car xs))))))
 
 (defmodule Dynamic
+  (defndynamic /= [a b] (not (= a b)))
+
   (defndynamic caar [pair] (car (car pair)))
   (defndynamic cadr [pair] (car (cdr pair)))
   (defndynamic cdar [pair] (cdr (car pair)))
@@ -46,6 +48,7 @@
   (defndynamic cddadr [pair] (cdr (cdr (car (cdr pair)))))
   (defndynamic cdddar [pair] (cdr (cdr (cdr (car pair)))))
   (defndynamic cddddr [pair] (cdr (cdr (cdr (cdr pair))))))
+
 
 (meta-set! doc "doc" "Set documentation for a binding.")
 (defmacro doc [name :rest strings]

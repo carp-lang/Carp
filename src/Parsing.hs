@@ -11,7 +11,7 @@ import Data.Bits (shift)
 -- import Text.Parsec.Error (newErrorMessage, Message(..))
 -- import Text.Parsec.Pos (newPos)
 
-import Data.Char (ord)
+import Data.Char (chr, ord)
 import Data.List (foldl')
 import Info
 import Numeric (readHex)
@@ -277,11 +277,37 @@ pat = do
 escaped :: Parsec.Parsec String ParseState String
 escaped = do
   _ <- Parsec.char '\\'
-  c <- Parsec.oneOf ['\\', '\"']
-  pure $ case c of
-    '\\' -> "\\\\"
-    '\"' -> "\""
-    _ -> error "escaped"
+  c <- Parsec.anyChar
+  case c of
+    '\\' -> pure "\\"
+    '\"' -> pure "\""
+    '\'' -> pure "\'"
+    'a' -> pure "\a"
+    'b' -> pure "\b"
+    'f' -> pure "\f"
+    'n' -> pure "\n"
+    'r' -> pure "\r"
+    't' -> pure "\t"
+    'v' -> pure "\v"
+    'x' -> do
+      hex <- Parsec.many1 (Parsec.oneOf "0123456789abcdefABCDEF")
+      let [(p, "")] = readHex hex
+      return [chr p]
+    'u' -> do
+      hex <- Parsec.count 4 (Parsec.oneOf "0123456789abcdefABCDEF")
+      let [(p, "")] = readHex hex
+      return [chr p]
+    'U' -> do
+      hex <- Parsec.count 8 (Parsec.oneOf "0123456789abcdefABCDEF")
+      let [(p, "")] = readHex hex
+      return [chr p]
+    _ ->
+      if elem c "01234567"
+      then do
+        hex <- Parsec.many1 (Parsec.oneOf "01234567")
+        let [(p, "")] = readHex (c : hex)
+        return [chr p]
+      else pure ('\\' : [c])
 
 escapedQuoteChar :: Parsec.Parsec String ParseState Char
 escapedQuoteChar = do
