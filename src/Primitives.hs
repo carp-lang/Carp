@@ -533,8 +533,15 @@ registerInternal ctx name ty override =
        in (ctx {contextGlobalEnv = env'}, dynamicNil)
 
 primitiveRegister :: VariadicPrimitiveCallback
-primitiveRegister _ ctx [XObj (Sym (SymPath _ name) _) _ _, ty] =
+primitiveRegister _ ctx [XObj (Sym (SymPath [] name) _) _ _, ty] =
   registerInternal ctx name ty Nothing
+primitiveRegister _ ctx [invalid@(XObj (Sym _ _) _ _), _] =
+  pure
+    ( evalError
+        ctx
+        ("`register` expects an unqualified name as first argument, but got `" ++ pretty invalid ++ "`")
+        (xobjInfo invalid)
+    )
 primitiveRegister _ ctx [name, _] =
   pure
     ( evalError
