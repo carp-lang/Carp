@@ -1,3 +1,8 @@
+; Implementors’ note: this code could be made more elegant by using quasiquotes
+; but quasiquoting is actually loaded after this module, so we can’t rely on
+; that functionality.
+
+
 (doc Derive "is a mechanism for deriving interfaces automatically.
 
 Please reference [the documentation](https://github.com/carp-lang/Carp/blob/master/docs/Derive.md)
@@ -15,7 +20,7 @@ Example:
 (make-deriver 'zero []
   (fn [t]
     (cons 'init
-      (map (fn [_] '(zero)) (members t)))))
+      (map (fn [_] '(zero)) (eval `(members %t)))))
 ```")
   (defndynamic make-deriver [f args body]
     (set! Derive.derivers
