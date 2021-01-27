@@ -643,13 +643,14 @@ executeCommand ctx@(Context env _ _ _ _ _ _ _) xobj =
             [ XObj Do (Just dummyInfo) Nothing,
               xobj',
               XObj
-                (Lst [XObj (Sym (SymPath [] "build") Symbol) (Just dummyInfo) Nothing])
+                (Lst [XObj (Sym (SymPath [] "build") Symbol) (Just dummyInfo) Nothing, trueXObj])
                 (Just dummyInfo)
                 Nothing,
               XObj
                 (Lst [XObj (Sym (SymPath [] "run") Symbol) (Just dummyInfo) Nothing])
                 (Just dummyInfo)
-                Nothing
+                Nothing,
+              (XObj (Lst []) (Just dummyInfo) (Just UnitTy))
             ]
         )
         (Just dummyInfo)
