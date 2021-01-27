@@ -188,6 +188,11 @@ expand eval ctx xobj =
             )
         [XObj Address _ _, XObj (Sym _ _) _ _] ->
           pure (ctx, Right xobj)
+        [a@(XObj Address _ _), arg@(XObj (Lst _) _ _)] -> do
+          (ctx', expandedArg) <- expand eval ctx arg
+          case expandedArg of
+            Left err -> pure (ctx, Left err)
+            Right right -> pure (ctx', Right (XObj (Lst [a, right]) (xobjInfo xobj) (xobjTy xobj)))
         [XObj Address _ _, arg] ->
           pure
             ( evalError
