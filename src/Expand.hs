@@ -186,6 +186,31 @@ expand eval ctx xobj =
                 )
                 Nothing
             )
+        [XObj Address _ _, XObj (Sym _ _) _ _] ->
+          pure (ctx, Right xobj)
+        [XObj Address _ _, arg] ->
+          pure
+            ( evalError
+                ctx
+                ("I can only take the `address` of a symbol, but I got `" ++ pretty arg ++"`.")
+                (xobjInfo xobj)
+            )
+        XObj Address _ _ : _ ->
+          pure
+            ( evalError
+                ctx
+                ("I can only take the `address` of a symbol, but I got `" ++ pretty xobj ++"`.")
+                (xobjInfo xobj)
+            )
+        [XObj Ref _ _, _] ->
+          pure (ctx, Right xobj)
+        XObj Ref _ _ : _ ->
+          pure
+            ( evalError
+                ctx
+                ("`ref` takes a single argument, but I got `" ++ pretty xobj ++"`.")
+                (xobjInfo xobj)
+            )
         XObj (Mod modEnv) _ _ : args ->
           let pathToModule = pathToEnv modEnv
               implicitInit = XObj (Sym (SymPath pathToModule "init") Symbol) i t
