@@ -202,8 +202,11 @@ expand eval ctx xobj =
                 ("I can only take the `address` of a symbol, but I got `" ++ pretty xobj ++"`.")
                 (xobjInfo xobj)
             )
-        [XObj Ref _ _, _] ->
-          pure (ctx, Right xobj)
+        [r@(XObj Ref _ _), arg] -> do
+          (ctx', expandedArg) <- expand eval ctx arg
+          case expandedArg of
+            Left err -> pure (ctx, Left err)
+            Right right -> pure (ctx', Right (XObj (Lst [r, right]) (xobjInfo xobj) (xobjTy xobj)))
         XObj Ref _ _ : _ ->
           pure
             ( evalError
