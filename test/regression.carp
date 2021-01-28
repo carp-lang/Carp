@@ -40,6 +40,10 @@
       (StrangeThings.Piff x) false
       _ true)))
 
+; quoted macros do not get evaluated if not called
+(defmacro invalid []
+  '(cond x 1))
+
 (use-all Test Vector2 Foo)
 
 (defn test-unreachable []
