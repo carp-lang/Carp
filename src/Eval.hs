@@ -4,6 +4,7 @@ module Eval where
 
 import ColorText
 import Commands
+import Context
 import Control.Applicative
 import Control.Exception
 import Control.Monad.State
@@ -274,14 +275,15 @@ eval ctx xobj@(XObj o info ty) preference resolver =
             do
               let binds = unwrapVar (pairwise bindings) []
                   ni = Env Map.empty (contextInternalEnv ctx) Nothing Set.empty InternalEnv 0
-              eitherCtx <- foldrM successiveEval' (Right ctx {contextInternalEnv = Just ni}) binds
+              eitherCtx <- foldrM successiveEval' (Right (replaceInternalEnv ctx ni)) binds
               case eitherCtx of
                 Left err -> pure (ctx, Left err)
                 Right newCtx -> do
                   (finalCtx, evaledBody) <- eval newCtx body preference ResolveLocal
                   let Just e = contextInternalEnv finalCtx
+                      Just parentEnv = envParent e
                   pure
-                    ( finalCtx {contextInternalEnv = envParent e},
+                    ( replaceInternalEnv finalCtx parentEnv,
                       do
                         okBody <- evaledBody
                         Right okBody
@@ -296,10 +298,8 @@ eval ctx xobj@(XObj o info ty) preference resolver =
                 Right ctx' -> do
                   (newCtx, res) <- eval ctx' x preference resolver
                   case res of
-                    Right okX -> do
-                      let binder = Binder emptyMeta (toLocalDef n okX)
-                          Just e = contextInternalEnv newCtx
-                      pure $ Right (newCtx {contextInternalEnv = Just (envInsertAt e (SymPath [] n) binder)})
+                    Right okX ->
+                      pure $ Right (bindLetDeclaration newCtx n okX)
                     Left err -> pure $ Left err
         [f@(XObj Fn {} _ _), args@(XObj (Arr a) _ _), body] -> do
           (newCtx, expanded) <- macroExpand ctx body
@@ -320,7 +320,8 @@ eval ctx xobj@(XObj o info ty) preference resolver =
                   Right okArgs -> do
                     let newGlobals = (contextGlobalEnv newCtx) <> (contextGlobalEnv c)
                         newTypes = TypeEnv $ (getTypeEnv (contextTypeEnv newCtx)) <> (getTypeEnv (contextTypeEnv c))
-                    (_, res) <- apply (c {contextHistory = contextHistory ctx, contextGlobalEnv = newGlobals, contextTypeEnv = newTypes}) body params okArgs
+                        updater = replaceHistory' (contextHistory ctx) . replaceGlobalEnv' newGlobals . replaceTypeEnv' newTypes
+                    (_, res) <- apply (updater c) body params okArgs
                     pure (newCtx, res)
                   Left err -> pure (newCtx, Left err)
         XObj (Lst [XObj Dynamic _ _, sym, XObj (Arr params) _ _, body]) i _ : args ->
@@ -526,7 +527,7 @@ macroExpand ctx xobj =
 
 apply :: Context -> XObj -> [XObj] -> [XObj] -> IO (Context, Either EvalError XObj)
 apply ctx@Context {contextInternalEnv = internal} body params args =
-  let env = contextEnv ctx
+  let Just env = contextInternalEnv ctx <|> innermostModuleEnv ctx <|> Just (contextGlobalEnv ctx)
       allParams = map getName params
    in case splitWhen (":rest" ==) allParams of
         [a, b] -> callWith env a b
@@ -546,7 +547,7 @@ apply ctx@Context {contextInternalEnv = internal} body params args =
       let n = length proper
           insideEnv = Env Map.empty internal Nothing Set.empty InternalEnv 0
           insideEnv' =
-           foldl'
+            foldl'
               (\e (p, x) -> extendEnv e p (toLocalDef p x))
               insideEnv
               (zip proper (take n args))
@@ -558,7 +559,7 @@ apply ctx@Context {contextInternalEnv = internal} body params args =
                   insideEnv'
                   (head rest)
                   (XObj (Lst (drop n args)) Nothing Nothing)
-      (c, r) <- evalDynamic ResolveLocal (ctx {contextInternalEnv = Just insideEnv''}) body
+      (c, r) <- evalDynamic ResolveLocal (replaceInternalEnv ctx insideEnv'') body
       pure (c {contextInternalEnv = internal}, r)
 
 -- | Parses a string and then converts the resulting forms to commands, which are evaluated in order.
@@ -684,13 +685,14 @@ catcher ctx exception =
 
 specialCommandWith :: Context -> XObj -> SymPath -> [XObj] -> IO (Context, Either EvalError XObj)
 specialCommandWith ctx _ path forms = do
-  let env = contextEnv ctx
+  let Just env = contextInternalEnv ctx <|> innermostModuleEnv ctx <|> Just (contextGlobalEnv ctx)
       useThese = envUseModules env
       env' = env {envUseModules = Set.insert path useThese}
-      ctx' = ctx {contextGlobalEnv = env'}
+      ctx' = replaceGlobalEnv ctx env'
   ctxAfter <- liftIO $ foldM folder ctx' forms
-  let envAfter = contextEnv ctxAfter
-      ctxAfter' = ctx {contextGlobalEnv = envAfter {envUseModules = useThese}} -- This will undo ALL use:s made inside the 'with'.
+  let Just envAfter = contextInternalEnv ctxAfter <|> innermostModuleEnv ctxAfter <|> Just (contextGlobalEnv ctxAfter)
+      -- undo ALL use:s made inside the 'with'.
+      ctxAfter' = replaceGlobalEnv ctx (envAfter {envUseModules = useThese})
   pure (ctxAfter', dynamicNil)
 
 specialCommandDefine :: Context -> XObj -> IO (Context, Either EvalError XObj)
@@ -921,8 +923,8 @@ loadInternal ctx xobj path i fileToLoad reloadMode = do
                           projectAlreadyLoaded = canonicalPath : alreadyLoaded,
                           projectLoadStack = canonicalPath : prevStack
                         }
-                newCtx <- liftIO $ executeString True False (ctx {contextProj = proj'}) contents canonicalPath
-                pure (newCtx {contextProj = (contextProj newCtx) {projectLoadStack = prevStack}}, dynamicNil)
+                newCtx <- liftIO $ executeString True False (replaceProject ctx proj') contents canonicalPath
+                pure (replaceProject newCtx (contextProj newCtx) {projectLoadStack = prevStack}, dynamicNil)
   where
     frozenPaths proj =
       if projectForceReload proj
@@ -1058,7 +1060,7 @@ commandReload ctx = do
             else do
               contents <- slurp filepath
               let proj' = proj {projectAlreadyLoaded = filepath : alreadyLoaded}
-              executeString False False (context {contextProj = proj'}) contents filepath
+              executeString False False (replaceProject context proj') contents filepath
   newCtx <- liftIO (foldM f ctx paths)
   pure (newCtx, dynamicNil)
 
@@ -1181,12 +1183,12 @@ specialCommandSet ctx [orig@(XObj (Sym path@(SymPath _ n) _) _ _), val] =
     setGlobal ctx' env value binder =
       pure $ either (failure ctx' orig) (success ctx') value
       where
-        success c xo = (c {contextGlobalEnv = setStaticOrDynamicVar path env binder xo}, dynamicNil)
+        success c xo = (replaceGlobalEnv c (setStaticOrDynamicVar path env binder xo), dynamicNil)
     setInternal :: Context -> Env -> Either EvalError XObj -> Binder -> IO (Context, Either EvalError XObj)
     setInternal ctx' env value binder =
       pure $ either (failure ctx' orig) (success ctx') value
       where
-        success c xo = (c {contextInternalEnv = Just (setStaticOrDynamicVar (SymPath [] n) env binder xo)}, dynamicNil)
+        success c xo = (replaceInternalEnv c (setStaticOrDynamicVar (SymPath [] n) env binder xo), dynamicNil)
 specialCommandSet ctx [notName, _] =
   pure (evalError ctx ("`set!` expected a name as first argument, but got " ++ pretty notName) (xobjInfo notName))
 specialCommandSet ctx args =
