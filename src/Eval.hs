@@ -487,6 +487,8 @@ macroExpand ctx xobj =
             ok <- expanded
             Right (XObj (StaticArr ok) i t)
         )
+    XObj (Lst [XObj (Sym (SymPath [] "quote") _) _ _, _]) _ _ ->
+      pure (ctx, Right xobj)
     XObj (Lst [XObj (Lst (XObj Macro _ _ : _)) _ _]) _ _ -> evalDynamic ResolveLocal ctx xobj
     XObj (Lst (x@(XObj (Sym _ _) _ _) : args)) i t -> do
       (next, f) <- evalDynamic ResolveLocal ctx x
