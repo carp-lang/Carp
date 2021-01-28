@@ -9,7 +9,9 @@ module Context
     replaceTypeEnv',
     replaceHistory',
     insertInGlobalEnv,
+    insertInGlobalEnv',
     insertInTypeEnv,
+    insertInTypeEnv',
     insertIntoInternalEnv,
     innermostModuleEnv,
     bindLetDeclaration,
@@ -90,6 +92,14 @@ insertIntoInternalEnv ctx path binder =
   ctx {contextInternalEnv = fmap insert (contextInternalEnv ctx)}
   where insert :: Env -> Env
         insert e = envInsertAt e path binder
+
+-- | insertInGlobalEnv with arguments flipped.
+insertInGlobalEnv' :: SymPath -> Binder -> Context -> Context
+insertInGlobalEnv' path binder ctx = insertInGlobalEnv ctx path binder
+
+-- | insertInTypeEnv with arguments flipped.
+insertInTypeEnv' :: SymPath -> Binder -> Context -> Context
+insertInTypeEnv' path binder ctx = insertInTypeEnv ctx path binder
 
 -- Specialized binding insertion functions
 
