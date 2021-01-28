@@ -2,17 +2,17 @@
 
 (use-all Random Test)
 
-(def reseed-before? (Dynamic.Random.startup-reseed?))
+(def reseed-before? (Dynamic.Random.gen-seed-at-startup?))
 
-(Random.no-startup-reseed)
+(Random.gen-seed-at-startup false)
 
-(def reseed-after? (Dynamic.Random.startup-reseed?))
+(def reseed-after? (Dynamic.Random.gen-seed-at-startup?))
 
-(Random.startup-reseed)
+(Random.gen-seed-at-startup true)
 
-(def reseed-redo? (Dynamic.Random.startup-reseed?))
+(def reseed-redo? (Dynamic.Random.gen-seed-at-startup?))
 
-(Random.no-startup-reseed)
+(Random.gen-seed-at-startup false)
 
 (deftest test
   (assert-true test
@@ -30,6 +30,6 @@
              "deterministic randomization works as expected"
              Double.approx)
   (assert-false test
-                (Random.startup-reseed?)
+                (Random.gen-seed-at-startup?)
                 "reseed can be checked statically as well")
 )

@@ -31,24 +31,22 @@
   (doc _ "forces reseeding based on the current time at program start")
   (def _ (do (seed) true))
 
-  (doc startup-reseed "enables reseeding the random number generator at startup.")
-  (defmacro startup-reseed []
-    (eval '(defmodule Random (def _ (do (seed) true)))))
+  (doc gen-seed-at-startup "toggles reseeding the random number generator at startup.")
+  (defmacro gen-seed-at-startup [toggle]
+    (if toggle
+      (eval '(defmodule Random (def _ (do (seed) true))))
+      (eval '(defmodule Random (def _ (do false))))))
 
-  (doc no-startup-reseed "disables reseeding the random number generator at startup.")
-  (defmacro no-startup-reseed []
-    (eval '(defmodule Random (def _ (do false)))))
+   (doc gen-seed-at-startup? "checks whether the random number generator was reseeded at startup.
 
-   (doc startup-reseed? "checks whether the random number generator was reseeded at startup.
-
-Use `Dynamic.Random.startup-reseed?` to check this in dynamic code.")
-  (defn startup-reseed? [] _)
+Use `Dynamic.Random.gen-seed-at-startup?` to check this in dynamic code.")
+  (defn gen-seed-at-startup? [] _)
 )
 
 (defmodule Dynamic
   (defmodule Random
-    (doc startup-reseed? "checks whether the random number generator will be reseeded at startup.")
-    (defmacro startup-reseed? []
+    (doc gen-seed-at-startup? "checks whether the random number generator will be reseeded at startup.")
+    (defmacro gen-seed-at-startup? []
       (last (last (s-expr Random._))))))
 
 (defmodule Int
