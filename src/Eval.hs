@@ -13,8 +13,8 @@ import Data.List.Split (splitOn, splitWhen)
 import Data.Maybe (fromJust, fromMaybe, isJust)
 import Emit
 import Env
-import Expand
 import EvalError
+import Expand
 import Infer
 import Info
 import Lookup
@@ -164,8 +164,7 @@ eval ctx xobj@(XObj o info ty) preference resolver =
             (Sym (SymPath [] _) _) ->
               if all isUnqualifiedSym a
                 then specialCommandDefine ctx xobj
-                else
-                  pure (throwErr (DefnContainsQualifiedArgs args) ctx (xobjInfo xobj))
+                else pure (throwErr (DefnContainsQualifiedArgs args) ctx (xobjInfo xobj))
             _ ->
               pure (throwErr (DefnIdentifierIsQualified name) ctx (xobjInfo xobj))
         [XObj (Defn _) _ _, _, invalidArgs, _] ->
@@ -175,8 +174,7 @@ eval ctx xobj@(XObj o info ty) preference resolver =
         [XObj Def _ _, name, _] ->
           if isUnqualifiedSym name
             then specialCommandDefine ctx xobj
-            else
-              pure (throwErr (DefIdentifierIsQualified name) ctx (xobjInfo xobj))
+            else pure (throwErr (DefIdentifierIsQualified name) ctx (xobjInfo xobj))
         [the@(XObj The _ _), t, value] ->
           do
             (newCtx, evaledValue) <- expandAll (evalDynamic ResolveLocal) ctx value -- TODO: Why expand all here?
@@ -190,9 +188,9 @@ eval ctx xobj@(XObj o info ty) preference resolver =
           pure (throwErr (TheMalformed xobj) ctx (xobjInfo xobj))
         [XObj Let _ _, XObj (Arr bindings) _ _, body]
           | odd (length bindings) ->
-              pure (throwErr (LetUnevenForms xobj) ctx (xobjInfo xobj))
+            pure (throwErr (LetUnevenForms xobj) ctx (xobjInfo xobj))
           | not (all isSym (evenIndices bindings)) ->
-              pure (throwErr (LetMalformedIdentifiers bindings) ctx (xobjInfo xobj))
+            pure (throwErr (LetMalformedIdentifiers bindings) ctx (xobjInfo xobj))
           | otherwise ->
             do
               let binds = unwrapVar (pairwise bindings) []
