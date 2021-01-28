@@ -1,0 +1,35 @@
+(load "Test.carp")
+
+(use-all Random Test)
+
+(def reseed-before? (Dynamic.Random.startup-reseed?))
+
+(Random.no-startup-reseed)
+
+(def reseed-after? (Dynamic.Random.startup-reseed?))
+
+(Random.startup-reseed)
+
+(def reseed-redo? (Dynamic.Random.startup-reseed?))
+
+(Random.no-startup-reseed)
+
+(deftest test
+  (assert-true test
+               reseed-before?
+               "reseeding is on by default")
+  (assert-false test
+                reseed-after?
+                "reseeding can be disabled")
+  (assert-true test
+                reseed-redo?
+                "reseeding can be re-enabled")
+  (assert-op test
+             0.658908 ; will always be the initial if not reseeded
+             (Random.random)
+             "deterministic randomization works as expected"
+             Double.approx)
+  (assert-false test
+                (Random.startup-reseed?)
+                "reseed can be checked statically as well")
+)
