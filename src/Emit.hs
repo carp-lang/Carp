@@ -761,7 +761,6 @@ toC toCMode (Binder meta root) = emitterSrc (execState (visit startingIndent roo
         appendToSrc (addIndent indent ++ arrayDataVar ++ "[" ++ show index ++ "] = " ++ visited ++ ";\n")
         pure ()
 
--- the chaining here ensures that drop is emitted before delete
 delete :: Int -> Info -> State EmitterState ()
 delete indent i = mapM_ deleterToC (infoDelete i)
   where
