@@ -282,8 +282,9 @@ runExeWithArgs ctx exe args = liftIO $ do
     ExitFailure i -> throw (ShellOutException ("'" ++ exe ++ "' exited with return value " ++ show i ++ ".") i)
 
 -- | Command for building the project, producing an executable binary or a shared library.
-commandBuild :: Bool -> NullaryCommandCallback
-commandBuild shutUp ctx = do
+commandBuild :: VariadicCommandCallback
+commandBuild ctx [] = commandBuild ctx [falseXObj]
+commandBuild ctx [XObj (Bol shutUp) _ _] = do
   let env = contextGlobalEnv ctx
       typeEnv = contextTypeEnv ctx
       proj = contextProj ctx
@@ -348,6 +349,10 @@ commandBuild shutUp ctx = do
           else case Map.lookup "main" (envBindings env) of
             Just _ -> compile True
             Nothing -> compile False
+commandBuild ctx [arg] =
+  pure (evalError ctx ("`build` expected a boolean argument, but got `" ++ pretty arg ++ "`.") (xobjInfo arg))
+commandBuild ctx args =
+  pure (evalError ctx ("`build` expected a single boolean argument, but got `" ++ unwords (map pretty args) ++ "`.") (xobjInfo (head args)))
 
 setProjectCanExecute :: Bool -> Context -> Context
 setProjectCanExecute value ctx =
