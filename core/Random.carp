@@ -27,11 +27,27 @@
       (set! s (mod (+ (* s a) c) m))
       (/ s m)))
 
-  (private _)
   (hidden _)
   (doc _ "forces reseeding based on the current time at program start")
-  (def _ (do (seed) 0))
+  (def _ (do (seed) true))
+
+  (doc gen-seed-at-startup "toggles reseeding the random number generator at startup.")
+  (defmacro gen-seed-at-startup [toggle]
+    (if toggle
+      (eval '(defmodule Random (def _ (do (seed) true))))
+      (eval '(defmodule Random (def _ (do false))))))
+
+   (doc gen-seed-at-startup? "checks whether the random number generator was reseeded at startup.
+
+Use `Dynamic.Random.gen-seed-at-startup?` to check this in dynamic code.")
+  (defn gen-seed-at-startup? [] _)
 )
+
+(defmodule Dynamic
+  (defmodule Random
+    (doc gen-seed-at-startup? "checks whether the random number generator will be reseeded at startup.")
+    (defmacro gen-seed-at-startup? []
+      (last (last (s-expr Random._))))))
 
 (defmodule Int
   (defn random-between [lower upper]
