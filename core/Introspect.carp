@@ -121,7 +121,7 @@
         (Introspect.primitive? binding) (caddr s)
         (Introspect.interface? binding) (car (cdaddr s))
         (Introspect.function? binding) (caddr s)
-        (Introspect.struct? binding) (map car (caddr s))
+        (Introspect.struct? binding) (map car (List.pairs (caddr s)))
         (Introspect.sumtype? binding) (map (fn [arr]
         (cadr arr)) (cddr s))
         '()))))
