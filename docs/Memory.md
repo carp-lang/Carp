@@ -1,5 +1,9 @@
 # Memory Management - a closer look
 
+### Related pages
+
+* [Drop](Drop.md) - a deeper look at the `drop` interface
+
 The goals of the memory management system in Carp are the following:
 
 * Predictable

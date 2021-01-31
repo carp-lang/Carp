@@ -907,7 +907,7 @@ manageMemory typeEnv globalEnv root =
                   Just (RefTy t@(StructTy (ConcreteNameTy "StaticArray") [_]) _) = xobjTy xobj
                   deleter = case nameOfPolymorphicFunction typeEnv globalEnv (FuncTy [t] UnitTy StaticLifetimeTy) "delete" of
                     Just pathOfDeleteFunc ->
-                      ProperDeleter pathOfDeleteFunc var
+                      ProperDeleter pathOfDeleteFunc (getDropFunc (xobjInfo xobj) t) var
                     Nothing ->
                       error ("No deleter found for Static Array : " ++ show t) --Just (FakeDeleter var)
               MemState deleters deps lifetimes <- get
@@ -1409,7 +1409,7 @@ manageMemory typeEnv globalEnv root =
         else pure (Right xobj)
     unmanageArg xobj@XObj {} =
       pure (Right xobj)
-    createDeleter :: XObj -> Maybe Deleter
+    getDropFunc i t = nameOfPolymorphicFunction typeEnv globalEnv (FuncTy [RefTy t (VarTy (makeTypeVariableNameFromInfo i))] UnitTy StaticLifetimeTy) "drop"
     createDeleter xobj =
       case xobjTy xobj of
         Just (RefTy _ _) -> Just (RefDeleter (varOfXObj xobj))
@@ -1418,7 +1418,7 @@ manageMemory typeEnv globalEnv root =
            in if isManaged typeEnv globalEnv t
                 then case nameOfPolymorphicFunction typeEnv globalEnv (FuncTy [t] UnitTy StaticLifetimeTy) "delete" of
                   Just pathOfDeleteFunc ->
-                    Just (ProperDeleter pathOfDeleteFunc var)
+                    Just (ProperDeleter pathOfDeleteFunc (getDropFunc (xobjInfo xobj) t) var)
                   Nothing ->
                     --trace ("Found no delete function for " ++ var ++ " : " ++ (showMaybeTy (ty xobj)))
                     Just (FakeDeleter var)
