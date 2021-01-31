@@ -602,8 +602,12 @@ toC toCMode (Binder meta root) = emitterSrc (execState (visit startingIndent roo
         XObj (Interface _ _) _ _ : _ ->
           pure ""
         -- Break
-        [XObj Break _ _] -> do
+        [XObj Break minfo _] -> do
+          case minfo of
+            Just i -> delete indent i
+            Nothing -> return ()
           appendToSrc (addIndent indent ++ "break;\n")
+          appendToSrc (addIndent indent ++ "// Unreachable:\n")
           pure ""
         -- Function application (functions with overridden names)
         func@(XObj (Sym _ (LookupGlobalOverride overriddenName)) _ _) : args ->
