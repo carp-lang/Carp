@@ -393,7 +393,7 @@ eval ctx xobj@(XObj o info ty) preference resolver =
         XObj (Lst (XObj (External _) _ _ : _)) _ _ : _ -> pure (ctx, Left (HasStaticCall xobj info))
         XObj (Match _) _ _ : _ -> pure (ctx, Left (HasStaticCall xobj info))
         XObj Ref _ _ : _ -> pure (ctx, Left (HasStaticCall xobj info))
-        XObj Address _ _: _ -> pure (ctx, Left (HasStaticCall xobj info))
+        XObj Address _ _ : _ -> pure (ctx, Left (HasStaticCall xobj info))
         l@(XObj (Lst _) i t) : args -> do
           (newCtx, f) <- eval ctx l preference ResolveLocal
           case f of
@@ -547,7 +547,7 @@ apply ctx@Context {contextInternalEnv = internal} body params args =
       let n = length proper
           insideEnv = Env Map.empty internal Nothing Set.empty InternalEnv 0
           insideEnv' =
-           foldl'
+            foldl'
               (\e (p, x) -> extendEnv e p (toLocalDef p x))
               insideEnv
               (zip proper (take n args))

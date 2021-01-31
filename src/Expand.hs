@@ -197,14 +197,14 @@ expand eval ctx xobj =
           pure
             ( evalError
                 ctx
-                ("I can only take the `address` of a symbol, but I got `" ++ pretty arg ++"`.")
+                ("I can only take the `address` of a symbol, but I got `" ++ pretty arg ++ "`.")
                 (xobjInfo xobj)
             )
         XObj Address _ _ : _ ->
           pure
             ( evalError
                 ctx
-                ("I can only take the `address` of a symbol, but I got `" ++ pretty xobj ++"`.")
+                ("I can only take the `address` of a symbol, but I got `" ++ pretty xobj ++ "`.")
                 (xobjInfo xobj)
             )
         [r@(XObj Ref _ _), arg] -> do
@@ -216,7 +216,7 @@ expand eval ctx xobj =
           pure
             ( evalError
                 ctx
-                ("`ref` takes a single argument, but I got `" ++ pretty xobj ++"`.")
+                ("`ref` takes a single argument, but I got `" ++ pretty xobj ++ "`.")
                 (xobjInfo xobj)
             )
         XObj (Mod modEnv) _ _ : args ->
@@ -309,8 +309,8 @@ expand eval ctx xobj =
             Left err -> pure (newCtx, Left err)
     successiveExpandLRMatch a (l, r) =
       case traverseExpandLiteral l of
-          Left (err, x) -> pure (evalError ctx err (xobjInfo x))
-          _ -> successiveExpandLR a (l, r)
+        Left (err, x) -> pure (evalError ctx err (xobjInfo x))
+        _ -> successiveExpandLR a (l, r)
     traverseExpandLiteral (XObj (Lst objs) _ _) =
       case mapM traverseExpandLiteral objs of
         Left e -> Left e
