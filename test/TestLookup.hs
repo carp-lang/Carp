@@ -2,8 +2,8 @@ module TestLookup where
 
 import qualified Lookup as Lookup
 import qualified Map
-import qualified Set
 import Obj
+import qualified Set
 import Test.HUnit
 import Types
 
