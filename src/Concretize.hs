@@ -993,7 +993,7 @@ manageMemory typeEnv globalEnv root =
                   manage xobj
                   pure $ do
                     okBody <- visitedBody
-                    let finalBody = searchBreak diff okBody
+                    let finalBody = searchForInnerBreak diff okBody
                     okBindings <- fmap (concatMap (\(n, x) -> [n, x])) (sequence visitedBindings)
                     pure (XObj (Lst [letExpr, XObj (Arr okBindings) bindi bindt, finalBody]) newInfo t)
         -- Set!
@@ -1113,7 +1113,7 @@ manageMemory typeEnv globalEnv root =
                   XObj objExpr objInfo objTy = okExpr
                   newExprInfo = setDeletersOnInfo objInfo (afterExprDeleters \\ preDeleters)
                   newExpr = XObj objExpr newExprInfo objTy
-                  finalBody = searchBreak diff okBody
+                  finalBody = searchForInnerBreak diff okBody
               pure (XObj (Lst [whileExpr, newExpr, finalBody]) newInfo t)
         [ifExpr@(XObj If _ _), expr, ifTrue, ifFalse] ->
           do
@@ -1268,15 +1268,15 @@ manageMemory typeEnv globalEnv root =
                   Right (XObj (Lst (okF : okArgs)) i t)
         [] -> pure (Right xobj)
     visitList _ = error "Must visit list."
-    searchBreak :: Set.Set Deleter -> XObj -> XObj
-    searchBreak diff (XObj (Lst [(XObj Break i' t')]) xi xt) =
+    searchForInnerBreak :: Set.Set Deleter -> XObj -> XObj
+    searchForInnerBreak diff (XObj (Lst [(XObj Break i' t')]) xi xt) =
       let ni = addDeletersToInfo i' diff
-      in XObj (Lst [(XObj Break ni t')]) xi xt
-    searchBreak _ x@(XObj (Lst ((XObj While _ _): _)) _ _) = x
-    searchBreak diff (XObj (Lst elems) i' t') =
-      let newElems = map (searchBreak diff) elems
-      in XObj (Lst newElems) i' t'
-    searchBreak _ e = e
+       in XObj (Lst [(XObj Break ni t')]) xi xt
+    searchForInnerBreak _ x@(XObj (Lst ((XObj While _ _) : _)) _ _) = x
+    searchForInnerBreak diff (XObj (Lst elems) i' t') =
+      let newElems = map (searchForInnerBreak diff) elems
+       in XObj (Lst newElems) i' t'
+    searchForInnerBreak _ e = e
     visitMatchCase :: (XObj, XObj) -> State MemState (Either TypeError ((Set.Set Deleter, (XObj, XObj)), [XObj]))
     visitMatchCase (lhs@XObj {}, rhs@XObj {}) =
       do
