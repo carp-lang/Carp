@@ -1,5 +1,12 @@
-module TypeError where
+{-# OPTIONS_GHC -fno-warn-orphans #-}
 
+module TypeError
+  ( module TypeError,
+    module TypeErrorDef,
+  )
+where
+
+import AssignTypes
 import Constraints
 import Data.Maybe (fromMaybe)
 import Info
@@ -7,58 +14,9 @@ import qualified Map
 import Obj
 import Project
 import Text.EditDistance (defaultEditCosts, levenshteinDistance)
+import TypeErrorDef
 import Types
 import Util
-
-data TypeError
-  = SymbolMissingType XObj Env
-  | DefnMissingType XObj
-  | DefMissingType XObj
-  | ExpressionMissingType XObj
-  | SymbolNotDefined SymPath XObj Env
-  | InvalidObj Obj XObj
-  | InvalidObjExample Obj XObj String
-  | CantUseDerefOutsideFunctionApplication XObj
-  | NotAType XObj
-  | WrongArgCount XObj Int Int
-  | NotAFunction XObj
-  | NoStatementsInDo XObj
-  | TooManyFormsInBody XObj
-  | NoFormsInBody XObj
-  | LeadingColon XObj
-  | UnificationFailed Constraint TypeMappings [Constraint]
-  | CantDisambiguate XObj String Ty [(Ty, SymPath)]
-  | CantDisambiguateInterfaceLookup XObj String Ty [(Ty, SymPath)]
-  | SeveralExactMatches XObj String Ty [(Ty, SymPath)]
-  | NoMatchingSignature XObj String Ty [(Ty, SymPath)]
-  | HolesFound [(String, Ty)]
-  | NotAValidType XObj
-  | FunctionsCantReturnRefTy XObj Ty
-  | LetCantReturnRefTy XObj Ty
-  | GettingReferenceToUnownedValue XObj
-  | UsingUnownedValue XObj
-  | UsingCapturedValue XObj
-  | ArraysCannotContainRefs XObj
-  | MainCanOnlyReturnUnitOrInt XObj Ty
-  | MainCannotHaveArguments XObj Int
-  | CannotConcretize XObj
-  | TooManyAnnotateCalls XObj
-  | CannotSet XObj
-  | CannotSetVariableFromLambda XObj XObj
-  | DoesNotMatchSignatureAnnotation XObj Ty -- Not used at the moment (but should?)
-  | CannotMatch XObj
-  | InvalidSumtypeCase XObj
-  | InvalidMemberType Ty XObj
-  | InvalidMemberTypeWhenConcretizing Ty XObj TypeError
-  | NotAmongRegisteredTypes Ty XObj
-  | UnevenMembers [XObj]
-  | DuplicatedMembers [XObj]
-  | InvalidLetBinding [XObj] (XObj, XObj)
-  | DuplicateBinding XObj
-  | DefinitionsMustBeAtToplevel XObj
-  | UsingDeadReference XObj String
-  | UninhabitedConstructor Ty XObj Int Int
-  | InconsistentKinds String [XObj]
 
 instance Show TypeError where
   show (SymbolMissingType xobj env) =
@@ -135,29 +93,10 @@ instance Show TypeError where
       ++ prettyInfoFromXObj xobj
       ++ ".\n\nI need exactly one body form. For multiple forms, try using `do`."
   show (UnificationFailed (Constraint a b aObj bObj ctx _) mappings _) =
-    "I can’t match the types `" ++ show (recursiveLookupTy mappings a)
-      ++ "` and `"
-      ++ show (recursiveLookupTy mappings b)
-      ++ "`"
+    "I can’t match the types `" ++ showTy a ++ "` and `" ++ showTy b ++ "`."
       ++ extra
-      ++ ".\n\n"
-      ++
-      --show aObj ++ "\nWITH\n" ++ show bObj ++ "\n\n" ++
-      "  "
-      ++ pretty aObj
-      ++ " : "
-      ++ showTypeFromXObj mappings aObj
-      ++ "\n  At "
-      ++ prettyInfoFromXObj aObj
-      ++ ""
-      ++ "\n\n"
-      ++ "  "
-      ++ pretty bObj
-      ++ " : "
-      ++ showTypeFromXObj mappings bObj
-      ++ "\n  At "
-      ++ prettyInfoFromXObj bObj
-      ++ "\n"
+      ++ showObj aObj
+      ++ showObj bObj
     where
       -- ++ "Constraint: " ++ show constraint ++ "\n\n"
       -- "All constraints:\n" ++ show constraints ++ "\n\n" ++
@@ -167,6 +106,14 @@ instance Show TypeError where
         if length s > 25
           then take 15 s ++ " ... " ++ drop (length s - 5) s
           else s
+      beautifulTy = beautifyTy mappings . recursiveLookupTy mappings
+      showTy = show . beautifulTy
+      showObjTy = fromMaybe "Type missing" . fmap showTy . xobjTy
+      showObj o =
+        "\n\n  " ++ pretty o ++ " : " ++ showObjTy o
+          ++ "\n  At "
+          ++ prettyInfoFromXObj o
+          ++ ""
   show (CantDisambiguate xobj originalName theType options) =
     "I found an ambiguous symbol `" ++ originalName ++ "` of type `"
       ++ show theType
@@ -460,7 +407,7 @@ evalError :: Context -> String -> Maybe Info -> (Context, Either EvalError a)
 evalError ctx = makeEvalError ctx Nothing
 
 -- | Print type errors correctly when running the compiler in 'Check' mode
-makeEvalError :: Context -> Maybe TypeError.TypeError -> String -> Maybe Info -> (Context, Either EvalError a)
+makeEvalError :: Context -> Maybe TypeError -> String -> Maybe Info -> (Context, Either EvalError a)
 makeEvalError ctx err msg info =
   let fppl = projectFilePathPrintLength (contextProj ctx)
       history = contextHistory ctx

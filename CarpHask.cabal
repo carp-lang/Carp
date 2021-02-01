@@ -59,6 +59,7 @@ library
                        Template,
                        ToTemplate,
                        TypeError,
+                       TypeErrorDef,
                        TypePredicates,
                        Types,
                        TypesToC,

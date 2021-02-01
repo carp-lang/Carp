@@ -43,3 +43,6 @@ map f (Map m) = Map $ M.map f m
 
 union :: Ord k => Map k v -> Map k v -> Map k v
 union (Map m) (Map m') = (Map (M.union m m'))
+
+assocs :: Map k a -> [(k, a)]
+assocs (Map m) = M.assocs m

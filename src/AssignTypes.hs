@@ -3,7 +3,7 @@ module AssignTypes where
 import Data.List (nub)
 import qualified Map
 import Obj
-import TypeError
+import TypeErrorDef
 import Types
 
 {-# ANN assignTypes "HLint: ignore Eta reduce" #-}
@@ -51,6 +51,26 @@ assignTypes mappings root = visit root
 isArrayTypeOK :: Ty -> Bool
 isArrayTypeOK (StructTy (ConcreteNameTy "Array") [RefTy _ _]) = False -- An array containing refs!
 isArrayTypeOK _ = True
+
+beautifyTy :: TypeMappings -> Ty -> Ty
+beautifyTy mappings = f
+  where
+    f :: Ty -> Ty
+    f (FuncTy argTys retTy lifetime) = FuncTy (f <$> argTys) (f retTy) (f lifetime)
+    f (StructTy n typeArgs) = StructTy n (f <$> typeArgs)
+    f (RefTy innerTy lifetime) = RefTy (f innerTy) (f lifetime)
+    f (PointerTy innerTy) = PointerTy $ f innerTy
+    f t@(VarTy n) = case Map.lookup n bmappings of
+      Just nn -> VarTy nn
+      Nothing -> t
+    f t = t
+    bmappings = beautification mappings
+    beautification :: TypeMappings -> Map.Map String String
+    beautification m =
+      Map.fromList $ zip (map (\(VarTy name) -> name) tys) ((: []) <$> ['a' ..])
+      where
+        tys = nub $ concat $ typeVariablesInOrderOfAppearance <$> tys'
+        tys' = snd <$> Map.assocs m
 
 -- | Change auto generated type names (i.e. 't0') to letters (i.e. 'a', 'b', 'c', etc...)
 -- | TODO: Only change variables that are machine generated.
