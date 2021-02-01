@@ -617,3 +617,99 @@
       (String.append &res " }")))
   (implements str Set.str)
 )
+
+
+; Dynamic maps:
+
+(defmodule Dynamic
+  (defndynamic n-times [n f]
+    (if (= n 0)
+      '()
+      (cons (f) (n-times (dec n) f))))
+
+  (defmodule Map
+    (defdynamic dflt-len 256)
+
+    (defdynamic min-load 20)
+    (defdynamic max-load 80)
+
+    (defndynamic create []
+      (n-times 256 list))
+
+    (defndynamic resize [m s]
+      (let-do [n (n-times s list)]
+        (while-do (not (empty? m))
+          (map (fn [pair] (set! n (put n (car pair) (cadr pair)))) (car m))
+          (set! m (cdr m)))
+          n))
+
+    (defndynamic grow [m] (resize m (* (length m) 2)))
+    (defndynamic shrink [m]
+      (let [new-size (/ (length m) 2)]
+        (if (< new-size dflt-len)
+          m
+          (resize m new-size))))
+
+    (defndynamic contains? [m k]
+      (let [idx (Dynamic.imod (hash k) (length m))]
+        (List.in? k (map car (List.nth m idx)))))
+
+    (defndynamic put [m k v]
+      (if (> (/ (* (Map.len m) 100) (length m)) Map.min-load)
+        (Map.put (grow m) k v)
+        (if (Map.contains? m k)
+          m
+          (let [idx (Dynamic.imod (hash k) (length m))]
+            (List.update-nth m idx (fn [l] (cons (list k v) l)))))))
+
+    (defndynamic get-with-default [m k default-value]
+      (if (Map.contains? m k)
+        (let [idx (Dynamic.imod (hash k) (length m))
+              l (List.nth m idx)]
+          (cadr (List.find l (fn [pair] (= (car pair) k)))))
+          default-value))
+
+    (defndynamic get [m k]
+      (Map.get-with-default m k '()))
+
+    (defndynamic update [m k f]
+      (if (Map.contains? m k)
+        (let [idx (Dynamic.imod (hash k) (length m))]
+          (List.update-nth m idx
+            (curry
+                map
+                (fn [pair] (if (= (car pair) k) (list k (f (cadr pair))) pair)))))
+        m))
+
+    (defndynamic len [m]
+      (reduce (fn [acc l] (+ acc (length l))) 0 m))
+
+    (defndynamic empty? [m]
+      (= (Map.len m) 0))
+
+    (defndynamic keys [m]
+      (reduce (fn [acc l] (append acc (map car l))) '() m))
+
+    (defndynamic vals [m]
+      (reduce (fn [acc l] (append acc (map cadr l))) '() m))
+
+    (defndynamic reverse [m]
+      (reduce (fn [acc l] (cons (map List.reverse l) acc)) '() m))
+
+    (defndynamic str [m]
+      (String.concat [
+        "{"
+        (reduce
+          (fn [acc l]
+            (String.concat [
+              acc
+              (reduce
+                (fn [a pair] (String.concat [a (str (car pair)) " " (str (cadr pair)) " "]))
+                ""
+                l)
+              ]))
+          ""
+          m)
+        "}"]))
+  )
+)

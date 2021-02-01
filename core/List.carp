@@ -304,4 +304,34 @@ Example:
                (let [r (walk-replace-finder pairs x)]
                  (if (empty? r) x (cadr r))))
              form))
+
+  (defmodule List
+    (doc pairs "makes a list of pairs out of a list `l`. If the number of
+elements is uneven, the trailing element will be discarded.")
+    (defndynamic pairs [l]
+      (if (< (length l) 2)
+        '()
+        (cons `(%(car l) %(cadr l)) (List.pairs (cddr l)))))
+
+    (defndynamic nth [l n]
+      (cond
+        (empty? l) '()
+        (= n 0) (car l)
+        (List.nth (cdr l) (dec n))))
+
+    (defndynamic update-nth [l n f]
+      (cond
+        (empty? l) '()
+        (= n 0) (cons (f (car l)) (cdr l))
+        (cons (car l) (List.update-nth (cdr l) (dec n) f))))
+
+    (defndynamic set-nth [l n elem]
+      (List.update-nth l n (fn [_] elem)))
+
+    (defndynamic find [l pred]
+      (cond
+        (empty? l) '()
+        (pred (car l)) (car l)
+        (find (cdr l) pred)))
   )
+)

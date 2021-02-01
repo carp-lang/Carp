@@ -50,11 +50,13 @@
   (defndynamic cddddr [pair] (cdr (cdr (cdr (cdr pair)))))
 
   (defmodule List
+    ; this should be defined using cond, but is defined before cond
     (defndynamic in? [elem l]
-      (cond
-        (empty? l) false
-        (= elem (car l)) true
-        (in? elem (cdr l)))))
+      (if (empty? l)
+        false
+        (if (= elem (car l))
+          true
+          (in? elem (cdr l))))))
 
   (defndynamic string? [s]
     (= (dynamic-type s) 'string))
