@@ -27,7 +27,7 @@ import System.Exit (exitSuccess)
 
 completeKeywordsAnd :: Context -> String -> [Completion]
 completeKeywordsAnd context word =
-  findKeywords word (envBindingNames (contextGlobalEnv context) ++ keywords) []
+  findKeywords word (envPublicBindingNames (contextGlobalEnv context) ++ keywords) []
   where
     findKeywords _ [] res = res
     findKeywords match (x : xs) res =
@@ -35,15 +35,7 @@ completeKeywordsAnd context word =
         then findKeywords match xs (res ++ [simpleCompletion x])
         else findKeywords match xs res
     keywords =
-      [ "Int", -- we should probably have a list of those somewhere
-        "Float",
-        "Double",
-        "Bool",
-        "String",
-        "Char",
-        "Array",
-        "Fn",
-        "def",
+      [ "def",
         "defn",
         "let",
         "do",
