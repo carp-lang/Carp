@@ -313,21 +313,25 @@ elements is uneven, the trailing element will be discarded.")
         '()
         (cons `(%(car l) %(cadr l)) (List.pairs (cddr l)))))
 
+    (doc nth "gets the nth element of the list `l`.")
     (defndynamic nth [l n]
       (cond
         (empty? l) '()
         (= n 0) (car l)
         (List.nth (cdr l) (dec n))))
 
+    (doc update-nth "updates the nth element of the list `l` using the function `f`.")
     (defndynamic update-nth [l n f]
       (cond
         (empty? l) '()
         (= n 0) (cons (f (car l)) (cdr l))
         (cons (car l) (List.update-nth (cdr l) (dec n) f))))
 
+    (doc set-nth "sets the nth element of the list `l` to the value `v`.")
     (defndynamic set-nth [l n elem]
       (List.update-nth l n (fn [_] elem)))
 
+    (doc find "finds the first element in the list `l` that matches `pred`.")
     (defndynamic find [l pred]
       (cond
         (empty? l) '()

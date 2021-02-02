@@ -56,7 +56,7 @@
         false
         (if (= elem (car l))
           true
-          (in? elem (cdr l))))))
+          (List.in? elem (cdr l))))))
 
   (defndynamic string? [s]
     (= (dynamic-type s) 'string))

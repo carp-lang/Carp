@@ -565,9 +565,8 @@ dictionary = do
       pairInit = XObj (Sym (SymPath ["Pair"] "init") (LookupGlobal CarpLand AFunction)) i Nothing
       pairs = map (\(k, v) -> XObj (Lst [pairInit, k, v]) i Nothing) (pairwise objs')
       arrayLiteral = XObj (Arr pairs) i Nothing
-      reffedArrayLiteral = XObj (Lst [XObj Ref i Nothing, arrayLiteral]) i Nothing
       fromArraySymbol = XObj (Sym (SymPath ["Map"] "from-array") (LookupGlobal CarpLand AFunction)) i Nothing
-      fromArraySexp = XObj (Lst [fromArraySymbol, reffedArrayLiteral]) i Nothing
+      fromArraySexp = XObj (Lst [fromArraySymbol, arrayLiteral]) i Nothing
   pure fromArraySexp
 
 readerMacro :: String -> Obj -> Parsec.Parsec String ParseState XObj
