@@ -2,7 +2,6 @@
 
 module RenderDocs where
 
-import AssignTypes (typeVariablesInOrderOfAppearance)
 import CMark
 import Control.Monad (when)
 import qualified Data.List as List
@@ -17,6 +16,7 @@ import Text.Blaze.Html.Renderer.Pretty (renderHtml)
 import Text.Blaze.Html5 ((!))
 import qualified Text.Blaze.Html5 as H
 import qualified Text.Blaze.Html5.Attributes as A
+import TypeError (typeVariablesInOrderOfAppearance)
 import Types
 
 -- TODO: Move the beautification to a much earlier place, preferably when the function is defined/concretized-

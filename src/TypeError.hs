@@ -1,22 +1,65 @@
-{-# OPTIONS_GHC -fno-warn-orphans #-}
+module TypeError where
 
-module TypeError
-  ( module TypeError,
-    module TypeErrorDef,
-  )
-where
-
-import AssignTypes
 import Constraints
+import Data.List (nub)
 import Data.Maybe (fromMaybe)
 import Info
 import qualified Map
 import Obj
 import Project
 import Text.EditDistance (defaultEditCosts, levenshteinDistance)
-import TypeErrorDef
 import Types
 import Util
+
+data TypeError
+  = SymbolMissingType XObj Env
+  | DefnMissingType XObj
+  | DefMissingType XObj
+  | ExpressionMissingType XObj
+  | SymbolNotDefined SymPath XObj Env
+  | InvalidObj Obj XObj
+  | InvalidObjExample Obj XObj String
+  | CantUseDerefOutsideFunctionApplication XObj
+  | NotAType XObj
+  | WrongArgCount XObj Int Int
+  | NotAFunction XObj
+  | NoStatementsInDo XObj
+  | TooManyFormsInBody XObj
+  | NoFormsInBody XObj
+  | LeadingColon XObj
+  | UnificationFailed Constraint TypeMappings [Constraint]
+  | CantDisambiguate XObj String Ty [(Ty, SymPath)]
+  | CantDisambiguateInterfaceLookup XObj String Ty [(Ty, SymPath)]
+  | SeveralExactMatches XObj String Ty [(Ty, SymPath)]
+  | NoMatchingSignature XObj String Ty [(Ty, SymPath)]
+  | HolesFound [(String, Ty)]
+  | NotAValidType XObj
+  | FunctionsCantReturnRefTy XObj Ty
+  | LetCantReturnRefTy XObj Ty
+  | GettingReferenceToUnownedValue XObj
+  | UsingUnownedValue XObj
+  | UsingCapturedValue XObj
+  | ArraysCannotContainRefs XObj
+  | MainCanOnlyReturnUnitOrInt XObj Ty
+  | MainCannotHaveArguments XObj Int
+  | CannotConcretize XObj
+  | TooManyAnnotateCalls XObj
+  | CannotSet XObj
+  | CannotSetVariableFromLambda XObj XObj
+  | DoesNotMatchSignatureAnnotation XObj Ty -- Not used at the moment (but should?)
+  | CannotMatch XObj
+  | InvalidSumtypeCase XObj
+  | InvalidMemberType Ty XObj
+  | InvalidMemberTypeWhenConcretizing Ty XObj TypeError
+  | NotAmongRegisteredTypes Ty XObj
+  | UnevenMembers [XObj]
+  | DuplicatedMembers [XObj]
+  | InvalidLetBinding [XObj] (XObj, XObj)
+  | DuplicateBinding XObj
+  | DefinitionsMustBeAtToplevel XObj
+  | UsingDeadReference XObj String
+  | UninhabitedConstructor Ty XObj Int Int
+  | InconsistentKinds String [XObj]
 
 instance Show TypeError where
   show (SymbolMissingType xobj env) =
@@ -436,3 +479,39 @@ keysInEnvEditDistance path@(SymPath (p : ps) name) env distance =
       case envParent env of
         Just parent -> keysInEnvEditDistance path parent distance
         Nothing -> []
+
+beautifyTy :: TypeMappings -> Ty -> Ty
+beautifyTy mappings = f
+  where
+    f :: Ty -> Ty
+    f (FuncTy argTys retTy lifetime) = FuncTy (f <$> argTys) (f retTy) (f lifetime)
+    f (StructTy n typeArgs) = StructTy n (f <$> typeArgs)
+    f (RefTy innerTy lifetime) = RefTy (f innerTy) (f lifetime)
+    f (PointerTy innerTy) = PointerTy $ f innerTy
+    f t@(VarTy n) = case Map.lookup n bmappings of
+      Just nn -> VarTy nn
+      Nothing -> t
+    f t = t
+    bmappings = beautification mappings
+    beautification :: TypeMappings -> Map.Map String String
+    beautification m =
+      Map.fromList $ zip (map (\(VarTy name) -> name) tys) ((: []) <$> ['a' ..])
+      where
+        tys = nub $ concat $ typeVariablesInOrderOfAppearance <$> tys'
+        tys' = snd <$> Map.assocs m
+
+typeVariablesInOrderOfAppearance :: Ty -> [Ty]
+typeVariablesInOrderOfAppearance (FuncTy argTys retTy ltTy) =
+  concatMap typeVariablesInOrderOfAppearance argTys ++ typeVariablesInOrderOfAppearance retTy ++ typeVariablesInOrderOfAppearance ltTy
+typeVariablesInOrderOfAppearance (StructTy n typeArgs) =
+  case n of
+    t@(VarTy _) -> typeVariablesInOrderOfAppearance t ++ concatMap typeVariablesInOrderOfAppearance typeArgs
+    _ -> concatMap typeVariablesInOrderOfAppearance typeArgs
+typeVariablesInOrderOfAppearance (RefTy innerTy lifetimeTy) =
+  typeVariablesInOrderOfAppearance innerTy ++ typeVariablesInOrderOfAppearance lifetimeTy
+typeVariablesInOrderOfAppearance (PointerTy innerTy) =
+  typeVariablesInOrderOfAppearance innerTy
+typeVariablesInOrderOfAppearance t@(VarTy _) =
+  [t]
+typeVariablesInOrderOfAppearance _ =
+  []
