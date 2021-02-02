@@ -32,6 +32,12 @@
   (defndynamic imod [x y]
     (- x (* y (/ x y))))
 
+  (doc even? "checks whether the number `n` is even.")
+  (defndynamic even? [n] (= 0 (mod n 2)))
+
+  (doc odd? "checks whether the number `n` is odd.")
+  (defndynamic odd? [n] (= 1 (mod n 2)))
+
   (defmodule Project
     (doc no-echo "Turn off debug printing in the compiler.")
     (defndynamic no-echo []

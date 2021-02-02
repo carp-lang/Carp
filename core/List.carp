@@ -336,6 +336,6 @@ elements is uneven, the trailing element will be discarded.")
       (cond
         (empty? l) '()
         (pred (car l)) (car l)
-        (find (cdr l) pred)))
+        (List.find (cdr l) pred)))
   )
 )
