@@ -323,6 +323,7 @@ getBinderDescription :: XObj -> String
 getBinderDescription (XObj (Lst (XObj (Defn _) _ _ : XObj (Sym _ _) _ _ : _)) _ _) = "defn"
 getBinderDescription (XObj (Lst (XObj Def _ _ : XObj (Sym _ _) _ _ : _)) _ _) = "def"
 getBinderDescription (XObj (Lst (XObj Macro _ _ : XObj (Sym _ _) _ _ : _)) _ _) = "macro"
+getBinderDescription (XObj (Lst (XObj DefDynamic _ _ : XObj (Sym _ _) _ _ : _)) _ _) = "defdynamic"
 getBinderDescription (XObj (Lst (XObj Dynamic _ _ : XObj (Sym _ _) _ _ : _)) _ _) = "dynamic"
 getBinderDescription (XObj (Lst (XObj (Command _) _ _ : XObj (Sym _ _) _ _ : _)) _ _) = "command"
 getBinderDescription (XObj (Lst (XObj (Primitive _) _ _ : XObj (Sym _ _) _ _ : _)) _ _) = "primitive"
