@@ -628,13 +628,13 @@
       (cons (f) (n-times (dec n) f))))
 
   (defmodule Map
-    (defdynamic dflt-len 256)
+    (defdynamic dflt-len 16)
 
     (defdynamic min-load 20)
     (defdynamic max-load 80)
 
     (defndynamic create []
-      (n-times 256 list))
+      (n-times Map.dflt-len list))
 
     (defndynamic resize [m s]
       (let-do [n (n-times s list)]
@@ -694,7 +694,7 @@
       (reduce (fn [acc l] (append acc (map cadr l))) '() m))
 
     (defndynamic reverse [m]
-      (reduce (fn [acc l] (cons (map List.reverse l) acc)) '() m))
+      (reduce (fn [acc l] (cons (map reverse l) acc)) '() m))
 
     (defndynamic str [m]
       (String.concat [
@@ -711,5 +711,27 @@
           ""
           m)
         "}"]))
+
+    (defndynamic remove [m k]
+      (if (> (/ (* (Map.len m) 100) (length m)) Map.min-load)
+        (Map.remove (shrink m) k)
+        (let [idx (imod (hash k) (length m))]
+          (reduce (fn [acc l] (cons (filter (fn [pair] (/= (car pair) k)) l) acc)) '() m))))
+
+    (defndynamic all? [pred m]
+      (List.all? (fn [l] (List.all? pred l)) m))
+
+    (defndynamic = [m1 m2]
+      (and (= (Map.len m1) (Map.len m2))
+           (all? &(fn [pair] (= (cadr pair) (get m2 (car pair)))) m1)))
+
+    (defndynamic map [f m]
+      (map (fn [l] (map (fn [pair] (list (car pair) (f pair))) l)) m))
+
+    (defndynamic kv-reduce [f init m]
+      (reduce (fn [acc l] (reduce f acc l)) init m))
+
+    (defndynamic merge [m1 m2]
+      (kv-reduce (fn [m pair] (put m (car pair) (cadr pair))) m1 m2))
   )
 )
