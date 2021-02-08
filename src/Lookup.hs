@@ -30,24 +30,6 @@ lookupInEnv path@(SymPath (p : ps) name) env =
         Just parent -> lookupInEnv path parent
         Nothing -> Nothing
 
--- | Lookup a binder in a context's typeEnv.
-lookupBinderInTypeEnv :: Context -> SymPath -> Maybe Binder
-lookupBinderInTypeEnv ctx path =
-  let typeEnv = getTypeEnv (contextTypeEnv ctx)
-   in lookupBinder path typeEnv
-
--- | Lookup a binder in a context's globalEnv.
-lookupBinderInGlobalEnv :: Context -> SymPath -> Maybe Binder
-lookupBinderInGlobalEnv ctx path =
-  let global = contextGlobalEnv ctx
-   in lookupBinder path global
-
--- | Lookup a binder in a context's contextEnv.
-lookupBinderInContextEnv :: Context -> SymPath -> Maybe Binder
-lookupBinderInContextEnv ctx path =
-  let ctxEnv = contextEnv ctx
-   in lookupBinder path ctxEnv
-
 -- | Performs a multiLookupEverywhere but drops envs from the result and wraps
 -- the results in a Maybe.
 multiLookupBinderEverywhere :: Context -> SymPath -> Maybe [Binder]
