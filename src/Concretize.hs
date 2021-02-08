@@ -813,6 +813,10 @@ findFunctionForMemberIncludePrimitives typeEnv env functionName functionType (me
 setDeletersOnInfo :: Maybe Info -> Set.Set Deleter -> Maybe Info
 setDeletersOnInfo i deleters = fmap (\i' -> i' {infoDelete = deleters}) i
 
+addDeletersToInfo :: Maybe Info -> Set.Set Deleter -> Maybe Info
+addDeletersToInfo i deleters =
+  fmap (\i' -> i' {infoDelete = Set.union (infoDelete i') deleters}) i
+
 -- | Helper function for setting the deleters for an XObj.
 del :: XObj -> Set.Set Deleter -> XObj
 del xobj deleters = xobj {xobjInfo = setDeletersOnInfo (xobjInfo xobj) deleters}
@@ -907,7 +911,7 @@ manageMemory typeEnv globalEnv root =
                   Just (RefTy t@(StructTy (ConcreteNameTy "StaticArray") [_]) _) = xobjTy xobj
                   deleter = case nameOfPolymorphicFunction typeEnv globalEnv (FuncTy [t] UnitTy StaticLifetimeTy) "delete" of
                     Just pathOfDeleteFunc ->
-                      ProperDeleter pathOfDeleteFunc var
+                      ProperDeleter pathOfDeleteFunc (getDropFunc (xobjInfo xobj) t) var
                     Nothing ->
                       error ("No deleter found for Static Array : " ++ show t) --Just (FakeDeleter var)
               MemState deleters deps lifetimes <- get
@@ -989,8 +993,9 @@ manageMemory typeEnv globalEnv root =
                   manage xobj
                   pure $ do
                     okBody <- visitedBody
+                    let finalBody = searchForInnerBreak diff okBody
                     okBindings <- fmap (concatMap (\(n, x) -> [n, x])) (sequence visitedBindings)
-                    pure (XObj (Lst [letExpr, XObj (Arr okBindings) bindi bindt, okBody]) newInfo t)
+                    pure (XObj (Lst [letExpr, XObj (Arr okBindings) bindi bindt, finalBody]) newInfo t)
         -- Set!
         [setbangExpr@(XObj SetBang _ _), variable, value] ->
           let varInfo = xobjInfo variable
@@ -1108,7 +1113,8 @@ manageMemory typeEnv globalEnv root =
                   XObj objExpr objInfo objTy = okExpr
                   newExprInfo = setDeletersOnInfo objInfo (afterExprDeleters \\ preDeleters)
                   newExpr = XObj objExpr newExprInfo objTy
-              pure (XObj (Lst [whileExpr, newExpr, okBody]) newInfo t)
+                  finalBody = searchForInnerBreak diff okBody
+              pure (XObj (Lst [whileExpr, newExpr, finalBody]) newInfo t)
         [ifExpr@(XObj If _ _), expr, ifTrue, ifFalse] ->
           do
             visitedExpr <- visit expr
@@ -1262,6 +1268,15 @@ manageMemory typeEnv globalEnv root =
                   Right (XObj (Lst (okF : okArgs)) i t)
         [] -> pure (Right xobj)
     visitList _ = error "Must visit list."
+    searchForInnerBreak :: Set.Set Deleter -> XObj -> XObj
+    searchForInnerBreak diff (XObj (Lst [(XObj Break i' t')]) xi xt) =
+      let ni = addDeletersToInfo i' diff
+       in XObj (Lst [(XObj Break ni t')]) xi xt
+    searchForInnerBreak _ x@(XObj (Lst ((XObj While _ _) : _)) _ _) = x
+    searchForInnerBreak diff (XObj (Lst elems) i' t') =
+      let newElems = map (searchForInnerBreak diff) elems
+       in XObj (Lst newElems) i' t'
+    searchForInnerBreak _ e = e
     visitMatchCase :: (XObj, XObj) -> State MemState (Either TypeError ((Set.Set Deleter, (XObj, XObj)), [XObj]))
     visitMatchCase (lhs@XObj {}, rhs@XObj {}) =
       do
@@ -1409,7 +1424,7 @@ manageMemory typeEnv globalEnv root =
         else pure (Right xobj)
     unmanageArg xobj@XObj {} =
       pure (Right xobj)
-    createDeleter :: XObj -> Maybe Deleter
+    getDropFunc i t = nameOfPolymorphicFunction typeEnv globalEnv (FuncTy [RefTy t (VarTy (makeTypeVariableNameFromInfo i))] UnitTy StaticLifetimeTy) "drop"
     createDeleter xobj =
       case xobjTy xobj of
         Just (RefTy _ _) -> Just (RefDeleter (varOfXObj xobj))
@@ -1418,7 +1433,7 @@ manageMemory typeEnv globalEnv root =
            in if isManaged typeEnv globalEnv t
                 then case nameOfPolymorphicFunction typeEnv globalEnv (FuncTy [t] UnitTy StaticLifetimeTy) "delete" of
                   Just pathOfDeleteFunc ->
-                    Just (ProperDeleter pathOfDeleteFunc var)
+                    Just (ProperDeleter pathOfDeleteFunc (getDropFunc (xobjInfo xobj) t) var)
                   Nothing ->
                     --trace ("Found no delete function for " ++ var ++ " : " ++ (showMaybeTy (ty xobj)))
                     Just (FakeDeleter var)

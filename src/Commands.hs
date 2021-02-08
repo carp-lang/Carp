@@ -274,8 +274,9 @@ runExeWithArgs ctx exe args = liftIO $ do
     ExitFailure i -> throw (ShellOutException ("'" ++ exe ++ "' exited with return value " ++ show i ++ ".") i)
 
 -- | Command for building the project, producing an executable binary or a shared library.
-commandBuild :: Bool -> NullaryCommandCallback
-commandBuild shutUp ctx = do
+commandBuild :: VariadicCommandCallback
+commandBuild ctx [] = commandBuild ctx [falseXObj]
+commandBuild ctx [XObj (Bol shutUp) _ _] = do
   let env = contextGlobalEnv ctx
       typeEnv = contextTypeEnv ctx
       proj = contextProj ctx
@@ -340,6 +341,10 @@ commandBuild shutUp ctx = do
           else case Map.lookup "main" (envBindings env) of
             Just _ -> compile True
             Nothing -> compile False
+commandBuild ctx [arg] =
+  pure (evalError ctx ("`build` expected a boolean argument, but got `" ++ pretty arg ++ "`.") (xobjInfo arg))
+commandBuild ctx args =
+  pure (evalError ctx ("`build` expected a single boolean argument, but got `" ++ unwords (map pretty args) ++ "`.") (xobjInfo (head args)))
 
 setProjectCanExecute :: Bool -> Context -> Context
 setProjectCanExecute value ctx =
@@ -624,7 +629,7 @@ commandPathAbsolute ctx a =
 commandArith :: (Number -> Number -> Number) -> String -> BinaryCommandCallback
 commandArith op _ ctx (XObj (Num aTy aNum) _ _) (XObj (Num bTy bNum) _ _) =
   let newTy = promoteNumber aTy bTy
-  in pure (ctx, Right (XObj (Num newTy (op aNum bNum)) (Just dummyInfo) (Just newTy)))
+   in pure (ctx, Right (XObj (Num newTy (op aNum bNum)) (Just dummyInfo) (Just newTy)))
 commandArith _ opname ctx a b = pure $ evalError ctx ("Can't call " ++ opname ++ " with " ++ pretty a ++ " and " ++ pretty b) (xobjInfo a)
 
 commandPlus :: BinaryCommandCallback
@@ -801,52 +806,53 @@ commandParse ctx x =
 commandType :: UnaryCommandCallback
 commandType ctx (XObj x _ _) =
   pure (ctx, Right (XObj (Sym (SymPath [] (typeOf x)) Symbol) Nothing Nothing))
-  where typeOf (Str _) = "string"
-        typeOf (Sym _ _) = "symbol"
-        typeOf (MultiSym _ _) = "multi-symbol"
-        typeOf (InterfaceSym _) = "interface-symbol"
-        typeOf (Arr _) = "array"
-        typeOf (StaticArr _) = "static-array"
-        typeOf (Lst _) = "list"
-        typeOf (Num IntTy _) = "int"
-        typeOf (Num LongTy _) = "long"
-        typeOf (Num ByteTy _) = "byte"
-        typeOf (Num FloatTy _) = "float"
-        typeOf (Num DoubleTy _) = "double"
-        typeOf (Num _ _) = error "invalid number type for `type` command!"
-        typeOf (Pattern _) = "pattern"
-        typeOf (Chr _) = "char"
-        typeOf (Bol _) = "bool"
-        typeOf (Dict _) = "map"
-        typeOf (Closure _ _) = "closure"
-        typeOf (Defn _) = "defn"
-        typeOf Def = "def"
-        typeOf (Fn _ _) = "fn"
-        typeOf Do = "do"
-        typeOf Let = "let"
-        typeOf LocalDef = "local-def"
-        typeOf While = "while"
-        typeOf Break = "dreak"
-        typeOf If = "if"
-        typeOf (Match _) = "matxch"
-        typeOf (Mod _) = "module"
-        typeOf (Deftype _) = "deftype"
-        typeOf (DefSumtype _) = "def-sum-type"
-        typeOf With = "with"
-        typeOf (External _) = "external"
-        typeOf (ExternalType _) = "external-type"
-        typeOf MetaStub = "meta-stub"
-        typeOf (Deftemplate _) = "deftemplate"
-        typeOf (Instantiate _) = "instantiate"
-        typeOf (Defalias _) = "defalias"
-        typeOf Address = "address"
-        typeOf SetBang = "set!"
-        typeOf Macro = "macro"
-        typeOf Dynamic = "dynamic"
-        typeOf DefDynamic = "defdynamic"
-        typeOf (Command _) = "command"
-        typeOf (Primitive _) = "primitive"
-        typeOf The = "the"
-        typeOf Ref = "ref"
-        typeOf Deref = "deref"
-        typeOf (Interface _ _) = "interface"
+  where
+    typeOf (Str _) = "string"
+    typeOf (Sym _ _) = "symbol"
+    typeOf (MultiSym _ _) = "multi-symbol"
+    typeOf (InterfaceSym _) = "interface-symbol"
+    typeOf (Arr _) = "array"
+    typeOf (StaticArr _) = "static-array"
+    typeOf (Lst _) = "list"
+    typeOf (Num IntTy _) = "int"
+    typeOf (Num LongTy _) = "long"
+    typeOf (Num ByteTy _) = "byte"
+    typeOf (Num FloatTy _) = "float"
+    typeOf (Num DoubleTy _) = "double"
+    typeOf (Num _ _) = error "invalid number type for `type` command!"
+    typeOf (Pattern _) = "pattern"
+    typeOf (Chr _) = "char"
+    typeOf (Bol _) = "bool"
+    typeOf (Dict _) = "map"
+    typeOf (Closure _ _) = "closure"
+    typeOf (Defn _) = "defn"
+    typeOf Def = "def"
+    typeOf (Fn _ _) = "fn"
+    typeOf Do = "do"
+    typeOf Let = "let"
+    typeOf LocalDef = "local-def"
+    typeOf While = "while"
+    typeOf Break = "dreak"
+    typeOf If = "if"
+    typeOf (Match _) = "matxch"
+    typeOf (Mod _) = "module"
+    typeOf (Deftype _) = "deftype"
+    typeOf (DefSumtype _) = "def-sum-type"
+    typeOf With = "with"
+    typeOf (External _) = "external"
+    typeOf (ExternalType _) = "external-type"
+    typeOf MetaStub = "meta-stub"
+    typeOf (Deftemplate _) = "deftemplate"
+    typeOf (Instantiate _) = "instantiate"
+    typeOf (Defalias _) = "defalias"
+    typeOf Address = "address"
+    typeOf SetBang = "set!"
+    typeOf Macro = "macro"
+    typeOf Dynamic = "dynamic"
+    typeOf DefDynamic = "defdynamic"
+    typeOf (Command _) = "command"
+    typeOf (Primitive _) = "primitive"
+    typeOf The = "the"
+    typeOf Ref = "ref"
+    typeOf Deref = "deref"
+    typeOf (Interface _ _) = "interface"

@@ -328,16 +328,13 @@ primitiveInfo _ ctx target@(XObj (Sym path@(SymPath _ _) _) _ _) =
         >> maybe (pure ()) (printMetaVal "Signature" pretty) (Meta.get "sig" metaData)
         >> maybe (pure ()) printDeprecated (Meta.get "deprecated" metaData)
         >> when (projectPrintTypedAST proj) (putStrLnWithColor Yellow (prettyTyped x))
-
     printMetaBool :: String -> XObj -> IO ()
     printMetaBool s (XObj (Bol True) _ _) = putStrLn ("  " ++ s)
     printMetaBool _ _ = return ()
-
     printDeprecated :: XObj -> IO ()
     printDeprecated (XObj (Bol True) _ _) = putStrLn "  Deprecated"
     printDeprecated (XObj (Str v) _ _) = putStrLn ("  Deprecated: " ++ v)
     printDeprecated _ = return ()
-
     printMetaVal :: String -> (XObj -> String) -> XObj -> IO ()
     printMetaVal s f xobj = putStrLn ("  " ++ s ++ ": " ++ f xobj)
 primitiveInfo _ ctx notName =
@@ -508,8 +505,15 @@ registerInternal ctx name ty override =
        in (insertInGlobalEnv ctx qpath (Binder meta registration), dynamicNil)
 
 primitiveRegister :: VariadicPrimitiveCallback
-primitiveRegister _ ctx [XObj (Sym (SymPath _ name) _) _ _, ty] =
+primitiveRegister _ ctx [XObj (Sym (SymPath [] name) _) _ _, ty] =
   registerInternal ctx name ty Nothing
+primitiveRegister _ ctx [invalid@(XObj (Sym _ _) _ _), _] =
+  pure
+    ( evalError
+        ctx
+        ("`register` expects an unqualified name as first argument, but got `" ++ pretty invalid ++ "`")
+        (xobjInfo invalid)
+    )
 primitiveRegister _ ctx [name, _] =
   pure
     ( evalError

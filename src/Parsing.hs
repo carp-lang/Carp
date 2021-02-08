@@ -303,11 +303,11 @@ escaped = do
       return [chr p]
     _ ->
       if elem c "01234567"
-      then do
-        hex <- Parsec.many1 (Parsec.oneOf "01234567")
-        let [(p, "")] = readHex (c : hex)
-        return [chr p]
-      else pure ('\\' : [c])
+        then do
+          hex <- Parsec.many1 (Parsec.oneOf "01234567")
+          let [(p, "")] = readHex (c : hex)
+          return [chr p]
+        else pure ('\\' : [c])
 
 escapedQuoteChar :: Parsec.Parsec String ParseState Char
 escapedQuoteChar = do

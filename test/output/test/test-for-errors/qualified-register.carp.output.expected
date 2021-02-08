@@ -1,0 +1,1 @@
+qualified-register.carp:3:11 `register` expects an unqualified name as first argument, but got `X.x`

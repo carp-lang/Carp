@@ -65,19 +65,3 @@ beautifyTypeVariables root =
               (map (VarTy . (: [])) ['a' ..])
           )
    in assignTypes mappings root
-
-typeVariablesInOrderOfAppearance :: Ty -> [Ty]
-typeVariablesInOrderOfAppearance (FuncTy argTys retTy ltTy) =
-  concatMap typeVariablesInOrderOfAppearance argTys ++ typeVariablesInOrderOfAppearance retTy ++ typeVariablesInOrderOfAppearance ltTy
-typeVariablesInOrderOfAppearance (StructTy n typeArgs) =
-  case n of
-    t@(VarTy _) -> typeVariablesInOrderOfAppearance t ++ concatMap typeVariablesInOrderOfAppearance typeArgs
-    _ -> concatMap typeVariablesInOrderOfAppearance typeArgs
-typeVariablesInOrderOfAppearance (RefTy innerTy lifetimeTy) =
-  typeVariablesInOrderOfAppearance innerTy ++ typeVariablesInOrderOfAppearance lifetimeTy
-typeVariablesInOrderOfAppearance (PointerTy innerTy) =
-  typeVariablesInOrderOfAppearance innerTy
-typeVariablesInOrderOfAppearance t@(VarTy _) =
-  [t]
-typeVariablesInOrderOfAppearance _ =
-  []

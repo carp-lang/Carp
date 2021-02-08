@@ -63,9 +63,7 @@ Uint8 Uint8_copy(Uint8* x) {
 }
 
 Array Uint8_from_MINUS_bytes(Array* a) {
-    int i;
     Array x;
-    uint8_t* d = (uint8_t*)a->data;
     x.len = a->len;
     x.capacity = a->capacity;
     x.data = CARP_MALLOC(x.len);
@@ -130,9 +128,7 @@ Uint16 Uint16_copy(Uint16* x) {
 }
 
 Array Uint16_from_MINUS_bytes(Array* a) {
-    int i;
     Array x;
-    uint8_t* d = (uint8_t*)a->data;
     x.len = a->len / 2;
     x.capacity = a->capacity / 2;
     x.data = CARP_MALLOC(x.len);
@@ -197,9 +193,7 @@ Uint32 Uint32_copy(Uint32* x) {
 }
 
 Array Uint32_from_MINUS_bytes(Array* a) {
-    int i;
     Array x;
-    uint8_t* d = (uint8_t*)a->data;
     x.len = a->len / 4;
     x.capacity = a->capacity / 4;
     x.data = CARP_MALLOC(x.len);
@@ -264,9 +258,7 @@ Uint64 Uint64_copy(Uint64* x) {
 }
 
 Array Uint64_from_MINUS_bytes(Array* a) {
-    int i;
     Array x;
-    uint8_t* d = (uint8_t*)a->data;
     x.len = a->len / 2;
     x.capacity = a->capacity / 2;
     x.data = CARP_MALLOC(x.len);
@@ -331,7 +323,6 @@ Int8 Int8_copy(Int8* x) {
 }
 
 Array Int8_from_MINUS_bytes(Array* a) {
-    int i;
     Array x;
     int8_t* d = (int8_t*)a->data;
     x.len = a->len;
@@ -398,9 +389,7 @@ Int16 Int16_copy(Int16* x) {
 }
 
 Array Int16_from_MINUS_bytes(Array* a) {
-    int i;
     Array x;
-    uint8_t* d = (uint8_t*)a->data;
     x.len = a->len;
     x.capacity = a->capacity;
     x.data = CARP_MALLOC(x.len);
@@ -465,9 +454,7 @@ Int32 Int32_copy(Int32* x) {
 }
 
 Array Int32_from_MINUS_bytes(Array* a) {
-    int i;
     Array x;
-    uint8_t* d = (uint8_t*)a->data;
     x.len = a->len / 4;
     x.capacity = a->capacity / 4;
     x.data = CARP_MALLOC(x.len);
@@ -532,9 +519,7 @@ Int64 Int64_copy(Int64* x) {
 }
 
 Array Int64_from_MINUS_bytes(Array* a) {
-    int i;
     Array x;
-    uint8_t* d = (uint8_t*)a->data;
     x.len = a->len / 2;
     x.capacity = a->capacity / 2;
     x.data = CARP_MALLOC(x.len);

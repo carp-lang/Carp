@@ -393,7 +393,8 @@ eval ctx xobj@(XObj o info ty) preference resolver =
         XObj (Lst (XObj (Deftemplate _) _ _ : _)) _ _ : _ -> pure (ctx, Left (HasStaticCall xobj info))
         XObj (Lst (XObj (External _) _ _ : _)) _ _ : _ -> pure (ctx, Left (HasStaticCall xobj info))
         XObj (Match _) _ _ : _ -> pure (ctx, Left (HasStaticCall xobj info))
-        [XObj Ref _ _, _] -> pure (ctx, Left (HasStaticCall xobj info))
+        XObj Ref _ _ : _ -> pure (ctx, Left (HasStaticCall xobj info))
+        XObj Address _ _ : _ -> pure (ctx, Left (HasStaticCall xobj info))
         l@(XObj (Lst _) i t) : args -> do
           (newCtx, f) <- eval ctx l preference ResolveLocal
           case f of
@@ -423,8 +424,6 @@ eval ctx xobj@(XObj o info ty) preference resolver =
                 Right _ -> eval ctx' x preference resolver
         [XObj While _ _, cond, body] ->
           specialCommandWhile ctx cond body
-        [XObj Address _ _, value] ->
-          specialCommandAddress ctx value
         [] -> pure (ctx, dynamicNil)
         _ -> pure (evalError ctx ("I did not understand the form `" ++ pretty xobj ++ "`") (xobjInfo xobj))
     badArity name params args i = case checkArity name params args of
@@ -488,6 +487,8 @@ macroExpand ctx xobj =
             ok <- expanded
             Right (XObj (StaticArr ok) i t)
         )
+    XObj (Lst [XObj (Sym (SymPath [] "quote") _) _ _, _]) _ _ ->
+      pure (ctx, Right xobj)
     XObj (Lst [XObj (Lst (XObj Macro _ _ : _)) _ _]) _ _ -> evalDynamic ResolveLocal ctx xobj
     XObj (Lst (x@(XObj (Sym _ _) _ _) : args)) i t -> do
       (_, f) <- evalDynamic ResolveLocal ctx x
@@ -641,13 +642,14 @@ executeCommand ctx@(Context env _ _ _ _ _ _ _) xobj =
             [ XObj Do (Just dummyInfo) Nothing,
               xobj',
               XObj
-                (Lst [XObj (Sym (SymPath [] "build") Symbol) (Just dummyInfo) Nothing])
+                (Lst [XObj (Sym (SymPath [] "build") Symbol) (Just dummyInfo) Nothing, trueXObj])
                 (Just dummyInfo)
                 Nothing,
               XObj
                 (Lst [XObj (Sym (SymPath [] "run") Symbol) (Just dummyInfo) Nothing])
                 (Just dummyInfo)
-                Nothing
+                Nothing,
+              (XObj (Lst []) (Just dummyInfo) (Just UnitTy))
             ]
         )
         (Just dummyInfo)
@@ -704,18 +706,6 @@ specialCommandDefine ctx xobj =
           pure (ctxWithDef, dynamicNil)
       Left err ->
         pure (ctx, Left err)
-
-specialCommandAddress :: Context -> XObj -> IO (Context, Either EvalError XObj)
-specialCommandAddress ctx xobj =
-  case xobj of
-    XObj (Sym _ _) _ _ ->
-      do
-        (newCtx, result) <- annotateWithinContext ctx xobj
-        case result of
-          Right (annXObj, _) -> return (newCtx, Right annXObj)
-          Left err ->
-            return (ctx, Left err)
-    _ -> return (evalError ctx ("Can't get the address of non-symbol " ++ pretty xobj) (xobjInfo xobj))
 
 specialCommandWhile :: Context -> XObj -> XObj -> IO (Context, Either EvalError XObj)
 specialCommandWhile ctx cond body = do

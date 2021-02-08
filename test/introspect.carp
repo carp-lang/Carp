@@ -30,6 +30,13 @@
 (defmacro test-arity [x]
   (eval (list 'Introspect.arity x)))
 
+(defmacro test-arguments [x]
+  (collect-into
+    (map
+      (fn [arg] `(copy %(str arg)))
+      (eval `(Introspect.arguments %x)))
+    array))
+
 (deftest test
   (assert-true test
     (test-function? foo)
@@ -49,6 +56,10 @@
   (assert-true test
     (test-module? Qux)
     "module? works as expected")
+  (assert-equal test
+    &[@"x"]
+    &(test-arguments foo)
+    "arguments works as expected")
   (assert-equal test
     1
     (test-arity foo)
