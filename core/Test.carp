@@ -38,7 +38,6 @@
   (defn assert-false [state x descr]
     (assert-equal state false x descr))
 
-
   (doc assert-ref-equal "Assert that x and y are equal by reference. Reference equality needs to be implemented for their type.")
   (defn assert-ref-equal [state x y descr]
     (handler state &x &y descr "value" =))
@@ -58,6 +57,14 @@
   (doc assert-error "Assert that x is an `Error`.")
   (defn assert-error [state x descr]
     (assert-true state (Result.error? x) descr))
+
+  (doc assert-dynamic-equal "Assert that the dynamic expressions `x` and `y` are equal.")
+  (defmacro assert-dynamic-equal [state x y descr]
+    `(Test.assert-equal %state true %(= (eval x) (eval y)) %descr))
+
+  (doc assert-dynamic-op "Assert that the dynamic expressions `x` and `y` are equal.")
+  (defmacro assert-dynamic-op [state x y descr op]
+    `(Test.assert-equal %state true %(op (eval x) (eval y)) %descr))
 
   (doc reset "Reset test state.")
   (defn reset [state]

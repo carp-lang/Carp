@@ -311,7 +311,7 @@ eval ctx xobj@(XObj o info ty) preference resolver =
                   else evalError ctx ("`fn` requires all arguments to be unqualified symbols, but it got `" ++ pretty args ++ "`") (xobjInfo args)
               Left err -> (ctx, Left err)
         XObj (Closure (XObj (Lst [XObj (Fn _ _) _ _, XObj (Arr params) _ _, body]) _ _) (CCtx c)) _ _ : args ->
-          case checkArity "<closure>" params args of
+          case checkArity (pretty xobj) params args of
             Left err -> pure (evalError ctx err (xobjInfo xobj))
             Right () ->
               do

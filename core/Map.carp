@@ -375,8 +375,8 @@
   (doc from-array "Create a map from the array a containing key-value pairs.")
   (defn from-array [a]
     (let-do [m (create)]
-      (for [i 0 (Array.length a)]
-        (let [e (Array.unsafe-nth a i)
+      (for [i 0 (Array.length &a)]
+        (let [e (Array.unsafe-nth &a i)
               k (Pair.a e)
               v (Pair.b e)]
           (put! &m k v)))
@@ -397,7 +397,7 @@
 
   (doc reverse "reverses they keys and values in a given map `m`.")
   (defn reverse [m]
-    (from-array &(Array.copy-map &Pair.reverse &(to-array m))))
+    (from-array (Array.copy-map &Pair.reverse &(to-array m))))
 )
 
 (deftype (SetBucket a) [entries (Array a)])
@@ -616,4 +616,183 @@
                       set)]
       (String.append &res " }")))
   (implements str Set.str)
+)
+
+
+; Dynamic maps:
+
+(defmodule Dynamic
+  (doc n-times "make a list by executing `f` `n` times.")
+  (defndynamic n-times [n f]
+    (if (= n 0)
+      '()
+      (cons (f) (n-times (dec n) f))))
+
+  (defmodule Pair
+    (doc init "creates a dynamic pair, i.e. a list with two elements.")
+    (defndynamic init [k v] (list k v)))
+
+  (defmodule Map
+    (hidden dflt-len)
+    (defdynamic dflt-len 16)
+
+    (hidden min-load)
+    (defdynamic min-load 20)
+    (hidden max-load)
+    (defdynamic max-load 80)
+
+    (doc create "makes a dynamic map.")
+    (defndynamic create []
+      (n-times Map.dflt-len list))
+
+    (doc create "resizes a dynamic map to size `s`.")
+    (defndynamic resize [m s]
+      (let-do [n (n-times s list)]
+        (while-do (not (empty? m))
+          (map (fn [pair] (set! n (put n (car pair) (cadr pair)))) (car m))
+          (set! m (cdr m)))
+          n))
+
+    (doc grow "grows a dynamic map.")
+    (defndynamic grow [m] (resize m (* (length m) 2)))
+    (doc shrink "shrinks dynamic map.")
+    (defndynamic shrink [m]
+      (let [new-size (/ (length m) 2)]
+        (if (< new-size dflt-len)
+          m
+          (resize m new-size))))
+
+    (doc contains? "checks whether the dynamic map `m` contains the key `k`.")
+    (defndynamic contains? [m k]
+      (let [idx (Dynamic.imod (hash k) (length m))]
+        (List.in? k (map car (List.nth m idx)))))
+
+    (doc put "adds a value `v` under the key `k` into the map. If `k` already
+exists in the map, it is updated.")
+    (defndynamic put [m k v]
+      (if (> (/ (* (Map.len m) 100) (length m)) Map.min-load)
+        (Map.put (grow m) k v)
+        (if (Map.contains? m k)
+          (Map.update m k (fn [_] v))
+          (let [idx (Dynamic.imod (hash k) (length m))]
+            (List.update-nth m idx (fn [l] (cons (list k v) l)))))))
+
+    (doc get-with-default "gets the value under the key `k`. If `k` doesn’t
+exist in the map, the default value is returned.")
+    (defndynamic get-with-default [m k default-value]
+      (if (Map.contains? m k)
+        (let [idx (Dynamic.imod (hash k) (length m))
+              l (List.nth m idx)]
+          (cadr (List.find l (fn [pair] (= (car pair) k)))))
+          default-value))
+
+    (doc get "gets the value under the key `k`. If `k` doesn’t exist in the
+map, `nil` is returned.")
+    (defndynamic get [m k]
+      (Map.get-with-default m k nil))
+
+    (doc update "updates the value under the key `k` using the function `f`. If
+`k` doesn’t exist in the map, it is returned unchanged.")
+    (defndynamic update [m k f]
+      (if (Map.contains? m k)
+        (let [idx (Dynamic.imod (hash k) (length m))]
+          (List.update-nth m idx
+            (curry
+                map
+                (fn [pair] (if (= (car pair) k) (list k (f (cadr pair))) pair)))))
+        m))
+
+    (doc update-with-default "updates the value under the key `k` using the
+function `f`. If `k` doesn’t exist in the map, it is set to `(f v)`.")
+    (defndynamic update-with-default [m k f v]
+      (if (Map.contains? m k)
+        (let [idx (Dynamic.imod (hash k) (length m))]
+          (List.update-nth m idx
+            (curry
+                map
+                (fn [pair] (if (= (car pair) k) (list k (f (cadr pair))) pair)))))
+        (Map.put m k (f v))))
+
+    (doc len "returns the length of the map `m`.")
+    (defndynamic len [m]
+      (reduce (fn [acc l] (+ acc (length l))) 0 m))
+
+    (doc empty? "checks whether the map `m` is empty.")
+    (defndynamic empty? [m]
+      (= (Map.len m) 0))
+
+    (doc keys "returns the key in the map `m`.")
+    (defndynamic keys [m]
+      (reduce (fn [acc l] (append acc (map car l))) '() m))
+
+    (doc vals "returns the values in the map `m`.")
+    (defndynamic vals [m]
+      (reduce (fn [acc l] (append acc (map cadr l))) '() m))
+
+    (doc reverse "reverses the key-value pairs in the map `m`.")
+    (defndynamic reverse [m]
+      (reduce
+        (fn [acc l] (reduce (fn [n p] (Map.put n (cadr p) (car p))) acc l))
+        (Map.create) m))
+
+    (defndynamic str [m]
+      (String.concat [
+        "{ "
+        (reduce
+          (fn [acc l]
+            (String.concat [
+              acc
+              (reduce
+                (fn [a pair] (String.concat [a (str (car pair)) " " (str (cadr pair)) " "]))
+                ""
+                l)
+              ]))
+          ""
+          m)
+        "}"]))
+
+    (doc remove "removes the pair under the key `k` from the map `m`. If it
+doesn’t exist, the map is returned unchanged.")
+    (defndynamic remove [m k]
+      (if (> (/ (* (Map.len m) 100) (length m)) Map.min-load)
+        (Map.remove (shrink m) k)
+        (let [idx (imod (hash k) (length m))]
+          (reduce (fn [acc l] (cons (filter (fn [pair] (/= (car pair) k)) l) acc)) '() m))))
+
+    (doc all? "checks whether all key value pairs in `m` satisfy the predicate
+`pred`. `pred` takes the pair `(k v)` as its sole argument.")
+    (defndynamic all? [pred m]
+      ; TODO: using (curry all? pred) doesn’t work here, i suppose it’s an env
+      ; problem
+      (all? (fn [l] (all? pred l)) m))
+
+    (doc = "checks whether two maps `m1` and `m2` are equal.")
+    (defndynamic = [m1 m2]
+      (and (= (Map.len m1) (Map.len m2))
+           (Map.all? (fn [pair] (= (cadr pair) (Map.get m2 (car pair)))) m1)))
+
+    (doc map "maps the function `f` over all pairs in the map `m`. `f` takes
+the pair `(k v)` as its sole argument and is expected to return a new value
+under `v`.")
+    (defndynamic map [f m]
+      (map (fn [l] (map (fn [pair] (list (car pair) (f pair))) l)) m))
+
+    (doc kv-reduce "reduces the map `m` using the function `f` and the initial
+value `init`. `f` takes the accumulator and the pair `(k v)` as its arguments
+and is expected to return a new accumulator.")
+    (defndynamic kv-reduce [f init m]
+      (reduce (fn [acc l] (reduce f acc l)) init m))
+
+    (doc merge "merges to maps `m1` and `m2`. Values in `m1` are preferred on
+collision.")
+    (defndynamic merge [m1 m2]
+      (Map.kv-reduce (fn [m pair] (Map.put m (car pair) (cadr pair))) m1 m2))
+
+    (doc from-array "creates a map from an array of key-value pairs `a`.")
+    (defndynamic from-array [a]
+      (reduce (fn [m pair] (Map.put m (car pair) (cadr pair))) (Map.create) a))
+
+    (doc to-array "creates an array of key-value pairs from the map `m`.")
+    (defndynamic to-array [m] (collect-into (reduce append '() m) array))
+  )
 )

@@ -151,18 +151,18 @@
   )
   (assert-equal test
                 2
-                (Map.length &(Map.from-array &[(Pair.init 1 2)
-                                               (Pair.init 3 4)]))
+                (Map.length &(Map.from-array [(Pair.init 1 2)
+                                              (Pair.init 3 4)]))
                 "creating a map from an array works"
   )
   (assert-equal test
                 "{ 1 2 }"
-                &(str &(Map.from-array &[(Pair.init 1 2)]))
+                &(str &(Map.from-array [(Pair.init 1 2)]))
                 "stringification works I"
   )
   (assert-equal test
                 "{ @\"hi\" @\"bye\" }"
-                &(str &(Map.from-array &[(Pair.init @"hi" @"bye")]))
+                &(str &(Map.from-array [(Pair.init @"hi" @"bye")]))
                 "stringification works II"
   )
   (assert-equal test
@@ -172,8 +172,8 @@
   )
   (assert-equal test
                 2
-                (Array.length &(Map.to-array &(Map.from-array &[(Pair.init 1 2)
-                                                                (Pair.init 3 4)])))
+                (Array.length &(Map.to-array &(Map.from-array [(Pair.init 1 2)
+                                                               (Pair.init 3 4)])))
                 "Map.to-array works 2"
   )
   (assert-equal test
