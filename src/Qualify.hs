@@ -52,7 +52,7 @@ instance Show QualificationError where
 --
 -- A fully qualified xobj **must not** be qualified further (e.g. using context
 -- paths).
-newtype Qualified = Qualified {runQualified :: XObj}
+newtype Qualified = Qualified {unQualified :: XObj}
 
 -- | Denotes a symbol that has been fully qualified.
 newtype QualifiedPath = QualifiedPath SymPath
@@ -107,7 +107,7 @@ qualifyNull _ spath = markQualified spath
 
 -- | Gets the qualified path of a fully qualified XObj.
 getQualifiedPath :: Qualified -> QualifiedPath
-getQualifiedPath = QualifiedPath . getPath . runQualified
+getQualifiedPath = QualifiedPath . getPath . unQualified
 
 -- | Qualifies all symbols in an XObj in the given context.
 qualify :: Context -> XObj -> Either QualificationError Qualified
@@ -140,7 +140,7 @@ setFullyQualifiedSymbols t g e xobj =
   where
     qualified :: Either QualificationError XObj
     qualified =
-      fmap runQualified $
+      fmap unQualified $
         case xobjObj xobj of
           Lst ((XObj (Defn _) _ _) : _) ->
             qualifyFunctionDefinition t g e xobj
@@ -181,7 +181,7 @@ qualifyFunctionDefinition typeEnv globalEnv env (XObj (Lst [defn@(XObj (Defn _) 
       functionEnv = Env Map.empty (Just envWithSelf) Nothing Set.empty InternalEnv 0
       envWithArgs = foldl' (\e arg@(XObj (Sym (SymPath _ argSymName) _) _ _) -> extendEnv e argSymName arg) functionEnv argsArr
    in setFullyQualifiedSymbols typeEnv globalEnv envWithArgs body
-        >>= pure . runQualified
+        >>= pure . unQualified
         >>= \qualifiedBody -> pure $ Qualified $ XObj (Lst [defn, sym, args, qualifiedBody]) i t
 qualifyFunctionDefinition _ _ _ xobj = Left $ FailedToQualifyDeclarationName xobj
 
@@ -192,7 +192,7 @@ qualifyLambda typeEnv globalEnv env (XObj (Lst [fn@(XObj (Fn _ _) _ _), args@(XO
       functionEnv = Env Map.empty (Just env) Nothing Set.empty InternalEnv (lvl + 1)
       envWithArgs = foldl' (\e arg@(XObj (Sym (SymPath _ argSymName) _) _ _) -> extendEnv e argSymName arg) functionEnv argsArr
    in setFullyQualifiedSymbols typeEnv globalEnv envWithArgs body
-        >>= pure . runQualified
+        >>= pure . unQualified
         >>= \qualifiedBody -> pure $ Qualified $ XObj (Lst [fn, args, qualifiedBody]) i t
 qualifyLambda _ _ _ xobj = Left $ FailedToQualifySymbols xobj
 
@@ -200,7 +200,7 @@ qualifyLambda _ _ _ xobj = Left $ FailedToQualifySymbols xobj
 qualifyThe :: Qualifier
 qualifyThe typeEnv globalEnv env (XObj (Lst [the@(XObj The _ _), typeX, value]) i t) =
   setFullyQualifiedSymbols typeEnv globalEnv env value
-    >>= pure . runQualified
+    >>= pure . unQualified
     >>= \qualifiedValue -> pure $ Qualified $ XObj (Lst [the, typeX, qualifiedValue]) i t
 qualifyThe _ _ _ xobj = Left $ FailedToQualifySymbols xobj
 
@@ -208,7 +208,7 @@ qualifyThe _ _ _ xobj = Left $ FailedToQualifySymbols xobj
 qualifyDef :: Qualifier
 qualifyDef typeEnv globalEnv env (XObj (Lst [def@(XObj Def _ _), sym, expr]) i t) =
   setFullyQualifiedSymbols typeEnv globalEnv env expr
-    >>= pure . runQualified
+    >>= pure . unQualified
     >>= \qualifiedExpr -> pure $ Qualified $ XObj (Lst [def, sym, qualifiedExpr]) i t
 qualifyDef _ _ _ xobj = Left $ FailedToQualifySymbols xobj
 
@@ -224,13 +224,13 @@ qualifyLet typeEnv globalEnv env (XObj (Lst [letExpr@(XObj Let _ _), bind@(XObj 
      in foldM qualifyBinding (innerEnv, []) (pairwise bindings)
           >>= \(innerEnv', qualifiedBindings) ->
             setFullyQualifiedSymbols typeEnv globalEnv innerEnv' body
-              >>= pure . runQualified
+              >>= pure . unQualified
               >>= \qualifiedBody -> pure $ Qualified $ XObj (Lst [letExpr, XObj (Arr qualifiedBindings) bindi bindt, qualifiedBody]) i t
   where
     qualifyBinding :: (Env, [XObj]) -> (XObj, XObj) -> Either QualificationError (Env, [XObj])
     qualifyBinding (e, bs) (s@(XObj (Sym (SymPath _ binderName) _) _ _), o) =
       setFullyQualifiedSymbols typeEnv globalEnv e o
-        >>= pure . runQualified
+        >>= pure . unQualified
         >>= \qualified -> pure $ (extendEnv e binderName s, bs ++ [s, qualified])
     qualifyBinding _ _ = error "bad let binding"
 qualifyLet _ _ _ xobj = Left $ FailedToQualifySymbols xobj
@@ -241,10 +241,10 @@ qualifyMatch typeEnv globalEnv env (XObj (Lst (matchExpr@(XObj (Match _) _ _) : 
   | odd (length casesXObjs) = pure $ Qualified $ XObj (Lst (matchExpr : expr : casesXObjs)) i t -- Leave it untouched for the compiler to find the error.
   | otherwise =
     setFullyQualifiedSymbols typeEnv globalEnv env expr
-      >>= pure . runQualified
+      >>= pure . unQualified
       >>= \qualifiedExpr ->
         mapM qualifyCases (pairwise casesXObjs)
-          >>= pure . map (map runQualified)
+          >>= pure . map (map unQualified)
           >>= \qualifiedCases -> pure $ Qualified $ XObj (Lst (matchExpr : qualifiedExpr : concat qualifiedCases)) i t
   where
     Just ii = i
@@ -282,7 +282,7 @@ qualifyLst :: Qualifier
 qualifyLst typeEnv globalEnv env (XObj (Lst xobjs) i t) =
   -- TODO: Perhaps this general case can be sufficient? No need with all the cases above..?
   mapM (setFullyQualifiedSymbols typeEnv globalEnv env) xobjs
-    >>= pure . map runQualified
+    >>= pure . map unQualified
     >>= \xobjs' -> pure $ Qualified $ XObj (Lst xobjs') i t
 qualifyLst _ _ _ xobj = Left $ FailedToQualifySymbols xobj
 
@@ -389,7 +389,7 @@ qualifySym _ _ _ xobj = Left $ FailedToQualifySymbols xobj
 qualifyArr :: Qualifier
 qualifyArr typeEnv globalEnv env (XObj (Arr array) i t) =
   mapM (setFullyQualifiedSymbols typeEnv globalEnv env) array
-    >>= pure . map runQualified
+    >>= pure . map unQualified
     >>= \array' -> pure $ Qualified $ XObj (Arr array') i t
 qualifyArr _ _ _ xobj = Left $ FailedToQualifySymbols xobj
 
@@ -397,6 +397,6 @@ qualifyArr _ _ _ xobj = Left $ FailedToQualifySymbols xobj
 qualifyStaticArr :: Qualifier
 qualifyStaticArr typeEnv globalEnv env (XObj (StaticArr array) i t) =
   mapM (setFullyQualifiedSymbols typeEnv globalEnv env) array
-    >>= pure . map runQualified
+    >>= pure . map unQualified
     >>= \array' -> pure $ Qualified $ XObj (StaticArr array') i t
 qualifyStaticArr _ _ _ xobj = Left $ FailedToQualifySymbols xobj

@@ -174,7 +174,7 @@ define hidden ctx qualifiedXObj =
         then defineInTypeEnv newBinder
         else defineInGlobalEnv newBinder
   where
-    annXObj = runQualified qualifiedXObj
+    annXObj = unQualified qualifiedXObj
     freshBinder = toBinder annXObj
     qpath = getQualifiedPath qualifiedXObj
     defineInTypeEnv :: Binder -> IO Context

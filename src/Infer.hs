@@ -26,7 +26,7 @@ import Types
 annotate :: TypeEnv -> Env -> Qualified -> Maybe (Ty, XObj) -> Either TypeError (XObj, [XObj])
 annotate typeEnv globalEnv qualifiedXObj rootSig =
   do
-    initiated <- initialTypes typeEnv globalEnv (runQualified qualifiedXObj)
+    initiated <- initialTypes typeEnv globalEnv (unQualified qualifiedXObj)
     (annotated, dependencies) <- annotateUntilDone typeEnv globalEnv initiated rootSig [] 100
     (final, deleteDeps) <- manageMemory typeEnv globalEnv annotated
     finalWithNiceTypes <- beautifyTypeVariables final
