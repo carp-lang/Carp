@@ -409,7 +409,7 @@ primitiveMembers _ ctx target = do
 
 -- | Set meta data for a Binder
 primitiveMetaSet :: TernaryPrimitiveCallback
-primitiveMetaSet _ ctx (XObj (Sym path _) _ _) (XObj (Str key) _ _) value =
+primitiveMetaSet _ ctx target@(XObj (Sym path@(SymPath prefixes _) _) _ _) (XObj (Str key) _ _) value =
   pure $ maybe create (,dynamicNil) lookupAndUpdate
   where
     qpath = qualifyPath ctx path
@@ -432,13 +432,13 @@ primitiveMetaSet _ ctx (XObj (Sym path _) _ _) (XObj (Str key) _ _) value =
           else Nothing
     create :: (Context, Either EvalError XObj)
     create =
-      let updated = Meta.updateBinderMeta (Meta.stub fullPath) key value
-       in (insertInGlobalEnv ctx qpath updated, dynamicNil)
---if null prefixes
---  then
---    let updated = Meta.updateBinderMeta (Meta.stub fullPath) key value
---     in (insertInGlobalEnv ctx fullPath updated, dynamicNil)
---  else evalError ctx ("`meta-set!` failed, I can't find the symbol `" ++ pretty target ++ "`") (xobjInfo target)
+      -- TODO: Remove the special casing here (null check) and throw a general
+      -- error when modules don't exist
+      if null prefixes
+        then
+          let updated = Meta.updateBinderMeta (Meta.stub fullPath) key value
+           in (insertInGlobalEnv ctx qpath updated, dynamicNil)
+        else evalError ctx ("`meta-set!` failed, I can't find the symbol `" ++ pretty target ++ "`") (xobjInfo target)
 primitiveMetaSet _ ctx (XObj (Sym (SymPath _ _) _) _ _) key _ =
   argumentErr ctx "meta-set!" "a string" "second" key
 primitiveMetaSet _ ctx target _ _ =
