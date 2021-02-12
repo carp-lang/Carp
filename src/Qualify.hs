@@ -253,16 +253,14 @@ qualifyMatch typeEnv globalEnv env (XObj (Lst (matchExpr@(XObj (Match _) _ _) : 
     innerEnv = Env Map.empty (Just env) (Just ("case-env-" ++ show (infoIdentifier ii))) Set.empty InternalEnv lvl
     qualifyCases :: (XObj, XObj) -> Either QualificationError [Qualified]
     qualifyCases (l@(XObj (Lst (_ : xs)) _ _), r) =
-      let innerEnv' = foldl' foldVars innerEnv xs
-       in setFullyQualifiedSymbols typeEnv globalEnv env l
-            >>= \l' ->
-              setFullyQualifiedSymbols typeEnv globalEnv innerEnv' r
-                >>= \r' -> Right $ [l', r']
+      do let innerEnv' = foldl' foldVars innerEnv xs
+         qualifiedLHS <- setFullyQualifiedSymbols typeEnv globalEnv env l
+         qualifiedRHS <- setFullyQualifiedSymbols typeEnv globalEnv innerEnv' r
+         Right [qualifiedLHS, qualifiedRHS]
     qualifyCases (l, r) =
-      setFullyQualifiedSymbols typeEnv globalEnv env l
-        >>= \l' ->
-          setFullyQualifiedSymbols typeEnv globalEnv env r
-            >>= \r' -> Right $ [l', r']
+      do qualifiedLHS <- setFullyQualifiedSymbols typeEnv globalEnv env l
+         qualifiedRHS <- setFullyQualifiedSymbols typeEnv globalEnv env r
+         Right [qualifiedLHS, qualifiedRHS]
     foldVars :: Env -> XObj -> Env
     foldVars env' v@(XObj (Sym (SymPath _ binderName) _) _ _) = extendEnv env' binderName v
     -- Nested sumtypes
