@@ -15,6 +15,7 @@ import Constraints
 import GenerateConstraints
 import InitialTypes
 import Obj
+import Qualify
 import TypeError
 import Types
 
@@ -22,10 +23,10 @@ import Types
 -- | Returns a list of all the bindings that need to be added for the new form to work.
 -- | The concretization of MultiSym:s (= ambiguous use of symbols, resolved by type usage)
 -- | makes it possible to solve more types so let's do it several times.
-annotate :: TypeEnv -> Env -> XObj -> Maybe (Ty, XObj) -> Either TypeError (XObj, [XObj])
-annotate typeEnv globalEnv xobj rootSig =
+annotate :: TypeEnv -> Env -> Qualified -> Maybe (Ty, XObj) -> Either TypeError (XObj, [XObj])
+annotate typeEnv globalEnv qualifiedXObj rootSig =
   do
-    initiated <- initialTypes typeEnv globalEnv xobj
+    initiated <- initialTypes typeEnv globalEnv (unQualified qualifiedXObj)
     (annotated, dependencies) <- annotateUntilDone typeEnv globalEnv initiated rootSig [] 100
     (final, deleteDeps) <- manageMemory typeEnv globalEnv annotated
     finalWithNiceTypes <- beautifyTypeVariables final

@@ -1099,3 +1099,15 @@ instance Semigroup Context where
 toLocalDef :: String -> XObj -> XObj
 toLocalDef var value =
   (XObj (Lst [XObj LocalDef Nothing Nothing, XObj (Sym (SymPath [] var) Symbol) Nothing Nothing, value]) (xobjInfo value) (xobjTy value))
+
+-- | Create a fresh binder for an XObj (a binder with empty Metadata).
+toBinder :: XObj -> Binder
+toBinder xobj = Binder emptyMeta xobj
+
+-- | Dynamic 'true'.
+trueXObj :: XObj
+trueXObj = XObj (Bol True) Nothing Nothing
+
+-- | Dynamic 'false'.
+falseXObj :: XObj
+falseXObj = XObj (Bol False) Nothing Nothing

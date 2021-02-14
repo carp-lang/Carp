@@ -87,7 +87,7 @@
                                             (Dynamic.String.concat [x newline])))
                                 strings
                                 ())]
-    (eval (list 'meta-set! name "doc" (Dynamic.String.concat (list-to-array-internal separated []))))))
+    (list 'meta-set! name "doc" (Dynamic.String.concat (list-to-array-internal separated [])))))
 
 (doc print-doc "Print the documentation for a binding.")
 (defmacro print-doc [name]

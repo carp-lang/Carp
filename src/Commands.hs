@@ -43,14 +43,6 @@ instance Exception CarpException
 dynamicNil :: Either a XObj
 dynamicNil = Right (XObj (Lst []) (Just dummyInfo) (Just UnitTy)) -- TODO: Remove/unwrap (Right ...) to a XObj
 
--- | Dynamic 'true'.
-trueXObj :: XObj
-trueXObj = XObj (Bol True) Nothing Nothing
-
--- | Dynamic 'false'.
-falseXObj :: XObj
-falseXObj = XObj (Bol False) Nothing Nothing
-
 boolToXObj :: Bool -> XObj
 boolToXObj b = if b then trueXObj else falseXObj
 
