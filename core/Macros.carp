@@ -95,7 +95,7 @@
 
 (doc sig "Annotate a binding with the desired signature.")
 (defmacro sig [name signature]
-  (eval (list 'meta-set! name "sig" signature)))
+  (list 'meta-set! name "sig" signature))
 
 (doc print-sig "Print the annotated signature for a binding.")
 (defmacro print-sig [name]
@@ -103,11 +103,11 @@
 
 (doc hide "Mark a binding as hidden, this will make it not print with the 'info' command.")
 (defmacro hidden [name]
-  (eval (list 'meta-set! name "hidden" true)))
+  (list 'meta-set! name "hidden" true))
 
 (doc private "Mark a binding as private, this will make it inaccessible from other modules.")
 (defmacro private [name]
-  (eval (list 'meta-set! name "private" true)))
+  (list 'meta-set! name "private" true))
 
 (doc todo "sets the todo property for a binding.")
 (defmacro todo [name value]
@@ -126,12 +126,12 @@
 
 (doc annotate "Add an annotation to this binding.")
 (defmacro annotate [name annotation]
-  (eval (list 'meta-set! name "annotations" (eval (annotate-helper name annotation)))))
+  (list 'meta-set! name "annotations" (eval (annotate-helper name annotation))))
 
 (doc deprecated "Declares that a binding is deprecated, using an optional explanation.")
 (defmacro deprecated [name :rest explanation]
   (let [v (if (= (length explanation) 0) true (car explanation))]
-    (eval (list 'meta-set! name "deprecated" v))))
+    (list 'meta-set! name "deprecated" v)))
 
 (defmodule Dynamic
 
