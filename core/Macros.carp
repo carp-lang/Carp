@@ -18,6 +18,9 @@
         (list-to-array-internal (cdr xs) (append acc (array (car xs))))))
 
 (defmodule Dynamic
+  (defndynamic quoted [x]
+    (list 'quote x))
+
   (defndynamic /= [a b] (not (= a b)))
 
   (defndynamic caar [pair] (car (car pair)))
@@ -71,10 +74,7 @@
     (= (dynamic-type s) 'array))
 
   (defndynamic number? [s]
-    (List.in? (dynamic-type s) '(int long double float byte)))
-
-)
-
+    (List.in? (dynamic-type s) '(int long double float byte))))
 
 (meta-set! doc "doc" "Set documentation for a binding.")
 (defmacro doc [name :rest strings]
@@ -132,13 +132,6 @@
 (defmacro deprecated [name :rest explanation]
   (let [v (if (= (length explanation) 0) true (car explanation))]
     (eval (list 'meta-set! name "deprecated" v))))
-
-(defmodule Dynamic
-
-  (defndynamic quoted [x]
-    (list 'quote x))
-
-)
 
 (defndynamic cond-internal [xs]
   (if (= (length xs) 0)
