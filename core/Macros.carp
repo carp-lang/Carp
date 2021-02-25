@@ -133,6 +133,20 @@
   (let [v (if (= (length explanation) 0) true (car explanation))]
     (eval (list 'meta-set! name "deprecated" v))))
 
+(doc defn- "Declares a function while marking it as private and hidden.")
+(defmacro defn- [name args form]
+  (do
+   (eval (list 'private name))
+   (eval (list 'hidden name))
+   (list 'defn name args form)))
+
+(doc def- "Declares a variable while marking it as private and hidden.")
+(defmacro def- [name value]
+  (do
+   (eval (list 'private name))
+   (eval (list 'hidden name))
+   (list 'def name value)))
+
 (defndynamic cond-internal [xs]
   (if (= (length xs) 0)
     (list)
