@@ -101,7 +101,7 @@
 (defmacro print-sig [name]
   (eval (list 'macro-log (list 'meta name "sig"))))
 
-(doc hide "Mark a binding as hidden, this will make it not print with the 'info' command.")
+(doc hidden "Mark a binding as hidden, this will make it not print with the 'info' command.")
 (defmacro hidden [name]
   (eval (list 'meta-set! name "hidden" true)))
 
