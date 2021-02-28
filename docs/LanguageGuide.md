@@ -317,6 +317,44 @@ Sometimes, it's more convenient to bring a module's declarations into scope only
       (length x))))
 ```
 
+It can be useful to keep some bindings internal to a module, to achieve that
+one can use `private` and `hidden`:
+
+```clojure
+(defmodule Say
+  ; Makes `hell` inaccessible outside of module `Say`
+  (private hell)
+  ; Will prevent `hell` from being visible when listing bindings in `Say`
+  (hidden hell)
+  (defn hell [] @"hell")
+
+  ; `private` & `hidden` work with `def` and `defn`
+  (private o)
+  (hidden o)
+  (def o @"o")
+
+  ; Can access `hell` and `o` inside the module
+  (defn hello [] (String.concat &[(hell) @&o])))
+
+
+; Valid call as `hello` is not private
+(Say.hello)
+
+; Will result in an compile time error as `hell` is private to the `Say` module
+(Say.hell)
+```
+
+`defn-` and `def-` can be used as a shorthand for defining a binding and
+marking it as `private` & `hidden`, the following example is equivalent to the
+previous one:
+
+```clojure
+(defmodule Say
+ (defn- hell [] @"hell")
+ (def- o @"o")
+ (defn hello [] (String.concat &[(hell) @&o])))
+```
+
 ### Interfaces
 
 Interfaces specify a generic function signature that multiple concrete
