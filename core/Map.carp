@@ -645,22 +645,32 @@
     (defndynamic create []
       (n-times Map.dflt-len list))
 
-    (doc create "resizes a dynamic map to size `s`.")
+    (hidden resize-bucket)
+    (defndynamic resize-bucket [n m]
+      (if (empty? m)
+        n
+        (Map.resize-bucket (Map.put n (caar m) (cadar m)) (cdr m))))
+
+    (hidden resize-)
+    (defndynamic resize- [n m]
+      (if (empty? m)
+        n
+        (do
+          (Map.resize- (Map.resize-bucket n (car m)) (cdr m)))))
+
+    (doc resize "resizes a dynamic map to size `s`.")
     (defndynamic resize [m s]
       (let-do [n (n-times s list)]
-        (while-do (not (empty? m))
-          (map (fn [pair] (set! n (put n (car pair) (cadr pair)))) (car m))
-          (set! m (cdr m)))
-          n))
+        (Map.resize- n m )))
 
     (doc grow "grows a dynamic map.")
-    (defndynamic grow [m] (resize m (* (length m) 2)))
+    (defndynamic grow [m] (Map.resize m (* (length m) 2)))
     (doc shrink "shrinks dynamic map.")
     (defndynamic shrink [m]
       (let [new-size (/ (length m) 2)]
         (if (< new-size dflt-len)
           m
-          (resize m new-size))))
+          (Map.resize m new-size))))
 
     (doc contains? "checks whether the dynamic map `m` contains the key `k`.")
     (defndynamic contains? [m k]
@@ -671,7 +681,7 @@
 exists in the map, it is updated.")
     (defndynamic put [m k v]
       (if (> (/ (* (Map.len m) 100) (length m)) Map.min-load)
-        (Map.put (grow m) k v)
+        (Map.put (Map.grow m) k v)
         (if (Map.contains? m k)
           (Map.update m k (fn [_] v))
           (let [idx (Dynamic.imod (hash k) (length m))]
@@ -755,7 +765,7 @@ function `f`. If `k` doesn’t exist in the map, it is set to `(f v)`.")
 doesn’t exist, the map is returned unchanged.")
     (defndynamic remove [m k]
       (if (> (/ (* (Map.len m) 100) (length m)) Map.min-load)
-        (Map.remove (shrink m) k)
+        (Map.remove (Map.shrink m) k)
         (let [idx (imod (hash k) (length m))]
           (reduce (fn [acc l] (cons (filter (fn [pair] (/= (car pair) k)) l) acc)) '() m))))
 
