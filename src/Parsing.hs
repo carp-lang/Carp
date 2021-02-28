@@ -649,6 +649,7 @@ balance text =
         (x : xs) -> case (x, c) of
           ('(', ')') -> Parsec.putState xs
           ('[', ']') -> Parsec.putState xs
+          ('{', '}') -> Parsec.putState xs
           ('"', '"') -> Parsec.putState xs
           --('\\', _) -> Parsec.putState xs -- ignore char after '\'
           _ -> push c
@@ -659,5 +660,6 @@ balance text =
         case c of
           '(' -> Parsec.putState (c : parens)
           '[' -> Parsec.putState (c : parens)
+          '{' -> Parsec.putState (c : parens)
           '"' -> Parsec.putState (c : parens)
           _ -> pure ()
