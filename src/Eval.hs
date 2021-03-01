@@ -625,6 +625,8 @@ executeCommand ctx@(Context env _ _ _ _ _ _ _) xobj =
         executeCommand newCtx (withBuildAndRun (XObj (Lst []) (Just dummyInfo) Nothing))
       Left (HasStaticCall _ _) ->
         callFromRepl newCtx xobj
+      Right a@(XObj (Arr _) _ _) ->
+        executeCommand newCtx (XObj (Lst [XObj (Sym (SymPath [] "str") Symbol) (Just dummyInfo) Nothing, XObj (Lst [XObj (Sym (SymPath [] "quote") Symbol) (Just dummyInfo) Nothing, a]) (Just dummyInfo) Nothing]) (Just dummyInfo) Nothing)
       Right res -> pure (res, newCtx)
   where
     callFromRepl newCtx xobj' = do

@@ -52,12 +52,90 @@
     (defndynamic suffix [s from]
       (String.slice s from (String.length s)))
 
+    (defndynamic starts-with? [s prfx]
+      (= (String.prefix s (String.length prfx)) prfx))
+
+    (defndynamic ends-with? [s prfx]
+      (= (String.suffix s (String.length prfx)) prfx))
+
     (defndynamic head [s]
       (String.prefix s 1))
 
     (defndynamic tail [s]
       (String.suffix s 1))
   )
+
+  (hidden dynamic-type-tag)
+  (defdynamic dynamic-type-tag "carp-dynamic-type-tag-")
+
+  (doc deftype-dynamic "creates a dynamic type with the members `slots` under
+the name `name`.
+
+Getters, setters, and initializers will be created.
+
+Example:
+```
+(deftype-dynamic Point (x y))
+
+(Point.str (Point.set-y (Point.init 1 2) 4))
+; => \"(Point 1 4)\"
+```")
+  (defmacro deftype-dynamic [name slots]
+    (eval `(defmodule %name
+       (defndynamic init %(collect-into slots array)
+          [%(String.concat [dynamic-type-tag (Symbol.str name)]) %@slots])
+
+       (defndynamic %(Symbol.concat [name '?]) [o]
+         (and (array? o) (= (car o) '%(String.concat [dynamic-type-tag (Symbol.str name)]))))
+
+       %@(map
+           (fn [slot]
+             `(defndynamic %slot [o]
+                 (List.nth o %(inc (List.index-of slots slot)))))
+           slots)
+
+       %@(map
+           (fn [slot]
+             `(defndynamic %(Symbol.concat ['set- slot]) [o n]
+                 (List.set-nth o %(inc (List.index-of slots slot)) n)))
+           slots)
+
+      (defndynamic str [o]
+        (String.concat
+          ["(" %(Symbol.str name)
+               %@(map (fn [slot] `(String.concat [" " (str (%(Symbol.prefix name slot) o))])) slots)
+           ")"]))
+    ))
+  )
+
+  ; this is sadly too slow :(
+  ;(defdynamic prim-= =)
+
+  ;(defndynamic = [a b]
+  ;  (if (and (array? a) (not (empty? a)))
+  ;    (let [tag? (car a)
+  ;          s (str tag?)
+  ;          cs (str dynamic-type-tag)]
+  ;      (if (and (symbol? tag?) (String.starts-with? s cs))
+  ;        (let [md (String.suffix s (length cs))
+  ;              f (Symbol.prefix (Symbol.from md) '=)]
+  ;          ((eval f) a b))
+  ;        (prim-= a b)))
+  ;    (prim-= a b)))
+
+  (hidden prim-str)
+  (defdynamic prim-str str)
+
+  (defndynamic str [a]
+    (if (and (array? a) (not (empty? a)))
+      (let [tag? (car a)
+            cs (prim-str dynamic-type-tag)]
+        (if (and (string? tag?) (String.starts-with? tag? cs))
+          (let [md (String.suffix tag? (String.length cs))
+                f (Symbol.prefix (Symbol.from md) 'str)]
+            ((eval f) a))
+          (prim-str a)))
+      (prim-str a)))
 )
 
 

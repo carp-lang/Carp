@@ -59,8 +59,10 @@ Example:
     (cond
       (and (list? form) (> (length form) 0))
         (quasiquote-list form)
+      (and (array? form) (empty? form))
+        []
       (array? form)
-        (collect-into (map quasiquote- form) array)
+        (list 'collect-into (quasiquote-list (collect-into form list)) 'array)
       (list 'quote form)))
 
   (doc quasiquote "is a quotation that may have expressions inside it in the

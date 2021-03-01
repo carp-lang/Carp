@@ -197,7 +197,7 @@
 
 (defmacro load-and-use [name]
   (do
-    (eval (list 'load (str name ".carp")))
+    (eval (list 'load (prim-str name ".carp")))
     (eval (list 'use name))))
 
 (defmacro comment [:rest forms]

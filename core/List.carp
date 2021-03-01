@@ -337,5 +337,18 @@ elements is uneven, the trailing element will be discarded.")
         (empty? l) '()
         (pred (car l)) (car l)
         (List.find (cdr l) pred)))
+
+    (doc index-of "finds the index of the first occurence of `elem` in the list
+`l`.
+
+If it isn’t found, `-1` is returned.")
+    (defndynamic index-of [l elem]
+      (cond
+        (empty? l) -1
+        (= elem (car l)) 0
+        (let [idx (List.index-of (cdr l) elem)]
+          (if (= -1 idx)
+            idx
+            (inc idx)))))
   )
 )
