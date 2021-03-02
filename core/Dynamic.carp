@@ -81,31 +81,40 @@ Example:
 ; => \"(Point 1 4)\"
 ```")
   (defmacro deftype-dynamic [name slots]
-    (eval `(defmodule %name
-       (defndynamic init %(collect-into slots array)
-          [%(String.concat [dynamic-type-tag (Symbol.str name)]) %@slots])
+    (let [slots-arr (collect-into slots array)
+          slots-ls (collect-into slots list)]
+      (eval `(defmodule %name
+         (defndynamic init %slots-arr
+            [%(String.concat [dynamic-type-tag (Symbol.str name)]) %@slots-ls])
 
-       (defndynamic %(Symbol.concat [name '?]) [o]
-         (and (array? o) (= (car o) '%(String.concat [dynamic-type-tag (Symbol.str name)]))))
+         (defndynamic %(Symbol.concat [name '?]) [o]
+           (and (array? o)
+                (= (car o)
+                   '%(String.concat [dynamic-type-tag (Symbol.str name)]))))
 
-       %@(map
-           (fn [slot]
-             `(defndynamic %slot [o]
-                 (List.nth o %(inc (List.index-of slots slot)))))
-           slots)
+         %@(map
+             (fn [slot]
+               `(defndynamic %slot [o]
+                   (List.nth o %(inc (List.index-of slots-ls slot)))))
+             slots-ls)
 
-       %@(map
-           (fn [slot]
-             `(defndynamic %(Symbol.concat ['set- slot]) [o n]
-                 (List.set-nth o %(inc (List.index-of slots slot)) n)))
-           slots)
+         %@(map
+             (fn [slot]
+               `(defndynamic %(Symbol.concat ['set- slot]) [o n]
+                   (List.set-nth o %(inc (List.index-of slots-ls slot)) n)))
+             slots-ls)
 
-      (defndynamic str [o]
-        (String.concat
-          ["(" %(Symbol.str name)
-               %@(map (fn [slot] `(String.concat [" " (str (%(Symbol.prefix name slot) o))])) slots)
-           ")"]))
-    ))
+        (defndynamic str [o]
+          (String.concat
+            ["(" %(Symbol.str name)
+                 %@(map (fn [slot]
+                          `(String.concat [" "
+                                           (str (%(Symbol.prefix name slot) o))
+                                          ]))
+                        slots-ls)
+             ")"]))
+      ))
+    )
   )
 
   ; this is sadly too slow :(
