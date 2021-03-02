@@ -715,6 +715,17 @@ commandSaveDocsInternal ctx modulePath = do
         Nothing ->
           Left ("I can’t find the module `" ++ show path ++ "`")
 
+-- | Command for emitting literal C code from Carp.
+-- The string passed to this function will be emitted as is.
+-- This is necessary in some C interop contexts, e.g. calling macros that only accept string literals:
+--   (static-assert 0 (emit-c "\"foo\""))
+-- Also used in combination with the preproc command.
+commandEmitC :: UnaryCommandCallback
+commandEmitC ctx (XObj (Str c) i _) =
+  pure (ctx, Right (XObj (C c) i (Just CTy)))
+commandEmitC ctx xobj =
+  pure (evalError ctx ("Invalid argument to emit-c (expected a string):" ++ pretty xobj) (xobjInfo xobj))
+
 saveDocs :: Context -> [(SymPath, Binder)] -> IO (Context, Either a XObj)
 saveDocs ctx pathsAndEnvBinders = do
   liftIO (saveDocsForEnvs (contextProj ctx) pathsAndEnvBinders)
@@ -807,6 +818,7 @@ commandType :: UnaryCommandCallback
 commandType ctx (XObj x _ _) =
   pure (ctx, Right (XObj (Sym (SymPath [] (typeOf x)) Symbol) Nothing Nothing))
   where
+    typeOf (C _) = "C"
     typeOf (Str _) = "string"
     typeOf (Sym _ _) = "symbol"
     typeOf (MultiSym _ _) = "multi-symbol"

@@ -65,6 +65,7 @@ data Ty
   | MacroTy
   | DynamicTy -- the type of dynamic functions (used in REPL and macros)
   | InterfaceTy
+  | CTy -- C literals
   | Universe -- the type of types of types (the type of TypeTy)
   deriving (Eq, Ord, Generic)
 
@@ -192,6 +193,7 @@ instance Show Ty where
   show MacroTy = "Macro"
   show DynamicTy = "Dynamic"
   show Universe = "Universe"
+  show CTy = "C"
 
 showMaybeTy :: Maybe Ty -> String
 showMaybeTy (Just t) = show t
