@@ -1,6 +1,7 @@
 module Commands where
 
 import ColorText
+import Context
 import Control.Exception
 import Control.Monad (join, when)
 import Control.Monad.IO.Class (MonadIO, liftIO)
@@ -303,6 +304,7 @@ commandBuild ctx [XObj (Bol shutUp) _ _] = do
         let compiler = projectCompiler proj
             echoCompilationCommand = projectEchoCompilationCommand proj
             incl = projectIncludesToC proj
+            preproc = projectPreprocToC proj
             includeCorePath = projectCarpDir proj ++ "/core/ "
             cModules = projectCModules proj
             flags = projectFlags proj
@@ -334,7 +336,7 @@ commandBuild ctx [XObj (Bol shutUp) _ _] = do
         liftIO $ createDirectoryIfMissing False outDir
         outputHandle <- openFile outMain WriteMode
         hSetEncoding outputHandle utf8
-        hPutStr outputHandle (incl ++ okSrc)
+        hPutStr outputHandle (incl ++ preproc ++ okSrc)
         hClose outputHandle
         if generateOnly
           then pure (ctx, dynamicNil)
@@ -395,6 +397,17 @@ commandAddInclude includerConstructor ctx x =
       pure (ctx {contextProj = proj'}, dynamicNil)
     _ ->
       pure (evalError ctx ("Argument to 'include' must be a string, but was `" ++ pretty x ++ "`") (xobjInfo x))
+
+-- | Command for adding preprocessing directives to emitted C output.
+-- All of the directives will be emitted after the project includes and before any other code.
+commandPreproc :: UnaryCommandCallback
+commandPreproc ctx (XObj (C c) _ _) =
+  let proj = contextProj ctx
+      preprocs = (projectPreproc proj) ++ [c]
+      proj' = proj {projectPreproc = preprocs}
+   in pure (replaceProject ctx proj', dynamicNil)
+commandPreproc ctx x =
+  pure (evalError ctx ("Argument to 'preproc' must be C code, but was `" ++ pretty x ++ "`") (xobjInfo x))
 
 commandAddSystemInclude :: UnaryCommandCallback
 commandAddSystemInclude = commandAddInclude SystemInclude
