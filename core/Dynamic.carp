@@ -88,9 +88,10 @@ Example:
             [%(String.concat [dynamic-type-tag (Symbol.str name)]) %@slots-ls])
 
          (defndynamic %(Symbol.concat [name '?]) [o]
-           (and (array? o)
-                (= (car o)
-                   '%(String.concat [dynamic-type-tag (Symbol.str name)]))))
+           (and* (array? o)
+                 (= (length o) %(inc (length slots)))
+                 (= (car o)
+                    '%(String.concat [dynamic-type-tag (Symbol.str name)]))))
 
          %@(map
              (fn [slot]
@@ -141,8 +142,12 @@ Example:
             cs (prim-str dynamic-type-tag)]
         (if (and (string? tag?) (String.starts-with? tag? cs))
           (let [md (String.suffix tag? (String.length cs))
-                f (Symbol.prefix (Symbol.from md) 'str)]
-            ((eval f) a))
+                mds (Symbol.from md)
+                f (Symbol.prefix mds 'str)
+                pred (Symbol.prefix mds (Symbol.concat [mds '?]))]
+            (if (pred a)
+              ((eval f) a)
+              (prim-str a)))
           (prim-str a)))
       (prim-str a)))
 )
