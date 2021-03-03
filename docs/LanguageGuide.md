@@ -69,77 +69,6 @@ foo ; symbol
 (defmodule <name> <definition1> <definition2> ...) ;; The main way to organize your program into smaller parts
 ```
 
-#### Interfaces
-
-Interfaces specify a generic function signature that multiple concrete
-functions may implement. You can define an interface using
-`definterface`, passing a name and type signature of a function:
-
-```clojure
-(definterface speak (Fn [a] String))
-```
-
-You can declare a function as an implementation of an interface using
-`implements`. For example, the following snippet declares `Dog.bark`
-and `Cat.meow` as an implementation of `speak`:
-
-```clojure
-(definterface speak (Fn [a] String))
-
-(defmodule Dog
-  (defn bark [aggressive?]
-    (if aggressive? @"WOOF!" @"woof!"))
-  (implements speak Dog.bark))
-
-(defmodule Cat
-  (defn meow [times] (String.repeat times "meow!"))
-  (implements speak Cat.meow))
-```
-
-Only functions that satisfy an interface's singature can implement
-it. For exmaple, the following function isn't a valid implementation
-of `speak` because it has the wrong number of arguments and its return
-type does not match the return type of `speak`:
-
-```clojure
-(defmodule Number
-  ;; who knew numbers could talk?
-  (defn holler [] "WOO!")
-  (implements speak Number.holler))
-=> [INTERFACE ERROR] Number.holler : (Fn [] (Ref String a)) doesn't match the interface signature (Fn [a] String)
-```
-
-When you call an interface by name, Carp uses the current context and
-the type signature of each implementation to call an implementation
-that type checks:
-
-```clojure
-(speak 2) ;; Int -> String, Cat.meow
-=> "meow!meow!"
-(speak false) ;; Bool -> String, Dog.bark
-=> "woof!"
-```
-
-If more than one interface implementation satisfies Carp's type
-checker in a given context, Carp will complain about the ambiguity:
-
-```clojure
-(defmodule Pikachu
-  (defn pika [times] (String.repeat times "pika!"))
-  (implements speak Pikachu.pika))
-
-(speak 2) ;; Int -> String, Cat.meow OR Pikachu.pika
-=> There are several exact matches for the interface `speak` of type `(Fn [Int] String)` at line 1, column 2 in 'REPL'
-Possibilities:
-    Cat.meow : (Fn [Int] String)
-    Pikachu.pika : (Fn [Int] String) at REPL:1:1.
-```
-
-In such cases, you'll have to help the Carp compiler disambiguate the
-call by calling the implementing function you need
-directly. It usually isn't useful to provide multiple
-implementations that have the same function signature.
-
 ### Conditional statements with `cond`
 The `cond` statement executes a block of code if a specified condition is true. If the condition is false, another block of code can be executed.
 
@@ -227,84 +156,6 @@ These can only be used at the REPL and during macro evaluation. Here's a subset 
 
 To see all functions available in the `Dynamic` module, enter `(info Dynamic)` at the REPL.
 
-### Modules and Name Lookup
-Functions and variables can be stored in modules which are named and can be nested. To use a symbol inside a module
-you need to qualify it with the module name, like this: `Float.cos`.
-
-*Using* a module makes it possible to access its members without qualifying them:
-
-```clojure
-(use Float)
-
-(defn f []
-  (cos 3.2f))
-```
-
-If there are several used modules that contain symbols with the same name, the type inferer will try to figure
-out which one of the symbols you really mean (based on the types in your code). If it can't, it will display an error.
-For example, both the module `String` and `Array` contain a function named 'length'. In the following code it's
-possible to see that it's the array version that is needed, and that one will be called:
-
-```clojure
-(use String)
-(use Array)
-
-(defn f []
-  (length [1 2 3 4 5]))
-```
-
-In the following example it's not possible to figure out which type is intended:
-```clojure
-(use String)
-(use Array)
-
-(defn f [x]
-  (length x))
-```
-
-Specifying the type solves this error:
-```clojure
-(use String)
-(use Array)
-
-(defn f [x]
-  (String.length x))
-```
-
-When you `use` a module, its declarations are brought into the current scope. If you `use` a module in the global scope, all of its declarations are brought into global scope after the call to `use`. Similarly, if you `use` a module in another module's scope, its declarations can be referred to without qualifiers within the scope of the module:
-
-```clojure
-(use String)
-
-;; Only the `String` module is used in the global scope,
-;; so we can refer to `length` without a module qualifier.
-(defn f [x]
-  (length x))
-
-(defmodule Foo
-  (use Array)
-  ;; Since the the `String` module is used in the global scope,
-  ;; and the Foo module `use`s `Array`, we again need to qualify calls to `length`
-  ;; to disambiguate which declaration we're referring to.
-  (defn g [xs]
-    (Array.length xs)))
-```
-
-Sometimes, it's more convenient to bring a module's declarations into scope only for a limited number of forms. You can do this using the `with` form:
-
-```clojure
-(defmodule Foo
-  ;; we need to use a module qualifier here,
-  ;; since there's no call to `use` in the `Foo` module scope.
-  (defn f [x]
-    (String.length x))
-
-  ;; Using the `with` form, we can reference the module's declarations
-  ;; unqualified in all the forms contained in the `with`'s scope.
-  (with String
-    (defn g [x]
-      (length x))))
-```
 
 ### Structs
 Any structure type defined in Carp has an init method that can be used to create a new instance. It must be called with all the arguments in the order they are defined.
@@ -387,6 +238,193 @@ Note that match works with *values* (not references) takes ownership over the va
 
 Note that this code would not take ownership over `might-be-a-string`. Also, the `s` in the first case is a reference, since it wouldn't be safe to destructure the `Maybe` into values in this situation.
 
+### Modules and Name Lookup
+Functions and variables can be stored in modules which are named and can be nested. To use a symbol inside a module
+you need to qualify it with the module name, like this: `Float.cos`.
+
+*Using* a module makes it possible to access its members without qualifying them:
+
+```clojure
+(use Float)
+
+(defn f []
+  (cos 3.2f))
+```
+
+If there are several used modules that contain symbols with the same name, the type inferer will try to figure
+out which one of the symbols you really mean (based on the types in your code). If it can't, it will display an error.
+For example, both the module `String` and `Array` contain a function named 'length'. In the following code it's
+possible to see that it's the array version that is needed, and that one will be called:
+
+```clojure
+(use String)
+(use Array)
+
+(defn f []
+  (length [1 2 3 4 5]))
+```
+
+In the following example it's not possible to figure out which type is intended:
+```clojure
+(use String)
+(use Array)
+
+(defn f [x]
+  (length x))
+```
+
+Specifying the type solves this error:
+```clojure
+(use String)
+(use Array)
+
+(defn f [x]
+  (String.length x))
+```
+
+When you `use` a module, its declarations are brought into the current scope. If you `use` a module in the global scope, all of its declarations are brought into global scope after the call to `use`. Similarly, if you `use` a module in another module's scope, its declarations can be referred to without qualifiers within the scope of the module:
+
+```clojure
+(use String)
+
+;; Only the `String` module is used in the global scope,
+;; so we can refer to `length` without a module qualifier.
+(defn f [x]
+  (length x))
+
+(defmodule Foo
+  (use Array)
+  ;; Since the the `String` module is used in the global scope,
+  ;; and the Foo module `use`s `Array`, we again need to qualify calls to `length`
+  ;; to disambiguate which declaration we're referring to.
+  (defn g [xs]
+    (Array.length xs)))
+```
+
+Sometimes, it's more convenient to bring a module's declarations into scope only for a limited number of forms. You can do this using the `with` form:
+
+```clojure
+(defmodule Foo
+  ;; we need to use a module qualifier here,
+  ;; since there's no call to `use` in the `Foo` module scope.
+  (defn f [x]
+    (String.length x))
+
+  ;; Using the `with` form, we can reference the module's declarations
+  ;; unqualified in all the forms contained in the `with`'s scope.
+  (with String
+    (defn g [x]
+      (length x))))
+```
+
+It can be useful to keep some bindings internal to a module, to achieve that
+one can use `private` and `hidden`:
+
+```clojure
+(defmodule Say
+  ; Makes `hell` inaccessible outside of module `Say`
+  (private hell)
+  ; Will prevent `hell` from being visible when listing bindings in `Say`
+  (hidden hell)
+  (defn hell [] @"hell")
+
+  ; `private` & `hidden` work with `def` and `defn`
+  (private o)
+  (hidden o)
+  (def o @"o")
+
+  ; Can access `hell` and `o` inside the module
+  (defn hello [] (String.concat &[(hell) @&o])))
+
+
+; Valid call as `hello` is not private
+(Say.hello)
+
+; Will result in an compile time error as `hell` is private to the `Say` module
+(Say.hell)
+```
+
+`defn-` and `def-` can be used as a shorthand for defining a binding and
+marking it as `private` & `hidden`, the following example is equivalent to the
+previous one:
+
+```clojure
+(defmodule Say
+ (defn- hell [] @"hell")
+ (def- o @"o")
+ (defn hello [] (String.concat &[(hell) @&o])))
+```
+
+### Interfaces
+
+Interfaces specify a generic function signature that multiple concrete
+functions may implement. You can define an interface using
+`definterface`, passing a name and type signature of a function:
+
+```clojure
+(definterface speak (Fn [a] String))
+```
+
+You can declare a function as an implementation of an interface using
+`implements`. For example, the following snippet declares `Dog.bark`
+and `Cat.meow` as an implementation of `speak`:
+
+```clojure
+(definterface speak (Fn [a] String))
+
+(defmodule Dog
+  (defn bark [aggressive?]
+    (if aggressive? @"WOOF!" @"woof!"))
+  (implements speak Dog.bark))
+
+(defmodule Cat
+  (defn meow [times] (String.repeat times "meow!"))
+  (implements speak Cat.meow))
+```
+
+Only functions that satisfy an interface's singature can implement
+it. For exmaple, the following function isn't a valid implementation
+of `speak` because it has the wrong number of arguments and its return
+type does not match the return type of `speak`:
+
+```clojure
+(defmodule Number
+  ;; who knew numbers could talk?
+  (defn holler [] "WOO!")
+  (implements speak Number.holler))
+=> [INTERFACE ERROR] Number.holler : (Fn [] (Ref String a)) doesn't match the interface signature (Fn [a] String)
+```
+
+When you call an interface by name, Carp uses the current context and
+the type signature of each implementation to call an implementation
+that type checks:
+
+```clojure
+(speak 2) ;; Int -> String, Cat.meow
+=> "meow!meow!"
+(speak false) ;; Bool -> String, Dog.bark
+=> "woof!"
+```
+
+If more than one interface implementation satisfies Carp's type
+checker in a given context, Carp will complain about the ambiguity:
+
+```clojure
+(defmodule Pikachu
+  (defn pika [times] (String.repeat times "pika!"))
+  (implements speak Pikachu.pika))
+
+(speak 2) ;; Int -> String, Cat.meow OR Pikachu.pika
+=> There are several exact matches for the interface `speak` of type `(Fn [Int] String)` at line 1, column 2 in 'REPL'
+Possibilities:
+    Cat.meow : (Fn [Int] String)
+    Pikachu.pika : (Fn [Int] String) at REPL:1:1.
+```
+
+In such cases, you'll have to help the Carp compiler disambiguate the
+call by calling the implementing function you need
+directly. It usually isn't useful to provide multiple
+implementations that have the same function signature.
 
 ### C Interop
 ```clojure
