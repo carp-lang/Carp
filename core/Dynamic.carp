@@ -118,21 +118,6 @@ Example:
     )
   )
 
-  ; this is sadly too slow :(
-  ;(defdynamic prim-= =)
-
-  ;(defndynamic = [a b]
-  ;  (if (and (array? a) (not (empty? a)))
-  ;    (let [tag? (car a)
-  ;          s (str tag?)
-  ;          cs (str dynamic-type-tag)]
-  ;      (if (and (symbol? tag?) (String.starts-with? s cs))
-  ;        (let [md (String.suffix s (length cs))
-  ;              f (Symbol.prefix (Symbol.from md) '=)]
-  ;          ((eval f) a b))
-  ;        (prim-= a b)))
-  ;    (prim-= a b)))
-
   (hidden prim-str)
   (defdynamic prim-str str)
 

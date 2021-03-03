@@ -1,5 +1,9 @@
 # Macros
 
+### Related pages
+
+* [Dynamic Types](Dynamic_Types.md) - A way to define your own types in dynamic Carp.
+
 Macros are among the most divisive features about any Lisp. There are many
 different design decisions to be made, and all of them have proponents and
 detractors.
