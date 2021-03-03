@@ -61,20 +61,22 @@
           true
           (List.in? elem (cdr l))))))
 
+  (defdynamic prim-dynamic-type dynamic-type)
+
   (defndynamic string? [s]
-    (= (dynamic-type s) 'string))
+    (= (prim-dynamic-type s) 'string))
 
   (defndynamic symbol? [s]
-    (= (dynamic-type s) 'symbol))
+    (= (prim-dynamic-type s) 'symbol))
 
   (defndynamic list? [s]
-    (= (dynamic-type s) 'list))
+    (= (prim-dynamic-type s) 'list))
 
   (defndynamic array? [s]
-    (= (dynamic-type s) 'array))
+    (= (prim-dynamic-type s) 'array))
 
   (defndynamic number? [s]
-    (List.in? (dynamic-type s) '(int long double float byte))))
+    (List.in? (prim-dynamic-type s) '(int long double float byte))))
 
 (meta-set! doc "doc" "Set documentation for a binding.")
 (defmacro doc [name :rest strings]

@@ -150,6 +150,23 @@ Example:
               (prim-str a)))
           (prim-str a)))
       (prim-str a)))
+
+  ; this was already defined, but before hidden was, so we call it here
+  (hidden prim-dynamic-type)
+
+  (defndynamic dynamic-type [a]
+    (if (and (array? a) (not (empty? a)))
+      (let [tag? (car a)
+            cs (prim-str dynamic-type-tag)]
+        (if (and (string? tag?) (String.starts-with? tag? cs))
+          (let [md (String.suffix tag? (String.length cs))
+                mds (Symbol.from md)
+                pred (Symbol.prefix mds (Symbol.concat [mds '?]))]
+            (if (pred a)
+              mds
+              (prim-dynamic-type a)))
+          (prim-dynamic-type a)))
+      (prim-dynamic-type a)))
 )
 
 
