@@ -15,6 +15,7 @@ typedef char *Pattern;
 typedef int64_t Long;
 typedef uint32_t Char;
 typedef char CChar;
+typedef void *c_code;
 
 #if defined NDEBUG
 #define CHK_INDEX(i, n)

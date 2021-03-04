@@ -365,6 +365,25 @@ dynamicStringModule =
       let f = addTernaryCommand . spath
        in [f "slice" commandSubstring "creates a substring from a beginning index to an end index." "(String.slice \"hello\" 1 3) ; => \"ell\""]
 
+unsafeModule :: Env
+unsafeModule =
+  Env {
+    envBindings = bindings,
+    envParent = Nothing,
+    envModuleName = Just "Unsafe",
+    envUseModules = Set.empty,
+    envMode = ExternalEnv,
+    envFunctionNestingLevel = 0
+  }
+  where
+    spath = SymPath ["Unsafe"]
+    bindings = Map.fromList unaries
+    unaries =
+      let f = addUnaryCommand . spath
+       in [ f "emit-c" commandEmitC "emits literal C inline" "(Unsafe.emit-c \"#if 0\")",
+            f "preproc" commandPreproc "adds preprocessing C code to emitted output" "(Unsafe.preproc (Unsafe.emit-c \"#define FOO 0\"))"
+          ]
+
 -- | A submodule of the Dynamic module. Contains functions for working with symbols in the repl or during compilation.
 dynamicSymModule :: Env
 dynamicSymModule =
@@ -457,6 +476,7 @@ startingGlobalEnv noArray =
           ++ [("Pointer", Binder emptyMeta (XObj (Mod pointerModule) Nothing Nothing))]
           ++ [("Dynamic", Binder emptyMeta (XObj (Mod dynamicModule) Nothing Nothing))]
           ++ [("Function", Binder emptyMeta (XObj (Mod functionModule) Nothing Nothing))]
+          ++ [("Unsafe", Binder emptyMeta (XObj (Mod unsafeModule) Nothing Nothing))]
 
 -- | The type environment (containing deftypes and interfaces) before any code is run.
 startingTypeEnv :: Env

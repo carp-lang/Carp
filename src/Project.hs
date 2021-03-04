@@ -18,6 +18,7 @@ instance Show Target where
 data Project = Project
   { projectTitle :: String,
     projectIncludes :: [Includer],
+    projectPreproc  :: [String],
     projectCFlags :: [String],
     projectLibFlags :: [String],
     projectPkgConfigFlags :: [String],
@@ -59,6 +60,7 @@ instance Show Project where
         "Compiler: " ++ projectCompiler,
         "Target: " ++ show projectTarget,
         "Includes:\n    " ++ joinIndented (map show projectIncludes),
+        "Preprocessor directives:\n    " ++ joinIndented (map show projectPreproc),
         "Cflags:\n    " ++ joinIndented projectCFlags,
         "Library flags:\n    " ++ joinIndented projectLibFlags,
         "Flags for pkg-config:\n    " ++ joinIndented projectPkgConfigFlags,

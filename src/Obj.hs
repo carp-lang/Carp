@@ -170,6 +170,7 @@ data Obj
   | Ref
   | Deref
   | Interface Ty [SymPath]
+  | C String -- C literal
   deriving (Show, Eq, Generic)
 
 instance Hashable Obj
@@ -411,6 +412,7 @@ pretty = visit 0
     visit :: Int -> XObj -> String
     visit indent xobj =
       case xobjObj xobj of
+        C c -> show c
         Lst lst -> "(" ++ joinWithSpace (map (visit indent) lst) ++ ")"
         Arr arr -> "[" ++ joinWithSpace (map (visit indent) arr) ++ "]"
         StaticArr arr -> "$[" ++ joinWithSpace (map (visit indent) arr) ++ "]"
@@ -488,6 +490,7 @@ prettyUpTo lim xobj =
         Num DoubleTy _ -> ""
         Num _ _ -> error "Invalid number type."
         Str _ -> ""
+        C _ -> ""
         Pattern _ -> ""
         Chr _ -> ""
         Sym _ _ -> ""
@@ -778,6 +781,7 @@ incrementEnvNestLevel env =
 
 -- | Converts an S-expression to one of the Carp types.
 xobjToTy :: XObj -> Maybe Ty
+xobjToTy (XObj (Sym (SymPath _ "C") _) _ _) = Just CTy
 xobjToTy (XObj (Sym (SymPath _ "Unit") _) _ _) = Just UnitTy
 xobjToTy (XObj (Sym (SymPath _ "Int") _) _ _) = Just IntTy
 xobjToTy (XObj (Sym (SymPath _ "Float") _) _ _) = Just FloatTy

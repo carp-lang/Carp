@@ -3,6 +3,7 @@ module Emit
     envToC,
     globalsToC,
     projectIncludesToC,
+    projectPreprocToC,
     envToDeclarations,
     checkForUnresolvedSymbols,
     ToCMode (..),
@@ -172,6 +173,7 @@ toC toCMode (Binder meta root) = emitterSrc (execState (visit startingIndent roo
             (Match _) -> dontVisit
             With -> dontVisit
             MetaStub -> dontVisit
+            C c -> pure c
     visitStr' indent str i shouldEscape =
       -- This will allocate a new string every time the code runs:
       -- do let var = freshVar i
@@ -945,6 +947,11 @@ projectIncludesToC proj = intercalate "\n" (map includerToC includes) ++ "\n\n"
     includerToC (SystemInclude file) = "#include <" ++ file ++ ">"
     includerToC (RelativeInclude file) = "#include \"" ++ file ++ "\""
     includes = projectIncludes proj
+
+projectPreprocToC :: Project -> String
+projectPreprocToC proj = intercalate "\n" preprocs ++ "\n\n"
+  where
+    preprocs = projectPreproc proj
 
 binderToC :: ToCMode -> Binder -> Either ToCError String
 binderToC toCMode binder =
