@@ -237,7 +237,8 @@ primitiveRegisterTypeWithoutFields :: Context -> String -> Maybe String -> IO (C
 primitiveRegisterTypeWithoutFields ctx t override = do
   let path = SymPath [] t
       typeDefinition = XObj (Lst [XObj (ExternalType override) Nothing Nothing, XObj (Sym path Symbol) Nothing Nothing]) Nothing (Just TypeTy)
-  pure (insertInTypeEnv ctx (qualifyPath ctx path) (toBinder typeDefinition), dynamicNil)
+  -- TODO: Support registering types in modules
+  pure (insertInTypeEnv ctx (markQualified path) (toBinder typeDefinition), dynamicNil)
 
 primitiveRegisterTypeWithFields :: Context -> XObj -> String -> Maybe String -> XObj -> IO (Context, Either EvalError XObj)
 primitiveRegisterTypeWithFields ctx x t override members =
