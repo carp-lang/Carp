@@ -17,6 +17,7 @@
            Bool
            Byte
            Char
+           Control
            Debug
            Derive
            Double
