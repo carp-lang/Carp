@@ -18,6 +18,9 @@
         (list-to-array-internal (cdr xs) (append acc (array (car xs))))))
 
 (defmodule Dynamic
+  (defndynamic quoted [x]
+    (list 'quote x))
+
   (defndynamic /= [a b] (not (= a b)))
 
   (defndynamic caar [pair] (car (car pair)))
@@ -71,10 +74,7 @@
     (= (dynamic-type s) 'array))
 
   (defndynamic number? [s]
-    (List.in? (dynamic-type s) '(int long double float byte)))
-
-)
-
+    (List.in? (dynamic-type s) '(int long double float byte))))
 
 (meta-set! doc "doc" "Set documentation for a binding.")
 (defmacro doc [name :rest strings]
@@ -101,7 +101,7 @@
 (defmacro print-sig [name]
   (eval (list 'macro-log (list 'meta name "sig"))))
 
-(doc hide "Mark a binding as hidden, this will make it not print with the 'info' command.")
+(doc hidden "Mark a binding as hidden, this will make it not print with the 'info' command.")
 (defmacro hidden [name]
   (eval (list 'meta-set! name "hidden" true)))
 
@@ -133,12 +133,19 @@
   (let [v (if (= (length explanation) 0) true (car explanation))]
     (eval (list 'meta-set! name "deprecated" v))))
 
-(defmodule Dynamic
+(doc defn- "Declares a function while marking it as private and hidden.")
+(defmacro defn- [name args form]
+  (do
+   (eval (list 'private name))
+   (eval (list 'hidden name))
+   (list 'defn name args form)))
 
-  (defndynamic quoted [x]
-    (list 'quote x))
-
-)
+(doc def- "Declares a variable while marking it as private and hidden.")
+(defmacro def- [name value]
+  (do
+   (eval (list 'private name))
+   (eval (list 'hidden name))
+   (list 'def name value)))
 
 (defndynamic cond-internal [xs]
   (if (= (length xs) 0)
