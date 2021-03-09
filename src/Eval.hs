@@ -242,8 +242,8 @@ eval ctx xobj@(XObj o info ty) preference resolver =
                     let newGlobals = (contextGlobalEnv newCtx) <> (contextGlobalEnv c)
                         newTypes = TypeEnv $ (getTypeEnv (contextTypeEnv newCtx)) <> (getTypeEnv (contextTypeEnv c))
                         updater = replaceHistory' (contextHistory ctx) . replaceGlobalEnv' newGlobals . replaceTypeEnv' newTypes
-                    (_, res) <- apply (updater c) body params okArgs
-                    pure (newCtx, res)
+                    (ctx', res) <- apply (updater c) body params okArgs
+                    pure (replaceGlobalEnv newCtx (contextGlobalEnv ctx'), res)
                   Left err -> pure (newCtx, Left err)
         XObj (Lst [XObj Dynamic _ _, sym, XObj (Arr params) _ _, body]) i _ : args ->
           case checkArity (getName sym) params args of
@@ -267,37 +267,37 @@ eval ctx xobj@(XObj o info ty) preference resolver =
                 Left _ -> pure (ctx, res)
         [XObj (Lst [XObj (Command (NullaryCommandFunction nullary)) _ _, _, _]) _ _] ->
           do
-            (_, evaledArgs) <- foldlM successiveEval (ctx, Right []) []
+            (c, evaledArgs) <- foldlM successiveEval (ctx, Right []) []
             case evaledArgs of
-              Right [] -> nullary ctx
+              Right [] -> nullary c
               Right _ -> error "eval nullary"
               Left err -> pure (ctx, Left err)
         [XObj (Lst [XObj (Command (UnaryCommandFunction unary)) _ _, _, _]) _ _, x] ->
           do
-            (_, evaledArgs) <- foldlM successiveEval (ctx, Right []) [x]
+            (c, evaledArgs) <- foldlM successiveEval (ctx, Right []) [x]
             case evaledArgs of
-              Right [x'] -> unary ctx x'
+              Right [x'] -> unary c x'
               Right _ -> error "eval unary"
               Left err -> pure (ctx, Left err)
         [XObj (Lst [XObj (Command (BinaryCommandFunction binary)) _ _, _, _]) _ _, x, y] ->
           do
-            (_, evaledArgs) <- foldlM successiveEval (ctx, Right []) [x, y]
+            (c, evaledArgs) <- foldlM successiveEval (ctx, Right []) [x, y]
             case evaledArgs of
-              Right [x', y'] -> binary ctx x' y'
+              Right [x', y'] -> binary c x' y'
               Right _ -> error "eval binary"
               Left err -> pure (ctx, Left err)
         [XObj (Lst [XObj (Command (TernaryCommandFunction ternary)) _ _, _, _]) _ _, x, y, z] ->
           do
-            (_, evaledArgs) <- foldlM successiveEval (ctx, Right []) [x, y, z]
+            (c, evaledArgs) <- foldlM successiveEval (ctx, Right []) [x, y, z]
             case evaledArgs of
-              Right [x', y', z'] -> ternary ctx x' y' z'
+              Right [x', y', z'] -> ternary c x' y' z'
               Right _ -> error "eval ternary"
               Left err -> pure (ctx, Left err)
         XObj (Lst [XObj (Command (VariadicCommandFunction variadic)) _ _, _, _]) _ _ : args ->
           do
-            (_, evaledArgs) <- foldlM successiveEval (ctx, Right []) args
+            (c, evaledArgs) <- foldlM successiveEval (ctx, Right []) args
             case evaledArgs of
-              Right xs -> variadic ctx xs
+              Right xs -> variadic c xs
               Left err -> pure (ctx, Left err)
         XObj (Lst [XObj (Command _) _ _, sym, XObj (Arr params) _ _]) i _ : args ->
           badArity (getName sym) params args i
