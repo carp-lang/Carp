@@ -2,6 +2,7 @@
 (use Test)
 
 (defdynamic x 400)
+(defdynamic z 0)
 
 ;; close over a global variable
 (defdynamic closure-one
@@ -23,6 +24,10 @@
 (defdynamic closure-five
   (fn [] (let [x 5] (fn [] x))))
 
+;; closures can update the global environment (issue #1181)
+(defdynamic closure-six
+  (fn [] (set! z (inc z))))
+
 (defdynamic y 500)
 
 (defmacro test-closure-one [] (closure-one))
@@ -30,6 +35,11 @@
 (defmacro test-closure-three [] (closure-three))
 (defmacro test-closure-four [] (closure-four))
 (defmacro test-closure-five [] ((closure-five)))
+(defmacro test-closure-six []
+  (do (closure-six)
+      (closure-six)
+      (closure-six)
+      z))
 
 ;; Change the global value of x (closed over in closure-one)
 (set! x 1000)
@@ -55,4 +65,8 @@
     5
     (test-closure-five)
     "nested closures prefer closed-over bindings")
+  (assert-equal test
+    3
+    (test-closure-six)
+    "closures can update the global environment")
 )
