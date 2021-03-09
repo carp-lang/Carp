@@ -1,0 +1,11 @@
+(deftype A [])
+
+(defmodule A
+  (sig drop (Fn [(Ref A)] ()))
+  (defn drop [a]
+    (IO.println "Hi from drop!"))
+)
+
+(defn main []
+  (let [a (A)]
+    ()))

@@ -1,0 +1,61 @@
+;;; Taken from
+;;; http://benchmarksgame.alioth.debian.org/u64q/program.php?test=mandelbrot&lang=gcc&id=2
+
+(add-cflag "-pipe -O3 -fomit-frame-pointer -march=native -mfpmath=sse -msse3")
+
+(use Double)
+(use Int)
+(use String)
+(use IO)
+
+(def w 16000.0)
+(def h 16000.0)
+
+(defn main []
+  (do
+    (print &(str* @"P4\n" (str w) @" " (str h) @"\n"))
+    (let-do [iter 50
+             limit 2.0
+             byte_acc 0b
+             bytes []
+             bit_num 0]
+      (for [y 0 (to-int h)]
+        (for [x 0 (to-int w)]
+          (let [Zr 0.0
+                Zi 0.0
+                Tr 0.0
+                Ti 0.0
+                Cr (- (/ (* 2.0 (from-int x)) w) 1.5)
+                Ci (- (/ (* 2.0 (from-int y)) w) 1.0)]
+            (do
+              (let [i 0]
+                (while (and (< i iter)
+                      (<= (+ Tr Ti) (* limit limit)))
+                  (do
+                    (set! Zi (+ (* 2.0 (* Zr Zi)) Ci))
+                    (set! Zr (+ (- Tr Ti) Cr))
+                    (set! Tr (* Zr Zr))
+                    (set! Ti (* Zi Zi))
+                    (set! i (inc i)))))
+
+              (set! byte_acc (* 2b byte_acc))
+
+              (when (<= (+ Tr Ti) (* limit limit))
+                (set! byte_acc (bit-or byte_acc 1b)))
+
+              (set! bit_num (inc bit_num))
+
+              (if (= bit_num 8)
+                (do
+                  (set! bytes (Array.push-back bytes byte_acc))
+                  (set! byte_acc 0b)
+                  (set! bit_num 0))
+                (if (= x (- (to-int w) 1))
+                  (do
+                    (set! byte_acc
+                      (bit-shift-left byte_acc (- 8b (mod (from-int (to-int w)) 8b))))
+                    (set! bytes (Array.push-back bytes byte_acc))
+                    (set! byte_acc 0b)
+                    (set! bit_num 0))
+                  ()))))))
+        (print &(String.from-bytes &bytes)))))

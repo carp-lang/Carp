@@ -18,6 +18,9 @@
         (list-to-array-internal (cdr xs) (append acc (array (car xs))))))
 
 (defmodule Dynamic
+  (defndynamic quoted [x]
+    (list 'quote x))
+
   (defndynamic /= [a b] (not (= a b)))
 
   (defndynamic caar [pair] (car (car pair)))
@@ -50,11 +53,13 @@
   (defndynamic cddddr [pair] (cdr (cdr (cdr (cdr pair)))))
 
   (defmodule List
+    ; this should be defined using cond, but is defined before cond
     (defndynamic in? [elem l]
-      (cond
-        (empty? l) false
-        (= elem (car l)) true
-        (in? elem (cdr l)))))
+      (if (empty? l)
+        false
+        (if (= elem (car l))
+          true
+          (List.in? elem (cdr l))))))
 
   (defndynamic string? [s]
     (= (dynamic-type s) 'string))
@@ -69,10 +74,7 @@
     (= (dynamic-type s) 'array))
 
   (defndynamic number? [s]
-    (List.in? (dynamic-type s) '(int long double float byte)))
-
-)
-
+    (List.in? (dynamic-type s) '(int long double float byte))))
 
 (meta-set! doc "doc" "Set documentation for a binding.")
 (defmacro doc [name :rest strings]
@@ -85,7 +87,7 @@
                                             (Dynamic.String.concat [x newline])))
                                 strings
                                 ())]
-    (eval (list 'meta-set! name "doc" (Dynamic.String.concat (list-to-array-internal separated []))))))
+    (list 'meta-set! name "doc" (Dynamic.String.concat (list-to-array-internal separated [])))))
 
 (doc print-doc "Print the documentation for a binding.")
 (defmacro print-doc [name]
@@ -99,7 +101,7 @@
 (defmacro print-sig [name]
   (eval (list 'macro-log (list 'meta name "sig"))))
 
-(doc hide "Mark a binding as hidden, this will make it not print with the 'info' command.")
+(doc hidden "Mark a binding as hidden, this will make it not print with the 'info' command.")
 (defmacro hidden [name]
   (eval (list 'meta-set! name "hidden" true)))
 
@@ -131,12 +133,19 @@
   (let [v (if (= (length explanation) 0) true (car explanation))]
     (eval (list 'meta-set! name "deprecated" v))))
 
-(defmodule Dynamic
+(doc defn- "Declares a function while marking it as private and hidden.")
+(defmacro defn- [name args form]
+  (do
+   (eval (list 'private name))
+   (eval (list 'hidden name))
+   (list 'defn name args form)))
 
-  (defndynamic quoted [x]
-    (list 'quote x))
-
-)
+(doc def- "Declares a variable while marking it as private and hidden.")
+(defmacro def- [name value]
+  (do
+   (eval (list 'private name))
+   (eval (list 'hidden name))
+   (list 'def name value)))
 
 (defndynamic cond-internal [xs]
   (if (= (length xs) 0)
@@ -258,3 +267,62 @@
      "of those interfaces.")
 (defmacro implements-all [mod :rest interfaces]
   (cons 'do (map (curry implement-declaration mod) interfaces)))
+
+(defmodule Unsafe
+  (defmodule C
+    (defndynamic emit-c-line [append-strings args]
+      (let [strs (map (fn [x] (String.concat [x " "])) (map str args))
+            arr (collect-into strs array)
+            code (String.concat (append append-strings arr))]
+      (list 'Unsafe.preproc (list 'Unsafe.emit-c code))))
+
+    (doc pragma
+       "Emits a #pragma compiler directive in Carp's c output.")
+    (defmacro pragma [:rest args]
+      (eval (Unsafe.C.emit-c-line ["#pragma "] args)))
+
+    (doc define
+      "Emits a #define compiler directive in Carp's c output.")
+    (defmacro define [name value]
+      (Unsafe.C.emit-c-line ["#define "] [name value]))
+
+    (doc undef
+      "Emits a #undef compiler directive in Carp's c output.")
+    (defmacro undef [name]
+      (Unsafe.C.emit-c-line ["#undef "] [name]))
+
+    (defndynamic if- [if-pre name then else]
+      (do (eval (Unsafe.C.emit-c-line [if-pre] [name]))
+          (eval (Unsafe.C.emit-c-line ["  "] [then]))
+          (if (not (empty? else))
+              (do (eval (Unsafe.C.emit-c-line ["#else"] []))
+                  (eval (Unsafe.C.emit-c-line ["  "] else)))
+              ())
+          (eval (Unsafe.C.emit-c-line ["#endif"] []))))
+
+    (doc ifpre
+      "Emits a #if compiler directive in Carp's c output.")
+    (defmacro ifpre [name then :rest else]
+      (Unsafe.C.if- "#if " name then else))
+
+    (doc ifdef
+      "Emits a #ifdef compiler directive in Carp's c output.")
+    (defmacro ifdef [name then :rest else]
+      (Unsafe.C.if- "#ifdef " name then else))
+
+    (doc ifndef
+      "Emits a #ifndef compiler directive in Carp's c output.")
+    (defmacro ifndef [name then :rest else]
+      (Unsafe.C.if- "#ifndef " name then else))
+
+    (doc warning
+      "Emits a #warning compiler directive in Carp's c output.")
+    (defmacro warning [message]
+      (eval (Unsafe.C.emit-c-line ["#warning "] [message])))
+
+    (doc error
+      "Emits a #error compiler directive in Carp's c output.")
+    (defmacro error [message]
+    (eval (Unsafe.C.emit-c-line ["#error "] [message])))
+  )
+)

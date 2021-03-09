@@ -1,6 +1,7 @@
 module TypeError where
 
 import Constraints
+import Data.List (nub)
 import Data.Maybe (fromMaybe)
 import Info
 import qualified Map
@@ -135,29 +136,10 @@ instance Show TypeError where
       ++ prettyInfoFromXObj xobj
       ++ ".\n\nI need exactly one body form. For multiple forms, try using `do`."
   show (UnificationFailed (Constraint a b aObj bObj ctx _) mappings _) =
-    "I can’t match the types `" ++ show (recursiveLookupTy mappings a)
-      ++ "` and `"
-      ++ show (recursiveLookupTy mappings b)
-      ++ "`"
+    "I can’t match the types `" ++ showTy a ++ "` and `" ++ showTy b ++ "`."
       ++ extra
-      ++ ".\n\n"
-      ++
-      --show aObj ++ "\nWITH\n" ++ show bObj ++ "\n\n" ++
-      "  "
-      ++ pretty aObj
-      ++ " : "
-      ++ showTypeFromXObj mappings aObj
-      ++ "\n  At "
-      ++ prettyInfoFromXObj aObj
-      ++ ""
-      ++ "\n\n"
-      ++ "  "
-      ++ pretty bObj
-      ++ " : "
-      ++ showTypeFromXObj mappings bObj
-      ++ "\n  At "
-      ++ prettyInfoFromXObj bObj
-      ++ "\n"
+      ++ showObj aObj
+      ++ showObj bObj
     where
       -- ++ "Constraint: " ++ show constraint ++ "\n\n"
       -- "All constraints:\n" ++ show constraints ++ "\n\n" ++
@@ -167,6 +149,14 @@ instance Show TypeError where
         if length s > 25
           then take 15 s ++ " ... " ++ drop (length s - 5) s
           else s
+      beautifulTy = beautifyTy mappings . recursiveLookupTy mappings
+      showTy = show . beautifulTy
+      showObjTy = fromMaybe "Type missing" . fmap showTy . xobjTy
+      showObj o =
+        "\n\n  " ++ pretty o ++ " : " ++ showObjTy o
+          ++ "\n  At "
+          ++ prettyInfoFromXObj o
+          ++ ""
   show (CantDisambiguate xobj originalName theType options) =
     "I found an ambiguous symbol `" ++ originalName ++ "` of type `"
       ++ show theType
@@ -460,7 +450,7 @@ evalError :: Context -> String -> Maybe Info -> (Context, Either EvalError a)
 evalError ctx = makeEvalError ctx Nothing
 
 -- | Print type errors correctly when running the compiler in 'Check' mode
-makeEvalError :: Context -> Maybe TypeError.TypeError -> String -> Maybe Info -> (Context, Either EvalError a)
+makeEvalError :: Context -> Maybe TypeError -> String -> Maybe Info -> (Context, Either EvalError a)
 makeEvalError ctx err msg info =
   let fppl = projectFilePathPrintLength (contextProj ctx)
       history = contextHistory ctx
@@ -489,3 +479,39 @@ keysInEnvEditDistance path@(SymPath (p : ps) name) env distance =
       case envParent env of
         Just parent -> keysInEnvEditDistance path parent distance
         Nothing -> []
+
+beautifyTy :: TypeMappings -> Ty -> Ty
+beautifyTy mappings = f
+  where
+    f :: Ty -> Ty
+    f (FuncTy argTys retTy lifetime) = FuncTy (f <$> argTys) (f retTy) (f lifetime)
+    f (StructTy n typeArgs) = StructTy n (f <$> typeArgs)
+    f (RefTy innerTy lifetime) = RefTy (f innerTy) (f lifetime)
+    f (PointerTy innerTy) = PointerTy $ f innerTy
+    f t@(VarTy n) = case Map.lookup n bmappings of
+      Just nn -> VarTy nn
+      Nothing -> t
+    f t = t
+    bmappings = beautification mappings
+    beautification :: TypeMappings -> Map.Map String String
+    beautification m =
+      Map.fromList $ zip (map (\(VarTy name) -> name) tys) ((: []) <$> ['a' ..])
+      where
+        tys = nub $ concat $ typeVariablesInOrderOfAppearance <$> tys'
+        tys' = snd <$> Map.assocs m
+
+typeVariablesInOrderOfAppearance :: Ty -> [Ty]
+typeVariablesInOrderOfAppearance (FuncTy argTys retTy ltTy) =
+  concatMap typeVariablesInOrderOfAppearance argTys ++ typeVariablesInOrderOfAppearance retTy ++ typeVariablesInOrderOfAppearance ltTy
+typeVariablesInOrderOfAppearance (StructTy n typeArgs) =
+  case n of
+    t@(VarTy _) -> typeVariablesInOrderOfAppearance t ++ concatMap typeVariablesInOrderOfAppearance typeArgs
+    _ -> concatMap typeVariablesInOrderOfAppearance typeArgs
+typeVariablesInOrderOfAppearance (RefTy innerTy lifetimeTy) =
+  typeVariablesInOrderOfAppearance innerTy ++ typeVariablesInOrderOfAppearance lifetimeTy
+typeVariablesInOrderOfAppearance (PointerTy innerTy) =
+  typeVariablesInOrderOfAppearance innerTy
+typeVariablesInOrderOfAppearance t@(VarTy _) =
+  [t]
+typeVariablesInOrderOfAppearance _ =
+  []

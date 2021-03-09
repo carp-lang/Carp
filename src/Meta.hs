@@ -7,6 +7,7 @@ module Meta
     updateBinderMeta,
     Meta.member,
     binderMember,
+    hide,
   )
 where
 
@@ -56,3 +57,7 @@ member key meta = Map.member key $ getMeta meta
 
 binderMember :: String -> Binder -> Bool
 binderMember key binder = Meta.member key $ fromBinder binder
+
+hide :: Binder -> Binder
+hide binder =
+  updateBinderMeta binder "hidden" trueXObj

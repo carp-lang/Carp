@@ -3,6 +3,13 @@
 (defmodule Dynamic
   ;; Functions for doing things at the REPL and during compile time.
 
+  (doc nil "is the value `nil`, i.e. the empty list.")
+  (defdynamic nil '())
+
+  (doc nil? "checks whether a value is nil, i.e. the empty list.")
+  (defndynamic nil? [value]
+    (= value nil))
+
   (defndynamic inc [x]
     (+ x 1))
 
@@ -19,6 +26,17 @@
       (while (or (> m b) (= m b))
         (set! m (- m b)))
       (if (< a 0) (neg m) m)))
+
+  (doc imod "implements the modulo on integers, and is much faster than
+[`mod](#mod).")
+  (defndynamic imod [x y]
+    (- x (* y (/ x y))))
+
+  (doc even? "checks whether the number `n` is even.")
+  (defndynamic even? [n] (= 0 (mod n 2)))
+
+  (doc odd? "checks whether the number `n` is odd.")
+  (defndynamic odd? [n] (= 1 (mod n 2)))
 
   (defmodule Project
     (doc no-echo "Turn off debug printing in the compiler.")

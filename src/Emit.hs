@@ -3,6 +3,7 @@ module Emit
     envToC,
     globalsToC,
     projectIncludesToC,
+    projectPreprocToC,
     envToDeclarations,
     checkForUnresolvedSymbols,
     ToCMode (..),
@@ -172,6 +173,7 @@ toC toCMode (Binder meta root) = emitterSrc (execState (visit startingIndent roo
             (Match _) -> dontVisit
             With -> dontVisit
             MetaStub -> dontVisit
+            C c -> pure c
     visitStr' indent str i shouldEscape =
       -- This will allocate a new string every time the code runs:
       -- do let var = freshVar i
@@ -602,8 +604,12 @@ toC toCMode (Binder meta root) = emitterSrc (execState (visit startingIndent roo
         XObj (Interface _ _) _ _ : _ ->
           pure ""
         -- Break
-        [XObj Break _ _] -> do
+        [XObj Break minfo _] -> do
+          case minfo of
+            Just i -> delete indent i
+            Nothing -> return ()
           appendToSrc (addIndent indent ++ "break;\n")
+          appendToSrc (addIndent indent ++ "// Unreachable:\n")
           pure ""
         -- Function application (functions with overridden names)
         func@(XObj (Sym _ (LookupGlobalOverride overriddenName)) _ _) : args ->
@@ -771,8 +777,13 @@ delete indent i = mapM_ deleterToC (infoDelete i)
       pure ()
     deleterToC RefDeleter {} =
       pure ()
-    deleterToC deleter@ProperDeleter {} =
-      appendToSrc $ addIndent indent ++ "" ++ pathToC (deleterPath deleter) ++ "(" ++ mangle (deleterVariable deleter) ++ ");\n"
+    deleterToC deleter@ProperDeleter {} = do
+      let v = mangle (deleterVariable deleter)
+      case dropPath deleter of
+        Just path ->
+          appendToSrc $ addIndent indent ++ "" ++ pathToC path ++ "(&" ++ v ++ ");\n"
+        Nothing -> pure ()
+      appendToSrc $ addIndent indent ++ "" ++ pathToC (deleterPath deleter) ++ "(" ++ v ++ ");\n"
 
 defnToDeclaration :: MetaData -> SymPath -> [XObj] -> Ty -> String
 defnToDeclaration meta path@(SymPath _ name) argList retTy =
@@ -936,6 +947,11 @@ projectIncludesToC proj = intercalate "\n" (map includerToC includes) ++ "\n\n"
     includerToC (SystemInclude file) = "#include <" ++ file ++ ">"
     includerToC (RelativeInclude file) = "#include \"" ++ file ++ "\""
     includes = projectIncludes proj
+
+projectPreprocToC :: Project -> String
+projectPreprocToC proj = intercalate "\n" preprocs ++ "\n\n"
+  where
+    preprocs = projectPreproc proj
 
 binderToC :: ToCMode -> Binder -> Either ToCError String
 binderToC toCMode binder =

@@ -1,6 +1,7 @@
 module Commands where
 
 import ColorText
+import Context
 import Control.Exception
 import Control.Monad (join, when)
 import Control.Monad.IO.Class (MonadIO, liftIO)
@@ -42,14 +43,6 @@ instance Exception CarpException
 -- | A lot of commands need to return nil, which signifies a side effecting function and no printing of the result.
 dynamicNil :: Either a XObj
 dynamicNil = Right (XObj (Lst []) (Just dummyInfo) (Just UnitTy)) -- TODO: Remove/unwrap (Right ...) to a XObj
-
--- | Dynamic 'true'.
-trueXObj :: XObj
-trueXObj = XObj (Bol True) Nothing Nothing
-
--- | Dynamic 'false'.
-falseXObj :: XObj
-falseXObj = XObj (Bol False) Nothing Nothing
 
 boolToXObj :: Bool -> XObj
 boolToXObj b = if b then trueXObj else falseXObj
@@ -282,8 +275,9 @@ runExeWithArgs ctx exe args = liftIO $ do
     ExitFailure i -> throw (ShellOutException ("'" ++ exe ++ "' exited with return value " ++ show i ++ ".") i)
 
 -- | Command for building the project, producing an executable binary or a shared library.
-commandBuild :: Bool -> NullaryCommandCallback
-commandBuild shutUp ctx = do
+commandBuild :: VariadicCommandCallback
+commandBuild ctx [] = commandBuild ctx [falseXObj]
+commandBuild ctx [XObj (Bol shutUp) _ _] = do
   let env = contextGlobalEnv ctx
       typeEnv = contextTypeEnv ctx
       proj = contextProj ctx
@@ -310,6 +304,7 @@ commandBuild shutUp ctx = do
         let compiler = projectCompiler proj
             echoCompilationCommand = projectEchoCompilationCommand proj
             incl = projectIncludesToC proj
+            preproc = projectPreprocToC proj
             includeCorePath = projectCarpDir proj ++ "/core/ "
             cModules = projectCModules proj
             flags = projectFlags proj
@@ -341,13 +336,17 @@ commandBuild shutUp ctx = do
         liftIO $ createDirectoryIfMissing False outDir
         outputHandle <- openFile outMain WriteMode
         hSetEncoding outputHandle utf8
-        hPutStr outputHandle (incl ++ okSrc)
+        hPutStr outputHandle (incl ++ preproc ++ okSrc)
         hClose outputHandle
         if generateOnly
           then pure (ctx, dynamicNil)
           else case Map.lookup "main" (envBindings env) of
             Just _ -> compile True
             Nothing -> compile False
+commandBuild ctx [arg] =
+  pure (evalError ctx ("`build` expected a boolean argument, but got `" ++ pretty arg ++ "`.") (xobjInfo arg))
+commandBuild ctx args =
+  pure (evalError ctx ("`build` expected a single boolean argument, but got `" ++ unwords (map pretty args) ++ "`.") (xobjInfo (head args)))
 
 setProjectCanExecute :: Bool -> Context -> Context
 setProjectCanExecute value ctx =
@@ -398,6 +397,17 @@ commandAddInclude includerConstructor ctx x =
       pure (ctx {contextProj = proj'}, dynamicNil)
     _ ->
       pure (evalError ctx ("Argument to 'include' must be a string, but was `" ++ pretty x ++ "`") (xobjInfo x))
+
+-- | Command for adding preprocessing directives to emitted C output.
+-- All of the directives will be emitted after the project includes and before any other code.
+commandPreproc :: UnaryCommandCallback
+commandPreproc ctx (XObj (C c) _ _) =
+  let proj = contextProj ctx
+      preprocs = (projectPreproc proj) ++ [c]
+      proj' = proj {projectPreproc = preprocs}
+   in pure (replaceProject ctx proj', dynamicNil)
+commandPreproc ctx x =
+  pure (evalError ctx ("Argument to 'preproc' must be C code, but was `" ++ pretty x ++ "`") (xobjInfo x))
 
 commandAddSystemInclude :: UnaryCommandCallback
 commandAddSystemInclude = commandAddInclude SystemInclude
@@ -632,7 +642,7 @@ commandPathAbsolute ctx a =
 commandArith :: (Number -> Number -> Number) -> String -> BinaryCommandCallback
 commandArith op _ ctx (XObj (Num aTy aNum) _ _) (XObj (Num bTy bNum) _ _) =
   let newTy = promoteNumber aTy bTy
-  in pure (ctx, Right (XObj (Num newTy (op aNum bNum)) (Just dummyInfo) (Just newTy)))
+   in pure (ctx, Right (XObj (Num newTy (op aNum bNum)) (Just dummyInfo) (Just newTy)))
 commandArith _ opname ctx a b = pure $ evalError ctx ("Can't call " ++ opname ++ " with " ++ pretty a ++ " and " ++ pretty b) (xobjInfo a)
 
 commandPlus :: BinaryCommandCallback
@@ -717,6 +727,17 @@ commandSaveDocsInternal ctx modulePath = do
           Left ("I can’t generate documentation for `" ++ pretty x ++ "` because it isn’t a module")
         Nothing ->
           Left ("I can’t find the module `" ++ show path ++ "`")
+
+-- | Command for emitting literal C code from Carp.
+-- The string passed to this function will be emitted as is.
+-- This is necessary in some C interop contexts, e.g. calling macros that only accept string literals:
+--   (static-assert 0 (emit-c "\"foo\""))
+-- Also used in combination with the preproc command.
+commandEmitC :: UnaryCommandCallback
+commandEmitC ctx (XObj (Str c) i _) =
+  pure (ctx, Right (XObj (C c) i (Just CTy)))
+commandEmitC ctx xobj =
+  pure (evalError ctx ("Invalid argument to emit-c (expected a string):" ++ pretty xobj) (xobjInfo xobj))
 
 saveDocs :: Context -> [(SymPath, Binder)] -> IO (Context, Either a XObj)
 saveDocs ctx pathsAndEnvBinders = do
@@ -809,52 +830,54 @@ commandParse ctx x =
 commandType :: UnaryCommandCallback
 commandType ctx (XObj x _ _) =
   pure (ctx, Right (XObj (Sym (SymPath [] (typeOf x)) Symbol) Nothing Nothing))
-  where typeOf (Str _) = "string"
-        typeOf (Sym _ _) = "symbol"
-        typeOf (MultiSym _ _) = "multi-symbol"
-        typeOf (InterfaceSym _) = "interface-symbol"
-        typeOf (Arr _) = "array"
-        typeOf (StaticArr _) = "static-array"
-        typeOf (Lst _) = "list"
-        typeOf (Num IntTy _) = "int"
-        typeOf (Num LongTy _) = "long"
-        typeOf (Num ByteTy _) = "byte"
-        typeOf (Num FloatTy _) = "float"
-        typeOf (Num DoubleTy _) = "double"
-        typeOf (Num _ _) = error "invalid number type for `type` command!"
-        typeOf (Pattern _) = "pattern"
-        typeOf (Chr _) = "char"
-        typeOf (Bol _) = "bool"
-        typeOf (Dict _) = "map"
-        typeOf (Closure _ _) = "closure"
-        typeOf (Defn _) = "defn"
-        typeOf Def = "def"
-        typeOf (Fn _ _) = "fn"
-        typeOf Do = "do"
-        typeOf Let = "let"
-        typeOf LocalDef = "local-def"
-        typeOf While = "while"
-        typeOf Break = "dreak"
-        typeOf If = "if"
-        typeOf (Match _) = "matxch"
-        typeOf (Mod _) = "module"
-        typeOf (Deftype _) = "deftype"
-        typeOf (DefSumtype _) = "def-sum-type"
-        typeOf With = "with"
-        typeOf (External _) = "external"
-        typeOf (ExternalType _) = "external-type"
-        typeOf MetaStub = "meta-stub"
-        typeOf (Deftemplate _) = "deftemplate"
-        typeOf (Instantiate _) = "instantiate"
-        typeOf (Defalias _) = "defalias"
-        typeOf Address = "address"
-        typeOf SetBang = "set!"
-        typeOf Macro = "macro"
-        typeOf Dynamic = "dynamic"
-        typeOf DefDynamic = "defdynamic"
-        typeOf (Command _) = "command"
-        typeOf (Primitive _) = "primitive"
-        typeOf The = "the"
-        typeOf Ref = "ref"
-        typeOf Deref = "deref"
-        typeOf (Interface _ _) = "interface"
+  where
+    typeOf (C _) = "C"
+    typeOf (Str _) = "string"
+    typeOf (Sym _ _) = "symbol"
+    typeOf (MultiSym _ _) = "multi-symbol"
+    typeOf (InterfaceSym _) = "interface-symbol"
+    typeOf (Arr _) = "array"
+    typeOf (StaticArr _) = "static-array"
+    typeOf (Lst _) = "list"
+    typeOf (Num IntTy _) = "int"
+    typeOf (Num LongTy _) = "long"
+    typeOf (Num ByteTy _) = "byte"
+    typeOf (Num FloatTy _) = "float"
+    typeOf (Num DoubleTy _) = "double"
+    typeOf (Num _ _) = error "invalid number type for `type` command!"
+    typeOf (Pattern _) = "pattern"
+    typeOf (Chr _) = "char"
+    typeOf (Bol _) = "bool"
+    typeOf (Dict _) = "map"
+    typeOf (Closure _ _) = "closure"
+    typeOf (Defn _) = "defn"
+    typeOf Def = "def"
+    typeOf (Fn _ _) = "fn"
+    typeOf Do = "do"
+    typeOf Let = "let"
+    typeOf LocalDef = "local-def"
+    typeOf While = "while"
+    typeOf Break = "dreak"
+    typeOf If = "if"
+    typeOf (Match _) = "matxch"
+    typeOf (Mod _) = "module"
+    typeOf (Deftype _) = "deftype"
+    typeOf (DefSumtype _) = "def-sum-type"
+    typeOf With = "with"
+    typeOf (External _) = "external"
+    typeOf (ExternalType _) = "external-type"
+    typeOf MetaStub = "meta-stub"
+    typeOf (Deftemplate _) = "deftemplate"
+    typeOf (Instantiate _) = "instantiate"
+    typeOf (Defalias _) = "defalias"
+    typeOf Address = "address"
+    typeOf SetBang = "set!"
+    typeOf Macro = "macro"
+    typeOf Dynamic = "dynamic"
+    typeOf DefDynamic = "defdynamic"
+    typeOf (Command _) = "command"
+    typeOf (Primitive _) = "primitive"
+    typeOf The = "the"
+    typeOf Ref = "ref"
+    typeOf Deref = "deref"
+    typeOf (Interface _ _) = "interface"

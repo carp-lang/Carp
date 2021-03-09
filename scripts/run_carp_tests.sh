@@ -50,6 +50,7 @@ compileOnlyExamples="\
                    examples/mutual_recursion.carp \
                    examples/guessing_game.carp \
                    examples/unicode.carp \
+                   examples/benchmark_*.carp \
                    examples/nested_lambdas.carp
 "
 

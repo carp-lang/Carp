@@ -303,11 +303,11 @@ escaped = do
       return [chr p]
     _ ->
       if elem c "01234567"
-      then do
-        hex <- Parsec.many1 (Parsec.oneOf "01234567")
-        let [(p, "")] = readHex (c : hex)
-        return [chr p]
-      else pure ('\\' : [c])
+        then do
+          hex <- Parsec.many1 (Parsec.oneOf "01234567")
+          let [(p, "")] = readHex (c : hex)
+          return [chr p]
+        else pure ('\\' : [c])
 
 escapedQuoteChar :: Parsec.Parsec String ParseState Char
 escapedQuoteChar = do
@@ -565,9 +565,8 @@ dictionary = do
       pairInit = XObj (Sym (SymPath ["Pair"] "init") (LookupGlobal CarpLand AFunction)) i Nothing
       pairs = map (\(k, v) -> XObj (Lst [pairInit, k, v]) i Nothing) (pairwise objs')
       arrayLiteral = XObj (Arr pairs) i Nothing
-      reffedArrayLiteral = XObj (Lst [XObj Ref i Nothing, arrayLiteral]) i Nothing
       fromArraySymbol = XObj (Sym (SymPath ["Map"] "from-array") (LookupGlobal CarpLand AFunction)) i Nothing
-      fromArraySexp = XObj (Lst [fromArraySymbol, reffedArrayLiteral]) i Nothing
+      fromArraySexp = XObj (Lst [fromArraySymbol, arrayLiteral]) i Nothing
   pure fromArraySexp
 
 readerMacro :: String -> Obj -> Parsec.Parsec String ParseState XObj
@@ -650,6 +649,7 @@ balance text =
         (x : xs) -> case (x, c) of
           ('(', ')') -> Parsec.putState xs
           ('[', ']') -> Parsec.putState xs
+          ('{', '}') -> Parsec.putState xs
           ('"', '"') -> Parsec.putState xs
           --('\\', _) -> Parsec.putState xs -- ignore char after '\'
           _ -> push c
@@ -660,5 +660,6 @@ balance text =
         case c of
           '(' -> Parsec.putState (c : parens)
           '[' -> Parsec.putState (c : parens)
+          '{' -> Parsec.putState (c : parens)
           '"' -> Parsec.putState (c : parens)
           _ -> pure ()

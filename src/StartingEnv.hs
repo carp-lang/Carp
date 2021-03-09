@@ -233,7 +233,6 @@ dynamicModule =
        in [ f "quit" commandQuit "quits the program." "(quit)",
             f "cat" commandCat "spits out the generated C code." "(cat)",
             f "run" commandRunExe "runs the built executable." "(run)",
-            f "build" (commandBuild False) "builds the current code to an executable." "(build)",
             f "reload" commandReload "reloads all currently loaded files that weren’t marked as only loading once (see `load` and `load-once`)." "(reload)",
             f "env" commandListBindings "lists all current bindings." "(env)",
             f "project" commandProject "prints the current project state." "(project)",
@@ -285,7 +284,8 @@ dynamicModule =
             f "str" commandStr "stringifies its arguments." "(str 1 \" \" 2 \" \" 3) ; => \"1 2 3\"",
             f "s-expr" commandSexpression "returns the s-expression associated with a binding. When the binding is a type, the deftype form is returned instead of the type's module by default. Pass an optional bool argument to explicitly request the module for a type instead of its definition form. If the bool is true, the module for the type will be returned. Returns an error when no definition is found for the binding." "(s-expr foo), (s-expr foo true)",
             f "load" commandLoad "loads a file into the current environment." "(load \"myfile.carp\")\n(load \"myrepo@version\" \"myfile\")",
-            f "load-once" commandLoadOnce "loads a file and prevents it from being reloaded (see `reload`)." "(load-once \"myfile.carp\")\n(load \"myrepo@version\" \"myfile\")"
+            f "load-once" commandLoadOnce "loads a file and prevents it from being reloaded (see `reload`)." "(load-once \"myfile.carp\")\n(load \"myrepo@version\" \"myfile\")",
+            f "build" commandBuild "builds the current code to an executable. Optionally takes a boolean that, when true, silences the output." "(build)"
           ]
     unaries' =
       let f = makeUnaryPrim . spath
@@ -364,6 +364,25 @@ dynamicStringModule =
     ternaries =
       let f = addTernaryCommand . spath
        in [f "slice" commandSubstring "creates a substring from a beginning index to an end index." "(String.slice \"hello\" 1 3) ; => \"ell\""]
+
+unsafeModule :: Env
+unsafeModule =
+  Env {
+    envBindings = bindings,
+    envParent = Nothing,
+    envModuleName = Just "Unsafe",
+    envUseModules = Set.empty,
+    envMode = ExternalEnv,
+    envFunctionNestingLevel = 0
+  }
+  where
+    spath = SymPath ["Unsafe"]
+    bindings = Map.fromList unaries
+    unaries =
+      let f = addUnaryCommand . spath
+       in [ f "emit-c" commandEmitC "emits literal C inline" "(Unsafe.emit-c \"#if 0\")",
+            f "preproc" commandPreproc "adds preprocessing C code to emitted output" "(Unsafe.preproc (Unsafe.emit-c \"#define FOO 0\"))"
+          ]
 
 -- | A submodule of the Dynamic module. Contains functions for working with symbols in the repl or during compilation.
 dynamicSymModule :: Env
@@ -457,6 +476,7 @@ startingGlobalEnv noArray =
           ++ [("Pointer", Binder emptyMeta (XObj (Mod pointerModule) Nothing Nothing))]
           ++ [("Dynamic", Binder emptyMeta (XObj (Mod dynamicModule) Nothing Nothing))]
           ++ [("Function", Binder emptyMeta (XObj (Mod functionModule) Nothing Nothing))]
+          ++ [("Unsafe", Binder emptyMeta (XObj (Mod unsafeModule) Nothing Nothing))]
 
 -- | The type environment (containing deftypes and interfaces) before any code is run.
 startingTypeEnv :: Env

@@ -74,6 +74,7 @@ initialTypes typeEnv rootEnv root = evalState (visit rootEnv root) 0
     visit env xobj = case xobjObj xobj of
       (Num t _) -> pure (Right (xobj {xobjTy = Just t}))
       (Bol _) -> pure (Right (xobj {xobjTy = Just BoolTy}))
+      (C _) -> pure (Right xobj {xobjTy = Just CTy})
       (Str _) -> do
         lt <- genVarTy
         pure (Right (xobj {xobjTy = Just (RefTy StringTy lt)}))

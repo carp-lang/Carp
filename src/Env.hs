@@ -85,6 +85,16 @@ envBindingNames = concatMap select . envBindings
     select (Binder _ (XObj (Mod m) _ _)) = envBindingNames m
     select (Binder _ obj) = [getName obj]
 
+envPublicBindingNames :: Env -> [String]
+envPublicBindingNames = concatMap select . envBindings
+  where
+    select :: Binder -> [String]
+    select (Binder _ (XObj (Mod m) _ _)) = envPublicBindingNames m
+    select (Binder meta obj) =
+      if metaIsTrue meta "private" || metaIsTrue meta "hidden"
+        then []
+        else [getName obj]
+
 -- | Recursively look through all environments for (def ...) forms.
 findAllGlobalVariables :: Env -> [Binder]
 findAllGlobalVariables env =

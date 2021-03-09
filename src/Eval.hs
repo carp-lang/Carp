@@ -4,6 +4,7 @@ module Eval where
 
 import ColorText
 import Commands
+import Context
 import Control.Applicative
 import Control.Exception
 import Control.Monad.State
@@ -138,7 +139,7 @@ eval ctx xobj@(XObj o info ty) preference resolver =
             Right (XObj (StaticArr ok) info ty)
         )
     _ -> do
-      (nctx, res) <- annotateWithinContext False ctx xobj
+      (nctx, res) <- annotateWithinContext ctx xobj
       pure $ case res of
         Left e -> (nctx, Left e)
         Right (val, _) -> (nctx, Right val)
@@ -195,14 +196,15 @@ eval ctx xobj@(XObj o info ty) preference resolver =
             do
               let binds = unwrapVar (pairwise bindings) []
                   ni = Env Map.empty (contextInternalEnv ctx) Nothing Set.empty InternalEnv 0
-              eitherCtx <- foldrM successiveEval' (Right ctx {contextInternalEnv = Just ni}) binds
+              eitherCtx <- foldrM successiveEval' (Right (replaceInternalEnv ctx ni)) binds
               case eitherCtx of
                 Left err -> pure (ctx, Left err)
                 Right newCtx -> do
                   (finalCtx, evaledBody) <- eval newCtx body preference ResolveLocal
                   let Just e = contextInternalEnv finalCtx
+                      Just parentEnv = envParent e
                   pure
-                    ( finalCtx {contextInternalEnv = envParent e},
+                    ( replaceInternalEnv finalCtx parentEnv,
                       do
                         okBody <- evaledBody
                         Right okBody
@@ -217,10 +219,8 @@ eval ctx xobj@(XObj o info ty) preference resolver =
                 Right ctx' -> do
                   (newCtx, res) <- eval ctx' x preference resolver
                   case res of
-                    Right okX -> do
-                      let binder = Binder emptyMeta (toLocalDef n okX)
-                          Just e = contextInternalEnv newCtx
-                      pure $ Right (newCtx {contextInternalEnv = Just (envInsertAt e (SymPath [] n) binder)})
+                    Right okX ->
+                      pure $ Right (bindLetDeclaration newCtx n okX)
                     Left err -> pure $ Left err
         [f@(XObj Fn {} _ _), args@(XObj (Arr a) _ _), body] -> do
           (newCtx, expanded) <- macroExpand ctx body
@@ -232,7 +232,7 @@ eval ctx xobj@(XObj o info ty) preference resolver =
                   else (throwErr (FnContainsQualifiedArgs args) ctx (xobjInfo args))
               Left err -> (ctx, Left err)
         XObj (Closure (XObj (Lst [XObj (Fn _ _) _ _, XObj (Arr params) _ _, body]) _ _) (CCtx c)) _ _ : args ->
-          case checkArity "<closure>" params args of
+          case checkArity (pretty xobj) params args of
             Left err -> pure (evalError ctx err (xobjInfo xobj))
             Right () ->
               do
@@ -241,7 +241,8 @@ eval ctx xobj@(XObj o info ty) preference resolver =
                   Right okArgs -> do
                     let newGlobals = (contextGlobalEnv newCtx) <> (contextGlobalEnv c)
                         newTypes = TypeEnv $ (getTypeEnv (contextTypeEnv newCtx)) <> (getTypeEnv (contextTypeEnv c))
-                    (_, res) <- apply (c {contextHistory = contextHistory ctx, contextGlobalEnv = newGlobals, contextTypeEnv = newTypes}) body params okArgs
+                        updater = replaceHistory' (contextHistory ctx) . replaceGlobalEnv' newGlobals . replaceTypeEnv' newTypes
+                    (_, res) <- apply (updater c) body params okArgs
                     pure (newCtx, res)
                   Left err -> pure (newCtx, Left err)
         XObj (Lst [XObj Dynamic _ _, sym, XObj (Arr params) _ _, body]) i _ : args ->
@@ -313,7 +314,8 @@ eval ctx xobj@(XObj o info ty) preference resolver =
         XObj (Lst (XObj (Deftemplate _) _ _ : _)) _ _ : _ -> pure (ctx, Left (HasStaticCall xobj info))
         XObj (Lst (XObj (External _) _ _ : _)) _ _ : _ -> pure (ctx, Left (HasStaticCall xobj info))
         XObj (Match _) _ _ : _ -> pure (ctx, Left (HasStaticCall xobj info))
-        [XObj Ref _ _, _] -> pure (ctx, Left (HasStaticCall xobj info))
+        XObj Ref _ _ : _ -> pure (ctx, Left (HasStaticCall xobj info))
+        XObj Address _ _ : _ -> pure (ctx, Left (HasStaticCall xobj info))
         l@(XObj (Lst _) i t) : args -> do
           (newCtx, f) <- eval ctx l preference ResolveLocal
           case f of
@@ -343,8 +345,6 @@ eval ctx xobj@(XObj o info ty) preference resolver =
                 Right _ -> eval ctx' x preference resolver
         [XObj While _ _, cond, body] ->
           specialCommandWhile ctx cond body
-        [XObj Address _ _, value] ->
-          specialCommandAddress ctx value
         [] -> pure (ctx, dynamicNil)
         _ -> pure (throwErr (UnknownForm xobj) ctx (xobjInfo xobj))
     badArity name params args i = case checkArity name params args of
@@ -408,16 +408,15 @@ macroExpand ctx xobj =
             ok <- expanded
             Right (XObj (StaticArr ok) i t)
         )
+    XObj (Lst [XObj (Sym (SymPath [] "quote") _) _ _, _]) _ _ ->
+      pure (ctx, Right xobj)
     XObj (Lst [XObj (Lst (XObj Macro _ _ : _)) _ _]) _ _ -> evalDynamic ResolveLocal ctx xobj
     XObj (Lst (x@(XObj (Sym _ _) _ _) : args)) i t -> do
-      (next, f) <- evalDynamic ResolveLocal ctx x
+      (_, f) <- evalDynamic ResolveLocal ctx x
       case f of
         Right m@(XObj (Lst (XObj Macro _ _ : _)) _ _) -> do
           (newCtx', res) <- evalDynamic ResolveLocal ctx (XObj (Lst (m : args)) i t)
           pure (newCtx', res)
-        -- TODO: Determine a way to eval primitives generally and remove this special case.
-        Right p@(XObj (Lst [XObj (Primitive (VariadicPrimitive variadic)) _ _, XObj (Sym (SymPath _ "defmodule") _) _ _, _]) _ _) ->
-          variadic p next args
         _ -> do
           (newCtx, expanded) <- foldlM successiveExpand (ctx, Right []) args
           pure
@@ -447,7 +446,7 @@ macroExpand ctx xobj =
 
 apply :: Context -> XObj -> [XObj] -> [XObj] -> IO (Context, Either EvalError XObj)
 apply ctx@Context {contextInternalEnv = internal} body params args =
-  let env = contextEnv ctx
+  let Just env = contextInternalEnv ctx <|> innermostModuleEnv ctx <|> Just (contextGlobalEnv ctx)
       allParams = map getName params
    in case splitWhen (":rest" ==) allParams of
         [a, b] -> callWith env a b
@@ -459,7 +458,7 @@ apply ctx@Context {contextInternalEnv = internal} body params args =
       let n = length proper
           insideEnv = Env Map.empty internal Nothing Set.empty InternalEnv 0
           insideEnv' =
-           foldl'
+            foldl'
               (\e (p, x) -> extendEnv e p (toLocalDef p x))
               insideEnv
               (zip proper (take n args))
@@ -471,7 +470,7 @@ apply ctx@Context {contextInternalEnv = internal} body params args =
                   insideEnv'
                   (head rest)
                   (XObj (Lst (drop n args)) Nothing Nothing)
-      (c, r) <- evalDynamic ResolveLocal (ctx {contextInternalEnv = Just insideEnv''}) body
+      (c, r) <- evalDynamic ResolveLocal (replaceInternalEnv ctx insideEnv'') body
       pure (c {contextInternalEnv = internal}, r)
 
 -- | Parses a string and then converts the resulting forms to commands, which are evaluated in order.
@@ -542,10 +541,10 @@ executeCommand ctx@(Context env _ _ _ _ _ _ _) xobj =
       Right res -> pure (res, newCtx)
   where
     callFromRepl newCtx xobj' = do
-      (nc, r) <- annotateWithinContext False newCtx xobj'
+      (nc, r) <- annotateWithinContext newCtx xobj'
       case r of
         Right (ann, deps) -> do
-          ctxWithDeps <- liftIO $ foldM (define True) nc deps
+          ctxWithDeps <- liftIO $ foldM (define True) nc (map Qualified deps)
           executeCommand ctxWithDeps (withBuildAndRun (buildMainFunction ann))
         Left err -> do
           reportExecutionError nc (show err)
@@ -556,13 +555,14 @@ executeCommand ctx@(Context env _ _ _ _ _ _ _) xobj =
             [ XObj Do (Just dummyInfo) Nothing,
               xobj',
               XObj
-                (Lst [XObj (Sym (SymPath [] "build") Symbol) (Just dummyInfo) Nothing])
+                (Lst [XObj (Sym (SymPath [] "build") Symbol) (Just dummyInfo) Nothing, trueXObj])
                 (Just dummyInfo)
                 Nothing,
               XObj
                 (Lst [XObj (Sym (SymPath [] "run") Symbol) (Just dummyInfo) Nothing])
                 (Just dummyInfo)
-                Nothing
+                Nothing,
+              (XObj (Lst []) (Just dummyInfo) (Just UnitTy))
             ]
         )
         (Just dummyInfo)
@@ -597,39 +597,28 @@ catcher ctx exception =
 
 specialCommandWith :: Context -> XObj -> SymPath -> [XObj] -> IO (Context, Either EvalError XObj)
 specialCommandWith ctx _ path forms = do
-  let env = contextEnv ctx
+  let Just env = contextInternalEnv ctx <|> innermostModuleEnv ctx <|> Just (contextGlobalEnv ctx)
       useThese = envUseModules env
       env' = env {envUseModules = Set.insert path useThese}
-      ctx' = ctx {contextGlobalEnv = env'}
+      ctx' = replaceGlobalEnv ctx env'
   ctxAfter <- liftIO $ foldM folder ctx' forms
-  let envAfter = contextEnv ctxAfter
-      ctxAfter' = ctx {contextGlobalEnv = envAfter {envUseModules = useThese}} -- This will undo ALL use:s made inside the 'with'.
+  let Just envAfter = contextInternalEnv ctxAfter <|> innermostModuleEnv ctxAfter <|> Just (contextGlobalEnv ctxAfter)
+      -- undo ALL use:s made inside the 'with'.
+      ctxAfter' = replaceGlobalEnv ctx (envAfter {envUseModules = useThese})
   pure (ctxAfter', dynamicNil)
 
 specialCommandDefine :: Context -> XObj -> IO (Context, Either EvalError XObj)
 specialCommandDefine ctx xobj =
   do
-    (newCtx, result) <- annotateWithinContext True ctx xobj
+    (newCtx, result) <- annotateWithinContext ctx xobj
     case result of
       Right (annXObj, annDeps) ->
         do
-          ctxWithDeps <- liftIO $ foldM (define True) newCtx annDeps
-          ctxWithDef <- liftIO $ define False ctxWithDeps annXObj
+          ctxWithDeps <- liftIO $ foldM (define True) newCtx (map Qualified annDeps)
+          ctxWithDef <- liftIO $ define False ctxWithDeps (Qualified annXObj)
           pure (ctxWithDef, dynamicNil)
       Left err ->
         pure (ctx, Left err)
-
-specialCommandAddress :: Context -> XObj -> IO (Context, Either EvalError XObj)
-specialCommandAddress ctx xobj =
-  case xobj of
-    XObj (Sym _ _) _ _ ->
-      do
-        (newCtx, result) <- annotateWithinContext False ctx xobj
-        case result of
-          Right (annXObj, _) -> return (newCtx, Right annXObj)
-          Left err ->
-            return (ctx, Left err)
-    _ -> pure (throwErr (AddressContainsNonSymbol xobj) ctx (xobjInfo xobj))
 
 specialCommandWhile :: Context -> XObj -> XObj -> IO (Context, Either EvalError XObj)
 specialCommandWhile ctx cond body = do
@@ -647,9 +636,11 @@ specialCommandWhile ctx cond body = do
           pure (throwErr (WhileContainsNonBool c) ctx (xobjInfo c))
     Left e -> pure (newCtx, Left e)
 
-getSigFromDefnOrDef :: Context -> Env -> FilePathPrintLength -> XObj -> Either EvalError (Maybe (Ty, XObj))
-getSigFromDefnOrDef ctx globalEnv fppl xobj =
+getSigFromDefnOrDef :: Context -> XObj -> Either EvalError (Maybe (Ty, XObj))
+getSigFromDefnOrDef ctx xobj =
   let pathStrings = contextPath ctx
+      globalEnv = contextGlobalEnv ctx
+      fppl = projectFilePathPrintLength (contextProj ctx)
       path = getPath xobj
       fullPath = case path of
         (SymPath [] _) -> consPath pathStrings path
@@ -666,14 +657,12 @@ getSigFromDefnOrDef ctx globalEnv fppl xobj =
             Nothing -> Left (EvalError ("Can't use '" ++ pretty foundSignature ++ "' as a type signature") (contextHistory ctx) fppl (xobjInfo xobj))
         Nothing -> Right Nothing
 
-annotateWithinContext :: Bool -> Context -> XObj -> IO (Context, Either EvalError (XObj, [XObj]))
-annotateWithinContext qualifyDefn ctx xobj = do
-  let pathStrings = contextPath ctx
-      fppl = projectFilePathPrintLength (contextProj ctx)
-      globalEnv = contextGlobalEnv ctx
+annotateWithinContext :: Context -> XObj -> IO (Context, Either EvalError (XObj, [XObj]))
+annotateWithinContext ctx xobj = do
+  let globalEnv = contextGlobalEnv ctx
       typeEnv = contextTypeEnv ctx
-      innerEnv = getEnv globalEnv pathStrings
-  let sig = getSigFromDefnOrDef ctx globalEnv fppl xobj
+      sig = getSigFromDefnOrDef ctx xobj
+      fppl = projectFilePathPrintLength (contextProj ctx)
   case sig of
     Left err -> pure (ctx, Left err)
     Right okSig -> do
@@ -681,16 +670,17 @@ annotateWithinContext qualifyDefn ctx xobj = do
       case expansionResult of
         Left err -> pure (evalError ctx (show err) Nothing)
         Right expanded ->
-          let xobjFullPath = if qualifyDefn then setFullyQualifiedDefn expanded (SymPath pathStrings (getName xobj)) else expanded
-              xobjFullSymbols = setFullyQualifiedSymbols typeEnv globalEnv innerEnv xobjFullPath
-           in case annotate typeEnv globalEnv xobjFullSymbols okSig of
-                Left err ->
-                  case contextExecMode ctx of
-                    Check ->
-                      pure (evalError ctx (joinLines (machineReadableErrorStrings fppl err)) Nothing)
-                    _ ->
-                      pure (evalError ctx (show err) (xobjInfo xobj))
-                Right ok -> pure (ctx, Right ok)
+          let xobjFullSymbols = qualify ctx expanded
+           in case xobjFullSymbols of
+                Left err -> pure (evalError ctx (show err) (xobjInfo xobj))
+                Right xs ->
+                  case annotate typeEnv globalEnv xs okSig of
+                    Left err ->
+                      -- TODO: Replace this with a single call to evalError (which already checks the execution mode)
+                      case contextExecMode ctx of
+                        Check -> pure (evalError ctx (joinLines (machineReadableErrorStrings fppl err)) Nothing)
+                        _ -> pure (evalError ctx (show err) (xobjInfo xobj))
+                    Right ok -> pure (ctx, Right ok)
 
 primitiveDefmodule :: VariadicPrimitiveCallback
 primitiveDefmodule xobj ctx@(Context env i _ pathStrings _ _ _ _) (XObj (Sym (SymPath [] moduleName) _) _ _ : innerExpressions) =
@@ -822,8 +812,8 @@ loadInternal ctx xobj path i fileToLoad reloadMode = do
                           projectAlreadyLoaded = canonicalPath : alreadyLoaded,
                           projectLoadStack = canonicalPath : prevStack
                         }
-                newCtx <- liftIO $ executeString True False (ctx {contextProj = proj'}) contents canonicalPath
-                pure (newCtx {contextProj = (contextProj newCtx) {projectLoadStack = prevStack}}, dynamicNil)
+                newCtx <- liftIO $ executeString True False (replaceProject ctx proj') contents canonicalPath
+                pure (replaceProject newCtx (contextProj newCtx) {projectLoadStack = prevStack}, dynamicNil)
   where
     frozenPaths proj =
       if projectForceReload proj
@@ -934,7 +924,7 @@ commandReload ctx = do
             else do
               contents <- slurp filepath
               let proj' = proj {projectAlreadyLoaded = filepath : alreadyLoaded}
-              executeString False False (context {contextProj = proj'}) contents filepath
+              executeString False False (replaceProject context proj') contents filepath
   newCtx <- liftIO (foldM f ctx paths)
   pure (newCtx, dynamicNil)
 
@@ -946,13 +936,12 @@ commandExpand = macroExpand
 -- | i.e. (Int.+ 2 3) => "_0 = 2 + 3"
 commandC :: UnaryCommandCallback
 commandC ctx xobj = do
-  let globalEnv = contextGlobalEnv ctx
-      typeEnv = contextTypeEnv ctx
   (newCtx, result) <- expandAll (evalDynamic ResolveLocal) ctx xobj
   case result of
     Left err -> pure (newCtx, Left err)
-    Right expanded ->
-      case annotate typeEnv globalEnv (setFullyQualifiedSymbols typeEnv globalEnv globalEnv expanded) Nothing of
+    Right expanded -> do
+      (_, annotated) <- annotateWithinContext newCtx expanded
+      case annotated of
         Left err -> pure $ evalError newCtx (show err) (xobjInfo xobj)
         Right (annXObj, annDeps) ->
           do
@@ -1057,12 +1046,12 @@ specialCommandSet ctx [orig@(XObj (Sym path@(SymPath _ n) _) _ _), val] =
     setGlobal ctx' env value binder =
       pure $ either (failure ctx' orig) (success ctx') value
       where
-        success c xo = (c {contextGlobalEnv = setStaticOrDynamicVar path env binder xo}, dynamicNil)
+        success c xo = (replaceGlobalEnv c (setStaticOrDynamicVar path env binder xo), dynamicNil)
     setInternal :: Context -> Env -> Either EvalError XObj -> Binder -> IO (Context, Either EvalError XObj)
     setInternal ctx' env value binder =
       pure $ either (failure ctx' orig) (success ctx') value
       where
-        success c xo = (c {contextInternalEnv = Just (setStaticOrDynamicVar (SymPath [] n) env binder xo)}, dynamicNil)
+        success c xo = (replaceInternalEnv c (setStaticOrDynamicVar (SymPath [] n) env binder xo), dynamicNil)
 specialCommandSet ctx [notName, _] =
   pure (throwErr (SetInvalidVarName notName) ctx (xobjInfo notName))
 specialCommandSet ctx args =
@@ -1076,7 +1065,7 @@ failure ctx orig err = evalError ctx (show err) (xobjInfo orig)
 -- the given value has a type matching the binder's in the given context.
 typeCheckValueAgainstBinder :: Context -> XObj -> Binder -> IO (Context, Either EvalError XObj)
 typeCheckValueAgainstBinder ctx val binder = do
-  (ctx', typedValue) <- annotateWithinContext False ctx val
+  (ctx', typedValue) <- annotateWithinContext ctx val
   pure $ case typedValue of
     Right (val', _) -> go ctx' binderTy val'
     Left err -> (ctx', Left err)
