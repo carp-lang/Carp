@@ -168,7 +168,7 @@ eval ctx xobj@(XObj o info ty) preference resolver =
             _ ->
               pure (throwErr (DefnIdentifierIsQualified name) ctx (xobjInfo xobj))
         [XObj (Defn _) _ _, _, invalidArgs, _] ->
-          pure (throwErr (DefnContainsInvalidArgs invalidArgs) ctx (xobjInfo xobj))
+          pure (throwErr (defnInvalidArgs [invalidArgs]) ctx (xobjInfo xobj))
         (defn@(XObj (Defn _) _ _) : _) ->
           pure (throwErr (DefnMalformed xobj) ctx (xobjInfo defn))
         [XObj Def _ _, name, _] ->
@@ -330,8 +330,8 @@ eval ctx xobj@(XObj o info ty) preference resolver =
             Left err -> pure (newCtx, Left err)
         XObj With _ _ : xobj'@(XObj (Sym path _) _ _) : forms ->
           specialCommandWith ctx xobj' path forms
-        XObj With _ _ : _ ->
-          pure (throwErr (WithContainsInvalidArgs xobj) ctx (xobjInfo xobj))
+        XObj With _ _ : x : _ ->
+          pure (throwErr (withInvalidArgs [x]) ctx (xobjInfo xobj))
         XObj SetBang _ _ : args -> specialCommandSet ctx args
         [XObj Do _ _] ->
           pure (throwErr DoMissingForms ctx (xobjInfo xobj))
@@ -749,25 +749,25 @@ commandLoad :: VariadicCommandCallback
 commandLoad ctx [xobj@(XObj (Str path) i _), XObj (Str toLoad) _ _] =
   loadInternal ctx xobj path i (Just toLoad) DoesReload
 commandLoad ctx [XObj (Str _) _ _, x] =
-  pure $ throwErr (LoadInvalidArgs [x]) ctx (xobjInfo x)
+  pure $ throwErr (loadInvalidArgs [x]) ctx (xobjInfo x)
 commandLoad ctx [x, _] =
-  pure $ throwErr (LoadInvalidArgs [x]) ctx (xobjInfo x)
+  pure $ throwErr (loadInvalidArgs [x]) ctx (xobjInfo x)
 commandLoad ctx [xobj@(XObj (Str path) i _)] =
   loadInternal ctx xobj path i Nothing DoesReload
 commandLoad ctx x =
-  pure $ throwErr (LoadInvalidArgs x) ctx Nothing
+  pure $ throwErr (loadInvalidArgs x) ctx Nothing
 
 commandLoadOnce :: VariadicCommandCallback
 commandLoadOnce ctx [xobj@(XObj (Str path) i _), XObj (Str toLoad) _ _] =
   loadInternal ctx xobj path i (Just toLoad) Frozen
 commandLoadOnce ctx [XObj (Str _) _ _, x] =
-  pure $ throwErr (LoadOnceInvalidArgs [x]) ctx (xobjInfo x)
+  pure $ throwErr (loadOnceInvalidArgs [x]) ctx (xobjInfo x)
 commandLoadOnce ctx [x, _] =
-  pure $ throwErr (LoadOnceInvalidArgs [x]) ctx (xobjInfo x)
+  pure $ throwErr (loadOnceInvalidArgs [x]) ctx (xobjInfo x)
 commandLoadOnce ctx [xobj@(XObj (Str path) i _)] =
   loadInternal ctx xobj path i Nothing Frozen
 commandLoadOnce ctx x =
-  pure $ throwErr (LoadOnceInvalidArgs x) ctx Nothing
+  pure $ throwErr (loadOnceInvalidArgs x) ctx Nothing
 
 loadInternal :: Context -> XObj -> String -> Maybe Info -> Maybe String -> ReloadMode -> IO (Context, Either EvalError XObj)
 loadInternal ctx xobj path i fileToLoad reloadMode = do
@@ -1066,7 +1066,7 @@ specialCommandSet ctx [orig@(XObj (Sym path@(SymPath _ n) _) _ _), val] =
 specialCommandSet ctx [notName, _] =
   pure (throwErr (SetInvalidVarName notName) ctx (xobjInfo notName))
 specialCommandSet ctx args =
-  pure (throwErr (SetInvalidArgs args) ctx (if null args then Nothing else xobjInfo (head args)))
+  pure (throwErr (setInvalidArgs args) ctx (if null args then Nothing else xobjInfo (head args)))
 
 -- | Convenience method for signifying failure in a given context.
 failure :: Context -> XObj -> EvalError -> (Context, Either EvalError a)

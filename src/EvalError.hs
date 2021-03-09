@@ -1,7 +1,12 @@
--- | Module EvalError defines errors that may occur during evaluation
+-- | Module EvalError defines errors that may occur during evaluation.
 module EvalError
   ( EvaluationError (..),
     throwErr,
+    defnInvalidArgs,
+    loadInvalidArgs,
+    loadOnceInvalidArgs,
+    withInvalidArgs,
+    setInvalidArgs,
   )
 where
 
@@ -12,7 +17,11 @@ import TypeError
 import Util
 import Types
 
+--------------------------------------------------------------------------------
+-- Data (Evaluation Errors)
+
 -- | Errors that occur when evaluating forms.
+-- Mostly called from the evaluator.
 data EvaluationError
   = SymbolNotFound SymPath
   | PrivateBinding SymPath
@@ -22,7 +31,6 @@ data EvaluationError
   | -- Defn
     DefnContainsQualifiedArgs XObj
   | DefnIdentifierIsQualified XObj
-  | DefnContainsInvalidArgs XObj
   | DefnMalformed XObj
   | -- Def
     DefIdentifierIsQualified XObj
@@ -33,8 +41,6 @@ data EvaluationError
   | LetMalformedIdentifiers [XObj]
   | -- Fn
     FnContainsQualifiedArgs XObj
-    -- With
-  |  WithContainsInvalidArgs XObj
   | -- Do
     DoMissingForms
   | -- Unknown Form
@@ -49,23 +55,21 @@ data EvaluationError
     ModuleRedefinition String
   | DefmoduleContainsNonSymbol XObj
   | DefmoduleNoArgs
-  | -- Load
-    LoadInvalidArgs [XObj]
   | LoadFileNotFound String
   | LoadGitFailure String String
   | LoadRecursiveLoad String
-  | -- Load-once
-    LoadOnceInvalidArgs [XObj]
   | -- Defndynamic
     DefnDynamicInvalidName XObj
   | -- Set!
     SetVarNotFound XObj
   | SetInvalidVarName XObj
-  | SetInvalidArgs [XObj]
   | SetTypeMismatch SymPath Ty Ty
   | -- Static Call
     StaticCall XObj
+  | -- Invalid Arguments
+    InvalidArgs String [XObj]
 
+-- Show instance for Evaluation Errors.
 instance Show EvaluationError where
   show (SymbolNotFound path) = "Can't find symbol '" ++ show path ++ "'"
   show (PrivateBinding path) =
@@ -84,10 +88,6 @@ instance Show EvaluationError where
   show (DefnIdentifierIsQualified name) =
     "`defn` identifiers must be unqualified symbols, but it got `"
       ++ pretty name
-      ++ "`"
-  show (DefnContainsInvalidArgs args) =
-    "`defn` requires an array of symbols as argument list, but it got `"
-      ++ pretty args
       ++ "`"
   show (DefnMalformed xobj) =
     "I didn’t understand the `defn` at " ++ prettyInfoFromXObj xobj
@@ -109,7 +109,6 @@ instance Show EvaluationError where
       ++ joinWithSpace (map pretty bindings)
       ++ "`"
   show (FnContainsQualifiedArgs args) = "`fn` requires all arguments to be unqualified symbols, but it got `" ++ pretty args ++ "`"
-  show (WithContainsInvalidArgs xobj) = "Invalid arguments to `with`: " ++ pretty xobj
   show DoMissingForms = "No forms in do"
   show (UnknownForm xobj) = "I did not understand the form `" ++ pretty xobj ++ "`"
   show (MacroBadArgumentSplit allParams) =
@@ -124,8 +123,6 @@ instance Show EvaluationError where
   show (ModuleRedefinition name) = "Can't redefine '" ++ name ++ "' as module"
   show (DefmoduleContainsNonSymbol x) = "`defmodule` expects a symbol, got '" ++ pretty x ++ "' instead."
   show DefmoduleNoArgs = "`defmodule` requires at least a symbol, received none."
-  show (LoadInvalidArgs xobj) = "Invalid args to `load`, expected (load str optional:fileFromRepo) but got: " ++ joinWithSpace (map pretty xobj)
-  show (LoadOnceInvalidArgs xobj) = "Invalid args to `load-once`, expected `(load-once str optional:fileFromRepo)` but got: " ++ joinWithSpace (map pretty xobj)
   show (LoadFileNotFound path) = " I can't find a file named: '" ++ path ++ "'" ++ "\n\nIf you tried loading an external package, try appending a version string (like `@master`)"
   show (LoadGitFailure path stderr) =
     "I can't find a file named: '" ++ path ++ "'"
@@ -135,12 +132,33 @@ instance Show EvaluationError where
   show (DefnDynamicInvalidName notName) = "`defndynamic` expected a name as first argument, but got " ++ pretty notName
   show (SetVarNotFound var) = "I couldn't find the variable " ++ pretty var ++ ", did you define it using `def` or `defdynamic`?"
   show (SetInvalidVarName var) = "`set!` expected a name as first argument, but got " ++ pretty var
-  show (SetInvalidArgs args) = "`set!` takes a name and a value, but got `" ++ unwords (map pretty args)
   show (SetTypeMismatch path oldTy newTy) = "can't `set!` " ++ show path ++ " to a value of type " ++ show oldTy ++ ", " ++ show path ++ " has type " ++ show newTy
   show (StaticCall x) = "Unexpected static call in " ++ pretty x
+  show (InvalidArgs expected actual) = expected ++ ", but got: " ++ joinWithComma (map pretty actual)
+
+--------------------------------------------------------------------------------
+-- Utilities
 
 -- | Given a Showable error, turn it into an EvalError
--- TODO: Unify this an toEvalError and remove one of these functions.
+-- TODO: Unify this and toEvalError and remove one of these functions.
 throwErr :: Show a => a -> Context -> Maybe Info -> (Context, Either EvalError XObj)
 throwErr err ctx info =
   evalError ctx (show err) info
+
+--------------------------------------------------------------------------------
+-- Invalid Argument Helpers
+
+defnInvalidArgs :: [XObj] -> EvaluationError
+defnInvalidArgs = InvalidArgs "Invalid args to `defn`, expected an array of symbols as an argument list"
+
+loadInvalidArgs :: [XObj] -> EvaluationError
+loadInvalidArgs = InvalidArgs  "Invalid args to `load`, expected (load str optional:fileFromRepo)"
+
+loadOnceInvalidArgs :: [XObj] -> EvaluationError
+loadOnceInvalidArgs = InvalidArgs "Invalid args to `load-once`, expected `(load-once str optional:fileFromRepo)`"
+
+withInvalidArgs :: [XObj] -> EvaluationError
+withInvalidArgs = InvalidArgs "Invalid arguments to `with`, expected a module name"
+
+setInvalidArgs :: [XObj] -> EvaluationError
+setInvalidArgs = InvalidArgs "Invalid arguments to `set!`, expected a symbol and a value"
