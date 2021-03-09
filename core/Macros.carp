@@ -267,3 +267,62 @@
      "of those interfaces.")
 (defmacro implements-all [mod :rest interfaces]
   (cons 'do (map (curry implement-declaration mod) interfaces)))
+
+(defmodule Unsafe
+  (defmodule C
+    (defndynamic emit-c-line [append-strings args]
+      (let [strs (map (fn [x] (String.concat [x " "])) (map str args))
+            arr (collect-into strs array)
+            code (String.concat (append append-strings arr))]
+      (list 'Unsafe.preproc (list 'Unsafe.emit-c code))))
+
+    (doc pragma
+       "Emits a #pragma compiler directive in Carp's c output.")
+    (defmacro pragma [:rest args]
+      (eval (Unsafe.C.emit-c-line ["#pragma "] args)))
+
+    (doc define
+      "Emits a #define compiler directive in Carp's c output.")
+    (defmacro define [name value]
+      (Unsafe.C.emit-c-line ["#define "] [name value]))
+
+    (doc undef
+      "Emits a #undef compiler directive in Carp's c output.")
+    (defmacro undef [name]
+      (Unsafe.C.emit-c-line ["#undef "] [name]))
+
+    (defndynamic if- [if-pre name then else]
+      (do (eval (Unsafe.C.emit-c-line [if-pre] [name]))
+          (eval (Unsafe.C.emit-c-line ["  "] [then]))
+          (if (not (empty? else))
+              (do (eval (Unsafe.C.emit-c-line ["#else"] []))
+                  (eval (Unsafe.C.emit-c-line ["  "] else)))
+              ())
+          (eval (Unsafe.C.emit-c-line ["#endif"] []))))
+
+    (doc ifpre
+      "Emits a #if compiler directive in Carp's c output.")
+    (defmacro ifpre [name then :rest else]
+      (Unsafe.C.if- "#if " name then else))
+
+    (doc ifdef
+      "Emits a #ifdef compiler directive in Carp's c output.")
+    (defmacro ifdef [name then :rest else]
+      (Unsafe.C.if- "#ifdef " name then else))
+
+    (doc ifndef
+      "Emits a #ifndef compiler directive in Carp's c output.")
+    (defmacro ifndef [name then :rest else]
+      (Unsafe.C.if- "#ifndef " name then else))
+
+    (doc warning
+      "Emits a #warning compiler directive in Carp's c output.")
+    (defmacro warning [message]
+      (eval (Unsafe.C.emit-c-line ["#warning "] [message])))
+
+    (doc error
+      "Emits a #error compiler directive in Carp's c output.")
+    (defmacro error [message]
+    (eval (Unsafe.C.emit-c-line ["#error "] [message])))
+  )
+)
