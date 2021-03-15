@@ -6,8 +6,6 @@
 (const-assert (= 1 1) "const-assert works II")
 (const-assert (= false (= 1 2)) "const-assert works III")
 
-(defdynamic global-x 1)
-
 (defn test-let-do []
   (let-do [x 1]
     (set! x (+ x 1))
@@ -36,19 +34,11 @@
     1 true
     false))
 
-(defmacro test-and [a b] (and a b))
-(defmacro test-or [a b] (or a b))
 (defmacro test-not [a] (not a))
 (defmacro test-< [a b] (< a b))
 (defmacro test-> [a b] (> a b))
 (defmacro test-= [a b] (= a b))
 
-(defndynamic gc- [key] (Project.get-config key))
-(defmacro gc [key] (gc- key))
-
-(def xy 1)
-(defndynamic test-join- [] (Symbol.concat ['x 'y]))
-(defmacro test-join [] (test-join-))
 (defmacro test-gensym []
   (let [x (gensym)]
     (list 'let (array x 1) (list '= x 1))))
@@ -70,47 +60,6 @@
     (and (= 'ace (Symbol.concat (eval (Dynamic.car zipped))))
       (= 'dog (Symbol.concat (eval (Dynamic.cadr zipped)))))))
 
-(defmacro test-curry []
-  (= 3 ((Dynamic.curry + 1) 2)))
-
-(defmacro test-flip []
-  (= 'Foo.Bar ((Dynamic.flip Symbol.prefix) 'Bar 'Foo)))
-
-(defmacro test-compose []
-  (= '() ((Dynamic.compose Dynamic.empty Dynamic.take) 2 '(1 2 3 4))))
-
-(defmacro test-reduce []
-  (= 10 (Dynamic.reduce + 0 '(1 2 3 4))))
-
-(defmacro test-unreduce []
-  (Dynamic.all? eval
-    (Dynamic.zip = '(1 2 3 4) (Dynamic.unreduce (curry + 1) 0 4 (list)))))
-
-(defmacro test-filter []
-  (Dynamic.all? (fn [x] (= 'a x))
-    (Dynamic.filter (fn [x] (= 'a x)) '(a b a b a b a b))))
-
-(defmacro test-empty []
-  ;; We can't compare '[] and '[] for some reason.
-  ;; But '() and '() are comparable
-  (and (= '() (Dynamic.empty '(1 2 3 4)))
-       (empty? (Dynamic.empty '[1 2 3 4]))))
-
-(defmacro test-reverse []
-  (Dynamic.all? eval
-    (Dynamic.zip = '(4 3 2 1) (Dynamic.reverse '(1 2 3 4)))))
-
-(defmacro test-take []
-  (let [result  (Dynamic.take 2 '(1 2 3 4))]
-    (and (= 1 (car result ))
-         (= '() (cddr result)))))
-
-(defmacro test-dynamic-while []
-  (let-do [acc 0]
-    (for [i 0 10]
-      (set! acc (+ acc i)))
-    (= acc 45)))
-
 (defmodule TestDyn
   (defndynamic x [] true))
 
@@ -121,36 +70,6 @@
 
 (defmacro test-dynamic-use []
   (test-dynamic-use-))
-
-(defmacro test-quasiquote []
-  (quasiquote
-    (+ (unquote global-x)
-       (+ (unquote-splicing (map inc [1 2]))))))
-
-(defmacro test-quasiquote-reader []
-  `(+ %global-x
-      (+ %@(map inc [1 2]))))
-
-(defmacro test-postwalk []
-  (eval (postwalk (fn [x] (if (= x '+) '* x))
-                  '(+ 2 (+ 2 3)))))
-
-(defmacro test-prewalk []
-  (eval (prewalk (fn [x] (if (= x '+) '* x))
-                 '(+ 2 (+ 2 3)))))
-
-(defmacro test-walk-replace []
-  (eval (walk-replace '((+ *)) '(+ 2 (+ 2 3)))))
-
-(defmacro test-cxr [ins l]
-  (eval (cxr ins l)))
-
-(defmacro test-neg [x]
-  (neg x))
-
-(defmacro test-round [n]
-  (round n))
-
 
 (deftest test
   (assert-true test
@@ -172,25 +91,25 @@
                (test-not false)
                "not macro works as expected")
   (assert-false test
-                (test-and false true)
+                (and false true)
                 "and macro works as expected I")
   (assert-true test
-               (test-and true true)
+               (and true true)
                "and macro works as expected II")
   (assert-false test
-               (test-and false (macro-error "failed"))
+               (and false (do (IO.exit 1) false))
                "and macro shortcircuits")
   (assert-false test
-               (test-or false false)
+               (or false false)
                "or macro works as expected I")
   (assert-true test
-               (test-or false true)
+               (or false true)
                "or macro works as expected II")
   (assert-true test
-               (test-or true (macro-error "failed"))
+               (or true (do (IO.exit 2) false))
                "or macro shortcircuits")
   (assert-true test
-               (test-or true true)
+               (or true true)
                "or macro works as expected III")
   (assert-true test
                (test-< 1 2)
@@ -314,18 +233,18 @@
                 "1 thing 2 things"
                 &(str* 1 " thing " 2 " things")
                 "str* macro works as expected")
-  (assert-equal test
-                false
-                (gc "echo-c")
-                "Project.get-config works as expected I")
-  (assert-equal test
-                "Untitled"
-                (gc "title")
-                "Project.get-config works as expected II")
-  (assert-equal test
-                1
-                (test-join)
-                "Symbol.concat works as expected")
+  (assert-dynamic-equal test
+                        false
+                        (Project.get-config "echo-c")
+                        "Project.get-config works as expected I")
+  (assert-dynamic-equal test
+                        "Untitled"
+                        (Project.get-config "title")
+                        "Project.get-config works as expected II")
+  (assert-dynamic-equal test
+                        'xy
+                        (Symbol.concat ['x 'y])
+                        "Symbol.concat works as expected")
   (assert-equal test
                 "test file contents\n"
                 (test-read-file)
@@ -342,36 +261,57 @@
   (assert-true test
                (test-zip)
                "zip works as expected")
-  (assert-true test
-               (test-curry)
-               "curry works as expected")
-  (assert-true test
-               (test-flip)
-               "filp works as expected")
-  (assert-true test
-               (test-compose)
-               "compose works as expected")
-  (assert-true test
-               (test-reduce)
-               "reduce works as expected")
-  (assert-true test
-               (test-unreduce)
-               "unreduce works as expected")
-  (assert-true test
-               (test-filter)
-               "filter works as expected")
-  (assert-true test
-               (test-reverse)
-               "reverse works as expected")
-  (assert-true test
-               (test-empty)
-               "empty works as expected")
-  (assert-true test
-               (test-take)
-               "take works as expected")
-  (assert-true test
-               (test-dynamic-while)
-               "while works as expected in dynamic code")
+  (assert-dynamic-equal test
+                        3
+                        ((Dynamic.curry + 1) 2)
+                        "curry works as expected")
+  (assert-dynamic-equal test
+                        'Foo.Bar
+                        ((Dynamic.flip Symbol.prefix) 'Bar 'Foo)
+                        "filp works as expected")
+  (assert-dynamic-equal test
+                        '()
+                        ((Dynamic.compose Dynamic.empty Dynamic.take) 2 '(1 2 3 4))
+                        "compose works as expected")
+  (assert-dynamic-equal test
+                        10
+                        (Dynamic.reduce + 0 '(1 2 3 4))
+                        "reduce works as expected")
+  (assert-dynamic-equal test
+                        '(1 2 3 4)
+                        (Dynamic.unreduce (curry + 1) 0 4 (list))
+                        "unreduce works as expected")
+  (assert-dynamic-equal test
+                        '(a a a a)
+                        (Dynamic.filter (fn [x] (= 'a x)) '(a b a b a b a b))
+                        "filter works as expected")
+  (assert-dynamic-equal test
+                        '(4 3 2 1)
+                        (Dynamic.reverse '(1 2 3 4))
+                        "reverse works as expected")
+  (assert-dynamic-equal test
+                        '()
+                        (Dynamic.empty '(1 2 3 4))
+                        "empty works as expected")
+  (assert-dynamic-equal test
+                        []
+                        (Dynamic.empty [1 2 3 4])
+                        "empty works as expected")
+  (assert-dynamic-equal test
+                        1
+                        (car (Dynamic.take 2 '(1 2 3 4)))
+                        "take works as expected I")
+  (assert-dynamic-equal test
+                        '()
+                        (cddr (Dynamic.take 2 '(1 2 3 4)))
+                        "take works as expected II")
+  (assert-dynamic-equal test
+                        45
+                        (let-do [acc 0]
+                          (for [i 0 10]
+                            (set! acc (+ acc i)))
+                          acc)
+                        "while works as expected in dynamic code")
   (assert-ref-equal test
                     @"oy"
                     (let [x @"hi"]
@@ -388,46 +328,52 @@
   (assert-true test
                (test-dynamic-use)
                "use works as expected in dynamic contexts")
-  (assert-equal test
-                6
-                (test-quasiquote)
-                "quasiquote works as expected")
-  (assert-equal test
-                6
-                (test-quasiquote-reader)
-                "quasiquote reader works as expected")
-  (assert-equal test
-                12
-                (test-postwalk)
-                "postwalk works as expected")
-  (assert-equal test
-                12
-                (test-prewalk)
-                "prewalk works as expected")
-  (assert-equal test
-                12
-                (test-walk-replace)
-                "walk-replace works as expected")
-  (assert-equal test
-                -1
-                (test-neg 1)
-                "Dynamic.neg works as expected")
-  (assert-equal test
-                4
-                (test-cxr (1 a 3 d) (1 2 3 4))
-                "Dynamic.cxr works as expected I")
-  (assert-equal test
-                1
-                (test-cxr (0 d 1 a) (1 2 3 4))
-                "Dynamic.cxr works as expected I")
-  (assert-equal test
-                3
-                (test-round 3.4)
-                "Dynamic.round works as expected I")
-  (assert-equal test
-                3
-                (test-round 2.51)
-                "Dynamic.round works as expected II")
+  (assert-dynamic-equal test
+                        6
+                        (let [x 1]
+                          (eval
+                            (quasiquote
+                              (+ (unquote x) (+ (unquote-splicing (map inc [1 2])))))))
+                        "quasiquote works as expected")
+  (assert-dynamic-equal test
+                        6
+                        (let [x 1]
+                          (eval `(+ %x (+ %@(map inc [1 2])))))
+                        "quasiquote reader works as expected")
+  (assert-dynamic-equal test
+                        12
+                        (eval (postwalk (fn [x] (if (= x '+) '* x))
+                                        '(+ 2 (+ 2 3))))
+                        "postwalk works as expected")
+  (assert-dynamic-equal test
+                        12
+                        (eval (prewalk (fn [x] (if (= x '+) '* x))
+                                       '(+ 2 (+ 2 3))))
+                        "prewalk works as expected")
+  (assert-dynamic-equal test
+                        12
+                        (eval (walk-replace '((+ *)) '(+ 2 (+ 2 3))))
+                        "walk-replace works as expected")
+  (assert-dynamic-equal test
+                        -1
+                        (neg 1)
+                        "Dynamic.neg works as expected")
+  (assert-dynamic-equal test
+                        4
+                        (cxr '(1 a 3 d) '(1 2 3 4))
+                        "Dynamic.cxr works as expected I")
+  (assert-dynamic-equal test
+                        1
+                        (cxr '(0 d 1 a) '(1 2 3 4))
+                        "Dynamic.cxr works as expected II")
+  (assert-dynamic-equal test
+                        3
+                        (round 3.4)
+                        "Dynamic.round works as expected I")
+  (assert-dynamic-equal test
+                        3
+                        (round 2.51)
+                        "Dynamic.round works as expected II")
   (assert-dynamic-equal test
                         '("h" "e" "l" "l" "o")
                         (String.to-list "hello")
