@@ -428,4 +428,8 @@
                 3
                 (test-round 2.51)
                 "Dynamic.round works as expected II")
+  (assert-dynamic-equal test
+                        '("h" "e" "l" "l" "o")
+                        (String.to-list "hello")
+                        "Dynamic.String.to-list works as expected")
 )

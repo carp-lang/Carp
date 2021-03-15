@@ -486,3 +486,15 @@
 
 (defmacro str* [:rest forms]
   `(copy %(build-str* forms)))
+
+(defmodule Dynamic
+  (defmodule String
+    (defndynamic empty? [s]
+      (= (String.length s) 0))
+
+    (defndynamic to-list [s]
+      (if (String.empty? s)
+        '()
+        (cons (String.head s) (String.to-list (String.tail s)))))
+  )
+)
