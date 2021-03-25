@@ -639,6 +639,10 @@ commandMinus :: BinaryCommandCallback
 commandMinus = commandArith (-) "-"
 
 commandDiv :: BinaryCommandCallback
+commandDiv ctx _ x@(XObj (Num _ (Integral 0)) _ _) =
+  pure $ evalError ctx "Attempted to divide by zero." (xobjInfo x)
+commandDiv ctx _ x@(XObj (Num _ (Floating 0)) _ _) =
+  pure $ evalError ctx "Attempted to divide by zero." (xobjInfo x)
 commandDiv ctx p@(XObj (Num _ (Integral _)) _ _) q@(XObj (Num _ (Integral _)) _ _) = commandArith div "/" ctx p q
 commandDiv ctx p q = commandArith (/) "/" ctx p q
 

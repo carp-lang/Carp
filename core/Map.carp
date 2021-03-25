@@ -643,9 +643,12 @@
     (hidden max-load)
     (defdynamic max-load 80)
 
-    (doc create "makes a dynamic map.")
+    (hidden create-sized)
+    (defndynamic create-sized [s]
+      (Map.init (n-times s list)))
+
     (defndynamic create []
-      (Map.init (n-times Map.dflt-len list)))
+      (Map.create-sized Map.dflt-len))
 
     (hidden resize-bucket)
     (defndynamic resize-bucket [n m]
@@ -661,8 +664,8 @@
 
     (doc resize "resizes a dynamic map to size `s`.")
     (defndynamic resize [m s]
-      (let-do [n (n-times s list)]
-        (Map.init (Map.resize- n (Map.buckets m)))))
+      (let-do [n (Map.create-sized s)]
+        (Map.resize- n (Map.buckets m))))
 
     (doc grow "grows a dynamic map.")
     (defndynamic grow [m] (Map.resize m (* (length (Map.buckets m)) 2)))
