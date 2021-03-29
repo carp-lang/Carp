@@ -1,0 +1,54 @@
+(deftype T [x Int y Int z Int])
+(derive T =)
+(derive T str)
+
+(register-simple-place 'T.x 'T.set-x!)
+
+(load "Test.carp")
+(use Test)
+
+(deftest test
+  ; as of yet unimplemented
+  ;(assert-dynamic-equal test
+  ;                      '(1 2 3)
+  ;                      (let-do [x '(2 2 3)]
+  ;                        (setf (car x) 1)
+  ;                        x)
+  ;                      "setf works for car"
+  ;)
+  ;(assert-dynamic-equal test
+  ;                      '(1 2)
+  ;                      (let-do [x '(1 2 3)]
+  ;                        (setf (cdr x) '(2))
+  ;                        x)
+  ;                      "setf works for cdr"
+  ;)
+  (assert-equal test
+                &[1 2 3]
+                &(let-do [x [1 3 3]]
+                  (setf (nth &x 1) 2)
+                  x)
+                "setf works for nth"
+  )
+  (assert-equal test
+                "hey"
+                &(let-do [x @"hoy"]
+                  (setf (char-at &x 1) \e)
+                  x)
+                "setf works for char-at"
+  )
+  (assert-equal test
+                10
+                (let-do [x 1]
+                  (setf x 10)
+                  x)
+                "setf works on symbols"
+  )
+  (assert-equal test
+                &(T.init 1 1 1)
+                &(let-do [x (T.init 0 1 1)]
+                  (setf (T.x &x) 1)
+                  x)
+                "setf works on custom types"
+  )
+)

@@ -26,6 +26,7 @@
            Function
            Geometry
            Quasiquote
+           Setf
            Int
            Introspect
            Unit
