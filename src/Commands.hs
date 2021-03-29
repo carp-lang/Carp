@@ -278,7 +278,7 @@ runExeWithArgs ctx exe args = liftIO $ do
 commandBuild :: VariadicCommandCallback
 commandBuild ctx [] = commandBuild ctx [falseXObj]
 commandBuild ctx [XObj (Bol shutUp) _ _] = do
-  let env = contextGlobalEnv ctx
+  let env = removeSpecials (contextGlobalEnv ctx)
       typeEnv = contextTypeEnv ctx
       proj = contextProj ctx
       execMode = contextExecMode ctx
@@ -343,6 +343,12 @@ commandBuild ctx [XObj (Bol shutUp) _ _] = do
           else case Map.lookup "main" (envBindings env) of
             Just _ -> compile True
             Nothing -> compile False
+  where
+    removeSpecials env =
+      let binds = Map.filterWithKey filterSpecials (envBindings env)
+       in env {envBindings = binds}
+    filterSpecials k _ =
+      not (isSpecialSym (XObj (Sym (SymPath [] k) Symbol) Nothing Nothing))
 commandBuild ctx [arg] =
   pure (evalError ctx ("`build` expected a boolean argument, but got `" ++ pretty arg ++ "`.") (xobjInfo arg))
 commandBuild ctx args =
