@@ -38,8 +38,8 @@ Example:
 (setf x 10)
 x ; => 10
 
-(def x [1 2 3]
-(setf (nth x 1) 10)
+(def x [1 2 3])
+(setf (nth &x 1) 10)
 x ; => [1 10 3]
 ```")
   (defmacro setf [place val]
