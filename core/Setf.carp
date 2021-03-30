@@ -26,6 +26,15 @@ Example:
   (defndynamic register-simple-place [name setter]
     (Setf.register-place name (fn [args] (cons setter args))))
 
+  (defndynamic register-struct-places [t]
+    (map
+      (fn [member]
+        (let [name (car member)
+              getter (Symbol.prefix t name)
+              setter (Symbol.prefix t (Symbol.concat ['set- name '!]))]
+          (Setf.register-simple-place getter setter)))
+      (eval `(members %t))))
+
   (hidden get-place)
   (defndynamic get-place [n]
     (Map.get Setf.places n))
