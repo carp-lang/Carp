@@ -26,6 +26,17 @@ Example:
   (defndynamic register-simple-place [name setter]
     (Setf.register-place name (fn [args] (cons setter args))))
 
+  (doc register-struct-places "registers all members of a struct-like type as
+places.
+
+Example:
+```
+(register-struct-places 'Vector2)
+
+(let-do [x (Vector2.init 1 2)]
+  (setf (Vector2.x &x) 10)
+  x) ; => (Vector2 10  2)
+```")
   (defndynamic register-struct-places [t]
     (map
       (fn [member]
