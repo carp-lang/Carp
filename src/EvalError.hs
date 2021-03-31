@@ -14,8 +14,8 @@ import Info
 import Obj
 import SymPath
 import TypeError
-import Util
 import Types
+import Util
 
 --------------------------------------------------------------------------------
 -- Data (Evaluation Errors)
@@ -152,7 +152,7 @@ defnInvalidArgs :: [XObj] -> EvaluationError
 defnInvalidArgs = InvalidArgs "Invalid args to `defn`, expected an array of symbols as an argument list"
 
 loadInvalidArgs :: [XObj] -> EvaluationError
-loadInvalidArgs = InvalidArgs  "Invalid args to `load`, expected (load str optional:fileFromRepo)"
+loadInvalidArgs = InvalidArgs "Invalid args to `load`, expected (load str optional:fileFromRepo)"
 
 loadOnceInvalidArgs :: [XObj] -> EvaluationError
 loadOnceInvalidArgs = InvalidArgs "Invalid args to `load-once`, expected `(load-once str optional:fileFromRepo)`"
