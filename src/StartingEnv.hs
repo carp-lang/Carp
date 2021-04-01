@@ -367,14 +367,14 @@ dynamicStringModule =
 
 unsafeModule :: Env
 unsafeModule =
-  Env {
-    envBindings = bindings,
-    envParent = Nothing,
-    envModuleName = Just "Unsafe",
-    envUseModules = Set.empty,
-    envMode = ExternalEnv,
-    envFunctionNestingLevel = 0
-  }
+  Env
+    { envBindings = bindings,
+      envParent = Nothing,
+      envModuleName = Just "Unsafe",
+      envUseModules = Set.empty,
+      envMode = ExternalEnv,
+      envFunctionNestingLevel = 0
+    }
   where
     spath = SymPath ["Unsafe"]
     bindings = Map.fromList unaries

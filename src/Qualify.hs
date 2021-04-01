@@ -181,36 +181,40 @@ qualifyFunctionDefinition typeEnv globalEnv env (XObj (Lst [defn@(XObj (Defn _) 
   -- It is marked as RecursionEnv basically is the same thing as external to not mess up lookup.
   -- Inside the recursion env is the function env that contains bindings for the arguments of the function.
   -- Note: These inner envs is ephemeral since they are not stored in a module or global scope.
-  do let recursionEnv = Env Map.empty (Just env) (Just (functionName ++ "-recurse-env")) Set.empty RecursionEnv 0
-         envWithSelf = extendEnv recursionEnv functionName sym
-         functionEnv = Env Map.empty (Just envWithSelf) Nothing Set.empty InternalEnv 0
-         envWithArgs = foldl' (\e arg@(XObj (Sym (SymPath _ argSymName) _) _ _) -> extendEnv e argSymName arg) functionEnv argsArr
-     qualifiedBody <- liftM unQualified (setFullyQualifiedSymbols typeEnv globalEnv envWithArgs body)
-     pure (Qualified (XObj (Lst [defn, sym, args, qualifiedBody]) i t))
+  do
+    let recursionEnv = Env Map.empty (Just env) (Just (functionName ++ "-recurse-env")) Set.empty RecursionEnv 0
+        envWithSelf = extendEnv recursionEnv functionName sym
+        functionEnv = Env Map.empty (Just envWithSelf) Nothing Set.empty InternalEnv 0
+        envWithArgs = foldl' (\e arg@(XObj (Sym (SymPath _ argSymName) _) _ _) -> extendEnv e argSymName arg) functionEnv argsArr
+    qualifiedBody <- liftM unQualified (setFullyQualifiedSymbols typeEnv globalEnv envWithArgs body)
+    pure (Qualified (XObj (Lst [defn, sym, args, qualifiedBody]) i t))
 qualifyFunctionDefinition _ _ _ xobj = Left $ FailedToQualifyDeclarationName xobj
 
 -- | Qualify the symbols in a lambda body.
 qualifyLambda :: Qualifier
 qualifyLambda typeEnv globalEnv env (XObj (Lst [fn@(XObj (Fn _ _) _ _), args@(XObj (Arr argsArr) _ _), body]) i t) =
-  do let lvl = envFunctionNestingLevel env
-         functionEnv = Env Map.empty (Just env) Nothing Set.empty InternalEnv (lvl + 1)
-         envWithArgs = foldl' (\e arg@(XObj (Sym (SymPath _ argSymName) _) _ _) -> extendEnv e argSymName arg) functionEnv argsArr
-     qualifiedBody <- liftM unQualified (setFullyQualifiedSymbols typeEnv globalEnv envWithArgs body)
-     pure (Qualified (XObj (Lst [fn, args, qualifiedBody]) i t))
+  do
+    let lvl = envFunctionNestingLevel env
+        functionEnv = Env Map.empty (Just env) Nothing Set.empty InternalEnv (lvl + 1)
+        envWithArgs = foldl' (\e arg@(XObj (Sym (SymPath _ argSymName) _) _ _) -> extendEnv e argSymName arg) functionEnv argsArr
+    qualifiedBody <- liftM unQualified (setFullyQualifiedSymbols typeEnv globalEnv envWithArgs body)
+    pure (Qualified (XObj (Lst [fn, args, qualifiedBody]) i t))
 qualifyLambda _ _ _ xobj = Left $ FailedToQualifySymbols xobj
 
 -- | Qualify the symbols in a The form's body.
 qualifyThe :: Qualifier
 qualifyThe typeEnv globalEnv env (XObj (Lst [the@(XObj The _ _), typeX, value]) i t) =
-  do qualifiedValue <- liftM unQualified (setFullyQualifiedSymbols typeEnv globalEnv env value)
-     pure (Qualified (XObj (Lst [the, typeX, qualifiedValue]) i t))
+  do
+    qualifiedValue <- liftM unQualified (setFullyQualifiedSymbols typeEnv globalEnv env value)
+    pure (Qualified (XObj (Lst [the, typeX, qualifiedValue]) i t))
 qualifyThe _ _ _ xobj = Left $ FailedToQualifySymbols xobj
 
 -- | Qualify the symbols in a Def form's body.
 qualifyDef :: Qualifier
 qualifyDef typeEnv globalEnv env (XObj (Lst [def@(XObj Def _ _), sym, expr]) i t) =
-  do qualifiedExpr <- liftM unQualified (setFullyQualifiedSymbols typeEnv globalEnv env expr)
-     pure (Qualified (XObj (Lst [def, sym, qualifiedExpr]) i t))
+  do
+    qualifiedExpr <- liftM unQualified (setFullyQualifiedSymbols typeEnv globalEnv env expr)
+    pure (Qualified (XObj (Lst [def, sym, qualifiedExpr]) i t))
 qualifyDef _ _ _ xobj = Left $ FailedToQualifySymbols xobj
 
 -- | Qualify the symbols in a Let form's bindings and body.
@@ -219,17 +223,19 @@ qualifyLet typeEnv globalEnv env (XObj (Lst [letExpr@(XObj Let _ _), bind@(XObj 
   | odd (length bindings) = Right $ Qualified $ XObj (Lst [letExpr, bind, body]) i t -- Leave it untouched for the compiler to find the error.
   | not (all isSym (evenIndices bindings)) = Right $ Qualified $ XObj (Lst [letExpr, bind, body]) i t -- Leave it untouched for the compiler to find the error.
   | otherwise =
-    do let Just ii = i
-           lvl = envFunctionNestingLevel env
-           innerEnv = Env Map.empty (Just env) (Just ("let-env-" ++ show (infoIdentifier ii))) Set.empty InternalEnv lvl
-       (innerEnv', qualifiedBindings) <- foldM qualifyBinding (innerEnv, []) (pairwise bindings)
-       qualifiedBody <- liftM unQualified (setFullyQualifiedSymbols typeEnv globalEnv innerEnv' body)
-       pure (Qualified (XObj (Lst [letExpr, XObj (Arr qualifiedBindings) bindi bindt, qualifiedBody]) i t))
+    do
+      let Just ii = i
+          lvl = envFunctionNestingLevel env
+          innerEnv = Env Map.empty (Just env) (Just ("let-env-" ++ show (infoIdentifier ii))) Set.empty InternalEnv lvl
+      (innerEnv', qualifiedBindings) <- foldM qualifyBinding (innerEnv, []) (pairwise bindings)
+      qualifiedBody <- liftM unQualified (setFullyQualifiedSymbols typeEnv globalEnv innerEnv' body)
+      pure (Qualified (XObj (Lst [letExpr, XObj (Arr qualifiedBindings) bindi bindt, qualifiedBody]) i t))
   where
     qualifyBinding :: (Env, [XObj]) -> (XObj, XObj) -> Either QualificationError (Env, [XObj])
     qualifyBinding (e, bs) (s@(XObj (Sym (SymPath _ binderName) _) _ _), o) =
-      do qualified <- liftM unQualified (setFullyQualifiedSymbols typeEnv globalEnv e o)
-         (pure (extendEnv e binderName s, bs ++ [s, qualified]))
+      do
+        qualified <- liftM unQualified (setFullyQualifiedSymbols typeEnv globalEnv e o)
+        (pure (extendEnv e binderName s, bs ++ [s, qualified]))
     qualifyBinding _ _ = error "bad let binding"
 qualifyLet _ _ _ xobj = Left $ FailedToQualifySymbols xobj
 
@@ -238,9 +244,10 @@ qualifyMatch :: Qualifier
 qualifyMatch typeEnv globalEnv env (XObj (Lst (matchExpr@(XObj (Match _) _ _) : expr : casesXObjs)) i t)
   | odd (length casesXObjs) = pure $ Qualified $ XObj (Lst (matchExpr : expr : casesXObjs)) i t -- Leave it untouched for the compiler to find the error.
   | otherwise =
-      do qualifiedExpr <- pure . unQualified =<< setFullyQualifiedSymbols typeEnv globalEnv env expr
-         qualifiedCases <- pure . map (map unQualified) =<< mapM qualifyCases (pairwise casesXObjs)
-         pure (Qualified (XObj (Lst (matchExpr : qualifiedExpr : concat qualifiedCases)) i t))
+    do
+      qualifiedExpr <- pure . unQualified =<< setFullyQualifiedSymbols typeEnv globalEnv env expr
+      qualifiedCases <- pure . map (map unQualified) =<< mapM qualifyCases (pairwise casesXObjs)
+      pure (Qualified (XObj (Lst (matchExpr : qualifiedExpr : concat qualifiedCases)) i t))
   where
     Just ii = i
     lvl = envFunctionNestingLevel env
@@ -248,14 +255,16 @@ qualifyMatch typeEnv globalEnv env (XObj (Lst (matchExpr@(XObj (Match _) _ _) : 
     innerEnv = Env Map.empty (Just env) (Just ("case-env-" ++ show (infoIdentifier ii))) Set.empty InternalEnv lvl
     qualifyCases :: (XObj, XObj) -> Either QualificationError [Qualified]
     qualifyCases (l@(XObj (Lst (_ : xs)) _ _), r) =
-      do let innerEnv' = foldl' foldVars innerEnv xs
-         qualifiedLHS <- setFullyQualifiedSymbols typeEnv globalEnv env l
-         qualifiedRHS <- setFullyQualifiedSymbols typeEnv globalEnv innerEnv' r
-         Right [qualifiedLHS, qualifiedRHS]
+      do
+        let innerEnv' = foldl' foldVars innerEnv xs
+        qualifiedLHS <- setFullyQualifiedSymbols typeEnv globalEnv env l
+        qualifiedRHS <- setFullyQualifiedSymbols typeEnv globalEnv innerEnv' r
+        Right [qualifiedLHS, qualifiedRHS]
     qualifyCases (l, r) =
-      do qualifiedLHS <- setFullyQualifiedSymbols typeEnv globalEnv env l
-         qualifiedRHS <- setFullyQualifiedSymbols typeEnv globalEnv env r
-         Right [qualifiedLHS, qualifiedRHS]
+      do
+        qualifiedLHS <- setFullyQualifiedSymbols typeEnv globalEnv env l
+        qualifiedRHS <- setFullyQualifiedSymbols typeEnv globalEnv env r
+        Right [qualifiedLHS, qualifiedRHS]
     foldVars :: Env -> XObj -> Env
     foldVars env' v@(XObj (Sym (SymPath _ binderName) _) _ _) = extendEnv env' binderName v
     -- Nested sumtypes
@@ -276,8 +285,9 @@ qualifyWith _ _ _ xobj = Left $ FailedToQualifySymbols xobj
 qualifyLst :: Qualifier
 qualifyLst typeEnv globalEnv env (XObj (Lst xobjs) i t) =
   -- TODO: Perhaps this general case can be sufficient? No need with all the cases above..?
-  do qualifiedXObjs <- liftM (map unQualified) (mapM (setFullyQualifiedSymbols typeEnv globalEnv env) xobjs)
-     pure (Qualified (XObj (Lst qualifiedXObjs) i t))
+  do
+    qualifiedXObjs <- liftM (map unQualified) (mapM (setFullyQualifiedSymbols typeEnv globalEnv env) xobjs)
+    pure (Qualified (XObj (Lst qualifiedXObjs) i t))
 qualifyLst _ _ _ xobj = Left $ FailedToQualifySymbols xobj
 
 -- | Qualify a single symbol.
@@ -382,13 +392,15 @@ qualifySym _ _ _ xobj = Left $ FailedToQualifySymbols xobj
 -- | Qualify an Arr form.
 qualifyArr :: Qualifier
 qualifyArr typeEnv globalEnv env (XObj (Arr array) i t) =
-  do qualifiedArr <- liftM (map unQualified) (mapM (setFullyQualifiedSymbols typeEnv globalEnv env) array)
-     pure (Qualified (XObj (Arr qualifiedArr) i t))
+  do
+    qualifiedArr <- liftM (map unQualified) (mapM (setFullyQualifiedSymbols typeEnv globalEnv env) array)
+    pure (Qualified (XObj (Arr qualifiedArr) i t))
 qualifyArr _ _ _ xobj = Left $ FailedToQualifySymbols xobj
 
 -- | Qualify a StaticArr form.
 qualifyStaticArr :: Qualifier
 qualifyStaticArr typeEnv globalEnv env (XObj (StaticArr array) i t) =
-  do qualifiedArr <- liftM (map unQualified) (mapM (setFullyQualifiedSymbols typeEnv globalEnv env) array)
-     pure (Qualified (XObj (StaticArr qualifiedArr) i t))
+  do
+    qualifiedArr <- liftM (map unQualified) (mapM (setFullyQualifiedSymbols typeEnv globalEnv env) array)
+    pure (Qualified (XObj (StaticArr qualifiedArr) i t))
 qualifyStaticArr _ _ _ xobj = Left $ FailedToQualifySymbols xobj

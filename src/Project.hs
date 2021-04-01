@@ -18,7 +18,7 @@ instance Show Target where
 data Project = Project
   { projectTitle :: String,
     projectIncludes :: [Includer],
-    projectPreproc  :: [String],
+    projectPreproc :: [String],
     projectCFlags :: [String],
     projectLibFlags :: [String],
     projectPkgConfigFlags :: [String],
