@@ -495,10 +495,11 @@ beautifyTy mappings = f
     bmappings = beautification mappings
     beautification :: TypeMappings -> Map.Map String String
     beautification m =
-      Map.fromList $ zip (map (\(VarTy name) -> name) tys) ((: []) <$> ['a' ..])
+      Map.fromList $ zip (map (\(VarTy name) -> name) tys) beautList
       where
         tys = nub $ concat $ typeVariablesInOrderOfAppearance <$> tys'
         tys' = snd <$> Map.assocs m
+    beautList = [c : s | s <- "" : beautList, c <- ['a' .. 'z']]
 
 typeVariablesInOrderOfAppearance :: Ty -> [Ty]
 typeVariablesInOrderOfAppearance (FuncTy argTys retTy ltTy) =
