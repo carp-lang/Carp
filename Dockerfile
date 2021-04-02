@@ -3,7 +3,7 @@ FROM debian:buster-slim
 ARG DEBIAN_FRONTEND=noninteractive
 
 ENV CARP_DIR=/Carp
-ENV CARP_GIT=https://github.com/dleslie/Carp
+ENV CARP_GIT=https://github.com/carp-lang/Carp
 ENV PATH=$PATH:/root/.local/bin
 
 RUN apt update && \
