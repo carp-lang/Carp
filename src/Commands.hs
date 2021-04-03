@@ -598,8 +598,8 @@ commandSymConcat ctx a =
     _ -> evalError ctx ("Can't call concat with " ++ pretty a) (xobjInfo a)
 
 commandSymPrefix :: BinaryCommandCallback
-commandSymPrefix ctx (XObj (Sym (SymPath [] prefix) _) _ _) (XObj (Sym (SymPath [] suffix) _) i t) =
-  pure (ctx, Right (XObj (Sym (SymPath [prefix] suffix) (LookupGlobal CarpLand AVariable)) i t))
+commandSymPrefix ctx (XObj (Sym (SymPath [] prefix) _) _ _) (XObj (Sym (SymPath [] suffix) st) i t) =
+  pure (ctx, Right (XObj (Sym (SymPath [prefix] suffix) st) i t))
 commandSymPrefix ctx x (XObj (Sym (SymPath [] _) _) _ _) =
   pure $ evalError ctx ("Can’t call `prefix` with " ++ pretty x) (xobjInfo x)
 commandSymPrefix ctx _ x =
