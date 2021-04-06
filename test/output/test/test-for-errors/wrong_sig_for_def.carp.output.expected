@@ -1,2 +1,2 @@
  Inferred Macro, can't unify with Bool.
-wrong_sig_for_def.carp:4:1 Inferred Bool, can't unify with Int.
+wrong_sig_for_def.carp:4:2 Inferred Bool, can't unify with Int.

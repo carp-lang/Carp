@@ -224,43 +224,48 @@ expand eval ctx xobj =
               implicitInit = XObj (Sym (SymPath pathToModule "init") Symbol) i t
            in expand eval ctx (XObj (Lst (implicitInit : args)) (xobjInfo xobj) (xobjTy xobj))
         f : args ->
-          do
-            (_, expandedF) <- expand eval ctx f
-            (ctx'', expandedArgs) <- foldlM successiveExpand (ctx, Right []) args
-            case expandedF of
-              Right (XObj (Lst [XObj Dynamic _ _, _, XObj (Arr _) _ _, _]) _ _) ->
-                --trace ("Found dynamic: " ++ pretty xobj)
-                eval ctx'' xobj
-              Right (XObj (Lst [XObj Macro _ _, _, XObj (Arr _) _ _, _]) _ _) ->
-                --trace ("Found macro: " ++ pretty xobj ++ " at " ++ prettyInfoFromXObj xobj)
-                eval ctx'' xobj
-              Right (XObj (Lst [XObj (Command (NullaryCommandFunction nullary)) _ _, _, _]) _ _) ->
-                nullary ctx''
-              Right (XObj (Lst [XObj (Command (UnaryCommandFunction unary)) _ _, _, _]) _ _) ->
-                case expandedArgs of
-                  Right [x] -> unary ctx'' x
-                  _ -> error "expanding args"
-              Right (XObj (Lst [XObj (Command (BinaryCommandFunction binary)) _ _, _, _]) _ _) ->
-                case expandedArgs of
-                  Right [x, y] -> binary ctx'' x y
-                  _ -> error "expanding args"
-              Right (XObj (Lst [XObj (Command (TernaryCommandFunction ternary)) _ _, _, _]) _ _) ->
-                case expandedArgs of
-                  Right [x, y, z] -> ternary ctx'' x y z
-                  _ -> error "expanding args"
-              Right (XObj (Lst [XObj (Command (VariadicCommandFunction variadic)) _ _, _, _]) _ _) ->
-                case expandedArgs of
-                  Right ea -> variadic ctx'' ea
-                  _ -> error "expanding args"
-              Right _ ->
-                pure
-                  ( ctx'',
-                    do
-                      okF <- expandedF
-                      okArgs <- expandedArgs
-                      Right (XObj (Lst (okF : okArgs)) i t)
-                  )
-              Left err -> pure (ctx'', Left err)
+          if isSpecialSym f
+            then do
+              (ctx', s) <- eval ctx f
+              let Right sym = s
+              expand eval ctx' (XObj (Lst (sym : args)) (xobjInfo xobj) (xobjTy xobj))
+            else do
+              (_, expandedF) <- expand eval ctx f
+              (ctx'', expandedArgs) <- foldlM successiveExpand (ctx, Right []) args
+              case expandedF of
+                Right (XObj (Lst [XObj Dynamic _ _, _, XObj (Arr _) _ _, _]) _ _) ->
+                  --trace ("Found dynamic: " ++ pretty xobj)
+                  eval ctx'' xobj
+                Right (XObj (Lst [XObj Macro _ _, _, XObj (Arr _) _ _, _]) _ _) ->
+                  --trace ("Found macro: " ++ pretty xobj ++ " at " ++ prettyInfoFromXObj xobj)
+                  eval ctx'' xobj
+                Right (XObj (Lst [XObj (Command (NullaryCommandFunction nullary)) _ _, _, _]) _ _) ->
+                  nullary ctx''
+                Right (XObj (Lst [XObj (Command (UnaryCommandFunction unary)) _ _, _, _]) _ _) ->
+                  case expandedArgs of
+                    Right [x] -> unary ctx'' x
+                    _ -> error "expanding args"
+                Right (XObj (Lst [XObj (Command (BinaryCommandFunction binary)) _ _, _, _]) _ _) ->
+                  case expandedArgs of
+                    Right [x, y] -> binary ctx'' x y
+                    _ -> error "expanding args"
+                Right (XObj (Lst [XObj (Command (TernaryCommandFunction ternary)) _ _, _, _]) _ _) ->
+                  case expandedArgs of
+                    Right [x, y, z] -> ternary ctx'' x y z
+                    _ -> error "expanding args"
+                Right (XObj (Lst [XObj (Command (VariadicCommandFunction variadic)) _ _, _, _]) _ _) ->
+                  case expandedArgs of
+                    Right ea -> variadic ctx'' ea
+                    _ -> error "expanding args"
+                Right _ ->
+                  pure
+                    ( ctx'',
+                      do
+                        okF <- expandedF
+                        okArgs <- expandedArgs
+                        Right (XObj (Lst (okF : okArgs)) i t)
+                    )
+                Left err -> pure (ctx'', Left err)
     expandList _ = error "Can't expand non-list in expandList."
     expandArray :: XObj -> IO (Context, Either EvalError XObj)
     expandArray (XObj (Arr xobjs) i t) =
