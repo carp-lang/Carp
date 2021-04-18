@@ -414,7 +414,32 @@ It will create a copy. If you want to avoid that, consider using [`endo-filter`]
     (let-do [darr (allocate (StaticArray.length sarr))]
       (for [i 0 (StaticArray.length sarr)]
         (aset-uninitialized! &darr i @(StaticArray.unsafe-nth sarr i)))
-      darr)))
+      darr))
+
+  (doc map-reduce "reduces an array `a` by invoking the function `f` on each
+element, while keeping an accumulator and a list.
+
+Returns a `Pair` where the first element is the mapped array and the second one
+is the final accumulator.
+
+The function `f` receives two arguments: the first one is the element, and the
+second one is the accumulator. `f` must return `(Pair result accumulator)`.
+
+Example:
+```
+(map-reduce &(fn [acc x] (Pair.init (+ @x @acc) (* @x 2))) 0 &[1 2 3])
+; => (Pair 6 [2 4 6])
+```")
+  (defn map-reduce [f acc a]
+    (reduce
+      &(fn [a el]
+        (let [l (Pair.b &a)
+              acc (Pair.a &a)
+              p (~f acc el)]
+          (Pair.init @(Pair.a &p) (Array.push-back @l @(Pair.b &p)))))
+      (Pair.init acc [])
+      a))
+)
 
 (defmacro doall [f xs]
   `(for [i 0 (Array.length &%xs)]
