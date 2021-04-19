@@ -422,8 +422,8 @@ element, while keeping an accumulator and a list.
 Returns a `Pair` where the first element is the mapped array and the second one
 is the final accumulator.
 
-The function `f` receives two arguments: the first one is the element, and the
-second one is the accumulator. `f` must return `(Pair result accumulator)`.
+The function `f` receives two arguments: the first one is the accumulator, and
+the second one is the element. `f` must return `(Pair accumulator result)`.
 
 Example:
 ```
