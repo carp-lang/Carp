@@ -12,6 +12,7 @@ import qualified StaticArrayTemplates
 import Template
 import ToTemplate
 import Types
+import qualified Env as E
 
 -- | These modules will be loaded in order before any other code is evaluated.
 coreModules :: String -> [String]
@@ -122,7 +123,7 @@ functionModule =
   where
     bindEnv env =
       let Just name = envModuleName env
-       in (name, Binder emptyMeta (XObj (Mod env) Nothing Nothing))
+       in (name, Binder emptyMeta (XObj (Mod env E.empty) Nothing Nothing))
     bindings = Map.fromList (map (bindEnv . generateInnerFunctionModule) [0 .. maxArity])
 
 -- | Each arity of functions need their own module to enable copying and string representation
@@ -328,10 +329,10 @@ dynamicModule =
             f "help" primitiveHelp "prints help." "(help)"
           ]
     mods =
-      [ ("String", Binder emptyMeta (XObj (Mod dynamicStringModule) Nothing Nothing)),
-        ("Symbol", Binder emptyMeta (XObj (Mod dynamicSymModule) Nothing Nothing)),
-        ("Project", Binder emptyMeta (XObj (Mod dynamicProjectModule) Nothing Nothing)),
-        ("Path", Binder emptyMeta (XObj (Mod dynamicPathModule) Nothing Nothing))
+      [ ("String", Binder emptyMeta (XObj (Mod dynamicStringModule E.empty) Nothing Nothing)),
+        ("Symbol", Binder emptyMeta (XObj (Mod dynamicSymModule E.empty) Nothing Nothing)),
+        ("Project", Binder emptyMeta (XObj (Mod dynamicProjectModule E.empty) Nothing Nothing)),
+        ("Path", Binder emptyMeta (XObj (Mod dynamicPathModule E.empty) Nothing Nothing))
       ]
 
 -- | A submodule of the Dynamic module. Contains functions for working with strings in the repl or during compilation.
@@ -471,12 +472,12 @@ startingGlobalEnv noArray =
       Map.fromList $
         [ register "NULL" (PointerTy (VarTy "a"))
         ]
-          ++ [("Array", Binder emptyMeta (XObj (Mod arrayModule) Nothing Nothing)) | not noArray]
-          ++ [("StaticArray", Binder emptyMeta (XObj (Mod staticArrayModule) Nothing Nothing))]
-          ++ [("Pointer", Binder emptyMeta (XObj (Mod pointerModule) Nothing Nothing))]
-          ++ [("Dynamic", Binder emptyMeta (XObj (Mod dynamicModule) Nothing Nothing))]
-          ++ [("Function", Binder emptyMeta (XObj (Mod functionModule) Nothing Nothing))]
-          ++ [("Unsafe", Binder emptyMeta (XObj (Mod unsafeModule) Nothing Nothing))]
+          ++ [("Array", Binder emptyMeta (XObj (Mod arrayModule E.empty) Nothing Nothing)) | not noArray]
+          ++ [("StaticArray", Binder emptyMeta (XObj (Mod staticArrayModule E.empty) Nothing Nothing))]
+          ++ [("Pointer", Binder emptyMeta (XObj (Mod pointerModule E.empty) Nothing Nothing))]
+          ++ [("Dynamic", Binder emptyMeta (XObj (Mod dynamicModule E.empty) Nothing Nothing))]
+          ++ [("Function", Binder emptyMeta (XObj (Mod functionModule E.empty) Nothing Nothing))]
+          ++ [("Unsafe", Binder emptyMeta (XObj (Mod unsafeModule E.empty) Nothing Nothing))]
 
 -- | The type environment (containing deftypes and interfaces) before any code is run.
 startingTypeEnv :: Env

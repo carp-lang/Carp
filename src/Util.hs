@@ -1,5 +1,6 @@
 module Util where
 
+import Data.Bifunctor
 import Data.List
 import Data.Maybe (fromMaybe)
 import qualified Map
@@ -116,3 +117,12 @@ intToArgName 7 = "t"
 intToArgName 8 = "s"
 intToArgName 9 = "r"
 intToArgName n = intToArgName 1 ++ intToArgName (n `div` 10)
+
+replaceLeft :: b -> Either a c -> Either b c
+replaceLeft x e = first (const x) e
+
+unwrapErr :: Show e => Either e a -> Either String a
+unwrapErr = first show
+
+toMaybe :: (b -> c) -> Either a b -> Maybe c
+toMaybe f e = either (const Nothing) (Just . f) e

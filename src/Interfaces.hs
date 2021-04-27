@@ -14,14 +14,15 @@ where
 
 import ColorText
 import Constraints
+import Context
 import Data.List (delete, deleteBy, foldl')
-import Data.Maybe (fromMaybe, mapMaybe)
-import Env
-import Lookup
+import Data.Either (rights, fromRight)
+import qualified Env
 import qualified Meta
 import Obj
 import Types
 import Util
+import qualified Qualify
 
 data InterfaceError
   = KindMismatch SymPath Ty Ty
@@ -67,7 +68,7 @@ instance Show InterfaceError where
 -- | Get the first path of an interface implementation that matches a given type signature
 getFirstMatchingImplementation :: Context -> [SymPath] -> Ty -> Maybe SymPath
 getFirstMatchingImplementation ctx paths ty =
-  case filter predicate (mapMaybe (`lookupBinder` global) paths) of
+  case filter predicate (rights (map (global `Env.lookupBinder`) paths)) of
     [] -> Nothing
     (x : _) -> Just ((getPath . binderXObj) x)
   where
@@ -77,53 +78,48 @@ getFirstMatchingImplementation ctx paths ty =
 -- | Remove an interface from a binder's list of implemented interfaces
 removeInterfaceFromImplements :: SymPath -> XObj -> Context -> Context
 removeInterfaceFromImplements oldImplPath interface ctx =
-  fromMaybe
+  fromRight
     ctx
-    ( lookupBinder oldImplPath (contextGlobalEnv ctx)
+    (lookupBinderInGlobalEnv ctx (Qualify.markQualified oldImplPath)
         >>= \binder ->
-          Meta.getBinderMetaValue "implements" binder
-            >>= ( \x ->
-                    case x of
-                      (XObj (Lst impls) i t) ->
-                        pure $ Meta.updateBinderMeta binder "implements" (XObj (Lst (deleteBy matchPath interface impls)) i t)
-                      _ -> Nothing
-                )
-            >>= (\b -> pure $ ctx {contextGlobalEnv = envInsertAt (contextGlobalEnv ctx) oldImplPath b})
-    )
+          pure (case Meta.getBinderMetaValue "implements" binder of
+                 Just (XObj (Lst impls) i t) -> Meta.updateBinderMeta binder "implements" (XObj (Lst (deleteBy matchPath interface impls)) i t)
+                 _ -> binder)
+        >>= insertInGlobalEnv ctx (Qualify.markQualified oldImplPath))
   where
     matchPath xobj xobj' = getPath xobj == getPath xobj'
 
 -- TODO: This is currently called once outside of this module--try to remove that call and make this internal.
 -- Checks whether a given form's type matches an interface, and if so, registers the form with the interface.
-registerInInterfaceIfNeeded :: Context -> Binder -> Binder -> Ty -> (Context, Maybe InterfaceError)
+registerInInterfaceIfNeeded :: Context -> Binder -> Binder -> Ty -> (Either ContextError Context, Maybe InterfaceError)
 registerInInterfaceIfNeeded ctx implementation interface definitionSignature =
   case interface of
     Binder _ (XObj (Lst [inter@(XObj (Interface interfaceSignature paths) ii it), isym]) i t) ->
       if checkKinds interfaceSignature definitionSignature
         then case solve [Constraint interfaceSignature definitionSignature inter inter inter OrdInterfaceImpl] of
-          Left _ -> (ctx, Just (TypeMismatch implPath definitionSignature interfaceSignature))
+          Left _ -> (Right ctx, Just (TypeMismatch implPath definitionSignature interfaceSignature))
           Right _ -> case getFirstMatchingImplementation ctx paths definitionSignature of
             Nothing -> (updatedCtx, Nothing)
             Just x ->
               if x == implPath
                 then (updatedCtx, Nothing)
                 else (implReplacedCtx x, Just (AlreadyImplemented ipath x implPath definitionSignature))
-        else (ctx, Just (KindMismatch implPath definitionSignature interfaceSignature))
+        else (Right ctx, Just (KindMismatch implPath definitionSignature interfaceSignature))
       where
+        qpath = (Qualify.markQualified (SymPath [] name))
         updatedInterface = XObj (Lst [XObj (Interface interfaceSignature (addIfNotPresent implPath paths)) ii it, isym]) i t
-        updatedCtx = ctx {contextTypeEnv = TypeEnv (extendEnv typeEnv name updatedInterface)}
+        updatedCtx = replaceTypeBinder ctx qpath (toBinder updatedInterface)
         implReplacedInterface x = XObj (Lst [XObj (Interface interfaceSignature (addIfNotPresent implPath (delete x paths))) ii it, isym]) i t
-        implReplacedCtx x = ctx {contextTypeEnv = TypeEnv (extendEnv typeEnv name (implReplacedInterface x))}
+        implReplacedCtx x = replaceTypeBinder ctx qpath (toBinder (implReplacedInterface x))
     _ ->
-      (ctx, Just (NonInterface (getBinderPath interface)))
+      (Right ctx, Just (NonInterface (getBinderPath interface)))
   where
     implPath = getBinderPath implementation
-    typeEnv = getTypeEnv (contextTypeEnv ctx)
     ipath@(SymPath _ name) = getBinderPath interface
 
 -- | Given a binder and an interface path, ensure that the form is
 -- registered with the interface.
-registerInInterface :: Context -> Binder -> Binder -> (Context, Maybe InterfaceError)
+registerInInterface :: Context -> Binder -> Binder -> (Either ContextError Context, Maybe InterfaceError)
 registerInInterface ctx implementation interface =
   case binderXObj implementation of
     XObj (Lst [XObj (Defn _) _ _, _, _, _]) _ (Just t) ->
@@ -141,26 +137,26 @@ registerInInterface ctx implementation interface =
     -- And instantiated/auto-derived type functions! (e.g. Pair.a)
     XObj (Lst [XObj (Instantiate _) _ _, _]) _ (Just t) ->
       registerInInterfaceIfNeeded ctx implementation interface t
-    _ -> (ctx, Nothing)
+    _ -> (Right ctx, Nothing)
 
 -- | For forms that were declared as implementations of interfaces that didn't exist,
 -- retroactively register those forms with the interface once its defined.
-retroactivelyRegisterInInterface :: Context -> Binder -> Context
+retroactivelyRegisterInInterface :: Context -> Binder -> Either ContextError Context
 retroactivelyRegisterInInterface ctx interface =
   -- TODO: Propagate error
   maybe resultCtx (error . show) err
   where
     env = contextGlobalEnv ctx
-    impls = lookupMany Everywhere lookupImplementations (getPath (binderXObj interface)) env
-    (resultCtx, err) = foldl' (\(context, _) binder -> registerInInterface context binder interface) (ctx, Nothing) impls
+    impls = concat (rights (fmap ((flip Env.findImplementations) (getPath (binderXObj interface))) (env : (Env.lookupChildren env))))
+    (resultCtx, err) = foldl' (\(Right context, _) binder -> registerInInterface context binder interface) (Right ctx, Nothing) impls
 
 -- | Checks whether an interface is implemented for a certain type signature,
 -- | e.g. Is "delete" implemented for `(Fn [String] ())` ?
 interfaceImplementedForTy :: TypeEnv -> Env -> String -> Ty -> Bool
-interfaceImplementedForTy (TypeEnv typeEnv) globalEnv interfaceName matchingTy =
-  case lookupBinder (SymPath [] interfaceName) typeEnv of
-    Just (Binder _ (XObj (Lst (XObj (Interface _ paths) _ _ : _)) _ _)) ->
-      let lookupType path = forceTy . binderXObj <$> lookupBinder path globalEnv
-          matches = filter (areUnifiable matchingTy) (mapMaybe lookupType paths)
+interfaceImplementedForTy typeEnv globalEnv interfaceName matchingTy =
+  case Env.lookupBinder typeEnv (SymPath [] interfaceName) of
+    Right (Binder _ (XObj (Lst (XObj (Interface _ paths) _ _ : _)) _ _)) ->
+      let lookupType' path = forceTy . binderXObj <$> (Env.lookupBinder globalEnv path)
+          matches = filter (areUnifiable matchingTy) (rights (map lookupType' paths))
        in not . null $ matches
     _ -> False

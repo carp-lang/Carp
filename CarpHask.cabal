@@ -34,7 +34,6 @@ library
                        Info,
                        InitialTypes,
                        Interfaces,
-                       Lookup,
                        Managed,
                        Map,
                        Meta,

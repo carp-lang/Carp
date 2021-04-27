@@ -4,7 +4,7 @@ import Control.Monad (foldM)
 import Data.Function (on)
 import Data.List (nubBy, (\\))
 import Data.Maybe (fromJust)
-import Lookup
+import Env (lookupBinder)
 import Obj
 import TypeError
 import TypePredicates
@@ -104,21 +104,19 @@ canBeUsedAsMemberType typeEnv typeVariables ty xobj =
     _ -> Left (InvalidMemberType ty xobj)
   where
     checkStruct :: Ty -> [Ty] -> Either TypeError ()
-    checkStruct (ConcreteNameTy "Array") [innerType] =
+    checkStruct (ConcreteNameTy (SymPath [] "Array")) [innerType] =
       canBeUsedAsMemberType typeEnv typeVariables innerType xobj
         >> pure ()
-    checkStruct (ConcreteNameTy n) vars =
-      case lookupBinder (SymPath lookupPath name) (getTypeEnv typeEnv) of
-        Just (Binder _ (XObj (Lst (XObj (ExternalType _) _ _ : _)) _ _)) ->
+    checkStruct (ConcreteNameTy (SymPath _ name)) vars =
+      case lookupBinder typeEnv (SymPath [] name) of
+        Right (Binder _ (XObj (Lst (XObj (ExternalType _) _ _ : _)) _ _)) ->
           pure ()
-        Just (Binder _ (XObj (Lst (XObj (Deftype t) _ _ : _)) _ _)) ->
+        Right (Binder _ (XObj (Lst (XObj (Deftype t) _ _ : _)) _ _)) ->
           checkInhabitants t >> foldM (\_ typ -> canBeUsedAsMemberType typeEnv typeVariables typ xobj) () vars
-        Just (Binder _ (XObj (Lst (XObj (DefSumtype t) _ _ : _)) _ _)) ->
+        Right (Binder _ (XObj (Lst (XObj (DefSumtype t) _ _ : _)) _ _)) ->
           checkInhabitants t >> foldM (\_ typ -> canBeUsedAsMemberType typeEnv typeVariables typ xobj) () vars
         _ -> Left (NotAmongRegisteredTypes ty xobj)
       where
-        lookupPath = getPathFromStructName n
-        name = getNameFromStructName n
         checkInhabitants :: Ty -> Either TypeError ()
         checkInhabitants (StructTy _ vs) =
           if length vs == length vars
