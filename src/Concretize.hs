@@ -9,7 +9,7 @@ import Data.List (foldl')
 import Data.Maybe (fromMaybe)
 import Data.Either (fromRight)
 import Debug.Trace
-import Env (insertX, insert, lookupBinder, envIsExternal, lookup, lookupEverywhere, findPoly, findAllByName)
+import Env (insertX, insert, envIsExternal, searchValue, lookupEverywhere, findPoly, getTypeBinder, getValue)
 import Info
 import Managed
 import qualified Map
@@ -262,7 +262,7 @@ concretizeXObj allowAmbiguityRoot typeEnv rootEnv visitedDefinitions root =
           pure [okVisitedLhs, okVisitedRhs]
     visitSymbol :: Bool -> Env -> XObj -> State [XObj] (Either TypeError XObj)
     visitSymbol allowAmbig env xobj@(XObj (Sym path lookupMode) i t) =
-      case lookup env path of
+      case searchValue env path of
         Right (foundEnv, binder)
           | envIsExternal foundEnv ->
             let theXObj = binderXObj binder
@@ -320,7 +320,7 @@ concretizeXObj allowAmbiguityRoot typeEnv rootEnv visitedDefinitions root =
     visitMultiSym _ _ _ = error "Not a multi symbol."
     visitInterfaceSym :: Bool -> Env -> XObj -> State [XObj] (Either TypeError XObj)
     visitInterfaceSym allowAmbig env xobj@(XObj (InterfaceSym name) i t) =
-      case lookupBinder typeEnv (SymPath [] name) of
+      case getTypeBinder typeEnv name of
         Right (Binder _ (XObj (Lst [XObj (Interface _ interfacePaths) _ _, _]) _ _)) ->
           let Just actualType = t
               tys = map (typeFromPath env) interfacePaths
@@ -452,10 +452,11 @@ concretizeType typeEnv arrayTy@(StructTy (ConcreteNameTy (SymPath [] "StaticArra
     else do
       deps <- mapM (concretizeType typeEnv) varTys
       Right (defineStaticArrayTypeAlias arrayTy : concat deps)
--- TODO: handle polymorphic constructors (a b)
-concretizeType typeEnv genericStructTy@(StructTy (ConcreteNameTy spath) _) =
-  case (lookup typeEnv spath) of
-    Right (_, Binder _ x) -> go x
+concretizeType typeEnv genericStructTy@(StructTy (ConcreteNameTy (SymPath _ name)) _) =
+  -- TODO: This function only looks up direct children of the type environment.
+  -- However, spath can point to types that belong to a module. Pass the global env here.
+  case (getTypeBinder typeEnv name) of
+    Right (Binder _ x) -> go x
     _ -> Right []
   where go :: XObj -> Either TypeError [XObj]
         go (XObj (Lst (XObj (Deftype originalStructTy) _ _ : _ : rest)) _ _) =
@@ -591,7 +592,7 @@ replaceGenericTypeSymbolsOnCase _ unknownCase = unknownCase -- TODO: error out?
 -- | Get the type of a symbol at a given path.
 typeFromPath :: Env -> SymPath -> Ty
 typeFromPath env p =
-  case lookup env p of
+  case searchValue env p of
     Right (e, Binder _ found)
       | envIsExternal e -> forceTy found
       | otherwise -> error "Local bindings shouldn't be ambiguous."
@@ -603,7 +604,7 @@ typeFromPath env p =
 -- | parts of doesNotBelongToAnInterface.
 modeFromPath :: Env -> SymPath -> SymbolMode
 modeFromPath env p =
-  case lookup env p of
+  case searchValue env p of
     Right (_, Binder _ (XObj (Lst (XObj (External (Just overrideWithName)) _ _ : _)) _ _)) ->
       LookupGlobalOverride overrideWithName
     Right (_, Binder _ (XObj (Lst (XObj (ExternalType (Just overrideWithName)) _ _ : _)) _ _)) ->
@@ -682,7 +683,7 @@ allImplementations typeEnv env functionName functionType =
       --trace ("areUnifiable? " ++ show functionType ++ " == " ++ show t ++ " " ++ show (areUnifiable functionType t)) $
       areUnifiable functionType t
     predicate Nothing = error "allfunctionswithnameandsignature"
-    foundBindings = case lookupBinder typeEnv (SymPath [] functionName) of
+    foundBindings = case getTypeBinder typeEnv functionName of
       -- this function is an interface; lookup implementations
       Right (Binder _ (XObj (Lst (XObj (Interface _ paths) _ _ : _)) _ _)) ->
         -- N.B./TODO: There are functions designed for this
@@ -691,14 +692,14 @@ allImplementations typeEnv env functionName functionType =
         -- implementations, or hangs). We should be able to use
         -- those here instead of looking up all interface paths
         -- directly, but for now we are stuck with this.
-        case sequence $ map (\p -> Env.lookup env p) (paths ++ [(SymPath [] functionName)]) of
+        case sequence $ map (\p -> searchValue env p) (paths ++ [(SymPath [] functionName)]) of
           Right found -> found
           Left _ ->
             case findPoly env functionName functionType of
               Right r -> [r]
               Left _ -> (lookupEverywhere env functionName)
       -- just a regular function; look for it
-      _ -> fromRight [] ((Env.findAllByName env functionName) <> pure (lookupEverywhere env functionName))
+      _ -> fromRight [] ((fmap (:[]) (Env.getValue env functionName)) <> pure (lookupEverywhere env functionName))
 
 -- | Find all the dependencies of a polymorphic function with a name and a desired concrete type.
 depsOfPolymorphicFunction :: TypeEnv -> Env -> [SymPath] -> String -> Ty -> [XObj]

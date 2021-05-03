@@ -11,7 +11,7 @@ import Data.Hashable (hash)
 import Data.List (elemIndex, foldl')
 import Data.List.Split (splitOn)
 import Data.Maybe (fromMaybe)
-import Env (lookupBinder)
+import qualified Env as E
 import Emit
 import Info
 import qualified Map
@@ -720,7 +720,7 @@ commandSaveDocsInternal ctx modulePath = do
   where
     getEnvironmentBinderForDocumentation :: Context -> Env -> SymPath -> Either String Binder
     getEnvironmentBinderForDocumentation _ env path =
-      case lookupBinder env path of
+      case E.searchValueBinder env path of
         Right foundBinder@(Binder _ (XObj (Mod _ _) _ _)) ->
           Right foundBinder
         Right (Binder _ x) ->
@@ -763,7 +763,7 @@ commandSexpressionInternal ctx xobj bol =
         mdl@(XObj (Mod e _) _ _) ->
           if bol
             then getMod
-            else case lookupBinder tyEnv (SymPath [] (fromMaybe "" (envModuleName e))) of
+            else case E.getTypeBinder tyEnv (fromMaybe "" (envModuleName e)) of
               Right (Binder _ (XObj (Lst forms) i t)) ->
                 pure (ctx, Right (XObj (Lst (map toSymbols forms)) i t))
               Right (Binder _ xobj') ->

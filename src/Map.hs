@@ -53,3 +53,6 @@ elems (Map m) = M.elems m
 
 adjust :: Ord k => (a -> a) -> k -> Map k a -> Map k a
 adjust f k (Map m) = (Map (M.adjust f k m))
+
+delete :: Ord k => k -> Map k a -> Map k a
+delete k (Map m) = (Map (M.delete k m))

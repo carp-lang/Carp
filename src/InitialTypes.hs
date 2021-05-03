@@ -127,7 +127,7 @@ initialTypes typeEnv rootEnv root = evalState (visit rootEnv root) 0
         SymPath _ name@('?' : _) -> pure (Right (xobj {xobjTy = Just (VarTy name)}))
         SymPath _ (':' : _) -> pure (Left (LeadingColon xobj))
         _ ->
-          case E.lookup env symPath of
+          case E.searchValue env symPath of
             Right (foundEnv, binder) ->
               case xobjTy (binderXObj binder) of
                 -- Don't rename internal symbols like parameters etc!
@@ -147,7 +147,7 @@ initialTypes typeEnv rootEnv root = evalState (visit rootEnv root) 0
     visitInterfaceSym :: Env -> XObj -> State Integer (Either TypeError XObj)
     visitInterfaceSym _ xobj@(XObj (InterfaceSym name) _ _) =
       do
-        freshTy <- case lookupBinder typeEnv (SymPath [] name) of
+        freshTy <- case getTypeBinder typeEnv name of
           Right (Binder _ (XObj (Lst [XObj (Interface interfaceSignature _) _ _, _]) _ _)) -> renameVarTys interfaceSignature
           Right (Binder _ x) -> error ("A non-interface named '" ++ name ++ "' was found in the type environment: " ++ pretty x)
           Left _ -> genVarTy

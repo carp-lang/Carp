@@ -25,7 +25,7 @@ scoreTypeBinder typeEnv b@(Binder _ (XObj (Lst (XObj x _ _ : XObj (Sym _ _) _ _ 
     _ -> (500, b)
   where
     depthOfStruct (StructTy (ConcreteNameTy (SymPath _ name)) varTys) =
-      case E.lookupBinder typeEnv (SymPath [] name) of
+      case E.getTypeBinder typeEnv name of
         Right (Binder _ typedef) -> (depthOfDeftype typeEnv Set.empty typedef varTys + 1, b)
         Left e -> error (show e)
     depthOfStruct _ = error "depthofstruct"
@@ -76,7 +76,7 @@ depthOfType typeEnv visited selfName theType =
           _
             | tyToC struct == selfName -> 1
             | otherwise ->
-              case E.lookupBinder typeEnv (SymPath [] s) of
+              case E.getTypeBinder typeEnv s of
                 Right (Binder _ typedef) -> depthOfDeftype typeEnv (Set.insert theType visited) typedef varTys
                   --moduleDepth + depthOfDeftype typeEnv (Set.insert theType visited) typedef varTys
                   --where
@@ -124,7 +124,7 @@ scoreBody globalEnv visited = visit
         (Sym path (LookupGlobal _ _)) ->
           if Set.member path visited
             then 0
-            else case E.lookupBinder globalEnv path of
+            else case E.searchValueBinder globalEnv path of
               Right foundBinder ->
                 let (score, _) = scoreValueBinder globalEnv (Set.insert path visited) foundBinder
                  in score + 1

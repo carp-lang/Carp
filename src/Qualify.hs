@@ -316,9 +316,12 @@ qualifySym :: Qualifier
 -- Unqualified path.
 qualifySym typeEnv globalEnv localEnv xobj@(XObj (Sym path@(SymPath _ name) _) i t) =
   (((replaceLeft (FailedToFindSymbol xobj)
-    (fmap (\(e,b) -> ((E.prj typeEnv),(E.prj e, b))) (E.lookup typeEnv path)
-    <> fmap (localEnv,) (E.lookup localEnv path)
-    <> fmap (globalEnv,) (E.lookup globalEnv path)))
+    -- TODO: Why do we need getValue here? We should be able to restrict this
+    -- search only to direct children of the type environment, but this causes
+    -- errors.
+    (fmap (\(e,b) -> ((E.prj typeEnv),(E.prj e, b))) (E.searchType typeEnv path)
+    <> fmap (localEnv,) (E.searchValue localEnv path)
+    <> fmap (globalEnv,) (E.searchValue globalEnv path)))
          >>= \(origin, (e, binder)) -> resolve (E.prj origin) (E.prj e) (binderXObj binder)
          >>= pure . Qualified)
     <> ((resolveMulti path (E.lookupInUsed localEnv globalEnv path)) >>= pure . Qualified)
@@ -329,7 +332,7 @@ qualifySym typeEnv globalEnv localEnv xobj@(XObj (Sym path@(SymPath _ name) _) i
   where resolve :: Env -> Env -> XObj -> Either QualificationError XObj
         resolve _ _ (XObj (Lst (XObj (Interface _ _) _ _ : _)) _ _) =
           -- Before we return an interface, double check that it isn't shadowed by a local let-binding.
-          case (E.lookup localEnv path) of
+          case (E.searchValue localEnv path) of
             Right (e, Binder _ _) ->
               case envMode e of
                 InternalEnv -> pure (XObj (Sym (getPath xobj) (LookupLocal (captureOrNot e localEnv))) i t)
@@ -341,7 +344,7 @@ qualifySym typeEnv globalEnv localEnv xobj@(XObj (Sym path@(SymPath _ name) _) i
           nakedInit modenv
         resolve origin found xobj' =
           if (isTypeDef xobj')
-            then ((replaceLeft (FailedToFindSymbol xobj') (fmap (globalEnv,) (E.lookup globalEnv path)))
+            then ((replaceLeft (FailedToFindSymbol xobj') (fmap (globalEnv,) (E.searchValue globalEnv path)))
                    >>= \(origin', (e', binder)) -> resolve (E.prj origin') (E.prj e') (binderXObj binder))
             else case envMode (E.prj found) of
                    RecursionEnv -> pure (XObj (Sym (getPath xobj') LookupRecursive) i t)
@@ -378,7 +381,7 @@ qualifySym typeEnv globalEnv localEnv xobj@(XObj (Sym path@(SymPath _ name) _) i
           case x of
             XObj (Mod ev _) _ _ ->
               fromRight (SymPath (init (pathToEnv ev)) name)
-                ((replaceLeft (FailedToFindSymbol x) (E.lookupType globalEnv typeEnv (SymPath (init (pathToEnv ev)) name)))
+                ((replaceLeft (FailedToFindSymbol x) (E.searchType globalEnv (SymPath (init (pathToEnv ev)) name)))
                 >> (fmap getPath (nakedInit ev)))
             _ -> (getPath x)
 qualifySym _ _ _ xobj = Left $ FailedToQualifySymbols xobj

@@ -4,7 +4,7 @@ import Control.Monad (foldM)
 import Data.Function (on)
 import Data.List (nubBy, (\\))
 import Data.Maybe (fromJust)
-import Env (lookupBinder)
+import qualified Env as E
 import Obj
 import TypeError
 import TypePredicates
@@ -108,7 +108,7 @@ canBeUsedAsMemberType typeEnv typeVariables ty xobj =
       canBeUsedAsMemberType typeEnv typeVariables innerType xobj
         >> pure ()
     checkStruct (ConcreteNameTy (SymPath _ name)) vars =
-      case lookupBinder typeEnv (SymPath [] name) of
+      case E.getTypeBinder typeEnv name of
         Right (Binder _ (XObj (Lst (XObj (ExternalType _) _ _ : _)) _ _)) ->
           pure ()
         Right (Binder _ (XObj (Lst (XObj (Deftype t) _ _ : _)) _ _)) ->

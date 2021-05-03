@@ -92,20 +92,20 @@ eval ctx xobj@(XObj o info ty) preference resolver =
           )
             <|> (if null p then tryInternalLookup spath else tryLookup spath)
         tryDynamicLookup =
-          (toMaybe id (E.lookupBinder (contextGlobalEnv ctx) (SymPath ("Dynamic" : p) n))
+          (toMaybe id (E.searchValueBinder (contextGlobalEnv ctx) (SymPath ("Dynamic" : p) n))
             >>= \(Binder _ found) -> pure (ctx, Right (resolveDef found)))
         tryInternalLookup path =
           --trace ("Looking for internally " ++ show path) -- ++ show (fmap (fmap E.binders . E.parent) (contextInternalEnv ctx)))
           ( contextInternalEnv ctx
-              >>= \e -> toMaybe id (E.lookupBinder e path)
+              >>= \e -> toMaybe id (E.searchValueBinder e path)
               >>= \(Binder _ found) -> pure (ctx, Right (resolveDef found))
           )
             <|> tryLookup path -- fallback
         tryLookup path =
-          ( toMaybe id (E.lookupBinder (contextGlobalEnv ctx) path)
+          ( toMaybe id (E.searchValueBinder (contextGlobalEnv ctx) path)
               >>= \(Binder meta found) -> checkPrivate meta found
           )
-            <|> ( toMaybe id (E.lookupBinder (contextGlobalEnv ctx) (SymPath ((contextPath ctx) ++ p) n))
+            <|> ( toMaybe id (E.searchValueBinder (contextGlobalEnv ctx) (SymPath ((contextPath ctx) ++ p) n))
                     >>= \(Binder meta found) -> checkPrivate meta found
                 )
             <|> ( toMaybe id (lookupBinderInTypeEnv ctx path)
@@ -116,7 +116,7 @@ eval ctx xobj@(XObj o info ty) preference resolver =
                     Nothing
                     ( map
                         ( \(SymPath p' n') ->
-                            toMaybe id (E.lookupBinder (contextGlobalEnv ctx) (SymPath (p' ++ (n' : p)) n))
+                            toMaybe id (E.searchValueBinder (contextGlobalEnv ctx) (SymPath (p' ++ (n' : p)) n))
                               >>= \(Binder meta found) -> checkPrivate meta found
                         )
                         (Set.toList (envUseModules (contextGlobalEnv ctx)))
@@ -693,7 +693,7 @@ primitiveDefmodule xobj ctx@(Context env i tenv pathStrings _ _ _ _) (XObj (Sym 
   -- N.B. The `envParent` rewrite at the end of this line is important!
   -- lookups delve into parent envs by default, which is normally what we want, but in this case it leads to problems
   -- when submodules happen to share a name with an existing module or type at the global level.
-  either (const (defineNewModule emptyMeta)) updateExistingModule (E.lookupBinder ((fromRight env (E.getInnerEnv env pathStrings)) {envParent = Nothing}) (SymPath [] moduleName))
+  either (const (defineNewModule emptyMeta)) updateExistingModule (E.searchValueBinder ((fromRight env (E.getInnerEnv env pathStrings)) {envParent = Nothing}) (SymPath [] moduleName))
     >>= defineModuleBindings
     >>= \(newCtx, result) ->
       let updater c = (c {contextInternalEnv = (E.parent =<< contextInternalEnv c)})
@@ -1027,12 +1027,12 @@ specialCommandSet ctx [orig@(XObj (Sym path@(SymPath _ _) _) _ _), val] =
   let lookupInternal =
         maybe (Left "") Right (contextInternalEnv ctx)
           >>= \e ->
-            unwrapErr (E.lookupBinder e path)
+            unwrapErr (E.searchValueBinder e path)
               >>= \binder -> pure (binder, setInternal, e)
       lookupGlobal =
         Right (contextGlobalEnv ctx)
           >>= \e ->
-            unwrapErr (E.lookupBinder e path)
+            unwrapErr (E.searchValueBinder e path)
               >>= \binder -> pure (binder, setGlobal, e)
    in either
         ((const (pure $ (throwErr (SetVarNotFound orig) ctx (xobjInfo orig)))))

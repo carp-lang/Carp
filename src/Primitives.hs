@@ -15,7 +15,7 @@ import Data.List (foldl')
 import Data.Maybe (fromJust, fromMaybe)
 import Deftype
 import Emit
-import Env (contextEnv, lookupEverywhere, lookupMeta, lookupBinder, lookupBinderEverywhere, addUsePath, insert)
+import Env (contextEnv, lookupEverywhere, lookupMeta, lookupBinderEverywhere, addUsePath, insert, searchValueBinder)
 import Infer
 import Info
 import Interfaces
@@ -27,6 +27,7 @@ import Project
 import Qualify (Qualified (..), getQualifiedPath, markQualified, qualify, qualifyNull, qualifyPath, unqualify, QualifiedPath)
 import Reify
 import Sumtypes
+import SymPath
 import Template
 import ToTemplate
 import TypeError
@@ -266,7 +267,7 @@ primitiveRegisterTypeWithFields ctx x t override members =
         pure (contextWithDefs, dynamicNil)
     path = SymPath [] t
     preExistingModule = case lookupBinderInGlobalEnv ctx path of
-      Right (Binder _ (XObj (Mod found _) _ _)) -> Just found
+      Right (Binder _ (XObj (Mod found et) _ _)) -> Just (found, et)
       _ -> Nothing
 
 notFound :: Context -> XObj -> SymPath -> IO (Context, Either EvalError XObj)
@@ -619,14 +620,14 @@ autoDerive c ty =
 -- | Add a module to the list of implicitly imported modules.
 primitiveUse :: UnaryPrimitiveCallback
 primitiveUse xobj ctx (XObj (Sym path _) _ _) =
- let modulePath = (contextPath ctx)
+ let modulePath = fromStrings (contextPath ctx)
      global     = (contextGlobalEnv ctx)
   in pure (case modulePath of
-             [] -> updateGlobalUsePaths global
-             _ -> case (lookupBinder global (SymPath (init modulePath) (last modulePath))) of
+             (SymPath [] "") -> updateGlobalUsePaths global
+             _ -> case searchValueBinder global modulePath of
                     Left err -> (evalError ctx (show err) (xobjInfo xobj))
                     Right binder ->
-                      updateModuleUsePaths global (SymPath (init modulePath) (last modulePath)) binder)
+                      updateModuleUsePaths global modulePath binder)
   where updateGlobalUsePaths :: Env -> (Context, Either EvalError XObj)
         updateGlobalUsePaths e =
           ((replaceGlobalEnv ctx (addUsePath e path)), dynamicNil)

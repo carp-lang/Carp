@@ -4,7 +4,7 @@ import Concretize
 import Context
 import Data.Maybe
 import Deftype
-import Env (new, addListOfBindings, next)
+import Env (new, addListOfBindings)
 import Info
 import Managed
 import Obj
@@ -30,13 +30,19 @@ moduleForSumtypeInContext ctx name vars members info =
       types    = contextTypeEnv ctx
       path     = contextPath ctx
       inner    = either (const Nothing) Just (innermostModuleEnv ctx)
-      previous = either (const Nothing) Just (fmap fst ((lookupBinderInInternalEnv ctx (SymPath path name)) <> (lookupBinderInGlobalEnv ctx (SymPath path name)) >>= \b -> replaceLeft (NotFoundGlobal (SymPath path name)) (next global (getName (binderXObj b)))))
+      previous = either (const Nothing) Just 
+                   ((lookupBinderInInternalEnv ctx (SymPath path name))
+                              <> (lookupBinderInGlobalEnv ctx (SymPath path name))
+                                   >>= \b -> replaceLeft (NotFoundGlobal (SymPath path name))
+                                                         (case binderXObj b of
+                                                            XObj (Mod ev et) _ _ -> Right (ev, et)
+                                                            _ -> Left "Non module"))
    in moduleForSumtype inner types global path name vars members info previous
 
-moduleForSumtype :: Maybe Env -> TypeEnv -> Env -> [String] -> String -> [Ty] -> [XObj] -> Maybe Info -> Maybe Env -> Either TypeError (String, XObj, [XObj])
+moduleForSumtype :: Maybe Env -> TypeEnv -> Env -> [String] -> String -> [Ty] -> [XObj] -> Maybe Info -> Maybe (Env, TypeEnv) -> Either TypeError (String, XObj, [XObj])
 moduleForSumtype innerEnv typeEnv env pathStrings typeName typeVariables rest i existingEnv =
-  let moduleValueEnv = fromMaybe (new  innerEnv (Just typeName)) existingEnv
-      moduleTypeEnv = (new (Just typeEnv) (Just typeName))
+  let moduleValueEnv = fromMaybe (new  innerEnv (Just typeName)) (fmap fst existingEnv)
+      moduleTypeEnv = fromMaybe (new (Just typeEnv) (Just typeName)) (fmap snd existingEnv)
       insidePath = pathStrings ++ [typeName]
    in do
         let structTy = StructTy (ConcreteNameTy (SymPath pathStrings typeName)) typeVariables

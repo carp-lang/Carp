@@ -274,7 +274,7 @@ expand eval ctx xobj =
     expandArray _ = error "Can't expand non-array in expandArray."
     expandSymbol :: XObj -> IO (Context, Either EvalError XObj)
     expandSymbol sym@(XObj (Sym path _) _ _) =
-      case lookupBinder ((contextEnv ctx)::Env) path of
+      case searchValueBinder (contextEnv ctx) path of
         Right (Binder meta (XObj (Lst (XObj (External _) _ _ : _)) _ _)) -> isPrivate meta xobj
         Right (Binder meta (XObj (Lst (XObj (Instantiate _) _ _ : _)) _ _)) -> isPrivate meta xobj
         Right (Binder meta (XObj (Lst (XObj (Deftemplate _) _ _ : _)) _ _)) -> isPrivate meta xobj
