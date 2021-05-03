@@ -1007,8 +1007,10 @@ typeEnvToDeclarations typeEnv global =
       addEnvToScore tyE = (sortDeclarationBinders tyE (map snd (Map.toList (binders tyE))))
       bindersWithScore = (addEnvToScore typeEnv)
       mods = (findModules global)
-      folder = (\sorted (XObj (Mod e t) _ _) ->
-                    sorted ++ (foldl folder (addEnvToScore t) (findModules e)))
+      folder =
+        ( \sorted (XObj (Mod e t) _ _) ->
+            sorted ++ (foldl folder (addEnvToScore t) (findModules e))
+        )
       allScoredBinders = sortOn fst (foldl folder bindersWithScore mods)
    in do
         okDecls <-

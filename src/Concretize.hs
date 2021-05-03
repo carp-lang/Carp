@@ -5,11 +5,11 @@ module Concretize where
 import AssignTypes
 import Constraints
 import Control.Monad.State
+import Data.Either (fromRight)
 import Data.List (foldl')
 import Data.Maybe (fromMaybe)
-import Data.Either (fromRight)
 import Debug.Trace
-import Env (insertX, insert, envIsExternal, searchValue, lookupEverywhere, findPoly, getTypeBinder, getValue)
+import Env (envIsExternal, findPoly, getTypeBinder, getValue, insert, insertX, lookupEverywhere, searchValue)
 import Info
 import Managed
 import qualified Map
@@ -458,17 +458,18 @@ concretizeType typeEnv genericStructTy@(StructTy (ConcreteNameTy (SymPath _ name
   case (getTypeBinder typeEnv name) of
     Right (Binder _ x) -> go x
     _ -> Right []
-  where go :: XObj -> Either TypeError [XObj]
-        go (XObj (Lst (XObj (Deftype originalStructTy) _ _ : _ : rest)) _ _) =
-          if isTypeGeneric originalStructTy
-            then instantiateGenericStructType typeEnv originalStructTy genericStructTy rest
-            else Right []
-        go (XObj (Lst (XObj (DefSumtype originalStructTy) _ _ : _ : rest)) _ _) =
-           if isTypeGeneric originalStructTy
-             then instantiateGenericSumtype typeEnv originalStructTy genericStructTy rest
-             else Right []
-        go (XObj (Lst (XObj (ExternalType _) _ _ : _)) _ _) = Right []
-        go x = error ("Non-deftype found in type env: " ++ pretty x)
+  where
+    go :: XObj -> Either TypeError [XObj]
+    go (XObj (Lst (XObj (Deftype originalStructTy) _ _ : _ : rest)) _ _) =
+      if isTypeGeneric originalStructTy
+        then instantiateGenericStructType typeEnv originalStructTy genericStructTy rest
+        else Right []
+    go (XObj (Lst (XObj (DefSumtype originalStructTy) _ _ : _ : rest)) _ _) =
+      if isTypeGeneric originalStructTy
+        then instantiateGenericSumtype typeEnv originalStructTy genericStructTy rest
+        else Right []
+    go (XObj (Lst (XObj (ExternalType _) _ _ : _)) _ _) = Right []
+    go x = error ("Non-deftype found in type env: " ++ pretty x)
 concretizeType t (RefTy rt _) =
   concretizeType t rt
 concretizeType t (PointerTy pt) =
@@ -699,7 +700,7 @@ allImplementations typeEnv env functionName functionType =
               Right r -> [r]
               Left _ -> (lookupEverywhere env functionName)
       -- just a regular function; look for it
-      _ -> fromRight [] ((fmap (:[]) (Env.getValue env functionName)) <> pure (lookupEverywhere env functionName))
+      _ -> fromRight [] ((fmap (: []) (Env.getValue env functionName)) <> pure (lookupEverywhere env functionName))
 
 -- | Find all the dependencies of a polymorphic function with a name and a desired concrete type.
 depsOfPolymorphicFunction :: TypeEnv -> Env -> [SymPath] -> String -> Ty -> [XObj]

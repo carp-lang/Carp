@@ -1,84 +1,86 @@
 {-# LANGUAGE TupleSections #-}
 
 module Env
-  (EnvironmentError,
-   Environment(..),
-   Mode(..),
-   -- utils
-   empty,
-   new,
-   parent,
-   setParent,
-   nested,
-   recursive,
-   binders,
-   ------------------------
-   -- lookups
-   getType,
-   getTypeBinder,
-   findType,
-   findTypeBinder,
-   searchType,
-   searchTypeBinder,
-   getValue,
-   getValueBinder,
-   findValue,
-   findValueBinder,
-   searchValue,
-   searchValueBinder,
-   -------------------------
-   -- Environment getters
-   getInnerEnv,
-   contextEnv,
-   envIsExternal,
-   envPublicBindingNames,
-   -------------------------
-   -- mutation
-   insert,
-   insertX,
-   replace,
-   addBinding,
-   deleteBinding,
-   addListOfBindings,
-   addUsePath,
-   -------------------------
-   -- finds
-   findPoly,
-   findAllByMeta,
-   findChildren,
-   findImplementations,
-   findAllGlobalVariables,
-   findModules,
-   allImportedEnvs,
-   -------------------------
-   -- lookups
-   lookupContextually,
-   lookupMeta,
-   lookupChildren,
-   lookupInUsed,
-   lookupEverywhere,
-   lookupBinderEverywhere,
-   progenitor,
-   replaceInPlace,
-  ) where
+  ( EnvironmentError,
+    Environment (..),
+    Mode (..),
+    -- utils
+    empty,
+    new,
+    parent,
+    setParent,
+    nested,
+    recursive,
+    binders,
+    ------------------------
+    -- lookups
+    getType,
+    getTypeBinder,
+    findType,
+    findTypeBinder,
+    searchType,
+    searchTypeBinder,
+    getValue,
+    getValueBinder,
+    findValue,
+    findValueBinder,
+    searchValue,
+    searchValueBinder,
+    -------------------------
+    -- Environment getters
+    getInnerEnv,
+    contextEnv,
+    envIsExternal,
+    envPublicBindingNames,
+    -------------------------
+    -- mutation
+    insert,
+    insertX,
+    replace,
+    addBinding,
+    deleteBinding,
+    addListOfBindings,
+    addUsePath,
+    -------------------------
+    -- finds
+    findPoly,
+    findAllByMeta,
+    findChildren,
+    findImplementations,
+    findAllGlobalVariables,
+    findModules,
+    allImportedEnvs,
+    -------------------------
+    -- lookups
+    lookupContextually,
+    lookupMeta,
+    lookupChildren,
+    lookupInUsed,
+    lookupEverywhere,
+    lookupBinderEverywhere,
+    progenitor,
+    replaceInPlace,
+  )
+where
 
+import Data.Either (fromRight, rights)
 import Data.List (foldl', unfoldr)
 import Data.Maybe (fromMaybe)
 import qualified Map
-import Obj
-import Types
-import qualified Set
-import Data.Either (fromRight, rights)
 import qualified Meta
+import Obj
+import qualified Set
+import Types
 
 --------------------------------------------------------------------------------
 -- Data
 
-data EnvironmentError = NoEnvInNonModule
-                      | NoReplaceInNonModule
-                      | BindingNotFound String Env
-                      | NoMatchingBindingFound String
-                      | NestedTypeError String
+data EnvironmentError
+  = NoEnvInNonModule
+  | NoReplaceInNonModule
+  | BindingNotFound String Env
+  | NoMatchingBindingFound String
+  | NestedTypeError String
 
 instance Show EnvironmentError where
   show NoEnvInNonModule = "Can't get an environment from a non-module."
@@ -96,10 +98,10 @@ data Mode = Types | Values
 
 -- | Class for generically handling type and value environments.
 class Environment e where
-  inj        :: Env -> e
-  prj        :: e -> Env
-  update     :: e -> Binder -> Either EnvironmentError Binder
-  modality   :: e -> Mode
+  inj :: Env -> e
+  prj :: e -> Env
+  update :: e -> Binder -> Either EnvironmentError Binder
+  modality :: e -> Mode
 
 -- | The value environment
 instance Environment Env where
@@ -132,11 +134,11 @@ new p name =
 
 -- | Returns a new environment with a designated nesting level.
 nested :: Environment e => Maybe e -> Maybe String -> Int -> e
-nested p name lvl = inj ((prj (new p name)) { envMode = InternalEnv, envFunctionNestingLevel = lvl })
+nested p name lvl = inj ((prj (new p name)) {envMode = InternalEnv, envFunctionNestingLevel = lvl})
 
 -- | Returns a new recursive environment with a designated nesting level.
 recursive :: Environment e => Maybe e -> Maybe String -> Int -> e
-recursive p name lvl = inj ((prj (new p name)) { envMode = RecursionEnv, envFunctionNestingLevel = lvl })
+recursive p name lvl = inj ((prj (new p name)) {envMode = RecursionEnv, envFunctionNestingLevel = lvl})
 
 -- | Returns the binders stored in an environment.
 binders :: Environment e => e -> Map.Map String Binder
@@ -183,13 +185,16 @@ updateEnv _ _ _ = Left NoEnvInNonModule
 walk' :: Mode -> Env -> SymPath -> Either EnvironmentError Env
 walk' _ e (SymPath [] _) = pure e
 walk' mode' e (SymPath (p : ps) name) =
-  do (_, binder) <- get e p
-     go (SymPath ps name) binder
-  where go :: SymPath -> Binder -> Either EnvironmentError Env
-        go (SymPath [] _) binder = nextEnv mode' binder
-        go path binder =
-          do env <- nextEnv Values binder
-             walk' mode' env path
+  do
+    (_, binder) <- get e p
+    go (SymPath ps name) binder
+  where
+    go :: SymPath -> Binder -> Either EnvironmentError Env
+    go (SymPath [] _) binder = nextEnv mode' binder
+    go path binder =
+      do
+        env <- nextEnv Values binder
+        walk' mode' env path
 
 -- | Generic *unidirectional* retrieval of binders (does not check parents).
 walkAndGet :: Environment e => e -> SymPath -> (Either EnvironmentError e, Either EnvironmentError Binder)
@@ -206,7 +211,7 @@ get :: Environment e => e -> String -> Either EnvironmentError (e, Binder)
 get e name =
   case Map.lookup name (binders e) of
     Nothing -> Left $ BindingNotFound name (prj e)
-    Just b  -> Right (e, b)
+    Just b -> Right (e, b)
 
 -- | Same as `get` but only returns a binder.
 getBinder :: Environment e => e -> String -> Either EnvironmentError Binder
@@ -220,8 +225,8 @@ find' :: Environment e => e -> SymPath -> Either EnvironmentError (e, Binder)
 find' e path =
   case walkAndGet e path of
     (Right e', Right b) -> Right (e', b)
-    (Left err, _)       -> Left err
-    (_, Left err)       -> Left err
+    (Left err, _) -> Left err
+    (_, Left err) -> Left err
 
 -- | Same as `find` but only returns a binder.
 findBinder :: Environment e => e -> SymPath -> Either EnvironmentError Binder
@@ -235,12 +240,13 @@ findBinder e path = fmap snd (find' e path)
 search :: Environment e => e -> SymPath -> Either EnvironmentError (e, Binder)
 search e path =
   case walkAndGet e path of
-    (Right e', Right b)  -> Right (e', b)
+    (Right e', Right b) -> Right (e', b)
     (Right e', Left err) -> (checkParent e' err)
-    (Left err, Left _)   -> (checkParent e err) <> Left err
+    (Left err, Left _) -> (checkParent e err) <> Left err
     -- impossible case. Included to keep `walk` honest.
-    (Left _, Right _)    -> error "impossible"
-  where checkParent env err = maybe (Left err) (`search` path) (parent env)
+    (Left _, Right _) -> error "impossible"
+  where
+    checkParent env err = maybe (Left err) (`search` path) (parent env)
 
 -- | Same as `search` but only returns a binder.
 searchBinder :: Environment e => e -> SymPath -> Either EnvironmentError Binder
@@ -254,7 +260,9 @@ searchBinder e path = fmap snd (search e path)
 -- they can be used to help enforce constraints at call sites.
 --
 -- For example, suppose we want to search for a binder that may name a type
--- *or* module, preferring types. One could cast to enforce a type search
+
+-- * or* module, preferring types. One could cast to enforce a type search
+
 -- starting from the global env:
 --
 --   search typeEnv path
@@ -354,16 +362,19 @@ type EnvironmentProducer e = (e -> String -> Binder -> Either EnvironmentError e
 -- | Given an environment and a complete identifier path, traverse a chain of
 -- environments until the path is exhausted, if requested, mutating the
 -- environments along the way:
-
 mutate :: Environment e => (EnvironmentProducer e) -> e -> SymPath -> Binder -> Either EnvironmentError e
 mutate f e path binder = go path
-  where go (SymPath [] name) = f e name binder
-        go (SymPath (p:ps) name) =
-          getBinder e p
-          >>= \modu -> nextEnv (modality e) modu
-          >>= \oldEnv -> mutate f (inj oldEnv) (SymPath ps name) binder
-          >>= \result -> updateEnv (modality e) (prj result) modu
-          >>= addBinding e p
+  where
+    go (SymPath [] name) = f e name binder
+    go (SymPath (p : ps) name) =
+      getBinder e p
+        >>= \modu ->
+          nextEnv (modality e) modu
+            >>= \oldEnv ->
+              mutate f (inj oldEnv) (SymPath ps name) binder
+                >>= \result ->
+                  updateEnv (modality e) (prj result) modu
+                    >>= addBinding e p
 
 -- | Insert a binding into an environment at the given path.
 insert :: Environment e => e -> SymPath -> Binder -> Either EnvironmentError e
@@ -389,9 +400,9 @@ replace = mutate replaceBinding
 replaceInPlace :: Environment e => e -> String -> Binder -> Either EnvironmentError e
 replaceInPlace e name b =
   (get e name >>= \_ -> addBinding e name b)
-  <> case parent e of
-       Just p  -> replaceInPlace p name b >>= \p' -> pure (inj ((prj e) {envParent = Just (prj p')}))
-       Nothing -> Left (BindingNotFound name (prj e))
+    <> case parent e of
+      Just p -> replaceInPlace p name b >>= \p' -> pure (inj ((prj e) {envParent = Just (prj p')}))
+      Nothing -> Left (BindingNotFound name (prj e))
 
 -- | Add a list of bindings to an environment.
 addListOfBindings :: Environment e => e -> [(String, Binder)] -> e
@@ -418,17 +429,18 @@ findAllByMeta e metaKey =
   let candidates = Map.elems (Map.filter (Meta.binderMember metaKey) (binders e))
    in case candidates of
         [] -> Left (NoMatchingBindingFound ("metadata " ++ metaKey))
-        _  -> Right $ candidates
+        _ -> Right $ candidates
 
 -- | Find all modules directly stored in environment `e`.
 findModules :: Environment e => e -> [XObj]
 findModules e =
   map binderXObj (filter modsOnly (Map.elems (binders e)))
-  where modsOnly :: Binder -> Bool
-        modsOnly binder =
-          case binderXObj binder of
-            XObj (Mod _ _) _ _ -> True
-            _ -> False
+  where
+    modsOnly :: Binder -> Bool
+    modsOnly binder =
+      case binderXObj binder of
+        XObj (Mod _ _) _ _ -> True
+        _ -> False
 
 -- | It's more efficient to specialize this function as it can take advantage
 -- of laziness; once we found the candidate function for a polymorphic
@@ -436,12 +448,14 @@ findModules e =
 findPoly :: Environment e => e -> String -> Ty -> Either EnvironmentError (e, Binder)
 findPoly env name ty =
   case getBinder env name of
-    Right b -> if unify b
-                 then Right (env, b)
-                 else (foldl' go (Left (BindingNotFound name (prj env))) (findChildren env))
-    Left  _ -> foldl' go (Left (BindingNotFound name (prj env))) (findChildren env)
-  where go x e = x <> (findPoly e name ty)
-        unify = areUnifiable ty . fromMaybe Universe . xobjTy . binderXObj
+    Right b ->
+      if unify b
+        then Right (env, b)
+        else (foldl' go (Left (BindingNotFound name (prj env))) (findChildren env))
+    Left _ -> foldl' go (Left (BindingNotFound name (prj env))) (findChildren env)
+  where
+    go x e = x <> (findPoly e name ty)
+    unify = areUnifiable ty . fromMaybe Universe . xobjTy . binderXObj
 
 -- | Find all environments that are *direct* children of an environment (one
 -- level down).
@@ -453,32 +467,37 @@ findPoly env name ty =
 findChildren :: Environment e => e -> [e]
 findChildren e =
   foldl' getEnv [] (binders e)
-  where getEnv acc binder =
-          case (nextEnv (modality e) binder) of
-            Left _ -> acc
-            Right e' -> ((inj e'):acc)
+  where
+    getEnv acc binder =
+      case (nextEnv (modality e) binder) of
+        Left _ -> acc
+        Right e' -> ((inj e') : acc)
 
 -- | Find all the environments contained in the modules initial environment,
 -- plus any module environments contained in *those* modules.
 lookupChildren :: Environment e => e -> [e]
 lookupChildren e =
   foldl' go [] (findChildren e)
-  where go acc e' = case findChildren e' of
-                     [] -> (e':acc)
-                     xs -> (foldl' go [] xs ++ acc)
+  where
+    go acc e' = case findChildren e' of
+      [] -> (e' : acc)
+      xs -> (foldl' go [] xs ++ acc)
 
 -- | Find all the environments designated by the use paths in an environment.
 findImportedEnvs :: Environment e => e -> [e]
 findImportedEnvs e =
   let eMode = modality e
       usePaths = Set.toList (envUseModules (prj e))
-      getter path = walk' eMode (prj e) path
-                    >>= \e' -> get e' (getName' path)
-                    >>= nextEnv eMode . snd
-                    >>= pure . inj
+      getter path =
+        walk' eMode (prj e) path
+          >>= \e' ->
+            get e' (getName' path)
+              >>= nextEnv eMode . snd
+              >>= pure . inj
       used = fmap getter usePaths
    in (rights used)
-   where getName' (SymPath _ name) = name
+  where
+    getName' (SymPath _ name) = name
 
 -- | Given an environment, get its topmost parent up the environment chain.
 --
@@ -492,23 +511,27 @@ allImportedEnvs e global =
   let env = prj e
       paths = (Set.toList (foldl' og (envUseModules env) (unfoldr go env)))
    in (rights (map get' paths))
-  where go e' = parent e' >>= \p -> pure (p,p)
-        og acc e' = (envUseModules e') <> acc
-        get' path = findBinder global path
-                    >>= nextEnv (modality e)
-                    >>= pure . inj
+  where
+    go e' = parent e' >>= \p -> pure (p, p)
+    og acc e' = (envUseModules e') <> acc
+    get' path =
+      findBinder global path
+        >>= nextEnv (modality e)
+        >>= pure . inj
 
 -- | Find all binders the implement a given interface, designated by its path.
 findImplementations :: Environment e => e -> SymPath -> Either EnvironmentError [Binder]
 findImplementations e interface =
-  ((findAllByMeta e "implements")
-    >>= \is -> (pure (filter (isImpl . Meta.fromBinder) is)))
-  <> Left (NoMatchingBindingFound ("implementation meta for " ++ show interface))
-  where isImpl :: MetaData -> Bool
-        isImpl meta =
-          case Meta.get "implements" meta of
-            Just (XObj (Lst interfaces) _ _) -> interface `elem` map getPath interfaces
-            _ -> False
+  ( (findAllByMeta e "implements")
+      >>= \is -> (pure (filter (isImpl . Meta.fromBinder) is))
+  )
+    <> Left (NoMatchingBindingFound ("implementation meta for " ++ show interface))
+  where
+    isImpl :: MetaData -> Bool
+    isImpl meta =
+      case Meta.get "implements" meta of
+        Just (XObj (Lst interfaces) _ _) -> interface `elem` map getPath interfaces
+        _ -> False
 
 -- | Searches for binders exhaustively in the given environment, a list of
 -- child environments it contains derived using a function and its parent, if
@@ -519,14 +542,15 @@ findImplementations e interface =
 -- parent, should it exist).
 lookupExhuastive :: Environment e => (e -> [e]) -> e -> String -> [(e, Binder)]
 lookupExhuastive f e name =
-  let envs   = [e] ++ (f e)
+  let envs = [e] ++ (f e)
    in (go (parent e) envs)
-   where go _ [] = []
-         go Nothing xs = foldl' accum [] xs
-         go (Just p) xs = go (parent p) (xs ++ [p] ++ (f p))
-         accum acc e' = case getBinder e' name of
-                          Right b -> ((e', b):acc)
-                          _ -> acc
+  where
+    go _ [] = []
+    go Nothing xs = foldl' accum [] xs
+    go (Just p) xs = go (parent p) (xs ++ [p] ++ (f p))
+    accum acc e' = case getBinder e' name of
+      Right b -> ((e', b) : acc)
+      _ -> acc
 
 lookupBinderExhuastive :: Environment e => (e -> [e]) -> e -> String -> [Binder]
 lookupBinderExhuastive f e name = fmap snd (lookupExhuastive f e name)
@@ -540,10 +564,11 @@ lookupInImports = lookupExhuastive findImportedEnvs
 lookupInUsed :: Environment e => e -> Env -> SymPath -> [(e, Binder)]
 lookupInUsed e global spath =
   foldl' go [] (allImportedEnvs e global)
-  where go :: Environment e => [(e, Binder)] -> e -> [(e, Binder)]
-        go acc e' = case (search e' spath) of
-                      Right (e'', b) -> ((e'', b):acc)
-                      _ -> acc
+  where
+    go :: Environment e => [(e, Binder)] -> e -> [(e, Binder)]
+    go acc e' = case (search e' spath) of
+      Right (e'', b) -> ((e'', b) : acc)
+      _ -> acc
 
 -- | Lookup a binder in *all* possible environments in the chain of an initial
 -- environment (parents and children, including Use modules).
@@ -557,16 +582,19 @@ lookupContextually e (SymPath [] name) =
     xs -> Right xs
 lookupContextually e path@(SymPath (p : ps) name) =
   lookupDirectly <> lookupInUsedAndParent
-  where lookupDirectly = (getBinder e p)
-                           >>= nextEnv (modality e)
-                           >>= \e' -> search (inj e') (SymPath ps name)
-                           >>= pure . (:[])
-        lookupInUsedAndParent = case rights (fmap ((flip search) path) (findImportedEnvs e)) of
-                                  [] -> Left (BindingNotFound name (prj e))
-                                  xs ->
-                                    case parent e of
-                                      Nothing -> Right xs
-                                      Just e' -> (Env.search e' path >>= \found -> Right $ xs ++ [found]) <> Right xs
+  where
+    lookupDirectly =
+      (getBinder e p)
+        >>= nextEnv (modality e)
+        >>= \e' ->
+          search (inj e') (SymPath ps name)
+            >>= pure . (: [])
+    lookupInUsedAndParent = case rights (fmap ((flip search) path) (findImportedEnvs e)) of
+      [] -> Left (BindingNotFound name (prj e))
+      xs ->
+        case parent e of
+          Nothing -> Right xs
+          Just e' -> (Env.search e' path >>= \found -> Right $ xs ++ [found]) <> Right xs
 
 --------------------------------------------------------------------------------
 -- Environment retrieval functions
@@ -579,8 +607,8 @@ getInnerEnv :: Environment e => e -> [String] -> Either EnvironmentError e
 getInnerEnv e [] = Right e
 getInnerEnv e (p : ps) =
   (getBinder e p)
-  >>= nextEnv (modality e)
-  >>= \moduleEnv -> getInnerEnv (inj moduleEnv) ps
+    >>= nextEnv (modality e)
+    >>= \moduleEnv -> getInnerEnv (inj moduleEnv) ps
 
 -- | Get a context's internal environment if it exists, otherwise get the
 -- innermost module's value environment based on the context path.
@@ -611,9 +639,10 @@ envPublicBindingNames e = concatMap select (Map.toList (binders e))
     select :: (String, Binder) -> [String]
     select (name, binder) =
       case (nextEnv (modality e) binder) of
-        Left _  -> if metaIsTrue (binderMeta binder) "private" || metaIsTrue (binderMeta binder) "hidden"
-                     then []
-                     else [name]
+        Left _ ->
+          if metaIsTrue (binderMeta binder) "private" || metaIsTrue (binderMeta binder) "hidden"
+            then []
+            else [name]
         Right e' -> envPublicBindingNames e'
 
 -- | Recursively look through all environments for (def ...) forms.
@@ -626,5 +655,5 @@ findAllGlobalVariables e =
   where
     finder :: [Binder] -> Binder -> [Binder]
     finder acc (Binder _ (XObj (Mod ev _) _ _)) = acc ++ (findAllGlobalVariables (inj ev))
-    finder acc def@(Binder _ (XObj (Lst (XObj Def _ _ : _)) _ _)) = (def:acc)
+    finder acc def@(Binder _ (XObj (Lst (XObj Def _ _ : _)) _ _)) = (def : acc)
     finder acc _ = acc

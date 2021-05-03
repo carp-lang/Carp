@@ -1,6 +1,6 @@
+{-# LANGUAGE BangPatterns #-}
 {-# LANGUAGE DeriveTraversable #-}
 {-# LANGUAGE GeneralizedNewtypeDeriving #-}
-{-# LANGUAGE BangPatterns #-}
 
 module Map where
 

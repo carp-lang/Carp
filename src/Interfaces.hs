@@ -15,14 +15,14 @@ where
 import ColorText
 import Constraints
 import Context
+import Data.Either (fromRight, rights)
 import Data.List (delete, deleteBy, foldl')
-import Data.Either (rights, fromRight)
 import qualified Env
 import qualified Meta
 import Obj
+import qualified Qualify
 import Types
 import Util
-import qualified Qualify
 
 data InterfaceError
   = KindMismatch SymPath Ty Ty
@@ -80,12 +80,15 @@ removeInterfaceFromImplements :: SymPath -> XObj -> Context -> Context
 removeInterfaceFromImplements oldImplPath interface ctx =
   fromRight
     ctx
-    (lookupBinderInGlobalEnv ctx (Qualify.markQualified oldImplPath)
+    ( lookupBinderInGlobalEnv ctx (Qualify.markQualified oldImplPath)
         >>= \binder ->
-          pure (case Meta.getBinderMetaValue "implements" binder of
-                 Just (XObj (Lst impls) i t) -> Meta.updateBinderMeta binder "implements" (XObj (Lst (deleteBy matchPath interface impls)) i t)
-                 _ -> binder)
-        >>= insertInGlobalEnv ctx (Qualify.markQualified oldImplPath))
+          pure
+            ( case Meta.getBinderMetaValue "implements" binder of
+                Just (XObj (Lst impls) i t) -> Meta.updateBinderMeta binder "implements" (XObj (Lst (deleteBy matchPath interface impls)) i t)
+                _ -> binder
+            )
+            >>= insertInGlobalEnv ctx (Qualify.markQualified oldImplPath)
+    )
   where
     matchPath xobj xobj' = getPath xobj == getPath xobj'
 

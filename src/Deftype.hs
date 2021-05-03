@@ -11,7 +11,7 @@ where
 import Concretize
 import Context
 import Data.Maybe
-import Env (new, addListOfBindings)
+import Env (addListOfBindings, new)
 import Info
 import Managed
 import Obj
@@ -29,17 +29,24 @@ import Validate
 
 moduleForDeftypeInContext :: Context -> String -> [Ty] -> [XObj] -> Maybe Info -> Either TypeError (String, XObj, [XObj])
 moduleForDeftypeInContext ctx name vars members info =
-  let global   = contextGlobalEnv ctx
-      types    = contextTypeEnv ctx
-      path     = contextPath ctx
-      inner    = either (const Nothing) Just (innermostModuleEnv ctx)
-      previous = either (const Nothing) Just 
-                   ((lookupBinderInInternalEnv ctx (SymPath path name))
-                              <> (lookupBinderInGlobalEnv ctx (SymPath path name))
-                                   >>= \b -> replaceLeft (NotFoundGlobal (SymPath path name))
-                                                         (case binderXObj b of
-                                                            XObj (Mod ev et) _ _ -> Right (ev, et)
-                                                            _ -> Left "Non module"))
+  let global = contextGlobalEnv ctx
+      types = contextTypeEnv ctx
+      path = contextPath ctx
+      inner = either (const Nothing) Just (innermostModuleEnv ctx)
+      previous =
+        either
+          (const Nothing)
+          Just
+          ( (lookupBinderInInternalEnv ctx (SymPath path name))
+              <> (lookupBinderInGlobalEnv ctx (SymPath path name))
+                >>= \b ->
+                  replaceLeft
+                    (NotFoundGlobal (SymPath path name))
+                    ( case binderXObj b of
+                        XObj (Mod ev et) _ _ -> Right (ev, et)
+                        _ -> Left "Non module"
+                    )
+          )
    in moduleForDeftype inner types global path name vars members info previous
 
 -- | This function creates a "Type Module" with the same name as the type being defined.
@@ -48,7 +55,7 @@ moduleForDeftypeInContext ctx name vars members info =
 moduleForDeftype :: Maybe Env -> TypeEnv -> Env -> [String] -> String -> [Ty] -> [XObj] -> Maybe Info -> Maybe (Env, TypeEnv) -> Either TypeError (String, XObj, [XObj])
 moduleForDeftype innerEnv typeEnv env pathStrings typeName typeVariables rest i existingEnv =
   let moduleValueEnv = fromMaybe (new innerEnv (Just typeName)) (fmap fst existingEnv)
-      moduleTypeEnv  = fromMaybe (new (Just typeEnv) (Just typeName)) (fmap snd existingEnv)
+      moduleTypeEnv = fromMaybe (new (Just typeEnv) (Just typeName)) (fmap snd existingEnv)
       -- The variable 'insidePath' is the path used for all member functions inside the 'typeModule'.
       -- For example (module Vec2 [x Float]) creates bindings like Vec2.create, Vec2.x, etc.
       insidePath = pathStrings ++ [typeName]

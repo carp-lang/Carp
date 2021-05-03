@@ -62,7 +62,8 @@ instance Show PrimitiveError where
     ("Invalid type variables for type definition: " ++ pretty xobj)
   show (MetaSetFailed xobj e) =
     "`meta-set!` failed on `" ++ pretty xobj
-      ++ "` " ++ show e
+      ++ "` "
+      ++ show e
   show (StructNotFound xobj) =
     "Couldn't find a type named '" ++ (show (getPath xobj))
       ++ "' in the type environment."
@@ -73,7 +74,6 @@ instance Show PrimitiveError where
   show (PrimitiveError.InvalidSumtypeCase xobj) =
     "Can't get members for an invalid sumtype case: "
       ++ pretty xobj
-
 
 instance Show PrimitiveWarning where
   show (NonExistentInterfaceWarning x) =

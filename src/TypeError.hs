@@ -309,7 +309,7 @@ instance Show TypeError where
   show (FailedToAddLambdaStructToTyEnv path xobj) =
     "Failed to add the lambda: " ++ show path ++ " represented by struct: "
       ++ pretty xobj
-      ++" to the type environment."
+      ++ " to the type environment."
 
 machineReadableErrorStrings :: FilePathPrintLength -> TypeError -> [String]
 machineReadableErrorStrings fppl err =
@@ -427,9 +427,10 @@ machineReadableErrorStrings fppl err =
     (InconsistentKinds varName xobjs) ->
       [machineReadableInfoFromXObj fppl (head xobjs) ++ " The type variable `" ++ varName ++ "` is used inconsistently: " ++ joinWithComma (map pretty (filter (doesTypeContainTyVarWithName varName . fromMaybe Universe . xobjToTy) xobjs)) ++ " Type variables must be applied to the same number of arguments."]
     (FailedToAddLambdaStructToTyEnv path xobj) ->
-      [machineReadableInfoFromXObj fppl xobj ++ "Failed to add the lambda: " ++ show path ++ " represented by struct: "
-        ++ pretty xobj
-        ++" to the type environment."]
+      [ machineReadableInfoFromXObj fppl xobj ++ "Failed to add the lambda: " ++ show path ++ " represented by struct: "
+          ++ pretty xobj
+          ++ " to the type environment."
+      ]
     _ ->
       [show err]
 

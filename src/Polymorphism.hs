@@ -1,6 +1,7 @@
 module Polymorphism
-  (nameOfPolymorphicFunction,
-  ) where
+  ( nameOfPolymorphicFunction,
+  )
+where
 
 import Env as E
 import Obj
@@ -17,8 +18,9 @@ import Types
 -- TODO: Environments are passed in different order here!!!
 nameOfPolymorphicFunction :: TypeEnv -> Env -> Ty -> String -> Maybe SymPath
 nameOfPolymorphicFunction _ env functionType functionName =
-  let foundBinder = (E.findPoly env functionName functionType)
-                    <> (E.findPoly (progenitor env) functionName functionType)
+  let foundBinder =
+        (E.findPoly env functionName functionType)
+          <> (E.findPoly (progenitor env) functionName functionType)
    in case foundBinder of
         Right (_, (Binder _ (XObj (Lst (XObj (External (Just name)) _ _ : _)) _ _))) ->
           Just (SymPath [] name)

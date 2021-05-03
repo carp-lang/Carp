@@ -11,8 +11,8 @@ import Data.Hashable (hash)
 import Data.List (elemIndex, foldl')
 import Data.List.Split (splitOn)
 import Data.Maybe (fromMaybe)
-import qualified Env as E
 import Emit
+import qualified Env as E
 import Info
 import qualified Map
 import qualified Meta
@@ -288,8 +288,8 @@ commandBuild ctx [XObj (Bol shutUp) _ _] = do
         c <- envToC env Functions
         initGlobals <- fmap (wrapInInitFunction (projectCore proj)) (globalsToC env)
         pure
-          ( "//Types:\n" ++ typeDecl ++
-              "\n\n//Declarations:\n"
+          ( "//Types:\n" ++ typeDecl
+              ++ "\n\n//Declarations:\n"
               ++ decl
               ++ "\n\n//Init globals:\n"
               ++ initGlobals

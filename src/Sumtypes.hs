@@ -4,7 +4,7 @@ import Concretize
 import Context
 import Data.Maybe
 import Deftype
-import Env (new, addListOfBindings)
+import Env (addListOfBindings, new)
 import Info
 import Managed
 import Obj
@@ -26,22 +26,29 @@ getCase cases caseNameToFind =
 
 moduleForSumtypeInContext :: Context -> String -> [Ty] -> [XObj] -> Maybe Info -> Either TypeError (String, XObj, [XObj])
 moduleForSumtypeInContext ctx name vars members info =
-  let global   = contextGlobalEnv ctx
-      types    = contextTypeEnv ctx
-      path     = contextPath ctx
-      inner    = either (const Nothing) Just (innermostModuleEnv ctx)
-      previous = either (const Nothing) Just 
-                   ((lookupBinderInInternalEnv ctx (SymPath path name))
-                              <> (lookupBinderInGlobalEnv ctx (SymPath path name))
-                                   >>= \b -> replaceLeft (NotFoundGlobal (SymPath path name))
-                                                         (case binderXObj b of
-                                                            XObj (Mod ev et) _ _ -> Right (ev, et)
-                                                            _ -> Left "Non module"))
+  let global = contextGlobalEnv ctx
+      types = contextTypeEnv ctx
+      path = contextPath ctx
+      inner = either (const Nothing) Just (innermostModuleEnv ctx)
+      previous =
+        either
+          (const Nothing)
+          Just
+          ( (lookupBinderInInternalEnv ctx (SymPath path name))
+              <> (lookupBinderInGlobalEnv ctx (SymPath path name))
+                >>= \b ->
+                  replaceLeft
+                    (NotFoundGlobal (SymPath path name))
+                    ( case binderXObj b of
+                        XObj (Mod ev et) _ _ -> Right (ev, et)
+                        _ -> Left "Non module"
+                    )
+          )
    in moduleForSumtype inner types global path name vars members info previous
 
 moduleForSumtype :: Maybe Env -> TypeEnv -> Env -> [String] -> String -> [Ty] -> [XObj] -> Maybe Info -> Maybe (Env, TypeEnv) -> Either TypeError (String, XObj, [XObj])
 moduleForSumtype innerEnv typeEnv env pathStrings typeName typeVariables rest i existingEnv =
-  let moduleValueEnv = fromMaybe (new  innerEnv (Just typeName)) (fmap fst existingEnv)
+  let moduleValueEnv = fromMaybe (new innerEnv (Just typeName)) (fmap fst existingEnv)
       moduleTypeEnv = fromMaybe (new (Just typeEnv) (Just typeName)) (fmap snd existingEnv)
       insidePath = pathStrings ++ [typeName]
    in do

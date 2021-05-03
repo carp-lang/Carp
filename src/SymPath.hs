@@ -94,5 +94,5 @@ consPath qualifyers (SymPath stringPaths name) =
 -- | Convert a list of strings into a path.
 fromStrings :: [String] -> SymPath
 fromStrings [] = SymPath [] ""
-fromStrings (s:[]) = SymPath [] s
+fromStrings (s : []) = SymPath [] s
 fromStrings ss = SymPath (init ss) (last ss)

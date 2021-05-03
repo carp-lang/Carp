@@ -437,9 +437,12 @@ initialTypes typeEnv rootEnv root = evalState (visit rootEnv root) 0
             Right env' ->
               case xobjObj sym of
                 (Sym (SymPath _ name) _) ->
-                  do visited <- visit env' expr
-                     pure (join
-                              (replaceLeft (InvalidLetBinding xobjs (sym, expr)) . E.insert env' (SymPath [] name) . Binder emptyMeta <$> visited))
+                  do
+                    visited <- visit env' expr
+                    pure
+                      ( join
+                          (replaceLeft (InvalidLetBinding xobjs (sym, expr)) . E.insert env' (SymPath [] name) . Binder emptyMeta <$> visited)
+                      )
                 _ -> pure (Left (InvalidLetBinding xobjs (sym, expr)))
     extendEnvWithParamList :: Env -> [XObj] -> State Integer Env
     extendEnvWithParamList env xobjs =

@@ -84,7 +84,7 @@ eval ctx xobj@(XObj o info ty) preference resolver =
         -- all else failed, error.
         unwrapLookup =
           fromMaybe
-              (throwErr (SymbolNotFound spath) ctx info)
+            (throwErr (SymbolNotFound spath) ctx info)
         tryAllLookups =
           ( case preference of
               PreferDynamic -> tryDynamicLookup
@@ -92,13 +92,15 @@ eval ctx xobj@(XObj o info ty) preference resolver =
           )
             <|> (if null p then tryInternalLookup spath else tryLookup spath)
         tryDynamicLookup =
-          (toMaybe id (E.searchValueBinder (contextGlobalEnv ctx) (SymPath ("Dynamic" : p) n))
-            >>= \(Binder _ found) -> pure (ctx, Right (resolveDef found)))
+          ( toMaybe id (E.searchValueBinder (contextGlobalEnv ctx) (SymPath ("Dynamic" : p) n))
+              >>= \(Binder _ found) -> pure (ctx, Right (resolveDef found))
+          )
         tryInternalLookup path =
           --trace ("Looking for internally " ++ show path) -- ++ show (fmap (fmap E.binders . E.parent) (contextInternalEnv ctx)))
           ( contextInternalEnv ctx
-              >>= \e -> toMaybe id (E.searchValueBinder e path)
-              >>= \(Binder _ found) -> pure (ctx, Right (resolveDef found))
+              >>= \e ->
+                toMaybe id (E.searchValueBinder e path)
+                  >>= \(Binder _ found) -> pure (ctx, Right (resolveDef found))
           )
             <|> tryLookup path -- fallback
         tryLookup path =
@@ -471,11 +473,13 @@ apply ctx@Context {contextInternalEnv = internal} body params args =
             if null rest
               then insideEnv'
               else
-                fromRight (error "couldn't insert into inside env")
-                  (E.insertX
-                    insideEnv'
-                    (SymPath [] (head rest))
-                    (XObj (Lst (drop n args)) Nothing Nothing))
+                fromRight
+                  (error "couldn't insert into inside env")
+                  ( E.insertX
+                      insideEnv'
+                      (SymPath [] (head rest))
+                      (XObj (Lst (drop n args)) Nothing Nothing)
+                  )
       (c, r) <- (evalDynamic ResolveLocal (replaceInternalEnv ctx insideEnv'') body)
       pure (c {contextInternalEnv = internal}, r)
 
@@ -705,8 +709,9 @@ primitiveDefmodule xobj ctx@(Context env i tenv pathStrings _ _ _ _) (XObj (Sym 
     -- Update an existing module by modifying its environment parents and updating the current context path.
     updateExistingModule :: Binder -> IO (Context, Either EvalError XObj)
     updateExistingModule (Binder _ (XObj (Mod innerEnv _) _ _)) =
-      let updateContext = replacePath' (contextPath ctx ++ [moduleName])
-                        . replaceInternalEnv' (innerEnv {envParent = i})
+      let updateContext =
+            replacePath' (contextPath ctx ++ [moduleName])
+              . replaceInternalEnv' (innerEnv {envParent = i})
        in pure (updateContext ctx, dynamicNil)
     updateExistingModule (Binder meta (XObj (Lst [XObj MetaStub _ _, _]) _ _)) =
       defineNewModule meta
@@ -718,12 +723,13 @@ primitiveDefmodule xobj ctx@(Context env i tenv pathStrings _ _ _ _) (XObj (Sym 
     defineNewModule meta =
       pure (fromRight ctx (updater ctx), dynamicNil)
       where
-        moduleDefs  = E.new (Just (fromRight env (E.getInnerEnv env pathStrings))) (Just moduleName)
+        moduleDefs = E.new (Just (fromRight env (E.getInnerEnv env pathStrings))) (Just moduleName)
         moduleTypes = E.new (Just tenv) (Just moduleName) --(Just (fromRight tenv (E.getInnerEnv tenv pathStrings))) (Just moduleName)
-        newModule   = XObj (Mod moduleDefs moduleTypes) (xobjInfo xobj) (Just ModuleTy)
-        updater     = \c -> insertInGlobalEnv' (markQualified (SymPath pathStrings moduleName)) (Binder meta newModule) c
-                    >>= pure . replaceInternalEnv' (moduleDefs {envParent = i})
-                    >>= pure . replacePath' (contextPath ctx ++ [moduleName])
+        newModule = XObj (Mod moduleDefs moduleTypes) (xobjInfo xobj) (Just ModuleTy)
+        updater = \c ->
+          insertInGlobalEnv' (markQualified (SymPath pathStrings moduleName)) (Binder meta newModule) c
+            >>= pure . replaceInternalEnv' (moduleDefs {envParent = i})
+            >>= pure . replacePath' (contextPath ctx ++ [moduleName])
     --------------------------------------------------------------------------------
     -- Define bindings for the module.
     defineModuleBindings :: (Context, Either EvalError XObj) -> IO (Context, Either EvalError XObj)

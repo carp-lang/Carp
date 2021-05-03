@@ -2,6 +2,7 @@ module StartingEnv where
 
 import qualified ArrayTemplates
 import Commands
+import qualified Env as E
 import Eval
 import Info
 import qualified Map
@@ -12,7 +13,6 @@ import qualified StaticArrayTemplates
 import Template
 import ToTemplate
 import Types
-import qualified Env as E
 
 -- | These modules will be loaded in order before any other code is evaluated.
 coreModules :: String -> [String]
@@ -368,14 +368,14 @@ dynamicStringModule =
 
 unsafeModule :: Env
 unsafeModule =
-  Env {
-    envBindings = bindings,
-    envParent = Nothing,
-    envModuleName = Just "Unsafe",
-    envUseModules = Set.empty,
-    envMode = ExternalEnv,
-    envFunctionNestingLevel = 0
-  }
+  Env
+    { envBindings = bindings,
+      envParent = Nothing,
+      envModuleName = Just "Unsafe",
+      envUseModules = Set.empty,
+      envMode = ExternalEnv,
+      envFunctionNestingLevel = 0
+    }
   where
     spath = SymPath ["Unsafe"]
     bindings = Map.fromList unaries

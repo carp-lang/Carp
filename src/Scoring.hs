@@ -78,9 +78,9 @@ depthOfType typeEnv visited selfName theType =
             | otherwise ->
               case E.getTypeBinder typeEnv s of
                 Right (Binder _ typedef) -> depthOfDeftype typeEnv (Set.insert theType visited) typedef varTys
-                  --moduleDepth + depthOfDeftype typeEnv (Set.insert theType visited) typedef varTys
-                  --where
-                  --  moduleDepth = length lookupPath * 1000 -- modules have score 1000
+                --moduleDepth + depthOfDeftype typeEnv (Set.insert theType visited) typedef varTys
+                --where
+                --  moduleDepth = length lookupPath * 1000 -- modules have score 1000
                 Left _ ->
                   --trace ("Unknown type: " ++ name) $
                   -- Two problems here:
