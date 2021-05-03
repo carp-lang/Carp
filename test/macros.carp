@@ -378,4 +378,11 @@
                         '("h" "e" "l" "l" "o")
                         (String.to-list "hello")
                         "Dynamic.String.to-list works as expected")
+  (assert-equal test
+                2
+                (let-do [src 1 dst 0]
+                  (Unsafe.C.asm addr "mov %1, %0\\n" "add $1, %0\\n" : "=r" (dst) : "r" (src))
+                  (addr)
+                  dst)
+                "asm works")
 )
