@@ -1,1 +1,1 @@
-return_ref_to_array_literal.carp:3:1 The reference '(defn f [] (ref [1 2 3]))' isn't alive.
+return_ref_to_array_literal.carp:3:2 The reference '(defn f [] (ref [1 2 3]))' isn't alive.

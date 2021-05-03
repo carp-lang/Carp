@@ -330,5 +330,9 @@
   (assert-ref-equal test
                     [1 2 3]
                     (from-static $[1 2 3])
-                    "from-static works"))
-
+                    "from-static works")
+  (assert-ref-equal test
+                    (Pair.init 6 [2 4 6])
+                    (map-reduce &(fn [acc x] (Pair.init (+ @x @acc) (* @x 2))) 0 &[1 2 3])
+                    "map-reduce works")
+)

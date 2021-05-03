@@ -278,7 +278,7 @@ runExeWithArgs ctx exe args = liftIO $ do
 commandBuild :: VariadicCommandCallback
 commandBuild ctx [] = commandBuild ctx [falseXObj]
 commandBuild ctx [XObj (Bol shutUp) _ _] = do
-  let env = contextGlobalEnv ctx
+  let env = removeSpecials (contextGlobalEnv ctx)
       typeEnv = contextTypeEnv ctx
       proj = contextProj ctx
       execMode = contextExecMode ctx
@@ -343,6 +343,12 @@ commandBuild ctx [XObj (Bol shutUp) _ _] = do
           else case Map.lookup "main" (envBindings env) of
             Just _ -> compile True
             Nothing -> compile False
+  where
+    removeSpecials env =
+      let binds = Map.filterWithKey filterSpecials (envBindings env)
+       in env {envBindings = binds}
+    filterSpecials k _ =
+      not (isSpecialSym (XObj (Sym (SymPath [] k) Symbol) Nothing Nothing))
 commandBuild ctx [arg] =
   pure (evalError ctx ("`build` expected a boolean argument, but got `" ++ pretty arg ++ "`.") (xobjInfo arg))
 commandBuild ctx args =
@@ -598,8 +604,8 @@ commandSymConcat ctx a =
     _ -> evalError ctx ("Can't call concat with " ++ pretty a) (xobjInfo a)
 
 commandSymPrefix :: BinaryCommandCallback
-commandSymPrefix ctx (XObj (Sym (SymPath [] prefix) _) _ _) (XObj (Sym (SymPath [] suffix) _) i t) =
-  pure (ctx, Right (XObj (Sym (SymPath [prefix] suffix) (LookupGlobal CarpLand AVariable)) i t))
+commandSymPrefix ctx (XObj (Sym (SymPath [] prefix) _) _ _) (XObj (Sym (SymPath [] suffix) st) i t) =
+  pure (ctx, Right (XObj (Sym (SymPath [prefix] suffix) st) i t))
 commandSymPrefix ctx x (XObj (Sym (SymPath [] _) _) _ _) =
   pure $ evalError ctx ("Can’t call `prefix` with " ++ pretty x) (xobjInfo x)
 commandSymPrefix ctx _ x =

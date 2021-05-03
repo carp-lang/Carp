@@ -324,5 +324,32 @@
       "Emits a #error compiler directive in Carp's c output.")
     (defmacro error [message]
     (eval (Unsafe.C.emit-c-line ["#error "] [message])))
+
+    (hidden asmify)
+    (defndynamic asmify [instruction]
+      (if (string? instruction)
+        (String.concat ["\"" instruction "\" "])
+        (str instruction)))
+
+    (doc asm
+      "Allows to define a named ASM construct. It allows both simple and "
+      "extended ASM."
+      ""
+      "Example:"
+      "```"
+      "; exits with eit code 5, uses macOS syscalls"
+      "(Unsafe.C.asm exit5 \"mov $0x2000001, %rax\\n\" \"mov $5, %rdi\\n\" \"syscall\")"
+      ""
+      "; writes from a variable called src into a variable dst and then adds 1 to dst"
+      "(Unsafe.C.asm addr \"mov %1, %0\\n\" \"add $1, %0\\n\" : \"=r\" (dst) : \"r\" (src))"
+      "```")
+    (defmacro asm [name :rest instructions]
+      (do
+        (eval (list 'Unsafe.C.define (String.concat [(str name) "()"])
+          (String.concat [
+            "__asm__("
+            (String.concat (collect-into (Dynamic.map Unsafe.C.asmify instructions) array))
+            ");"])))
+        (eval (list 'register name '(Fn [] ())))))
   )
 )

@@ -21,7 +21,7 @@
   (doc read-file "returns the contents of a file passed as argument as a string.")
   (register read-file (Fn [&String] String))
   (doc exit "exit the current program with a return code.")
-  (register exit (Fn [Int] a))
+  (register exit (Fn [Int] ()) "exit")
   (register EOF Char)
   (doc EOF "the End-Of-File character as a literal.")
   (doc fopen "opens a file by name using a mode (one or multiple of [r]ead, [w]rite, and [a]ppend), returns a file pointer. Consider using the function open-file instead.")

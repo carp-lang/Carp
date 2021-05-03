@@ -1,17 +1,9 @@
 (defmodule Random
 
-  (def a 69069.0)
-  (hidden a)
-  (private a)
-  (def c 1.0)
-  (hidden c)
-  (private c)
-  (def m 4294967296.0)
-  (hidden m)
-  (private m)
-  (def s 19380110.0)
-  (hidden s)
-  (private s)
+  (def- a 69069.0)
+  (def- c 1.0)
+  (def- m 4294967296.0)
+  (def- s 19380110.0)
 
   (doc seed "seed resets the seed of the random number generator.")
   (defn seed []

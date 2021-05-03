@@ -412,25 +412,8 @@ symbol = do
             Nothing
         )
     else pure $ case last segments of
-      "defn" -> XObj (Defn Nothing) i Nothing
-      "def" -> XObj Def i Nothing
-      -- TODO: What about the other def- forms?
-      "do" -> XObj Do i Nothing
-      "while" -> XObj While i Nothing
-      "fn" -> XObj (Fn Nothing Set.empty) i Nothing
-      "let" -> XObj Let i Nothing
-      "break" -> XObj Break i Nothing
-      "if" -> XObj If i Nothing
-      "match" -> XObj (Match MatchValue) i Nothing
-      "match-ref" -> XObj (Match MatchRef) i Nothing
       "true" -> XObj (Bol True) i Nothing
       "false" -> XObj (Bol False) i Nothing
-      "address" -> XObj Address i Nothing
-      "set!" -> XObj SetBang i Nothing
-      "the" -> XObj The i Nothing
-      "ref" -> XObj Ref i Nothing
-      "deref" -> XObj Deref i Nothing
-      "with" -> XObj With i Nothing
       name -> XObj (Sym (SymPath (init segments) name) Symbol) i Nothing
 
 atom :: Parsec.Parsec String ParseState XObj

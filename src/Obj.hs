@@ -199,6 +199,11 @@ isSym :: XObj -> Bool
 isSym (XObj (Sym (SymPath _ _) _) _ _) = True
 isSym _ = False
 
+isSpecialSym :: XObj -> Bool
+isSpecialSym (XObj (Sym (SymPath [] s) _) _ _) =
+  elem s ["defn", "def", "do", "while", "fn", "let", "break", "if", "match", "match-ref", "address", "set!", "the", "ref", "deref", "with"]
+isSpecialSym _ = False
+
 isArray :: XObj -> Bool
 isArray (XObj (Arr _) _ _) = True
 isArray _ = False

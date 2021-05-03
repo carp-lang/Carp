@@ -6,6 +6,7 @@ import qualified Env as E
 import Eval
 import Info
 import qualified Map
+import qualified Meta
 import Obj
 import Primitives
 import qualified Set
@@ -468,9 +469,31 @@ startingGlobalEnv noArray =
       envFunctionNestingLevel = 0
     }
   where
+    makeSymbol s doc example o =
+      (s, Binder (Meta.set "doc" (makeDoc doc example) emptyMeta) (XObj o Nothing Nothing))
+    makeDoc doc example =
+      (XObj (Str (doc ++ "\n\nExample:\n```\n" ++ example ++ "\n```")) Nothing Nothing)
     bindings =
+      -- NOTE: special symbols that should be treated like keywords also need to
+      -- be added to isSpecialSym in obj (to avoid emitting them as c etc.)
       Map.fromList $
-        [ register "NULL" (PointerTy (VarTy "a"))
+        [ register "NULL" (PointerTy (VarTy "a")),
+          makeSymbol "defn" "is used to define a function." "(defn name [arg] body)" (Defn Nothing),
+          makeSymbol "def" "is used to bind a variable." "(def variable \"value\")" Def,
+          makeSymbol "do" "is used to group statements." "(do (println* \"hi\") 1) ; => 1" Do,
+          makeSymbol "while" "is used for loops." "(while true\n  (loop-forever))" While,
+          makeSymbol "fn" "is used to define anonymous functions." "(fn [arg] body)" (Fn Nothing Set.empty),
+          makeSymbol "let" "" "" Let,
+          makeSymbol "break" "" "" Break,
+          makeSymbol "if" "" "" If,
+          makeSymbol "match" "" "" (Match MatchValue),
+          makeSymbol "match-ref" "" "" (Match MatchRef),
+          makeSymbol "address" "" "" Address,
+          makeSymbol "set!" "" "" SetBang,
+          makeSymbol "the" "" "" The,
+          makeSymbol "ref" "" "" Ref,
+          makeSymbol "deref" "" "" Deref,
+          makeSymbol "with" "" "" With
         ]
           ++ [("Array", Binder emptyMeta (XObj (Mod arrayModule E.empty) Nothing Nothing)) | not noArray]
           ++ [("StaticArray", Binder emptyMeta (XObj (Mod staticArrayModule E.empty) Nothing Nothing))]

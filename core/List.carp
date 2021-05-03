@@ -1,26 +1,35 @@
 (defmodule Dynamic
 
-  (defndynamic cxr [x pair]
-    (if (= (length x) 0)
-      (list 'quote pair)
-      (if (= 0 (car x))
-        (cxr (cddr x) pair)
-        (list
-          (if (= 'a (cadr x))
-            'car
-            (if (= 'd (cadr x))
-              'cdr
-              (macro-error "`cxr` expects either `a` or `d` symbols, got " (cadr x))))
-          (if (= 1 (car x))
-            (cxr (cddr x) pair)
-            (cxr (cons (- (car x) 1) (cdr x)) pair))))))
+  (doc cxr "takes a specification of a traversal in `a` (head) and `d` (tail)
+symbols and a list `pair` to traverse.
 
+Example:
+```
+(cxr '(1 a 1 d) '(1 2 3)) ; => 2
+
+(cxr '(1 a 1 d 1 a 4 d) '(1 2 3 4 (5 6 7))) ; => 6
+```")
+  (defndynamic cxr [x pair]
+    (cond
+      (= (length x) 0) pair
+      (= 0 (car x)) (cxr (cddr x) pair)
+      ((cond
+        (= 'a (cadr x)) car
+        (= 'd (cadr x)) cdr
+        (macro-error "`cxr` expects either `a` or `d` symbols, got " (cadr x)))
+        (if (= 1 (car x))
+          (cxr (cddr x) pair)
+          (cxr (cons (- (car x) 1) (cdr x)) pair)))))
+
+  (doc nthcdr "takes the `n`th tail or `cdr` of the list `pair`.")
   (defndynamic nthcdr [n pair]
     (cxr (list (+ n 1) 'd) pair))
 
+  (doc nthcar "takes the `n`th head or `car` of the list `pair`.")
   (defndynamic nthcar [n pair]
     (cxr (list 1 'a n 'd) pair))
 
+  (hidden collect-into-internal)
   (defndynamic collect-into-internal [xs acc f]
     (if (= 0 (length xs))
         acc

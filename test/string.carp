@@ -184,7 +184,11 @@
   (assert-equal test
                 &[@"erik" @"sved" @"hej" @"foo"]
                 &(words "erik sved\nhej\tfoo")
-                "words works correctly")
+                "words works correctly I")
+  (assert-equal test
+                &[@"erik" @"sved" @"hej" @"foo"]
+                &(words "erik sved\n\nhej\tfoo")
+                "words works correctly II")
   (assert-equal test
                 &[@"erik" @"sved" @"hej" @"foo"]
                 &(lines "erik\nsved\nhej\nfoo")
