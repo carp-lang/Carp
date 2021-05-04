@@ -21,4 +21,4 @@ assertNotFound (Left _) = TestCase (assertBool "assertNotFound" True) -- Better 
 assertNotFound _ = TestCase (assertBool "assertNotFound" False)
 
 basicLookup :: Test
-basicLookup = assertNotFound (fmap snd (E.lookup emptyRootEnv (SymPath [] "nonexisting")))
+basicLookup = assertNotFound (fmap snd (E.searchValue emptyRootEnv (SymPath [] "nonexisting")))
