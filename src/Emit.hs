@@ -1001,6 +1001,12 @@ globalsToC globalEnv =
             (sortGlobalVariableBinders globalEnv allGlobalBinders)
         pure (concat okCodes)
 
+-- | Similar to envToDeclarations, however, to get types, we need to traverse
+-- the global environment, pull out local type envs from modules, then emit
+-- binders for these types.
+--
+-- TODO: It should be possible to define a general function that works for both
+-- value/type envs, then we can merge this and envToDeclarations
 typeEnvToDeclarations :: TypeEnv -> Env -> Either ToCError String
 typeEnvToDeclarations typeEnv global =
   let -- We need to carry the type environment to pass the correct environment on the binderToDeclaration call.

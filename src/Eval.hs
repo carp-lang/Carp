@@ -92,25 +92,25 @@ eval ctx xobj@(XObj o info ty) preference resolver =
           )
             <|> (if null p then tryInternalLookup spath else tryLookup spath)
         tryDynamicLookup =
-          ( toMaybe id (E.searchValueBinder (contextGlobalEnv ctx) (SymPath ("Dynamic" : p) n))
+          ( maybeId (E.searchValueBinder (contextGlobalEnv ctx) (SymPath ("Dynamic" : p) n))
               >>= \(Binder _ found) -> pure (ctx, Right (resolveDef found))
           )
         tryInternalLookup path =
           --trace ("Looking for internally " ++ show path) -- ++ show (fmap (fmap E.binders . E.parent) (contextInternalEnv ctx)))
           ( contextInternalEnv ctx
               >>= \e ->
-                toMaybe id (E.searchValueBinder e path)
+                maybeId (E.searchValueBinder e path)
                   >>= \(Binder _ found) -> pure (ctx, Right (resolveDef found))
           )
             <|> tryLookup path -- fallback
         tryLookup path =
-          ( toMaybe id (E.searchValueBinder (contextGlobalEnv ctx) path)
+          ( maybeId (E.searchValueBinder (contextGlobalEnv ctx) path)
               >>= \(Binder meta found) -> checkPrivate meta found
           )
-            <|> ( toMaybe id (E.searchValueBinder (contextGlobalEnv ctx) (SymPath ((contextPath ctx) ++ p) n))
+            <|> ( maybeId (E.searchValueBinder (contextGlobalEnv ctx) (SymPath ((contextPath ctx) ++ p) n))
                     >>= \(Binder meta found) -> checkPrivate meta found
                 )
-            <|> ( toMaybe id (lookupBinderInTypeEnv ctx path)
+            <|> ( maybeId (lookupBinderInTypeEnv ctx path)
                     >>= \(Binder _ found) -> pure (ctx, Right (resolveDef found))
                 )
             <|> ( foldl
@@ -118,7 +118,7 @@ eval ctx xobj@(XObj o info ty) preference resolver =
                     Nothing
                     ( map
                         ( \(SymPath p' n') ->
-                            toMaybe id (E.searchValueBinder (contextGlobalEnv ctx) (SymPath (p' ++ (n' : p)) n))
+                            maybeId (E.searchValueBinder (contextGlobalEnv ctx) (SymPath (p' ++ (n' : p)) n))
                               >>= \(Binder meta found) -> checkPrivate meta found
                         )
                         (Set.toList (envUseModules (contextGlobalEnv ctx)))
@@ -453,7 +453,7 @@ macroExpand ctx xobj =
 
 apply :: Context -> XObj -> [XObj] -> [XObj] -> IO (Context, Either EvalError XObj)
 apply ctx@Context {contextInternalEnv = internal} body params args =
-  let Just env = contextInternalEnv ctx <|> toMaybe id (innermostModuleEnv ctx) <|> Just (contextGlobalEnv ctx)
+  let Just env = contextInternalEnv ctx <|> maybeId (innermostModuleEnv ctx) <|> Just (contextGlobalEnv ctx)
       allParams = map getName params
    in case splitWhen (":rest" ==) allParams of
         [a, b] -> callWith env a b
@@ -607,12 +607,12 @@ catcher ctx exception =
 
 specialCommandWith :: Context -> XObj -> SymPath -> [XObj] -> IO (Context, Either EvalError XObj)
 specialCommandWith ctx _ path forms = do
-  let Just env = contextInternalEnv ctx <|> toMaybe id (innermostModuleEnv ctx) <|> Just (contextGlobalEnv ctx)
+  let Just env = contextInternalEnv ctx <|> maybeId (innermostModuleEnv ctx) <|> Just (contextGlobalEnv ctx)
       useThese = envUseModules env
       env' = env {envUseModules = Set.insert path useThese}
       ctx' = replaceGlobalEnv ctx env'
   ctxAfter <- liftIO $ foldM folder ctx' forms
-  let Just envAfter = contextInternalEnv ctxAfter <|> toMaybe id (innermostModuleEnv ctxAfter) <|> Just (contextGlobalEnv ctxAfter)
+  let Just envAfter = contextInternalEnv ctxAfter <|> maybeId (innermostModuleEnv ctxAfter) <|> Just (contextGlobalEnv ctxAfter)
       -- undo ALL use:s made inside the 'with'.
       ctxAfter' = replaceGlobalEnv ctx (envAfter {envUseModules = useThese})
   pure (ctxAfter', dynamicNil)
@@ -724,7 +724,7 @@ primitiveDefmodule xobj ctx@(Context env i tenv pathStrings _ _ _ _) (XObj (Sym 
       pure (fromRight ctx (updater ctx), dynamicNil)
       where
         moduleDefs = E.new (Just (fromRight env (E.getInnerEnv env pathStrings))) (Just moduleName)
-        moduleTypes = E.new (Just tenv) (Just moduleName) --(Just (fromRight tenv (E.getInnerEnv tenv pathStrings))) (Just moduleName)
+        moduleTypes = E.new (Just tenv) (Just moduleName)
         newModule = XObj (Mod moduleDefs moduleTypes) (xobjInfo xobj) (Just ModuleTy)
         updater = \c ->
           insertInGlobalEnv' (markQualified (SymPath pathStrings moduleName)) (Binder meta newModule) c

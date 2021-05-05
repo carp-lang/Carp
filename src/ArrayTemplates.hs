@@ -10,11 +10,11 @@ import ToTemplate
 import Types
 import TypesToC
 
-arrayTy :: Ty
-arrayTy = StructTy (ConcreteNameTy (SymPath [] "Array")) [(VarTy "a")]
+arrayTyA :: Ty
+arrayTyA = StructTy (ConcreteNameTy (SymPath [] "Array")) [(VarTy "a")]
 
 arrayRef :: Ty
-arrayRef = RefTy arrayTy (VarTy "q")
+arrayRef = RefTy arrayTyA (VarTy "q")
 
 -- | "Endofunctor Map"
 templateEMap :: (String, Binder)
@@ -26,7 +26,7 @@ templateEMap =
     documentation
   where
     templateType =
-      FuncTy [RefTy endomorphism (VarTy "q"), arrayTy] arrayTy StaticLifetimeTy
+      FuncTy [RefTy endomorphism (VarTy "q"), arrayTyA] arrayTyA StaticLifetimeTy
     endomorphism = FuncTy [VarTy "a"] (VarTy "a") (VarTy "fq")
     documentation =
       "applies a function `f` to an array `a`. The type of the elements cannot change."
@@ -70,7 +70,7 @@ templateEFilter = defineTypeParameterizedTemplate templateCreator path t docs
   where
     fTy = FuncTy [RefTy (VarTy "a") (VarTy "q")] BoolTy (VarTy "fq")
     path = SymPath ["Array"] "endo-filter"
-    t = FuncTy [RefTy fTy (VarTy "w"), arrayTy] arrayTy StaticLifetimeTy
+    t = FuncTy [RefTy fTy (VarTy "w"), arrayTyA] arrayTyA StaticLifetimeTy
     docs = "filters array members using a function. This function takes ownership."
     elt = "&((($a*)a.data)[i])"
     declaration :: String -> (String -> String) -> [Token]
@@ -113,7 +113,7 @@ templatePushBack =
   where
     path = SymPath ["Array"] "push-back"
     valTy = VarTy "a"
-    t = FuncTy [arrayTy, valTy] arrayTy StaticLifetimeTy
+    t = FuncTy [arrayTyA, valTy] arrayTyA StaticLifetimeTy
     docs = "adds an element `value` to the end of an array `a`."
     declaration :: String -> [Token]
     declaration setter =
@@ -184,7 +184,7 @@ templatePopBack :: (String, Binder)
 templatePopBack = defineTypeParameterizedTemplate templateCreator path t docs
   where
     path = SymPath ["Array"] "pop-back"
-    t = FuncTy [arrayTy] arrayTy StaticLifetimeTy
+    t = FuncTy [arrayTyA] arrayTyA StaticLifetimeTy
     docs = "removes the last element of an array and returns the new array."
     templateCreator = TemplateCreator $
       \typeEnv env ->
@@ -449,7 +449,7 @@ templateDeleteArray :: (String, Binder)
 templateDeleteArray = defineTypeParameterizedTemplate templateCreator path t docs
   where
     path = SymPath ["Array"] "delete"
-    t = FuncTy [arrayTy] UnitTy StaticLifetimeTy
+    t = FuncTy [arrayTyA] UnitTy StaticLifetimeTy
     docs = "deletes an array. This function should usually not be called manually."
     templateCreator = TemplateCreator $
       \typeEnv env ->
@@ -511,7 +511,7 @@ templateCopyArray :: (String, Binder)
 templateCopyArray = defineTypeParameterizedTemplate templateCreator path t docs
   where
     path = SymPath ["Array"] "copy"
-    t = FuncTy [arrayRef] arrayTy StaticLifetimeTy
+    t = FuncTy [arrayRef] arrayTyA StaticLifetimeTy
     docs = "copies an array."
     templateCreator = TemplateCreator $
       \typeEnv env ->

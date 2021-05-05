@@ -78,9 +78,6 @@ depthOfType typeEnv visited selfName theType =
             | otherwise ->
               case E.getTypeBinder typeEnv s of
                 Right (Binder _ typedef) -> depthOfDeftype typeEnv (Set.insert theType visited) typedef varTys
-                --moduleDepth + depthOfDeftype typeEnv (Set.insert theType visited) typedef varTys
-                --where
-                --  moduleDepth = length lookupPath * 1000 -- modules have score 1000
                 Left _ ->
                   --trace ("Unknown type: " ++ name) $
                   -- Two problems here:
@@ -92,7 +89,6 @@ depthOfType typeEnv visited selfName theType =
                   -- module that's not yet been scored. To be safe, add 500
                   500 + depthOfVarTys
       where
-        --lookupPath = getPathFromStructName (getStructName struct)
         s = getNameFromStructName (getStructName struct)
         depthOfVarTys =
           case fmap (depthOfType typeEnv visited (getStructName struct)) varTys of

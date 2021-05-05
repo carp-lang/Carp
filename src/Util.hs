@@ -126,3 +126,6 @@ unwrapErr = first show
 
 toMaybe :: (b -> c) -> Either a b -> Maybe c
 toMaybe f e = either (const Nothing) (Just . f) e
+
+maybeId :: Either a b -> Maybe b
+maybeId = toMaybe id

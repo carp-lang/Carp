@@ -213,15 +213,15 @@ insertTypeBinder ctx qpath binder =
                 >>= pure . (replaceGlobalEnv ctx) . getTypeEnv
         )
 
+-- TODO: This function currently only handles top-level types. (fine for now,
+-- as it's only called to update interfaces) Update this to handle qualified
+-- types A.B
 replaceTypeBinder :: Context -> QualifiedPath -> Binder -> Either ContextError Context
 replaceTypeBinder ctx qpath binder =
-  let (SymPath path name) = unqualify qpath
-   in first
-        (\_ -> trace (show path) (FailedToInsertInTypeEnv (unqualify qpath) binder))
-        ( (E.replaceInPlace (contextTypeEnv ctx) name binder)
-            >>= pure . (replaceTypeEnv ctx)
-        )
-        <> insertTypeBinder ctx qpath binder
+  let (SymPath _ name) = unqualify qpath
+      err = (FailedToInsertInTypeEnv (unqualify qpath) binder)
+      replacement = (E.replaceInPlace (contextTypeEnv ctx) name binder) >>= pure . (replaceTypeEnv ctx)
+   in replaceLeft err replacement <> insertTypeBinder ctx qpath binder
 
 -- | Adds a binder to a context's internal environment at an unqualified path.
 --
