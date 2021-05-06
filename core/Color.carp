@@ -26,7 +26,7 @@
      BgWhite)
   (use Id)
   (defn hash [k]
-    (get-tag (the (Ref Color.Id) k)))
+    (get-tag k))
   (implements hash Color.hash)
   (defn = [a b]
     (= (hash (the (Ref Color.Id) a)) (hash b)))

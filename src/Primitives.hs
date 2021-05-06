@@ -641,29 +641,35 @@ autoDerive c ty =
 primitiveUse :: UnaryPrimitiveCallback
 primitiveUse xobj ctx (XObj (Sym path _) _ _) =
   let modulePath = fromStrings (contextPath ctx)
+      contextualized = (consPath (contextPath ctx) path)
       global = (contextGlobalEnv ctx)
+      -- Look up the module to see if we can actually use it.
+      -- The reference might be contextual, if so, append the current context path strings.
+      path' = case (searchValueBinder global path) of
+              Right _ -> path
+              _ -> contextualized
    in pure
         ( case modulePath of
-            (SymPath [] "") -> updateGlobalUsePaths global
+            (SymPath [] "") -> updateGlobalUsePaths global path'
             _ -> case searchValueBinder global modulePath of
               Left err -> (evalError ctx (show err) (xobjInfo xobj))
               Right binder ->
-                updateModuleUsePaths global modulePath binder
+                updateModuleUsePaths global modulePath binder path'
         )
   where
-    updateGlobalUsePaths :: Env -> (Context, Either EvalError XObj)
-    updateGlobalUsePaths e =
-      ((replaceGlobalEnv ctx (addUsePath e path)), dynamicNil)
+    updateGlobalUsePaths :: Env -> SymPath -> (Context, Either EvalError XObj)
+    updateGlobalUsePaths e spath =
+      ((replaceGlobalEnv ctx (addUsePath e spath)), dynamicNil)
 
-    updateModuleUsePaths :: Env -> SymPath -> Binder -> (Context, Either EvalError XObj)
-    updateModuleUsePaths e p (Binder meta (XObj (Mod ev et) i t)) =
+    updateModuleUsePaths :: Env -> SymPath -> Binder -> SymPath -> (Context, Either EvalError XObj)
+    updateModuleUsePaths e p (Binder meta (XObj (Mod ev et) i t)) spath =
       either
         (\err -> (evalError ctx err (xobjInfo xobj)))
         (\newCtx -> (newCtx, dynamicNil))
-        ( (unwrapErr (insert e p (Binder meta (XObj (Mod (addUsePath ev path) et) i t))))
+        ( (unwrapErr (insert e p (Binder meta (XObj (Mod (addUsePath ev spath) et) i t))))
             >>= pure . replaceGlobalEnv ctx
         )
-    updateModuleUsePaths _ _ _ =
+    updateModuleUsePaths _ _ _ _ =
       (evalError ctx "Context path pointed to non-module!" (xobjInfo xobj))
 primitiveUse _ ctx x =
   argumentErr ctx "use" "a symbol" "first" x

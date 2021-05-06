@@ -202,7 +202,8 @@ qualifyFunctionDefinition typeEnv globalEnv env x@(XObj (Lst [defn@(XObj (Defn _
   do
     recursionEnv <- fixLeft (pure (E.recursive (Just env) (Just (functionName ++ "-recurse-env")) 0))
     envWithSelf <- fixLeft (E.insertX recursionEnv (SymPath [] functionName) sym)
-    functionEnv <- fixLeft (pure (E.nested (Just envWithSelf) Nothing 0))
+    -- | Copy the use modules from the local env to ensure they are available from the function env.
+    functionEnv <- fixLeft (pure ((E.nested (Just envWithSelf) (Just (functionName ++ "-function-env")) 0) {envUseModules = (envUseModules env)}))
     envWithArgs <- fixLeft (foldM (\e arg@(XObj (Sym path _) _ _) -> E.insertX e path arg) functionEnv argsArr)
     qualifiedBody <- liftM unQualified (setFullyQualifiedSymbols typeEnv globalEnv envWithArgs body)
     pure (Qualified (XObj (Lst [defn, sym, args, qualifiedBody]) i t))
