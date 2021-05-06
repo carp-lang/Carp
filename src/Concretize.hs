@@ -88,6 +88,8 @@ concretizeXObj allowAmbiguityRoot typeEnv rootEnv visitedDefinitions root =
             envWithArgs =
               foldl'
                 ( \e arg@(XObj (Sym path _) _ _) ->
+                -- n.b. this won't fail since we're inserting unqualified args into a fresh env
+                -- TODO: Still, it'd be nicer and more flexible to catch failures here.
                     let Right v = insertX e path arg in v
                 )
                 functionEnv
@@ -687,12 +689,6 @@ allImplementations typeEnv env functionName functionType =
     foundBindings = case getTypeBinder typeEnv functionName of
       -- this function is an interface; lookup implementations
       Right (Binder _ (XObj (Lst (XObj (Interface _ paths) _ _ : _)) _ _)) ->
-        -- N.B./TODO: There are functions designed for this
-        -- scenario--e.g. lookupImplementations, but they cause
-        -- either entirely unacceptable behavior (not finding
-        -- implementations, or hangs). We should be able to use
-        -- those here instead of looking up all interface paths
-        -- directly, but for now we are stuck with this.
         case sequence $ map (\p -> searchValue env p) (paths ++ [(SymPath [] functionName)]) of
           Right found -> found
           Left _ ->
