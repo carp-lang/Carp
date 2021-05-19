@@ -60,6 +60,7 @@ data TypeError
   | UsingDeadReference XObj String
   | UninhabitedConstructor Ty XObj Int Int
   | InconsistentKinds String [XObj]
+  | FailedToAddLambdaStructToTyEnv SymPath XObj
 
 instance Show TypeError where
   show (SymbolMissingType xobj env) =
@@ -305,6 +306,10 @@ instance Show TypeError where
     "Can't use a struct or sumtype constructor without arguments as a member type at " ++ prettyInfoFromXObj xobj ++ ". The type constructor " ++ show ty ++ " expects " ++ show wanted ++ " arguments but got " ++ show got
   show (InconsistentKinds varName xobjs) =
     " The type variable `" ++ varName ++ "` is used inconsistently: " ++ joinWithComma (map pretty (filter (doesTypeContainTyVarWithName varName . fromMaybe Universe . xobjToTy) xobjs)) ++ " Type variables must be applied to the same number of arguments."
+  show (FailedToAddLambdaStructToTyEnv path xobj) =
+    "Failed to add the lambda: " ++ show path ++ " represented by struct: "
+      ++ pretty xobj
+      ++ " to the type environment."
 
 machineReadableErrorStrings :: FilePathPrintLength -> TypeError -> [String]
 machineReadableErrorStrings fppl err =
@@ -421,6 +426,11 @@ machineReadableErrorStrings fppl err =
       [machineReadableInfoFromXObj fppl xobj ++ "Can't use a struct or sumtype constructor without arguments as a member type at " ++ prettyInfoFromXObj xobj ++ ". The type constructor " ++ show ty ++ " expects " ++ show wanted ++ " arguments but got " ++ show got]
     (InconsistentKinds varName xobjs) ->
       [machineReadableInfoFromXObj fppl (head xobjs) ++ " The type variable `" ++ varName ++ "` is used inconsistently: " ++ joinWithComma (map pretty (filter (doesTypeContainTyVarWithName varName . fromMaybe Universe . xobjToTy) xobjs)) ++ " Type variables must be applied to the same number of arguments."]
+    (FailedToAddLambdaStructToTyEnv path xobj) ->
+      [ machineReadableInfoFromXObj fppl xobj ++ "Failed to add the lambda: " ++ show path ++ " represented by struct: "
+          ++ pretty xobj
+          ++ " to the type environment."
+      ]
     _ ->
       [show err]
 
@@ -473,7 +483,7 @@ keysInEnvEditDistance path@(SymPath (p : ps) name) env distance =
   case Map.lookup p (envBindings env) of
     Just (Binder _ xobj) ->
       case xobj of
-        (XObj (Mod modEnv) _ _) -> keysInEnvEditDistance (SymPath ps name) modEnv distance
+        (XObj (Mod modEnv _) _ _) -> keysInEnvEditDistance (SymPath ps name) modEnv distance
         _ -> []
     Nothing ->
       case envParent env of

@@ -1,3 +1,5 @@
+{-# LANGUAGE TupleSections #-}
+
 --------------------------------------------------------------------------------
 
 -- | Defines data, errors, and functions for qualifying symbols in a given
@@ -16,15 +18,14 @@ module Qualify
 where
 
 import Control.Monad (foldM, liftM)
-import Data.List (foldl')
-import Debug.Trace
-import Env
+import Data.Bifunctor
+import Data.Either (fromRight)
+import qualified Env as E
 import Info
-import Lookup
 import qualified Map
 import Obj
 import qualified Set
-import Types
+import SymPath
 import Util
 
 --------------------------------------------------------------------------------
@@ -35,6 +36,11 @@ data QualificationError
   = FailedToQualifyDeclarationName XObj
   | FailedToQualifySymbols XObj
   | FailedToQualifyPath SymPath
+  | NonVariableInMatch XObj
+  | NakedInitForUnnamedModule [String]
+  | QualifiedMulti SymPath
+  | LocalMulti SymPath [(Env, Binder)]
+  | FailedToFindSymbol XObj
 
 instance Show QualificationError where
   show (FailedToQualifyDeclarationName xobj) =
@@ -44,6 +50,18 @@ instance Show QualificationError where
   show (FailedToQualifyPath spath) =
     "Couldn't fully qualify the symbol: " ++ show spath
       ++ "in the given context."
+  show (NonVariableInMatch xobj) =
+    "Couldn't qualify the xobj: " ++ pretty xobj
+      ++ "in a match expression."
+  show (NakedInitForUnnamedModule s) =
+    "Tried to emit a naked init for an unnamed module: " ++ (show s)
+  show (QualifiedMulti spath) =
+    "Tried to use a qualified symbol as a multi sym: " ++ (show spath)
+  show (LocalMulti spath binders) =
+    "Tried to use a symbol that has local bindings as a multi sym: " ++ show spath
+      ++ show binders
+  show (FailedToFindSymbol xobj) =
+    "Couldn't find the xobj: " ++ pretty xobj
 
 --------------------------------------------------------------------------------
 -- Data
@@ -52,7 +70,7 @@ instance Show QualificationError where
 --
 -- A fully qualified xobj **must not** be qualified further (e.g. using context
 -- paths).
-newtype Qualified = Qualified {unQualified :: XObj}
+newtype Qualified = Qualified {unQualified :: XObj} deriving (Show)
 
 -- | Denotes a symbol that has been fully qualified.
 newtype QualifiedPath = QualifiedPath SymPath
@@ -115,10 +133,10 @@ qualify ctx xobj@(XObj obj info ty) =
   -- TODO: Merge this with setFullyQualifiedSymbols
   case obj of
     Lst [defn, (XObj (Sym (SymPath _ name) mode) symi symt), args, body] ->
-      setFullyQualifiedSymbols t g i (XObj (Lst [defn, (XObj (Sym (SymPath pathStrings name) mode) symi symt), args, body]) info ty)
+      inner >>= \i -> setFullyQualifiedSymbols t g i (XObj (Lst [defn, (XObj (Sym (SymPath pathStrings name) mode) symi symt), args, body]) info ty)
     Lst [def, XObj (Sym (SymPath _ name) mode) symi symt, expr] ->
-      setFullyQualifiedSymbols t g i (XObj (Lst [def, (XObj (Sym (SymPath pathStrings name) mode) symi symt), expr]) info ty)
-    _ -> setFullyQualifiedSymbols t g i xobj
+      inner >>= \i -> setFullyQualifiedSymbols t g i (XObj (Lst [def, (XObj (Sym (SymPath pathStrings name) mode) symi symt), expr]) info ty)
+    _ -> inner >>= \i -> setFullyQualifiedSymbols t g i xobj
   where
     pathStrings :: [String]
     pathStrings = contextPath ctx
@@ -126,8 +144,8 @@ qualify ctx xobj@(XObj obj info ty) =
     t = contextTypeEnv ctx
     g :: Env
     g = contextGlobalEnv ctx
-    i :: Env
-    i = getEnv g pathStrings
+    inner :: Either QualificationError Env
+    inner = replaceLeft (FailedToQualifySymbols xobj) (E.getInnerEnv g pathStrings)
 
 -- | Changes all symbols EXCEPT bound vars (defn names, variable names, etc) to their fully qualified paths.
 -- | This must run after the 'setFullyQualifiedDefn' function has fixed the paths of all bindings in the environment.
@@ -176,29 +194,32 @@ type Qualifier = TypeEnv -> Env -> Env -> XObj -> Either QualificationError Qual
 
 -- | Qualify the symbols in a Defn form's body.
 qualifyFunctionDefinition :: Qualifier
-qualifyFunctionDefinition typeEnv globalEnv env (XObj (Lst [defn@(XObj (Defn _) _ _), sym@(XObj (Sym (SymPath _ functionName) _) _ _), args@(XObj (Arr argsArr) _ _), body]) i t) =
+qualifyFunctionDefinition typeEnv globalEnv env x@(XObj (Lst [defn@(XObj (Defn _) _ _), sym@(XObj (Sym (SymPath _ functionName) _) _ _), args@(XObj (Arr argsArr) _ _), body]) i t) =
   -- For self-recursion, there must be a binding to the function in the inner env.
   -- It is marked as RecursionEnv basically is the same thing as external to not mess up lookup.
   -- Inside the recursion env is the function env that contains bindings for the arguments of the function.
   -- Note: These inner envs is ephemeral since they are not stored in a module or global scope.
   do
-    let recursionEnv = Env Map.empty (Just env) (Just (functionName ++ "-recurse-env")) Set.empty RecursionEnv 0
-        envWithSelf = extendEnv recursionEnv functionName sym
-        functionEnv = Env Map.empty (Just envWithSelf) Nothing Set.empty InternalEnv 0
-        envWithArgs = foldl' (\e arg@(XObj (Sym (SymPath _ argSymName) _) _ _) -> extendEnv e argSymName arg) functionEnv argsArr
+    recursionEnv <- fixLeft (pure (E.recursive (Just env) (Just (functionName ++ "-recurse-env")) 0))
+    envWithSelf <- fixLeft (E.insertX recursionEnv (SymPath [] functionName) sym)
+    -- Copy the use modules from the local env to ensure they are available from the function env.
+    functionEnv <- fixLeft (pure ((E.nested (Just envWithSelf) (Just (functionName ++ "-function-env")) 0) {envUseModules = (envUseModules env)}))
+    envWithArgs <- fixLeft (foldM (\e arg@(XObj (Sym path _) _ _) -> E.insertX e path arg) functionEnv argsArr)
     qualifiedBody <- liftM unQualified (setFullyQualifiedSymbols typeEnv globalEnv envWithArgs body)
     pure (Qualified (XObj (Lst [defn, sym, args, qualifiedBody]) i t))
+  where
+    fixLeft = replaceLeft (FailedToQualifyDeclarationName x)
 qualifyFunctionDefinition _ _ _ xobj = Left $ FailedToQualifyDeclarationName xobj
 
 -- | Qualify the symbols in a lambda body.
 qualifyLambda :: Qualifier
-qualifyLambda typeEnv globalEnv env (XObj (Lst [fn@(XObj (Fn _ _) _ _), args@(XObj (Arr argsArr) _ _), body]) i t) =
-  do
-    let lvl = envFunctionNestingLevel env
-        functionEnv = Env Map.empty (Just env) Nothing Set.empty InternalEnv (lvl + 1)
-        envWithArgs = foldl' (\e arg@(XObj (Sym (SymPath _ argSymName) _) _ _) -> extendEnv e argSymName arg) functionEnv argsArr
-    qualifiedBody <- liftM unQualified (setFullyQualifiedSymbols typeEnv globalEnv envWithArgs body)
-    pure (Qualified (XObj (Lst [fn, args, qualifiedBody]) i t))
+qualifyLambda typeEnv globalEnv env x@(XObj (Lst [fn@(XObj (Fn _ _) _ _), args@(XObj (Arr argsArr) _ _), body]) i t) =
+  let lvl = envFunctionNestingLevel env
+      functionEnv = Env Map.empty (Just env) Nothing Set.empty InternalEnv (lvl + 1)
+   in (replaceLeft (FailedToQualifySymbols x) (foldM (\e arg@(XObj (Sym path _) _ _) -> E.insertX e path arg) functionEnv argsArr))
+        >>= \envWithArgs ->
+          liftM unQualified (setFullyQualifiedSymbols typeEnv globalEnv envWithArgs body)
+            >>= \qualifiedBody -> pure (Qualified (XObj (Lst [fn, args, qualifiedBody]) i t))
 qualifyLambda _ _ _ xobj = Left $ FailedToQualifySymbols xobj
 
 -- | Qualify the symbols in a The form's body.
@@ -219,7 +240,7 @@ qualifyDef _ _ _ xobj = Left $ FailedToQualifySymbols xobj
 
 -- | Qualify the symbols in a Let form's bindings and body.
 qualifyLet :: Qualifier
-qualifyLet typeEnv globalEnv env (XObj (Lst [letExpr@(XObj Let _ _), bind@(XObj (Arr bindings) bindi bindt), body]) i t)
+qualifyLet typeEnv globalEnv env x@(XObj (Lst [letExpr@(XObj Let _ _), bind@(XObj (Arr bindings) bindi bindt), body]) i t)
   | odd (length bindings) = Right $ Qualified $ XObj (Lst [letExpr, bind, body]) i t -- Leave it untouched for the compiler to find the error.
   | not (all isSym (evenIndices bindings)) = Right $ Qualified $ XObj (Lst [letExpr, bind, body]) i t -- Leave it untouched for the compiler to find the error.
   | otherwise =
@@ -232,17 +253,19 @@ qualifyLet typeEnv globalEnv env (XObj (Lst [letExpr@(XObj Let _ _), bind@(XObj 
       pure (Qualified (XObj (Lst [letExpr, XObj (Arr qualifiedBindings) bindi bindt, qualifiedBody]) i t))
   where
     qualifyBinding :: (Env, [XObj]) -> (XObj, XObj) -> Either QualificationError (Env, [XObj])
-    qualifyBinding (e, bs) (s@(XObj (Sym (SymPath _ binderName) _) _ _), o) =
+    qualifyBinding (e, bs) (s@(XObj (Sym path _) _ _), o) =
       do
         qualified <- liftM unQualified (setFullyQualifiedSymbols typeEnv globalEnv e o)
-        (pure (extendEnv e binderName s, bs ++ [s, qualified]))
+        updated <- (replaceLeft (FailedToQualifySymbols x) (E.insertX e path s))
+        (pure (updated, bs ++ [s, qualified]))
     qualifyBinding _ _ = error "bad let binding"
 qualifyLet _ _ _ xobj = Left $ FailedToQualifySymbols xobj
 
 -- | Qualify symbols in a Match form.
 qualifyMatch :: Qualifier
 qualifyMatch typeEnv globalEnv env (XObj (Lst (matchExpr@(XObj (Match _) _ _) : expr : casesXObjs)) i t)
-  | odd (length casesXObjs) = pure $ Qualified $ XObj (Lst (matchExpr : expr : casesXObjs)) i t -- Leave it untouched for the compiler to find the error.
+  -- Leave it untouched for the compiler to find the error.
+  | odd (length casesXObjs) = pure $ Qualified $ XObj (Lst (matchExpr : expr : casesXObjs)) i t
   | otherwise =
     do
       qualifiedExpr <- pure . unQualified =<< setFullyQualifiedSymbols typeEnv globalEnv env expr
@@ -251,26 +274,33 @@ qualifyMatch typeEnv globalEnv env (XObj (Lst (matchExpr@(XObj (Match _) _ _) : 
   where
     Just ii = i
     lvl = envFunctionNestingLevel env
+    -- Create an inner environment for each case.
     innerEnv :: Env
-    innerEnv = Env Map.empty (Just env) (Just ("case-env-" ++ show (infoIdentifier ii))) Set.empty InternalEnv lvl
+    innerEnv = E.nested (Just env) (Just ("case-env-" ++ show (infoIdentifier ii))) lvl
+    -- Qualify each case in the match form.
     qualifyCases :: (XObj, XObj) -> Either QualificationError [Qualified]
     qualifyCases (l@(XObj (Lst (_ : xs)) _ _), r) =
       do
-        let innerEnv' = foldl' foldVars innerEnv xs
-        qualifiedLHS <- setFullyQualifiedSymbols typeEnv globalEnv env l
+        innerEnv' <- foldM foldVars innerEnv xs
+        qualifiedLHS <- setFullyQualifiedSymbols typeEnv globalEnv innerEnv' l
         qualifiedRHS <- setFullyQualifiedSymbols typeEnv globalEnv innerEnv' r
+        Right [qualifiedLHS, qualifiedRHS]
+    qualifyCases (wild@(XObj (Sym (SymPath _ "_") _) _ _), r) =
+      do
+        qualifiedLHS <- foldVars env wild >>= \e -> setFullyQualifiedSymbols typeEnv globalEnv e wild
+        qualifiedRHS <- setFullyQualifiedSymbols typeEnv globalEnv env r
         Right [qualifiedLHS, qualifiedRHS]
     qualifyCases (l, r) =
       do
         qualifiedLHS <- setFullyQualifiedSymbols typeEnv globalEnv env l
         qualifiedRHS <- setFullyQualifiedSymbols typeEnv globalEnv env r
         Right [qualifiedLHS, qualifiedRHS]
-    foldVars :: Env -> XObj -> Env
-    foldVars env' v@(XObj (Sym (SymPath _ binderName) _) _ _) = extendEnv env' binderName v
-    -- Nested sumtypes
-    -- fold recursively -- is there a more efficient way?
-    foldVars _ (XObj (Lst (_ : ys)) _ _) = foldl' foldVars innerEnv ys
-    foldVars _ v = error ("Can't match variable with " ++ show v)
+    -- Add variables in a case to its environment
+    foldVars :: Env -> XObj -> Either QualificationError Env
+    foldVars env' v@(XObj (Sym path _) _ _) = (replaceLeft (FailedToQualifySymbols v) (E.insertX env' path v))
+    -- Nested sumtypes; fold recursively -- is there a more efficient way?
+    foldVars _ (XObj (Lst (_ : ys)) _ _) = foldM foldVars innerEnv ys
+    foldVars _ v = Left $ NonVariableInMatch v
 qualifyMatch _ _ _ xobj = Left $ FailedToQualifySymbols xobj
 
 -- | Qualify symbols in a With form.
@@ -291,103 +321,92 @@ qualifyLst typeEnv globalEnv env (XObj (Lst xobjs) i t) =
 qualifyLst _ _ _ xobj = Left $ FailedToQualifySymbols xobj
 
 -- | Qualify a single symbol.
--- TODO: Clean this up
 qualifySym :: Qualifier
-qualifySym typeEnv globalEnv localEnv xobj@(XObj (Sym path _) i t) =
-  Right $
-    Qualified $
-      case path of
-        -- Unqualified:
-        SymPath [] name ->
-          case lookupBinder path (getTypeEnv typeEnv) of
-            Just (Binder _ (XObj (Lst (XObj (Interface _ _) _ _ : _)) _ _)) ->
-              -- Found an interface with the same path!
-              -- Have to ensure it's not a local variable with the same name as the interface
-              case lookupInEnv path localEnv of
-                Just (foundEnv, _) ->
-                  if envIsExternal foundEnv
-                    then createInterfaceSym name
-                    else doesNotBelongToAnInterface False localEnv
-                Nothing ->
-                  --trace ("Will turn '" ++ show path ++ "' " ++ prettyInfoFromXObj xobj ++ " into an interface symbol.")
-                  createInterfaceSym name
-            _ ->
-              doesNotBelongToAnInterface False localEnv
-        -- Qualified:
-        _ ->
-          doesNotBelongToAnInterface False localEnv
+-- Unqualified path.
+qualifySym typeEnv globalEnv localEnv xobj@(XObj (Sym path@(SymPath _ name) _) i t) =
+  ( ( ( replaceLeft
+          (FailedToFindSymbol xobj)
+          -- TODO: Why do we need getValue here? We should be able to restrict this
+          -- search only to direct children of the type environment, but this causes
+          -- errors.
+          ( fmap (\(e, b) -> ((E.prj typeEnv), (E.prj e, b))) (E.searchType typeEnv path)
+              <> fmap (localEnv,) (E.searchValue localEnv path)
+              <> fmap (globalEnv,) (E.searchValue globalEnv path)
+          )
+      )
+        >>= \(origin, (e, binder)) ->
+          resolve (E.prj origin) (E.prj e) (binderXObj binder)
+            >>= pure . Qualified
+    )
+      <> ((resolveMulti path (E.lookupInUsed localEnv globalEnv path)) >>= pure . Qualified)
+      <> ((replaceLeft (FailedToFindSymbol xobj) (E.lookupContextually globalEnv path)) >>= (resolveMulti path) >>= pure . Qualified)
+      <> ((resolveMulti path (E.lookupEverywhere globalEnv name)) >>= pure . Qualified)
+      <> pure (Qualified xobj)
+  )
   where
-    createInterfaceSym name =
-      XObj (InterfaceSym name) i t
-    captureOrNot foundEnv =
-      if envFunctionNestingLevel foundEnv < envFunctionNestingLevel localEnv
-        then Capture (envFunctionNestingLevel localEnv - envFunctionNestingLevel foundEnv)
-        else NoCapture
-    doesNotBelongToAnInterface :: Bool -> Env -> XObj
-    doesNotBelongToAnInterface finalRecurse theEnv =
-      let results = multiLookupQualified path theEnv
-          results' = removeThoseShadowedByRecursiveSymbol results
-       in case results' of
-            [] -> case envParent theEnv of
-              Just p ->
-                doesNotBelongToAnInterface False p
-              Nothing ->
-                -- OBS! The environment with no parent is the global env but it's an old one without the latest bindings!
-                if finalRecurse
-                  then xobj -- This was the TRUE global env, stop here and leave 'xobj' as is.
-                  else doesNotBelongToAnInterface True globalEnv
-            [(_, Binder _ foundOne@(XObj (Lst (XObj (External (Just overrideWithName)) _ _ : _)) _ _))] ->
-              XObj (Sym (getPath foundOne) (LookupGlobalOverride overrideWithName)) i t
-            [(e, Binder _ (XObj (Mod modEnv) _ _))] ->
-              -- Lookup of a "naked" module name means that the Carp code is trying to
-              -- instantiate a (nested) module with an implicit .init, e.g. (Pair 1 2)
-              case envModuleName modEnv of
-                Nothing -> error ("Can't get name from unqualified module path: " ++ show path)
-                Just name ->
-                  let pathHere = pathToEnv e
-                   in XObj (Sym (SymPath (pathHere ++ [name]) "init") (LookupGlobal CarpLand AFunction)) i t
-            [(e, Binder _ foundOne)] ->
-              case envMode e of
-                ExternalEnv ->
-                  XObj
-                    ( Sym
-                        (getPath foundOne)
-                        (LookupGlobal (if isExternalFunction foundOne then ExternalCode else CarpLand) (definitionMode foundOne))
-                    )
-                    i
-                    t
-                RecursionEnv -> XObj (Sym (getPath foundOne) LookupRecursive) i t
-                _ ->
-                  --trace ("\nLOCAL variable " ++ show (getPath foundOne) ++ ":\n" ++ prettyEnvironmentChain e) $
-                  XObj (Sym (getPath foundOne) (LookupLocal (captureOrNot e))) i t
-            multiple ->
-              case filter (not . envIsExternal . fst) multiple of
-                -- There is at least one local binding, use the path of that one:
-                (e, Binder _ local) : _ -> XObj (Sym (getPath local) (LookupLocal (captureOrNot e))) i t
-                -- There are no local bindings, this is allowed to become a multi lookup symbol:
-                [] ->
-                  -- (trace $ "Turned " ++ show path ++ " into multisym: " ++ joinWithComma (map (show . (\(e, b) -> (getPath (binderXObj b), safeEnvModuleName e, envMode e))) multiple)) $
-                  case path of
-                    (SymPath [] name) ->
-                      -- Create a MultiSym!
-                      XObj (MultiSym name (map (getPath . binderXObj . snd) multiple)) i t
-                    pathWithQualifiers ->
-                      -- The symbol IS qualified but can't be found, should produce an error later during compilation.
-                      trace ("PROBLEMATIC: " ++ show path) (XObj (Sym pathWithQualifiers (LookupGlobal CarpLand AFunction)) i t)
-    removeThoseShadowedByRecursiveSymbol :: [(Env, Binder)] -> [(Env, Binder)]
-    removeThoseShadowedByRecursiveSymbol allBinders = visit allBinders allBinders
-      where
-        visit bs res =
-          foldl'
-            ( \result b ->
-                case b of
-                  (Env {envMode = RecursionEnv}, Binder _ xobj') ->
-                    remove (\(_, Binder _ x) -> xobj' /= x && getName xobj' == getName x) result
-                  _ -> result
+    resolve :: Env -> Env -> XObj -> Either QualificationError XObj
+    resolve _ _ (XObj (Lst (XObj (Interface _ _) _ _ : _)) _ _) =
+      -- Before we return an interface, double check that it isn't shadowed by a local let-binding.
+      case (E.searchValue localEnv path) of
+        Right (e, Binder _ _) ->
+          case envMode e of
+            InternalEnv -> pure (XObj (Sym (getPath xobj) (LookupLocal (captureOrNot e localEnv))) i t)
+            _ -> pure (XObj (InterfaceSym name) i t)
+        _ -> pure (XObj (InterfaceSym name) i t)
+    resolve _ _ x@(XObj (Lst (XObj (External (Just overrideName)) _ _ : _)) _ _) =
+      pure (XObj (Sym (getPath x) (LookupGlobalOverride overrideName)) i t)
+    resolve _ _ (XObj (Mod modenv _) _ _) =
+      nakedInit modenv
+    resolve origin found xobj' =
+      if (isTypeDef xobj')
+        then
+          ( (replaceLeft (FailedToFindSymbol xobj') (fmap (globalEnv,) (E.searchValue globalEnv path)))
+              >>= \(origin', (e', binder)) -> resolve (E.prj origin') (E.prj e') (binderXObj binder)
+          )
+        else case envMode (E.prj found) of
+          RecursionEnv -> pure (XObj (Sym (getPath xobj') LookupRecursive) i t)
+          InternalEnv -> pure (XObj (Sym (getPath xobj') (LookupLocal (captureOrNot found origin))) i t)
+          ExternalEnv -> pure (XObj (Sym (getPath xobj') (LookupGlobal (if isExternalFunction xobj' then ExternalCode else CarpLand) (definitionMode xobj'))) i t)
+    resolveMulti :: (Show e, E.Environment e) => SymPath -> [(e, Binder)] -> Either QualificationError XObj
+    resolveMulti _ [] =
+      Left (FailedToFindSymbol xobj)
+    resolveMulti _ [(e, b)] =
+      resolve (E.prj e) (E.prj e) (binderXObj b)
+    resolveMulti spath xs =
+      let localOnly = remove (E.envIsExternal . fst) xs
+          paths = map (getModuleSym . (second binderXObj)) xs
+       in case localOnly of
+            [] -> case spath of
+              (SymPath [] _) ->
+                Right $ XObj (MultiSym name paths) i t
+              _ -> Left (QualifiedMulti spath)
+            ys -> Left (LocalMulti spath (map (first E.prj) ys))
+    nakedInit :: Env -> Either QualificationError XObj
+    nakedInit e =
+      maybe
+        (Left (NakedInitForUnnamedModule (pathToEnv e)))
+        (Right . id)
+        ( envModuleName e
+            >>= \name' ->
+              pure (XObj (Sym (SymPath ((init (pathToEnv e)) ++ [name']) "init") (LookupGlobal CarpLand AFunction)) i t)
+        )
+    getModuleSym (_, x) =
+      case x of
+        XObj (Mod ev _) _ _ ->
+          fromRight
+            (SymPath (init (pathToEnv ev)) name)
+            ( (replaceLeft (FailedToFindSymbol x) (E.searchType globalEnv (SymPath (init (pathToEnv ev)) name)))
+                >> (fmap getPath (nakedInit ev))
             )
-            res
-            bs
+        _ -> (getPath x)
 qualifySym _ _ _ xobj = Left $ FailedToQualifySymbols xobj
+
+-- | Determine whether or not this symbol is captured in a local environment (closures).
+captureOrNot :: Env -> Env -> CaptureMode
+captureOrNot foundEnv localEnv =
+  if envFunctionNestingLevel foundEnv < envFunctionNestingLevel localEnv
+    then Capture (envFunctionNestingLevel localEnv - envFunctionNestingLevel foundEnv)
+    else NoCapture
 
 -- | Qualify an Arr form.
 qualifyArr :: Qualifier

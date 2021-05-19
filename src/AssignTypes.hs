@@ -49,7 +49,7 @@ assignTypes mappings root = visit root
       Nothing -> pure xobj
 
 isArrayTypeOK :: Ty -> Bool
-isArrayTypeOK (StructTy (ConcreteNameTy "Array") [RefTy _ _]) = False -- An array containing refs!
+isArrayTypeOK (StructTy (ConcreteNameTy (SymPath [] "Array")) [RefTy _ _]) = False -- An array containing refs!
 isArrayTypeOK _ = True
 
 -- | Change auto generated type names (i.e. 't0') to letters (i.e. 'a', 'b', 'c', etc...)

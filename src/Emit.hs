@@ -8,6 +8,7 @@ module Emit
     checkForUnresolvedSymbols,
     ToCMode (..),
     wrapInInitFunction,
+    typeEnvToDeclarations,
   )
 where
 
@@ -139,7 +140,7 @@ toC toCMode (Binder meta root) = emitterSrc (execState (visit startingIndent roo
               x -> show (ord x) ++ "/*" ++ show x ++ "*/" -- ['U', '\'', x, '\'']
             Closure elt _ -> visit indent elt
             Sym _ _ -> visitSymbol indent xobj
-            Mod _ -> error (show (CannotEmitModKeyword xobj))
+            Mod _ _ -> error (show (CannotEmitModKeyword xobj))
             External _ -> error (show (CannotEmitExternal xobj))
             (Defn _) -> dontVisit
             Def -> dontVisit
@@ -258,7 +259,7 @@ toC toCMode (Binder meta root) = emitterSrc (execState (visit startingIndent roo
                 Just callback = name
                 callbackMangled = pathToC callback
                 needEnv = not (null capturedVars)
-                lambdaEnvTypeName = callbackMangled ++ "_env" -- The name of the struct is the callback name with suffix '_env'.
+                lambdaEnvTypeName = (SymPath [] (callbackMangled ++ "_ty")) -- The name of the struct is the callback name with suffix '_ty'.
                 lambdaEnvType = StructTy (ConcreteNameTy lambdaEnvTypeName) []
                 lambdaEnvName = freshVar info ++ "_env"
             appendToSrc
@@ -293,8 +294,8 @@ toC toCMode (Binder meta root) = emitterSrc (execState (visit startingIndent roo
             appendToSrc (addIndent indent ++ "Lambda " ++ retVar ++ " = {\n")
             appendToSrc (addIndent indent ++ "  .callback = (void*)" ++ callbackMangled ++ ",\n")
             appendToSrc (addIndent indent ++ "  .env = " ++ (if needEnv then lambdaEnvName else "NULL") ++ ",\n")
-            appendToSrc (addIndent indent ++ "  .delete = (void*)" ++ (if needEnv then "" ++ lambdaEnvTypeName ++ "_delete" else "NULL") ++ ",\n")
-            appendToSrc (addIndent indent ++ "  .copy = (void*)" ++ (if needEnv then "" ++ lambdaEnvTypeName ++ "_copy" else "NULL") ++ "\n")
+            appendToSrc (addIndent indent ++ "  .delete = (void*)" ++ (if needEnv then "" ++ show lambdaEnvTypeName ++ "_delete" else "NULL") ++ ",\n")
+            appendToSrc (addIndent indent ++ "  .copy = (void*)" ++ (if needEnv then "" ++ show lambdaEnvTypeName ++ "_copy" else "NULL") ++ "\n")
             appendToSrc (addIndent indent ++ "};\n")
             pure retVar
         -- Def
@@ -661,8 +662,8 @@ toC toCMode (Binder meta root) = emitterSrc (execState (visit startingIndent roo
                     else tyToCLambdaFix retTy ++ "(*)(" ++ joinWithComma (map tyToCLambdaFix voidless) ++ ")"
                 castToFnWithEnv =
                   if unwrapLambdas
-                    then tyToCLambdaFix retTy ++ "(*)(" ++ joinWithComma (map tyToCRawFunctionPtrFix (StructTy (ConcreteNameTy "LambdaEnv") [] : voidless)) ++ ")"
-                    else tyToCLambdaFix retTy ++ "(*)(" ++ joinWithComma (map tyToCLambdaFix (StructTy (ConcreteNameTy "LambdaEnv") [] : voidless)) ++ ")"
+                    then tyToCLambdaFix retTy ++ "(*)(" ++ joinWithComma (map tyToCRawFunctionPtrFix (StructTy (ConcreteNameTy (SymPath [] "LambdaEnv")) [] : voidless)) ++ ")"
+                    else tyToCLambdaFix retTy ++ "(*)(" ++ joinWithComma (map tyToCLambdaFix (StructTy (ConcreteNameTy (SymPath [] "LambdaEnv")) [] : voidless)) ++ ")"
                 callLambda = funcToCall ++ ".env ? ((" ++ castToFnWithEnv ++ ")" ++ funcToCall ++ ".callback)" ++ "(" ++ funcToCall ++ ".env" ++ (if null argListAsC then "" else ", ") ++ argListAsC ++ ") : ((" ++ castToFn ++ ")" ++ funcToCall ++ ".callback)(" ++ argListAsC ++ ");\n"
             if isUnit retTy
               then do
@@ -703,7 +704,7 @@ toC toCMode (Binder meta root) = emitterSrc (execState (visit startingIndent roo
       do
         let arrayVar = freshVar i
             len = length xobjs
-            Just (StructTy (ConcreteNameTy "Array") [innerTy]) = t
+            Just (StructTy (ConcreteNameTy (SymPath [] "Array")) [innerTy]) = t
         appendToSrc
           ( addIndent indent ++ "Array " ++ arrayVar
               ++ " = { .len = "
@@ -744,7 +745,7 @@ toC toCMode (Binder meta root) = emitterSrc (execState (visit startingIndent roo
             retVar = arrayVar ++ "_retref"
             arrayDataVar = arrayVar ++ "_data"
             len = length xobjs
-            Just tt@(RefTy (StructTy (ConcreteNameTy "StaticArray") [innerTy]) _) = t
+            Just tt@(RefTy (StructTy (ConcreteNameTy (SymPath [] "StaticArray")) [innerTy]) _) = t
         appendToSrc (addIndent indent ++ tyToCLambdaFix innerTy ++ " " ++ arrayDataVar ++ "[" ++ show len ++ "];\n")
         appendToSrc
           ( addIndent indent ++ "Array " ++ arrayVar
@@ -960,7 +961,7 @@ binderToC toCMode binder =
         XObj (External _) _ _ -> Right ""
         XObj (ExternalType _) _ _ -> Right ""
         XObj (Command _) _ _ -> Right ""
-        XObj (Mod env) _ _ -> envToC env toCMode
+        XObj (Mod env _) _ _ -> envToC env toCMode
         _ -> case xobjTy xobj of
           Just t ->
             if isTypeGeneric t
@@ -974,16 +975,16 @@ binderToDeclaration :: TypeEnv -> Binder -> Either ToCError String
 binderToDeclaration typeEnv binder =
   let xobj = binderXObj binder
    in case xobj of
-        XObj (Mod env) _ _ -> envToDeclarations typeEnv env
+        XObj (Mod env _) _ _ -> envToDeclarations typeEnv env
         _ -> case xobjTy xobj of
           Just t -> if isTypeGeneric t then Right "" else Right (toDeclaration binder ++ "")
           Nothing -> Left (BinderIsMissingType binder)
 
 envToC :: Env -> ToCMode -> Either ToCError String
 envToC env toCMode =
-  let binders = Map.toList (envBindings env)
+  let binders' = Map.toList (envBindings env)
    in do
-        okCodes <- mapM (binderToC toCMode . snd) binders
+        okCodes <- mapM (binderToC toCMode . snd) binders'
         pure (concat okCodes)
 
 globalsToC :: Env -> Either ToCError String
@@ -999,6 +1000,34 @@ globalsToC globalEnv =
             )
             (sortGlobalVariableBinders globalEnv allGlobalBinders)
         pure (concat okCodes)
+
+-- | Similar to envToDeclarations, however, to get types, we need to traverse
+-- the global environment, pull out local type envs from modules, then emit
+-- binders for these types.
+--
+-- TODO: It should be possible to define a general function that works for both
+-- value/type envs, then we can merge this and envToDeclarations
+typeEnvToDeclarations :: TypeEnv -> Env -> Either ToCError String
+typeEnvToDeclarations typeEnv global =
+  let -- We need to carry the type environment to pass the correct environment on the binderToDeclaration call.
+      addEnvToScore tyE = (sortDeclarationBinders tyE (map snd (Map.toList (binders tyE))))
+      bindersWithScore = (addEnvToScore typeEnv)
+      mods = (findModules global)
+      folder =
+        ( \sorted (XObj (Mod e t) _ _) ->
+            sorted ++ (foldl folder (addEnvToScore t) (findModules e))
+        )
+      allScoredBinders = sortOn fst (foldl folder bindersWithScore mods)
+   in do
+        okDecls <-
+          mapM
+            ( \(score, binder) ->
+                fmap
+                  (\s -> if s == "" then "" else ("\n// Depth " ++ show score ++ "\n") ++ s)
+                  (binderToDeclaration typeEnv binder)
+            )
+            allScoredBinders
+        pure (concat okDecls)
 
 envToDeclarations :: TypeEnv -> Env -> Either ToCError String
 envToDeclarations typeEnv env =
@@ -1018,13 +1047,13 @@ envToDeclarations typeEnv env =
 -- debugScorePair (s,b) = trace ("Scored binder: " ++ show b ++ ", score: " ++ show s) (s,b)
 
 sortDeclarationBinders :: TypeEnv -> [Binder] -> [(Int, Binder)]
-sortDeclarationBinders typeEnv binders =
+sortDeclarationBinders typeEnv binders' =
   --trace ("\nSORTED: " ++ (show (sortOn fst (map (scoreBinder typeEnv) binders))))
-  sortOn fst (map (scoreTypeBinder typeEnv) binders)
+  sortOn fst (map (scoreTypeBinder typeEnv) binders')
 
 sortGlobalVariableBinders :: Env -> [Binder] -> [(Int, Binder)]
-sortGlobalVariableBinders globalEnv binders =
-  sortOn fst (map (scoreValueBinder globalEnv Set.empty) binders)
+sortGlobalVariableBinders globalEnv binders' =
+  sortOn fst (map (scoreValueBinder globalEnv Set.empty) binders')
 
 checkForUnresolvedSymbols :: XObj -> Either ToCError ()
 checkForUnresolvedSymbols = visit

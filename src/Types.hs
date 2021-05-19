@@ -26,6 +26,7 @@ module Types
     getStructName,
     getPathFromStructName,
     getNameFromStructName,
+    getStructPath,
     promoteNumber,
   )
 where
@@ -60,7 +61,7 @@ data Ty
   | RefTy Ty Ty -- second Ty is the lifetime
   | StaticLifetimeTy
   | StructTy Ty [Ty] -- the name (possibly a var) of the struct, and it's type parameters
-  | ConcreteNameTy String -- the name of a struct
+  | ConcreteNameTy SymPath -- the name of a struct
   | TypeTy -- the type of types
   | MacroTy
   | DynamicTy -- the type of dynamic functions (used in REPL and macros)
@@ -179,7 +180,7 @@ instance Show Ty where
   show InterfaceTy = "Interface"
   show (StructTy s []) = show s
   show (StructTy s typeArgs) = "(" ++ show s ++ " " ++ joinWithSpace (map show typeArgs) ++ ")"
-  show (ConcreteNameTy name) = name
+  show (ConcreteNameTy spath) = show spath
   show (PointerTy p) = "(Ptr " ++ show p ++ ")"
   show (RefTy r lt) =
     -- case r of
@@ -336,13 +337,13 @@ typesDeleterFunctionType memberType = FuncTy [memberType] UnitTy StaticLifetimeT
 
 -- | The type of environments sent to Lambdas (used in emitted C code)
 lambdaEnvTy :: Ty
-lambdaEnvTy = StructTy (ConcreteNameTy "LambdaEnv") []
+lambdaEnvTy = StructTy (ConcreteNameTy (SymPath [] "LambdaEnv")) []
 
 createStructName :: [String] -> String -> String
 createStructName path name = intercalate "." (path ++ [name])
 
 getStructName :: Ty -> String
-getStructName (StructTy (ConcreteNameTy name) _) = name
+getStructName (StructTy (ConcreteNameTy spath) _) = show spath
 getStructName (StructTy (VarTy name) _) = name
 getStructName _ = ""
 
@@ -353,6 +354,11 @@ getPathFromStructName structName =
 
 getNameFromStructName :: String -> String
 getNameFromStructName structName = last (map unpack (splitOn (pack ".") (pack structName)))
+
+getStructPath :: Ty -> SymPath
+getStructPath (StructTy (ConcreteNameTy spath) _) = spath
+getStructPath (StructTy (VarTy name) _) = (SymPath [] name)
+getStructPath _ = (SymPath [] "")
 
 -- N.B.: promoteNumber is only safe for numeric types!
 promoteNumber :: Ty -> Ty -> Ty

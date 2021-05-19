@@ -4,7 +4,6 @@ import Control.Monad.State (State, evalState, get, put)
 import Data.Foldable (foldlM)
 import Env
 import Info
-import Lookup
 import Obj
 import TypeError
 import Types
@@ -219,7 +218,7 @@ expand eval ctx xobj =
                 ("`ref` takes a single argument, but I got `" ++ pretty xobj ++ "`.")
                 (xobjInfo xobj)
             )
-        XObj (Mod modEnv) _ _ : args ->
+        XObj (Mod modEnv _) _ _ : args ->
           let pathToModule = pathToEnv modEnv
               implicitInit = XObj (Sym (SymPath pathToModule "init") Symbol) i t
            in expand eval ctx (XObj (Lst (implicitInit : args)) (xobjInfo xobj) (xobjTy xobj))
@@ -280,15 +279,15 @@ expand eval ctx xobj =
     expandArray _ = error "Can't expand non-array in expandArray."
     expandSymbol :: XObj -> IO (Context, Either EvalError XObj)
     expandSymbol sym@(XObj (Sym path _) _ _) =
-      case lookupBinder path (contextEnv ctx) of
-        Just (Binder meta (XObj (Lst (XObj (External _) _ _ : _)) _ _)) -> isPrivate meta xobj
-        Just (Binder meta (XObj (Lst (XObj (Instantiate _) _ _ : _)) _ _)) -> isPrivate meta xobj
-        Just (Binder meta (XObj (Lst (XObj (Deftemplate _) _ _ : _)) _ _)) -> isPrivate meta xobj
-        Just (Binder meta (XObj (Lst (XObj (Defn _) _ _ : _)) _ _)) -> isPrivate meta xobj
-        Just (Binder meta (XObj (Lst (XObj Def _ _ : _)) _ _)) -> isPrivate meta xobj
-        Just (Binder meta (XObj (Lst (XObj (Defalias _) _ _ : _)) _ _)) -> isPrivate meta xobj
-        Just (Binder meta found) -> isPrivate meta found -- use the found value
-        Nothing -> pure (ctx, Right xobj) -- symbols that are not found are left as-is
+      case searchValueBinder (contextEnv ctx) path of
+        Right (Binder meta (XObj (Lst (XObj (External _) _ _ : _)) _ _)) -> isPrivate meta xobj
+        Right (Binder meta (XObj (Lst (XObj (Instantiate _) _ _ : _)) _ _)) -> isPrivate meta xobj
+        Right (Binder meta (XObj (Lst (XObj (Deftemplate _) _ _ : _)) _ _)) -> isPrivate meta xobj
+        Right (Binder meta (XObj (Lst (XObj (Defn _) _ _ : _)) _ _)) -> isPrivate meta xobj
+        Right (Binder meta (XObj (Lst (XObj Def _ _ : _)) _ _)) -> isPrivate meta xobj
+        Right (Binder meta (XObj (Lst (XObj (Defalias _) _ _ : _)) _ _)) -> isPrivate meta xobj
+        Right (Binder meta found) -> isPrivate meta found -- use the found value
+        Left _ -> pure (ctx, Right xobj) -- symbols that are not found are left as-is
       where
         isPrivate m x =
           pure $

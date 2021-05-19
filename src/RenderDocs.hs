@@ -52,7 +52,7 @@ saveDocsForEnvs ctx pathsAndEnvBinders =
 getEnvAndMetaFromBinder :: Binder -> (Env, MetaData)
 getEnvAndMetaFromBinder envBinder =
   case envBinder of
-    Binder meta (XObj (Mod env) _ _) -> (env, meta)
+    Binder meta (XObj (Mod env _) _ _) -> (env, meta)
     _ -> error "Binder's not a module. This should be detected in 'commandSaveDocsInternal'."
 
 projectIndexPage :: Project -> [String] -> String

@@ -12,8 +12,8 @@ import Data.List (elemIndex, foldl')
 import Data.List.Split (splitOn)
 import Data.Maybe (fromMaybe)
 import Emit
+import qualified Env as E
 import Info
-import Lookup
 import qualified Map
 import qualified Meta
 import Obj
@@ -283,8 +283,8 @@ commandBuild ctx [XObj (Bol shutUp) _ _] = do
       proj = contextProj ctx
       execMode = contextExecMode ctx
       src = do
+        typeDecl <- typeEnvToDeclarations typeEnv env
         decl <- envToDeclarations typeEnv env
-        typeDecl <- envToDeclarations typeEnv (getTypeEnv typeEnv)
         c <- envToC env Functions
         initGlobals <- fmap (wrapInInitFunction (projectCore proj)) (globalsToC env)
         pure
@@ -726,12 +726,12 @@ commandSaveDocsInternal ctx modulePath = do
   where
     getEnvironmentBinderForDocumentation :: Context -> Env -> SymPath -> Either String Binder
     getEnvironmentBinderForDocumentation _ env path =
-      case lookupBinder path env of
-        Just foundBinder@(Binder _ (XObj (Mod _) _ _)) ->
+      case E.searchValueBinder env path of
+        Right foundBinder@(Binder _ (XObj (Mod _ _) _ _)) ->
           Right foundBinder
-        Just (Binder _ x) ->
+        Right (Binder _ x) ->
           Left ("I can’t generate documentation for `" ++ pretty x ++ "` because it isn’t a module")
-        Nothing ->
+        Left _ ->
           Left ("I can’t find the module `" ++ show path ++ "`")
 
 -- | Command for emitting literal C code from Carp.
@@ -760,21 +760,21 @@ commandSexpression ctx xobj =
 
 commandSexpressionInternal :: Context -> XObj -> Bool -> IO (Context, Either EvalError XObj)
 commandSexpressionInternal ctx xobj bol =
-  let tyEnv = getTypeEnv $ contextTypeEnv ctx
+  let tyEnv = contextTypeEnv ctx
    in case xobj of
         (XObj (Lst [inter@(XObj (Interface ty _) _ _), path]) i t) ->
           pure (ctx, Right (XObj (Lst [toSymbols inter, path, reify ty]) i t))
         (XObj (Lst forms) i t) ->
           pure (ctx, Right (XObj (Lst (map toSymbols forms)) i t))
-        mdl@(XObj (Mod e) _ _) ->
+        mdl@(XObj (Mod e _) _ _) ->
           if bol
             then getMod
-            else case lookupBinder (SymPath [] (fromMaybe "" (envModuleName e))) tyEnv of
-              Just (Binder _ (XObj (Lst forms) i t)) ->
+            else case E.getTypeBinder tyEnv (fromMaybe "" (envModuleName e)) of
+              Right (Binder _ (XObj (Lst forms) i t)) ->
                 pure (ctx, Right (XObj (Lst (map toSymbols forms)) i t))
-              Just (Binder _ xobj') ->
+              Right (Binder _ xobj') ->
                 pure (ctx, Right (toSymbols xobj'))
-              Nothing ->
+              Left _ ->
                 getMod
           where
             getMod =
@@ -800,7 +800,7 @@ commandSexpressionInternal ctx xobj bol =
           pure $ evalError ctx ("can't get an s-expression for: " ++ pretty xobj ++ " is it a bound symbol or literal s-expression?") (Just dummyInfo)
 
 toSymbols :: XObj -> XObj
-toSymbols (XObj (Mod e) i t) =
+toSymbols (XObj (Mod e _) i t) =
   XObj
     ( Lst
         [ XObj (Sym (SymPath [] "defmodule") Symbol) i t,
@@ -866,7 +866,7 @@ commandType ctx (XObj x _ _) =
     typeOf Break = "dreak"
     typeOf If = "if"
     typeOf (Match _) = "matxch"
-    typeOf (Mod _) = "module"
+    typeOf (Mod _ _) = "module"
     typeOf (Deftype _) = "deftype"
     typeOf (DefSumtype _) = "def-sum-type"
     typeOf With = "with"

@@ -8,17 +8,17 @@ import Context
 import Control.Applicative
 import Control.Exception
 import Control.Monad.State
+import Data.Either (fromRight)
 import Data.Foldable (foldlM, foldrM)
 import Data.List (foldl', intercalate, isSuffixOf)
 import Data.List.Split (splitOn, splitWhen)
 import Data.Maybe (fromJust, fromMaybe, isJust)
 import Emit
-import Env
+import qualified Env as E
 import EvalError
 import Expand
 import Infer
 import Info
-import Lookup
 import qualified Map
 import qualified Meta
 import Obj
@@ -81,9 +81,10 @@ eval ctx xobj@(XObj o info ty) preference resolver =
             then pure (ctx, Left (HasStaticCall xobj info))
             else pure v
         checkStatic v = pure v
+        -- all else failed, error.
         unwrapLookup =
           fromMaybe
-            (throwErr (SymbolNotFound spath) ctx info) -- all else failed, error.
+            (throwErr (SymbolNotFound spath) ctx info)
         tryAllLookups =
           ( case preference of
               PreferDynamic -> tryDynamicLookup
@@ -91,19 +92,25 @@ eval ctx xobj@(XObj o info ty) preference resolver =
           )
             <|> (if null p then tryInternalLookup spath else tryLookup spath)
         tryDynamicLookup =
-          lookupBinder (SymPath ("Dynamic" : p) n) (contextGlobalEnv ctx)
-            >>= \(Binder _ found) -> pure (ctx, Right (resolveDef found))
-        tryInternalLookup path =
-          ( contextInternalEnv ctx
-              >>= lookupBinder path
+          ( maybeId (E.searchValueBinder (contextGlobalEnv ctx) (SymPath ("Dynamic" : p) n))
               >>= \(Binder _ found) -> pure (ctx, Right (resolveDef found))
+          )
+        tryInternalLookup path =
+          --trace ("Looking for internally " ++ show path) -- ++ show (fmap (fmap E.binders . E.parent) (contextInternalEnv ctx)))
+          ( contextInternalEnv ctx
+              >>= \e ->
+                maybeId (E.searchValueBinder e path)
+                  >>= \(Binder _ found) -> pure (ctx, Right (resolveDef found))
           )
             <|> tryLookup path -- fallback
         tryLookup path =
-          ( lookupBinder path (contextGlobalEnv ctx)
+          ( maybeId (E.searchValueBinder (contextGlobalEnv ctx) path)
               >>= \(Binder meta found) -> checkPrivate meta found
           )
-            <|> ( lookupBinder path (getTypeEnv (contextTypeEnv ctx))
+            <|> ( maybeId (E.searchValueBinder (contextGlobalEnv ctx) (SymPath ((contextPath ctx) ++ p) n))
+                    >>= \(Binder meta found) -> checkPrivate meta found
+                )
+            <|> ( maybeId (lookupBinderInTypeEnv ctx path)
                     >>= \(Binder _ found) -> pure (ctx, Right (resolveDef found))
                 )
             <|> ( foldl
@@ -111,7 +118,7 @@ eval ctx xobj@(XObj o info ty) preference resolver =
                     Nothing
                     ( map
                         ( \(SymPath p' n') ->
-                            lookupBinder (SymPath (p' ++ (n' : p)) n) (contextGlobalEnv ctx)
+                            maybeId (E.searchValueBinder (contextGlobalEnv ctx) (SymPath (p' ++ (n' : p)) n))
                               >>= \(Binder meta found) -> checkPrivate meta found
                         )
                         (Set.toList (envUseModules (contextGlobalEnv ctx)))
@@ -220,7 +227,7 @@ eval ctx xobj@(XObj o info ty) preference resolver =
                   (newCtx, res) <- eval ctx' x preference resolver
                   case res of
                     Right okX ->
-                      pure $ Right (bindLetDeclaration newCtx n okX)
+                      pure $ Right (fromRight (error "Failed to eval let binding!!") (bindLetDeclaration newCtx n okX))
                     Left err -> pure $ Left err
         [f@(XObj Fn {} _ _), args@(XObj (Arr a) _ _), body] -> do
           (newCtx, expanded) <- macroExpand ctx body
@@ -446,7 +453,7 @@ macroExpand ctx xobj =
 
 apply :: Context -> XObj -> [XObj] -> [XObj] -> IO (Context, Either EvalError XObj)
 apply ctx@Context {contextInternalEnv = internal} body params args =
-  let Just env = contextInternalEnv ctx <|> innermostModuleEnv ctx <|> Just (contextGlobalEnv ctx)
+  let Just env = contextInternalEnv ctx <|> maybeId (innermostModuleEnv ctx) <|> Just (contextGlobalEnv ctx)
       allParams = map getName params
    in case splitWhen (":rest" ==) allParams of
         [a, b] -> callWith env a b
@@ -459,18 +466,21 @@ apply ctx@Context {contextInternalEnv = internal} body params args =
           insideEnv = Env Map.empty internal Nothing Set.empty InternalEnv 0
           insideEnv' =
             foldl'
-              (\e (p, x) -> extendEnv e p (toLocalDef p x))
+              (\e (p, x) -> fromRight (error "Couldn't add local def ") (E.insertX e (SymPath [] p) (toLocalDef p x)))
               insideEnv
               (zip proper (take n args))
           insideEnv'' =
             if null rest
               then insideEnv'
               else
-                extendEnv
-                  insideEnv'
-                  (head rest)
-                  (XObj (Lst (drop n args)) Nothing Nothing)
-      (c, r) <- evalDynamic ResolveLocal (replaceInternalEnv ctx insideEnv'') body
+                fromRight
+                  (error "couldn't insert into inside env")
+                  ( E.insertX
+                      insideEnv'
+                      (SymPath [] (head rest))
+                      (XObj (Lst (drop n args)) Nothing Nothing)
+                  )
+      (c, r) <- (evalDynamic ResolveLocal (replaceInternalEnv ctx insideEnv'') body)
       pure (c {contextInternalEnv = internal}, r)
 
 -- | Parses a string and then converts the resulting forms to commands, which are evaluated in order.
@@ -597,12 +607,12 @@ catcher ctx exception =
 
 specialCommandWith :: Context -> XObj -> SymPath -> [XObj] -> IO (Context, Either EvalError XObj)
 specialCommandWith ctx _ path forms = do
-  let Just env = contextInternalEnv ctx <|> innermostModuleEnv ctx <|> Just (contextGlobalEnv ctx)
+  let Just env = contextInternalEnv ctx <|> maybeId (innermostModuleEnv ctx) <|> Just (contextGlobalEnv ctx)
       useThese = envUseModules env
       env' = env {envUseModules = Set.insert path useThese}
       ctx' = replaceGlobalEnv ctx env'
   ctxAfter <- liftIO $ foldM folder ctx' forms
-  let Just envAfter = contextInternalEnv ctxAfter <|> innermostModuleEnv ctxAfter <|> Just (contextGlobalEnv ctxAfter)
+  let Just envAfter = contextInternalEnv ctxAfter <|> maybeId (innermostModuleEnv ctxAfter) <|> Just (contextGlobalEnv ctxAfter)
       -- undo ALL use:s made inside the 'with'.
       ctxAfter' = replaceGlobalEnv ctx (envAfter {envUseModules = useThese})
   pure (ctxAfter', dynamicNil)
@@ -645,7 +655,7 @@ getSigFromDefnOrDef ctx xobj =
       fullPath = case path of
         (SymPath [] _) -> consPath pathStrings path
         (SymPath _ _) -> path
-      metaData = lookupMeta fullPath globalEnv
+      metaData = either (const emptyMeta) id (E.lookupMeta globalEnv fullPath)
    in case Meta.get "sig" metaData of
         Just foundSignature ->
           case xobjToTy foundSignature of
@@ -683,39 +693,45 @@ annotateWithinContext ctx xobj = do
                     Right ok -> pure (ctx, Right ok)
 
 primitiveDefmodule :: VariadicPrimitiveCallback
-primitiveDefmodule xobj ctx@(Context env i _ pathStrings _ _ _ _) (XObj (Sym (SymPath [] moduleName) _) _ _ : innerExpressions) =
+primitiveDefmodule xobj ctx@(Context env i tenv pathStrings _ _ _ _) (XObj (Sym (SymPath [] moduleName) _) _ _ : innerExpressions) =
   -- N.B. The `envParent` rewrite at the end of this line is important!
   -- lookups delve into parent envs by default, which is normally what we want, but in this case it leads to problems
   -- when submodules happen to share a name with an existing module or type at the global level.
-  maybe (defineNewModule emptyMeta) updateExistingModule (lookupBinder (SymPath [] moduleName) ((getEnv env pathStrings) {envParent = Nothing}))
+  either (const (defineNewModule emptyMeta)) updateExistingModule (E.searchValueBinder ((fromRight env (E.getInnerEnv env pathStrings)) {envParent = Nothing}) (SymPath [] moduleName))
     >>= defineModuleBindings
     >>= \(newCtx, result) ->
-      case result of
-        Left err -> pure (newCtx, Left err)
-        Right _ -> pure (popModulePath (newCtx {contextInternalEnv = envParent =<< contextInternalEnv newCtx}), dynamicNil)
+      let updater c = (c {contextInternalEnv = (E.parent =<< contextInternalEnv c)})
+       in case result of
+            Left err -> pure (newCtx, Left err)
+            Right _ -> pure (updater (popModulePath newCtx), dynamicNil)
   where
+    --------------------------------------------------------------------------------
+    -- Update an existing module by modifying its environment parents and updating the current context path.
     updateExistingModule :: Binder -> IO (Context, Either EvalError XObj)
-    updateExistingModule (Binder _ (XObj (Mod innerEnv) _ _)) =
-      let ctx' =
-            ctx
-              { contextInternalEnv = Just innerEnv {envParent = i},
-                contextPath = contextPath ctx ++ [moduleName]
-              }
-       in pure (ctx', dynamicNil)
+    updateExistingModule (Binder _ (XObj (Mod innerEnv _) _ _)) =
+      let updateContext =
+            replacePath' (contextPath ctx ++ [moduleName])
+              . replaceInternalEnv' (innerEnv {envParent = i})
+       in pure (updateContext ctx, dynamicNil)
     updateExistingModule (Binder meta (XObj (Lst [XObj MetaStub _ _, _]) _ _)) =
       defineNewModule meta
     updateExistingModule _ =
       pure (throwErr (ModuleRedefinition moduleName) ctx (xobjInfo xobj))
+    --------------------------------------------------------------------------------
+    -- Define a brand new module with a context's current environments as its parents.
     defineNewModule :: MetaData -> IO (Context, Either EvalError XObj)
     defineNewModule meta =
-      pure (ctx', dynamicNil)
+      pure (fromRight ctx (updater ctx), dynamicNil)
       where
-        moduleEnv = Env (Map.fromList []) (Just (getEnv env pathStrings)) (Just moduleName) Set.empty ExternalEnv 0
-        newModule = XObj (Mod moduleEnv) (xobjInfo xobj) (Just ModuleTy)
-        updatedGlobalEnv = envInsertAt env (SymPath pathStrings moduleName) (Binder meta newModule)
-        -- The parent of the internal env needs to be set to i here for contextual `use` calls to work.
-        -- In theory this shouldn't be necessary; but for now it is.
-        ctx' = ctx {contextGlobalEnv = updatedGlobalEnv, contextInternalEnv = Just moduleEnv {envParent = i}, contextPath = contextPath ctx ++ [moduleName]}
+        moduleDefs = E.new (Just (fromRight env (E.getInnerEnv env pathStrings))) (Just moduleName)
+        moduleTypes = E.new (Just tenv) (Just moduleName)
+        newModule = XObj (Mod moduleDefs moduleTypes) (xobjInfo xobj) (Just ModuleTy)
+        updater = \c ->
+          insertInGlobalEnv' (markQualified (SymPath pathStrings moduleName)) (Binder meta newModule) c
+            >>= pure . replaceInternalEnv' (moduleDefs {envParent = i})
+            >>= pure . replacePath' (contextPath ctx ++ [moduleName])
+    --------------------------------------------------------------------------------
+    -- Define bindings for the module.
     defineModuleBindings :: (Context, Either EvalError XObj) -> IO (Context, Either EvalError XObj)
     defineModuleBindings (context, Left e) = pure (context, Left e)
     defineModuleBindings (context, _) =
@@ -725,7 +741,7 @@ primitiveDefmodule xobj ctx@(Context env i _ pathStrings _ _ _ _) (XObj (Sym (Sy
     step (ctx', Right _) expressions =
       macroExpand ctx' expressions
         >>= \(ctx'', res) -> case res of
-          Left _ -> pure (ctx'', res)
+          Left err -> pure (ctx'', Left err)
           Right r -> evalDynamic ResolveLocal ctx'' r
 primitiveDefmodule _ ctx (x : _) =
   pure (throwErr (DefmoduleContainsNonSymbol x) ctx (xobjInfo x))
@@ -1013,21 +1029,21 @@ primitiveDefdynamic _ ctx notName _ =
   pure (throwErr (DefnDynamicInvalidName notName) ctx (xobjInfo notName))
 
 specialCommandSet :: Context -> [XObj] -> IO (Context, Either EvalError XObj)
-specialCommandSet ctx [orig@(XObj (Sym path@(SymPath _ n) _) _ _), val] =
+specialCommandSet ctx [orig@(XObj (Sym path@(SymPath _ _) _) _ _), val] =
   let lookupInternal =
-        contextInternalEnv ctx
+        maybe (Left "") Right (contextInternalEnv ctx)
           >>= \e ->
-            lookupBinder path e
+            unwrapErr (E.searchValueBinder e path)
               >>= \binder -> pure (binder, setInternal, e)
       lookupGlobal =
-        Just (contextGlobalEnv ctx)
+        Right (contextGlobalEnv ctx)
           >>= \e ->
-            lookupBinder path e
+            unwrapErr (E.searchValueBinder e path)
               >>= \binder -> pure (binder, setGlobal, e)
-   in maybe
-        (pure $ (throwErr (SetVarNotFound orig) ctx (xobjInfo orig)))
+   in either
+        ((const (pure $ (throwErr (SetVarNotFound orig) ctx (xobjInfo orig)))))
         (\(binder', setter', env') -> evalAndSet binder' setter' env')
-        (lookupInternal <|> lookupGlobal)
+        (lookupInternal <> lookupGlobal)
   where
     evalAndSet :: Binder -> (Context -> Env -> Either EvalError XObj -> Binder -> IO (Context, Either EvalError XObj)) -> Env -> IO (Context, Either EvalError XObj)
     evalAndSet binder setter env =
@@ -1051,7 +1067,7 @@ specialCommandSet ctx [orig@(XObj (Sym path@(SymPath _ n) _) _ _), val] =
     setInternal ctx' env value binder =
       pure $ either (failure ctx' orig) (success ctx') value
       where
-        success c xo = (replaceInternalEnv c (setStaticOrDynamicVar (SymPath [] n) env binder xo), dynamicNil)
+        success c xo = (replaceInternalEnv c (setStaticOrDynamicVar path env binder xo), dynamicNil)
 specialCommandSet ctx [notName, _] =
   pure (throwErr (SetInvalidVarName notName) ctx (xobjInfo notName))
 specialCommandSet ctx args =
@@ -1080,14 +1096,14 @@ typeCheckValueAgainstBinder ctx val binder = do
 -- assigns an appropriate type to the variable.
 -- Returns a new environment containing the assignment.
 setStaticOrDynamicVar :: SymPath -> Env -> Binder -> XObj -> Env
-setStaticOrDynamicVar path env binder value =
+setStaticOrDynamicVar path@(SymPath _ name) env binder value =
   case binder of
     (Binder meta (XObj (Lst (def@(XObj Def _ _) : sym : _)) _ t)) ->
-      envReplaceBinding path (Binder meta (XObj (Lst [def, sym, value]) (xobjInfo value) t)) env
+      fromRight env (E.insert env path (Binder meta (XObj (Lst [def, sym, value]) (xobjInfo value) t)))
     (Binder meta (XObj (Lst (defdy@(XObj DefDynamic _ _) : sym : _)) _ _)) ->
-      envReplaceBinding path (Binder meta (XObj (Lst [defdy, sym, value]) (xobjInfo value) (Just DynamicTy))) env
+      fromRight env (E.insert env path (Binder meta (XObj (Lst [defdy, sym, value]) (xobjInfo value) (Just DynamicTy))))
     (Binder meta (XObj (Lst (lett@(XObj LocalDef _ _) : sym : _)) _ t)) ->
-      envReplaceBinding path (Binder meta (XObj (Lst [lett, sym, value]) (xobjInfo value) t)) env
+      fromRight (error "FAILED!") (E.replaceInPlace env name (Binder meta (XObj (Lst [lett, sym, value]) (xobjInfo value) t)))
     -- shouldn't happen, errors are thrown at call sites.
     -- TODO: Return an either here to propagate error.
     _ -> env

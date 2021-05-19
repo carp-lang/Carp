@@ -1,5 +1,6 @@
 module Context
-  ( replaceGlobalEnv,
+  ( ContextError (..),
+    replaceGlobalEnv,
     replaceInternalEnv,
     replaceTypeEnv,
     replaceHistory,
@@ -9,27 +10,82 @@ module Context
     replaceInternalEnv',
     replaceTypeEnv',
     replaceHistory',
+    replacePath',
     insertInGlobalEnv,
     insertInGlobalEnv',
-    insertInTypeEnv,
-    insertInTypeEnv',
+    insertTypeBinder,
+    insertTypeBinder',
     insertInInternalEnv,
+    insertType,
+    replaceTypeBinder,
     innermostModuleEnv,
     bindLetDeclaration,
     lookupInterface,
     lookupBinderInGlobalEnv,
+    lookupBinderInInternalEnv,
     lookupBinderInTypeEnv,
     lookupBinderInContextEnv,
     contextualize,
   )
 where
 
-import Env
-import Lookup
+import Data.Bifunctor
+import Debug.Trace
+import qualified Env as E
 import Obj
 import Project
 import Qualify (QualifiedPath, qualifyPath, unqualify)
 import SymPath
+import Util (joinWithPeriod, replaceLeft)
+
+--------------------------------------------------------------------------------
+-- Errors
+
+data ContextError
+  = FailedToInsertInGlobalEnv SymPath Binder
+  | FailedToInsertInTypeEnv SymPath Binder
+  | FailedToInsertInInternalEnv SymPath Binder
+  | AttemptedToInsertQualifiedInternalBinder SymPath
+  | NoModuleEnvs String
+  | NotFoundGlobal SymPath
+  | NotFoundType SymPath
+  | NotFoundContext SymPath
+  | NotFoundInternal SymPath
+
+insertFailure :: SymPath -> Binder -> String
+insertFailure path binder =
+  "Failed to insert the binder: " ++ show binder
+    ++ " at path: "
+    ++ show path
+
+instance Show ContextError where
+  show (FailedToInsertInGlobalEnv path binder) =
+    insertFailure path binder
+      ++ "in the context's global environment."
+  show (FailedToInsertInTypeEnv path binder) =
+    insertFailure path binder
+      ++ "in the context's type environment."
+  show (FailedToInsertInInternalEnv path binder) =
+    insertFailure path binder
+      ++ "in the context's internal environment."
+  show (AttemptedToInsertQualifiedInternalBinder path) =
+    "Attempted to insert a qualified binder: " ++ show path
+      ++ " into a context's internal environment."
+  show (NoModuleEnvs pathstring) =
+    "Couldn't find any modules in the given context at path: "
+      ++ pathstring
+  show (NotFoundGlobal path) =
+    "Couldn't find the symbol: " ++ show path
+      ++ "in the context's global environment."
+  show (NotFoundType path) =
+    "Couldn't find the symbol: " ++ show path
+      ++ "in the context's type environment."
+  show (NotFoundContext path) =
+    "Couldn't find the symbol: " ++ show path
+      ++ "in the context's context environment."
+  show (NotFoundInternal path) =
+    "Couldn't find the symbol: " ++ show path
+      ++ "in the context's internal environment."
 
 --------------------------------------------------------------------------------
 -- Contextual Class
@@ -113,6 +169,10 @@ replaceTypeEnv' = flip replaceTypeEnv
 replaceHistory' :: [XObj] -> Context -> Context
 replaceHistory' = flip replaceHistory
 
+-- | replacePath with arguments flipped.
+replacePath' :: [String] -> Context -> Context
+replacePath' = flip replacePath
+
 --------------------------------------------------------------------------------
 -- Binding Insertion Functions
 
@@ -121,46 +181,85 @@ replaceHistory' = flip replaceHistory
 -- In most cases the qualified path will have been qualified under the same
 -- context, but this constraint is *not* enforced by the definition of this
 -- function.
-insertInGlobalEnv :: Context -> QualifiedPath -> Binder -> Context
+insertInGlobalEnv :: Context -> QualifiedPath -> Binder -> Either ContextError Context
 insertInGlobalEnv ctx qpath binder =
-  let globalEnv = contextGlobalEnv ctx
-   in ctx {contextGlobalEnv = envInsertAt globalEnv (unqualify qpath) binder}
+  replaceLeft
+    (FailedToInsertInGlobalEnv (unqualify qpath) binder)
+    ( E.insert (contextGlobalEnv ctx) (unqualify qpath) binder
+        >>= \e -> pure $! (ctx {contextGlobalEnv = e})
+    )
 
 -- | Adds a binder to a context's type environment at a qualified path.
 --
 -- In most cases the qualified path will have been qualified under the same
 -- context, but this constraint is *not* enforced by the definition of this
 -- function.
-insertInTypeEnv :: Context -> QualifiedPath -> Binder -> Context
-insertInTypeEnv ctx qpath binder =
-  let typeEnv = getTypeEnv (contextTypeEnv ctx)
-   in ctx {contextTypeEnv = TypeEnv (envInsertAt typeEnv (unqualify qpath) binder)}
+insertTypeBinder :: Context -> QualifiedPath -> Binder -> Either ContextError Context
+insertTypeBinder ctx qpath binder =
+  let (SymPath path name) = unqualify qpath
+   in first
+        (\_ -> trace (show path) (FailedToInsertInTypeEnv (unqualify qpath) binder))
+        ( case path of
+            [] ->
+              (E.insert (contextTypeEnv ctx) (SymPath [] name) binder)
+                >>= pure . (replaceTypeEnv ctx)
+            -- TODO: We need to 'view' the global environment as a type
+            -- environment here to ensure types are added to a module's type
+            -- environment and not its value environment (the modality is
+            -- correct)
+            -- Find a more elegant API here.
+            _ ->
+              (E.insert (TypeEnv (contextGlobalEnv ctx)) (SymPath path name) binder)
+                >>= pure . (replaceGlobalEnv ctx) . getTypeEnv
+        )
+
+-- TODO: This function currently only handles top-level types. (fine for now,
+-- as it's only called to update interfaces) Update this to handle qualified
+-- types A.B
+replaceTypeBinder :: Context -> QualifiedPath -> Binder -> Either ContextError Context
+replaceTypeBinder ctx qpath binder =
+  let (SymPath _ name) = unqualify qpath
+      err = (FailedToInsertInTypeEnv (unqualify qpath) binder)
+      replacement = (E.replaceInPlace (contextTypeEnv ctx) name binder) >>= pure . (replaceTypeEnv ctx)
+   in replaceLeft err replacement <> insertTypeBinder ctx qpath binder
 
 -- | Adds a binder to a context's internal environment at an unqualified path.
 --
 -- If the context does not have an internal environment, this function does nothing.
-insertInInternalEnv :: Context -> SymPath -> Binder -> Context
+insertInInternalEnv :: Context -> SymPath -> Binder -> Either ContextError Context
 insertInInternalEnv ctx path@(SymPath [] _) binder =
-  ctx {contextInternalEnv = fmap insert (contextInternalEnv ctx)}
+  maybe
+    (Left (FailedToInsertInInternalEnv path binder))
+    insert'
+    (contextInternalEnv ctx)
   where
-    insert :: Env -> Env
-    insert e = envInsertAt e path binder
-insertInInternalEnv _ _ _ =
-  error "attempted to insert a qualified symbol into an internal environment"
+    insert' :: Env -> Either ContextError Context
+    insert' e =
+      replaceLeft
+        (FailedToInsertInInternalEnv path binder)
+        (E.insert e path binder >>= \e' -> pure (ctx {contextInternalEnv = pure e'}))
+insertInInternalEnv _ path _ = Left (AttemptedToInsertQualifiedInternalBinder path)
 
 -- | insertInGlobalEnv with arguments flipped.
-insertInGlobalEnv' :: QualifiedPath -> Binder -> Context -> Context
+insertInGlobalEnv' :: QualifiedPath -> Binder -> Context -> Either ContextError Context
 insertInGlobalEnv' path binder ctx = insertInGlobalEnv ctx path binder
 
--- | insertInTypeEnv with arguments flipped.
-insertInTypeEnv' :: QualifiedPath -> Binder -> Context -> Context
-insertInTypeEnv' path binder ctx = insertInTypeEnv ctx path binder
+-- | insertTypeBinder with arguments flipped.
+insertTypeBinder' :: QualifiedPath -> Binder -> Context -> Either ContextError Context
+insertTypeBinder' path binder ctx = insertTypeBinder ctx path binder
 
 -- | Inserts a let binding into the appropriate environment in a context.
-bindLetDeclaration :: Context -> String -> XObj -> Context
+bindLetDeclaration :: Context -> String -> XObj -> Either ContextError Context
 bindLetDeclaration ctx name xobj =
   let binder = Binder emptyMeta (toLocalDef name xobj)
    in insertInInternalEnv ctx (SymPath [] name) binder
+
+-- | Inserts a new type into a given context, adding a binding to the type
+-- environment and a module to to value environment.
+insertType :: Context -> QualifiedPath -> Binder -> Binder -> Either ContextError Context
+insertType ctx qpath typeBinder modBinder =
+  (insertInGlobalEnv ctx qpath modBinder)
+    >>= \c -> (insertTypeBinder c qpath typeBinder)
 
 --------------------------------------------------------------------------------
 -- Environment Retrieval Functions
@@ -168,23 +267,24 @@ bindLetDeclaration ctx name xobj =
 -- | Retrieves the innermost (deepest) module environment in a context
 -- according to the context's contextPath.
 --
--- Returns Nothing if the Context path is empty.
-innermostModuleEnv :: Context -> Maybe Env
+-- Returns an error if the Context path is empty.
+innermostModuleEnv :: Context -> Either ContextError Env
 innermostModuleEnv ctx = go (contextPath ctx)
   where
-    go :: [String] -> Maybe Env
-    go [] = Nothing
-    go xs = Just $ getEnv (contextGlobalEnv ctx) xs
+    go :: [String] -> Either ContextError Env
+    go [] = Left (NoModuleEnvs "")
+    go xs = replaceLeft (NoModuleEnvs (joinWithPeriod xs)) (E.getInnerEnv (contextGlobalEnv ctx) xs)
 
 --------------------------------------------------------------------------------
 -- Binder Lookup Functions
 
 -- | Lookup a binder with a fully determined location in a context.
-decontextualizedLookup :: (Context -> SymPath -> Maybe Binder) -> Context -> SymPath -> Maybe Binder
+decontextualizedLookup :: (Context -> SymPath -> Either ContextError Binder) -> Context -> SymPath -> Either ContextError Binder
 decontextualizedLookup f ctx path =
   f (replacePath ctx []) path
 
-lookupInterface :: Context -> SymPath -> Maybe Binder
+-- | Lookup an interface in the given context.
+lookupInterface :: Context -> SymPath -> Either ContextError Binder
 lookupInterface ctx path =
   decontextualizedLookup lookupBinderInTypeEnv ctx path
 
@@ -193,30 +293,46 @@ lookupInterface ctx path =
 -- Depending on the type of path passed to this function, further
 -- contextualization of the path may be performed before the lookup is
 -- performed.
-lookupBinderInTypeEnv :: Contextual a => Context -> a -> Maybe Binder
+lookupBinderInTypeEnv :: Contextual a => Context -> a -> Either ContextError Binder
 lookupBinderInTypeEnv ctx path =
-  let typeEnv = getTypeEnv (contextTypeEnv ctx)
-      fullPath = contextualize path ctx
-   in lookupBinder fullPath typeEnv
+  let typeEnv = contextTypeEnv ctx
+      global = contextGlobalEnv ctx
+      fullPath@(SymPath qualification name) = contextualize path ctx
+      theType =
+        ( case qualification of
+            [] -> E.getTypeBinder typeEnv name
+            _ -> E.searchTypeBinder global fullPath
+        )
+   in replaceLeft (NotFoundType fullPath) theType
 
 -- | Lookup a binder in a context's global environment.
 --
 -- Depending on the type of path passed to this function, further
 -- contextualization of the path may be performed before the lookup is
 -- performed.
-lookupBinderInGlobalEnv :: Contextual a => Context -> a -> Maybe Binder
+lookupBinderInGlobalEnv :: Contextual a => Context -> a -> Either ContextError Binder
 lookupBinderInGlobalEnv ctx path =
   let global = contextGlobalEnv ctx
       fullPath = contextualize path ctx
-   in lookupBinder fullPath global
+   in replaceLeft (NotFoundGlobal fullPath) (E.searchValueBinder global fullPath)
+
+-- | Lookup a binder in a context's internal environment.
+lookupBinderInInternalEnv :: Contextual a => Context -> a -> Either ContextError Binder
+lookupBinderInInternalEnv ctx path =
+  let internal = contextInternalEnv ctx
+      fullPath = contextualize path ctx
+   in maybe
+        (Left (NotFoundInternal fullPath))
+        (\e -> replaceLeft (NotFoundInternal fullPath) (E.searchValueBinder e fullPath))
+        internal
 
 -- | Lookup a binder in a context's context environment.
 --
 -- Depending on the type of path passed to this function, further
 -- contextualization of the path may be performed before the lookup is
 -- performed.
-lookupBinderInContextEnv :: Context -> SymPath -> Maybe Binder
+lookupBinderInContextEnv :: Context -> SymPath -> Either ContextError Binder
 lookupBinderInContextEnv ctx path =
-  let ctxEnv = contextEnv ctx
+  let ctxEnv = (E.contextEnv ctx)
       fullPath = contextualize path ctx
-   in lookupBinder fullPath ctxEnv
+   in replaceLeft (NotFoundContext fullPath) (E.searchValueBinder ctxEnv fullPath)

@@ -149,7 +149,7 @@ data Obj
   | Break
   | If
   | Match MatchMode
-  | Mod Env
+  | Mod Env TypeEnv
   | Deftype Ty
   | DefSumtype Ty
   | With
@@ -342,7 +342,7 @@ getBinderDescription (XObj (Lst (XObj MetaStub _ _ : XObj (Sym _ _) _ _ : _)) _ 
 getBinderDescription (XObj (Lst (XObj (Deftype _) _ _ : XObj (Sym _ _) _ _ : _)) _ _) = "deftype"
 getBinderDescription (XObj (Lst (XObj (DefSumtype _) _ _ : XObj (Sym _ _) _ _ : _)) _ _) = "deftype"
 getBinderDescription (XObj (Lst (XObj (Interface _ _) _ _ : XObj (Sym _ _) _ _ : _)) _ _) = "interface"
-getBinderDescription (XObj (Mod _) _ _) = "module"
+getBinderDescription (XObj (Mod _ _) _ _) = "module"
 getBinderDescription b = error ("Unhandled binder: " ++ show b)
 
 getName :: XObj -> String
@@ -384,7 +384,7 @@ getPath (XObj (Lst (XObj (External _) _ _ : XObj (Sym path _) _ _ : _)) _ _) = p
 getPath (XObj (Lst (XObj (ExternalType _) _ _ : XObj (Sym path _) _ _ : _)) _ _) = path
 getPath (XObj (Lst (XObj MetaStub _ _ : XObj (Sym path _) _ _ : _)) _ _) = path
 getPath (XObj (Lst (XObj (Deftype _) _ _ : XObj (Sym path _) _ _ : _)) _ _) = path
-getPath (XObj (Lst (XObj (Mod _) _ _ : XObj (Sym path _) _ _ : _)) _ _) = path
+getPath (XObj (Lst (XObj (Mod _ _) _ _ : XObj (Sym path _) _ _ : _)) _ _) = path
 getPath (XObj (Lst (XObj (Interface _ _) _ _ : XObj (Sym path _) _ _ : _)) _ _) = path
 getPath (XObj (Lst (XObj (Command _) _ _ : XObj (Sym path _) _ _ : _)) _ _) = path
 getPath (XObj (Lst (XObj (Primitive _) _ _ : XObj (Sym path _) _ _ : _)) _ _) = path
@@ -449,7 +449,7 @@ pretty = visit 0
         Do -> "do"
         Let -> "let"
         LocalDef -> "local-binding"
-        Mod env -> fromMaybe "module" (envModuleName env)
+        Mod env _ -> fromMaybe "module" (envModuleName env)
         Deftype _ -> "deftype"
         DefSumtype _ -> "deftype"
         Deftemplate _ -> "deftemplate"
@@ -515,7 +515,7 @@ prettyUpTo lim xobj =
         Do -> ""
         Let -> ""
         LocalDef -> ""
-        Mod _ -> ""
+        Mod _ _ -> ""
         Deftype _ -> ""
         DefSumtype _ -> ""
         Deftemplate _ -> ""
@@ -643,9 +643,11 @@ forceShowBinder :: Binder -> String
 forceShowBinder binder = showBinderIndented 0 True (getName (binderXObj binder), binder)
 
 showBinderIndented :: Int -> Bool -> (String, Binder) -> String
-showBinderIndented indent _ (name, Binder _ (XObj (Mod env) _ _)) =
+showBinderIndented indent _ (name, Binder _ (XObj (Mod env tenv) _ _)) =
   replicate indent ' ' ++ name ++ " : Module = {\n"
     ++ prettyEnvironmentIndented (indent + 4) env
+    ++ "\n"
+    ++ prettyEnvironmentIndented (indent + 4) (getTypeEnv tenv)
     ++ "\n"
     ++ replicate indent ' '
     ++ "}"
@@ -717,7 +719,7 @@ instance Hashable ClosureContext
 instance Eq ClosureContext where
   _ == _ = True
 
-newtype TypeEnv = TypeEnv {getTypeEnv :: Env} deriving (Generic)
+newtype TypeEnv = TypeEnv {getTypeEnv :: Env} deriving (Generic, Eq)
 
 instance Hashable TypeEnv
 
@@ -798,9 +800,9 @@ xobjToTy (XObj (Sym (SymPath _ "Pattern") _) _ _) = Just PatternTy
 xobjToTy (XObj (Sym (SymPath _ "Char") _) _ _) = Just CharTy
 xobjToTy (XObj (Sym (SymPath _ "Bool") _) _ _) = Just BoolTy
 xobjToTy (XObj (Sym (SymPath _ "Static") _) _ _) = Just StaticLifetimeTy
-xobjToTy (XObj (Sym (SymPath prefixes s@(firstLetter : _)) _) _ _)
+xobjToTy (XObj (Sym spath@(SymPath _ s@(firstLetter : _)) _) _ _)
   | isLower firstLetter = Just (VarTy s)
-  | otherwise = Just (StructTy (ConcreteNameTy (createStructName prefixes s)) [])
+  | otherwise = Just (StructTy (ConcreteNameTy spath) [])
 xobjToTy (XObj (Lst [XObj (Sym (SymPath _ "Ptr") _) _ _, innerTy]) _ _) =
   do
     okInnerTy <- xobjToTy innerTy
@@ -945,10 +947,10 @@ defineFunctionTypeAlias :: Ty -> XObj
 defineFunctionTypeAlias aliasTy = defineTypeAlias (tyToC aliasTy) aliasTy
 
 defineArrayTypeAlias :: Ty -> XObj
-defineArrayTypeAlias t = defineTypeAlias (tyToC t) (StructTy (ConcreteNameTy "Array") [])
+defineArrayTypeAlias t = defineTypeAlias (tyToC t) (StructTy (ConcreteNameTy (SymPath [] "Array")) [])
 
 defineStaticArrayTypeAlias :: Ty -> XObj
-defineStaticArrayTypeAlias t = defineTypeAlias (tyToC t) (StructTy (ConcreteNameTy "Array") [])
+defineStaticArrayTypeAlias t = defineTypeAlias (tyToC t) (StructTy (ConcreteNameTy (SymPath [] "Array")) [])
 
 -- |
 defineInterface :: String -> Ty -> [SymPath] -> Maybe Info -> XObj
