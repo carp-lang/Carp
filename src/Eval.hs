@@ -1048,8 +1048,12 @@ specialCommandSet ctx [orig@(XObj (Sym path@(SymPath _ _) _) _ _), val] =
     evalAndSet :: Binder -> (Context -> Env -> Either EvalError XObj -> Binder -> IO (Context, Either EvalError XObj)) -> Env -> IO (Context, Either EvalError XObj)
     evalAndSet binder setter env =
       case xobjTy (binderXObj binder) of
-        -- don't type check dynamic bindings
+        -- don't type check dynamic or untyped bindings
+        -- TODO: Figure out why untyped cases are sometimes coming into set!
         Just DynamicTy ->
+          evalDynamic ResolveLocal ctx val
+            >>= \(newCtx, result) -> setter newCtx env result binder
+        Nothing ->
           evalDynamic ResolveLocal ctx val
             >>= \(newCtx, result) -> setter newCtx env result binder
         _ ->
