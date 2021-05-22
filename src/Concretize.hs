@@ -27,6 +27,7 @@ import TypesToC
 import Util
 import Validate
 import Prelude hiding (lookup)
+import InitialTypes
 
 data Level = Toplevel | Inside
 
@@ -479,19 +480,54 @@ concretizeType t (PointerTy pt) =
 concretizeType _ _ =
   Right [] -- ignore all other types
 
+-- | Renames the type variable literals in a sum type for temporary validation.
+renameGenericTypeSymbolsOnSum :: [(Ty, Ty)] -> XObj -> XObj
+renameGenericTypeSymbolsOnSum varpairs x@(XObj (Lst (caseNm : caseMembers)) i t) =
+  case caseMembers of
+    [XObj (Arr arr) ii tt] ->
+      XObj (Lst (caseNm : [XObj (Arr (map replacer arr)) ii tt])) i t
+    _ -> x
+  where
+    mapp = Map.fromList varpairs
+    replacer mem@(XObj (Sym (SymPath [] name) _) _ _) =
+       let Just perhapsTyVar = xobjToTy mem
+        in if isFullyGenericType perhapsTyVar
+           then case Map.lookup (VarTy name) mapp of
+                  Just new -> reify new
+                  _ -> mem
+           else mem
+    replacer y = y
+renameGenericTypeSymbolsOnSum _ x = x
+
+-- | Renames the type variable literals in a product type for temporary validation.
+renameGenericTypeSymbolsOnProduct :: [Ty] -> [XObj] -> [XObj]
+renameGenericTypeSymbolsOnProduct vars members =
+  concatMap (\(var, (v, t)) -> [v, rename var t]) (zip vars (pairwise members))
+  where rename var mem =
+          let Just perhapsTyVar = xobjToTy mem
+           in if isFullyGenericType perhapsTyVar
+              then reify var
+              else mem
+
 -- | Given an generic struct type and a concrete version of it, generate all dependencies needed to use the concrete one.
 -- TODO: Handle polymorphic constructors (a b).
 instantiateGenericStructType :: TypeEnv -> Ty -> Ty -> [XObj] -> Either TypeError [XObj]
-instantiateGenericStructType typeEnv originalStructTy@(StructTy _ originalTyVars) genericStructTy membersXObjs =
+instantiateGenericStructType typeEnv originalStructTy@(StructTy _ _) genericStructTy membersXObjs =
   -- Turn (deftype (A a) [x a, y a]) into (deftype (A Int) [x Int, y Int])
   let fake1 = XObj (Sym (SymPath [] "a") Symbol) Nothing Nothing
       fake2 = XObj (Sym (SymPath [] "b") Symbol) Nothing Nothing
       XObj (Arr memberXObjs) _ _ = head membersXObjs
+      rename@(StructTy _ renamedOrig) = evalState (renameVarTys originalStructTy) 0
    in case solve [Constraint originalStructTy genericStructTy fake1 fake2 fake1 OrdMultiSym] of
         Left e -> error (show e)
         Right mappings ->
-          let concretelyTypedMembers = replaceGenericTypeSymbolsOnMembers mappings memberXObjs
-           in case validateMembers typeEnv originalTyVars concretelyTypedMembers of
+          let Right mapp = solve [Constraint rename genericStructTy fake1 fake2 fake1 OrdMultiSym]
+              nameFixedMembers = renameGenericTypeSymbolsOnProduct renamedOrig memberXObjs
+              validMembers = replaceGenericTypeSymbolsOnMembers mapp nameFixedMembers
+              concretelyTypedMembers = replaceGenericTypeSymbolsOnMembers mappings memberXObjs
+           -- We only used the renamed types for validation--passing the
+           -- renamed xobjs further down leads to syntactical issues.
+           in case validateMembers typeEnv renamedOrig validMembers of
                 Left err -> Left err
                 Right () ->
                   let deps = mapM (depsForStructMemberPair typeEnv) (pairwise concretelyTypedMembers)
@@ -523,12 +559,14 @@ instantiateGenericSumtype typeEnv originalStructTy@(StructTy _ originalTyVars) g
   -- Turn (deftype (Maybe a) (Just a) (Nothing)) into (deftype (Maybe Int) (Just Int) (Nothing))
   let fake1 = XObj (Sym (SymPath [] "a") Symbol) Nothing Nothing
       fake2 = XObj (Sym (SymPath [] "b") Symbol) Nothing Nothing
-   in case solve [Constraint originalStructTy genericStructTy fake1 fake2 fake1 OrdMultiSym] of
+      rename@(StructTy _ renamedOrig) = evalState (renameVarTys originalStructTy) 0
+   in case solve [Constraint rename genericStructTy fake1 fake2 fake1 OrdMultiSym] of
         Left e -> error (show e)
         Right mappings ->
-          let concretelyTypedCases = map (replaceGenericTypeSymbolsOnCase mappings) cases
+          let nameFixedCases = map (renameGenericTypeSymbolsOnSum (zip originalTyVars renamedOrig)) cases
+              concretelyTypedCases = map (replaceGenericTypeSymbolsOnCase mappings) nameFixedCases
               deps = mapM (depsForCase typeEnv) concretelyTypedCases
-           in case toCases typeEnv originalTyVars concretelyTypedCases of -- Don't care about the cases, this is done just for validation.
+           in case toCases typeEnv renamedOrig concretelyTypedCases of -- Don't care about the cases, this is done just for validation.
                 Left err -> Left err
                 Right _ ->
                   case deps of
