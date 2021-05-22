@@ -36,9 +36,12 @@ import Types
 import Util
 import Prelude hiding (exp, mod)
 
+-- TODO: Formalize "lookup order preference" a bit better and move into
+-- the Context module.
 data LookupPreference
   = PreferDynamic
   | PreferGlobal
+  | PreferLocal
 
 data Resolver
   = ResolveGlobal
@@ -89,12 +92,26 @@ eval ctx xobj@(XObj o info ty) preference resolver =
           ( case preference of
               PreferDynamic -> tryDynamicLookup
               PreferGlobal -> tryLookup spath <|> tryDynamicLookup
+              PreferLocal -> tryLocalLookup spath <|> tryDynamicLookup <|> tryLookup spath
           )
-            <|> (if null p then tryInternalLookup spath else tryLookup spath)
+            <|> (if null p then tryInternalLookup spath <|> tryLookup spath else tryLookup spath)
+        tryDynamicLookup :: Maybe (Context, Either EvalError XObj)
         tryDynamicLookup =
           ( maybeId (E.searchValueBinder (contextGlobalEnv ctx) (SymPath ("Dynamic" : p) n))
               >>= \(Binder _ found) -> pure (ctx, Right (resolveDef found))
           )
+        tryLocalLookup :: SymPath -> Maybe (Context, Either EvalError XObj)
+        tryLocalLookup path =
+           ( contextInternalEnv ctx
+              >>= \e ->
+                maybeId (E.findValueBinder e path)
+                  >>= \(Binder _ found) -> pure (ctx, Right (resolveDef found))
+          )
+        -- TODO: Deprecate this function?
+        -- The behavior here is a bit nefarious since it relies on cached
+        -- environment parents (it calls `search` on the "internal" binder).
+        -- But for now, it seems to be needed for some cases.
+        tryInternalLookup :: SymPath -> Maybe (Context, Either EvalError XObj)
         tryInternalLookup path =
           --trace ("Looking for internally " ++ show path) -- ++ show (fmap (fmap E.binders . E.parent) (contextInternalEnv ctx)))
           ( contextInternalEnv ctx
@@ -102,7 +119,7 @@ eval ctx xobj@(XObj o info ty) preference resolver =
                 maybeId (E.searchValueBinder e path)
                   >>= \(Binder _ found) -> pure (ctx, Right (resolveDef found))
           )
-            <|> tryLookup path -- fallback
+        tryLookup :: SymPath -> Maybe (Context, Either EvalError XObj)
         tryLookup path =
           ( maybeId (E.searchValueBinder (contextGlobalEnv ctx) path)
               >>= \(Binder meta found) -> checkPrivate meta found
@@ -207,9 +224,9 @@ eval ctx xobj@(XObj o info ty) preference resolver =
               case eitherCtx of
                 Left err -> pure (ctx, Left err)
                 Right newCtx -> do
-                  (finalCtx, evaledBody) <- eval newCtx body preference ResolveLocal
+                  (finalCtx, evaledBody) <- eval newCtx body PreferLocal ResolveLocal
                   let Just e = contextInternalEnv finalCtx
-                      Just parentEnv = envParent e
+                      parentEnv = fromMaybe e (envParent e)
                   pure
                     ( replaceInternalEnv finalCtx parentEnv,
                       do
