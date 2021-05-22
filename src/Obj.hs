@@ -400,6 +400,8 @@ setPath (XObj (Lst (defn@(XObj (Defn _) _ _) : XObj (Sym _ _) si st : rest)) i t
   XObj (Lst (defn : XObj (Sym newPath Symbol) si st : rest)) i t
 setPath (XObj (Lst [extr@(XObj (External _) _ _), XObj (Sym _ _) si st, ty]) i t) newPath =
   XObj (Lst [extr, XObj (Sym newPath Symbol) si st, ty]) i t
+setPath (XObj (Lst (def@(XObj Def _ _) : XObj (Sym _ _) si st : rest)) i t) newPath =
+  XObj (Lst (def : XObj (Sym newPath Symbol) si st : rest)) i t
 setPath x _ =
   error ("Can't set path on " ++ show x)
 
