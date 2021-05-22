@@ -26,7 +26,7 @@ validateMemberCases typeEnv typeVariables rest = mapM_ visit rest
 
 validateMembers :: TypeEnv -> [Ty] -> [XObj] -> Either TypeError ()
 validateMembers typeEnv typeVariables membersXObjs =
-  checkUnevenMembers >> checkDuplicateMembers >> checkKindConsistency >> checkMembers
+  checkUnevenMembers >> checkDuplicateMembers >> checkMembers >> checkKindConsistency
   where
     pairs = pairwise membersXObjs
     -- Are the number of members even?
@@ -52,6 +52,8 @@ validateMembers typeEnv typeVariables membersXObjs =
         Left var -> Left (InconsistentKinds var membersXObjs)
         _ -> pure ()
       where
+        -- fromJust is safe here; invalid types will be caught in the prior check.
+        -- todo? be safer anyway?
         varsOnly = filter isTypeGeneric (map (fromJust . xobjToTy . snd) pairs)
     checkMembers :: Either TypeError ()
     checkMembers = mapM_ (okXObjForType typeEnv typeVariables . snd) pairs
