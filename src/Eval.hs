@@ -1050,18 +1050,17 @@ specialCommandSet ctx [orig@(XObj (Sym path@(SymPath _ _) _) _ _), val] =
       case xobjTy (binderXObj binder) of
         -- don't type check dynamic or untyped bindings
         -- TODO: Figure out why untyped cases are sometimes coming into set!
-        Just DynamicTy ->
-          evalDynamic ResolveLocal ctx val
-            >>= \(newCtx, result) -> setter newCtx env result binder
-        Nothing ->
-          evalDynamic ResolveLocal ctx val
-            >>= \(newCtx, result) -> setter newCtx env result binder
+        Just DynamicTy -> handleUnTyped
+        Nothing -> handleUnTyped
         _ ->
           evalDynamic ResolveLocal ctx val
             >>= \(newCtx, result) ->
               case result of
                 Right evald -> typeCheckValueAgainstBinder newCtx evald binder >>= \(nctx, typedVal) -> setter nctx env typedVal binder
                 left -> pure (newCtx, left)
+      where handleUnTyped :: IO (Context, Either EvalError XObj)
+            handleUnTyped = evalDynamic ResolveLocal ctx val
+                              >>= \(newCtx, result) -> setter newCtx env result binder
     setGlobal :: Context -> Env -> Either EvalError XObj -> Binder -> IO (Context, Either EvalError XObj)
     setGlobal ctx' env value binder =
       pure $ either (failure ctx' orig) (success ctx') value
