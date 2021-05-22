@@ -638,6 +638,19 @@ concretizeDefinition allowAmbiguity typeEnv globalEnv visitedDefinitions definit
       suffix = polymorphicSuffix polyType concreteType
       newPath = SymPath pathStrings (name ++ suffix)
    in case definition of
+        -- todo: repeat of defn below
+        XObj (Lst (XObj Def _ _ : _)) _ _ ->
+          let withNewPath = setPath definition newPath
+              mappings = unifySignatures polyType concreteType
+           in case assignTypes mappings withNewPath of
+                Right typed ->
+                  if newPath `elem` visitedDefinitions
+                    then pure (withNewPath, [])
+                    else do
+                      (concrete, deps) <- concretizeXObj allowAmbiguity typeEnv globalEnv (newPath : visitedDefinitions) typed
+                      (managed, memDeps) <- manageMemory typeEnv globalEnv concrete
+                      pure (managed, deps ++ memDeps)
+                Left e -> Left e
         XObj (Lst (XObj (Defn _) _ _ : _)) _ _ ->
           let withNewPath = setPath definition newPath
               mappings = unifySignatures polyType concreteType
