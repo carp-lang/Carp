@@ -259,7 +259,7 @@
     (assert (= 3 (Array.element-count &xs "a")))))
 
 (defn first-letter [s]
-  (String.slice s 0 1))
+  (String.slice &s 0 1))
 
 (defn array-aupdate []
   (let [xs [@"abc" @"xyz"]
