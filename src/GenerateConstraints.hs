@@ -4,7 +4,7 @@ import Constraints
 import Control.Arrow hiding (arr)
 import Control.Monad.State
 import Data.List as List
-import Data.Maybe (fromMaybe, mapMaybe)
+import Data.Maybe (catMaybes, fromMaybe, mapMaybe)
 import Info
 import Obj
 import qualified Set
@@ -35,8 +35,7 @@ genConstraints _ root rootSig = fmap sort (gen root)
             captureList :: [XObj]
             captureList = Set.toList captures
             capturesConstrs =
-              mapMaybe
-                id
+              catMaybes
                 ( zipWith
                     ( \captureTy captureObj ->
                         case captureTy of
@@ -273,7 +272,7 @@ genConstraints _ root rootSig = fmap sort (gen root)
                       (Sym (SymPath [] ("I inferred the type of the array from its first element " ++ show (getPath x))) Symbol)
                       (xobjInfo x)
                       (Just headTy)
-                  Just (StructTy (ConcreteNameTy "Array") [t]) = xobjTy xobj
+                  Just (StructTy (ConcreteNameTy (SymPath [] "Array")) [t]) = xobjTy xobj
                   betweenExprConstraints = zipWith (\o n -> Constraint headTy (forceTy o) headObj (genObj o n) xobj OrdArrBetween) xs [1 ..]
                   headConstraint = Constraint headTy t headObj (genObj x 1) xobj OrdArrHead
               pure (headConstraint : insideExprConstraints ++ betweenExprConstraints)
@@ -294,7 +293,7 @@ genConstraints _ root rootSig = fmap sort (gen root)
                       (Sym (SymPath [] ("I inferred the type of the static array from its first element " ++ show (getPath x))) Symbol)
                       (xobjInfo x)
                       (Just headTy)
-                  Just (RefTy (StructTy (ConcreteNameTy "StaticArray") [t]) _) = xobjTy xobj
+                  Just (RefTy (StructTy (ConcreteNameTy (SymPath [] "StaticArray")) [t]) _) = xobjTy xobj
                   betweenExprConstraints = zipWith (\o n -> Constraint headTy (forceTy o) headObj (genObj o n) xobj OrdArrBetween) xs [1 ..]
                   headConstraint = Constraint headTy t headObj (genObj x 1) xobj OrdArrHead
               pure (headConstraint : insideExprConstraints ++ betweenExprConstraints)

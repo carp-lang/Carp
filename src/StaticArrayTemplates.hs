@@ -11,7 +11,7 @@ import Types
 -- since there are some small differences here and there I'v decided to not
 -- try to abstract over them and just duplicate the templates instead.
 concreteArray :: Ty
-concreteArray = (ConcreteNameTy "StaticArray")
+concreteArray = ConcreteNameTy (SymPath [] "StaticArray")
 
 templateUnsafeNth :: (String, Binder)
 templateUnsafeNth =
@@ -67,7 +67,7 @@ templateDeleteArray = defineTypeParameterizedTemplate templateCreator path t doc
                 ++ deleteTy typeEnv env arrayType
                 ++ [TokC "}\n"]
           )
-          ( \(FuncTy [(StructTy _ [insideType])] UnitTy _) ->
+          ( \(FuncTy [StructTy _ [insideType]] UnitTy _) ->
               depsForDeleteFunc typeEnv env insideType
           )
 

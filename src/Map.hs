@@ -1,3 +1,4 @@
+{-# LANGUAGE BangPatterns #-}
 {-# LANGUAGE DeriveTraversable #-}
 {-# LANGUAGE GeneralizedNewtypeDeriving #-}
 
@@ -18,7 +19,7 @@ fromList :: Ord k => [(k, v)] -> Map k v
 fromList = Map . M.fromList
 
 lookup :: Ord k => k -> Map k v -> Maybe v
-lookup k (Map m) = M.lookup k m
+lookup !k (Map !m) = M.lookup k m
 
 member :: Ord k => k -> Map k v -> Bool
 member k (Map m) = M.member k m
@@ -40,3 +41,18 @@ keys (Map m) = M.keys m
 
 map :: (a -> b) -> Map k a -> Map k b
 map f (Map m) = Map $ M.map f m
+
+union :: Ord k => Map k v -> Map k v -> Map k v
+union (Map m) (Map m') = (Map (M.union m m'))
+
+assocs :: Map k a -> [(k, a)]
+assocs (Map m) = M.assocs m
+
+elems :: Map k a -> [a]
+elems (Map m) = M.elems m
+
+adjust :: Ord k => (a -> a) -> k -> Map k a -> Map k a
+adjust f k (Map m) = (Map (M.adjust f k m))
+
+delete :: Ord k => k -> Map k a -> Map k a
+delete k (Map m) = (Map (M.delete k m))

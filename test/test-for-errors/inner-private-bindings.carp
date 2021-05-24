@@ -1,0 +1,8 @@
+(Project.config "file-path-print-length" "short")
+(defmodule A
+  (defmodule B
+    (private f) 
+    (defn f [] 1)
+  )
+  (defn g [] (B.f))
+)

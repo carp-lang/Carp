@@ -9,20 +9,14 @@
                  (cadddr (cdr settings))
                  (if (< step (- step step)) '> '<))
           ]
-      (list
-       'let (array variable from)
-       (list
-        'while (list comp variable to)
-        (list
-         'do
-         (if (= (length body) 0)
-           ()
-           (if (list? body)
-             (car body)
-             body))
-         (list
-          'set! variable
-          (list '+ variable step))))))))
+      `(let [%variable %from]
+         (while (%comp %variable %to)
+           (do
+             %(cond
+                (= (length body) 0) ()
+                (list? body) (car body)
+                body)
+             (set! %variable (+ %variable %step))))))))
 
 (defmodule Array
 
@@ -46,6 +40,7 @@ It will sum the previous sum with each new value, starting at `0`.")
   (doc empty? "checks whether the array `a` is empty.")
   (defn empty? [a]
     (= (Array.length a) 0))
+  (implements empty? Array.empty?)
 
   (doc any? "checks whether any of the elements in `a` match the function `f`.")
   (defn any? [f a]
@@ -180,6 +175,10 @@ If the array is empty, returns `Nothing`")
   (doc suffix "gets a suffix array from `start-index`.")
   (defn suffix [xs start-index]
     (slice xs start-index (length xs)))
+
+  (doc rest "gets all but the first element from the array.")
+  (defn rest [xs]
+    (suffix xs 1))
 
   (doc reverse "reverses an array.")
   (defn reverse [a]
@@ -415,21 +414,46 @@ It will create a copy. If you want to avoid that, consider using [`endo-filter`]
     (let-do [darr (allocate (StaticArray.length sarr))]
       (for [i 0 (StaticArray.length sarr)]
         (aset-uninitialized! &darr i @(StaticArray.unsafe-nth sarr i)))
-      darr)))
+      darr))
+
+  (doc map-reduce "reduces an array `a` by invoking the function `f` on each
+element, while keeping an accumulator and a list.
+
+Returns a `Pair` where the first element is the mapped array and the second one
+is the final accumulator.
+
+The function `f` receives two arguments: the first one is the accumulator, and
+the second one is the element. `f` must return `(Pair accumulator result)`.
+
+Example:
+```
+(map-reduce &(fn [acc x] (Pair.init (+ @x @acc) (* @x 2))) 0 &[1 2 3])
+; => (Pair 6 [2 4 6])
+```")
+  (defn map-reduce [f acc a]
+    (reduce
+      &(fn [a el]
+        (let [l (Pair.b &a)
+              acc (Pair.a &a)
+              p (~f acc el)]
+          (Pair.init @(Pair.a &p) (Array.push-back @l @(Pair.b &p)))))
+      (Pair.init acc [])
+      a))
+)
 
 (defmacro doall [f xs]
-  (list 'for ['i 0 (list 'Array.length (list 'ref xs))]
-        (list f (list 'Array.unsafe-nth (list 'ref xs) 'i))))
+  `(for [i 0 (Array.length &%xs)]
+     (%f (Array.unsafe-nth &%xs i))))
 
 (defndynamic foreach-internal [var xs expr]
   (let [xsym (gensym-with 'xs)
         len (gensym-with 'len)
         i (gensym-with 'i)]
-    (list 'let [xsym xs
-                len (list 'Array.length xsym)]
-          (list 'for [i 0 len]
-                (list 'let [var (list 'Array.unsafe-nth xsym i)]
-                      expr)))))
+    `(let [%xsym %xs
+           %len (Array.length %xsym)]
+       (for [%i 0 %len]
+         (let [%var (Array.unsafe-nth %xsym %i)]
+           %expr)))))
 
 (defmacro foreach [binding expr]
   (if (array? binding)

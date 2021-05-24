@@ -29,6 +29,13 @@
 (defn monster [scary?] (if scary? @"RAWR" @"meow"))
 (implements monster monster)
 
+;; If multiple implementations of the same concrete type are provided,
+;; one overwrites the other.
+(defn laugh-monster [times] (String.repeat times "LOL"))
+(implements monster laugh-monster)
+(defn pikachu [times] (String.repeat times "pika"))
+(implements monster pikachu)
+
 (deftest test
   (assert-equal test
     &2
@@ -47,4 +54,9 @@
     &(monster false)
     "Implementations may be global, and an implementation with the same name may
     be used as a default.")
+  (assert-equal test
+    "pikapikapika"
+    &(monster 3)
+    "Implementations may be overwritten, when multiple implementations of the same type
+     are provided.")
 )

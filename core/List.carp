@@ -1,24 +1,35 @@
 (defmodule Dynamic
 
+  (doc cxr "takes a specification of a traversal in `a` (head) and `d` (tail)
+symbols and a list `pair` to traverse.
+
+Example:
+```
+(cxr '(1 a 1 d) '(1 2 3)) ; => 2
+
+(cxr '(1 a 1 d 1 a 4 d) '(1 2 3 4 (5 6 7))) ; => 6
+```")
   (defndynamic cxr [x pair]
-    (if (= (length x) 0)
-      (list 'quote pair)
-      (list
-        (if (= 'a (cadr x))
-          'car
-          (if (= 'd (cadr x))
-            'cdr
-            (macro-error "`cxr` expects either `a` or `d` symbols, got " (cadr x))))
+    (cond
+      (= (length x) 0) pair
+      (= 0 (car x)) (cxr (cddr x) pair)
+      ((cond
+        (= 'a (cadr x)) car
+        (= 'd (cadr x)) cdr
+        (macro-error "`cxr` expects either `a` or `d` symbols, got " (cadr x)))
         (if (= 1 (car x))
           (cxr (cddr x) pair)
           (cxr (cons (- (car x) 1) (cdr x)) pair)))))
 
+  (doc nthcdr "takes the `n`th tail or `cdr` of the list `pair`.")
   (defndynamic nthcdr [n pair]
     (cxr (list (+ n 1) 'd) pair))
 
+  (doc nthcar "takes the `n`th head or `car` of the list `pair`.")
   (defndynamic nthcar [n pair]
     (cxr (list 1 'a n 'd) pair))
 
+  (hidden collect-into-internal)
   (defndynamic collect-into-internal [xs acc f]
     (if (= 0 (length xs))
         acc
@@ -238,4 +249,102 @@
             '()
             l))
 
+  (doc walk "traverses `form`, an arbitrary data structure, using the functions
+`inner` and `outer`. It will apply `inner` to each element of `form`, building
+up a data structure of the same type, then applies `outer` to the result. It
+recognizes arrays and lists. Other data structures will just be passed to
+`outer`.
+
+Example:
+```
+(walk car reverse [[1 2] [3 4] [5 6]]) ; => [5 3 1]
+```")
+  (defndynamic walk [inner outer form]
+    (cond
+      (list? form) (outer (map inner form))
+      (array? form) (outer (collect-into (map inner form) array))
+      (outer form)))
+
+  (doc postwalk "Performs a depth-first, post-order traversal of `form` and
+calls `f` on each subform, collecting the result.
+
+Example:
+```
+; note: this could be achieved using `walk-replace` as well
+(postwalk (fn [x]
+            (cond
+              (= x '+) '*
+              (= x '-) '/
+              x))
+          '(+ 1 (- 2 3))) ; => (* 1 (/ 2 3))
+```")
+  (defndynamic postwalk [f form]
+    (walk (curry postwalk f) f form))
+
+  (doc prewalk "behaves like [`postwalk`](#postwalk), but does pre-order
+traversal.
+
+Example:
+```
+(prewalk (fn [x] (if (number? x) (* x 4) x)) '(+ 1 (- 2 3))) ; => (+ 4 (- 8 12))
+```")
+  (defndynamic prewalk [f form]
+    (walk (curry prewalk f) (fn [x] x) (f form)))
+
+  (hidden walk-replace-finder)
+  (defndynamic walk-replace-finder [p el]
+    (if (empty? p)
+      p
+      (let [f (car p)]
+        (if (= (car f) el)
+          f
+          (walk-replace-finder (cdr p) el)))))
+
+  (doc walk-replace "Performs a depth-first, pre-order traversal of `form` and
+finds a matching replacement for each subform in the replacement pairs `pairs`,
+if applicable, collecting the result.
+
+Example:
+```
+(walk-replace '((+ *) (- /)) '(+ 1 (- 2 3))) ; => (* 1 (/ 2 3))
+```")
+  (defndynamic walk-replace [pairs form]
+    (prewalk (fn [x]
+               (let [r (walk-replace-finder pairs x)]
+                 (if (empty? r) x (cadr r))))
+             form))
+
+  (defmodule List
+    (doc pairs "makes a list of pairs out of a list `l`. If the number of
+elements is uneven, the trailing element will be discarded.")
+    (defndynamic pairs [l]
+      (if (< (length l) 2)
+        '()
+        (cons `(%(car l) %(cadr l)) (List.pairs (cddr l)))))
+
+    (doc nth "gets the nth element of the list `l`.")
+    (defndynamic nth [l n]
+      (cond
+        (empty? l) '()
+        (= n 0) (car l)
+        (List.nth (cdr l) (dec n))))
+
+    (doc update-nth "updates the nth element of the list `l` using the function `f`.")
+    (defndynamic update-nth [l n f]
+      (cond
+        (empty? l) '()
+        (= n 0) (cons (f (car l)) (cdr l))
+        (cons (car l) (List.update-nth (cdr l) (dec n) f))))
+
+    (doc set-nth "sets the nth element of the list `l` to the value `v`.")
+    (defndynamic set-nth [l n elem]
+      (List.update-nth l n (fn [_] elem)))
+
+    (doc find "finds the first element in the list `l` that matches `pred`.")
+    (defndynamic find [l pred]
+      (cond
+        (empty? l) '()
+        (pred (car l)) (car l)
+        (List.find (cdr l) pred)))
   )
+)

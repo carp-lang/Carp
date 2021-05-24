@@ -1,7 +1,7 @@
 module Scoring (scoreTypeBinder, scoreValueBinder) where
 
 import Data.Maybe (fromJust)
-import Lookup
+import Env as E
 import Obj
 import qualified Set
 import Types
@@ -24,15 +24,12 @@ scoreTypeBinder typeEnv b@(Binder _ (XObj (Lst (XObj x _ _ : XObj (Sym _ _) _ _ 
     ExternalType _ -> (0, b)
     _ -> (500, b)
   where
-    depthOfStruct (StructTy (ConcreteNameTy structName) varTys) =
-      case lookupBinder (SymPath lookupPath name) (getTypeEnv typeEnv) of
-        Just (Binder _ typedef) -> ((depthOfDeftype typeEnv Set.empty typedef varTys + 1), b)
-        Nothing -> error ("Can't find user defined type '" ++ structName ++ "' in type env.")
-      where
-        lookupPath = getPathFromStructName structName
-        name = getNameFromStructName structName
+    depthOfStruct (StructTy (ConcreteNameTy (SymPath _ name)) varTys) =
+      case E.getTypeBinder typeEnv name of
+        Right (Binder _ typedef) -> (depthOfDeftype typeEnv Set.empty typedef varTys + 1, b)
+        Left e -> error (show e)
     depthOfStruct _ = error "depthofstruct"
-scoreTypeBinder _ b@(Binder _ (XObj (Mod _) _ _)) =
+scoreTypeBinder _ b@(Binder _ (XObj (Mod _ _) _ _)) =
   (1000, b)
 scoreTypeBinder _ x = error ("Can't score: " ++ show x)
 
@@ -74,22 +71,24 @@ depthOfType typeEnv visited selfName theType =
     depthOfStructType :: Ty -> [Ty] -> Int
     depthOfStructType struct varTys =
       1
-        + case (getStructName struct) of
+        + case getStructName struct of
           "Array" -> depthOfVarTys
           _
-            | (tyToC struct) == selfName -> 1
+            | tyToC struct == selfName -> 1
             | otherwise ->
-              case lookupBinder (SymPath lookupPath s) (getTypeEnv typeEnv) of
-                Just (Binder _ typedef) -> moduleDepth + depthOfDeftype typeEnv (Set.insert theType visited) typedef varTys
-                  where
-                    moduleDepth = ((length lookupPath) * 1000) -- modules have score 1000
-                Nothing ->
+              case E.getTypeBinder typeEnv s of
+                Right (Binder _ typedef) -> depthOfDeftype typeEnv (Set.insert theType visited) typedef varTys
+                Left _ ->
                   --trace ("Unknown type: " ++ name) $
-                  depthOfVarTys -- The problem here is that generic types don't generate
-                  -- their definition in time so we get nothing for those.
-                  -- Instead, let's try the type vars.
+                  -- Two problems here:
+                  --
+                  -- 1. generic types don't generate their definition in time
+                  -- so we get nothing for those. Instead, let's try the type
+                  -- vars.
+                  -- 2. If a type wasn't found type may also refer to a type defined in another
+                  -- module that's not yet been scored. To be safe, add 500
+                  500 + depthOfVarTys
       where
-        lookupPath = getPathFromStructName (getStructName struct)
         s = getNameFromStructName (getStructName struct)
         depthOfVarTys =
           case fmap (depthOfType typeEnv visited (getStructName struct)) varTys of
@@ -110,7 +109,7 @@ scoreValueBinder _ _ binder =
   (0, binder)
 
 scoreBody :: Env -> Set.Set SymPath -> XObj -> Int
-scoreBody globalEnv visited root = visit root
+scoreBody globalEnv visited = visit
   where
     visit xobj =
       case xobjObj xobj of
@@ -121,12 +120,12 @@ scoreBody globalEnv visited root = visit root
         (Sym path (LookupGlobal _ _)) ->
           if Set.member path visited
             then 0
-            else case lookupBinder path globalEnv of
-              Just foundBinder ->
+            else case E.searchValueBinder globalEnv path of
+              Right foundBinder ->
                 let (score, _) = scoreValueBinder globalEnv (Set.insert path visited) foundBinder
                  in score + 1
-              Nothing ->
-                error ("Failed to lookup '" ++ show path ++ "'.")
+              Left e ->
+                error (show e)
         _ -> 0
     visitList (XObj (Lst []) _ _) =
       0

@@ -144,7 +144,7 @@ list of those characters.")
 
   (doc words "splits a string into words.")
   (defn words [s]
-    (split-by s &[\tab \space \newline]))
+    (Array.endo-filter &(fn [s] (not (empty? s))) (split-by s &[\tab \space \newline])))
 
   (doc lines "splits a string into lines.")
   (defn lines [s]

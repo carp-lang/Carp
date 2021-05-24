@@ -12,6 +12,8 @@ This is an extension of what is covered in the [Language Guide](./LanguageGuide.
   - [`deftemplate`](#deftemplate)
     - [`Basic example`](#basic-example)
     - [`Generics`](#generics)
+  - [`emit-c`](#unsafe-emit-c)
+  - [`preproc`](#unsafe-preproc)
 - [Callbacks](#callbacks)
 
 
@@ -40,7 +42,7 @@ generated on the C side. Here are some examples:
 
 ; Generic signature
 (sig print-first-and-add (Fn [(Ref (Array a)) b b] b))
-(defn print-first-and-add [arr x y] 
+(defn print-first-and-add [arr x y]
  (do
    (println* (Array.unsafe-first arr))
    (+ x y)))
@@ -52,10 +54,10 @@ generated on the C side. Here are some examples:
 ; => print_MINUS_first_MINUS_and_MINUS_add__String_Long
 ```
 
-Looking at the examples should be clear enough but let's break it down:  
+Looking at the examples should be clear enough but let's break it down:
 Carp will replace illegal characters in C with a string representation of them
-(`- => _MINUS_`, `? => _QMARK_`, etc...)  
-If in modules it will prefix the identifier with the modules name.  
+(`- => _MINUS_`, `? => _QMARK_`, etc...)
+If in modules it will prefix the identifier with the modules name.
 When the arguments to a function are generic it will suffix the types to the
 identifiers, the identifiers are not able to be generated until it is used. If
 a function is potentially generic but you don't want it to be you can add a
@@ -274,19 +276,19 @@ We can instead define the previous example like so:
 (print @"Print this!")
 ```
 
-Let's break down what's going on here:  
+Let's break down what's going on here:
 The **first** argument to `deftemplate` is the name we'll use to refer to the
-function.  
+function.
 The **second** is a type signature and is identical to the one found
-in our previous `register` call.  
+in our previous `register` call.
 The **third** is our function declaration, it'll be injected at the top of the
-generated C file.  
+generated C file.
 The **last** argument represent the function definition.
 
-Two more things to look at:  
+Two more things to look at:
 `$NAME` is a variable that will be derived from the name you've given the
 function plus any module it's defined in, so no need to worry about name
-clashes with other `print` functions in other modules.  
+clashes with other `print` functions in other modules.
 `$DECL` will be replaced with the declaration passed as a third argument when
 the function is defined
 
@@ -342,6 +344,70 @@ out/main.c:9153:29: error: invalid operands to binary expression ('String' (aka 
                           ~ ^ ~
 1 error generated.
 ```
+
+### `Unsafe.emit-c`
+
+While `deftemplate` is flexible and sufficient for most use cases, there are
+certain scenarios in which it won't accomplish what you need. For example, some
+C macros, such as c11's `static_assert` require a string literal argument.
+`deftemplate` can't accomplish this. In such cases, you can use `Unsafe.emit-c`
+to emit a literal string in the Carp compiler's C output. `emit-c` is perfect
+for scenarios like `static_assert` calls. Assuming `static_assert` is
+`register`ed as `static-assert`, we can use `emit-c` in the following way to
+ensure it is passed a string literal in the compiler's emitted C code:
+
+```
+(register static-assert (Fn [a C] ()))
+
+(static-assert 0 (Unsafe.emit-c "\"foo\""))
+```
+
+which will emit the corresponding C:
+
+```
+static_assert(0, "foo")
+```
+
+`emit-C` returns values of the `C` type, a special type that represents literal
+C code in Carp.
+
+### `Unsafe.preproc`
+
+The Carp compiler emits C code in an order that ensures the dependencies of
+functions are available before functions are called. Sometimes, you may want to
+include C code before the Carp compiler's output. For instance, you might want
+to provide some preprocessor directives to a C compiler. The `Unsafe.preproc`
+function was designed with this use case in mind. You can use `preproc` to
+inject arbitrary C code prior to the Carp compiler's normal C output. Any code
+passed to `preproc` will be emitted after file `includes` but before any other
+emitted C code.
+
+`preproc` takes a value of type `C` as an argument, so it must be used in
+combination with `Unsafe.emit-c`. The C code you pass to `preproc` isn't
+checked at all, so be careful!
+
+If you do define C symbols using `preproc`, you'll still need to call
+`register` to reference them in Carp code. For example, the following snippet
+uses `preproc` to make a C macro and function available in the Carp compiler's
+output and then calls `register` to reference these symbols in the `main`
+function in the Carp source:
+
+```
+(Unsafe.preproc (Unsafe.emit-c "#define FOO 0"))
+(Unsafe.preproc (Unsafe.emit-c "void foo() { printf(\"%d\\n\", 1); }"))
+
+(register FOO Int)
+(register foo (Fn [] ()))
+
+(defn main []
+  (do (foo)
+      (IO.println &(fmt "%d" FOO))))
+```
+
+You can use this technique to add provisional definitions you need to reference
+in compiler output. If your helper functions, macros, or preprocessor
+directives are lengthy or complex, you may want to define them in a separate
+`h` file and `relative-include` it in your Carp source instead.
 
 ## Callbacks
 

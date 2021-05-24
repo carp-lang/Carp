@@ -1,0 +1,101 @@
+; Implementors’ note: this code could be made more elegant by using quasiquotes
+; but quasiquoting is actually loaded after this module, so we can’t rely on
+; that functionality.
+
+
+(doc Derive "is a mechanism for deriving interfaces automatically.
+
+Please reference [the documentation](https://github.com/carp-lang/Carp/blob/master/docs/Derive.md)
+for more information.")
+(defmodule Derive
+  (hidden derivers)
+  (defdynamic derivers '())
+
+  (doc make-deriver "is a mechanism for providing your own deriver by providing
+the interface name `f`, the arguments it takes `args`, and a function that can
+generate a body when given a type `body`.
+
+Example:
+```
+(make-deriver 'zero []
+  (fn [t]
+    (cons 'init
+      (map (fn [_] '(zero)) (eval `(members %t)))))
+```")
+  (defndynamic make-deriver [f args body]
+    (set! Derive.derivers
+      (cons
+        (list f
+          (fn [t name]
+            (list 'defmodule t
+              (list 'defn name args
+                (body t))
+              (list 'implements f (Symbol.prefix t name)))))
+        Derive.derivers)))
+
+  (doc make-update-deriver "is a convenience function for creating a deriver
+for functions that you could pass into `update-<member>` style functions.")
+  (defndynamic make-update-deriver [interface]
+    (make-deriver interface ['o]
+      (fn [t]
+        (reduce
+          (fn [acc m]
+            (list (Symbol.concat ['update- (car m)]) acc (list 'ref interface)))
+          'o
+          (eval (list 'members t))))))
+
+  (hidden get-deriver)
+  (defndynamic get-deriver [f derivers]
+    (if (empty? derivers)
+      '()
+      (if (= (caar derivers) f)
+        (car derivers)
+        (get-deriver f (cdr derivers)))))
+
+  (doc derivable? "checks whether a quoted interface name `f` is currently
+derivable.")
+  (defndynamic derivable? [f]
+    (let [deriver (get-deriver f Derive.derivers)]
+      (not (empty? deriver))))
+
+  (doc derivables "returns the list of currently derivable interfaces.")
+  (defndynamic derivables []
+    (map car Derive.derivers))
+
+  (doc derive "derives an interface function `f` for a type `t`.
+
+Optionally, it also takes an argument `overrride` that overrides the name of
+the generated function to avoid collisions.")
+  (defmacro derive [t f :rest override]
+    (let [name (if (empty? override) f (car override))
+          deriver (get-deriver f Derive.derivers)]
+      (if (empty? deriver)
+        (macro-error (String.concat ["no deriver found for interface " (str f) "!"]))
+        (eval ((cadr deriver) t name))))))
+
+(use Derive)
+
+(make-deriver '= ['o1 'o2]
+  (fn [t]
+    (reduce
+      (fn [acc m]
+        (list 'and (list '= (list (car m) 'o1) (list (car m) 'o2)) acc))
+      true
+      (eval (list 'members t)))))
+
+(make-deriver 'zero []
+  (fn [t]
+    (cons 'init
+      (map (fn [_] '(zero)) (eval (list 'members t))))))
+
+(make-deriver 'str ['o]
+  (fn [t]
+    (let [mems (eval (list 'members t))]
+      (cons 'fmt
+        (cons
+          (String.concat
+            (append
+              (append ["(" (str t)]
+                      (collect-into (map (fn [_] " %s") mems) array))
+              [")"]))
+          (map (fn [m] (list 'ref (list 'str (list (car m) 'o)))) mems))))))

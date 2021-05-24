@@ -73,6 +73,7 @@
   (doc empty? "Check if the string is the empty string.")
   (defn empty? [s]
     (Int.= (length s) 0))
+  (implements empty? String.empty?)
 
   (doc slice "Return part of a string, beginning at index `a` and ending at index `b`.")
   (defn slice [s a b]
@@ -298,45 +299,8 @@
   (implements prn IntRef.prn)
   (defn str [x] (Int.str @x))
   (implements str IntRef.str)
-)
-
-(defmodule BoolRef
-  (defn prn [x] (Bool.str @x))
-  (implements prn BoolRef.prn)
-  (defn str [x] (Bool.str @x))
-  (implements str BoolRef.str)
-)
-
-(defmodule Byte (defn prn [x] (Byte.str x)) (implements prn Byte.prn))
-(defmodule ByteRef
-  (defn prn [x] (Byte.str @x))
-  (implements prn ByteRef.prn)
-  (defn str [x] (Byte.str @x))
-  (implements str ByteRef.str)
-)
-
-(defmodule Long (defn prn [x] (Long.str x)) (implements prn Long.prn))
-(defmodule LongRef
-  (defn prn [x] (Long.str @x))
-  (implements prn LongRef.prn)
-  (defn str [x] (Long.str @x))
-  (implements str LongRef.str)
-)
-
-(defmodule Float (defn prn [x] (Float.str x)) (implements prn Float.prn))
-(defmodule FloatRef
-  (defn prn [x] (Float.str @x))
-  (implements prn FloatRef.prn)
-  (defn str [x] (Float.str @x))
-  (implements str FloatRef.str)
-)
-
-(defmodule Double (defn prn [x] (Double.str x)) (implements prn Double.prn))
-(defmodule DoubleRef
-  (defn prn [x] (Double.str @x))
-  (implements prn DoubleRef.prn)
-  (defn str [x] (Double.str @x))
-  (implements str DoubleRef.str)
+  (defn format [s x] (Int.format s @x))
+  (implements format IntRef.format)
 )
 
 (defmodule Bool (defn prn [x] (Bool.str x)) (implements prn Bool.prn))
@@ -345,6 +309,48 @@
   (implements prn BoolRef.prn)
   (defn str [x] (Bool.str @x))
   (implements str BoolRef.str)
+  (defn format [s x] (Bool.format s @x))
+  (implements format BoolRef.format)
+)
+
+(defmodule Byte (defn prn [x] (Byte.str x)) (implements prn Byte.prn))
+(defmodule ByteRef
+  (defn prn [x] (Byte.str @x))
+  (implements prn ByteRef.prn)
+  (defn str [x] (Byte.str @x))
+  (implements str ByteRef.str)
+  (defn format [s x] (Byte.format s @x))
+  (implements format ByteRef.format)
+)
+
+(defmodule Long (defn prn [x] (Long.str x)) (implements prn Long.prn))
+(defmodule LongRef
+  (defn prn [x] (Long.str @x))
+  (implements prn LongRef.prn)
+  (defn str [x] (Long.str @x))
+  (implements str LongRef.str)
+  (defn format [s x] (Long.format s @x))
+  (implements format LongRef.format)
+)
+
+(defmodule Float (defn prn [x] (Float.str x)) (implements prn Float.prn))
+(defmodule FloatRef
+  (defn prn [x] (Float.str @x))
+  (implements prn FloatRef.prn)
+  (defn str [x] (Float.str @x))
+  (implements str FloatRef.str)
+  (defn format [s x] (Float.format s @x))
+  (implements format FloatRef.format)
+)
+
+(defmodule Double (defn prn [x] (Double.str x)) (implements prn Double.prn))
+(defmodule DoubleRef
+  (defn prn [x] (Double.str @x))
+  (implements prn DoubleRef.prn)
+  (defn str [x] (Double.str @x))
+  (implements str DoubleRef.str)
+  (defn format [s x] (Double.format s @x))
+  (implements format DoubleRef.format)
 )
 
 (defmodule Array (defn prn [x] (Array.str x)) (implements prn Array.prn))
@@ -473,10 +479,22 @@
 
 (defndynamic build-str* [forms]
   (if (= (length forms) 0)
-    (list "")
+    '("")
     (if (= (length forms) 1)
-      (list 'ref (list 'str (car forms)))
-      (list 'ref (list 'String.append (list 'ref (list 'str (car forms))) (build-str* (cdr forms)))))))
+      `&(str %(car forms))
+      `&(String.append &(str %(car forms)) %(build-str* (cdr forms))))))
 
 (defmacro str* [:rest forms]
-  (list 'copy (build-str* forms)))
+  `(copy %(build-str* forms)))
+
+(defmodule Dynamic
+  (defmodule String
+    (defndynamic empty? [s]
+      (= (String.length s) 0))
+
+    (defndynamic to-list [s]
+      (if (String.empty? s)
+        '()
+        (cons (String.head s) (String.to-list (String.tail s)))))
+  )
+)

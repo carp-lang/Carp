@@ -17,13 +17,18 @@
            Bool
            Byte
            Char
+           Control
            Debug
+           Derive
            Double
            Dynamic
            Float
            Function
            Geometry
+           Quasiquote
            Int
+           Introspect
+           Unit
            IO
            Long
            Map

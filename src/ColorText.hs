@@ -39,10 +39,10 @@ emitErrorWithLabel :: String -> String -> IO ()
 emitErrorWithLabel label str = putStrLnWithColor Red (labelStr label str)
 
 emitError :: String -> IO ()
-emitError str = emitErrorWithLabel "ERROR" str
+emitError = emitErrorWithLabel "ERROR"
 
 emitErrorBare :: String -> IO ()
-emitErrorBare str = putStrLnWithColor Red str
+emitErrorBare = putStrLnWithColor Red
 
 emitErrorAndExit :: String -> IO a
 emitErrorAndExit str = do

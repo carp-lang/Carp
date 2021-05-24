@@ -1,0 +1,6 @@
+(Project.config "file-path-print-length" "short")
+
+(defn test [m]
+ (match m
+     (Maybe.Just 0) (println* "hi")
+     _ (println* "bye")))

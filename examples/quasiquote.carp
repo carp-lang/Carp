@@ -1,0 +1,9 @@
+(defdynamic x 1)
+(defdynamic y '(1 2))
+
+(defmacro gen-sum []
+  (quasiquote
+    (+ (unquote x)
+       (+ (unquote-splicing (map inc y))))))
+
+(defn main [] (println* (gen-sum)))

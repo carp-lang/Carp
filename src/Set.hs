@@ -10,6 +10,9 @@ newtype Set v = Set {unSet :: S.Set v} deriving (Show, Eq, Foldable, Ord)
 instance Hashable v => Hashable (Set v) where
   hashWithSalt s = hashWithSalt s . Set.toList
 
+instance Ord a => Semigroup (Set a) where
+  Set s1 <> Set s2 = Set (s1 <> s2)
+
 toList :: Set v -> [v]
 toList (Set s) = S.toList s
 
@@ -45,3 +48,6 @@ filter f (Set s) = Set $ S.filter f s
 
 size :: Set v -> Int
 size (Set s) = S.size s
+
+map :: Ord b => (a -> b) -> Set a -> Set b
+map f (Set s) = Set $ S.map f s

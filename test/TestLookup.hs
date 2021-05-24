@@ -1,8 +1,9 @@
 module TestLookup where
 
-import qualified Lookup as Lookup
+import Env as E
 import qualified Map
 import Obj
+import qualified Set
 import Test.HUnit
 import Types
 
@@ -13,11 +14,11 @@ testLookup =
 
 b1 = Binder emptyMeta (XObj (Str "b1") Nothing (Just StringTy))
 
-emptyRootEnv = Env (Map.fromList []) Nothing Nothing [] ExternalEnv 0
+emptyRootEnv = Env (Map.fromList []) Nothing Nothing Set.empty ExternalEnv 0
 
-assertNotFound :: Maybe Binder -> Test
-assertNotFound Nothing = TestCase (assertBool "assertNotFound" True) -- Better way?
+assertNotFound :: Either EnvironmentError Binder -> Test
+assertNotFound (Left _) = TestCase (assertBool "assertNotFound" True) -- Better way?
 assertNotFound _ = TestCase (assertBool "assertNotFound" False)
 
 basicLookup :: Test
-basicLookup = assertNotFound (fmap snd (Lookup.lookupInEnv (SymPath [] "nonexisting") emptyRootEnv))
+basicLookup = assertNotFound (fmap snd (E.searchValue emptyRootEnv (SymPath [] "nonexisting")))

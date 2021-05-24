@@ -15,6 +15,7 @@ typedef char *Pattern;
 typedef int64_t Long;
 typedef uint32_t Char;
 typedef char CChar;
+typedef void *c_code;
 
 #if defined NDEBUG
 #define CHK_INDEX(i, n)
@@ -33,6 +34,12 @@ typedef char CChar;
         }                                                                  \
     } while (0)
 #endif
+
+#define UNHANDLED(file, line)                                                  \
+    do {                                                                       \
+        printf("Unhandled case in 'match' expression at %s:%d\n", file, line); \
+        abort();                                                               \
+    } while (0)
 
 // Array
 typedef struct {

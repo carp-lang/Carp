@@ -5,6 +5,7 @@ module SymPath
     mangle,
     pathToC,
     consPath,
+    fromStrings,
   )
 where
 
@@ -89,3 +90,9 @@ pathToC (SymPath modulePath name) =
 consPath :: [String] -> SymPath -> SymPath
 consPath qualifyers (SymPath stringPaths name) =
   SymPath (qualifyers ++ stringPaths) name
+
+-- | Convert a list of strings into a path.
+fromStrings :: [String] -> SymPath
+fromStrings [] = SymPath [] ""
+fromStrings (s : []) = SymPath [] s
+fromStrings ss = SymPath (init ss) (last ss)

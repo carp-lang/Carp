@@ -69,77 +69,6 @@ foo ; symbol
 (defmodule <name> <definition1> <definition2> ...) ;; The main way to organize your program into smaller parts
 ```
 
-#### Interfaces
-
-Interfaces specify a generic function signature that multiple concrete
-functions may implement. You can define an interface using
-`definterface`, passing a name and type signature of a function:
-
-```clojure
-(definterface speak (Fn [a] String))
-```
-
-You can declare a function as an implementation of an interface using
-`implements`. For example, the following snippet declares `Dog.bark`
-and `Cat.meow` as an implementation of `speak`:
-
-```clojure
-(definterface speak (Fn [a] String))
-
-(defmodule Dog
-  (defn bark [aggressive?]
-    (if aggressive? @"WOOF!" @"woof!"))
-  (implements speak Dog.bark))
-
-(defmodule Cat
-  (defn meow [times] (String.repeat times "meow!"))
-  (implements speak Cat.meow))
-```
-
-Only functions that satisfy an interface's singature can implement
-it. For exmaple, the following function isn't a valid implementation
-of `speak` because it has the wrong number of arguments and its return
-type does not match the return type of `speak`:
-
-```clojure
-(defmodule Number
-  ;; who knew numbers could talk?
-  (defn holler [] "WOO!")
-  (implements speak Number.holler))
-=> [INTERFACE ERROR] Number.holler : (Fn [] (Ref String a)) doesn't match the interface signature (Fn [a] String)
-```
-
-When you call an interface by name, Carp uses the current context and
-the type signature of each implementation to call an implementation
-that type checks:
-
-```clojure
-(speak 2) ;; Int -> String, Cat.meow
-=> "meow!meow!"
-(speak false) ;; Bool -> String, Dog.bark
-=> "woof!"
-```
-
-If more than one interface implementation satisfies Carp's type
-checker in a given context, Carp will complain about the ambiguity:
-
-```clojure
-(defmodule Pikachu
-  (defn pika [times] (String.repeat times "pika!"))
-  (implements speak Pikachu.pika))
-
-(speak 2) ;; Int -> String, Cat.meow OR Pikachu.pika
-=> There are several exact matches for the interface `speak` of type `(Fn [Int] String)` at line 1, column 2 in 'REPL'
-Possibilities:
-    Cat.meow : (Fn [Int] String)
-    Pikachu.pika : (Fn [Int] String) at REPL:1:1.
-```
-
-In such cases, you'll have to help the Carp compiler disambiguate the
-call by calling the implementing function you need
-directly. It usually isn't useful to provide multiple
-implementations that have the same function signature.
-
 ### Conditional statements with `cond`
 The `cond` statement executes a block of code if a specified condition is true. If the condition is false, another block of code can be executed.
 
@@ -177,7 +106,8 @@ and other static analysis. The first three of them are also available in dynamic
 (while <expression> <body>) ;; Loop until expression is false
 (use <module>) ;; Brings all symbols inside <module> into the scope
 (with <module> <expr1> <expr2> ...) ;; Locally scoped `use` statement where all expressions after it will look up symbols in the <module>
-(match <expression> <case1> <expr1> <case2> <expr2> ...) ;; Pattern matches <expression> against a set of sumtype constructors
+(match <expression> <case1> <expr1> <case2> <expr2> ...) ;; Pattern matches an <expression> against a set of sumtype constructors
+(match-ref <expression> <case1> <expr1> <case2> <expr2> ...) ;; Pattern matches an <expression> of reference type, not taking ownership of its members
 (ref <expression>) ;; Borrow an owned value
 (address <expression>) ;; Takes the memory address of a value, returns a C-style pointer
 (set! <variable> <expression>) ;; Mutate a variable
@@ -225,6 +155,88 @@ These can only be used at the REPL and during macro evaluation. Here's a subset 
 ```
 
 To see all functions available in the `Dynamic` module, enter `(info Dynamic)` at the REPL.
+
+
+### Structs
+Any structure type defined in Carp has an init method that can be used to create a new instance. It must be called with all the arguments in the order they are defined.
+```clojure
+(deftype Vector2 [x Int, y Int])
+
+(let [my-pos (Vector2.init 10 20)]
+  ...)
+
+;; Additionally, a 'lens' is automatically generated for each member; signatures for reference:
+;; Vector2.x (Fn [(Ref Vector2)] (Ref Int))
+(Vector2.x &my-pos) ;; => 10
+;; Vector2.set-x (Fn [Vector2 Int] Vector2)
+(Vector2.set-x my-pos 30) ;; => (Vector2 30 20)
+;; Vector2.set-x! (Fn [(Ref Vector2), Int] ())
+(Vector2.set-x! &my-pos 30) ;; => Will update the vector my-pos in place and return ()
+;; Note the inner reference to a function
+;; Vector2.update-x (Fn [Vector2, (Ref (Fn [Int] Int))] Vector2)
+(Vector2.update-x my-pos inc) ;; => (Vector2 11 20)
+;; This can also be a lambda
+(Vector2.update-x my-pos &(fn [n] (* n 3))) ;; => (Vector2 30 20)
+```
+
+### Sumtypes
+There are two ways to define `sumtypes`:
+
+**Enumeration:**
+```clojure
+(deftype MyEnum
+  Kind1
+  Kind2
+  Kind3)
+```
+
+**Data:**
+```clojure
+(deftype (Either a b)
+  (Left [a])
+  (Right [b]))
+```
+
+A Variant can be created with the same syntax as call expression:
+```clojure
+(MyEnum.Kind1)
+(Either.Left 10)
+(Either.Right 11)
+
+;; Or use `use` statement
+(use Either)
+(Left 10)
+(Right 11)
+
+(use MyEnum)
+(Kind1)
+(Kind2)
+(Kind3)
+```
+
+You can use pattern matching to extract values in a safe way:
+```clojure
+(defn get [either]
+  (match either
+    (Either.Left a) a
+    (Either.Right b) b))
+
+(with MyEnum
+  ;; You can give a generic "otherwise" statement as well
+  (match myenum
+    (Kind1) (logic1)
+    _ (logic-other)))
+```
+
+Note that match works with *values* (not references) takes ownership over the value being matched on. If you instead want to match on a reference, you can use `match-ref`:
+
+```clojure
+(match-ref &might-be-a-string
+  (Just s) (IO.println s)
+  Nothing (IO.println "Got nothing"))
+```
+
+Note that this code would not take ownership over `might-be-a-string`. Also, the `s` in the first case is a reference, since it wouldn't be safe to destructure the `Maybe` into values in this situation.
 
 ### Modules and Name Lookup
 Functions and variables can be stored in modules which are named and can be nested. To use a symbol inside a module
@@ -305,68 +317,114 @@ Sometimes, it's more convenient to bring a module's declarations into scope only
       (length x))))
 ```
 
-### Structs
+It can be useful to keep some bindings internal to a module, to achieve that
+one can use `private` and `hidden`:
+
 ```clojure
-(deftype Vector2 [x Int, y Int])
+(defmodule Say
+  ; Makes `hell` inaccessible outside of module `Say`
+  (private hell)
+  ; Will prevent `hell` from being visible when listing bindings in `Say`
+  (hidden hell)
+  (defn hell [] @"hell")
 
-(let [my-pos (Vector2.init 10 20)]
-  ...)
+  ; `private` & `hidden` work with `def` and `defn`
+  (private o)
+  (hidden o)
+  (def o @"o")
 
-;; A 'lens' is automatically generated for each member:
-(Vector2.x my-pos) ;; => 10
-(Vector2.set-x my-pos 30) ;; => (Vector2 30 20)
-(Vector2.set-x! &my-pos 30) ;; => Will update the vector my-pos in place and return ()
-(Vector2.update-x my-pos inc) ;; => (Vector2 11 20)
+  ; Can access `hell` and `o` inside the module
+  (defn hello [] (String.concat &[(hell) @&o])))
+
+
+; Valid call as `hello` is not private
+(Say.hello)
+
+; Will result in an compile time error as `hell` is private to the `Say` module
+(Say.hell)
 ```
 
-### Sumtypes
-There are two ways to define `sumtypes`:
+`defn-` and `def-` can be used as a shorthand for defining a binding and
+marking it as `private` & `hidden`, the following example is equivalent to the
+previous one:
 
-**Enumeration:**
 ```clojure
-(deftype MyEnum
-  Kind1
-  Kind2
-  Kind3)
+(defmodule Say
+ (defn- hell [] @"hell")
+ (def- o @"o")
+ (defn hello [] (String.concat &[(hell) @&o])))
 ```
 
-**Data:**
+### Interfaces
+
+Interfaces specify a generic function signature that multiple concrete
+functions may implement. You can define an interface using
+`definterface`, passing a name and type signature of a function:
+
 ```clojure
-(deftype (Either a b)
-  (Left [a])
-  (Right [b]))
+(definterface speak (Fn [a] String))
 ```
 
-A Variant can be created with the same syntax as call expression:
+You can declare a function as an implementation of an interface using
+`implements`. For example, the following snippet declares `Dog.bark`
+and `Cat.meow` as an implementation of `speak`:
+
 ```clojure
-(MyEnum.Kind1)
-(Either.Left 10)
-(Either.Right 11)
+(definterface speak (Fn [a] String))
 
-;; Or use `use` statement
-(use Either)
-(Left 10)
-(Right 11)
+(defmodule Dog
+  (defn bark [aggressive?]
+    (if aggressive? @"WOOF!" @"woof!"))
+  (implements speak Dog.bark))
 
-(use MyEnum)
-(Kind1)
-(Kind2)
-(Kind3)
+(defmodule Cat
+  (defn meow [times] (String.repeat times "meow!"))
+  (implements speak Cat.meow))
 ```
 
-You can use pattern matching to extract values in a safe way:
-```clojure
-(defn get [either]
-  (match either
-    (Either.Left a) a
-    (Either.Right b) b))
+Only functions that satisfy an interface's singature can implement
+it. For exmaple, the following function isn't a valid implementation
+of `speak` because it has the wrong number of arguments and its return
+type does not match the return type of `speak`:
 
-(with MyEnum
-  ;; You can give a generic "otherwise" statement as well
-  (match myenum
-    (Kind1) (logic1)
-    _ (logic-other)))
+```clojure
+(defmodule Number
+  ;; who knew numbers could talk?
+  (defn holler [] "WOO!")
+  (implements speak Number.holler))
+=> [INTERFACE ERROR] Number.holler : (Fn [] (Ref String a)) doesn't match the interface signature (Fn [a] String)
 ```
+
+When you call an interface by name, Carp uses the current context and
+the type signature of each implementation to call an implementation
+that type checks:
+
+```clojure
+(speak 2) ;; Int -> String, Cat.meow
+=> "meow!meow!"
+(speak false) ;; Bool -> String, Dog.bark
+=> "woof!"
+```
+
+If more than one interface implementation satisfies Carp's type
+checker in a given context, Carp will complain about the ambiguity:
+
+```clojure
+(defmodule Pikachu
+  (defn pika [times] (String.repeat times "pika!"))
+  (implements speak Pikachu.pika))
+
+(speak 2) ;; Int -> String, Cat.meow OR Pikachu.pika
+=> There are several exact matches for the interface `speak` of type `(Fn [Int] String)` at line 1, column 2 in 'REPL'
+Possibilities:
+    Cat.meow : (Fn [Int] String)
+    Pikachu.pika : (Fn [Int] String) at REPL:1:1.
+```
+
+In such cases, you'll have to help the Carp compiler disambiguate the
+call by calling the implementing function you need
+directly. It usually isn't useful to provide multiple
+implementations that have the same function signature.
 
 ### C Interop
 ```clojure

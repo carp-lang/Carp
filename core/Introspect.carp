@@ -83,30 +83,48 @@
   (doc arity
     "What's the arity of this binding?
 
-    - When `binding` is a function, returns the number of arguments.
-    - When `binding` is a command, returns the number of arguments.
-    - When `binding` is a primitive, returns the number of arguments.
-    - When `binding` is an interface, returns the number of arguments.
-    - When `binding` is a struct, returns the number of fields.
-    - When `binding` is a sumtype, returns a list of the number of type
-      arguments of each constructor.")
+- When `binding` is a function, returns the number of arguments.
+- When `binding` is a command, returns the number of arguments.
+- When `binding` is a primitive, returns the number of arguments.
+- When `binding` is an interface, returns the number of arguments.
+- When `binding` is a struct, returns the number of fields.
+- When `binding` is a sumtype, returns a list of the number of type
+  arguments of each constructor.
+- Otherwise it returns 0.")
   (defndynamic arity [binding]
+    (let [args (arguments binding)]
+      (if (Introspect.sumtype? binding)
+        (map length args)
+        (length args))))
+
+  (doc arguments
+    "What are the arguments to this binding?
+
+- When `binding` is a function, returns the argument array.
+- When `binding` is a command, returns the argument array.
+- When `binding` is a primitive, returns the argument array.
+- When `binding` is an interface, returns the argument array.
+- When `binding` is a struct, returns the fields.
+- When `binding` is a sumtype, returns a list of the type arguments of each
+  constructor.
+- Otherwise it returns an empty list.")
+  (defndynamic arguments [binding]
     (let [s (s-expr binding)]
     (if (empty? s)
         0
     (cond
         (Introspect.external? binding)
           (if (list? (caddr s))
-              (length (car (cdaddr s)))
-              0)
-        (Introspect.command? binding) (length (caddr s))
-        (Introspect.primitive? binding) (length (caddr s))
-        (Introspect.interface? binding) (length (car (cdaddr s)))
-        (Introspect.function? binding) (length (caddr s))
-        (Introspect.struct? binding) (/ (length (caddr s)) 2)
+              (car (cdaddr s))
+              '())
+        (Introspect.command? binding) (caddr s)
+        (Introspect.primitive? binding) (caddr s)
+        (Introspect.interface? binding) (car (cdaddr s))
+        (Introspect.function? binding) (caddr s)
+        (Introspect.struct? binding) (map car (List.pairs (caddr s)))
         (Introspect.sumtype? binding) (map (fn [arr]
-        (length (cadr arr))) (cddr s))
-        0))))
+        (cadr arr)) (cddr s))
+        '()))))
 
   (doc macro?
     "Is this binding a macro?")

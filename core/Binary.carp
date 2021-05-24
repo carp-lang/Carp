@@ -5,53 +5,16 @@
 ;; TODO: Replace all of these with a single type-generic
 ;; zip-n macro.
 (defmodule Maybe
-  (defn zip [f a b]
-    (match a
-    (Maybe.Nothing) (Maybe.Nothing)
-    (Just x)
-      (match b
-      (Maybe.Nothing) (Maybe.Nothing)
-      (Just y) (Just (~f x y)))))
-
-  (defn zip4 [f a b c d]
-    (match a
-    (Maybe.Nothing) (Maybe.Nothing)
-    (Just x)
-      (match b
-      (Maybe.Nothing) (Maybe.Nothing)
-      (Just y)
-        (match c
-        (Maybe.Nothing) (Maybe.Nothing)
-        (Just z)
-          (match d
+  (defndynamic zip- [f args names]
+    (if (empty? args)
+      `(Maybe.Just (~%f %@names))
+      (let [n (gensym-with 'zip)]
+        `(match %(car args)
           (Maybe.Nothing) (Maybe.Nothing)
-          (Just x2) (Just (~f x y z x2)))))))
+          (Maybe.Just %n) %(Maybe.zip- f (cdr args) (cons-last n names))))))
 
-  (defn zip8 [f a b c d e a1 b1 c1]
-   (match a
-   (Maybe.Nothing) (Maybe.Nothing)
-   (Just x)
-     (match b
-     (Maybe.Nothing) (Maybe.Nothing)
-     (Just y)
-       (match c
-       (Maybe.Nothing) (Maybe.Nothing)
-       (Just z)
-         (match d
-         (Maybe.Nothing) (Maybe.Nothing)
-         (Just x2)
-           (match e
-           (Maybe.Nothing) (Maybe.Nothing)
-           (Just y2)
-             (match a1
-             (Maybe.Nothing) (Maybe.Nothing)
-             (Just z2)
-               (match b1
-               (Maybe.Nothing) (Maybe.Nothing)
-               (Just x3)
-                 (match c1
-                 (Maybe.Nothing) (Maybe.Nothing)
-                 (Just y3) (Just (~f x y z x2 y2 z2 x3 y3)))))))))))
+  (defmacro zip [f :rest args]
+    (Maybe.zip- f args '()))
 )
 
 ;; Temporary fix for issue #698
@@ -216,11 +179,11 @@
   (defn bytes->int32 [order bs]
     (match order
       (ByteOrder.LittleEndian)
-        (Maybe.zip4 &to-int32 (Array.nth bs 0) (Array.nth bs 1)
-                              (Array.nth bs 2) (Array.nth bs 3))
+        (Maybe.zip &to-int32 (Array.nth bs 0) (Array.nth bs 1)
+                             (Array.nth bs 2) (Array.nth bs 3))
       (ByteOrder.BigEndian)
-        (Maybe.zip4 &to-int32 (Array.nth bs 3) (Array.nth bs 2)
-                              (Array.nth bs 1) (Array.nth bs 0))))
+        (Maybe.zip &to-int32 (Array.nth bs 3) (Array.nth bs 2)
+                             (Array.nth bs 1) (Array.nth bs 0))))
 
   (doc int32->bytes
     "Converts a Uint32 to a sequence of bytes representing the value using the provided `order`")
@@ -299,15 +262,15 @@
   (defn bytes->int64 [order bs]
     (match order
       (ByteOrder.LittleEndian)
-        (Maybe.zip8 &to-int64 (Array.nth bs 0) (Array.nth bs 1)
-                              (Array.nth bs 2) (Array.nth bs 3)
-                              (Array.nth bs 4) (Array.nth bs 5)
-                              (Array.nth bs 6) (Array.nth bs 7))
+        (Maybe.zip &to-int64 (Array.nth bs 0) (Array.nth bs 1)
+                             (Array.nth bs 2) (Array.nth bs 3)
+                             (Array.nth bs 4) (Array.nth bs 5)
+                             (Array.nth bs 6) (Array.nth bs 7))
       (ByteOrder.BigEndian)
-        (Maybe.zip8 &to-int64 (Array.nth bs 7) (Array.nth bs 6)
-                              (Array.nth bs 5) (Array.nth bs 4)
-                              (Array.nth bs 3) (Array.nth bs 2)
-                              (Array.nth bs 1) (Array.nth bs 0))))
+        (Maybe.zip &to-int64 (Array.nth bs 7) (Array.nth bs 6)
+                             (Array.nth bs 5) (Array.nth bs 4)
+                             (Array.nth bs 3) (Array.nth bs 2)
+                             (Array.nth bs 1) (Array.nth bs 0))))
   (doc int64->bytes
     "Converts a Uint64 to a sequence of bytes representing the value using the provided `order`")
   (sig int64->bytes (Fn [ByteOrder Uint64] (Array Byte)))

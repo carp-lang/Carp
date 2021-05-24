@@ -33,6 +33,7 @@ data Info = Info
 data Deleter
   = ProperDeleter
       { deleterPath :: SymPath,
+        dropPath :: Maybe SymPath, -- used for facilitating "drop", code that runs before a deleter
         deleterVariable :: String
       }
   | -- used for external types with no delete function
@@ -49,7 +50,8 @@ data Deleter
   deriving (Eq, Ord)
 
 instance Show Deleter where
-  show (ProperDeleter path var) = "(ProperDel " ++ show path ++ " " ++ show var ++ ")"
+  show (ProperDeleter path dropper var) =
+    "(ProperDel " ++ show path ++ " " ++ maybe "" show dropper ++ " " ++ show var ++ ")"
   show (FakeDeleter var) = "(FakeDel " ++ show var ++ ")"
   show (PrimDeleter var) = "(PrimDel " ++ show var ++ ")"
   show (RefDeleter var) = "(RefDel " ++ show var ++ ")"

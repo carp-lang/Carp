@@ -2,7 +2,6 @@
 
 module RenderDocs where
 
-import AssignTypes (typeVariablesInOrderOfAppearance)
 import CMark
 import Control.Monad (when)
 import qualified Data.List as List
@@ -17,6 +16,7 @@ import Text.Blaze.Html.Renderer.Pretty (renderHtml)
 import Text.Blaze.Html5 ((!))
 import qualified Text.Blaze.Html5 as H
 import qualified Text.Blaze.Html5.Attributes as A
+import TypeError (typeVariablesInOrderOfAppearance)
 import Types
 
 -- TODO: Move the beautification to a much earlier place, preferably when the function is defined/concretized-
@@ -52,7 +52,7 @@ saveDocsForEnvs ctx pathsAndEnvBinders =
 getEnvAndMetaFromBinder :: Binder -> (Env, MetaData)
 getEnvAndMetaFromBinder envBinder =
   case envBinder of
-    Binder meta (XObj (Mod env) _ _) -> (env, meta)
+    Binder meta (XObj (Mod env _) _ _) -> (env, meta)
     _ -> error "Binder's not a module. This should be detected in 'commandSaveDocsInternal'."
 
 projectIndexPage :: Project -> [String] -> String
@@ -152,6 +152,13 @@ binderToHtml (Binder meta xobj) =
       typeSignature = case xobjTy xobj of
         Just t -> show (beautifyType t) -- NOTE: This destroys user-defined names of type variables!
         Nothing -> ""
+      isDeprecated = case Meta.get "deprecated" meta of
+        Just (XObj (Bol True) _ _) -> True
+        Just (XObj (Str _) _ _) -> True
+        _ -> False
+      deprecationStr = case Meta.get "deprecated" meta of
+        Just (XObj (Str s) _ _) -> commonmarkToHtml [optSafe] $ Text.pack s
+        _ -> ""
       docString = case Meta.get "doc" meta of
         Just (XObj (Str s) _ _) -> s
         Just found -> pretty found
@@ -161,12 +168,19 @@ binderToHtml (Binder meta xobj) =
         do
           H.a ! A.class_ "anchor" ! A.href (H.stringValue ("#" ++ name)) $
             H.h3 ! A.id (H.stringValue name) $
-              H.toHtml name
+              do
+                H.toHtml name
+                when isDeprecated $
+                  H.span ! A.class_ "deprecation-notice" $
+                    H.toHtml ("deprecated" :: String)
           H.div ! A.class_ "description" $ H.toHtml description
           H.p ! A.class_ "sig" $ H.toHtml typeSignature
           case maybeNameAndArgs of
             Just nameAndArgs -> H.pre ! A.class_ "args" $ H.toHtml nameAndArgs
             Nothing -> H.span $ H.toHtml ("" :: String)
           H.p ! A.class_ "doc" $ H.preEscapedToHtml htmlDoc
+          when isDeprecated $
+            H.div ! A.class_ "deprecation-text" $
+              H.preEscapedToHtml deprecationStr
 
 --p_ (toHtml (description))

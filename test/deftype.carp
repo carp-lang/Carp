@@ -9,6 +9,9 @@
 (defmodule Wrap2
   (deftype C []))
 (use Wrap2)
+(use Wrap)
+
+(deftype B [])
 
 (deftest test
   (assert-equal test
@@ -23,4 +26,8 @@
     "(Wrap2.C)"
     (ref (str (ref (C))))
     "implicit .init for 'use':d type defined inside module works")
+  (assert-equal test
+    "(B)"
+    (ref (str (ref (B))))
+    "when module and global types compete, global types are preffered.")
   )
