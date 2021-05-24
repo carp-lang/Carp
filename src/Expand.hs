@@ -291,12 +291,12 @@ expand eval ctx xobj =
       where
         qpath = (qualifyPath ctx (SymPath [] name))
         searchForBinder =
-          case lookupBinderInGlobalEnv ctx path <> lookupBinderInGlobalEnv ctx qpath of
-            Right (Binder meta found) -> isPrivate meta (matchDef found)
+          case (lookupBinderInGlobalEnv ctx path <> lookupBinderInGlobalEnv ctx qpath) of
+            Right (Binder meta found) -> isPrivate meta (matchDef found) (getPath found)
             Left _ -> pure (ctx, Right xobj) -- symbols that are not found are left as-is
-        isPrivate m x =
+        isPrivate m x (SymPath p' _) =
           pure $
-            if (metaIsTrue m "private") && (not (null p) && p /= (contextPath ctx))
+            if (metaIsTrue m "private") && (not (null p') && p' /= (contextPath ctx))
               then evalError ctx (show (PrivateBinding path)) (xobjInfo sym)
               else (ctx, Right x)
         matchDef (XObj (Lst (XObj (External _) _ _ : _)) _ _) = xobj
