@@ -108,6 +108,36 @@ templateAsetBang = defineTypeParameterizedTemplate templateCreator path t docs
               depsForDeleteFunc typeEnv env arrayType
           )
 
+templateAsetUninitializedBang :: (String, Binder)
+templateAsetUninitializedBang = defineTypeParameterizedTemplate templateCreator path t docs
+  where
+    path = SymPath ["StaticArray"] "aset-uninitialized!"
+    t = FuncTy [RefTy (StructTy (ConcreteNameTy (SymPath [] "StaticArray")) [VarTy "t"]) (VarTy "q"), IntTy, VarTy "t"] UnitTy StaticLifetimeTy
+    docs = "sets an uninitialized static array member. The old member will not be deleted."
+    templateCreator = TemplateCreator $
+      \_ _ ->
+        Template
+          t
+          ( \(FuncTy [_, _, valueType] _ _) ->
+              case valueType of
+                UnitTy -> toTemplate "void $NAME (Array *aRef, int n)"
+                _ -> toTemplate "void $NAME (Array *aRef, int n, $t newValue)"
+          )
+          ( \(FuncTy [_, _, valueType] _ _) ->
+              case valueType of
+                UnitTy -> ArrayTemplates.unitSetterTemplate
+                _ ->
+                  multilineTemplate
+                    [ "$DECL {",
+                      "    Array a = *aRef;",
+                      "    assert(n >= 0);",
+                      "    assert(n < a.len);",
+                      "    (($t*)a.data)[n] = newValue;",
+                      "}"
+                    ]
+          )
+          (const [])
+
 templateStrArray :: (String, Binder)
 templateStrArray = defineTypeParameterizedTemplate templateCreator path t docs
   where

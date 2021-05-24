@@ -186,9 +186,14 @@ If the array is empty, returns `Nothing`")
           (set! c (Int.inc c))))
       c))
 
+    (doc unsafe-nth-value "returns the value at index `i` of a static array `a` (just like [unsafe-nth](#unsafe-nth)) but does not take its reference, and does *not* copy the value. Should only be used for optimizations and when you know what you're doing, circumvents the borrow checker!")
+  (deftemplate unsafe-nth-value (Fn [(Ref (StaticArray a)) Int] a)
+    "$a $NAME(Array *a, int i)"
+    "$DECL { return (($a*)a->data)[i]; }")
+
   (doc aupdate! "transmutes (i.e. updates) the element at index `i` of an array `a` using the function `f` in place.")
   (defn aupdate! [a i f]
-    (aset! a i (~f (unsafe-nth a i))))
+    (aset-uninitialized! a i (~f (unsafe-nth-value a i))))
 
   (doc swap! "swaps the indices `i` and `j` of an array `a` in place.")
   (defn swap! [a i j]
@@ -219,4 +224,3 @@ If the array is empty, returns `Nothing`")
   (deftemplate unsafe-raw (Fn [(Ref (StaticArray t))] (Ptr t))
     "$t* $NAME(Array *a)"
     "$DECL { return a->data; }"))
-

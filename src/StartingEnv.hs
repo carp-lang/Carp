@@ -70,6 +70,7 @@ staticArrayModule =
           StaticArrayTemplates.templateLength,
           StaticArrayTemplates.templateDeleteArray,
           StaticArrayTemplates.templateAsetBang,
+          StaticArrayTemplates.templateAsetUninitializedBang,
           StaticArrayTemplates.templateStrArray
         ]
 
