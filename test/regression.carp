@@ -60,6 +60,11 @@
 (defn defining-function-with-def []
   (double 3))
 
+;; using special symbol as binder name
+(defndynamic special-symbol-as-binder []
+  (let [c (car (list 1 2 3))]
+     (list c)))
+
 (deftest test
   (assert-equal test
                 1
