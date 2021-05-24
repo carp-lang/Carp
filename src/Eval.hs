@@ -41,7 +41,8 @@ import Prelude hiding (exp, mod)
 data LookupPreference
   = PreferDynamic
   | PreferGlobal
-  | PreferLocal
+  | PreferLocal [SymPath]
+  deriving Show
 
 data Resolver
   = ResolveGlobal
@@ -76,8 +77,8 @@ eval ctx xobj@(XObj o info ty) preference resolver =
     Sym spath@(SymPath p n) _ ->
       pure $
         case resolver of
-          ResolveGlobal -> unwrapLookup (tryAllLookups >>= checkStatic)
-          ResolveLocal -> unwrapLookup tryAllLookups
+          ResolveGlobal -> unwrapLookup ((tryAllLookups preference) >>= checkStatic)
+          ResolveLocal  -> unwrapLookup (tryAllLookups preference)
       where
         checkStatic v@(_, Right (XObj (Lst ((XObj obj _ _) : _)) _ _)) =
           if isResolvableStaticObj obj
@@ -88,25 +89,30 @@ eval ctx xobj@(XObj o info ty) preference resolver =
         unwrapLookup =
           fromMaybe
             (throwErr (SymbolNotFound spath) ctx info)
-        tryAllLookups =
-          ( case preference of
-              PreferDynamic -> tryDynamicLookup
-              PreferGlobal -> tryLookup spath <|> tryDynamicLookup
-              PreferLocal -> tryLocalLookup spath <|> tryDynamicLookup <|> tryLookup spath
-          )
-            <|> (if null p then tryInternalLookup spath <|> tryLookup spath else tryLookup spath)
+        -- | Try all lookups performs lookups for symbols based on a given
+        -- lookup preference.
+        tryAllLookups :: LookupPreference -> Maybe (Context, Either EvalError XObj)
+        tryAllLookups PreferDynamic = (getDynamic) <|> fullLookup
+        tryAllLookups PreferGlobal  = (getGlobal spath) <|> fullLookup
+        tryAllLookups (PreferLocal shadows) = (if spath `elem` shadows then (getLocal n) else (getDynamic)) <|> fullLookup
+        fullLookup = (tryDynamicLookup <|> (if null p then tryInternalLookup spath <|> tryLookup spath else tryLookup spath))
+        getDynamic :: Maybe (Context, Either EvalError XObj)
+        getDynamic =
+          do (Binder _ found) <- maybeId (E.findValueBinder (contextGlobalEnv ctx) (SymPath ("Dynamic" : p) n))
+             pure (ctx, Right (resolveDef found))
+        getGlobal :: SymPath -> Maybe (Context, Either EvalError XObj)
+        getGlobal path =
+          do (Binder _ found) <- maybeId (E.findValueBinder (contextGlobalEnv ctx) path)
+             pure (ctx, Right (resolveDef found))
         tryDynamicLookup :: Maybe (Context, Either EvalError XObj)
         tryDynamicLookup =
-          ( maybeId (E.searchValueBinder (contextGlobalEnv ctx) (SymPath ("Dynamic" : p) n))
-              >>= \(Binder _ found) -> pure (ctx, Right (resolveDef found))
-          )
-        tryLocalLookup :: SymPath -> Maybe (Context, Either EvalError XObj)
-        tryLocalLookup path =
-           ( contextInternalEnv ctx
-              >>= \e ->
-                maybeId (E.findValueBinder e path)
-                  >>= \(Binder _ found) -> pure (ctx, Right (resolveDef found))
-          )
+          do (Binder _ found) <- maybeId (E.searchValueBinder (contextGlobalEnv ctx) (SymPath ("Dynamic" : p) n))
+             pure (ctx, Right (resolveDef found))
+        getLocal :: String -> Maybe (Context, Either EvalError XObj)
+        getLocal name =
+           do internal <- contextInternalEnv ctx
+              (Binder _ found) <- maybeId (E.getValueBinder internal name)
+              pure (ctx, Right (resolveDef found))
         -- TODO: Deprecate this function?
         -- The behavior here is a bit nefarious since it relies on cached
         -- environment parents (it calls `search` on the "internal" binder).
@@ -224,7 +230,7 @@ eval ctx xobj@(XObj o info ty) preference resolver =
               case eitherCtx of
                 Left err -> pure (ctx, Left err)
                 Right newCtx -> do
-                  (finalCtx, evaledBody) <- eval newCtx body PreferLocal ResolveLocal
+                  (finalCtx, evaledBody) <- eval newCtx body (PreferLocal (map (\(name, _) -> (SymPath [] name)) binds)) ResolveLocal
                   let Just e = contextInternalEnv finalCtx
                       parentEnv = fromMaybe e (envParent e)
                   pure
