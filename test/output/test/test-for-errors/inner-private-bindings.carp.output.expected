@@ -1,0 +1,1 @@
+inner-private-bindings.carp:7:15 The binding: B.f is private; it may only be used within the module that defines it.

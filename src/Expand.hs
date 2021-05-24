@@ -8,6 +8,9 @@ import Obj
 import TypeError
 import Types
 import Util
+import Context
+import Qualify
+import EvalError
 
 -- | Used for calling back to the 'eval' function in Eval.hs
 type DynamicEvaluator = Context -> XObj -> IO (Context, Either EvalError XObj)
@@ -278,22 +281,31 @@ expand eval ctx xobj =
           )
     expandArray _ = error "Can't expand non-array in expandArray."
     expandSymbol :: XObj -> IO (Context, Either EvalError XObj)
-    expandSymbol sym@(XObj (Sym path _) _ _) =
-      case searchValueBinder (contextEnv ctx) path of
-        Right (Binder meta (XObj (Lst (XObj (External _) _ _ : _)) _ _)) -> isPrivate meta xobj
-        Right (Binder meta (XObj (Lst (XObj (Instantiate _) _ _ : _)) _ _)) -> isPrivate meta xobj
-        Right (Binder meta (XObj (Lst (XObj (Deftemplate _) _ _ : _)) _ _)) -> isPrivate meta xobj
-        Right (Binder meta (XObj (Lst (XObj (Defn _) _ _ : _)) _ _)) -> isPrivate meta xobj
-        Right (Binder meta (XObj (Lst (XObj Def _ _ : _)) _ _)) -> isPrivate meta xobj
-        Right (Binder meta (XObj (Lst (XObj (Defalias _) _ _ : _)) _ _)) -> isPrivate meta xobj
-        Right (Binder meta found) -> isPrivate meta found -- use the found value
-        Left _ -> pure (ctx, Right xobj) -- symbols that are not found are left as-is
+    expandSymbol sym@(XObj (Sym path@(SymPath p name) _) _ _) =
+      case p of
+        [] ->
+          case getValueBinder (contextEnv ctx) name of
+            Right (Binder _ found) -> pure (ctx, Right (matchDef found)) -- use the found value
+            _ -> searchForBinder
+        _ -> searchForBinder
       where
+        qpath = (qualifyPath ctx (SymPath [] name))
+        searchForBinder =
+          case lookupBinderInGlobalEnv ctx path <> lookupBinderInGlobalEnv ctx qpath of
+            Right (Binder meta found) -> isPrivate meta (matchDef found)
+            Left _ -> pure (ctx, Right xobj) -- symbols that are not found are left as-is
         isPrivate m x =
           pure $
-            if metaIsTrue m "private"
-              then evalError ctx ("The binding: " ++ pretty sym ++ " is private; it may only be used within the module that defines it.") (xobjInfo sym)
+            if (metaIsTrue m "private") && (not (null p) && p /= (contextPath ctx))
+              then evalError ctx (show (PrivateBinding path)) (xobjInfo sym)
               else (ctx, Right x)
+        matchDef (XObj (Lst (XObj (External _) _ _ : _)) _ _) = xobj
+        matchDef (XObj (Lst (XObj (Instantiate _) _ _ : _)) _ _) = xobj
+        matchDef (XObj (Lst (XObj (Deftemplate _) _ _ : _)) _ _) = xobj
+        matchDef (XObj (Lst (XObj (Defn _) _ _ : _)) _ _) = xobj
+        matchDef (XObj (Lst (XObj Def _ _ : _)) _ _) = xobj
+        matchDef (XObj (Lst (XObj MetaStub _ _ : _)) _ _) = xobj
+        matchDef x = x
     expandSymbol _ = pure (evalError ctx "Can't expand non-symbol in expandSymbol." Nothing)
     successiveExpand (ctx', acc) e =
       case acc of
