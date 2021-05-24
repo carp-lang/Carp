@@ -1,0 +1,7 @@
+(Project.config "file-path-print-length" "short")
+
+(defmodule Say
+ (def- hell @"hell")
+ (def hello (String.concat &[@&hell @"o"])))
+
+(defn main [] (println* &Say.hell))

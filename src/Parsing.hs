@@ -11,7 +11,8 @@ import Data.Bits (shift)
 -- import Text.Parsec.Error (newErrorMessage, Message(..))
 -- import Text.Parsec.Pos (newPos)
 
-import Data.Char (ord)
+import Data.Char (chr, ord)
+import Data.List (foldl')
 import Info
 import Numeric (readHex)
 import Obj
@@ -54,7 +55,7 @@ otherBases = do
       digits <- Parsec.many1 (Parsec.oneOf "01")
       incColumn (length digits)
       pure (binToDec digits)
-    binToDec = show . foldl f 0
+    binToDec = show . foldl' f 0
       where
         f :: Int -> Char -> Int
         f x '0' = shift x 1
@@ -276,11 +277,37 @@ pat = do
 escaped :: Parsec.Parsec String ParseState String
 escaped = do
   _ <- Parsec.char '\\'
-  c <- Parsec.oneOf ['\\', '\"']
-  pure $ case c of
-    '\\' -> "\\\\"
-    '\"' -> "\""
-    _ -> error "escaped"
+  c <- Parsec.anyChar
+  case c of
+    '\\' -> pure "\\"
+    '\"' -> pure "\""
+    '\'' -> pure "\'"
+    'a' -> pure "\a"
+    'b' -> pure "\b"
+    'f' -> pure "\f"
+    'n' -> pure "\n"
+    'r' -> pure "\r"
+    't' -> pure "\t"
+    'v' -> pure "\v"
+    'x' -> do
+      hex <- Parsec.many1 (Parsec.oneOf "0123456789abcdefABCDEF")
+      let [(p, "")] = readHex hex
+      return [chr p]
+    'u' -> do
+      hex <- Parsec.count 4 (Parsec.oneOf "0123456789abcdefABCDEF")
+      let [(p, "")] = readHex hex
+      return [chr p]
+    'U' -> do
+      hex <- Parsec.count 8 (Parsec.oneOf "0123456789abcdefABCDEF")
+      let [(p, "")] = readHex hex
+      return [chr p]
+    _ ->
+      if elem c "01234567"
+        then do
+          hex <- Parsec.many1 (Parsec.oneOf "01234567")
+          let [(p, "")] = readHex (c : hex)
+          return [chr p]
+        else pure ('\\' : [c])
 
 escapedQuoteChar :: Parsec.Parsec String ParseState Char
 escapedQuoteChar = do
@@ -385,25 +412,8 @@ symbol = do
             Nothing
         )
     else pure $ case last segments of
-      "defn" -> XObj (Defn Nothing) i Nothing
-      "def" -> XObj Def i Nothing
-      -- TODO: What about the other def- forms?
-      "do" -> XObj Do i Nothing
-      "while" -> XObj While i Nothing
-      "fn" -> XObj (Fn Nothing Set.empty) i Nothing
-      "let" -> XObj Let i Nothing
-      "break" -> XObj Break i Nothing
-      "if" -> XObj If i Nothing
-      "match" -> XObj (Match MatchValue) i Nothing
-      "match-ref" -> XObj (Match MatchRef) i Nothing
       "true" -> XObj (Bol True) i Nothing
       "false" -> XObj (Bol False) i Nothing
-      "address" -> XObj Address i Nothing
-      "set!" -> XObj SetBang i Nothing
-      "the" -> XObj The i Nothing
-      "ref" -> XObj Ref i Nothing
-      "deref" -> XObj Deref i Nothing
-      "with" -> XObj With i Nothing
       name -> XObj (Sym (SymPath (init segments) name) Symbol) i Nothing
 
 atom :: Parsec.Parsec String ParseState XObj
@@ -538,48 +548,46 @@ dictionary = do
       pairInit = XObj (Sym (SymPath ["Pair"] "init") (LookupGlobal CarpLand AFunction)) i Nothing
       pairs = map (\(k, v) -> XObj (Lst [pairInit, k, v]) i Nothing) (pairwise objs')
       arrayLiteral = XObj (Arr pairs) i Nothing
-      reffedArrayLiteral = XObj (Lst [XObj Ref i Nothing, arrayLiteral]) i Nothing
       fromArraySymbol = XObj (Sym (SymPath ["Map"] "from-array") (LookupGlobal CarpLand AFunction)) i Nothing
-      fromArraySexp = XObj (Lst [fromArraySymbol, reffedArrayLiteral]) i Nothing
+      fromArraySexp = XObj (Lst [fromArraySymbol, arrayLiteral]) i Nothing
   pure fromArraySexp
 
-ref :: Parsec.Parsec String ParseState XObj
-ref = do
-  i <- createInfo
-  _ <- Parsec.char '&'
-  incColumn 1
+readerMacro :: String -> Obj -> Parsec.Parsec String ParseState XObj
+readerMacro macroStr obj = do
+  i1 <- createInfo
+  s <- Parsec.try (Parsec.string macroStr)
+  incColumn (length s)
+  i2 <- createInfo
   expr <- sexpr
-  pure (XObj (Lst [XObj Ref Nothing Nothing, expr]) i Nothing)
+  pure (XObj (Lst [XObj obj i1 Nothing, expr]) i2 Nothing)
+
+symReaderMacro :: String -> String -> Parsec.Parsec String ParseState XObj
+symReaderMacro macroStr sym = readerMacro macroStr (Sym (SymPath [] sym) Symbol)
+
+ref :: Parsec.Parsec String ParseState XObj
+ref = readerMacro "&" Ref
 
 deref :: Parsec.Parsec String ParseState XObj
-deref = do
-  i <- createInfo
-  _ <- Parsec.char '~'
-  incColumn 1
-  expr <- sexpr
-  pure (XObj (Lst [XObj Deref Nothing Nothing, expr]) i Nothing)
+deref = readerMacro "~" Deref
 
 copy :: Parsec.Parsec String ParseState XObj
-copy = do
-  i1 <- createInfo
-  i2 <- createInfo
-  _ <- Parsec.char '@'
-  incColumn 1
-  expr <- sexpr
-  pure (XObj (Lst [XObj (Sym (SymPath [] "copy") Symbol) i1 Nothing, expr]) i2 Nothing)
+copy = symReaderMacro "@" "copy"
 
 quote :: Parsec.Parsec String ParseState XObj
-quote = do
-  i1 <- createInfo
-  i2 <- createInfo
-  _ <- Parsec.char '\''
-  incColumn 1
-  expr <- sexpr
-  pure (XObj (Lst [XObj (Sym (SymPath [] "quote") Symbol) i1 Nothing, expr]) i2 Nothing)
+quote = symReaderMacro "'" "quote"
+
+quasiquote :: Parsec.Parsec String ParseState XObj
+quasiquote = symReaderMacro "`" "quasiquote"
+
+unquoteSplicing :: Parsec.Parsec String ParseState XObj
+unquoteSplicing = symReaderMacro "%@" "unquote-splicing"
+
+unquote :: Parsec.Parsec String ParseState XObj
+unquote = symReaderMacro "%" "unquote"
 
 sexpr :: Parsec.Parsec String ParseState XObj
 sexpr = do
-  x <- Parsec.choice [ref, deref, copy, quote, list, staticArray, array, dictionary, atom]
+  x <- Parsec.choice [ref, deref, copy, quote, quasiquote, unquoteSplicing, unquote, list, staticArray, array, dictionary, atom]
   _ <- whitespaceOrNothing
   pure x
 
@@ -624,6 +632,7 @@ balance text =
         (x : xs) -> case (x, c) of
           ('(', ')') -> Parsec.putState xs
           ('[', ']') -> Parsec.putState xs
+          ('{', '}') -> Parsec.putState xs
           ('"', '"') -> Parsec.putState xs
           --('\\', _) -> Parsec.putState xs -- ignore char after '\'
           _ -> push c
@@ -634,5 +643,6 @@ balance text =
         case c of
           '(' -> Parsec.putState (c : parens)
           '[' -> Parsec.putState (c : parens)
+          '{' -> Parsec.putState (c : parens)
           '"' -> Parsec.putState (c : parens)
           _ -> pure ()

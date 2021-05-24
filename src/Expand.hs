@@ -1,11 +1,13 @@
 module Expand (expandAll, replaceSourceInfoOnXObj) where
 
+import Context
 import Control.Monad.State (State, evalState, get, put)
 import Data.Foldable (foldlM)
 import Env
+import EvalError
 import Info
-import Lookup
 import Obj
+import Qualify
 import TypeError
 import Types
 import Util
@@ -132,7 +134,7 @@ expand eval ctx xobj =
           | even (length rest) ->
             do
               (ctx', expandedExpr) <- expand eval ctx expr
-              (newCtx, expandedPairs) <- foldlM successiveExpandLR (ctx', Right []) (pairwise rest)
+              (newCtx, expandedPairs) <- foldlM successiveExpandLRMatch (ctx', Right []) (pairwise rest)
               pure
                 ( newCtx,
                   do
@@ -186,48 +188,86 @@ expand eval ctx xobj =
                 )
                 Nothing
             )
-        XObj (Mod modEnv) _ _ : args ->
+        [XObj Address _ _, XObj (Sym _ _) _ _] ->
+          pure (ctx, Right xobj)
+        [a@(XObj Address _ _), arg@(XObj (Lst _) _ _)] -> do
+          (ctx', expandedArg) <- expand eval ctx arg
+          case expandedArg of
+            Left err -> pure (ctx, Left err)
+            Right right -> pure (ctx', Right (XObj (Lst [a, right]) (xobjInfo xobj) (xobjTy xobj)))
+        [XObj Address _ _, arg] ->
+          pure
+            ( evalError
+                ctx
+                ("I can only take the `address` of a symbol, but I got `" ++ pretty arg ++ "`.")
+                (xobjInfo xobj)
+            )
+        XObj Address _ _ : _ ->
+          pure
+            ( evalError
+                ctx
+                ("I can only take the `address` of a symbol, but I got `" ++ pretty xobj ++ "`.")
+                (xobjInfo xobj)
+            )
+        [r@(XObj Ref _ _), arg] -> do
+          (ctx', expandedArg) <- expand eval ctx arg
+          case expandedArg of
+            Left err -> pure (ctx, Left err)
+            Right right -> pure (ctx', Right (XObj (Lst [r, right]) (xobjInfo xobj) (xobjTy xobj)))
+        XObj Ref _ _ : _ ->
+          pure
+            ( evalError
+                ctx
+                ("`ref` takes a single argument, but I got `" ++ pretty xobj ++ "`.")
+                (xobjInfo xobj)
+            )
+        XObj (Mod modEnv _) _ _ : args ->
           let pathToModule = pathToEnv modEnv
               implicitInit = XObj (Sym (SymPath pathToModule "init") Symbol) i t
            in expand eval ctx (XObj (Lst (implicitInit : args)) (xobjInfo xobj) (xobjTy xobj))
         f : args ->
-          do
-            (_, expandedF) <- expand eval ctx f
-            (ctx'', expandedArgs) <- foldlM successiveExpand (ctx, Right []) args
-            case expandedF of
-              Right (XObj (Lst [XObj Dynamic _ _, _, XObj (Arr _) _ _, _]) _ _) ->
-                --trace ("Found dynamic: " ++ pretty xobj)
-                eval ctx'' xobj
-              Right (XObj (Lst [XObj Macro _ _, _, XObj (Arr _) _ _, _]) _ _) ->
-                --trace ("Found macro: " ++ pretty xobj ++ " at " ++ prettyInfoFromXObj xobj)
-                eval ctx'' xobj
-              Right (XObj (Lst [XObj (Command (NullaryCommandFunction nullary)) _ _, _, _]) _ _) ->
-                nullary ctx''
-              Right (XObj (Lst [XObj (Command (UnaryCommandFunction unary)) _ _, _, _]) _ _) ->
-                case expandedArgs of
-                  Right [x] -> unary ctx'' x
-                  _ -> error "expanding args"
-              Right (XObj (Lst [XObj (Command (BinaryCommandFunction binary)) _ _, _, _]) _ _) ->
-                case expandedArgs of
-                  Right [x, y] -> binary ctx'' x y
-                  _ -> error "expanding args"
-              Right (XObj (Lst [XObj (Command (TernaryCommandFunction ternary)) _ _, _, _]) _ _) ->
-                case expandedArgs of
-                  Right [x, y, z] -> ternary ctx'' x y z
-                  _ -> error "expanding args"
-              Right (XObj (Lst [XObj (Command (VariadicCommandFunction variadic)) _ _, _, _]) _ _) ->
-                case expandedArgs of
-                  Right ea -> variadic ctx'' ea
-                  _ -> error "expanding args"
-              Right _ ->
-                pure
-                  ( ctx'',
-                    do
-                      okF <- expandedF
-                      okArgs <- expandedArgs
-                      Right (XObj (Lst (okF : okArgs)) i t)
-                  )
-              Left err -> pure (ctx'', Left err)
+          if isSpecialSym f
+            then do
+              (ctx', s) <- eval ctx f
+              let Right sym = s
+              expand eval ctx' (XObj (Lst (sym : args)) (xobjInfo xobj) (xobjTy xobj))
+            else do
+              (_, expandedF) <- expand eval ctx f
+              (ctx'', expandedArgs) <- foldlM successiveExpand (ctx, Right []) args
+              case expandedF of
+                Right (XObj (Lst [XObj Dynamic _ _, _, XObj (Arr _) _ _, _]) _ _) ->
+                  --trace ("Found dynamic: " ++ pretty xobj)
+                  eval ctx'' xobj
+                Right (XObj (Lst [XObj Macro _ _, _, XObj (Arr _) _ _, _]) _ _) ->
+                  --trace ("Found macro: " ++ pretty xobj ++ " at " ++ prettyInfoFromXObj xobj)
+                  eval ctx'' xobj
+                Right (XObj (Lst [XObj (Command (NullaryCommandFunction nullary)) _ _, _, _]) _ _) ->
+                  nullary ctx''
+                Right (XObj (Lst [XObj (Command (UnaryCommandFunction unary)) _ _, _, _]) _ _) ->
+                  case expandedArgs of
+                    Right [x] -> unary ctx'' x
+                    _ -> error "expanding args"
+                Right (XObj (Lst [XObj (Command (BinaryCommandFunction binary)) _ _, _, _]) _ _) ->
+                  case expandedArgs of
+                    Right [x, y] -> binary ctx'' x y
+                    _ -> error "expanding args"
+                Right (XObj (Lst [XObj (Command (TernaryCommandFunction ternary)) _ _, _, _]) _ _) ->
+                  case expandedArgs of
+                    Right [x, y, z] -> ternary ctx'' x y z
+                    _ -> error "expanding args"
+                Right (XObj (Lst [XObj (Command (VariadicCommandFunction variadic)) _ _, _, _]) _ _) ->
+                  case expandedArgs of
+                    Right ea -> variadic ctx'' ea
+                    _ -> error "expanding args"
+                Right _ ->
+                  pure
+                    ( ctx'',
+                      do
+                        okF <- expandedF
+                        okArgs <- expandedArgs
+                        Right (XObj (Lst (okF : okArgs)) i t)
+                    )
+                Left err -> pure (ctx'', Left err)
     expandList _ = error "Can't expand non-list in expandList."
     expandArray :: XObj -> IO (Context, Either EvalError XObj)
     expandArray (XObj (Arr xobjs) i t) =
@@ -241,22 +281,31 @@ expand eval ctx xobj =
           )
     expandArray _ = error "Can't expand non-array in expandArray."
     expandSymbol :: XObj -> IO (Context, Either EvalError XObj)
-    expandSymbol sym@(XObj (Sym path _) _ _) =
-      case lookupBinder path (contextEnv ctx) of
-        Just (Binder meta (XObj (Lst (XObj (External _) _ _ : _)) _ _)) -> isPrivate meta xobj
-        Just (Binder meta (XObj (Lst (XObj (Instantiate _) _ _ : _)) _ _)) -> isPrivate meta xobj
-        Just (Binder meta (XObj (Lst (XObj (Deftemplate _) _ _ : _)) _ _)) -> isPrivate meta xobj
-        Just (Binder meta (XObj (Lst (XObj (Defn _) _ _ : _)) _ _)) -> isPrivate meta xobj
-        Just (Binder meta (XObj (Lst (XObj Def _ _ : _)) _ _)) -> isPrivate meta xobj
-        Just (Binder meta (XObj (Lst (XObj (Defalias _) _ _ : _)) _ _)) -> isPrivate meta xobj
-        Just (Binder meta found) -> isPrivate meta found -- use the found value
-        Nothing -> pure (ctx, Right xobj) -- symbols that are not found are left as-is
+    expandSymbol sym@(XObj (Sym path@(SymPath p name) _) _ _) =
+      case p of
+        [] ->
+          case getValueBinder (contextEnv ctx) name of
+            Right (Binder _ found) -> pure (ctx, Right (matchDef found)) -- use the found value
+            _ -> searchForBinder
+        _ -> searchForBinder
       where
-        isPrivate m x =
+        qpath = (qualifyPath ctx (SymPath [] name))
+        searchForBinder =
+          case (lookupBinderInGlobalEnv ctx path <> lookupBinderInGlobalEnv ctx qpath) of
+            Right (Binder meta found) -> isPrivate meta (matchDef found) (getPath found)
+            Left _ -> pure (ctx, Right xobj) -- symbols that are not found are left as-is
+        isPrivate m x (SymPath p' _) =
           pure $
-            if metaIsTrue m "private"
-              then evalError ctx ("The binding: " ++ pretty sym ++ " is private; it may only be used within the module that defines it.") (xobjInfo sym)
+            if (metaIsTrue m "private") && (not (null p') && p' /= (contextPath ctx))
+              then evalError ctx (show (PrivateBinding path)) (xobjInfo sym)
               else (ctx, Right x)
+        matchDef (XObj (Lst (XObj (External _) _ _ : _)) _ _) = xobj
+        matchDef (XObj (Lst (XObj (Instantiate _) _ _ : _)) _ _) = xobj
+        matchDef (XObj (Lst (XObj (Deftemplate _) _ _ : _)) _ _) = xobj
+        matchDef (XObj (Lst (XObj (Defn _) _ _ : _)) _ _) = xobj
+        matchDef (XObj (Lst (XObj Def _ _ : _)) _ _) = xobj
+        matchDef (XObj (Lst (XObj MetaStub _ _ : _)) _ _) = xobj
+        matchDef x = x
     expandSymbol _ = pure (evalError ctx "Can't expand non-symbol in expandSymbol." Nothing)
     successiveExpand (ctx', acc) e =
       case acc of
@@ -274,6 +323,17 @@ expand eval ctx xobj =
           case expandedR of
             Right v -> pure (newCtx, Right (lst ++ [[l, v]]))
             Left err -> pure (newCtx, Left err)
+    successiveExpandLRMatch a (l, r) =
+      case traverseExpandLiteral l of
+        Left (err, x) -> pure (evalError ctx err (xobjInfo x))
+        _ -> successiveExpandLR a (l, r)
+    traverseExpandLiteral (XObj (Lst objs) _ _) =
+      case mapM traverseExpandLiteral objs of
+        Left e -> Left e
+        _ -> Right ()
+    traverseExpandLiteral (XObj (Sym _ _) _ _) = Right ()
+    traverseExpandLiteral other =
+      Left ("I can’t use `" ++ pretty other ++ "` in match, only lists and symbols are allowed", other)
 
 -- | Replace all the infoIdentifier:s on all nested XObj:s
 setNewIdentifiers :: XObj -> XObj

@@ -1,0 +1,189 @@
+(load "Test.carp")
+(use Test)
+
+(deftest test
+  (assert-dynamic-equal test
+                        "2"
+                        (Map.get (Map.put (Map.create) "1" "2") "1")
+                        "basic put and get works"
+  )
+  (assert-dynamic-equal test
+                        "3"
+                        (Map.get (Map.put (Map.put (Map.create) "1" "2") "1" "3") "1")
+                        "put, update and get"
+  )
+  (assert-dynamic-equal test
+                        nil
+                        (Map.get (Map.create) "1")
+                        "get works with defaults"
+  )
+  (assert-dynamic-equal test
+                        true
+                        (Map.empty? (Map.update (Map.create) "x" inc))
+                        "update works with empty map"
+  )
+  (assert-dynamic-equal test
+                        2
+                        (Map.get (Map.update {"x" 1} "x" inc) "x")
+                        "update works"
+    )
+  (assert-dynamic-equal test
+                        \x
+                        (Map.get-with-default {1 \x} 1 \_)
+                        "get-with-default works I"
+  )
+  (assert-dynamic-equal test
+                        \_
+                        (Map.get-with-default {1 \x} 2 \_)
+                        "get-with-default works II"
+  )
+  (assert-dynamic-equal test
+                        8
+                        (Map.get (Map.update-with-default (Map.create) "x" inc 7) "x")
+                        "update-with-default works with empty map"
+  )
+  (assert-dynamic-equal test
+                        2
+                        (Map.get (Map.update-with-default {"x" 1} "x" inc 7) "x")
+                        "update-with-default works"
+  )
+  (assert-dynamic-equal test
+                        1
+                        (Map.len (Map.put (Map.create) "1" "2"))
+                        "len works"
+  )
+  (assert-dynamic-equal test
+                        0
+                        (Map.len (Map.create))
+                        "length works on empty map"
+  )
+  (assert-dynamic-equal test
+                        false
+                        (Map.contains? (Map.create) "1")
+                        "contains? works on empty map"
+  )
+  (assert-dynamic-equal test
+                        true
+                        (Map.contains? (Map.put (Map.create) "1" "2") "1")
+                        "contains? works"
+  )
+  (assert-dynamic-equal test
+                        true
+                        (Map.contains? (Map.put (Map.create) -7 "2") -7)
+                        "contains? works with negative keys"
+  )
+  (assert-dynamic-equal test
+                        false
+                        (Map.contains? (Map.put (Map.create) 1 "2") -7)
+                        "contains? works with negative keys"
+  )
+  (assert-dynamic-equal test
+                        true
+                        (Map.empty? (Map.create))
+                        "empty? works on empty map"
+  )
+  (assert-dynamic-equal test
+                        false
+                        (Map.empty? (Map.put (Map.create) "1" "2"))
+                        "empty? works"
+  )
+  (assert-dynamic-equal test
+                        true
+                        (Map.empty? (Map.remove (Map.put (Map.create) "1" "2") "1"))
+                        "remove works"
+  )
+  (assert-dynamic-equal test
+                        true
+                        (Map.all? (fn [p] (or (even? (car p)) (cadr p)))
+                                  {1 true 2 false 4 false})
+                        "Map.all? works I"
+  )
+  (assert-dynamic-equal test
+                        false
+                        (Map.all? (fn [p] (or (even? (car p)) (cadr p)))
+                                  {1 true 2 false 5 false})
+                        "Map.all? works II"
+  )
+  (assert-dynamic-equal test
+                        true
+                        (Map.= {1 2 3 4} {1 2 3 4})
+                        "Map.= works I"
+  )
+  (assert-dynamic-equal test
+                        false
+                        (Map.= {1 2 3 4} {1 2 3 5})
+                        "Map.= works II"
+  )
+  (assert-dynamic-equal test
+                        false
+                        (Map.= {1 2 3 4} {1 2})
+                        "Map.= works III"
+  )
+  (assert-dynamic-equal test
+                        2
+                        (Map.len (Map.from-array [(Pair.init 1 2)
+                                                  (Pair.init 3 4)]))
+                        "creating a map from an array works"
+  )
+  (assert-dynamic-equal test
+                        "{ 1 2 }"
+                        (Map.str (Map.from-array [(Pair.init 1 2)]))
+                        "stringification works I"
+  )
+  (assert-dynamic-equal test
+                        ; TODO: should we escape strings?
+                        "{ hi bye }"
+                        (Map.str (Map.from-array [(Pair.init "hi" "bye")]))
+                        "stringification works II"
+  )
+  (assert-dynamic-equal test
+                        [(Pair.init 1 2)]
+                        (Map.to-array (Map.put (Map.create) 1 2))
+                        "Map.to-array works 1"
+  )
+  (assert-dynamic-equal test
+                        2
+                        (length (Map.to-array (Map.from-array [(Pair.init 1 2)
+                                                               (Pair.init 3 4)])))
+                        "Map.to-array works 2"
+  )
+  (assert-dynamic-equal test
+                        "{ 1 12 3 34 }"
+                        (Map.str (Map.map (fn [p] (+ (cadr p) (* 10 (car p)))) {1 2 3 4}))
+                        "map works"
+  )
+  (assert-dynamic-equal test
+                        641
+                        (Map.kv-reduce (fn [sum p] (+ sum (+ (* 100 (car p)) (* 10 (cadr p)))))
+                                       1
+                                       {1 1 2 1 3 2})
+                        "kv-reduce works"
+  )
+  (assert-dynamic-equal test
+                        '(1 2 3)
+                        (Map.keys {1 1 2 1 3 2})
+                        "keys works"
+  )
+  (assert-dynamic-equal test
+                        '(1 1 2)
+                        (Map.vals {1 1 2 1 3 2})
+                        "vals works"
+  )
+  (assert-dynamic-equal test
+                        3
+                        (Map.get {(Pair.init 1 2) 3} (Pair.init 1 2))
+                        "Pairs work as keys"
+  )
+  (assert-dynamic-op test
+                     {1 "hi" 2 "bye"}
+                     (Map.reverse {"hi" 1 "bye" 2})
+                     "reverse works"
+                     Map.=
+  )
+  (assert-dynamic-op test
+                     {1 "hi" 2 "bye" 3 "!"}
+                     (Map.merge {1 "bye" 3 "!"} {2 "bye" 1 "hi"})
+                     "merge works"
+                     Map.=
+  )
+)

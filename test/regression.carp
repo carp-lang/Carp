@@ -28,11 +28,21 @@
   (Piff [String])
   (Puff [String]))
 
+; set! works on arguments (issue #1144)
+(defndynamic set-args [i]
+  (do (set! i (+ i 2)) i))
+
+(defmacro call-set-args [] (set-args 2))
+
 (defn match-ref-1 []
   (let [xs [(StrangeThings.Puff @"ABCD")]]
     (match-ref (Array.unsafe-nth &xs 0)
       (StrangeThings.Piff x) false
       _ true)))
+
+; quoted macros do not get evaluated if not called
+(defmacro invalid []
+  '(cond x 1))
 
 (use-all Test Vector2 Foo)
 
@@ -66,6 +76,10 @@
                 2
                 (nested-lambdas)
                 "test that nested lambdas can use captured values")
+  (assert-equal test
+                4
+                (call-set-args)
+                "test that set! works on dynamic function arguments")
   (assert-true test
                (let-and-set)
                "test that nested let bindings and set! interplay nicely")

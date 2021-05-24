@@ -3,7 +3,7 @@
 
 (defmodule System
   (doc carp-init-globals "Initializes all global variables (in correct order, based on interdependencies). Called automatically by `main` if the project is compiled as an executable. Client code needs to call this function manually when using a library written in Carp.")
-  (register carp-init-globals (Fn [Int Int] ()) "carp_init_globals")
+  (register carp-init-globals (Fn [Int (Ptr (Ptr CChar))] ()) "carp_init_globals")
   (doc time "Gets the current system time as an integer.")
   (register time (Fn [] Int))
   (doc nanotime "Gets the current system time in nanoseconds as a long.")

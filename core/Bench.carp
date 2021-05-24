@@ -3,9 +3,7 @@
 (system-include "carp_bench.h")
 
 (defmodule Bench
-  (def min-runs 50)
-  (private min-runs)
-  (hidden min-runs)
+  (def- min-runs 50)
 
   (private get-time-elapsed)
   (hidden get-time-elapsed)
@@ -19,43 +17,33 @@ If your functions takes a large amount of time, experimenting with this might ma
     ; but this is an implementation detail
     (set! min-runs (/ n 2)))
 
-  (private get-unit)
-  (hidden get-unit)
-  (defn get-unit [n]
+  (defn- get-unit [n]
     (cond
       (< n 1000.0) (String.append &(Double.str n) "ns")
       (< n 1000000.0) (String.append &(Double.str (/ n 1000.0)) "µs")
       (< n 1000000000.0) (String.append &(Double.str (/ n 1000000.0)) "ms")
       (String.append &(Double.str (/ n 1000000000.0)) "s")))
 
-  (private print)
-  (hidden print)
-  (defn print [title n]
+  (defn- print [title n]
     (let [unit (get-unit n)]
       (do
         (IO.print title)
         (IO.println &unit))))
 
-  (private ns-iter-inner)
-  (hidden ns-iter-inner)
-  (defn ns-iter-inner [f n]
+  (defn- ns-iter-inner [f n]
     (let [start (get-time-elapsed)]
       (do
         (for [i 0 n] (ignore (~f)))
         (Double.- (get-time-elapsed) start))))
 
-  (private print-bench-results)
-  (hidden print-bench-results)
-  (defn print-bench-results [res total]
+  (defn- print-bench-results [res total]
     (do
       (print "Total time elapsed: " total)
       (print "Best case: " @(Statistics.Summary.min res))
       (print "Worst case: " @(Statistics.Summary.max res))
       (print "Standard deviation: " @(Statistics.Summary.stdev res))))
 
-  (private get-samples)
-  (hidden get-samples)
-  (defn get-samples [f n]
+  (defn- get-samples [f n]
     (let [zero 0.0
           samples (Array.replicate min-runs &zero)]
       (do
@@ -63,9 +51,7 @@ If your functions takes a large amount of time, experimenting with this might ma
           (Array.aset! &samples i (Double./ (ns-iter-inner f (Double.to-int n)) n)))
         (Statistics.summary &(Statistics.winsorize &samples 5.0)))))
 
-  (private min-one)
-  (hidden min-one)
-  (defn min-one [n]
+  (defn- min-one [n]
     (if (> 1.0 n) n 1.0))
 
   ; it is actually possible to make this run forever by supplying a _really_
@@ -109,16 +95,16 @@ If your functions takes a large amount of time, experimenting with this might ma
 
 
 (defmacro benchn [n form]
-  (list 'let ['before (Bench.get-time-elapsed)
-              'times []]
-    (list 'do
-      (list 'for ['i 0 n]
-        (list 'let ['before-once (Bench.get-time-elapsed)]
-          (list 'do
-            form
-            (list 'set! &times (Array.push-back (Array.copy &times) (Double.- (Bench.get-time-elapsed) before-once))))))
-      (list 'let ['total (Double.- (Bench.get-time-elapsed) before)
-                  'per (list 'Double./ 'total (list 'Double.from-int n))]
+  `(let [before (Bench.get-time-elapsed)
+         times []]
+    (do
+      (for [i 0 %n]
+        (let [before-once (Bench.get-time-elapsed)]
+          (do
+            %form
+            (set! &times (Array.push-back (Array.copy &times) (Double.- (Bench.get-time-elapsed) before-once))))))
+      (let [total (Double.- (Bench.get-time-elapsed) before)
+            per (Double./ total (Double.from-int %n))]
         (do
           (Bench.print "Total time elapsed: " total)
           (Bench.print "Time elapsed per run (average): " per)

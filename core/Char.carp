@@ -6,6 +6,8 @@
   (register > (Fn [Char Char] Bool))
   (register to-int (Fn [Char] Int))
   (register from-int (Fn [Int] Char))
+  (register to-byte (Fn [Char] Byte))
+  (register from-byte (Fn [Byte] Char))
   (register copy (Fn [&Char] Char))
 
   (implements < Char.<)

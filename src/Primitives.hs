@@ -1,4 +1,3 @@
-{-# LANGUAGE LambdaCase #-}
 {-# LANGUAGE TupleSections #-}
 
 module Primitives where
@@ -9,25 +8,26 @@ import Context
 import Control.Applicative
 import Control.Monad (foldM, unless, when)
 import Control.Monad.IO.Class (MonadIO, liftIO)
-import Data.Either (rights)
+import Data.Bifunctor
+import Data.Either (fromRight, rights)
 import Data.Functor ((<&>))
-import Data.List (union)
-import Data.Maybe (fromJust, fromMaybe, mapMaybe, maybeToList)
+import Data.List (foldl')
+import Data.Maybe (fromJust, fromMaybe)
 import Deftype
 import Emit
-import Env
+import Env (addUsePath, contextEnv, insert, lookupBinderEverywhere, lookupEverywhere, lookupMeta, searchValueBinder)
 import Infer
 import Info
 import Interfaces
-import Lookup
-import qualified Map
 import Managed
 import qualified Meta
 import Obj
 import PrimitiveError
 import Project
+import Qualify (Qualified (..), QualifiedPath, getQualifiedPath, markQualified, qualify, qualifyNull, qualifyPath, unqualify)
 import Reify
 import Sumtypes
+import SymPath
 import Template
 import ToTemplate
 import TypeError
@@ -36,70 +36,59 @@ import Types
 import Util
 import Web.Browser (openBrowser)
 
--- found :: (MonadIO m, Show a1) => a2 -> a1 -> m (a2, Either a3 XObj)
--- found ctx binder =
---   liftIO $ do putStrLnWithColor White (show binder)
---               pure (ctx, dynamicNil)
+makeNullaryPrim :: SymPath -> NullaryPrimitiveCallback -> String -> String -> (String, Binder)
+makeNullaryPrim p = makePrim p . NullaryPrimitive
 
-makePrim :: String -> Int -> String -> String -> Primitive -> (String, Binder)
-makePrim name arity = makePrim' name (Just arity)
+makeUnaryPrim :: SymPath -> UnaryPrimitiveCallback -> String -> String -> (String, Binder)
+makeUnaryPrim p = makePrim p . UnaryPrimitive
 
-makeVarPrim :: String -> String -> String -> Primitive -> (String, Binder)
-makeVarPrim name = makePrim' name Nothing
+makeBinaryPrim :: SymPath -> BinaryPrimitiveCallback -> String -> String -> (String, Binder)
+makeBinaryPrim p = makePrim p . BinaryPrimitive
+
+makeTernaryPrim :: SymPath -> TernaryPrimitiveCallback -> String -> String -> (String, Binder)
+makeTernaryPrim p = makePrim p . TernaryPrimitive
+
+makeQuaternaryPrim :: SymPath -> QuaternaryPrimitiveCallback -> String -> String -> (String, Binder)
+makeQuaternaryPrim p = makePrim p . QuaternaryPrimitive
+
+makeVariadicPrim :: SymPath -> VariadicPrimitiveCallback -> String -> String -> (String, Binder)
+makeVariadicPrim p = makePrim p . VariadicPrimitive
 
 argumentErr :: Context -> String -> String -> String -> XObj -> IO (Context, Either EvalError XObj)
 argumentErr ctx fun ty number actual =
   pure (toEvalError ctx actual (ArgumentTypeError fun ty number actual))
 
-makePrim' :: String -> Maybe Int -> String -> String -> Primitive -> (String, Binder)
-makePrim' name maybeArity docString example callback =
-  let path = SymPath [] name
-      prim =
-        XObj
-          ( Lst
-              [ XObj (Primitive (PrimitiveFunction wrapped)) (Just dummyInfo) Nothing,
-                XObj (Sym path Symbol) Nothing Nothing,
-                unfoldArgs
-              ]
-          )
-          (Just dummyInfo)
-          (Just DynamicTy)
-      meta = Meta.set "doc" (XObj (Str doc) Nothing Nothing) emptyMeta
-   in (name, Binder meta prim)
+makePrim :: SymPath -> PrimitiveFunctionType -> String -> String -> (String, Binder)
+makePrim path callback doc example =
+  (name, Binder meta prim)
   where
-    wrapped =
-      case maybeArity of
-        Just a ->
-          \x c l ->
-            let ll = length l
-             in (if ll /= a then err x c a ll else callback x c l)
-        Nothing -> callback
-    err :: XObj -> Context -> Int -> Int -> IO (Context, Either EvalError XObj)
-    err x ctx a l =
-      pure
-        ( evalError
-            ctx
-            ( "The primitive `" ++ name ++ "` expected " ++ show a
-                ++ " arguments, but got "
-                ++ show l
-                ++ ".\n\n"
-                ++ exampleUsage
-            )
-            (xobjInfo x)
-        )
-    doc = docString ++ "\n\n" ++ exampleUsage
+    SymPath _ name = path
     exampleUsage = "Example Usage:\n```\n" ++ example ++ "\n```\n"
-    unfoldArgs =
-      case maybeArity of
-        Just arity ->
-          let tosym x = XObj (Sym (SymPath [] x) Symbol) Nothing Nothing
-           in XObj (Arr (map (tosym . intToArgName) [1 .. arity])) Nothing Nothing
-        Nothing -> XObj (Arr [XObj (Sym (SymPath [] "") Symbol) Nothing Nothing]) Nothing Nothing
+    docString = doc ++ "\n\n" ++ exampleUsage
+    meta = Meta.set "doc" (XObj (Str docString) Nothing Nothing) emptyMeta
+    prim =
+      XObj
+        ( Lst
+            [ XObj (Primitive callback) (Just dummyInfo) Nothing,
+              XObj (Sym path Symbol) Nothing Nothing,
+              XObj (Arr args) Nothing Nothing
+            ]
+        )
+        (Just dummyInfo)
+        (Just DynamicTy)
+    args = (\x -> XObj (Sym (SymPath [] x) Symbol) Nothing Nothing) <$> argnames
+    argnames = case callback of
+      NullaryPrimitive _ -> []
+      UnaryPrimitive _ -> ["x"]
+      BinaryPrimitive _ -> ["x", "y"]
+      TernaryPrimitive _ -> ["x", "y", "z"]
+      QuaternaryPrimitive _ -> ["x", "y", "z", "w"]
+      VariadicPrimitive _ -> []
 
 infoXObjOrError :: Context -> (Context, Either EvalError XObj) -> Maybe Info -> Maybe XObj -> (Context, Either EvalError XObj)
 infoXObjOrError ctx err i = maybe err (\xobj -> (ctx, Right xobj {xobjInfo = i}))
 
-primitiveFile :: Primitive
+primitiveFile :: VariadicPrimitiveCallback
 primitiveFile x@(XObj _ i _) ctx args =
   pure $ case args of
     [] -> infoXObjOrError ctx err i (getFileAsXObj fppl i)
@@ -109,7 +98,7 @@ primitiveFile x@(XObj _ i _) ctx args =
     fppl = projectFilePathPrintLength (contextProj ctx)
     err = toEvalError ctx x (MissingInfo x)
 
-primitiveLine :: Primitive
+primitiveLine :: VariadicPrimitiveCallback
 primitiveLine x@(XObj _ i _) ctx args =
   pure $ case args of
     [] -> infoXObjOrError ctx err i (getLineAsXObj i)
@@ -118,7 +107,7 @@ primitiveLine x@(XObj _ i _) ctx args =
   where
     err = toEvalError ctx x (MissingInfo x)
 
-primitiveColumn :: Primitive
+primitiveColumn :: VariadicPrimitiveCallback
 primitiveColumn x@(XObj _ i _) ctx args =
   pure $ case args of
     [] -> infoXObjOrError ctx err i (getColumnAsXObj i)
@@ -127,51 +116,41 @@ primitiveColumn x@(XObj _ i _) ctx args =
   where
     err = toEvalError ctx x (MissingInfo x)
 
-primitiveImplements :: Primitive
-primitiveImplements call ctx [x@(XObj (Sym interface@(SymPath _ _) _) _ _), XObj (Sym (SymPath prefixes name) _) _ _] =
+primitiveImplements :: BinaryPrimitiveCallback
+primitiveImplements _ ctx x@(XObj (Sym interface@(SymPath _ _) _) _ _) (XObj (Sym path _) _ _) =
   do
-    (maybeInterface, maybeImpl) <- pure (lookupBinder interface tyEnv, lookupBinder (SymPath modules name) global)
+    (maybeInterface, maybeImpl) <- pure (lookupInterface ctx interface, lookupBinderInGlobalEnv ctx qpath)
     case (maybeInterface, maybeImpl) of
-      (_, Nothing) ->
-        if null modules
-          then pure (toEvalError ctx call ForewardImplementsMeta)
-          else updateMeta (Meta.stub (SymPath modules name)) ctx
-      (Nothing, Just implBinder) ->
+      (_, Left _) -> updateMeta (Meta.stub (contextualize path ctx)) ctx
+      (Left _, Right implBinder) ->
         warn >> updateMeta implBinder ctx
-      (Just interfaceBinder, Just implBinder) ->
+      (Right interfaceBinder, Right implBinder) ->
+        -- N.B. The found binding will be fully qualified!
         addToInterface interfaceBinder implBinder
   where
-    global = contextGlobalEnv ctx
-    tyEnv = getTypeEnv . contextTypeEnv $ ctx
-    SymPath modules _ = consPath (contextPath ctx `union` prefixes) (SymPath [] name)
+    qpath = qualifyNull ctx path
     warn :: IO ()
     warn = emitWarning (show (NonExistentInterfaceWarning x))
     addToInterface :: Binder -> Binder -> IO (Context, Either EvalError XObj)
     addToInterface inter impl =
-      either
-        (addToInterfaceError (contextExecMode ctx))
-        (updateMeta impl)
-        (registerInInterface ctx impl inter)
-    addToInterfaceError :: ExecutionMode -> String -> IO (Context, Either EvalError XObj)
-    addToInterfaceError Check e =
-      putStrLn (machineReadableInfoFromXObj fppl x ++ " " ++ e)
-        >> pure (evalError ctx e (xobjInfo x))
-      where
-        fppl = projectFilePathPrintLength (contextProj ctx)
-    addToInterfaceError _ e =
-      putStrLnWithColor Red e
-        >> pure (evalError ctx e (xobjInfo x))
+      let (Right newCtx, maybeErr) = registerInInterface ctx impl inter
+       in maybe (updateMeta impl newCtx) (handleError newCtx impl) maybeErr
+    handleError :: Context -> Binder -> InterfaceError -> IO (Context, Either EvalError XObj)
+    handleError context impl e@(AlreadyImplemented _ oldImplPath _ _) =
+      emitWarning (show e) >> pure (removeInterfaceFromImplements oldImplPath x context) >>= updateMeta impl
+    handleError context _ e =
+      emitError (show e) >> pure (evalError context (show e) (xobjInfo x))
     updateMeta :: Binder -> Context -> IO (Context, Either EvalError XObj)
     updateMeta binder context =
-      pure (fromJust update, dynamicNil)
+      pure (fromRight (error "Couldn't insert updated meta!!") (fromJust updater), dynamicNil)
       where
-        update =
+        updater =
           ( ( Meta.getBinderMetaValue "implements" binder
                 <&> updateImplementations binder
             )
               <|> Just (updateImplementations binder (XObj (Lst []) (Just dummyInfo) (Just DynamicTy)))
           )
-            >>= \newBinder -> pure (context {contextGlobalEnv = envInsertAt global (getBinderPath binder) newBinder})
+            >>= pure . (insertInGlobalEnv context qpath)
         updateImplementations :: Binder -> XObj -> Binder
         updateImplementations implBinder (XObj (Lst impls) inf ty) =
           if x `elem` impls
@@ -179,44 +158,41 @@ primitiveImplements call ctx [x@(XObj (Sym interface@(SymPath _ _) _) _ _), XObj
             else Meta.updateBinderMeta implBinder "implements" (XObj (Lst (x : impls)) inf ty)
         updateImplementations implBinder _ =
           Meta.updateBinderMeta implBinder "implements" (XObj (Lst [x]) (Just dummyInfo) (Just DynamicTy))
-primitiveImplements x ctx [XObj (Sym _ _) _ _, y] =
+primitiveImplements x ctx (XObj (Sym _ _) _ _) y =
   pure $ toEvalError ctx x (ArgumentTypeError "implements" "a symbol" "second" y)
-primitiveImplements _ ctx [x, _] =
+primitiveImplements _ ctx x _ =
   pure $ toEvalError ctx x (ArgumentTypeError "implements" "a symbol" "first" x)
-primitiveImplements x@XObj {} ctx args =
-  pure $ toEvalError ctx x (ArgumentArityError x "2" args)
 
-define :: Bool -> Context -> XObj -> IO Context
-define hidden ctx@(Context globalEnv _ typeEnv _ proj _ _ _) annXObj =
-  pure (hideIt freshBinder)
+-- N.B. Symbols come into this function FULLY QUALIFIED!
+-- see Eval.hs annotateWithinContext
+define :: Bool -> Context -> Qualified -> IO Context
+define hidden ctx qualifiedXObj =
+  pure (if hidden then (Meta.hide freshBinder) else freshBinder)
     >>= \newBinder ->
       if isTypeDef annXObj
         then defineInTypeEnv newBinder
         else defineInGlobalEnv newBinder
   where
-    freshBinder = Binder emptyMeta annXObj
+    annXObj = unQualified qualifiedXObj
+    freshBinder = toBinder annXObj
+    qpath = getQualifiedPath qualifiedXObj
     defineInTypeEnv :: Binder -> IO Context
-    defineInTypeEnv binder = pure (insertInTypeEnv ctx (getPath annXObj) binder)
+    defineInTypeEnv = pure . fromRight ctx . (insertTypeBinder ctx qpath)
     defineInGlobalEnv :: Binder -> IO Context
-    defineInGlobalEnv fallbackBinder =
+    defineInGlobalEnv newBinder =
+      when (projectEchoC (contextProj ctx)) (putStrLn (toC All (Binder emptyMeta annXObj)))
+        >> case (lookupBinderInGlobalEnv ctx qpath) of
+          Left _ -> pure (fromRight ctx (insertInGlobalEnv ctx qpath newBinder))
+          Right oldBinder -> redefineExistingBinder oldBinder newBinder
+    redefineExistingBinder :: Binder -> Binder -> IO Context
+    redefineExistingBinder old@(Binder meta _) (Binder _ x) =
       do
-        let maybeExistingBinder = lookupBinder (getPath annXObj) globalEnv
-        when (projectEchoC proj) (putStrLn (toC All (Binder emptyMeta annXObj)))
-        case maybeExistingBinder of
-          Nothing -> pure (insertInGlobalEnv ctx (getPath annXObj) fallbackBinder)
-          Just binder -> redefineExistingBinder binder
-    redefineExistingBinder :: Binder -> IO Context
-    redefineExistingBinder old@(Binder meta _) =
-      do
-        let updatedBinder = hideIt (Binder meta annXObj)
-        warnTypeChange old
-        updatedContext <- implementInterfaces updatedBinder
-        pure (insertInGlobalEnv updatedContext (getPath annXObj) updatedBinder)
-    hideIt :: Binder -> Binder
-    hideIt binder =
-      if hidden
-        then Meta.updateBinderMeta binder "hidden" trueXObj
-        else binder
+        unless (isInstantiation (binderXObj old)) (warnTypeChange old)
+        -- TODO: Merge meta more elegantly.
+        updatedContext <- (implementInterfaces (Binder meta x))
+        pure (fromRight (error ("Failed to insert " ++ show qpath)) (insertInGlobalEnv updatedContext qpath (Binder meta x)))
+    isInstantiation (XObj (Lst (XObj (Instantiate _) _ _ : _)) _ _) = True
+    isInstantiation _ = False
     warnTypeChange :: Binder -> IO ()
     warnTypeChange binder =
       unless (areUnifiable (forceTy annXObj) previousType) warn
@@ -229,22 +205,23 @@ define hidden ctx@(Context globalEnv _ typeEnv _ proj _ _ _) annXObj =
     implementInterfaces binder =
       pure
         ( Meta.getBinderMetaValue "implements" binder
-            >>= \(XObj (Lst interfaces) _ _) -> pure (map getPath interfaces)
+            -- TODO: Direct qualification!
+            >>= \(XObj (Lst interfaces) _ _) -> pure (map Qualified interfaces)
         )
         >>= \maybeinterfaces ->
-          pure (mapMaybe (`lookupBinder` getTypeEnv typeEnv) (fromMaybe [] maybeinterfaces))
+          pure (rights (fmap (lookupBinderInTypeEnv ctx . getQualifiedPath) (fromMaybe [] maybeinterfaces)))
             >>= \interfaceBinders ->
-              pure (foldM (`registerInInterface` binder) ctx interfaceBinders)
-                >>= \case
-                  Left e -> printError (contextExecMode ctx) e >> pure ctx
-                  Right newCtx -> pure newCtx
+              pure (foldl' (\(ctx', _) interface -> first (fromRight ctx') (registerInInterface ctx' binder interface)) (ctx, Nothing) interfaceBinders)
+                >>= \(newCtx, err) -> case err of
+                  Just e -> printError (contextExecMode ctx) (show e) >> pure ctx
+                  Nothing -> pure newCtx
     printError :: ExecutionMode -> String -> IO ()
     printError Check e =
       let fppl = projectFilePathPrintLength (contextProj ctx)
        in putStrLn (machineReadableInfoFromXObj fppl annXObj ++ " " ++ e)
     printError _ e = putStrLnWithColor Red e
 
-primitiveRegisterType :: Primitive
+primitiveRegisterType :: VariadicPrimitiveCallback
 primitiveRegisterType _ ctx [XObj (Sym (SymPath [] t) _) _ _] =
   primitiveRegisterTypeWithoutFields ctx t Nothing
 primitiveRegisterType _ ctx [x] =
@@ -257,224 +234,197 @@ primitiveRegisterType _ ctx [x@(XObj (Sym (SymPath [] t) _) _ _), members] =
   primitiveRegisterTypeWithFields ctx x t Nothing members
 primitiveRegisterType x ctx _ = pure (toEvalError ctx x RegisterTypeError)
 
+-- | Register an external type that has no fields.
 primitiveRegisterTypeWithoutFields :: Context -> String -> Maybe String -> IO (Context, Either EvalError XObj)
 primitiveRegisterTypeWithoutFields ctx t override = do
-  let pathStrings = contextPath ctx
-      typeEnv = contextTypeEnv ctx
-      path = SymPath pathStrings t
+  let path = SymPath [] t
       typeDefinition = XObj (Lst [XObj (ExternalType override) Nothing Nothing, XObj (Sym path Symbol) Nothing Nothing]) Nothing (Just TypeTy)
-  pure (ctx {contextTypeEnv = TypeEnv (extendEnv (getTypeEnv typeEnv) t typeDefinition)}, dynamicNil)
+  -- TODO: Support registering types in modules
+  case insertTypeBinder ctx (markQualified path) (toBinder typeDefinition) of
+    Left e -> pure (evalError ctx (show e) Nothing)
+    Right c -> pure (c, dynamicNil)
 
+-- | Register an external type that has fields.
 primitiveRegisterTypeWithFields :: Context -> XObj -> String -> Maybe String -> XObj -> IO (Context, Either EvalError XObj)
 primitiveRegisterTypeWithFields ctx x t override members =
   either
     handleErr
     updateContext
-    (bindingsForRegisteredType typeEnv globalEnv pathStrings t [members] Nothing preExistingModule)
+    (bindingsForRegisteredType (contextTypeEnv ctx) (contextGlobalEnv ctx) (contextPath ctx) t [members] Nothing preExistingModule)
   where
     handleErr e = pure $ makeEvalError ctx (Just e) (show e) (xobjInfo x)
     updateContext (typeModuleName, typeModuleXObj, deps) =
       do
         let typeDefinition = XObj (Lst [XObj (ExternalType override) Nothing Nothing, XObj (Sym path Symbol) Nothing Nothing]) Nothing (Just TypeTy)
-            ctx' =
-              ( ctx
-                  { contextGlobalEnv = envInsertAt globalEnv (SymPath pathStrings typeModuleName) (Binder emptyMeta typeModuleXObj),
-                    contextTypeEnv = TypeEnv (extendEnv (getTypeEnv typeEnv) t typeDefinition)
-                  }
-              )
-        contextWithDefs <- liftIO $ foldM (define True) ctx' deps
+            path' = (qualifyPath ctx (SymPath [] typeModuleName))
+            update = \c -> insertInGlobalEnv' path' (toBinder typeModuleXObj) c >>= insertTypeBinder' path' (toBinder typeDefinition)
+            Right ctx' = update ctx
+        -- TODO: Another case where define does not get formally qualified deps!
+        contextWithDefs <- liftIO $ foldM (define True) ctx' (map Qualified deps)
         pure (contextWithDefs, dynamicNil)
-    pathStrings = contextPath ctx
-    globalEnv = contextGlobalEnv ctx
-    typeEnv = contextTypeEnv ctx
-    path = SymPath pathStrings t
-    preExistingModule = case lookupBinder (SymPath pathStrings t) globalEnv of
-      Just (Binder _ (XObj (Mod found) _ _)) -> Just found
+    path = SymPath [] t
+    preExistingModule = case lookupBinderInGlobalEnv ctx path of
+      Right (Binder _ (XObj (Mod found et) _ _)) -> Just (found, et)
       _ -> Nothing
 
 notFound :: Context -> XObj -> SymPath -> IO (Context, Either EvalError XObj)
 notFound ctx x path = pure (toEvalError ctx x (SymbolNotFoundError path))
 
-primitiveInfo :: Primitive
-primitiveInfo _ ctx [target@(XObj (Sym path@(SymPath _ _) _) _ _)] = do
+-- | Get information about a binding.
+primitiveInfo :: UnaryPrimitiveCallback
+primitiveInfo _ ctx target@(XObj (Sym path@(SymPath _ name) _) _ _) =
   case path of
     SymPath [] _ ->
-      printIfFound (lookupBinderInTypeEnv ctx path)
-        >> maybe
-          (notFound ctx target path)
-          (foldM (\_ binder -> printer binder) (ctx, dynamicNil))
-          ( fmap (: []) (lookupBinderInContextEnv ctx path)
-              <|> multiLookupBinderEverywhere ctx path
-          )
+      do
+        let found = lookupBinderInTypeEnv ctx path
+        _ <- printIfFound found
+        _ <- printInterfaceImplementationsOrAll found otherBindings
+        either (const (notFound ctx target path)) (const ok) (found <> fmap head otherBindings)
+      where
+        otherBindings =
+          fmap (: []) (lookupBinderInContextEnv ctx path)
+            <> (Right (lookupBinderEverywhere (contextGlobalEnv ctx) name))
     _ ->
-      printIfFound (lookupBinderInTypeEnv ctx path)
-        >> ( case lookupBinderInContextEnv ctx path of
-               Nothing -> notFound ctx target path
-               Just found -> printer found
-           )
+      do
+        let found = lookupBinderInTypeEnv ctx path
+        let others = lookupBinderInContextEnv ctx path
+        _ <- printIfFound found
+        _ <- either (const (pure ())) printer others
+        either (const (notFound ctx target path)) (const ok) (found <> others)
   where
-    -- TODO: Return IO () here
-    printIfFound :: Maybe Binder -> IO (Context, Either EvalError XObj)
-    printIfFound binder = maybe (pure (ctx, dynamicNil)) printer binder
-
+    ok :: IO (Context, Either EvalError XObj)
+    ok = pure (ctx, dynamicNil)
+    printInterfaceImplementationsOrAll :: Either ContextError Binder -> Either ContextError [Binder] -> IO ()
+    printInterfaceImplementationsOrAll interface impls =
+      either
+        (const (pure ()))
+        (foldM (\_ binder -> printer binder) ())
+        ( ( interface
+              >>= \binder ->
+                pure (xobjObj (binderXObj binder))
+                  >>= \obj ->
+                    case obj of
+                      (Lst [XObj (Interface _ _) _ _, _]) ->
+                        fmap (filter (implementsInterface binder)) impls
+                      _ -> impls
+          )
+            <> impls
+        )
+    implementsInterface :: Binder -> Binder -> Bool
+    implementsInterface binder binder' =
+      maybe
+        False
+        (\(XObj (Lst impls) _ _) -> getBinderPath binder `elem` map getPath impls)
+        (Meta.getBinderMetaValue "implements" binder')
+    printIfFound :: Either ContextError Binder -> IO ()
+    printIfFound = either (const (pure ())) printer
+    printer :: Binder -> IO ()
     printer binder@(Binder metaData x@(XObj _ (Just i) _)) =
       putStrLnWithColor Blue (forceShowBinder binder)
         >> putStrLn ("  Defined at " ++ prettyInfo i)
         >> printMeta metaData (contextProj ctx) x
-        >> pure (ctx, dynamicNil)
     printer binder@(Binder metaData x) =
       print binder
         >> printMeta metaData (contextProj ctx) x
-        >> pure (ctx, dynamicNil)
     printMeta :: MetaData -> Project -> XObj -> IO ()
     printMeta metaData proj x =
       maybe (pure ()) (printMetaVal "Documentation" (either (const "") id . unwrapStringXObj)) (Meta.get "doc" metaData)
         >> maybe (pure ()) (printMetaVal "Implements" getName) (Meta.get "implements" metaData)
-        >> maybe (pure ()) (printMetaVal "Private" pretty) (Meta.get "private" metaData)
-        >> maybe (pure ()) (printMetaVal "Hidden" pretty) (Meta.get "hidden" metaData)
+        >> maybe (pure ()) (printMetaBool "Private") (Meta.get "private" metaData)
+        >> maybe (pure ()) (printMetaBool "Hidden") (Meta.get "hidden" metaData)
         >> maybe (pure ()) (printMetaVal "Signature" pretty) (Meta.get "sig" metaData)
+        >> maybe (pure ()) printDeprecated (Meta.get "deprecated" metaData)
         >> when (projectPrintTypedAST proj) (putStrLnWithColor Yellow (prettyTyped x))
-
+    printMetaBool :: String -> XObj -> IO ()
+    printMetaBool s (XObj (Bol True) _ _) = putStrLn ("  " ++ s)
+    printMetaBool _ _ = return ()
+    printDeprecated :: XObj -> IO ()
+    printDeprecated (XObj (Bol True) _ _) = putStrLn "  Deprecated"
+    printDeprecated (XObj (Str v) _ _) = putStrLn ("  Deprecated: " ++ v)
+    printDeprecated _ = return ()
     printMetaVal :: String -> (XObj -> String) -> XObj -> IO ()
     printMetaVal s f xobj = putStrLn ("  " ++ s ++ ": " ++ f xobj)
-primitiveInfo _ ctx [notName] =
+primitiveInfo _ ctx notName =
   argumentErr ctx "info" "a name" "first" notName
-primitiveInfo x ctx xs = pure $ toEvalError ctx x (ArgumentArityError x "1" xs)
 
 dynamicOrMacroWith :: Context -> (SymPath -> [XObj]) -> Ty -> String -> XObj -> IO (Context, Either EvalError XObj)
 dynamicOrMacroWith ctx producer ty name body = do
-  let pathStrings = contextPath ctx
-      globalEnv = contextGlobalEnv ctx
-      path = SymPath pathStrings name
-      elt = XObj (Lst (producer path)) (xobjInfo body) (Just ty)
-      meta = lookupMeta (getPath elt) globalEnv
-  pure (ctx {contextGlobalEnv = envInsertAt globalEnv path (Binder meta elt)}, dynamicNil)
+  let qpath = qualifyPath ctx (SymPath [] name)
+      elt = XObj (Lst (producer (unqualify qpath))) (xobjInfo body) (Just ty)
+      meta = fromRight emptyMeta (lookupMeta (contextGlobalEnv ctx) (getPath elt))
+  pure
+    ( case (insertInGlobalEnv ctx qpath (Binder meta elt)) of
+        Left e -> evalError ctx (show e) (xobjInfo body)
+        Right c -> (c, dynamicNil)
+    )
 
-primitiveMembers :: Primitive
-primitiveMembers _ ctx [target] = do
-  let typeEnv = contextTypeEnv ctx
-  case bottomedTarget of
-    XObj (Sym path@(SymPath _ name) _) _ _ ->
-      case lookupBinder path (getTypeEnv typeEnv) of
-        Just
-          ( Binder
-              _
-              ( XObj
-                  ( Lst
-                      [ XObj (Deftype _) Nothing Nothing,
-                        XObj (Sym (SymPath _ _) Symbol) Nothing Nothing,
-                        XObj (Arr members) _ _
-                        ]
-                    )
-                  _
-                  _
-                )
-            ) ->
-            pure (ctx, Right (XObj (Arr (map (\(a, b) -> XObj (Lst [a, b]) Nothing Nothing) (pairwise members))) Nothing Nothing))
-        Just
-          ( Binder
-              _
-              ( XObj
-                  ( Lst
-                      ( XObj (DefSumtype _) Nothing Nothing
-                          : XObj (Sym (SymPath _ _) Symbol) Nothing Nothing
-                          : sumtypeCases
-                        )
-                    )
-                  _
-                  _
-                )
-            ) ->
-            pure (ctx, Right (XObj (Arr (concatMap getMembersFromCase sumtypeCases)) Nothing Nothing))
-            where
-              getMembersFromCase :: XObj -> [XObj]
-              getMembersFromCase (XObj (Lst members) _ _) =
-                map (\(a, b) -> XObj (Lst [a, b]) Nothing Nothing) (pairwise members)
-              getMembersFromCase x@(XObj (Sym _ _) _ _) =
-                [XObj (Lst [x, XObj (Arr []) Nothing Nothing]) Nothing Nothing]
-              getMembersFromCase (XObj x _ _) =
-                error ("Can't handle case " ++ show x)
-        _ ->
-          pure (evalError ctx ("Can't find a struct type named '" ++ name ++ "' in type environment") (xobjInfo target))
-    _ -> pure (evalError ctx ("Can't get the members of non-symbol: " ++ pretty target) (xobjInfo target))
+-- | Get the members of a type declaration.
+primitiveMembers :: UnaryPrimitiveCallback
+primitiveMembers _ ctx xobj@(XObj (Sym path _) _ _) =
+  case (lookupBinderInTypeEnv ctx path) of
+    Left _ -> pure $ toEvalError ctx xobj (StructNotFound xobj)
+    Right b -> go (binderXObj b)
   where
-    env = contextEnv ctx
-    bottomedTarget =
-      case target of
-        XObj (Sym targetPath _) _ _ ->
-          case lookupBinder targetPath env of
-            -- this is a trick: every type generates a module in the env;
-            -- we’re special-casing here because we need the parent of the
-            -- module
-            Just (Binder _ (XObj (Mod _) _ _)) -> target
-            -- if we’re recursing into a non-sym, we’ll stop one level down
-            Just (Binder _ _) -> bottomedTarget
-            _ -> target
-        _ -> target
-primitiveMembers _ _ _ = error "primitivemembers"
+    go :: XObj -> IO (Context, Either EvalError XObj)
+    go (XObj (Lst [(XObj (Deftype _) _ _), _, (XObj (Arr members) _ _)]) _ _) =
+      pure (ctx, Right (XObj (Arr (map (\(a, b) -> XObj (Lst [a, b]) Nothing Nothing) (pairwise members))) Nothing Nothing))
+    go (XObj (Lst ((XObj (DefSumtype _) _ _) : _ : cases)) _ _) =
+      pure $ (ctx, (either Left (\a -> Right (XObj (Arr (concat a)) Nothing Nothing)) (mapM getMembersFromCase cases)))
+    go x = pure (toEvalError ctx x (NonTypeInTypeEnv path x))
+
+    getMembersFromCase :: XObj -> Either EvalError [XObj]
+    getMembersFromCase (XObj (Lst members) _ _) =
+      Right (map (\(a, b) -> XObj (Lst [a, b]) Nothing Nothing) (pairwise members))
+    getMembersFromCase x@(XObj (Sym _ _) _ _) =
+      Right [XObj (Lst [x, XObj (Arr []) Nothing Nothing]) Nothing Nothing]
+    getMembersFromCase x =
+      second (: []) (snd (toEvalError ctx x (PrimitiveError.InvalidSumtypeCase x)))
+primitiveMembers _ ctx x = argumentErr ctx "members" "a symbol" "first" x
 
 -- | Set meta data for a Binder
-primitiveMetaSet :: Primitive
-primitiveMetaSet _ ctx [target@(XObj (Sym (SymPath prefixes name) _) _ _), XObj (Str key) _ _, value] =
-  pure $ maybe create (,dynamicNil) lookupAndUpdate
+--
+-- Permits "forward-declaration": if the binder doesn't exist, it creates a
+-- "meta stub" for the binder with the meta information.
+primitiveMetaSet :: TernaryPrimitiveCallback
+primitiveMetaSet _ ctx target@(XObj (Sym path@(SymPath _ _) _) _ _) (XObj (Str key) _ _) value =
+  pure $ either (const create) (,dynamicNil) (lookupGlobal <> lookupType)
   where
-    fullPath@(SymPath modules _) = consPath (contextPath ctx `union` prefixes) (SymPath [] name)
-    dynamicPath = consPath ["Dynamic"] fullPath
-    global = contextGlobalEnv ctx
-    types = getTypeEnv (contextTypeEnv ctx)
-    lookupAndUpdate :: Maybe Context
-    lookupAndUpdate =
-      ( lookupBinder dynamicPath global
-          >>= \binder ->
-            pure (Meta.updateBinderMeta binder key value)
-              >>= \b ->
-                pure (envInsertAt global dynamicPath b)
-                  >>= \env -> pure (ctx {contextGlobalEnv = env})
-      )
-        <|> ( lookupBinder fullPath global
-                >>= \binder ->
-                  pure (Meta.updateBinderMeta binder key value)
-                    >>= \b ->
-                      pure (envInsertAt global fullPath b)
-                        >>= \env -> pure (ctx {contextGlobalEnv = env})
-            )
-        -- This is a global name but it doesn't exist in the global env
-        -- Before creating a new binder, check that it doesn't denote an existing type or interface.
-        <|> if null modules
-          then
-            lookupBinder fullPath types
-              >>= \binder ->
-                pure (Meta.updateBinderMeta binder key value)
-                  >>= \b ->
-                    pure (envInsertAt types fullPath b)
-                      >>= \env -> pure (ctx {contextTypeEnv = TypeEnv env})
-          else Nothing
+    qpath = qualifyPath ctx path
+    lookupGlobal :: Either ContextError Context
+    lookupGlobal =
+      lookupBinderInGlobalEnv ctx path
+        >>= \binder ->
+          pure (Meta.updateBinderMeta binder key value)
+            >>= insertInGlobalEnv ctx qpath
+    lookupType :: Either ContextError Context
+    lookupType =
+      lookupBinderInTypeEnv ctx qpath
+        >>= \binder ->
+          pure (Meta.updateBinderMeta binder key value)
+            >>= insertTypeBinder ctx qpath
     create :: (Context, Either EvalError XObj)
     create =
-      if null prefixes
-        then
-          let updated = Meta.updateBinderMeta (Meta.stub fullPath) key value
-              newEnv = envInsertAt global fullPath updated
-           in (ctx {contextGlobalEnv = newEnv}, dynamicNil)
-        else evalError ctx ("`meta-set!` failed, I can't find the symbol `" ++ pretty target ++ "`") (xobjInfo target)
-primitiveMetaSet _ ctx [XObj (Sym _ _) _ _, key, _] =
+      let updated = Meta.updateBinderMeta (Meta.stub (unqualify qpath)) key value
+       in case (insertInGlobalEnv ctx qpath updated) of
+            Left e -> toEvalError ctx target (MetaSetFailed target (show e))
+            Right c -> (c, dynamicNil)
+primitiveMetaSet _ ctx (XObj (Sym (SymPath _ _) _) _ _) key _ =
   argumentErr ctx "meta-set!" "a string" "second" key
-primitiveMetaSet _ ctx [target, _, _] =
+primitiveMetaSet _ ctx target _ _ =
   argumentErr ctx "meta-set!" "a symbol" "first" target
-primitiveMetaSet _ _ _ = error "primitivemetaset"
 
-primitiveDefinterface :: Primitive
-primitiveDefinterface xobj ctx [nameXObj@(XObj (Sym path@(SymPath [] name) _) _ _), ty] =
+primitiveDefinterface :: BinaryPrimitiveCallback
+primitiveDefinterface xobj ctx nameXObj@(XObj (Sym path@(SymPath [] name) _) _ _) ty =
   pure $ maybe invalidType validType (xobjToTy ty)
   where
-    typeEnv = getTypeEnv (contextTypeEnv ctx)
     invalidType = evalError ctx ("Invalid type for interface `" ++ name ++ "`: " ++ pretty ty) (xobjInfo ty)
-    validType t = maybe defInterface updateInterface (lookupBinder path typeEnv)
+    validType t = either (const defInterface) updateInterface (lookupBinderInTypeEnv ctx path)
       where
         defInterface =
           let interface = defineInterface name t [] (xobjInfo nameXObj)
-              typeEnv' = TypeEnv (envInsertAt typeEnv (SymPath [] name) (Binder emptyMeta interface))
-              newCtx = retroactivelyRegisterInInterface (ctx {contextTypeEnv = typeEnv'}) (Binder emptyMeta interface)
+              binder = toBinder interface
+              Right ctx' = insertTypeBinder ctx (markQualified (SymPath [] name)) binder
+              Right newCtx = retroactivelyRegisterInInterface ctx' binder
            in (newCtx, dynamicNil)
         updateInterface binder = case binder of
           Binder _ (XObj (Lst (XObj (Interface foundType _) _ _ : _)) _ _) ->
@@ -493,16 +443,13 @@ primitiveDefinterface xobj ctx [nameXObj@(XObj (Sym path@(SymPath [] name) _) _ 
                   )
                   (xobjInfo xobj)
           _ -> error "updateinterface"
-primitiveDefinterface _ ctx [name, _] =
+primitiveDefinterface _ ctx name _ =
   pure (evalError ctx ("`definterface` expects a name as first argument, but got `" ++ pretty name ++ "`") (xobjInfo name))
-primitiveDefinterface _ _ _ = error "primitivedefinterface"
 
 registerInternal :: Context -> String -> XObj -> Maybe String -> IO (Context, Either EvalError XObj)
 registerInternal ctx name ty override =
   pure $ maybe invalidType validType (xobjToTy ty)
   where
-    pathStrings = contextPath ctx
-    globalEnv = contextGlobalEnv ctx
     invalidType =
       evalError
         ctx
@@ -512,24 +459,32 @@ registerInternal ctx name ty override =
         (xobjInfo ty)
     -- TODO: Retroactively register in interface if implements metadata is present.
     validType t =
-      let path = SymPath pathStrings name
+      let qpath = qualifyPath ctx (SymPath [] name)
           registration =
             XObj
               ( Lst
                   [ XObj (External override) Nothing Nothing,
-                    XObj (Sym path Symbol) Nothing Nothing,
+                    XObj (Sym (unqualify qpath) Symbol) Nothing Nothing,
                     ty
                   ]
               )
               (xobjInfo ty)
               (Just t)
-          meta = lookupMeta (getPath registration) globalEnv
-          env' = envInsertAt globalEnv path (Binder meta registration)
-       in (ctx {contextGlobalEnv = env'}, dynamicNil)
+          meta = fromRight emptyMeta (lookupMeta (contextGlobalEnv ctx) (getPath registration))
+       in case (insertInGlobalEnv ctx qpath (Binder meta registration)) of
+            Left err -> evalError ctx (show err) (xobjInfo ty)
+            Right c -> (c, dynamicNil)
 
-primitiveRegister :: Primitive
-primitiveRegister _ ctx [XObj (Sym (SymPath _ name) _) _ _, ty] =
+primitiveRegister :: VariadicPrimitiveCallback
+primitiveRegister _ ctx [XObj (Sym (SymPath [] name) _) _ _, ty] =
   registerInternal ctx name ty Nothing
+primitiveRegister _ ctx [invalid@(XObj (Sym _ _) _ _), _] =
+  pure
+    ( evalError
+        ctx
+        ("`register` expects an unqualified name as first argument, but got `" ++ pretty invalid ++ "`")
+        (xobjInfo invalid)
+    )
 primitiveRegister _ ctx [name, _] =
   pure
     ( evalError
@@ -563,224 +518,227 @@ primitiveRegister x ctx _ =
         (xobjInfo x)
     )
 
-primitiveDeftype :: Primitive
-primitiveDeftype xobj ctx (name : rest) =
-  case rest of
-    (XObj (Arr a) _ _ : _) ->
-      case members a of
-        Nothing ->
-          pure $
-            makeEvalError
-              ctx
-              Nothing
-              ( "All fields must have a name and a type."
-                  ++ "Example:\n"
-                  ++ "```(deftype Name [field1 Type1, field2 Type2, field3 Type3])```\n"
-              )
-              (xobjInfo xobj)
-        Just ms ->
-          ensureUnqualified $ map fst ms
-      where
-        members :: [XObj] -> Maybe [(XObj, XObj)]
-        members (binding : val : xs) = do
-          xs' <- members xs
-          Just $ (binding, val) : xs'
-        members [_] = Nothing
-        members [] = Just []
-        ensureUnqualified :: [XObj] -> IO (Context, Either EvalError XObj)
-        ensureUnqualified objs =
-          if all isUnqualifiedSym objs
-            then deftype name
-            else
-              pure $
-                makeEvalError
-                  ctx
-                  Nothing
-                  ( "Type members must be unqualified symbols, but got `"
-                      ++ concatMap pretty rest
-                      ++ "`"
-                  )
-                  (xobjInfo xobj)
-    _ -> deftype name
+primitiveDeftype :: VariadicPrimitiveCallback
+primitiveDeftype xobj ctx (name : rest@(XObj (Arr a) _ _ : _)) =
+  case members a of
+    Nothing -> pure (toEvalError ctx xobj BadDeftypeMembers)
+    Just ms -> ensureUnqualified (map fst ms)
   where
-    deftype nm@(XObj (Sym (SymPath _ ty) _) _ _) = deftype' nm ty []
-    deftype (XObj (Lst (nm@(XObj (Sym (SymPath _ ty) _) _ _) : tyvars)) _ _) =
-      deftype' nm ty tyvars
-    deftype nm =
-      pure
-        ( evalError
-            ctx
-            ("Invalid name for type definition: " ++ pretty nm)
-            (xobjInfo nm)
-        )
-    deftype' :: XObj -> String -> [XObj] -> IO (Context, Either EvalError XObj)
-    deftype' nameXObj typeName typeVariableXObjs = do
-      let pathStrings = contextPath ctx
-          env = contextGlobalEnv ctx
-          innerEnv = contextInternalEnv ctx
-          typeEnv = contextTypeEnv ctx
-          typeVariables = mapM xobjToTy typeVariableXObjs
-          (preExistingModule, preExistingMeta) =
-            case lookupBinder (SymPath pathStrings typeName) (fromMaybe env innerEnv) {envParent = Nothing} of
-              Just (Binder meta (XObj (Mod found) _ _)) -> (Just found, meta)
-              Just (Binder meta _) -> (Nothing, meta)
-              _ -> (Nothing, emptyMeta)
-          (creatorFunction, typeConstructor) =
-            if length rest == 1 && isArray (head rest)
-              then (moduleForDeftype, Deftype)
-              else (moduleForSumtype, DefSumtype)
-      case (nameXObj, typeVariables) of
-        (XObj (Sym (SymPath _ tyName) _) i _, Just okTypeVariables) ->
-          case creatorFunction (Just (getEnv env pathStrings)) typeEnv env pathStrings tyName okTypeVariables rest i preExistingModule of
-            Right (typeModuleName, typeModuleXObj, deps) ->
-              let structTy = StructTy (ConcreteNameTy (createStructName pathStrings tyName)) okTypeVariables
-                  updatedGlobal = envInsertAt env (SymPath pathStrings typeModuleName) (Binder preExistingMeta typeModuleXObj)
-                  typeDefinition =
-                    -- NOTE: The type binding is needed to emit the type definition and all the member functions of the type.
-                    XObj
-                      ( Lst
-                          ( XObj (typeConstructor structTy) Nothing Nothing :
-                            XObj (Sym (SymPath pathStrings tyName) Symbol) Nothing Nothing :
-                            rest
-                          )
-                      )
-                      i
-                      (Just TypeTy)
-                  holderEnv = \name' prev -> Env (Map.fromList []) (Just prev) (Just name') [] ExternalEnv 0
-                  holderModule = \name'' prevEnv -> Binder emptyMeta (XObj (Mod (holderEnv name'' prevEnv)) (Just dummyInfo) (Just ModuleTy))
-                  folder = \(contx, prev) pathstring -> (contx {contextTypeEnv = TypeEnv $ envInsertAt (getTypeEnv typeEnv) (SymPath (maybeToList (envModuleName prev)) pathstring) (holderModule pathstring prev)}, holderEnv pathstring prev)
-                  wHolders = fst (foldl folder (ctx, getTypeEnv typeEnv) pathStrings)
-                  ctx' =
-                    ( (fst (foldl folder (ctx, getTypeEnv typeEnv) pathStrings))
-                        { contextGlobalEnv = updatedGlobal,
-                          contextTypeEnv = TypeEnv (envInsertAt (getTypeEnv (contextTypeEnv wHolders)) (SymPath pathStrings tyName) (Binder emptyMeta typeDefinition))
-                        }
-                    )
-               in do
-                    ctxWithDeps <- liftIO (foldM (define True) ctx' deps)
-                    let fakeImplBinder sympath t = Binder emptyMeta (XObj (Sym sympath Symbol) (Just dummyInfo) (Just t))
-                        deleteSig = FuncTy [structTy] UnitTy StaticLifetimeTy
-                        strSig = FuncTy [RefTy structTy (VarTy "q")] StringTy StaticLifetimeTy
-                        copySig = FuncTy [RefTy structTy (VarTy "q")] structTy StaticLifetimeTy
-                        Just deleteInterface = lookupBinder (SymPath [] "delete") (getTypeEnv typeEnv)
-                        Just strInterface = lookupBinder (SymPath [] "str") (getTypeEnv typeEnv)
-                        Just copyInterface = lookupBinder (SymPath [] "copy") (getTypeEnv typeEnv)
-                        modulePath = SymPath (pathStrings ++ [typeModuleName])
-                        ctxWithInterfaceRegistrations =
-                          -- Since these functions are autogenerated, we treat them as a special case
-                          -- and automatically implement the interfaces.
-                          foldM
-                            (\context (path, sig, interface) -> registerInInterfaceIfNeeded context path interface sig)
-                            ctxWithDeps
-                            [ (fakeImplBinder (modulePath "delete") deleteSig, deleteSig, deleteInterface),
-                              (fakeImplBinder (modulePath "str") strSig, strSig, strInterface),
-                              (fakeImplBinder (modulePath "copy") copySig, copySig, copyInterface)
-                            ]
-                    case ctxWithInterfaceRegistrations of
-                      Left err -> do
-                        liftIO (putStrLnWithColor Red err)
-                        pure (ctx, dynamicNil)
-                      Right ok -> pure (ok, dynamicNil)
-            Left err ->
-              pure (makeEvalError ctx (Just err) ("Invalid type definition for '" ++ pretty nameXObj ++ "':\n\n" ++ show err) Nothing)
-        (_, Nothing) ->
-          pure (makeEvalError ctx Nothing ("Invalid type variables for type definition: " ++ pretty nameXObj) (xobjInfo nameXObj))
-        _ -> error "primitiveDeftype1"
+    members :: [XObj] -> Maybe [(XObj, XObj)]
+    members [] = Just []
+    members [_] = Nothing
+    members (binding : val : xs) = members xs >>= \xs' -> pure $ (binding, val) : xs'
+    ensureUnqualified :: [XObj] -> IO (Context, Either EvalError XObj)
+    ensureUnqualified objs =
+      if all isUnqualifiedSym objs
+        then deftype ctx name (selectConstructor rest)
+        else pure (toEvalError ctx xobj (QualifiedTypeMember rest))
+primitiveDeftype _ ctx (name : rest) =
+  deftype ctx name (selectConstructor rest)
 primitiveDeftype _ _ _ = error "primitivedeftype"
 
-primitiveUse :: Primitive
-primitiveUse xobj ctx [XObj (Sym path _) _ _] =
-  pure $ maybe lookupInGlobal useModule (lookupInEnv path e)
+type ModuleCreator = Context -> String -> [Ty] -> [XObj] -> Maybe Info -> Either TypeError (String, XObj, [XObj])
+
+-- | Build an XObj representing the constructor of a type in Carp.
+selectConstructor :: [XObj] -> (Ty -> (XObj, [XObj], ModuleCreator))
+selectConstructor xs =
+  let (constructor, creator, mems) =
+        if length xs == 1 && isArray (head xs)
+          then (Deftype, moduleForDeftypeInContext, xs)
+          else (DefSumtype, moduleForSumtypeInContext, xs)
+   in \t ->
+        ( XObj
+            ( Lst
+                ( XObj (constructor t) Nothing Nothing :
+                  XObj (Sym (getStructPath t) Symbol) Nothing Nothing :
+                  mems
+                )
+            )
+            Nothing
+            (Just TypeTy),
+          mems,
+          creator
+        )
+
+deftype :: Context -> XObj -> (Ty -> (XObj, [XObj], ModuleCreator)) -> IO (Context, Either EvalError XObj)
+deftype ctx x@(XObj (Sym (SymPath [] name) _) _ _) constructor =
+  do
+    (ctxWithType, e) <- (makeType ctx name [] constructor)
+    case e of
+      Left err -> pure (evalError ctx (show err) (xobjInfo x))
+      Right t -> autoDerive ctxWithType t
+deftype ctx x@(XObj (Lst ((XObj (Sym (SymPath [] name) _) _ _) : tyvars)) _ _) constructor =
+  do
+    (ctxWithType, e) <-
+      ( either
+          (\s -> pure (evalError ctx s Nothing))
+          (\vars -> makeType ctx name vars constructor)
+          (maybe (Left (show (InvalidTypeVariables x))) Right (checkVariables tyvars))
+        )
+    case e of
+      Left err -> pure (evalError ctx (show err) (xobjInfo x))
+      Right t -> autoDerive ctxWithType t
+deftype ctx name _ = pure $ toEvalError ctx name (InvalidTypeName name)
+
+checkVariables :: [XObj] -> Maybe [Ty]
+checkVariables vars = mapM xobjToTy vars
+
+makeType :: Context -> String -> [Ty] -> (Ty -> (XObj, [XObj], ModuleCreator)) -> IO (Context, Either EvalError Ty)
+makeType ctx name vars constructor =
+  let qpath = (qualifyPath ctx (SymPath [] name))
+      ty = StructTy (ConcreteNameTy (unqualify qpath)) vars
+      (typeX, members, creator) = constructor ty
+   in case ( unwrapErr (creator ctx name vars members Nothing)
+               >>= \(_, modx, deps) ->
+                 pure (existingOr ctx qpath modx)
+                   >>= \mod' ->
+                     unwrapErr (insertType ctx qpath (toBinder typeX) mod')
+                       >>= \c -> pure (foldM (define True) c (map Qualified deps))
+           ) of
+        Left e -> pure (evalError ctx e (xobjInfo typeX))
+        Right result -> (result >>= \ctx' -> pure (ctx', pure ty))
   where
-    pathStrings = contextPath ctx
-    env = contextGlobalEnv ctx
-    e = getEnv env pathStrings
-    useThese = envUseModules e
-    e' = if path `elem` useThese then e else e {envUseModules = path : useThese}
-    lookupInGlobal = maybe missing useModule (lookupInEnv path env)
-      where
-        missing = evalError ctx ("Can't find a module named '" ++ show path ++ "'") (xobjInfo xobj)
-    useModule _ = (ctx {contextGlobalEnv = envReplaceEnvAt env pathStrings e'}, dynamicNil)
-primitiveUse _ ctx [x] =
+    existingOr :: Context -> QualifiedPath -> XObj -> Binder
+    existingOr c q x@(XObj (Mod e _) _ _) =
+      case ((lookupBinderInInternalEnv c q) <> (lookupBinderInGlobalEnv c q)) of
+        Right (Binder meta (XObj (Mod ve te) ii tt)) ->
+          (Binder meta (XObj (Mod (e <> ve) te) ii tt))
+        _ -> (toBinder x)
+    existingOr _ _ x = (toBinder x)
+
+-- | Automatically derive implementations of interfaces.
+autoDerive :: Context -> Ty -> IO (Context, Either EvalError XObj)
+autoDerive c ty =
+  let (SymPath mods tyname) = (getStructPath ty)
+      implBinder :: String -> Ty -> Binder
+      implBinder name t = Binder emptyMeta (XObj (Sym (SymPath (mods ++ [tyname]) name) Symbol) (Just dummyInfo) (Just t))
+      getSig :: String -> Ty
+      getSig "delete" = FuncTy [ty] UnitTy StaticLifetimeTy
+      getSig "str" = FuncTy [RefTy ty (VarTy "q")] StringTy StaticLifetimeTy
+      getSig "copy" = FuncTy [RefTy ty (VarTy "q")] ty StaticLifetimeTy
+      getSig _ = VarTy "z"
+      interfaces =
+        [ lookupBinderInTypeEnv c (markQualified (SymPath [] "delete")),
+          lookupBinderInTypeEnv c (markQualified (SymPath [] "str")),
+          lookupBinderInTypeEnv c (markQualified (SymPath [] "copy"))
+        ]
+      registration interface =
+        let name = getSimpleName (binderXObj interface)
+            sig = getSig name
+         in (implBinder name sig, sig, interface)
+      derives =
+        (sequence interfaces)
+          >>= \binders -> pure (fmap registration binders)
+   in case derives of
+        Left _ -> pure (evalError c "Couldn't derive interfaces." Nothing)
+        Right regs ->
+          case foldl' (\(context, _) (path, sig, interface) -> first (fromRight (error "COULDNT DERIVE!")) (registerInInterfaceIfNeeded context path interface sig)) (c, Nothing) regs of
+            (ci, Just err@AlreadyImplemented {}) -> emitWarning (show err) >> pure (ci, dynamicNil :: Either EvalError XObj)
+            (_, Just err) -> pure $ evalError c (show err) Nothing
+            (ci, Nothing) -> pure (ci, dynamicNil :: Either EvalError XObj)
+
+-- | Add a module to the list of implicitly imported modules.
+primitiveUse :: UnaryPrimitiveCallback
+primitiveUse xobj ctx (XObj (Sym path _) _ _) =
+  let modulePath = fromStrings (contextPath ctx)
+      contextualized = (consPath (contextPath ctx) path)
+      global = (contextGlobalEnv ctx)
+      -- Look up the module to see if we can actually use it.
+      -- The reference might be contextual, if so, append the current context path strings.
+      path' = case (searchValueBinder global path) of
+        Right _ -> path
+        _ -> contextualized
+   in pure
+        ( case modulePath of
+            (SymPath [] "") -> updateGlobalUsePaths global path'
+            _ -> case searchValueBinder global modulePath of
+              Left err -> (evalError ctx (show err) (xobjInfo xobj))
+              Right binder ->
+                updateModuleUsePaths global modulePath binder path'
+        )
+  where
+    updateGlobalUsePaths :: Env -> SymPath -> (Context, Either EvalError XObj)
+    updateGlobalUsePaths e spath =
+      ((replaceGlobalEnv ctx (addUsePath e spath)), dynamicNil)
+
+    updateModuleUsePaths :: Env -> SymPath -> Binder -> SymPath -> (Context, Either EvalError XObj)
+    updateModuleUsePaths e p (Binder meta (XObj (Mod ev et) i t)) spath =
+      either
+        (\err -> (evalError ctx err (xobjInfo xobj)))
+        (\newCtx -> (newCtx, dynamicNil))
+        ( (unwrapErr (insert e p (Binder meta (XObj (Mod (addUsePath ev spath) et) i t))))
+            >>= pure . replaceGlobalEnv ctx
+        )
+    updateModuleUsePaths _ _ _ _ =
+      (evalError ctx "Context path pointed to non-module!" (xobjInfo xobj))
+primitiveUse _ ctx x =
   argumentErr ctx "use" "a symbol" "first" x
-primitiveUse _ _ _ = error "primitiveuse"
 
 -- | Get meta data for a Binder
-primitiveMeta :: Primitive
-primitiveMeta (XObj _ i _) ctx [XObj (Sym (SymPath prefixes name) _) _ _, XObj (Str key) _ _] = do
+primitiveMeta :: BinaryPrimitiveCallback
+primitiveMeta (XObj _ i _) ctx (XObj (Sym path _) _ _) (XObj (Str key) _ _) =
   pure $ maybe errNotFound foundBinder lookup'
   where
-    global = contextGlobalEnv ctx
-    types = getTypeEnv (contextTypeEnv ctx)
-    fullPath = consPath (contextPath ctx `union` prefixes) (SymPath [] name)
     lookup' :: Maybe Binder
-    lookup' = (lookupBinder fullPath global <|> lookupBinder fullPath types) >>= pure
+    lookup' = either (const Nothing) Just (lookupBinderInGlobalEnv ctx path <> lookupBinderInTypeEnv ctx path)
     foundBinder :: Binder -> (Context, Either EvalError XObj)
     foundBinder binder = (ctx, maybe dynamicNil Right (Meta.getBinderMetaValue key binder))
     errNotFound :: (Context, Either EvalError XObj)
-    errNotFound = evalError ctx ("`meta` failed, I can’t find `" ++ show fullPath ++ "`") i
-primitiveMeta _ ctx [XObj (Sym _ _) _ _, key] =
+    errNotFound = evalError ctx ("`meta` failed, I can’t find `" ++ show path ++ "`") i
+primitiveMeta _ ctx (XObj (Sym _ _) _ _) key =
   argumentErr ctx "meta" "a string" "second" key
-primitiveMeta _ ctx [path, _] =
+primitiveMeta _ ctx path _ =
   argumentErr ctx "meta" "a symbol" "first" path
-primitiveMeta _ _ _ = error "primitivemeta"
 
-primitiveDefined :: Primitive
-primitiveDefined _ ctx [XObj (Sym path _) _ _] =
-  let env = contextEnv ctx
-   in pure $ maybe (ctx, Right falseXObj) (const (ctx, Right trueXObj)) (lookupInEnv path env)
-primitiveDefined _ ctx [arg] =
+primitiveDefined :: UnaryPrimitiveCallback
+primitiveDefined _ ctx (XObj (Sym path _) _ _) =
+  pure $ either (const (ctx, Right falseXObj)) (const (ctx, Right trueXObj)) (lookupBinderInContextEnv ctx path)
+primitiveDefined _ ctx arg =
   argumentErr ctx "defined" "a symbol" "first" arg
-primitiveDefined _ _ _ = error "primitivedefined"
 
-primitiveDeftemplate :: Primitive
+primitiveDeftemplate :: QuaternaryPrimitiveCallback
 -- deftemplate can't receive a dependency function, as Ty aren't exposed in Carp
-primitiveDeftemplate _ ctx [XObj (Sym (SymPath [] name) _) _ _, ty, XObj (Str declTempl) _ _, XObj (Str defTempl) _ _] =
-  pure $ maybe invalidType validType (xobjToTy ty)
+primitiveDeftemplate _ ctx (XObj (Sym p@(SymPath [] _) _) _ _) ty (XObj (Str declTempl) _ _) (XObj (Str defTempl) _ _) =
+  pure $ maybe invalidType (fromRight invalidType . fmap (\x -> (x, dynamicNil)) . validType) (xobjToTy ty)
   where
-    pathStrings = contextPath ctx
     typeEnv = contextTypeEnv ctx
     globalEnv = contextGlobalEnv ctx
-    p = SymPath pathStrings name
     invalidType = evalError ctx ("I do not understand the type form in " ++ pretty ty) (xobjInfo ty)
-    validType t = case defineTemplate p t "" (toTemplate declTempl) (toTemplate defTempl) (const []) of
+    validType t = case defineTemplate (contextualize p ctx) t "" (toTemplate declTempl) (toTemplate defTempl) (const []) of
       (_, b@(Binder _ (XObj (Lst (XObj (Deftemplate template) _ _ : _)) _ _))) ->
         if isTypeGeneric t
           then
             let (Binder _ registration) = b
-                meta = lookupMeta (getPath registration) globalEnv
-                env' = envInsertAt globalEnv p (Binder meta registration)
-             in (ctx {contextGlobalEnv = env'}, dynamicNil)
+                meta = fromRight emptyMeta (lookupMeta globalEnv (getPath registration))
+             in insertInGlobalEnv ctx (qualifyPath ctx p) (Binder meta registration)
           else
             let templateCreator = getTemplateCreator template
-                (registration, _) = instantiateTemplate p t (templateCreator typeEnv globalEnv)
-                meta = lookupMeta (getPath registration) globalEnv
-                env' = envInsertAt globalEnv p (Binder meta registration)
-             in (ctx {contextGlobalEnv = env'}, dynamicNil)
+                (registration, _) = instantiateTemplate (contextualize p ctx) t (templateCreator typeEnv globalEnv)
+                meta = fromRight emptyMeta (lookupMeta globalEnv (getPath registration))
+             in insertInGlobalEnv ctx (qualifyPath ctx p) (Binder meta registration)
       _ -> error "primitivedeftemplate1"
-primitiveDeftemplate _ ctx [XObj (Sym (SymPath [] _) _) _ _, _, XObj (Str _) _ _, x] =
+primitiveDeftemplate _ ctx (XObj (Sym (SymPath [] _) _) _ _) _ (XObj (Str _) _ _) x =
   argumentErr ctx "deftemplate" "a string" "fourth" x
-primitiveDeftemplate _ ctx [XObj (Sym (SymPath [] _) _) _ _, _, x, _] =
+primitiveDeftemplate _ ctx (XObj (Sym (SymPath [] _) _) _ _) _ x _ =
   argumentErr ctx "deftemplate" "a string" "third" x
-primitiveDeftemplate _ ctx [s@(XObj (Sym (SymPath _ _) _) _ _), _, _, _] = do
+primitiveDeftemplate _ ctx s@(XObj (Sym (SymPath _ _) _) _ _) _ _ _ =
   argumentErr ctx "deftemplate" "a symbol without prefix" "first" s
-primitiveDeftemplate _ ctx [x, _, _, _] =
+primitiveDeftemplate _ ctx x _ _ _ =
   argumentErr ctx "deftemplate" "a symbol" "first" x
-primitiveDeftemplate _ _ _ = error "primitivedeftemplate"
 
 noTypeError :: Context -> XObj -> IO (Context, Either EvalError XObj)
 noTypeError ctx x = pure $ evalError ctx ("Can't get the type of: " ++ pretty x) (xobjInfo x)
 
-primitiveType :: Primitive
+primitiveType :: UnaryPrimitiveCallback
 -- A special case, the type of the type of types (type (type (type 1))) => ()
-primitiveType _ ctx [XObj _ _ (Just Universe)] =
+primitiveType _ ctx (XObj _ _ (Just Universe)) =
   pure (ctx, Right (XObj (Lst []) Nothing Nothing))
-primitiveType _ ctx [XObj _ _ (Just TypeTy)] = liftIO $ pure (ctx, Right $ reify TypeTy)
-primitiveType _ ctx [x@(XObj (Sym path@(SymPath [] name) _) _ _)] =
-  maybe otherDefs go (lookupBinder path env)
+primitiveType _ ctx (XObj _ _ (Just TypeTy)) = liftIO $ pure (ctx, Right $ reify TypeTy)
+primitiveType _ ctx x@(XObj (Sym path@(SymPath [] name) _) _ _) =
+  fromRight otherDefs (second go (lookupBinderInGlobalEnv ctx path))
   where
     env = contextGlobalEnv ctx
-    otherDefs = case multiLookupEverywhere name env of
+    otherDefs = case lookupEverywhere env name of
       [] ->
         notFound ctx x path
       binders ->
@@ -793,10 +751,9 @@ primitiveType _ ctx [x@(XObj (Sym path@(SymPath [] name) _) _ _)] =
       case xobjTy (binderXObj binder) of
         Nothing -> noTypeError ctx x
         Just t -> pure (ctx, Right (reify t))
-primitiveType _ ctx [x@(XObj (Sym qualifiedPath _) _ _)] =
-  maybe (notFound ctx x qualifiedPath) (go . snd) (lookupInEnv qualifiedPath env)
+primitiveType _ ctx x@(XObj (Sym qualifiedPath _) _ _) =
+  fromRight (notFound ctx x qualifiedPath) (second go (lookupBinderInGlobalEnv ctx qualifiedPath))
   where
-    env = contextGlobalEnv ctx
     go binder =
       case xobjTy (binderXObj binder) of
         Nothing -> noTypeError ctx x
@@ -811,34 +768,32 @@ primitiveType _ ctx [x@(XObj (Sym qualifiedPath _) _ _)] =
 -- (type '(Pair.init 1 1)) => (Pair Int Int)
 -- Contrarily the behavior is far more consistent as a primitive if we simply add this case, and from a user perspective, it makes more sense
 -- that this function would be one that *doesn't* evaluate its arguments.
-primitiveType any' ctx [XObj (Lst (XObj (Sym (SymPath [] "type") _) _ _ : rest)) _ _] =
+primitiveType any' ctx (XObj (Lst [XObj (Sym (SymPath [] "type") _) _ _, rest]) _ _) =
   primitiveType any' ctx rest
     >>= \result -> case snd result of
-      Right xobj -> primitiveType any' (fst result) [xobj]
+      Right xobj -> primitiveType any' (fst result) xobj
       Left e -> pure (ctx, Left e)
-primitiveType _ ctx [x@XObj {}] =
+primitiveType _ ctx x@XObj {} =
   let tenv = contextTypeEnv ctx
-      typed = annotate tenv (contextGlobalEnv ctx) x Nothing
+      typed = either (\_ -> annotate tenv (contextGlobalEnv ctx) (Qualified x) Nothing) (\q -> annotate tenv (contextGlobalEnv ctx) q Nothing) $ qualify ctx x
    in liftIO $ either fail' ok typed
   where
     fail' _ = pure (evalError ctx ("Can't get the type of: " ++ pretty x) (xobjInfo x))
     ok (XObj _ _ (Just t), _) = pure (ctx, Right $ reify t)
     ok (_, _) = pure (evalError ctx ("Can't get the type of: " ++ pretty x) (xobjInfo x))
-primitiveType _ _ _ = error "primitivetype"
 
-primitiveKind :: Primitive
-primitiveKind _ ctx [x@XObj {}] =
+primitiveKind :: UnaryPrimitiveCallback
+primitiveKind _ ctx x@XObj {} =
   let tenv = contextTypeEnv ctx
-      typed = annotate tenv (contextGlobalEnv ctx) x Nothing
+      typed = either (\_ -> annotate tenv (contextGlobalEnv ctx) (Qualified x) Nothing) (\q -> annotate tenv (contextGlobalEnv ctx) q Nothing) $ qualify ctx x
    in pure (either fail' ok typed)
   where
     fail' _ = evalError ctx ("Can't get the kind of: " ++ pretty x) (xobjInfo x)
     ok (XObj _ _ (Just t), _) = (ctx, Right $ reify (tyToKind t))
     ok (_, _) = evalError ctx ("Can't get the kind of: " ++ pretty x) (xobjInfo x)
-primitiveKind _ _ _ = error "primitivekind"
 
 -- | Primitive for printing help.
-primitiveHelp :: Primitive
+primitiveHelp :: VariadicPrimitiveCallback
 primitiveHelp _ ctx [XObj (Sym (SymPath [] "about") _) _ _] =
   liftIO $ do
     putStrLn "Carp is an ongoing research project by Erik Svedäng, et al."
@@ -915,8 +870,8 @@ openBrowserHelper ctx url =
 -- | Checks if a type is managed. Note that it probably could be implemented in terms
 -- of `(implements? <sym>)` but to be 100% sure that we use the same lookup as the
 -- type system, I've done it this way -- at least for now.
-primitiveIsManaged :: Primitive
-primitiveIsManaged _ ctx [xobj@(XObj (Sym _ _) i _)] =
+primitiveIsManaged :: UnaryPrimitiveCallback
+primitiveIsManaged _ ctx xobj@(XObj (Sym _ _) i _) =
   let tenv = contextTypeEnv ctx
       genv = contextEnv ctx
    in case xobjToTy xobj of
@@ -925,4 +880,4 @@ primitiveIsManaged _ ctx [xobj@(XObj (Sym _ _) i _)] =
             then pure (ctx, Right trueXObj)
             else pure (ctx, Right falseXObj)
         Nothing -> pure (evalError ctx ("Can't take type of " ++ pretty xobj) i)
-primitiveIsManaged _ _ _ = error "primitiveIsManaged"
+primitiveIsManaged _ _ _ = error "primitiveismanaged"

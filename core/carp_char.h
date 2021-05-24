@@ -18,6 +18,14 @@ Char Char_from_MINUS_int(int i) {
     return (Char)i;
 }
 
+int Char_to_MINUS_byte(Char c) {
+    return (uint8_t)c;
+}
+
+Char Char_from_MINUS_byte(uint8_t i) {
+    return (Char)i;
+}
+
 Char Char_copy(const Char *c) {
     return *c;
 }

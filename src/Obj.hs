@@ -3,6 +3,7 @@
 
 module Obj where
 
+import Control.Applicative
 import Control.Monad.State
 import Data.Char
 import Data.Hashable
@@ -66,17 +67,31 @@ data MatchMode = MatchValue | MatchRef deriving (Eq, Show, Generic)
 
 instance Hashable MatchMode
 
-data Number = Floating Double | Integral Int deriving (Eq, Ord, Generic)
+data Number = Floating Double | Integral Int deriving (Generic)
 
 instance Hashable Number
+
+instance Eq Number where
+  (Floating a) == (Floating b) = a == b
+  (Integral a) == (Integral b) = a == b
+  (Floating a) == (Integral b) = a == fromIntegral b
+  (Integral a) == (Floating b) = fromIntegral a == b
+
+instance Ord Number where
+  (Floating a) <= (Floating b) = a <= b
+  (Integral a) <= (Integral b) = a <= b
+  (Floating a) <= (Integral b) = a <= fromIntegral b
+  (Integral a) <= (Floating b) = fromIntegral a <= b
 
 instance Num Number where
   (Floating a) + (Floating b) = Floating (a + b)
   (Integral a) + (Integral b) = Integral (a + b)
-  _ + _ = error "+"
-  (Floating a) * (Floating b) = Floating (a * b)
+  (Floating a) + (Integral b) = Floating (a + fromIntegral b)
+  (Integral a) + (Floating b) = Floating (fromIntegral a + b)
   (Integral a) * (Integral b) = Integral (a * b)
-  _ * _ = error "*"
+  (Floating a) * (Floating b) = Floating (a * b)
+  (Integral a) * (Floating b) = Floating (fromIntegral a * b)
+  (Floating a) * (Integral b) = Floating (a * fromIntegral b)
   negate (Floating a) = Floating (negate a)
   negate (Integral a) = Integral (negate a)
   abs (Floating a) = Floating (abs a)
@@ -129,12 +144,12 @@ data Obj
   | Fn (Maybe SymPath) (Set.Set XObj) -- the name of the lifted function, the set of variables this lambda captures, and a dynamic environment
   | Do
   | Let
-  | LetDef
+  | LocalDef
   | While
   | Break
   | If
   | Match MatchMode
-  | Mod Env
+  | Mod Env TypeEnv
   | Deftype Ty
   | DefSumtype Ty
   | With
@@ -155,6 +170,7 @@ data Obj
   | Ref
   | Deref
   | Interface Ty [SymPath]
+  | C String -- C literal
   deriving (Show, Eq, Generic)
 
 instance Hashable Obj
@@ -182,6 +198,11 @@ isUnqualifiedSym _ = False
 isSym :: XObj -> Bool
 isSym (XObj (Sym (SymPath _ _) _) _ _) = True
 isSym _ = False
+
+isSpecialSym :: XObj -> Bool
+isSpecialSym (XObj (Sym (SymPath [] s) _) _ _) =
+  elem s ["defn", "def", "do", "while", "fn", "let", "break", "if", "match", "match-ref", "address", "set!", "the", "ref", "deref", "with"]
+isSpecialSym _ = False
 
 isArray :: XObj -> Bool
 isArray (XObj (Arr _) _ _) = True
@@ -211,10 +232,26 @@ instance Ord Obj where
 
 -- TODO: handle comparison of lists, arrays and dictionaries
 
--- | The type of primitive functions. See Primitives.hs
-type Primitive = XObj -> Context -> [XObj] -> IO (Context, Either EvalError XObj)
+type NullaryPrimitiveCallback = XObj -> Context -> IO (Context, Either EvalError XObj)
 
-newtype PrimitiveFunctionType = PrimitiveFunction {getPrimitive :: Primitive}
+type UnaryPrimitiveCallback = XObj -> Context -> XObj -> IO (Context, Either EvalError XObj)
+
+type BinaryPrimitiveCallback = XObj -> Context -> XObj -> XObj -> IO (Context, Either EvalError XObj)
+
+type TernaryPrimitiveCallback = XObj -> Context -> XObj -> XObj -> XObj -> IO (Context, Either EvalError XObj)
+
+type QuaternaryPrimitiveCallback = XObj -> Context -> XObj -> XObj -> XObj -> XObj -> IO (Context, Either EvalError XObj)
+
+type VariadicPrimitiveCallback = XObj -> Context -> [XObj] -> IO (Context, Either EvalError XObj)
+
+-- | The type of primitive functions. See Primitives.hs
+data PrimitiveFunctionType
+  = NullaryPrimitive NullaryPrimitiveCallback
+  | UnaryPrimitive UnaryPrimitiveCallback
+  | BinaryPrimitive BinaryPrimitiveCallback
+  | TernaryPrimitive TernaryPrimitiveCallback
+  | QuaternaryPrimitive QuaternaryPrimitiveCallback
+  | VariadicPrimitive VariadicPrimitiveCallback
 
 instance Hashable PrimitiveFunctionType where
   hashWithSalt s = const s
@@ -292,6 +329,7 @@ getBinderDescription :: XObj -> String
 getBinderDescription (XObj (Lst (XObj (Defn _) _ _ : XObj (Sym _ _) _ _ : _)) _ _) = "defn"
 getBinderDescription (XObj (Lst (XObj Def _ _ : XObj (Sym _ _) _ _ : _)) _ _) = "def"
 getBinderDescription (XObj (Lst (XObj Macro _ _ : XObj (Sym _ _) _ _ : _)) _ _) = "macro"
+getBinderDescription (XObj (Lst (XObj DefDynamic _ _ : XObj (Sym _ _) _ _ : _)) _ _) = "defdynamic"
 getBinderDescription (XObj (Lst (XObj Dynamic _ _ : XObj (Sym _ _) _ _ : _)) _ _) = "dynamic"
 getBinderDescription (XObj (Lst (XObj (Command _) _ _ : XObj (Sym _ _) _ _ : _)) _ _) = "command"
 getBinderDescription (XObj (Lst (XObj (Primitive _) _ _ : XObj (Sym _ _) _ _ : _)) _ _) = "primitive"
@@ -304,7 +342,7 @@ getBinderDescription (XObj (Lst (XObj MetaStub _ _ : XObj (Sym _ _) _ _ : _)) _ 
 getBinderDescription (XObj (Lst (XObj (Deftype _) _ _ : XObj (Sym _ _) _ _ : _)) _ _) = "deftype"
 getBinderDescription (XObj (Lst (XObj (DefSumtype _) _ _ : XObj (Sym _ _) _ _ : _)) _ _) = "deftype"
 getBinderDescription (XObj (Lst (XObj (Interface _ _) _ _ : XObj (Sym _ _) _ _ : _)) _ _) = "interface"
-getBinderDescription (XObj (Mod _) _ _) = "module"
+getBinderDescription (XObj (Mod _ _) _ _) = "module"
 getBinderDescription b = error ("Unhandled binder: " ++ show b)
 
 getName :: XObj -> String
@@ -335,7 +373,7 @@ getSimpleNameWithArgs _ = Nothing
 getPath :: XObj -> SymPath
 getPath (XObj (Lst (XObj (Defn _) _ _ : XObj (Sym path _) _ _ : _)) _ _) = path
 getPath (XObj (Lst (XObj Def _ _ : XObj (Sym path _) _ _ : _)) _ _) = path
-getPath (XObj (Lst (XObj LetDef _ _ : XObj (Sym path _) _ _ : _)) _ _) = path
+getPath (XObj (Lst (XObj LocalDef _ _ : XObj (Sym path _) _ _ : _)) _ _) = path
 getPath (XObj (Lst (XObj Macro _ _ : XObj (Sym path _) _ _ : _)) _ _) = path
 getPath (XObj (Lst (XObj Dynamic _ _ : XObj (Sym path _) _ _ : _)) _ _) = path
 getPath (XObj (Lst (XObj DefDynamic _ _ : XObj (Sym path _) _ _ : _)) _ _) = path
@@ -346,7 +384,7 @@ getPath (XObj (Lst (XObj (External _) _ _ : XObj (Sym path _) _ _ : _)) _ _) = p
 getPath (XObj (Lst (XObj (ExternalType _) _ _ : XObj (Sym path _) _ _ : _)) _ _) = path
 getPath (XObj (Lst (XObj MetaStub _ _ : XObj (Sym path _) _ _ : _)) _ _) = path
 getPath (XObj (Lst (XObj (Deftype _) _ _ : XObj (Sym path _) _ _ : _)) _ _) = path
-getPath (XObj (Lst (XObj (Mod _) _ _ : XObj (Sym path _) _ _ : _)) _ _) = path
+getPath (XObj (Lst (XObj (Mod _ _) _ _ : XObj (Sym path _) _ _ : _)) _ _) = path
 getPath (XObj (Lst (XObj (Interface _ _) _ _ : XObj (Sym path _) _ _ : _)) _ _) = path
 getPath (XObj (Lst (XObj (Command _) _ _ : XObj (Sym path _) _ _ : _)) _ _) = path
 getPath (XObj (Lst (XObj (Primitive _) _ _ : XObj (Sym path _) _ _ : _)) _ _) = path
@@ -362,6 +400,8 @@ setPath (XObj (Lst (defn@(XObj (Defn _) _ _) : XObj (Sym _ _) si st : rest)) i t
   XObj (Lst (defn : XObj (Sym newPath Symbol) si st : rest)) i t
 setPath (XObj (Lst [extr@(XObj (External _) _ _), XObj (Sym _ _) si st, ty]) i t) newPath =
   XObj (Lst [extr, XObj (Sym newPath Symbol) si st, ty]) i t
+setPath (XObj (Lst (def@(XObj Def _ _) : XObj (Sym _ _) si st : rest)) i t) newPath =
+  XObj (Lst (def : XObj (Sym newPath Symbol) si st : rest)) i t
 setPath x _ =
   error ("Can't set path on " ++ show x)
 
@@ -379,6 +419,7 @@ pretty = visit 0
     visit :: Int -> XObj -> String
     visit indent xobj =
       case xobjObj xobj of
+        C c -> show c
         Lst lst -> "(" ++ joinWithSpace (map (visit indent) lst) ++ ")"
         Arr arr -> "[" ++ joinWithSpace (map (visit indent) arr) ++ "]"
         StaticArr arr -> "$[" ++ joinWithSpace (map (visit indent) arr) ++ "]"
@@ -409,8 +450,8 @@ pretty = visit 0
         While -> "while"
         Do -> "do"
         Let -> "let"
-        LetDef -> "let"
-        Mod env -> fromMaybe "module" (envModuleName env)
+        LocalDef -> "local-binding"
+        Mod env _ -> fromMaybe "module" (envModuleName env)
         Deftype _ -> "deftype"
         DefSumtype _ -> "deftype"
         Deftemplate _ -> "deftemplate"
@@ -456,6 +497,7 @@ prettyUpTo lim xobj =
         Num DoubleTy _ -> ""
         Num _ _ -> error "Invalid number type."
         Str _ -> ""
+        C _ -> ""
         Pattern _ -> ""
         Chr _ -> ""
         Sym _ _ -> ""
@@ -474,8 +516,8 @@ prettyUpTo lim xobj =
         While -> ""
         Do -> ""
         Let -> ""
-        LetDef -> ""
-        Mod _ -> ""
+        LocalDef -> ""
+        Mod _ _ -> ""
         Deftype _ -> ""
         DefSumtype _ -> ""
         Deftemplate _ -> ""
@@ -603,9 +645,11 @@ forceShowBinder :: Binder -> String
 forceShowBinder binder = showBinderIndented 0 True (getName (binderXObj binder), binder)
 
 showBinderIndented :: Int -> Bool -> (String, Binder) -> String
-showBinderIndented indent _ (name, Binder _ (XObj (Mod env) _ _)) =
+showBinderIndented indent _ (name, Binder _ (XObj (Mod env tenv) _ _)) =
   replicate indent ' ' ++ name ++ " : Module = {\n"
     ++ prettyEnvironmentIndented (indent + 4) env
+    ++ "\n"
+    ++ prettyEnvironmentIndented (indent + 4) (getTypeEnv tenv)
     ++ "\n"
     ++ replicate indent ' '
     ++ "}"
@@ -661,7 +705,7 @@ data Env = Env
   { envBindings :: Map.Map String Binder,
     envParent :: Maybe Env,
     envModuleName :: Maybe String,
-    envUseModules :: [SymPath],
+    envUseModules :: Set.Set SymPath,
     envMode :: EnvMode,
     envFunctionNestingLevel :: Int -- Normal defn:s have 0, lambdas get +1 for each level of nesting
   }
@@ -677,7 +721,7 @@ instance Hashable ClosureContext
 instance Eq ClosureContext where
   _ == _ = True
 
-newtype TypeEnv = TypeEnv {getTypeEnv :: Env} deriving (Generic)
+newtype TypeEnv = TypeEnv {getTypeEnv :: Env} deriving (Generic, Eq)
 
 instance Hashable TypeEnv
 
@@ -703,7 +747,7 @@ prettyEnvironmentIndented indent env =
       ++ let modules = envUseModules env
           in if null modules
                then []
-               else ("\n" ++ replicate indent ' ' ++ "Used modules:") : map (showImportIndented indent) modules
+               else ("\n" ++ replicate indent ' ' ++ "Used modules:") : Set.toList (Set.map (showImportIndented indent) modules)
 
 -- | For debugging nested environments
 prettyEnvironmentChain :: Env -> String
@@ -746,6 +790,7 @@ incrementEnvNestLevel env =
 
 -- | Converts an S-expression to one of the Carp types.
 xobjToTy :: XObj -> Maybe Ty
+xobjToTy (XObj (Sym (SymPath _ "C") _) _ _) = Just CTy
 xobjToTy (XObj (Sym (SymPath _ "Unit") _) _ _) = Just UnitTy
 xobjToTy (XObj (Sym (SymPath _ "Int") _) _ _) = Just IntTy
 xobjToTy (XObj (Sym (SymPath _ "Float") _) _ _) = Just FloatTy
@@ -757,9 +802,9 @@ xobjToTy (XObj (Sym (SymPath _ "Pattern") _) _ _) = Just PatternTy
 xobjToTy (XObj (Sym (SymPath _ "Char") _) _ _) = Just CharTy
 xobjToTy (XObj (Sym (SymPath _ "Bool") _) _ _) = Just BoolTy
 xobjToTy (XObj (Sym (SymPath _ "Static") _) _ _) = Just StaticLifetimeTy
-xobjToTy (XObj (Sym (SymPath prefixes s@(firstLetter : _)) _) _ _)
+xobjToTy (XObj (Sym spath@(SymPath _ s@(firstLetter : _)) _) _ _)
   | isLower firstLetter = Just (VarTy s)
-  | otherwise = Just (StructTy (ConcreteNameTy (createStructName prefixes s)) [])
+  | otherwise = Just (StructTy (ConcreteNameTy spath) [])
 xobjToTy (XObj (Lst [XObj (Sym (SymPath _ "Ptr") _) _ _, innerTy]) _ _) =
   do
     okInnerTy <- xobjToTy innerTy
@@ -904,10 +949,10 @@ defineFunctionTypeAlias :: Ty -> XObj
 defineFunctionTypeAlias aliasTy = defineTypeAlias (tyToC aliasTy) aliasTy
 
 defineArrayTypeAlias :: Ty -> XObj
-defineArrayTypeAlias t = defineTypeAlias (tyToC t) (StructTy (ConcreteNameTy "Array") [])
+defineArrayTypeAlias t = defineTypeAlias (tyToC t) (StructTy (ConcreteNameTy (SymPath [] "Array")) [])
 
 defineStaticArrayTypeAlias :: Ty -> XObj
-defineStaticArrayTypeAlias t = defineTypeAlias (tyToC t) (StructTy (ConcreteNameTy "Array") [])
+defineStaticArrayTypeAlias t = defineTypeAlias (tyToC t) (StructTy (ConcreteNameTy (SymPath [] "Array")) [])
 
 -- |
 defineInterface :: String -> Ty -> [SymPath] -> Maybe Info -> XObj
@@ -1026,3 +1071,56 @@ isResolvableStaticObj (Instantiate _) = True
 isResolvableStaticObj (Fn _ _) = True
 isResolvableStaticObj (Interface _ _) = True
 isResolvableStaticObj _ = False
+
+-- | Left biased semigroup instance for Envs.
+instance Semigroup Env where
+  e <> e' =
+    let bindings = envBindings e
+        bindings' = envBindings e'
+        joinedParents =
+          (envParent e >>= \p -> (pure p <|> (envParent e' >>= \p' -> pure (p <> p'))))
+            <|> envParent e'
+        joinedUseModules = envUseModules e <> envUseModules e'
+     in e
+          { envBindings = Map.union bindings bindings',
+            envParent = joinedParents,
+            envUseModules = joinedUseModules
+          }
+
+-- | Semigroup instance for Contexts
+--   - Left biased in internal env combination
+--   - Right biased in global env combination
+--   - Right biased in type env combination
+--  The assumption here is that the context on the LHS is the *older* context
+--  in the case of conflicts, we prefer the bindings on the RHS *except* for
+--  the internal environment, since retaining some bindings from the internal
+--  env is typically the reason you'd call this function.
+instance Semigroup Context where
+  c <> c' =
+    let global = contextGlobalEnv c
+        global' = contextGlobalEnv c'
+        internal = contextInternalEnv c
+        internal' = contextInternalEnv c'
+        typeEnv = getTypeEnv (contextTypeEnv c)
+        typeEnv' = getTypeEnv (contextTypeEnv c')
+     in c
+          { contextGlobalEnv = global' <> global,
+            contextInternalEnv = internal <> internal',
+            contextTypeEnv = TypeEnv (typeEnv' <> typeEnv)
+          }
+
+toLocalDef :: String -> XObj -> XObj
+toLocalDef var value =
+  (XObj (Lst [XObj LocalDef Nothing Nothing, XObj (Sym (SymPath [] var) Symbol) Nothing Nothing, value]) (xobjInfo value) (xobjTy value))
+
+-- | Create a fresh binder for an XObj (a binder with empty Metadata).
+toBinder :: XObj -> Binder
+toBinder xobj = Binder emptyMeta xobj
+
+-- | Dynamic 'true'.
+trueXObj :: XObj
+trueXObj = XObj (Bol True) Nothing Nothing
+
+-- | Dynamic 'false'.
+falseXObj :: XObj
+falseXObj = XObj (Bol False) Nothing Nothing

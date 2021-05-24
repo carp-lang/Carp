@@ -3,14 +3,45 @@
 (defmodule Dynamic
   ;; Functions for doing things at the REPL and during compile time.
 
+  (doc nil "is the value `nil`, i.e. the empty list.")
+  (defdynamic nil '())
+
+  (doc nil? "checks whether a value is nil, i.e. the empty list.")
+  (defndynamic nil? [value]
+    (= value nil))
+
+  (doc inc "increments a number.")
   (defndynamic inc [x]
     (+ x 1))
 
+  (doc dec "decrements a number.")
   (defndynamic dec [x]
     (- x 1))
 
+  (doc neg "negates a number.")
+  (defndynamic neg [x]
+    (* -1 x))
+
+  (doc mod "implements modulo, is slower than modulo specialized on
+integers [`imod`](#imod).")
   (defndynamic mod [x y]
+    (let-do [a (if (< x 0) (neg x) x)
+             b (if (< y 0) (neg y) y)
+             m a]
+      (while (or (> m b) (= m b))
+        (set! m (- m b)))
+      (if (< a 0) (neg m) m)))
+
+  (doc imod "implements modulo on integers, and is much faster than
+[`mod](#mod).")
+  (defndynamic imod [x y]
     (- x (* y (/ x y))))
+
+  (doc even? "checks whether the number `n` is even.")
+  (defndynamic even? [n] (= 0 (mod n 2)))
+
+  (doc odd? "checks whether the number `n` is odd.")
+  (defndynamic odd? [n] (= 1 (mod n 2)))
 
   (defmodule Project
     (doc no-echo "Turn off debug printing in the compiler.")
@@ -20,13 +51,20 @@
         (Project.config "echo-compiler-cmd" false))))
 
   (defmodule String
+    (doc prefix "takes the prefix of the string `s` up to the index `to`.")
     (defndynamic prefix [s to]
       (String.slice s 0 to))
 
+    (doc suffix "takes the suffix of the string `s` from the index `from`.")
     (defndynamic suffix [s from]
       (String.slice s from (String.length s)))
 
-    (defndynamic tail [s ]
+    (doc head "takes the head of the string `s` as a one-character string.")
+    (defndynamic head [s]
+      (String.prefix s 1))
+
+    (doc tail "takes the tail of the string `s`.")
+    (defndynamic tail [s]
       (String.suffix s 1))
   )
 )

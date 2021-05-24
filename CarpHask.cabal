@@ -1,5 +1,5 @@
 name:                CarpHask
-version:             0.4.2.0
+version:             0.5.0.0
 -- synopsis:
 -- description:
 homepage:            https://github.com/eriksvedang/Carp
@@ -26,6 +26,7 @@ library
                        Deftype,
                        Emit,
                        Env,
+                       EvalError,
                        Eval,
                        Expand,
                        GenerateConstraints,
@@ -33,7 +34,6 @@ library
                        Info,
                        InitialTypes,
                        Interfaces,
-                       Lookup,
                        Managed,
                        Map,
                        Meta,

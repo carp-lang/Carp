@@ -49,7 +49,7 @@ assignTypes mappings root = visit root
       Nothing -> pure xobj
 
 isArrayTypeOK :: Ty -> Bool
-isArrayTypeOK (StructTy (ConcreteNameTy "Array") [RefTy _ _]) = False -- An array containing refs!
+isArrayTypeOK (StructTy (ConcreteNameTy (SymPath [] "Array")) [RefTy _ _]) = False -- An array containing refs!
 isArrayTypeOK _ = True
 
 -- | Change auto generated type names (i.e. 't0') to letters (i.e. 'a', 'b', 'c', etc...)
@@ -65,19 +65,3 @@ beautifyTypeVariables root =
               (map (VarTy . (: [])) ['a' ..])
           )
    in assignTypes mappings root
-
-typeVariablesInOrderOfAppearance :: Ty -> [Ty]
-typeVariablesInOrderOfAppearance (FuncTy argTys retTy ltTy) =
-  concatMap typeVariablesInOrderOfAppearance argTys ++ typeVariablesInOrderOfAppearance retTy ++ typeVariablesInOrderOfAppearance ltTy
-typeVariablesInOrderOfAppearance (StructTy n typeArgs) =
-  case n of
-    t@(VarTy _) -> typeVariablesInOrderOfAppearance t ++ concatMap typeVariablesInOrderOfAppearance typeArgs
-    _ -> concatMap typeVariablesInOrderOfAppearance typeArgs
-typeVariablesInOrderOfAppearance (RefTy innerTy lifetimeTy) =
-  typeVariablesInOrderOfAppearance innerTy ++ typeVariablesInOrderOfAppearance lifetimeTy
-typeVariablesInOrderOfAppearance (PointerTy innerTy) =
-  typeVariablesInOrderOfAppearance innerTy
-typeVariablesInOrderOfAppearance t@(VarTy _) =
-  [t]
-typeVariablesInOrderOfAppearance _ =
-  []

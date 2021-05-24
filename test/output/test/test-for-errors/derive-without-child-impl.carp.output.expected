@@ -1,0 +1,8 @@
+derive-without-child-impl.carp:9:23 Can't find matching lookup for symbol 'inc' of type (Fn [T1] T1)
+None of the possibilities have the correct signature:
+    Pointer.inc : (Fn [(Ptr a)] (Ptr a))
+    Byte.inc : (Fn [Byte] Byte)
+    Int.inc : (Fn [Int] Int)
+    Long.inc : (Fn [Long] Long)
+    Double.inc : (Fn [Double] Double)
+    Float.inc : (Fn [Float] Float)

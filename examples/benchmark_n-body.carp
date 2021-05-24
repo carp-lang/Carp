@@ -1,0 +1,159 @@
+;;; Taken from
+;;; http://benchmarksgame.alioth.debian.org/u64q/program.php?test=nbody&lang=gcc&id=1
+
+(add-cflag "-pipe -O3 -fomit-frame-pointer -march=native -mfpmath=sse -msse3")
+
+(use IO)
+(use Double)
+(use Array)
+(use Int)
+
+;;; pow(double, double) is 5 times slower for (pow x 3)
+; int Int_pow(int x, int y) {
+;     int r = 1;
+;     while (y) {
+;         if (y & 1)
+;             r *= x;
+;         y >>= 1;
+;         x *= x;
+;     }
+;     return r;
+; }
+(defn ipow [x y]
+  (let-do [r 1.0]
+    (while (/= y 0)
+      (do
+        (when (/= (bit-and y 1) 0)
+          (set! r (* r x)))
+        (set! y (/ y 2))
+        (set! x (* x x))))
+    r))
+
+(def n 50000000)
+
+(defn solar_mass [] (* (* 4.0 pi) pi)) ;; I cannot #DEFINE, so solar_mass cannot be a `def`
+(def days_per_year 365.24)
+
+(deftype Planet
+  [ x Double y Double z Double
+    vx Double vy Double vz Double
+    mass Double ])
+
+; for eg. 1.03e-03
+(defn e [d exp]
+  (* d (pow 10.0 (from-int exp))))
+
+
+
+; currying would make this a single line
+; + lambdas would make this unneeded
+(defn reduce-px [t b] (+ t (* @(Planet.vx b) @(Planet.mass b))))
+(defn reduce-py [t b] (+ t (* @(Planet.vy b) @(Planet.mass b))))
+(defn reduce-pz [t b] (+ t (* @(Planet.vz b) @(Planet.mass b))))
+
+(defn offset_momentum [bodies]
+  (let [b (unsafe-nth bodies 0)
+        px (reduce &reduce-px 0.0 bodies)
+        py (reduce &reduce-py 0.0 bodies)
+        pz (reduce &reduce-pz 0.0 bodies)]
+    (do
+      (Planet.set-vx! b (/ (neg px) (solar_mass)))
+      (Planet.set-vy! b (/ (neg py) (solar_mass)))
+      (Planet.set-vz! b (/ (neg pz) (solar_mass))))))
+
+
+
+(defn energy [bodies]
+  (let-do [e 0.0]
+    (for [i 0 (length bodies)]
+      (let-do [b (unsafe-nth bodies i)]
+          (set! e (+ e (* 0.5 (* @(Planet.mass b)
+                                  (+ (ipow @(Planet.vx b) 2)
+                                     (+ (ipow @(Planet.vy b) 2)
+                                        (ipow @(Planet.vz b) 2)))))))
+
+          (for [j (+ i 1) (length bodies)]
+            (let [b2 (unsafe-nth bodies j)
+                  dx (- @(Planet.x b) @(Planet.x b2))
+                  dy (- @(Planet.y b) @(Planet.y b2))
+                  dz (- @(Planet.z b) @(Planet.z b2))
+                  dist (sqrt (+ (ipow dx 2) (+ (ipow dy 2) (ipow dz 2))))]
+              (set! e (- e (/ (* @(Planet.mass b) @(Planet.mass b2)) dist)))))))
+      e))
+
+
+(defn update-planet [i bodies dt]
+  (let [b (unsafe-nth bodies i)]
+    (do
+      (Planet.set-x! b (+ @(Planet.x b) (* dt @(Planet.vx b))))
+      (Planet.set-y! b (+ @(Planet.y b) (* dt @(Planet.vy b))))
+      (Planet.set-z! b (+ @(Planet.z b) (* dt @(Planet.vz b)))))))
+
+(defn advance [bodies dt]
+  (do
+    (for [i 0 (length bodies)]
+      (let [b (unsafe-nth bodies i)]
+        (for [j (+ i 1) (length bodies)]
+          (let [b2 (unsafe-nth bodies j)
+                dx (- @(Planet.x b) @(Planet.x b2))
+                dy (- @(Planet.y b) @(Planet.y b2))
+                dz (- @(Planet.z b) @(Planet.z b2))
+                dist (sqrt (+ (ipow dx 2) (+ (ipow dy 2) (ipow dz 2))))
+                mag (/ dt (ipow dist 3))]
+            (do
+              (Planet.set-vx! b (- @(Planet.vx b) (* dx (* @(Planet.mass b2) mag))))
+              (Planet.set-vy! b (- @(Planet.vy b) (* dy (* @(Planet.mass b2) mag))))
+              (Planet.set-vz! b (- @(Planet.vz b) (* dz (* @(Planet.mass b2) mag))))
+
+              (Planet.set-vx! b2 (+ @(Planet.vx b2) (* dx (* @(Planet.mass b) mag))))
+              (Planet.set-vy! b2 (+ @(Planet.vy b2) (* dy (* @(Planet.mass b) mag))))
+              (Planet.set-vz! b2 (+ @(Planet.vz b2) (* dz (* @(Planet.mass b) mag)))))))))
+
+    (for [i 0 (length bodies)]
+      (update-planet i bodies dt))))
+
+; defining bodies outside main (`def`) results in c compile error:
+; - solar mass is a function
+; - i cannot do eg. 1.01e-03
+(defn main []
+  (let-do [bodies [
+          (Planet.init 0.0 0.0 0.0 0.0 0.0 0.0 (solar_mass))
+          (Planet.init                                ; jupiter
+            (e 4.84143144246472090   0)
+            (e -1.16032004402742839  0)
+            (e -1.03622044471123109 -1)
+            (* (e 1.66007664274403694 -3) days_per_year)
+            (* (e 7.69901118419740425 -3) days_per_year)
+            (* (e -6.90460016972063023 -5) days_per_year)
+            (* (e 9.54791938424326609 -4) (solar_mass)))
+          (Planet.init                               ; saturn
+            (e 8.34336671824457987   0)
+            (e 4.12479856412430479   0)
+            (e -4.03523417114321381 -1)
+            (* (e -2.76742510726862411 -3) days_per_year)
+            (* (e 4.99852801234917238 -3) days_per_year)
+            (* (e 2.30417297573763929 -5) days_per_year)
+            (* (e 2.85885980666130812 -4) (solar_mass)))
+          (Planet.init                               ; uranus
+            (e 1.28943695621391310   1)
+            (e -1.51111514016986312  1)
+            (e -2.23307578892655734 -1)
+            (* (e 2.96460137564761618 -3) days_per_year)
+            (* (e 2.37847173959480950 -3) days_per_year)
+            (* (e -2.96589568540237556 -5) days_per_year)
+            (* (e 4.36624404335156298 -5) (solar_mass)))
+          (Planet.init                               ; neptune
+            (e 1.53796971148509165  1)
+            (e -2.59193146099879641 1)
+            (e 1.79258772950371181 -1)
+            (* (e 2.68067772490389322 -3) days_per_year)
+            (* (e 1.62824170038242295 -3) days_per_year)
+            (* (e -9.51592254519715870 -5) days_per_year)
+            (* (e 5.15138902046611451 -5) (solar_mass)))
+        ]]
+      (offset_momentum &bodies)
+      (println &(str (energy &bodies))) ; printf %.9f
+      (for [i 0 n]
+        (do
+          (advance &bodies 0.01)))
+      (println &(str (energy &bodies))))) ;

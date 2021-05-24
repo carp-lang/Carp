@@ -1,5 +1,6 @@
 module Util where
 
+import Data.Bifunctor
 import Data.List
 import Data.Maybe (fromMaybe)
 import qualified Map
@@ -65,7 +66,7 @@ enumerate 5 = "sixth"
 enumerate 6 = "seventh"
 enumerate n = show n ++ ":th"
 
-data Platform = Linux | MacOS | Windows | FreeBSD deriving (Show, Eq)
+data Platform = Linux | MacOS | Windows | FreeBSD | NetBSD deriving (Show, Eq)
 
 platform :: Platform
 platform =
@@ -74,6 +75,7 @@ platform =
     "darwin" -> MacOS
     "mingw32" -> Windows
     "freebsd" -> FreeBSD
+    "netbsd" -> NetBSD
     p -> error ("Unknown platform: " ++ p)
 
 unionOfSetsInList :: Ord a => [Set.Set a] -> Set.Set a
@@ -115,3 +117,15 @@ intToArgName 7 = "t"
 intToArgName 8 = "s"
 intToArgName 9 = "r"
 intToArgName n = intToArgName 1 ++ intToArgName (n `div` 10)
+
+replaceLeft :: b -> Either a c -> Either b c
+replaceLeft x e = first (const x) e
+
+unwrapErr :: Show e => Either e a -> Either String a
+unwrapErr = first show
+
+toMaybe :: (b -> c) -> Either a b -> Maybe c
+toMaybe f e = either (const Nothing) (Just . f) e
+
+maybeId :: Either a b -> Maybe b
+maybeId = toMaybe id

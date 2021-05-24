@@ -1,4 +1,6 @@
 (deftype (Vector2 f) [x f, y f])
+(derive Vector2 zero)
+(derive Vector2 =)
 
 (defmodule Vector2
   (defn map [f v]
@@ -11,10 +13,6 @@
 
   (defn vreduce [f i v]
     (f (f i @(x v)) @(y v)))
-
-  (defn zero []
-    (init (zero) (zero)))
-  (implements zero Vector2.zero)
 
   (defn random []
     (init (random-0-1) (random-0-1)))
@@ -33,10 +31,6 @@
   (defn div [a n]
     (init (/ @(x a) n)
           (/ @(y a) n)))
-
-  (defn = [a b]
-    (vreduce (fn [i v] (and i v)) true &(zip = a b)))
-  (implements = Vector2.=)
 
   (doc vapprox "Check whether the vectors a and b are approximately equal.")
   (defn vapprox [a b]
@@ -102,6 +96,8 @@
 )
 
 (deftype (Vector3 f) [x f, y f, z f])
+(derive Vector3 zero)
+(derive Vector3 =)
 
 (defmodule Vector3
   (defn map [f v]
@@ -117,17 +113,9 @@
   (defn vreduce [f i v]
     (f (f (f i @(x v)) @(y v)) @(z v)))
 
-  (defn zero []
-    (init (zero) (zero) (zero)))
-  (implements zero Vector3.zero)
-
   (defn random []
     (init (random-0-1) (random-0-1) (random-0-1)))
   (implements random Vector3.random)
-
-  (defn = [a b]
-    (vreduce (fn [i v] (and i v)) true &(zip = a b)))
-  (implements = Vector3.=)
 
   (doc vapprox "Check whether the vectors a and b are approximately equal.")
   (defn vapprox [a b]
@@ -212,6 +200,7 @@
 
 
 (deftype (VectorN f) [n Int, v (Array f)])
+(derive VectorN =)
 
 (defmodule VectorN
   (defn zero-sized [n]
@@ -233,11 +222,6 @@
     (if (= @(n a) @(n b))
       (Maybe.Just (zip- f (v a) (v b)))
       (Maybe.Nothing)))
-
-  (defn = [a b]
-    (and (Int.= @(n a) @(n b))
-         (Array.= (v a) (v b))))
-  (implements = VectorN.=)
 
   (defn add [a b]
     (zip + a b))

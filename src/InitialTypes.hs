@@ -1,11 +1,11 @@
 module InitialTypes where
 
 import Control.Monad.State
-import Env
+import Env as E
 import Info
-import Lookup
 import qualified Map
 import Obj
+import qualified Set
 import TypeError
 import Types
 import Util
@@ -73,6 +73,7 @@ initialTypes typeEnv rootEnv root = evalState (visit rootEnv root) 0
     visit env xobj = case xobjObj xobj of
       (Num t _) -> pure (Right (xobj {xobjTy = Just t}))
       (Bol _) -> pure (Right (xobj {xobjTy = Just BoolTy}))
+      (C _) -> pure (Right xobj {xobjTy = Just CTy})
       (Str _) -> do
         lt <- genVarTy
         pure (Right (xobj {xobjTy = Just (RefTy StringTy lt)}))
@@ -97,7 +98,7 @@ initialTypes typeEnv rootEnv root = evalState (visit rootEnv root) 0
       If -> pure (Left (InvalidObj If xobj))
       While -> pure (Left (InvalidObj While xobj))
       Do -> pure (Left (InvalidObj Do xobj))
-      (Mod _) -> pure (Left (InvalidObj If xobj))
+      (Mod _ _) -> pure (Left (InvalidObj If xobj))
       e@(Deftype _) -> pure (Left (InvalidObj e xobj))
       e@(External _) -> pure (Left (InvalidObj e xobj))
       e@(ExternalType _) -> pure (Left (InvalidObj e xobj))
@@ -115,19 +116,25 @@ initialTypes typeEnv rootEnv root = evalState (visit rootEnv root) 0
       -- catchall case for exhaustive patterns
       unknown -> pure (Left (InvalidObj unknown xobj))
     visitSymbol :: Env -> XObj -> SymPath -> State Integer (Either TypeError XObj)
-    visitSymbol _ xobj@(XObj (Sym _ LookupRecursive) _ _) _ =
-      -- Recursive lookups are left untouched (this avoids problems with looking up the thing they're referring to)
-      do
-        freshTy <- genVarTy
-        pure (Right xobj {xobjTy = Just freshTy})
+    visitSymbol e xobj@(XObj (Sym name LookupRecursive) _ _) _ =
+      case E.searchValueBinder e name of
+        -- If this recursive symbol is already typed in this environment, use that type.
+        -- This is relevant for, e.g. recursive function calls.
+        -- We need to use search here to check parents as our let-binding handling possibly puts recursive
+        -- environments as the parent of a more local environment for the let bindings.
+        Right (Binder _ found) -> pure (Right xobj {xobjTy = xobjTy found})
+        -- Other recursive lookups are left untouched (this avoids problems with looking up the thing they're referring to)
+        Left _ -> do
+          freshTy <- genVarTy
+          pure (Right xobj {xobjTy = Just freshTy})
     visitSymbol env xobj symPath =
       case symPath of
         -- Symbols with leading ? are 'holes'.
         SymPath _ name@('?' : _) -> pure (Right (xobj {xobjTy = Just (VarTy name)}))
         SymPath _ (':' : _) -> pure (Left (LeadingColon xobj))
         _ ->
-          case lookupInEnv symPath env of
-            Just (foundEnv, binder) ->
+          case E.searchValue env symPath of
+            Right (foundEnv, binder) ->
               case xobjTy (binderXObj binder) of
                 -- Don't rename internal symbols like parameters etc!
                 Just theType
@@ -136,7 +143,7 @@ initialTypes typeEnv rootEnv root = evalState (visit rootEnv root) 0
                     pure (Right (xobj {xobjTy = Just renamed}))
                   | otherwise -> pure (Right (xobj {xobjTy = Just theType}))
                 Nothing -> pure (Left (SymbolMissingType xobj foundEnv))
-            Nothing -> pure (Left (SymbolNotDefined symPath xobj env)) -- Gives the error message "Trying to refer to an undefined symbol ..."
+            Left _ -> pure (Left (SymbolNotDefined symPath xobj env)) -- Gives the error message "Trying to refer to an undefined symbol ..."
     visitMultiSym :: Env -> XObj -> [SymPath] -> State Integer (Either TypeError XObj)
     visitMultiSym _ xobj@(XObj (MultiSym _ _) _ _) _ =
       do
@@ -146,10 +153,10 @@ initialTypes typeEnv rootEnv root = evalState (visit rootEnv root) 0
     visitInterfaceSym :: Env -> XObj -> State Integer (Either TypeError XObj)
     visitInterfaceSym _ xobj@(XObj (InterfaceSym name) _ _) =
       do
-        freshTy <- case lookupBinder (SymPath [] name) (getTypeEnv typeEnv) of
-          Just (Binder _ (XObj (Lst [XObj (Interface interfaceSignature _) _ _, _]) _ _)) -> renameVarTys interfaceSignature
-          Just (Binder _ x) -> error ("A non-interface named '" ++ name ++ "' was found in the type environment: " ++ pretty x)
-          Nothing -> genVarTy
+        freshTy <- case getTypeBinder typeEnv name of
+          Right (Binder _ (XObj (Lst [XObj (Interface interfaceSignature _) _ _, _]) _ _)) -> renameVarTys interfaceSignature
+          Right (Binder _ x) -> error ("A non-interface named '" ++ name ++ "' was found in the type environment: " ++ pretty x)
+          Left _ -> genVarTy
         pure (Right xobj {xobjTy = Just freshTy})
     visitInterfaceSym _ _ = error "visitinterfacesym"
     visitArray :: Env -> XObj -> State Integer (Either TypeError XObj)
@@ -159,7 +166,7 @@ initialTypes typeEnv rootEnv root = evalState (visit rootEnv root) 0
         arrayVarTy <- genVarTy
         pure $ do
           okVisited <- sequence visited
-          Right (XObj (Arr okVisited) i (Just (StructTy (ConcreteNameTy "Array") [arrayVarTy])))
+          Right (XObj (Arr okVisited) i (Just (StructTy (ConcreteNameTy (SymPath [] "Array")) [arrayVarTy])))
     visitArray _ _ = error "The function 'visitArray' only accepts XObj:s with arrays in them."
     visitStaticArray :: Env -> XObj -> State Integer (Either TypeError XObj)
     visitStaticArray env (XObj (StaticArr xobjs) i _) =
@@ -169,7 +176,7 @@ initialTypes typeEnv rootEnv root = evalState (visit rootEnv root) 0
         lt <- genVarTy
         pure $ do
           okVisited <- sequence visited
-          Right (XObj (StaticArr okVisited) i (Just (RefTy (StructTy (ConcreteNameTy "StaticArray") [arrayVarTy]) lt)))
+          Right (XObj (StaticArr okVisited) i (Just (RefTy (StructTy (ConcreteNameTy (SymPath [] "StaticArray")) [arrayVarTy]) lt)))
     visitStaticArray _ _ = error "The function 'visitStaticArray' only accepts XObj:s with arrays in them."
     visitDictionary :: Env -> XObj -> State Integer (Either TypeError XObj)
     visitDictionary env (XObj (Dict xobjs) i _) =
@@ -178,7 +185,7 @@ initialTypes typeEnv rootEnv root = evalState (visit rootEnv root) 0
         arrayVarTy <- genVarTy
         pure $ do
           okVisited <- sequence visited
-          Right (XObj (Dict okVisited) i (Just (StructTy (ConcreteNameTy "Dictionary") [arrayVarTy])))
+          Right (XObj (Dict okVisited) i (Just (StructTy (ConcreteNameTy (SymPath [] "Dictionary")) [arrayVarTy])))
     visitDictionary _ _ = error "The function 'visitArray' only accepts XObj:s with dictionaries in them."
     getTys env argList =
       do
@@ -196,7 +203,7 @@ initialTypes typeEnv rootEnv root = evalState (visit rootEnv root) 0
             let funcTy = Just (FuncTy argTypes returnType StaticLifetimeTy)
                 typedNameSymbol = nameSymbol {xobjTy = funcTy}
                 -- TODO! After the introduction of 'LookupRecursive' this env shouldn't be needed anymore? (but it is for some reason...)
-                envWithSelf = extendEnv funcScopeEnv name typedNameSymbol
+                Right envWithSelf = E.insertX funcScopeEnv (SymPath [] name) typedNameSymbol
             visitedBody <- visit envWithSelf body
             visitedArgs <- mapM (visit envWithSelf) argList
             pure $ do
@@ -422,7 +429,7 @@ initialTypes typeEnv rootEnv root = evalState (visit rootEnv root) 0
               { envBindings = Map.empty,
                 envParent = Just env,
                 envModuleName = Nothing,
-                envUseModules = [],
+                envUseModules = Set.empty,
                 envMode = InternalEnv,
                 envFunctionNestingLevel = envFunctionNestingLevel env
               }
@@ -438,18 +445,21 @@ initialTypes typeEnv rootEnv root = evalState (visit rootEnv root) 0
                 (Sym (SymPath _ name) _) ->
                   do
                     visited <- visit env' expr
-                    pure (envAddBinding env' name . Binder emptyMeta <$> visited)
+                    pure
+                      ( join
+                          (replaceLeft (InvalidLetBinding xobjs (sym, expr)) . E.insert env' (SymPath [] name) . Binder emptyMeta <$> visited)
+                      )
                 _ -> pure (Left (InvalidLetBinding xobjs (sym, expr)))
     extendEnvWithParamList :: Env -> [XObj] -> State Integer Env
     extendEnvWithParamList env xobjs =
       do
-        binders <- mapM createBinderForParam xobjs
+        binders' <- mapM createBinderForParam xobjs
         pure
           Env
-            { envBindings = Map.fromList binders,
+            { envBindings = Map.fromList binders',
               envParent = Just env,
               envModuleName = Nothing,
-              envUseModules = [],
+              envUseModules = Set.empty,
               envMode = InternalEnv,
               envFunctionNestingLevel = envFunctionNestingLevel env
             }
@@ -466,13 +476,13 @@ initialTypes typeEnv rootEnv root = evalState (visit rootEnv root) 0
     extendEnvWithCaseMatch :: Env -> XObj -> State Integer Env
     extendEnvWithCaseMatch env caseRoot =
       do
-        binders <- createBindersForCaseVariable caseRoot
+        binders' <- createBindersForCaseVariable caseRoot
         pure
           Env
-            { envBindings = Map.fromList binders,
+            { envBindings = Map.fromList binders',
               envParent = Just env,
               envModuleName = Nothing,
-              envUseModules = [],
+              envUseModules = Set.empty,
               envMode = InternalEnv,
               envFunctionNestingLevel = envFunctionNestingLevel env
             }
@@ -482,8 +492,8 @@ initialTypes typeEnv rootEnv root = evalState (visit rootEnv root) 0
         createBindersForCaseVariable xobj@(XObj (MultiSym name _) _ _) = createBinderInternal xobj name
         createBindersForCaseVariable xobj@(XObj (InterfaceSym name) _ _) = createBinderInternal xobj name
         createBindersForCaseVariable (XObj (Lst lst) _ _) = do
-          binders <- mapM createBindersForCaseVariable lst
-          pure (concat binders)
+          binders' <- mapM createBindersForCaseVariable lst
+          pure (concat binders')
         createBindersForCaseVariable (XObj Ref _ _) = pure []
         createBindersForCaseVariable x = error ("Can't create binder for non-symbol in 'case' variable match:" ++ show x) -- TODO: Should use proper error mechanism
         createBinderInternal :: XObj -> String -> State Integer [(String, Binder)]

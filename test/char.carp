@@ -134,4 +134,12 @@
   (assert-true test
                 (alphanum? \0)
                 "alphanum? works as expected III")
+  (assert-equal test
+                48b
+                (to-byte \0)
+                "to-byte works as expected")
+  (assert-equal test
+                \A
+                (from-byte 65b)
+                "from-byte works as expected")
 )

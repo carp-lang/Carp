@@ -18,4 +18,71 @@
         (set! result (~f result)))
       result))
 
+  (doc when-success 
+    "Executes a side effect, `f`, when `result` is `Success`ful."
+    "```"
+    "(def suc (the (Result Int Int) (Result.Success 0)))"
+    "(def err (the (Result Int Int) (Result.Error 0)))"
+    ""
+    "(when-success &(fn [] (IO.println \"success!\")) suc)"
+    "=> success!"
+    "(when-success &(fn [] (IO.println \"success!\")) err)"
+    "=> "
+    "```")
+  (sig when-success (Fn [&(Fn [] ()) (Result a b)] ()))
+  (defn when-success [f result]
+    (match result
+      (Result.Success _) (~f)
+      _ ()))
+
+  (doc when-error 
+    "Executes a side effect, `f`, when `result` is `Error`oneus."
+    "```"
+    "(def suc (the (Result Int Int) (Result.Success 0)))"
+    "(def err (the (Result Int Int) (Result.Error 0)))"
+    ""
+    "(when-error &(fn [] (IO.println \"error!\")) err)"
+    "=> error!"
+    "(when-error &(fn [] (IO.println \"error!\")) suc)"
+    "=> "
+    "```")
+  (sig when-error (Fn [&(Fn [] ()) (Result a b)] ()))
+  (defn when-error [f result]
+    (match result
+      (Result.Error _) (~f)
+      _ ()))
+
+  (doc when-just 
+    "Executes a side-effect, `f`, when `maybe` is `Just`."
+    "```"
+    "(def just (Maybe.Just 2))"
+    "(def nothing (the (Maybe Int) (Maybe.Nothing)))"
+    ""
+    "(when-just &(fn [] (IO.println \"just!\")) just)"
+    "=> just!"
+    "(when-just &(fn [] (IO.println \"just!\")) nothing)"
+    "=> "
+    "```")
+  (sig when-just (Fn [&(Fn [] ()) (Maybe a)] ()))
+  (defn when-just [f maybe]
+    (match maybe
+      (Maybe.Just _) (~f)
+      _ ()))
+
+  (doc when-nothing 
+    "Executes a side-effect, `f`, when `maybe` is `Nothing`."
+    "```"
+    "(def just (Maybe.Just 2))"
+    "(def nothing (the (Maybe Int) (Maybe.Nothing)))"
+    ""
+    "(when-nothing &(fn [] (IO.println \"nothing!\")) nothing)"
+    "=> nothing!"
+    "(when-nothing &(fn [] (IO.println \"nothing!\")) just)"
+    "=> "
+    "```")
+  (sig when-nothing (Fn [&(Fn [] ()) (Maybe a)] ()))
+  (defn when-nothing [f maybe]
+    (match maybe
+      (Maybe.Nothing) (~f)
+      _ ()))
   )

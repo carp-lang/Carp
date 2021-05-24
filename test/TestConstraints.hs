@@ -116,16 +116,16 @@ testConstr10 =
 
 testConstr11 =
   assertSolution
-    [Constraint (PointerTy (VarTy "a")) (PointerTy (StructTy (ConcreteNameTy "Monkey") [])) x x x OrdNo]
-    [("a", (StructTy (ConcreteNameTy "Monkey") []))]
+    [Constraint (PointerTy (VarTy "a")) (PointerTy (StructTy (ConcreteNameTy (SymPath [] "Monkey")) [])) x x x OrdNo]
+    [("a", (StructTy (ConcreteNameTy (SymPath [] "Monkey")) []))]
 
 testConstr12 =
   assertSolution
-    [ Constraint t1 (PointerTy (StructTy (ConcreteNameTy "Array") [IntTy])) x x x OrdNo,
+    [ Constraint t1 (PointerTy (StructTy (ConcreteNameTy (SymPath [] "Array")) [IntTy])) x x x OrdNo,
       Constraint t1 (PointerTy t2) x x x OrdNo
     ]
-    [ ("t1", (PointerTy (StructTy (ConcreteNameTy "Array") [IntTy]))),
-      ("t2", (StructTy (ConcreteNameTy "Array") [IntTy]))
+    [ ("t1", (PointerTy (StructTy (ConcreteNameTy (SymPath [] "Array")) [IntTy]))),
+      ("t2", (StructTy (ConcreteNameTy (SymPath [] "Array")) [IntTy]))
     ]
 
 testConstr13 =
@@ -144,36 +144,36 @@ testConstr13 =
 -- Struct types
 testConstr20 =
   assertSolution
-    [ Constraint t0 (StructTy (ConcreteNameTy "Vector") [t1]) x x x OrdNo,
-      Constraint t0 (StructTy (ConcreteNameTy "Vector") [IntTy]) x x x OrdNo
+    [ Constraint t0 (StructTy (ConcreteNameTy (SymPath [] "Vector")) [t1]) x x x OrdNo,
+      Constraint t0 (StructTy (ConcreteNameTy (SymPath [] "Vector")) [IntTy]) x x x OrdNo
     ]
-    [("t0", (StructTy (ConcreteNameTy "Vector") [IntTy])), ("t1", IntTy)]
+    [("t0", (StructTy (ConcreteNameTy (SymPath [] "Vector")) [IntTy])), ("t1", IntTy)]
 
 testConstr21 =
   assertSolution
-    [ Constraint t1 (StructTy (ConcreteNameTy "Array") [t2]) x x x OrdNo,
-      Constraint t1 (StructTy (ConcreteNameTy "Array") [t3]) x x x OrdNo,
+    [ Constraint t1 (StructTy (ConcreteNameTy (SymPath [] "Array")) [t2]) x x x OrdNo,
+      Constraint t1 (StructTy (ConcreteNameTy (SymPath [] "Array")) [t3]) x x x OrdNo,
       Constraint t3 BoolTy x x x OrdNo
     ]
-    [ ("t1", (StructTy (ConcreteNameTy "Array") [BoolTy])),
+    [ ("t1", (StructTy (ConcreteNameTy (SymPath [] "Array")) [BoolTy])),
       ("t2", BoolTy),
       ("t3", BoolTy)
     ]
 
 testConstr22 =
   assertSolution
-    [ Constraint t1 (StructTy (ConcreteNameTy "Array") [t2]) x x x OrdNo,
-      Constraint t2 (StructTy (ConcreteNameTy "Array") [t3]) x x x OrdNo,
+    [ Constraint t1 (StructTy (ConcreteNameTy (SymPath [] "Array")) [t2]) x x x OrdNo,
+      Constraint t2 (StructTy (ConcreteNameTy (SymPath [] "Array")) [t3]) x x x OrdNo,
       Constraint t3 FloatTy x x x OrdNo
     ]
-    [ ("t1", (StructTy (ConcreteNameTy "Array") [(StructTy (ConcreteNameTy "Array") [FloatTy])])),
-      ("t2", (StructTy (ConcreteNameTy "Array") [FloatTy])),
+    [ ("t1", (StructTy (ConcreteNameTy (SymPath [] "Array")) [(StructTy (ConcreteNameTy (SymPath [] "Array")) [FloatTy])])),
+      ("t2", (StructTy (ConcreteNameTy (SymPath [] "Array")) [FloatTy])),
       ("t3", FloatTy)
     ]
 
 testConstr23 =
   assertUnificationFailure
-    [ Constraint (StructTy (ConcreteNameTy "Array") [t1]) (StructTy (ConcreteNameTy "Array") [t2]) x x x OrdNo,
+    [ Constraint (StructTy (ConcreteNameTy (SymPath [] "Array")) [t1]) (StructTy (ConcreteNameTy (SymPath [] "Array")) [t2]) x x x OrdNo,
       Constraint t1 IntTy x x x OrdNo,
       Constraint t2 FloatTy x x x OrdNo
     ]
@@ -182,7 +182,7 @@ testConstr24 =
   assertUnificationFailure
     [ Constraint t2 FloatTy x x x OrdNo,
       Constraint t1 IntTy x x x OrdNo,
-      Constraint (StructTy (ConcreteNameTy "Array") [t1]) (StructTy (ConcreteNameTy "Array") [t2]) x x x OrdNo
+      Constraint (StructTy (ConcreteNameTy (SymPath [] "Array")) [t1]) (StructTy (ConcreteNameTy (SymPath [] "Array")) [t2]) x x x OrdNo
     ]
 
 -- m9 = solve [Constraint (StructTy "Vector" [IntTy]) (StructTy "Vector" [t1]) x x x OrdNo]
@@ -219,10 +219,10 @@ testConstr33 =
 
 testConstr34 =
   assertSolution
-    [ Constraint (VarTy "a") (StructTy (ConcreteNameTy "Pair") [(VarTy "x0"), (VarTy "y0")]) x x x OrdNo,
-      Constraint (StructTy (ConcreteNameTy "Array") [(VarTy "a")]) (StructTy (ConcreteNameTy "Array") [(StructTy (ConcreteNameTy "Pair") [(VarTy "x1"), (VarTy "y1")])]) x x x OrdNo
+    [ Constraint (VarTy "a") (StructTy (ConcreteNameTy (SymPath [] "Pair")) [(VarTy "x0"), (VarTy "y0")]) x x x OrdNo,
+      Constraint (StructTy (ConcreteNameTy (SymPath [] "Array")) [(VarTy "a")]) (StructTy (ConcreteNameTy (SymPath [] "Array")) [(StructTy (ConcreteNameTy (SymPath [] "Pair")) [(VarTy "x1"), (VarTy "y1")])]) x x x OrdNo
     ]
-    [ ("a", (StructTy (ConcreteNameTy "Pair") [(VarTy "x0"), (VarTy "y0")])),
+    [ ("a", (StructTy (ConcreteNameTy (SymPath [] "Pair")) [(VarTy "x0"), (VarTy "y0")])),
       ("x0", (VarTy "x0")),
       ("y0", (VarTy "y0")),
       ("x1", (VarTy "x0")),
@@ -232,10 +232,10 @@ testConstr34 =
 -- Same as testConstr34, except everything is wrapped in refs
 testConstr35 =
   assertSolution
-    [ Constraint (RefTy (VarTy "a") (VarTy "lt0")) (RefTy (StructTy (ConcreteNameTy "Pair") [(VarTy "x0"), (VarTy "y0")]) (VarTy "lt1")) x x x OrdNo,
-      Constraint (RefTy (StructTy (ConcreteNameTy "Array") [(VarTy "a")]) (VarTy "lt2")) (RefTy (StructTy (ConcreteNameTy "Array") [(StructTy (ConcreteNameTy "Pair") [(VarTy "x1"), (VarTy "y1")])]) (VarTy "lt3")) x x x OrdNo
+    [ Constraint (RefTy (VarTy "a") (VarTy "lt0")) (RefTy (StructTy (ConcreteNameTy (SymPath [] "Pair")) [(VarTy "x0"), (VarTy "y0")]) (VarTy "lt1")) x x x OrdNo,
+      Constraint (RefTy (StructTy (ConcreteNameTy (SymPath [] "Array")) [(VarTy "a")]) (VarTy "lt2")) (RefTy (StructTy (ConcreteNameTy (SymPath [] "Array")) [(StructTy (ConcreteNameTy (SymPath [] "Pair")) [(VarTy "x1"), (VarTy "y1")])]) (VarTy "lt3")) x x x OrdNo
     ]
-    [ ("a", (StructTy (ConcreteNameTy "Pair") [(VarTy "x0"), (VarTy "y0")])),
+    [ ("a", (StructTy (ConcreteNameTy (SymPath [] "Pair")) [(VarTy "x0"), (VarTy "y0")])),
       ("x0", (VarTy "x0")),
       ("y0", (VarTy "y0")),
       ("x1", (VarTy "x0")),
