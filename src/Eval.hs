@@ -42,7 +42,7 @@ data LookupPreference
   = PreferDynamic
   | PreferGlobal
   | PreferLocal [SymPath]
-  deriving Show
+  deriving (Show)
 
 data Resolver
   = ResolveGlobal
@@ -78,7 +78,7 @@ eval ctx xobj@(XObj o info ty) preference resolver =
       pure $
         case resolver of
           ResolveGlobal -> unwrapLookup ((tryAllLookups preference) >>= checkStatic)
-          ResolveLocal  -> unwrapLookup (tryAllLookups preference)
+          ResolveLocal -> unwrapLookup (tryAllLookups preference)
       where
         checkStatic v@(_, Right (XObj (Lst ((XObj obj _ _) : _)) _ _)) =
           if isResolvableStaticObj obj
@@ -89,30 +89,33 @@ eval ctx xobj@(XObj o info ty) preference resolver =
         unwrapLookup =
           fromMaybe
             (throwErr (SymbolNotFound spath) ctx info)
-        -- | Try all lookups performs lookups for symbols based on a given
-        -- lookup preference.
+
         tryAllLookups :: LookupPreference -> Maybe (Context, Either EvalError XObj)
         tryAllLookups PreferDynamic = (getDynamic) <|> fullLookup
-        tryAllLookups PreferGlobal  = (getGlobal spath) <|> fullLookup
+        tryAllLookups PreferGlobal = (getGlobal spath) <|> fullLookup
         tryAllLookups (PreferLocal shadows) = (if spath `elem` shadows then (getLocal n) else (getDynamic)) <|> fullLookup
         fullLookup = (tryDynamicLookup <|> (if null p then tryInternalLookup spath <|> tryLookup spath else tryLookup spath))
         getDynamic :: Maybe (Context, Either EvalError XObj)
         getDynamic =
-          do (Binder _ found) <- maybeId (E.findValueBinder (contextGlobalEnv ctx) (SymPath ("Dynamic" : p) n))
-             pure (ctx, Right (resolveDef found))
+          do
+            (Binder _ found) <- maybeId (E.findValueBinder (contextGlobalEnv ctx) (SymPath ("Dynamic" : p) n))
+            pure (ctx, Right (resolveDef found))
         getGlobal :: SymPath -> Maybe (Context, Either EvalError XObj)
         getGlobal path =
-          do (Binder meta found) <- maybeId (E.findValueBinder (contextGlobalEnv ctx) path)
-             checkPrivate meta found
+          do
+            (Binder meta found) <- maybeId (E.findValueBinder (contextGlobalEnv ctx) path)
+            checkPrivate meta found
         tryDynamicLookup :: Maybe (Context, Either EvalError XObj)
         tryDynamicLookup =
-          do (Binder meta found) <- maybeId (E.searchValueBinder (contextGlobalEnv ctx) (SymPath ("Dynamic" : p) n))
-             checkPrivate meta found
+          do
+            (Binder meta found) <- maybeId (E.searchValueBinder (contextGlobalEnv ctx) (SymPath ("Dynamic" : p) n))
+            checkPrivate meta found
         getLocal :: String -> Maybe (Context, Either EvalError XObj)
         getLocal name =
-           do internal <- contextInternalEnv ctx
-              (Binder _ found) <- maybeId (E.getValueBinder internal name)
-              pure (ctx, Right (resolveDef found))
+          do
+            internal <- contextInternalEnv ctx
+            (Binder _ found) <- maybeId (E.getValueBinder internal name)
+            pure (ctx, Right (resolveDef found))
         -- TODO: Deprecate this function?
         -- The behavior here is a bit nefarious since it relies on cached
         -- environment parents (it calls `search` on the "internal" binder).
@@ -446,7 +449,7 @@ macroExpand ctx xobj =
             ok <- expanded
             Right (XObj (StaticArr ok) i t)
         )
-    XObj (Lst (XObj (Sym (SymPath [] "defmodule") _) _ _: _)) _ _ ->
+    XObj (Lst (XObj (Sym (SymPath [] "defmodule") _) _ _ : _)) _ _ ->
       pure (ctx, Right xobj)
     XObj (Lst [XObj (Sym (SymPath [] "quote") _) _ _, _]) _ _ ->
       pure (ctx, Right xobj)
@@ -1091,9 +1094,11 @@ specialCommandSet ctx [orig@(XObj (Sym path@(SymPath _ _) _) _ _), val] =
               case result of
                 Right evald -> typeCheckValueAgainstBinder newCtx evald binder >>= \(nctx, typedVal) -> setter nctx env typedVal binder
                 left -> pure (newCtx, left)
-      where handleUnTyped :: IO (Context, Either EvalError XObj)
-            handleUnTyped = evalDynamic ResolveLocal ctx val
-                              >>= \(newCtx, result) -> setter newCtx env result binder
+      where
+        handleUnTyped :: IO (Context, Either EvalError XObj)
+        handleUnTyped =
+          evalDynamic ResolveLocal ctx val
+            >>= \(newCtx, result) -> setter newCtx env result binder
     setGlobal :: Context -> Env -> Either EvalError XObj -> Binder -> IO (Context, Either EvalError XObj)
     setGlobal ctx' env value binder =
       pure $ either (failure ctx' orig) (success ctx') value

@@ -11,6 +11,7 @@ import Data.Maybe (fromMaybe)
 import Debug.Trace
 import Env (envIsExternal, findPoly, getTypeBinder, getValue, insert, insertX, lookupEverywhere, searchValue)
 import Info
+import InitialTypes
 import Managed
 import qualified Map
 import Obj
@@ -27,7 +28,6 @@ import TypesToC
 import Util
 import Validate
 import Prelude hiding (lookup)
-import InitialTypes
 
 data Level = Toplevel | Inside
 
@@ -89,8 +89,8 @@ concretizeXObj allowAmbiguityRoot typeEnv rootEnv visitedDefinitions root =
             envWithArgs =
               foldl'
                 ( \e arg@(XObj (Sym path _) _ _) ->
-                -- n.b. this won't fail since we're inserting unqualified args into a fresh env
-                -- TODO: Still, it'd be nicer and more flexible to catch failures here.
+                    -- n.b. this won't fail since we're inserting unqualified args into a fresh env
+                    -- TODO: Still, it'd be nicer and more flexible to catch failures here.
                     let Right v = insertX e path arg in v
                 )
                 functionEnv
@@ -490,12 +490,12 @@ renameGenericTypeSymbolsOnSum varpairs x@(XObj (Lst (caseNm : caseMembers)) i t)
   where
     mapp = Map.fromList varpairs
     replacer mem@(XObj (Sym (SymPath [] name) _) _ _) =
-       let Just perhapsTyVar = xobjToTy mem
-        in if isFullyGenericType perhapsTyVar
-           then case Map.lookup (VarTy name) mapp of
-                  Just new -> reify new
-                  _ -> mem
-           else mem
+      let Just perhapsTyVar = xobjToTy mem
+       in if isFullyGenericType perhapsTyVar
+            then case Map.lookup (VarTy name) mapp of
+              Just new -> reify new
+              _ -> mem
+            else mem
     replacer y = y
 renameGenericTypeSymbolsOnSum _ x = x
 
@@ -503,11 +503,12 @@ renameGenericTypeSymbolsOnSum _ x = x
 renameGenericTypeSymbolsOnProduct :: [Ty] -> [XObj] -> [XObj]
 renameGenericTypeSymbolsOnProduct vars members =
   concatMap (\(var, (v, t)) -> [v, rename var t]) (zip vars (pairwise members))
-  where rename var mem =
-          let Just perhapsTyVar = xobjToTy mem
-           in if isFullyGenericType perhapsTyVar
-              then reify var
-              else mem
+  where
+    rename var mem =
+      let Just perhapsTyVar = xobjToTy mem
+       in if isFullyGenericType perhapsTyVar
+            then reify var
+            else mem
 
 -- | Given an generic struct type and a concrete version of it, generate all dependencies needed to use the concrete one.
 -- TODO: Handle polymorphic constructors (a b).
@@ -525,9 +526,9 @@ instantiateGenericStructType typeEnv originalStructTy@(StructTy _ _) genericStru
               nameFixedMembers = renameGenericTypeSymbolsOnProduct renamedOrig memberXObjs
               validMembers = replaceGenericTypeSymbolsOnMembers mapp nameFixedMembers
               concretelyTypedMembers = replaceGenericTypeSymbolsOnMembers mappings memberXObjs
-           -- We only used the renamed types for validation--passing the
-           -- renamed xobjs further down leads to syntactical issues.
-           in case validateMembers typeEnv renamedOrig validMembers of
+           in -- We only used the renamed types for validation--passing the
+              -- renamed xobjs further down leads to syntactical issues.
+              case validateMembers typeEnv renamedOrig validMembers of
                 Left err -> Left err
                 Right () ->
                   let deps = mapM (depsForStructMemberPair typeEnv) (pairwise concretelyTypedMembers)
