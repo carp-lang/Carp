@@ -36,9 +36,13 @@ import Types
 import Util
 import Prelude hiding (exp, mod)
 
+-- TODO: Formalize "lookup order preference" a bit better and move into
+-- the Context module.
 data LookupPreference
   = PreferDynamic
   | PreferGlobal
+  | PreferLocal [SymPath]
+  deriving Show
 
 data Resolver
   = ResolveGlobal
@@ -73,8 +77,8 @@ eval ctx xobj@(XObj o info ty) preference resolver =
     Sym spath@(SymPath p n) _ ->
       pure $
         case resolver of
-          ResolveGlobal -> unwrapLookup (tryAllLookups >>= checkStatic)
-          ResolveLocal -> unwrapLookup tryAllLookups
+          ResolveGlobal -> unwrapLookup ((tryAllLookups preference) >>= checkStatic)
+          ResolveLocal  -> unwrapLookup (tryAllLookups preference)
       where
         checkStatic v@(_, Right (XObj (Lst ((XObj obj _ _) : _)) _ _)) =
           if isResolvableStaticObj obj
@@ -85,16 +89,35 @@ eval ctx xobj@(XObj o info ty) preference resolver =
         unwrapLookup =
           fromMaybe
             (throwErr (SymbolNotFound spath) ctx info)
-        tryAllLookups =
-          ( case preference of
-              PreferDynamic -> tryDynamicLookup
-              PreferGlobal -> tryLookup spath <|> tryDynamicLookup
-          )
-            <|> (if null p then tryInternalLookup spath else tryLookup spath)
+        -- | Try all lookups performs lookups for symbols based on a given
+        -- lookup preference.
+        tryAllLookups :: LookupPreference -> Maybe (Context, Either EvalError XObj)
+        tryAllLookups PreferDynamic = (getDynamic) <|> fullLookup
+        tryAllLookups PreferGlobal  = (getGlobal spath) <|> fullLookup
+        tryAllLookups (PreferLocal shadows) = (if spath `elem` shadows then (getLocal n) else (getDynamic)) <|> fullLookup
+        fullLookup = (tryDynamicLookup <|> (if null p then tryInternalLookup spath <|> tryLookup spath else tryLookup spath))
+        getDynamic :: Maybe (Context, Either EvalError XObj)
+        getDynamic =
+          do (Binder _ found) <- maybeId (E.findValueBinder (contextGlobalEnv ctx) (SymPath ("Dynamic" : p) n))
+             pure (ctx, Right (resolveDef found))
+        getGlobal :: SymPath -> Maybe (Context, Either EvalError XObj)
+        getGlobal path =
+          do (Binder _ found) <- maybeId (E.findValueBinder (contextGlobalEnv ctx) path)
+             pure (ctx, Right (resolveDef found))
+        tryDynamicLookup :: Maybe (Context, Either EvalError XObj)
         tryDynamicLookup =
-          ( maybeId (E.searchValueBinder (contextGlobalEnv ctx) (SymPath ("Dynamic" : p) n))
-              >>= \(Binder _ found) -> pure (ctx, Right (resolveDef found))
-          )
+          do (Binder _ found) <- maybeId (E.searchValueBinder (contextGlobalEnv ctx) (SymPath ("Dynamic" : p) n))
+             pure (ctx, Right (resolveDef found))
+        getLocal :: String -> Maybe (Context, Either EvalError XObj)
+        getLocal name =
+           do internal <- contextInternalEnv ctx
+              (Binder _ found) <- maybeId (E.getValueBinder internal name)
+              pure (ctx, Right (resolveDef found))
+        -- TODO: Deprecate this function?
+        -- The behavior here is a bit nefarious since it relies on cached
+        -- environment parents (it calls `search` on the "internal" binder).
+        -- But for now, it seems to be needed for some cases.
+        tryInternalLookup :: SymPath -> Maybe (Context, Either EvalError XObj)
         tryInternalLookup path =
           --trace ("Looking for internally " ++ show path) -- ++ show (fmap (fmap E.binders . E.parent) (contextInternalEnv ctx)))
           ( contextInternalEnv ctx
@@ -102,7 +125,7 @@ eval ctx xobj@(XObj o info ty) preference resolver =
                 maybeId (E.searchValueBinder e path)
                   >>= \(Binder _ found) -> pure (ctx, Right (resolveDef found))
           )
-            <|> tryLookup path -- fallback
+        tryLookup :: SymPath -> Maybe (Context, Either EvalError XObj)
         tryLookup path =
           ( maybeId (E.searchValueBinder (contextGlobalEnv ctx) path)
               >>= \(Binder meta found) -> checkPrivate meta found
@@ -207,9 +230,9 @@ eval ctx xobj@(XObj o info ty) preference resolver =
               case eitherCtx of
                 Left err -> pure (ctx, Left err)
                 Right newCtx -> do
-                  (finalCtx, evaledBody) <- eval newCtx body preference ResolveLocal
+                  (finalCtx, evaledBody) <- eval newCtx body (PreferLocal (map (\(name, _) -> (SymPath [] name)) binds)) ResolveLocal
                   let Just e = contextInternalEnv finalCtx
-                      Just parentEnv = envParent e
+                      parentEnv = fromMaybe e (envParent e)
                   pure
                     ( replaceInternalEnv finalCtx parentEnv,
                       do
@@ -224,10 +247,18 @@ eval ctx xobj@(XObj o info ty) preference resolver =
               \case
                 err@(Left _) -> pure err
                 Right ctx' -> do
-                  (newCtx, res) <- eval ctx' x preference resolver
+                  -- Bind a reference to the let bind in a recursive
+                  -- environment. This permits recursion in anonymous functions
+                  -- in let binds such as:
+                  --   (let [f (fn [x] (if (= x 1) x (f (dec x))))] (f 10))
+                  let origin = (contextInternalEnv ctx')
+                      recFix = (E.recursive origin (Just "let-rec-env") 0)
+                      Right envWithSelf = E.insertX recFix (SymPath [] n) x
+                      ctx'' = replaceInternalEnv ctx' envWithSelf
+                  (newCtx, res) <- eval ctx'' x preference resolver
                   case res of
                     Right okX ->
-                      pure $ Right (fromRight (error "Failed to eval let binding!!") (bindLetDeclaration newCtx n okX))
+                      pure $ Right (fromRight (error "Failed to eval let binding!!") (bindLetDeclaration (newCtx {contextInternalEnv = origin}) n okX))
                     Left err -> pure $ Left err
         [f@(XObj Fn {} _ _), args@(XObj (Arr a) _ _), body] -> do
           (newCtx, expanded) <- macroExpand ctx body
