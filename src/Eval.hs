@@ -247,10 +247,18 @@ eval ctx xobj@(XObj o info ty) preference resolver =
               \case
                 err@(Left _) -> pure err
                 Right ctx' -> do
-                  (newCtx, res) <- eval ctx' x preference resolver
+                  -- Bind a reference to the let bind in a recursive
+                  -- environment. This permits recursion in anonymous functions
+                  -- in let binds such as:
+                  --   (let [f (fn [x] (if (= x 1) x (f (dec x))))] (f 10))
+                  let origin = (contextInternalEnv ctx')
+                      recFix = (E.recursive origin (Just "let-rec-env") 0)
+                      Right envWithSelf = E.insertX recFix (SymPath [] n) x
+                      ctx'' = replaceInternalEnv ctx' envWithSelf
+                  (newCtx, res) <- eval ctx'' x preference resolver
                   case res of
                     Right okX ->
-                      pure $ Right (fromRight (error "Failed to eval let binding!!") (bindLetDeclaration newCtx n okX))
+                      pure $ Right (fromRight (error "Failed to eval let binding!!") (bindLetDeclaration (newCtx {contextInternalEnv = origin}) n okX))
                     Left err -> pure $ Left err
         [f@(XObj Fn {} _ _), args@(XObj (Arr a) _ _), body] -> do
           (newCtx, expanded) <- macroExpand ctx body
