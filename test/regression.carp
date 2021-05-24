@@ -76,6 +76,10 @@
 (defn dynamic-closure-referring-to-itself-test []
   (dynamic-closure-referring-to-itself))
 
+;; Avoid unification failure (issue #521)
+(deftype (HitRecord a) [t a])
+(deftype (CurrentHit a) [hr (Maybe (HitRecord a))])
+
 (deftest test
   (assert-equal test
                 1
