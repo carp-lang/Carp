@@ -486,15 +486,14 @@ macroExpand ctx xobj =
 
 apply :: Context -> XObj -> [XObj] -> [XObj] -> IO (Context, Either EvalError XObj)
 apply ctx@Context {contextInternalEnv = internal} body params args =
-  let Just env = contextInternalEnv ctx <|> maybeId (innermostModuleEnv ctx) <|> Just (contextGlobalEnv ctx)
-      allParams = map getName params
+  let allParams = map getName params
    in case splitWhen (":rest" ==) allParams of
-        [a, b] -> callWith env a b
-        [a] -> callWith env a []
+        [a, b] -> callWith a b
+        [a] -> callWith a []
         _ ->
           pure (throwErr (MacroBadArgumentSplit allParams) ctx Nothing)
   where
-    callWith _ proper rest = do
+    callWith proper rest = do
       let n = length proper
           insideEnv = Env Map.empty internal Nothing Set.empty InternalEnv 0
           insideEnv' =
@@ -513,7 +512,8 @@ apply ctx@Context {contextInternalEnv = internal} body params args =
                       (SymPath [] (head rest))
                       (XObj (Lst (drop n args)) Nothing Nothing)
                   )
-      (c, r) <- (evalDynamic ResolveLocal (replaceInternalEnv ctx insideEnv'') body)
+          binds = if null rest then proper else proper ++ [(head rest)]
+      (c, r) <- (eval (replaceInternalEnv ctx insideEnv'') body (PreferLocal (map (\x -> (SymPath [] x)) binds)) ResolveLocal)
       pure (c {contextInternalEnv = internal}, r)
 
 -- | Parses a string and then converts the resulting forms to commands, which are evaluated in order.
