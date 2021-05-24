@@ -65,6 +65,17 @@
   (let [c (car (list 1 2 3))]
      (list c)))
 
+;; dynamic closure referring to itself
+(defmacro dynamic-closure-referring-to-itself []
+  (let [f (fn [x]
+            (if (= x 1)
+              x
+              (f (dec x))))]
+    (f 10)))
+
+(defn dynamic-closure-referring-to-itself-test []
+  (dynamic-closure-referring-to-itself))
+
 (deftest test
   (assert-equal test
                 1
@@ -107,4 +118,8 @@
                 6
                 (defining-function-with-def)
                 "test that defining function with def works")
+  (assert-equal test
+                1
+                (dynamic-closure-referring-to-itself-test)
+                "test that dynamic closure can refer to itself")
 )
