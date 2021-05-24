@@ -51,6 +51,15 @@
     (Maybe.Nothing) true
     _ (unreachable "test unreachable")))
 
+;; defining function with def (not defn)
+(defn duplicate-arg [f]
+  (fn [x] (f x x)))
+
+(def double (duplicate-arg +))
+
+(defn defining-function-with-def []
+  (double 3))
+
 (deftest test
   (assert-equal test
                 1
@@ -89,4 +98,8 @@
   (assert-true test
                (test-unreachable)
                "test that unreachable works (as best possible)")
+  (assert-equal test
+                6
+                (defining-function-with-def)
+                "test that defining function with def works")
 )
