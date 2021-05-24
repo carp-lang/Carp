@@ -89,7 +89,8 @@ eval ctx xobj@(XObj o info ty) preference resolver =
         unwrapLookup =
           fromMaybe
             (throwErr (SymbolNotFound spath) ctx info)
-
+        -- Try all lookups performs lookups for symbols based on a given
+        -- lookup preference.
         tryAllLookups :: LookupPreference -> Maybe (Context, Either EvalError XObj)
         tryAllLookups PreferDynamic = (getDynamic) <|> fullLookup
         tryAllLookups PreferGlobal = (getGlobal spath) <|> fullLookup
