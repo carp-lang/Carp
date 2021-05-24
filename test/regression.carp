@@ -60,12 +60,12 @@
 (defn defining-function-with-def []
   (double 3))
 
-;; using special symbol as binder name
+;; using special symbol as binder name (issue #659)
 (defndynamic special-symbol-as-binder []
   (let [c (car (list 1 2 3))]
      (list c)))
 
-;; dynamic closure referring to itself
+;; dynamic closure referring to itself (issue #1133)
 (defmacro dynamic-closure-referring-to-itself []
   (let [f (fn [x]
             (if (= x 1)
@@ -76,7 +76,7 @@
 (defn dynamic-closure-referring-to-itself-test []
   (dynamic-closure-referring-to-itself))
 
-;; Avoid unification failure (issue #521)
+;; avoid unification failure (issue #521)
 (deftype (HitRecord a) [t a])
 (deftype (CurrentHit a) [hr (Maybe (HitRecord a))])
 
