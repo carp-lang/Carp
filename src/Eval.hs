@@ -102,12 +102,12 @@ eval ctx xobj@(XObj o info ty) preference resolver =
              pure (ctx, Right (resolveDef found))
         getGlobal :: SymPath -> Maybe (Context, Either EvalError XObj)
         getGlobal path =
-          do (Binder _ found) <- maybeId (E.findValueBinder (contextGlobalEnv ctx) path)
-             pure (ctx, Right (resolveDef found))
+          do (Binder meta found) <- maybeId (E.findValueBinder (contextGlobalEnv ctx) path)
+             checkPrivate meta found
         tryDynamicLookup :: Maybe (Context, Either EvalError XObj)
         tryDynamicLookup =
-          do (Binder _ found) <- maybeId (E.searchValueBinder (contextGlobalEnv ctx) (SymPath ("Dynamic" : p) n))
-             pure (ctx, Right (resolveDef found))
+          do (Binder meta found) <- maybeId (E.searchValueBinder (contextGlobalEnv ctx) (SymPath ("Dynamic" : p) n))
+             checkPrivate meta found
         getLocal :: String -> Maybe (Context, Either EvalError XObj)
         getLocal name =
            do internal <- contextInternalEnv ctx
@@ -123,14 +123,14 @@ eval ctx xobj@(XObj o info ty) preference resolver =
           ( contextInternalEnv ctx
               >>= \e ->
                 maybeId (E.searchValueBinder e path)
-                  >>= \(Binder _ found) -> pure (ctx, Right (resolveDef found))
+                  >>= \(Binder meta found) -> checkPrivate meta found
           )
         tryLookup :: SymPath -> Maybe (Context, Either EvalError XObj)
         tryLookup path =
           ( maybeId (E.searchValueBinder (contextGlobalEnv ctx) path)
               >>= \(Binder meta found) -> checkPrivate meta found
           )
-            <|> ( maybeId (E.searchValueBinder (contextGlobalEnv ctx) (SymPath ((contextPath ctx) ++ p) n))
+            <|> ( (maybeId (E.searchValueBinder (contextGlobalEnv ctx) (SymPath ((contextPath ctx) ++ p) n)))
                     >>= \(Binder meta found) -> checkPrivate meta found
                 )
             <|> ( maybeId (lookupBinderInTypeEnv ctx path)
@@ -446,6 +446,8 @@ macroExpand ctx xobj =
             ok <- expanded
             Right (XObj (StaticArr ok) i t)
         )
+    XObj (Lst (XObj (Sym (SymPath [] "defmodule") _) _ _: _)) _ _ ->
+      pure (ctx, Right xobj)
     XObj (Lst [XObj (Sym (SymPath [] "quote") _) _ _, _]) _ _ ->
       pure (ctx, Right xobj)
     XObj (Lst [XObj (Lst (XObj Macro _ _ : _)) _ _]) _ _ -> evalDynamic ResolveLocal ctx xobj
@@ -709,7 +711,7 @@ annotateWithinContext ctx xobj = do
     Right okSig -> do
       (_, expansionResult) <- expandAll (evalDynamic ResolveLocal) ctx xobj
       case expansionResult of
-        Left err -> pure (evalError ctx (show err) Nothing)
+        Left err -> pure (ctx, Left err)
         Right expanded ->
           let xobjFullSymbols = qualify ctx expanded
            in case xobjFullSymbols of
