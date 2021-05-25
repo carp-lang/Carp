@@ -1,0 +1,2 @@
+wrong_type_when_recursing.carp:5:5 Inferred Int, can't unify with ().
+wrong_type_when_recursing.carp:4:3 Inferred (), can't unify with Int.

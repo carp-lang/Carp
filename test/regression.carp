@@ -51,6 +51,35 @@
     (Maybe.Nothing) true
     _ (unreachable "test unreachable")))
 
+;; defining function with def (not defn)
+(defn duplicate-arg [f]
+  (fn [x] (f x x)))
+
+(def double (duplicate-arg +))
+
+(defn defining-function-with-def []
+  (double 3))
+
+;; using special symbol as binder name (issue #659)
+(defndynamic special-symbol-as-binder []
+  (let [c (car (list 1 2 3))]
+     (list c)))
+
+;; dynamic closure referring to itself (issue #1133)
+(defmacro dynamic-closure-referring-to-itself []
+  (let [f (fn [x]
+            (if (= x 1)
+              x
+              (f (dec x))))]
+    (f 10)))
+
+(defn dynamic-closure-referring-to-itself-test []
+  (dynamic-closure-referring-to-itself))
+
+;; avoid unification failure (issue #521)
+(deftype (HitRecord a) [t a])
+(deftype (CurrentHit a) [hr (Maybe (HitRecord a))])
+
 (deftest test
   (assert-equal test
                 1
@@ -89,4 +118,12 @@
   (assert-true test
                (test-unreachable)
                "test that unreachable works (as best possible)")
+  (assert-equal test
+                6
+                (defining-function-with-def)
+                "test that defining function with def works")
+  (assert-equal test
+                1
+                (dynamic-closure-referring-to-itself-test)
+                "test that dynamic closure can refer to itself")
 )

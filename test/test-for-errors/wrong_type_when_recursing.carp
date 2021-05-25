@@ -1,0 +1,6 @@
+(Project.config "file-path-print-length" "short")
+
+(defn f [x]
+  (do
+    (the Int x)
+    1.0))
