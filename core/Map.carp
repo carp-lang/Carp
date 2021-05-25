@@ -119,11 +119,11 @@
     @(Pair.b (Array.unsafe-nth (entries b) i)))
 
   (defn set-idx [b i val]
-    (do (Array.aupdate! (entries &b) i &(fn [p] (Pair.set-b @p @val)))
+    (do (Array.aupdate! (entries &b) i &(fn [p] (Pair.set-b p @val)))
         b))
 
   (defn set-idx! [b i val]
-    (Array.aupdate! (entries b) i &(fn [p] (Pair.set-b @p @val))))
+    (Array.aupdate! (entries b) i &(fn [p] (Pair.set-b p @val))))
 
   (defn push-back [b k v]
     (do (Array.push-back! (entries &b) (Pair.init-from-refs k v))

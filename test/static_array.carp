@@ -2,8 +2,6 @@
 (use Test)
 (use StaticArray)
 
-(defn inc-ref [x] (+ @x 1))
-
 (deftest test
 
   (let [arr $[1 2 4]]
@@ -181,7 +179,7 @@
     (assert-equal test
                   $[1 3]
                   (do
-                    (aupdate! arr 1 &inc-ref)
+                    (aupdate! arr 1 &inc)
                     arr)
                   "aupdate! works as expected"))
 
@@ -219,4 +217,3 @@
                 &2
                 (Pointer.to-ref (Pointer.inc (unsafe-raw $[1 2 3])))
                 "unsafe-raw works as expected II"))
-

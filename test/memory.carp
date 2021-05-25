@@ -259,7 +259,7 @@
     (assert (= 3 (Array.element-count &xs "a")))))
 
 (defn first-letter [s]
-  (String.slice s 0 1))
+  (String.slice &s 0 1))
 
 (defn array-aupdate []
   (let [xs [@"abc" @"xyz"]
@@ -332,6 +332,12 @@
 (defn array-map-reduce []
   (let [r (map-reduce &(fn [acc x] (Pair.init (append acc x) (append "-" x))) @"" &[@"1" @"2" @"3"])]
     (assert (= &r &(Pair.init @"123" [@"-1" @"-2" @"-3"])))))
+
+(defn static-array-aupdate! []
+  (let [xs $[@"abc" @"xyz"]]
+    (do
+      (StaticArray.aupdate! xs 1 &first-letter)
+      (assert (= $[@"abc" @"x"] xs)))))
 
 (defn string-append-leak-test []
   (let [a "abcdef"
@@ -492,6 +498,7 @@
   (assert-no-leak test array-copy-map-1 "array-copy-map-1 does not leak")
   (assert-no-leak test array-copy-map-2 "array-copy-map-2 does not leak")
   (assert-no-leak test array-map-reduce "array-map-reduce does not leak")
+  (assert-no-leak test static-array-aupdate! "static-array-aupdate! does not leak")
   (assert-no-leak test string-append-leak-test "String.append does not leak")
   (assert-no-leak test lambda-1 "lambda-1 does not leak")
   (assert-no-leak test lambda-2 "lambda-2 does not leak")
