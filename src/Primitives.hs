@@ -646,8 +646,8 @@ primitiveUse xobj ctx (XObj (Sym path _) _ _) =
       -- Look up the module to see if we can actually use it.
       -- The reference might be contextual, if so, append the current context path strings.
       path' = case (searchValueBinder global path) of
-              Right _ -> path
-              _ -> contextualized
+        Right _ -> path
+        _ -> contextualized
    in pure
         ( case modulePath of
             (SymPath [] "") -> updateGlobalUsePaths global path'

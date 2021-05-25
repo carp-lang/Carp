@@ -1,16 +1,16 @@
 module Expand (expandAll, replaceSourceInfoOnXObj) where
 
+import Context
 import Control.Monad.State (State, evalState, get, put)
 import Data.Foldable (foldlM)
 import Env
+import EvalError
 import Info
 import Obj
+import Qualify
 import TypeError
 import Types
 import Util
-import Context
-import Qualify
-import EvalError
 
 -- | Used for calling back to the 'eval' function in Eval.hs
 type DynamicEvaluator = Context -> XObj -> IO (Context, Either EvalError XObj)

@@ -117,15 +117,16 @@ initialTypes typeEnv rootEnv root = evalState (visit rootEnv root) 0
       unknown -> pure (Left (InvalidObj unknown xobj))
     visitSymbol :: Env -> XObj -> SymPath -> State Integer (Either TypeError XObj)
     visitSymbol e xobj@(XObj (Sym name LookupRecursive) _ _) _ =
-        case E.searchValueBinder e name of
-          -- If this recursive symbol is already typed in this environment, use that type.
-          -- This is relevant for, e.g. recursive function calls.
-          -- We need to use search here to check parents as our let-binding handling possibly puts recursive
-          -- environments as the parent of a more local environment for the let bindings.
-          Right (Binder _ found) -> pure (Right xobj {xobjTy = xobjTy found})
-          -- Other recursive lookups are left untouched (this avoids problems with looking up the thing they're referring to)
-          Left _ -> do freshTy <- genVarTy
-                       pure (Right xobj {xobjTy = Just freshTy})
+      case E.searchValueBinder e name of
+        -- If this recursive symbol is already typed in this environment, use that type.
+        -- This is relevant for, e.g. recursive function calls.
+        -- We need to use search here to check parents as our let-binding handling possibly puts recursive
+        -- environments as the parent of a more local environment for the let bindings.
+        Right (Binder _ found) -> pure (Right xobj {xobjTy = xobjTy found})
+        -- Other recursive lookups are left untouched (this avoids problems with looking up the thing they're referring to)
+        Left _ -> do
+          freshTy <- genVarTy
+          pure (Right xobj {xobjTy = Just freshTy})
     visitSymbol env xobj symPath =
       case symPath of
         -- Symbols with leading ? are 'holes'.
