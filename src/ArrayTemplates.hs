@@ -102,9 +102,8 @@ templateEFilter = defineTypeParameterizedTemplate templateCreator path t docs
                       _ -> declaration "            ((($a*)a.data)[insertIndex++]) = (($a*)a.data)[i];" deleteCall
                   )
           )
-          ( \(FuncTy [RefTy ft@(FuncTy fArgTys@[RefTy insideType _] BoolTy _) _, _] _ _) ->
+          ( \(FuncTy [RefTy ft@(FuncTy fArgTys@[RefTy _ _] BoolTy _) _, _] _ _) ->
               [defineFunctionTypeAlias ft, defineFunctionTypeAlias (FuncTy (lambdaEnvTy : fArgTys) BoolTy StaticLifetimeTy)]
-                ++ depsForDeleteFunc typeEnv env insideType
           )
 
 templatePushBack :: (String, Binder)
@@ -329,9 +328,7 @@ templateAset = defineTypeParameterizedTemplate templateCreator path t docs
                           "}"
                         ]
           )
-          ( \(FuncTy [_, _, insideTy] _ _) ->
-              depsForDeleteFunc typeEnv env insideTy
-          )
+          (const [])
 
 templateAsetBang :: (String, Binder)
 templateAsetBang = defineTypeParameterizedTemplate templateCreator path t docs
@@ -363,9 +360,7 @@ templateAsetBang = defineTypeParameterizedTemplate templateCreator path t docs
                           "}"
                         ]
           )
-          ( \(FuncTy [RefTy arrayType _, _, _] _ _) ->
-              depsForDeleteFunc typeEnv env arrayType
-          )
+          (const [])
 
 -- | This function can set uninitialized memory in an array (used together with 'allocate').
 -- | It will NOT try to free the value that is already at location 'n'.
@@ -406,14 +401,12 @@ templateLength = defineTypeParameterizedTemplate templateCreator path t docs
     t = FuncTy [RefTy (StructTy (ConcreteNameTy (SymPath [] "Array")) [VarTy "t"]) (VarTy "q")] IntTy StaticLifetimeTy
     docs = "gets the length of the array."
     templateCreator = TemplateCreator $
-      \typeEnv env ->
+      \_ _ ->
         Template
           t
           (const (toTemplate "int $NAME (Array *a)"))
           (const (toTemplate "$DECL { return (*a).len; }"))
-          ( \(FuncTy [RefTy arrayType _] _ _) ->
-              depsForDeleteFunc typeEnv env arrayType
-          )
+          (const [])
 
 templateAllocate :: (String, Binder)
 templateAllocate = defineTypeParameterizedTemplate templateCreator path t docs
@@ -422,7 +415,7 @@ templateAllocate = defineTypeParameterizedTemplate templateCreator path t docs
     t = FuncTy [IntTy] (StructTy (ConcreteNameTy (SymPath [] "Array")) [VarTy "t"]) StaticLifetimeTy
     docs = "allocates an uninitialized array. You can initialize members using [`aset-uninitialized`](#aset-uninitialized)."
     templateCreator = TemplateCreator $
-      \typeEnv env ->
+      \_ _ ->
         Template
           t
           (const (toTemplate "Array $NAME (int n)"))
@@ -441,9 +434,7 @@ templateAllocate = defineTypeParameterizedTemplate templateCreator path t docs
                          ]
                   )
           )
-          ( \(FuncTy [_] arrayType _) ->
-              depsForDeleteFunc typeEnv env arrayType
-          )
+          (const [])
 
 templateDeleteArray :: (String, Binder)
 templateDeleteArray = defineTypeParameterizedTemplate templateCreator path t docs
@@ -461,9 +452,7 @@ templateDeleteArray = defineTypeParameterizedTemplate templateCreator path t doc
                 ++ deleteTy typeEnv env arrayType
                 ++ [TokC "}\n"]
           )
-          ( \(FuncTy [StructTy (ConcreteNameTy (SymPath [] "Array")) [insideType]] UnitTy _) ->
-              depsForDeleteFunc typeEnv env insideType
-          )
+          (const [])
 
 deleteTy :: TypeEnv -> Env -> Ty -> [Token]
 deleteTy typeEnv env (StructTy _ [innerType]) =
