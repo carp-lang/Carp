@@ -643,7 +643,7 @@ envPublicBindingNames e = concatMap select (Map.toList (binders e))
           if metaIsTrue (binderMeta binder) "private" || metaIsTrue (binderMeta binder) "hidden"
             then []
             else [name]
-        Right e' -> envPublicBindingNames e'
+        Right e' -> map (\n -> name ++ "." ++ n) (envPublicBindingNames e')
 
 -- | Recursively look through all environments for (def ...) forms.
 --
