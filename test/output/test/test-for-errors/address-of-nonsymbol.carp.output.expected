@@ -1,1 +1,0 @@
-address-of-nonsymbol.carp:2:1 I can only take the `address` of a symbol, but I got `1`.
