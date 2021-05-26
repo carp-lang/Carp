@@ -357,7 +357,6 @@ eval ctx xobj@(XObj o info ty) preference resolver =
         XObj (Lst (XObj (External _) _ _ : _)) _ _ : _ -> pure (ctx, Left (HasStaticCall xobj info))
         XObj (Match _) _ _ : _ -> pure (ctx, Left (HasStaticCall xobj info))
         XObj Ref _ _ : _ -> pure (ctx, Left (HasStaticCall xobj info))
-        XObj Address _ _ : _ -> pure (ctx, Left (HasStaticCall xobj info))
         l@(XObj (Lst _) i t) : args -> do
           (newCtx, f) <- eval ctx l preference ResolveLocal
           case f of
