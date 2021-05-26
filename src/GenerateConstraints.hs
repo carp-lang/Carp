@@ -187,9 +187,6 @@ genConstraints _ root rootSig = fmap sort (gen root)
                           mkConstr _ = Nothing
                           expressionsShouldReturnUnit = mapMaybe mkConstr (init expressions)
                       pure (retConstraint : insideExpressionsConstraints ++ expressionsShouldReturnUnit)
-          -- Address
-          [XObj Address _ _, value] ->
-            gen value
           -- Set!
           [XObj SetBang _ _, variable, value] ->
             do

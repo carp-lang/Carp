@@ -1103,12 +1103,6 @@ manageMemory typeEnv globalEnv root =
                           okValue <- visitedValue
                           _ <- ownsTheVarBefore -- Force Either to fail
                           pure (XObj (Lst [setbangExpr, newVariable, okValue]) i t)
-        [addressExpr@(XObj Address _ _), value] ->
-          do
-            visitedValue <- visit value
-            pure $ do
-              okValue <- visitedValue
-              pure (XObj (Lst [addressExpr, okValue]) i t)
         [theExpr@(XObj The _ _), typeXObj, value] ->
           do
             visitedValue <- visit value

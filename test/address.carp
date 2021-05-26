@@ -1,0 +1,17 @@
+(load "Test.carp")
+
+(use Test)
+
+
+(deftest test
+  (let [arr [1 2 3 4]]
+    (assert-equal test
+                  &(Array.copy-map &address &arr)
+                  &(Array.copy-map &address &arr)
+                  "address works I"))
+  (assert-not-equal test
+                    &(Array.copy-map &address &[1 2 3 4])
+                    &(Array.copy-map &address &[1 2 3 4])
+                    "address works II"
+                    )
+)
