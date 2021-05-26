@@ -42,7 +42,6 @@ completeKeywordsAnd context word =
         "if",
         "while",
         "ref",
-        "address",
         "set!",
         "the",
         "defmacro",

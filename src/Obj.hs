@@ -200,7 +200,7 @@ isSym _ = False
 
 isSpecialSym :: XObj -> Bool
 isSpecialSym (XObj (Sym (SymPath [] s) _) _ _) =
-  elem s ["defn", "def", "do", "while", "fn", "let", "break", "if", "match", "match-ref", "address", "set!", "the", "ref", "deref", "with"]
+  elem s ["defn", "def", "do", "while", "fn", "let", "break", "if", "match", "match-ref", "set!", "the", "ref", "deref", "with"]
 isSpecialSym _ = False
 
 isArray :: XObj -> Bool
