@@ -15,8 +15,6 @@
 (system-include "core.h")
 (system-include "carp_memory.h")
 
-(deftemplate address (Fn [(Ref a)] (Ptr a)) "$a * $NAME($a * a)" "$DECL { return a; }")
-
 (load-once "Interfaces.carp")
 (load-once "Blitable.carp")
 (load-once "Bool.carp")

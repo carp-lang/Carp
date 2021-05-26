@@ -68,3 +68,5 @@ The user will have to ensure themselves that this is a safe operation.")
   (defn dec [a] (Pointer.sub a 1l))
   (implements dec Pointer.dec)
 )
+
+(deftemplate address (Fn [(Ref a)] (Ptr a)) "$a * $NAME($a * a)" "$DECL { return a; }")
