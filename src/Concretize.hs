@@ -537,7 +537,7 @@ instantiateGenericStructType typeEnv originalStructTy@(StructTy _ _) genericStru
               concretelyTypedMembers = replaceGenericTypeSymbolsOnMembers mappings memberXObjs
            in -- We only used the renamed types for validation--passing the
               -- renamed xobjs further down leads to syntactical issues.
-              case validateMembers typeEnv renamedOrig validMembers of
+              case validateMembers AllowAnyTypeVariableNames typeEnv renamedOrig validMembers of
                 Left err -> Left err
                 Right () ->
                   let deps = mapM (depsForStructMemberPair typeEnv) (pairwise concretelyTypedMembers)

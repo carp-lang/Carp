@@ -21,7 +21,7 @@ toCase typeEnv typeVars x@(XObj (Lst [XObj (Sym (SymPath [] name) Symbol) _ _, X
         Nothing ->
           Left (InvalidSumtypeCase x)
         Just okTys ->
-          let validated = map (\t -> canBeUsedAsMemberType typeEnv typeVars t x) okTys
+          let validated = map (\t -> canBeUsedAsMemberType OnlyCapturedNames typeEnv typeVars t x) okTys
            in case sequence validated of
                 Left e ->
                   Left e
