@@ -74,14 +74,17 @@ concretizeXObj allowAmbiguityRoot typeEnv rootEnv visitedDefinitions root =
       if not (null argsArr)
         then pure $ Left (MainCannotHaveArguments nameSymbol (length argsArr))
         else do
-          _ <- concretizeTypeOfXObj typeEnv body
-          visitedBody <- visit False Inside env body
-          pure $ do
-            okBody <- visitedBody
-            let t = fromMaybe UnitTy (xobjTy okBody)
-            if not (isTypeGeneric t) && t /= UnitTy && t /= IntTy
-              then Left (MainCanOnlyReturnUnitOrInt nameSymbol t)
-              else return [defn, nameSymbol, args, okBody]
+          check <- concretizeTypeOfXObj typeEnv body
+          case check of
+            Left err -> pure (Left err)
+            Right _ -> do
+              visitedBody <- visit False Inside env body
+              pure $ do
+                okBody <- visitedBody
+                let t = fromMaybe UnitTy (xobjTy okBody)
+                if not (isTypeGeneric t) && t /= UnitTy && t /= IntTy
+                  then Left (MainCanOnlyReturnUnitOrInt nameSymbol t)
+                  else return [defn, nameSymbol, args, okBody]
     visitList _ Toplevel env (XObj (Lst [defn@(XObj (Defn _) _ _), nameSymbol, args@(XObj (Arr argsArr) _ _), body]) _ t) =
       do
         mapM_ (concretizeTypeOfXObj typeEnv) argsArr
@@ -97,11 +100,14 @@ concretizeXObj allowAmbiguityRoot typeEnv rootEnv visitedDefinitions root =
                 argsArr
             Just funcTy = t
             allowAmbig = isTypeGeneric funcTy
-        _ <- concretizeTypeOfXObj typeEnv body
-        visitedBody <- visit allowAmbig Inside (incrementEnvNestLevel envWithArgs) body
-        pure $ do
-          okBody <- visitedBody
-          pure [defn, nameSymbol, args, okBody]
+        check <- concretizeTypeOfXObj typeEnv body
+        case check of
+          Left err -> pure (Left err)
+          Right _ -> do
+            visitedBody <- visit allowAmbig Inside (incrementEnvNestLevel envWithArgs) body
+            pure $ do
+              okBody <- visitedBody
+              pure [defn, nameSymbol, args, okBody]
     visitList _ Inside _ xobj@(XObj (Lst [XObj (Defn _) _ _, _, XObj (Arr _) _ _, _]) _ _) =
       pure (Left (DefinitionsMustBeAtToplevel xobj))
     visitList allowAmbig _ env (XObj (Lst [XObj (Fn _ _) fni fnt, args@(XObj (Arr argsArr) ai at), body]) i t) =
@@ -216,11 +222,14 @@ concretizeXObj allowAmbiguityRoot typeEnv rootEnv visitedDefinitions root =
       do
         visitedBindings <- fmap sequence (mapM (visit allowAmbig level env) bindings)
         visitedBody <- visit allowAmbig level env body
-        mapM_ (concretizeTypeOfXObj typeEnv . fst) (pairwise bindings)
-        pure $ do
-          okVisitedBindings <- visitedBindings
-          okVisitedBody <- visitedBody
-          pure [letExpr, XObj (Arr okVisitedBindings) bindi bindt, okVisitedBody]
+        checks <- mapM (concretizeTypeOfXObj typeEnv . fst) (pairwise bindings)
+        case sequence checks of
+          Left err -> pure (Left err)
+          Right _ ->
+            pure $ do
+              okVisitedBindings <- visitedBindings
+              okVisitedBody <- visitedBody
+              pure [letExpr, XObj (Arr okVisitedBindings) bindi bindt, okVisitedBody]
     visitList allowAmbig level env (XObj (Lst [theExpr@(XObj The _ _), typeXObj, value]) _ _) =
       do
         visitedValue <- visit allowAmbig level env value

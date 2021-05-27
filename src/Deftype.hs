@@ -398,7 +398,7 @@ genericInit allocationMode pathStrings originalStructTy@(StructTy (ConcreteNameT
           )
           ( \(FuncTy _ concreteStructTy _) ->
               case concretizeType typeEnv concreteStructTy of
-                Left err -> error (show err ++ ". This error should not crash the compiler - change return type to Either here.")
+                Left _ -> []
                 Right ok -> ok
           )
 genericInit _ _ _ _ = error "genericinit"
