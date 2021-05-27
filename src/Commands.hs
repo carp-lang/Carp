@@ -23,6 +23,7 @@ import Project
 import Reify
 import RenderDocs
 import System.Directory (makeAbsolute)
+import System.Environment (getEnv, setEnv)
 import System.Exit (ExitCode (..), exitSuccess)
 import System.IO (IOMode (..), hClose, hPutStr, hSetEncoding, openFile, utf8)
 import System.Info (arch, os)
@@ -704,6 +705,24 @@ commandWriteFile ctx filename contents =
             Left _ -> evalError ctx ("Cannot write to argument to `" ++ fname ++ "`, an argument to `write-file`") (xobjInfo filename)
         _ -> pure (evalError ctx ("The second argument to `write-file` must be a string, I got `" ++ pretty contents ++ "`") (xobjInfo contents))
     _ -> pure (evalError ctx ("The first argument to `write-file` must be a string, I got `" ++ pretty filename ++ "`") (xobjInfo filename))
+
+commandGetEnv :: UnaryCommandCallback
+commandGetEnv ctx (XObj (Str var) _ _) = do
+  exceptional <- liftIO ((try $ getEnv var) :: (IO (Either IOException String)))
+  pure $ case exceptional of
+    Right v -> (ctx, Right (XObj (Str v) (Just dummyInfo) (Just StringTy)))
+    Left _ -> (ctx, dynamicNil)
+commandGetEnv ctx notString =
+  pure (evalError ctx ("The argument to `get-env` must be a string, I got `" ++ pretty notString ++ "`") (xobjInfo notString))
+
+commandSetEnv :: BinaryCommandCallback
+commandSetEnv ctx (XObj (Str var) _ _) (XObj (Str val) _ _) = do
+  liftIO $ setEnv var val
+  pure (ctx, dynamicNil)
+commandSetEnv ctx notString (XObj (Str _) _ _) =
+  pure (evalError ctx ("The first argument to `set-env` must be a string, I got `" ++ pretty notString ++ "`") (xobjInfo notString))
+commandSetEnv ctx _ notString =
+  pure (evalError ctx ("The second argument to `set-env` must be a string, I got `" ++ pretty notString ++ "`") (xobjInfo notString))
 
 commandHostBitWidth :: NullaryCommandCallback
 commandHostBitWidth ctx =
