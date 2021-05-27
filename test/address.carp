@@ -1,7 +1,7 @@
 (load "Test.carp")
 
 (use Test)
-
+(use Pointer)
 
 (deftest test
   (let [arr [1 2 3 4]]

@@ -5,6 +5,10 @@
   (doc eq "checks two pointer references for equality.")
   (deftemplate ref-eq (Fn [(Ref (Ptr p)) (Ref (Ptr p))] Bool) "bool $NAME($p **p1, $p **p2)" " $DECL { return *p1 == *p2; }")
   (implements = Pointer.ref-eq)
+
+  (doc address "returns the memory address of a reference. Equivalent to the `&` operator when placed before a variable in C.")
+  (deftemplate address (Fn [(Ref a)] (Ptr a)) "$a * $NAME($a * a)" "$DECL { return a; }")
+
   (doc to-ref "converts a pointer to a reference type.
 
 The user will have to ensure themselves that this is a safe operation.")
@@ -68,5 +72,3 @@ The user will have to ensure themselves that this is a safe operation.")
   (defn dec [a] (Pointer.sub a 1l))
   (implements dec Pointer.dec)
 )
-
-(deftemplate address (Fn [(Ref a)] (Ptr a)) "$a * $NAME($a * a)" "$DECL { return a; }")

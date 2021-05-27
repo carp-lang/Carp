@@ -83,7 +83,7 @@
     (defn all []
       (let-do [events []
                e (SDL.Event.init)]
-        (while (poll (address &e))
+        (while (poll (Pointer.address &e))
           (set! events (Array.push-back events e)))
         events))
 
@@ -211,7 +211,7 @@
     (defn get []
       (let [x 0
             y 0
-            state (SDL.Mouse.get-mouse-state (address &x) (address &y))
+            state (SDL.Mouse.get-mouse-state (Pointer.address &x) (Pointer.address &y))
             l (/= 0 (Int.bit-and state (SDL.Mouse.button SDL.Mouse.button-left)))
             r (/= 0 (Int.bit-and state (SDL.Mouse.button SDL.Mouse.button-right)))]
         (SDL.MouseState.init x y l r))))
@@ -287,7 +287,7 @@
 
   (defn dimensions [texture]
     (let-do [w 0 h 0]
-      (SDL.query-texture texture NULL NULL (address &w) (address &h)) ;; TODO: Can't qualify 'query-texture' ??!
+      (SDL.query-texture texture NULL NULL (Pointer.address &w) (Pointer.address &h)) ;; TODO: Can't qualify 'query-texture' ??!
       (SDL.rect 0 0 w h)))
 
   (defn draw-texture [rend texture point]
@@ -296,7 +296,7 @@
                          @(SDL_Point.y point)
                          @(SDL_Rect.w &dims)
                          @(SDL_Rect.h &dims))]
-      (SDL.render-copy rend texture (address &dims) (address &dest))))
+      (SDL.render-copy rend texture (Pointer.address &dims) (Pointer.address &dest))))
 
   (defn draw-texture-centered [rend texture point]
     (let [dims (SDL.dimensions texture)
@@ -306,7 +306,7 @@
                          (- @(SDL_Point.y point) (/ h 2))
                          w
                          h)]
-      (SDL.render-copy rend texture (address &dims) (address &dest))))
+      (SDL.render-copy rend texture (Pointer.address &dims) (Pointer.address &dest))))
 
   (defn-do bg [rend color]
     (with Int
@@ -332,7 +332,7 @@
           ren NULL]
       (do (SDL.init SDL.INIT_EVERYTHING)
           (SDL.Hint.set SDL.Hint.render-vsync (cstr "1"))
-          (SDL.create-window-and-renderer width height (bit-or SDL.WindowFlags.window-shown SDL.WindowFlags.window-resizable) (address &win) (address &ren))
+          (SDL.create-window-and-renderer width height (bit-or SDL.WindowFlags.window-shown SDL.WindowFlags.window-resizable) (Pointer.address &win) (Pointer.address &ren))
           (SDL.set-window-title win (cstr title))
           (SDLApp.init win ren 60))))
 
