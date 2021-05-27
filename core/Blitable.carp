@@ -57,3 +57,7 @@
 (defmodule Uint64
   (defn blit [x] (the Uint64 x))
   (implements blit Uint64.blit))
+
+(defmodule Pointer
+  (defn blit [x] (the (Ptr a) x))
+  (implements blit Pointer.blit))

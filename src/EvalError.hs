@@ -47,8 +47,6 @@ data EvaluationError
     UnknownForm XObj
   | -- Function/Macro Application
     MacroBadArgumentSplit [String]
-  | -- Address
-    AddressContainsNonSymbol XObj
   | -- While
     WhileContainsNonBool XObj
   | -- Defmodule
@@ -115,7 +113,6 @@ instance Show EvaluationError where
     "I didn’t understand this macro’s argument split, got `"
       ++ joinWith "," allParams
       ++ "`, but expected exactly one `:rest` separator."
-  show (AddressContainsNonSymbol xobj) = "Can't get the address of non-symbol " ++ pretty xobj
   show (WhileContainsNonBool c) =
     "This `while` condition contains the non-boolean value '"
       ++ pretty c

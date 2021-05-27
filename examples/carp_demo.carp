@@ -33,7 +33,7 @@
       (SDL.set-render-draw-color rend 0 0 0 255)
       (SDL.render-clear rend)
       (SDL.set-render-draw-color rend 200 250 255 255)
-      (SDL.render-fill-rect rend (address rect))
+      (SDL.render-fill-rect rend (Pointer.address &rect))
       (SDL.set-render-draw-color rend 100 50 255 155)
       (let [mouse-state (SDL.MouseState.get)
             x @(SDL.MouseState.x &mouse-state)
@@ -55,10 +55,10 @@
       (let [img @(Images.img1 &images)]
         (SDL.render-copy-ex rend
                             img
-                            (address (SDL.dimensions img))
-                            (address (SDL.rect 100 100 300 300))
+                            (Pointer.address &(SDL.dimensions img))
+                            (Pointer.address &(SDL.rect 100 100 300 300))
                             (* 0.1 (from-int (SDL.get-ticks)))
-                            (address (SDL.point 150 150))
+                            (Pointer.address &(SDL.point 150 150))
                             SDL.flip-none)))))
 
 (defn event-handler [app state event]

@@ -38,13 +38,13 @@
               (and (= x @(State.x state)) (= y @(State.y state))) (SDL.set-render-draw-color rend 255 0 0 255)
               (get-square state x y) (SDL.set-render-draw-color rend 0 0 0 255)
               (SDL.set-render-draw-color rend 255 255 255 255))
-            (SDL.render-fill-rect rend (address (SDL.rect (* x w) (* y h) (dec w) (dec h))))))))
+            (SDL.render-fill-rect rend (Pointer.address &(SDL.rect (* x w) (* y h) (dec w) (dec h))))))))
     (SDL.render-present rend)
     ))
 
 (defn handle-events [app rend]
   (let [event (SDL.Event.init)]
-    (while (SDL.Event.poll (address event))
+    (while (SDL.Event.poll (Pointer.address &event))
       (let [et (SDL.Event.type &event)]
         (cond (= et SDL.Event.quit) (SDLApp.stop app)
               ())))))

@@ -89,7 +89,7 @@
   )
   (assert-equal test
                 &(Just 0)
-                &(from-ptr (address (zero)))
+                &(from-ptr (Pointer.address &(zero)))
                 "from-ptr works on Ptr/Just"
   )
   (assert-equal test

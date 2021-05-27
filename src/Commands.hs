@@ -895,7 +895,6 @@ commandType ctx (XObj x _ _) =
     typeOf (Deftemplate _) = "deftemplate"
     typeOf (Instantiate _) = "instantiate"
     typeOf (Defalias _) = "defalias"
-    typeOf Address = "address"
     typeOf SetBang = "set!"
     typeOf Macro = "macro"
     typeOf Dynamic = "dynamic"

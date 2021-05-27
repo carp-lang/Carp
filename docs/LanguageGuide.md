@@ -109,7 +109,6 @@ and other static analysis. The first three of them are also available in dynamic
 (match <expression> <case1> <expr1> <case2> <expr2> ...) ;; Pattern matches an <expression> against a set of sumtype constructors
 (match-ref <expression> <case1> <expr1> <case2> <expr2> ...) ;; Pattern matches an <expression> of reference type, not taking ownership of its members
 (ref <expression>) ;; Borrow an owned value
-(address <expression>) ;; Takes the memory address of a value, returns a C-style pointer
 (set! <variable> <expression>) ;; Mutate a variable
 (the <type> <expression>) ;; Explicitly declare the type of an expression
 ```

@@ -159,7 +159,6 @@ data Obj
   | Deftemplate TemplateCreator
   | Instantiate Template
   | Defalias Ty
-  | Address
   | SetBang
   | Macro
   | Dynamic -- DefnDynamic
@@ -201,7 +200,7 @@ isSym _ = False
 
 isSpecialSym :: XObj -> Bool
 isSpecialSym (XObj (Sym (SymPath [] s) _) _ _) =
-  elem s ["defn", "def", "do", "while", "fn", "let", "break", "if", "match", "match-ref", "address", "set!", "the", "ref", "deref", "with"]
+  elem s ["defn", "def", "do", "while", "fn", "let", "break", "if", "match", "match-ref", "set!", "the", "ref", "deref", "with"]
 isSpecialSym _ = False
 
 isArray :: XObj -> Bool
@@ -462,7 +461,6 @@ pretty = visit 0
         ExternalType (Just override) -> "external-type (override: " ++ show override ++ ")"
         MetaStub -> "meta-stub"
         Defalias _ -> "defalias"
-        Address -> "address"
         SetBang -> "set!"
         Macro -> "macro"
         Dynamic -> "dynamic"
@@ -528,7 +526,6 @@ prettyUpTo lim xobj =
         ExternalType (Just _) -> ")"
         MetaStub -> ""
         Defalias _ -> ""
-        Address -> ""
         SetBang -> ""
         Macro -> ""
         Dynamic -> ""

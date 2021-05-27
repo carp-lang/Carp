@@ -491,7 +491,6 @@ startingGlobalEnv noArray =
           makeSymbol "if" "" "" If,
           makeSymbol "match" "" "" (Match MatchValue),
           makeSymbol "match-ref" "" "" (Match MatchRef),
-          makeSymbol "address" "" "" Address,
           makeSymbol "set!" "" "" SetBang,
           makeSymbol "the" "" "" The,
           makeSymbol "ref" "" "" Ref,

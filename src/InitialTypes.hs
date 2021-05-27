@@ -105,7 +105,6 @@ initialTypes typeEnv rootEnv root = evalState (visit rootEnv root) 0
       e@(Deftemplate _) -> pure (Left (InvalidObj e xobj))
       e@(Instantiate _) -> pure (Left (InvalidObj e xobj))
       e@(Defalias _) -> pure (Left (InvalidObj e xobj))
-      Address -> pure (Left (InvalidObj Address xobj))
       SetBang -> pure (Left (InvalidObj SetBang xobj))
       Macro -> pure (Left (InvalidObj Macro xobj))
       The -> pure (Left (InvalidObj The xobj))
@@ -350,14 +349,6 @@ initialTypes typeEnv rootEnv root = evalState (visit rootEnv root) 0
             pure $ do
               okExpressions <- visitedExpressions
               pure (XObj (Lst (doExpr : okExpressions)) i (Just t))
-        -- Address
-        [addressExpr@(XObj Address _ _), value] ->
-          do
-            visitedValue <- visit env value
-            pure $ do
-              okValue <- visitedValue
-              let Just t' = xobjTy okValue
-              pure (XObj (Lst [addressExpr, okValue]) i (Just (PointerTy t')))
         -- Set!
         [setExpr@(XObj SetBang _ _), variable, value] ->
           do
