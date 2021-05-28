@@ -1,4 +1,9 @@
 #!/usr/bin/env python3
+
+# lcase are only:
+#    hacking.md, index.md, patterns.md
+
+
 # If you want to browse the Carp documentation offline with all the bells and whistles 
 # (e.g. working hyperlinks to other documents and embedded graphics) that are usually 
 # provided by the github webpage, you can convert it to static html with this script.
@@ -11,7 +16,10 @@
 # Start it with:
 #     python3 zConvertMd2Html.py 
 # or depending on you system configuration (e.g. on Windows):
-#     python zConvertMd2Html.py 
+#     python zConvertMd2Html.py
+# or by executing the script itself (only on *NIX / BSD):
+#     chmod u+x zConvertMd2Html.py
+#     ./zConvertMd2Html.py
 #
 # Please note: 
 #    inter-document references do not work since the markdown-library does not create 
@@ -19,9 +27,10 @@
 
 import markdown, glob, os, re, shutil
 
-# TODO: put this file in %CARP_DIR%/docs-html/
-# TODO: review all references for caps and unneccessary long references to local files
-# TODO: fill ../docs/index.md and add a comment on top about where to start reading
+# TODO: copy sub folders and check that docs in ./core/ and ./sdl/ are linked (as html)
+# TODO: update Libraries.md to point to local AND web docu source??
+# TODO: verify that documents are linked where appropriate
+# TODO: update build to include the new folder  
 # TODO: resize carp_on_arduboy.jpg to sensible width (file or via parameter?)
 
 docPath = "../docs/"
@@ -42,13 +51,13 @@ def change_md2html( match ):
         refAnchor = ""
     else:
         refAnchor = "#" + refParts[1]
-    if lFile.startswith("http") or not lFile.endswith(".md"):
+    if lFile.startswith("http") or not lFile.endswith(".md") or lFile.startswith("../"):
         # not a reference to a local .md file => return unchanged match
         mSpan = match.span()
         new = match.string[ mSpan[0]: mSpan[1] ]
         print("\tkept reference: " + new)
     else:
-        new = "[%s](%s.html%s)" % (mgroups[0], lFile[:-3], refAnchor )
+        new = "[%s](%s.html%s)" % (mgroups[0], refFile[:-3], refAnchor )
         print("\tadjusted reference: " + new)
     return new
 
