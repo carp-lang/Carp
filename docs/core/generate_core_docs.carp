@@ -1,7 +1,9 @@
+; runs this from the Carp installation directory, NOT current directory!
+
 (Project.config "title" "core")
 (Project.config "docs-directory" "./docs/core/")
 (Project.config "docs-logo" "logo.png")
-(Project.config "docs-prelude" "This website contains the documentation for the Carp standard library. You can download Carp [here](https://github.com/carp-lang/carp).")
+(Project.config "docs-prelude" "Welcome to the documentation for the Carp standard library. Please select a library from the menu on the right to browse its documentation. Carp is available for download [here](https://github.com/carp-lang/carp).")
 (Project.config "docs-url" "https://github.com/carp-lang/carp")
 
 (load "SafeInt.carp")
