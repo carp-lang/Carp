@@ -15,7 +15,7 @@ import Util
 
 data TypeVarRestriction
   = AllowAnyTypeVariableNames
-  | OnlyCapturedNames
+  | AllowOnlyCapturedNames
   deriving (Eq)
 
 -- | Make sure that the member declarations in a type definition
@@ -25,7 +25,7 @@ validateMemberCases :: TypeEnv -> [Ty] -> [XObj] -> Either TypeError ()
 validateMemberCases typeEnv typeVariables rest = mapM_ visit rest
   where
     visit (XObj (Arr membersXObjs) _ _) =
-      validateMembers OnlyCapturedNames typeEnv typeVariables membersXObjs
+      validateMembers AllowOnlyCapturedNames typeEnv typeVariables membersXObjs
     visit xobj =
       Left (InvalidSumtypeCase xobj)
 
@@ -136,10 +136,13 @@ canBeUsedAsMemberType typeVarRestriction typeEnv typeVariables ty xobj =
     checkStruct _ _ = error "checkstruct"
     checkVar :: Ty -> Either TypeError ()
     checkVar variable =
-      if typeVarRestriction == AllowAnyTypeVariableNames
-        || any (isCaptured variable) typeVariables
-        then pure ()
-        else Left (InvalidMemberType ty xobj)
+      case typeVarRestriction of
+        AllowAnyTypeVariableNames ->
+          pure ()
+        AllowOnlyCapturedNames ->
+          if any (isCaptured variable) typeVariables
+            then pure ()
+            else Left (InvalidMemberType ty xobj)
       where
         -- If a variable `a` appears in a higher-order polymorphic form, such as `(f a)`
         -- `a` may be used as a member, sans `f`, but `f` may not appear
