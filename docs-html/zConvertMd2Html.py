@@ -1,9 +1,5 @@
 #!/usr/bin/env python3
 
-# lcase are only:
-#    hacking.md, index.md, patterns.md
-
-
 # If you want to browse the Carp documentation offline with all the bells and whistles 
 # (e.g. working hyperlinks to other documents and embedded graphics) that are usually 
 # provided by the github webpage, you can convert it to static html with this script.
@@ -31,7 +27,6 @@ import markdown, glob, os, re, shutil
 # TODO: update Libraries.md to point to local AND web docu source??
 # TODO: verify that documents are linked where appropriate
 # TODO: update build to include the new folder  
-# TODO: resize carp_on_arduboy.jpg to sensible width (file or via parameter?)
 
 docPath = "../docs/"
 docPathLen = len(docPath)
