@@ -3,10 +3,12 @@
 Please start by reading the [Manual](Manual.md)
 
 You may find yourself coming back to 
+
 * [the description of the Carp language](LanguageGuide.md) 
 * [its libraries.](Libraries.md)
 
 Also there is documentation about:
+
 * [C Interop](CInterop.md); 
 * [how to contribute](Contributing.md);
 * [support for implementig interfaces for datatypes based on their members](Derive.md); 
