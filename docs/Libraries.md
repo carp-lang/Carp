@@ -1,8 +1,9 @@
 ## Working with libraries and modules
 
-Carp comes with a standard library called Core, sources are [here](../core/).
-Documentation is available [online](http://carp-lang.github.io/carp-docs/core/core_index.html) as well as [locally](./core/core_index.html).
-Many of these - 44 of 62 at the time of writing - are loaded by default, see [Core.carp](../core/Core.carp) for details. 
+Carp comes with a standard library called Core, sources are [here](../core/). 
+It consists of a number of modules.
+Documentation is available [online](http://carp-lang.github.io/carp-docs/core/core_index.html) as well as [locally](./core/core_index.html) for most of them.
+The majority of modules are loaded by default, see [Core.carp](../core/Core.carp) for details. 
 If your `CARP_DIR` environment variable is set up [properly](Install.md#setting-the-carp_dir), then the remaining libraries can easily be imported using the `load` command. For example, to get access to the Bench module, do the following:
 
 ```clojure
