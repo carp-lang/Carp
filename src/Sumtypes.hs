@@ -17,6 +17,7 @@ import TypePredicates
 import Types
 import TypesToC
 import Util
+import Validate (TypeVarRestriction (..))
 
 getCase :: [SumtypeCase] -> String -> Maybe SumtypeCase
 getCase cases caseNameToFind =
@@ -53,7 +54,7 @@ moduleForSumtype innerEnv typeEnv env pathStrings typeName typeVariables rest i 
       insidePath = pathStrings ++ [typeName]
    in do
         let structTy = StructTy (ConcreteNameTy (SymPath pathStrings typeName)) typeVariables
-        cases <- toCases typeEnv typeVariables rest
+        cases <- toCases typeEnv AllowOnlyCapturedNames typeVariables rest
         okIniters <- initers insidePath structTy cases
         okTag <- binderForTag insidePath structTy
         (okStr, okStrDeps) <- binderForStrOrPrn typeEnv env insidePath structTy cases "str"

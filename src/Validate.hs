@@ -14,8 +14,8 @@ import Util
 {-# ANN validateMemberCases "HLint: ignore Eta reduce" #-}
 
 data TypeVarRestriction
-  = AllowAnyTypeVariableNames
-  | AllowOnlyCapturedNames
+  = AllowAnyTypeVariableNames -- Used when checking a type found in the code, e.g. (Foo a), any name is OK for 'a'
+  | AllowOnlyCapturedNames -- Used when checking a type definition, e.g. (deftype (Foo a) [x a]), requires a to be in scope
   deriving (Eq)
 
 -- | Make sure that the member declarations in a type definition

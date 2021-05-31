@@ -575,7 +575,7 @@ instantiateGenericSumtype typeEnv originalStructTy@(StructTy _ originalTyVars) g
           let nameFixedCases = map (renameGenericTypeSymbolsOnSum (zip originalTyVars renamedOrig)) cases
               concretelyTypedCases = map (replaceGenericTypeSymbolsOnCase mappings) nameFixedCases
               deps = mapM (depsForCase typeEnv) concretelyTypedCases
-           in case toCases typeEnv renamedOrig concretelyTypedCases of -- Don't care about the cases, this is done just for validation.
+           in case toCases typeEnv AllowAnyTypeVariableNames renamedOrig concretelyTypedCases of -- Don't care about the cases, this is done just for validation.
                 Left err -> Left err
                 Right _ ->
                   case deps of
