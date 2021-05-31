@@ -1,6 +1,10 @@
 ## Working with libraries and modules
 
-Carp comes with a standard library called [Core](../core/) where only certain files are loaded by default (see [Core.carp](../core/Core.carp)). If your `CARP_DIR` environment variable is [set properly](https://github.com/carp-lang/Carp/blob/master/docs/Install.md#setting-the-carp_dir), these libraries will be easily imported using the `load` command. For example, to get access to the Bench module, do the following:
+Carp comes with a standard library called Core, sources are [here](../core/). 
+It consists of a number of modules.
+Documentation is available [online](http://carp-lang.github.io/carp-docs/core/core_index.html) as well as [locally](./core/core_index.html) for most of them.
+The majority of modules are loaded by default, see [Core.carp](../core/Core.carp) for details. 
+If your `CARP_DIR` environment variable is set up [properly](Install.md#setting-the-carp_dir), then the remaining libraries can easily be imported using the `load` command. For example, to get access to the Bench module, do the following:
 
 ```clojure
 (load "Bench.carp")
@@ -52,13 +56,14 @@ You can generate HTML documentation for a set of modules by running `save-docs` 
 ```clojure
 > (save-docs Int Float String)
 ```
-
-See the file [generate_core_docs.carp](./core/generate_core_docs.carp) for an example of how to configure the result.
+See the [ReadMe](./core/README.md) for updating the entire standard library documentation or
+the [program](./core/generate_core_docs.carp) for examples of how to configure the documentation generator.
 
 
 ## Auto generated API documentation
 
-* [Core](http://carp-lang.github.io/carp-docs/core/core_index.html)
+* [online docu for Carp standard library](http://carp-lang.github.io/carp-docs/core/core_index.html)
+* [local  docu for Carp standard library](./core/core_index.html)
 * [SDL](http://carp-lang.github.io/carp-docs/sdl/SDL_index.html)
 
 ## Some External Libraries
