@@ -1,1 +1,0 @@
-multiarg-ref.carp:2:1 `ref` takes a single argument, but I got `(ref 1 2)`.

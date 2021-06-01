@@ -13,6 +13,11 @@ import Util
 
 {-# ANN validateMemberCases "HLint: ignore Eta reduce" #-}
 
+data TypeVarRestriction
+  = AllowAnyTypeVariableNames -- Used when checking a type found in the code, e.g. (Foo a), any name is OK for 'a'
+  | AllowOnlyNamesInScope -- Used when checking a type definition, e.g. (deftype (Foo a) [x a]), requires a to be in scope
+  deriving (Eq)
+
 -- | Make sure that the member declarations in a type definition
 -- | Follow the pattern [<name> <type>, <name> <type>, ...]
 -- | TODO: This function is only called by the deftype parts of the codebase, which is more specific than the following check implies.
@@ -20,12 +25,12 @@ validateMemberCases :: TypeEnv -> [Ty] -> [XObj] -> Either TypeError ()
 validateMemberCases typeEnv typeVariables rest = mapM_ visit rest
   where
     visit (XObj (Arr membersXObjs) _ _) =
-      validateMembers typeEnv typeVariables membersXObjs
+      validateMembers AllowOnlyNamesInScope typeEnv typeVariables membersXObjs
     visit xobj =
       Left (InvalidSumtypeCase xobj)
 
-validateMembers :: TypeEnv -> [Ty] -> [XObj] -> Either TypeError ()
-validateMembers typeEnv typeVariables membersXObjs =
+validateMembers :: TypeVarRestriction -> TypeEnv -> [Ty] -> [XObj] -> Either TypeError ()
+validateMembers typeVarRestriction typeEnv typeVariables membersXObjs =
   checkUnevenMembers >> checkDuplicateMembers >> checkMembers >> checkKindConsistency
   where
     pairs = pairwise membersXObjs
@@ -56,17 +61,17 @@ validateMembers typeEnv typeVariables membersXObjs =
         -- todo? be safer anyway?
         varsOnly = filter isTypeGeneric (map (fromJust . xobjToTy . snd) pairs)
     checkMembers :: Either TypeError ()
-    checkMembers = mapM_ (okXObjForType typeEnv typeVariables . snd) pairs
+    checkMembers = mapM_ (okXObjForType typeVarRestriction typeEnv typeVariables . snd) pairs
 
-okXObjForType :: TypeEnv -> [Ty] -> XObj -> Either TypeError ()
-okXObjForType typeEnv typeVariables xobj =
+okXObjForType :: TypeVarRestriction -> TypeEnv -> [Ty] -> XObj -> Either TypeError ()
+okXObjForType typeVarRestriction typeEnv typeVariables xobj =
   case xobjToTy xobj of
-    Just t -> canBeUsedAsMemberType typeEnv typeVariables t xobj
+    Just t -> canBeUsedAsMemberType typeVarRestriction typeEnv typeVariables t xobj
     Nothing -> Left (NotAType xobj)
 
 -- | Can this type be used as a member for a deftype?
-canBeUsedAsMemberType :: TypeEnv -> [Ty] -> Ty -> XObj -> Either TypeError ()
-canBeUsedAsMemberType typeEnv typeVariables ty xobj =
+canBeUsedAsMemberType :: TypeVarRestriction -> TypeEnv -> [Ty] -> Ty -> XObj -> Either TypeError ()
+canBeUsedAsMemberType typeVarRestriction typeEnv typeVariables ty xobj =
   case ty of
     UnitTy -> pure ()
     IntTy -> pure ()
@@ -81,7 +86,7 @@ canBeUsedAsMemberType typeEnv typeVariables ty xobj =
     FuncTy {} -> pure ()
     PointerTy UnitTy -> pure ()
     PointerTy inner ->
-      canBeUsedAsMemberType typeEnv typeVariables inner xobj
+      canBeUsedAsMemberType typeVarRestriction typeEnv typeVariables inner xobj
         >> pure ()
     -- Struct variables may appear as complete applications or individual
     -- components in the head of a definition; that is the forms:
@@ -107,16 +112,16 @@ canBeUsedAsMemberType typeEnv typeVariables ty xobj =
   where
     checkStruct :: Ty -> [Ty] -> Either TypeError ()
     checkStruct (ConcreteNameTy (SymPath [] "Array")) [innerType] =
-      canBeUsedAsMemberType typeEnv typeVariables innerType xobj
+      canBeUsedAsMemberType typeVarRestriction typeEnv typeVariables innerType xobj
         >> pure ()
     checkStruct (ConcreteNameTy (SymPath _ name)) vars =
       case E.getTypeBinder typeEnv name of
         Right (Binder _ (XObj (Lst (XObj (ExternalType _) _ _ : _)) _ _)) ->
           pure ()
         Right (Binder _ (XObj (Lst (XObj (Deftype t) _ _ : _)) _ _)) ->
-          checkInhabitants t >> foldM (\_ typ -> canBeUsedAsMemberType typeEnv typeVariables typ xobj) () vars
+          checkInhabitants t >> foldM (\_ typ -> canBeUsedAsMemberType typeVarRestriction typeEnv typeVariables typ xobj) () vars
         Right (Binder _ (XObj (Lst (XObj (DefSumtype t) _ _ : _)) _ _)) ->
-          checkInhabitants t >> foldM (\_ typ -> canBeUsedAsMemberType typeEnv typeVariables typ xobj) () vars
+          checkInhabitants t >> foldM (\_ typ -> canBeUsedAsMemberType typeVarRestriction typeEnv typeVariables typ xobj) () vars
         _ -> Left (NotAmongRegisteredTypes ty xobj)
       where
         checkInhabitants :: Ty -> Either TypeError ()
@@ -126,14 +131,18 @@ canBeUsedAsMemberType typeEnv typeVariables ty xobj =
             else Left (UninhabitedConstructor ty xobj (length vs) (length vars))
         checkInhabitants _ = Left (InvalidMemberType ty xobj)
     checkStruct v@(VarTy _) vars =
-      canBeUsedAsMemberType typeEnv typeVariables v xobj
-        >> foldM (\_ typ -> canBeUsedAsMemberType typeEnv typeVariables typ xobj) () vars
+      canBeUsedAsMemberType typeVarRestriction typeEnv typeVariables v xobj
+        >> foldM (\_ typ -> canBeUsedAsMemberType typeVarRestriction typeEnv typeVariables typ xobj) () vars
     checkStruct _ _ = error "checkstruct"
     checkVar :: Ty -> Either TypeError ()
     checkVar variable =
-      if any (isCaptured variable) typeVariables
-        then pure ()
-        else Left (InvalidMemberType ty xobj)
+      case typeVarRestriction of
+        AllowAnyTypeVariableNames ->
+          pure ()
+        AllowOnlyNamesInScope ->
+          if any (isCaptured variable) typeVariables
+            then pure ()
+            else Left (InvalidMemberType ty xobj)
       where
         -- If a variable `a` appears in a higher-order polymorphic form, such as `(f a)`
         -- `a` may be used as a member, sans `f`, but `f` may not appear

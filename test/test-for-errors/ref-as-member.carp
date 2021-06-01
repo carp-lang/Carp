@@ -1,0 +1,6 @@
+(Project.config "file-path-print-length" "short")
+
+(defn f []
+  (let [x 10
+        r &x]
+    (Pair.init r r)))
