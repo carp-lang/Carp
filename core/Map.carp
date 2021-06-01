@@ -161,7 +161,7 @@
     (<= 0 (find b k)))
 
   (defn remove [entries k]
-    (let-do [nentries []]
+    (let-do [nentries (the (Array (Pair a b)) [])]
       (for [i 0 (Array.length entries)]
         (let [e (Array.unsafe-nth entries i)]
           (unless (= (Pair.a e) k)
