@@ -258,9 +258,15 @@ qualifyLet typeEnv globalEnv env x@(XObj (Lst [letExpr@(XObj Let _ _), bind@(XOb
         -- Let bindings to anonymous functions may recursively call themselves,
         -- qualify the symbols appropriately by adding a recursion environment.
         -- e.g. (let [f (fn [x] (if (= x 1) x (f (dec x))))])
+        -- Environment parenting is a bit nuanced here; the recursive reference
+        -- needs to be stored in a recursive env to mark the symbol correctly.
+        -- However, we also need to ensure captured variables are still marked
+        -- as such, which is based on env nesting level, and we need to ensure
+        -- the recursive reference isn't accidentally captured.
+        let Just origin = E.parent e
         recursionEnv <- fixLeft (pure (E.recursive (Just e) (Just ("let-recurse-env")) 0))
         envWithSelf <- fixLeft (E.insertX recursionEnv path s)
-        qualified <- liftM unQualified (setFullyQualifiedSymbols typeEnv globalEnv envWithSelf o)
+        qualified <- liftM unQualified (setFullyQualifiedSymbols typeEnv globalEnv (E.setParent e (E.setParent origin envWithSelf)) o)
         updated <- (replaceLeft (FailedToQualifySymbols x) (E.insertX e path s))
         (pure (updated, bs ++ [s, qualified]))
       where
