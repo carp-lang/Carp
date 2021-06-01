@@ -212,7 +212,26 @@ initialTypes typeEnv rootEnv root = evalState (visit rootEnv root) 0
         [XObj (Defn _) _ _, XObj (Sym _ _) _ _, XObj (Arr _) _ _] -> pure (Left (NoFormsInBody xobj))
         XObj defn@(Defn _) _ _ : _ ->
           pure (Left (InvalidObjExample defn xobj "(defn <name> [<arguments>] <body>)"))
-        -- Fn
+        -- Anonymous function bound to a let name
+        -- Supports recursion by assigning the same type to recursive calls ("let-rec").
+        [XObj LocalDef _ _, XObj (Sym path _) si _, XObj (Lst [fn@(XObj (Fn _ _) _ _), XObj (Arr argList) argsi argst, body]) _ _] ->
+          do
+            (argTypes, returnType, funcScopeEnv) <- getTys env argList
+            lt <- genVarTy
+            let funcTy = Just (FuncTy argTypes returnType lt)
+                typedNameSymbol = XObj (Sym path LookupRecursive) si funcTy
+                Right envWithSelf = E.insertX funcScopeEnv path typedNameSymbol
+            visitedBody <- visit envWithSelf body
+            visitedArgs <- mapM (visit envWithSelf) argList
+            pure $ do
+              okBody <- visitedBody
+              okArgs <- sequence visitedArgs
+              let final = XObj (Lst [fn, XObj (Arr okArgs) argsi argst, okBody]) i funcTy
+              pure final --(trace ("FINAL: " ++ show final) final)
+        -- Let bindings
+        [XObj LocalDef _ _, _, value] ->
+          visit env value
+        -- Unbound anonymous Fn
         [fn@(XObj (Fn _ _) _ _), XObj (Arr argList) argsi argst, body] ->
           do
             (argTypes, returnType, funcScopeEnv) <- getTys env argList
@@ -427,6 +446,9 @@ initialTypes typeEnv rootEnv root = evalState (visit rootEnv root) 0
        in -- Need to fold (rather than map) to make the previous bindings accessible to the later ones, i.e. (let [a 100 b a] ...)
           foldM createBinderForLetPair (Right emptyInnerEnv) pairs
       where
+        -- Cast binders to Local Defs so that we can account for recursion ("let-rec").
+        -- A local def carries the binder name along with its value, so we can appropriately type recursive uses.
+        -- e.g. (let [f (fn [x] (if (= x 1) x (f (dec x))))])
         createBinderForLetPair :: Either TypeError Env -> (XObj, XObj) -> State Integer (Either TypeError Env)
         createBinderForLetPair envOrErr (sym, expr) =
           case envOrErr of
@@ -435,7 +457,7 @@ initialTypes typeEnv rootEnv root = evalState (visit rootEnv root) 0
               case xobjObj sym of
                 (Sym (SymPath _ name) _) ->
                   do
-                    visited <- visit env' expr
+                    visited <- visit env' (toLocalDef name expr)
                     pure
                       ( join
                           (replaceLeft (InvalidLetBinding xobjs (sym, expr)) . E.insert env' (SymPath [] name) . Binder emptyMeta <$> visited)

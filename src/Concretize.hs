@@ -136,6 +136,14 @@ concretizeXObj allowAmbiguityRoot typeEnv rootEnv visitedDefinitions root =
                 SymPath spath name = rootDefinitionPath
                 lambdaPath = SymPath spath ("_Lambda_" ++ lambdaToCName name (envFunctionNestingLevel envWithArgs) ++ "_" ++ show (infoIdentifier ii) ++ "_env")
                 lambdaNameSymbol = XObj (Sym lambdaPath Symbol) (Just dummyInfo) Nothing
+                -- Anonymous functions bound to a let name might call themselves. These recursive instances will have already been qualified as LookupRecursive symbols.
+                -- Rename the recursive calls according to the generated lambda name so that we can call these correctly from C.
+                renameRecursives x = case x of
+                                       (XObj (Sym _ LookupRecursive) si st) -> (XObj (Sym lambdaPath LookupRecursive) si st)
+                                       y@(XObj (Lst _) _ _) -> endoMap renameRecursives y
+                                       y@(XObj (Arr _) _ _) -> endoMap renameRecursives y
+                                       _ -> x
+                recBody = (endoMap renameRecursives okBody)
                 environmentTypeName = pathToC lambdaPath ++ "_ty"
                 tyPath = (SymPath [] environmentTypeName)
                 extendedArgs =
@@ -154,7 +162,7 @@ concretizeXObj allowAmbiguityRoot typeEnv rootEnv visitedDefinitions root =
                         )
                         ai
                         at
-                lambdaCallback = XObj (Lst [XObj (Defn (Just (Set.fromList capturedVars))) (Just dummyInfo) Nothing, lambdaNameSymbol, extendedArgs, okBody]) i t
+                lambdaCallback = XObj (Lst [XObj (Defn (Just (Set.fromList capturedVars))) (Just dummyInfo) Nothing, lambdaNameSymbol, extendedArgs, recBody]) i t
                 -- The lambda will also carry with it a special made struct containing the variables it captures
                 -- (if it captures at least one variable)
                 structMemberPairs =
@@ -199,7 +207,7 @@ concretizeXObj allowAmbiguityRoot typeEnv rootEnv visitedDefinitions root =
                               modify (deleterDeps ++)
                               modify (copyFn :)
                               modify (copyDeps ++)
-                      pure (Right [XObj (Fn (Just lambdaPath) (Set.fromList capturedVars)) fni fnt, args, okBody])
+                      trace ("RECURSIVE RENAMES: " ++ show (endoMap renameRecursives okBody)) $ pure (Right [XObj (Fn (Just lambdaPath) (Set.fromList capturedVars)) fni fnt, args, recBody])
           Left err ->
             pure (Left err)
     visitList _ Toplevel env (XObj (Lst [def@(XObj Def _ _), nameSymbol, body]) _ t) =

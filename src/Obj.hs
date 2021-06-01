@@ -1121,3 +1121,10 @@ trueXObj = XObj (Bol True) Nothing Nothing
 -- | Dynamic 'false'.
 falseXObj :: XObj
 falseXObj = XObj (Bol False) Nothing Nothing
+
+-- | Applies an XObj transformation over all atomic XObjs in a form, retaining
+-- list and array structure.
+endoMap :: (XObj -> XObj) -> XObj -> XObj
+endoMap f (XObj (Arr xs) i t) = XObj (Arr (map f xs)) i t
+endoMap f (XObj (Lst xs) i t) = XObj (Lst (map f xs)) i t
+endoMap f x = f x
