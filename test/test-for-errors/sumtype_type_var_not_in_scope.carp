@@ -1,0 +1,5 @@
+(Project.config "file-path-print-length" "short")
+
+(deftype (Foo a)
+  (Bar [x b])
+  Baz)
