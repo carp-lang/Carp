@@ -15,7 +15,7 @@ import Util
 
 data TypeVarRestriction
   = AllowAnyTypeVariableNames -- Used when checking a type found in the code, e.g. (Foo a), any name is OK for 'a'
-  | AllowOnlyCapturedNames -- Used when checking a type definition, e.g. (deftype (Foo a) [x a]), requires a to be in scope
+  | AllowOnlyNamesInScope -- Used when checking a type definition, e.g. (deftype (Foo a) [x a]), requires a to be in scope
   deriving (Eq)
 
 -- | Make sure that the member declarations in a type definition
@@ -25,7 +25,7 @@ validateMemberCases :: TypeEnv -> [Ty] -> [XObj] -> Either TypeError ()
 validateMemberCases typeEnv typeVariables rest = mapM_ visit rest
   where
     visit (XObj (Arr membersXObjs) _ _) =
-      validateMembers AllowOnlyCapturedNames typeEnv typeVariables membersXObjs
+      validateMembers AllowOnlyNamesInScope typeEnv typeVariables membersXObjs
     visit xobj =
       Left (InvalidSumtypeCase xobj)
 
@@ -139,7 +139,7 @@ canBeUsedAsMemberType typeVarRestriction typeEnv typeVariables ty xobj =
       case typeVarRestriction of
         AllowAnyTypeVariableNames ->
           pure ()
-        AllowOnlyCapturedNames ->
+        AllowOnlyNamesInScope ->
           if any (isCaptured variable) typeVariables
             then pure ()
             else Left (InvalidMemberType ty xobj)
