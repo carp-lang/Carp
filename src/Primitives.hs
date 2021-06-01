@@ -607,7 +607,7 @@ makeType ctx name vars constructor =
     existingOr _ _ x = (toBinder x)
 
 -- | TODO: Possibly use this function in more places where currently 'unwrapErr' is
--- used, which ignores contextExecMode/fppl.
+-- used, since that function ignores contextExecMode/fppl.
 unwrapTypeErr :: Context -> Either TypeError a -> Either String a
 unwrapTypeErr ctx (Left err) = Left (typeErrorToString ctx err)
 unwrapTypeErr _ (Right x) = Right x
