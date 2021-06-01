@@ -255,9 +255,9 @@ qualifyLet typeEnv globalEnv env x@(XObj (Lst [letExpr@(XObj Let _ _), bind@(XOb
     qualifyBinding :: (Env, [XObj]) -> (XObj, XObj) -> Either QualificationError (Env, [XObj])
     qualifyBinding (e, bs) (s@(XObj (Sym path _) _ _), o@(XObj (Lst [(XObj (Fn _ _) _ _), _, _]) _ _)) =
       do
-	-- Let bindings to anonymous functions may recursively call themselves,
-	-- qualify the symbols appropriately by adding a recursion environment.
-	-- e.g. (let [f (fn [x] (if (= x 1) x (f (dec x))))])
+        -- Let bindings to anonymous functions may recursively call themselves,
+        -- qualify the symbols appropriately by adding a recursion environment.
+        -- e.g. (let [f (fn [x] (if (= x 1) x (f (dec x))))])
         recursionEnv <- fixLeft (pure (E.recursive (Just e) (Just ("let-recurse-env")) 0))
         envWithSelf <- fixLeft (E.insertX recursionEnv path s)
         qualified <- liftM unQualified (setFullyQualifiedSymbols typeEnv globalEnv envWithSelf o)

@@ -207,7 +207,7 @@ concretizeXObj allowAmbiguityRoot typeEnv rootEnv visitedDefinitions root =
                               modify (deleterDeps ++)
                               modify (copyFn :)
                               modify (copyDeps ++)
-                      trace ("RECURSIVE RENAMES: " ++ show (endoMap renameRecursives okBody)) $ pure (Right [XObj (Fn (Just lambdaPath) (Set.fromList capturedVars)) fni fnt, args, recBody])
+                      pure (Right [XObj (Fn (Just lambdaPath) (Set.fromList capturedVars)) fni fnt, args, recBody])
           Left err ->
             pure (Left err)
     visitList _ Toplevel env (XObj (Lst [def@(XObj Def _ _), nameSymbol, body]) _ t) =
