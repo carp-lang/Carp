@@ -1,7 +1,5 @@
 # Embedded
 
-<img src="carp_on_arduboy.jpg">
-
 Programming for embedded devices is a bit like living in the desert. Everything
 is scarce, you have to constantly ration, and you better stay out of the sun.
 
@@ -16,6 +14,12 @@ reasoning apply to Carp. If you already know what flags you need to get the job
 done, great! Carp will probably work with them out of the box. Still, getting
 acquainted with the tools it provides might help you have an easier time
 getting productive.
+
+## A picture is worth...
+
+Just to give you an idea of what is possible, here's a picture to whet your appetite:
+<img src="carp_on_arduboy.jpg">
+
 
 ## Fundamentals
 
