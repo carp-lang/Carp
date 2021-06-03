@@ -35,10 +35,8 @@
   (register fclose (Fn [(Ptr FILE)] ()))
   (doc fgetc "gets a character from a file pointer.")
   (register fgetc (Fn [(Ptr FILE)] Char))
-  (doc fwrite "writes to a file pointer.")
-  (register fwrite (Fn [a Int Int (Ptr FILE)] ()) "fwrite")
-  (doc fwrite2 "writes a C string to a file and returns the number of item written. This is a wrapper for fwrite() from the C standard library, see stdio or fwrite for details.")
-  (register fwrite2 (Fn [(Ptr CChar) Int Int (Ptr FILE)] Int) "fwrite")   ; any reason to use 'a' instead of '(Ptr CChar)' here?
+  (doc fwrite "writes a C string to a file and returns the number of item written. This is a wrapper for fwrite() from the C standard library, see stdio or fwrite for details.")
+  (register fwrite (Fn [(Ptr CChar) Int Int (Ptr FILE)] Int) "fwrite")   ; any reason to use 'a' instead of '(Ptr CChar)' here?
   (doc fread "reads from a file pointer into a pointer.")
   (register fread (Fn [a Int Int (Ptr FILE)] Int) "fread")
   (doc fflush "flushes a file pointer (i.e. commits every write).")
@@ -100,7 +98,7 @@
       (if (Result.error? &fOut?)
         (Result.Error (fmt "error=%d opening file='%s'" (Result.unsafe-from-error fOut?) file-name))
         (let-do [  fOut           (Result.unsafe-from-success fOut?)
-                   bytes-written  (fwrite2 (String.cstr content) 1 bytes2write fOut) ]
+                   bytes-written  (fwrite (String.cstr content) 1 bytes2write fOut) ]
           (fclose fOut)
           (if (Int.= bytes-written bytes2write)
             (Result.Success true)
