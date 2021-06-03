@@ -1,6 +1,16 @@
 (load "Test.carp")
 (use-all IO Test)
 
+(defn write-then-read [content file-name]
+  (let [ written? (IO.write-file content file-name) ]
+    (if (Result.error? &written?)
+      (Result.unsafe-from-error written?)
+      (let-do [ read? (IO.read-file file-name) ]
+        (IO.unlink @file-name)
+        (if (Result.error? &read?)
+          (Result.unsafe-from-error   read?)
+          (Result.unsafe-from-success read?)  )))))
+
 (deftest test
   (assert-nothing test
                   &(IO.getenv @"thisdoesnotexist")
@@ -10,4 +20,9 @@
                &(IO.getenv @"PATH")
                "getenv works on existant variable"
   )
+  (let [ data "Icke\n\tdette\n\tkieke mal,\nOochen, Flesch und Beene." ]  ; include \n in test data!
+    (assert-equal test
+                  data
+                  &(write-then-read data "io_carp_testdata.txt")  
+                  "write-file then read-file"  ))
 )
