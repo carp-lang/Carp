@@ -20,6 +20,18 @@
   (register get-char (Fn [] Char) "getchar")
   (doc read-file "returns the contents of a file passed as argument as a string.")
   (register read-file (Fn [&String] String))
+  (doc write-file "Writes a string into a (text) file, overwriting it if it already exists:\n(write-file content file-name)")
+  (defn write-file [content file-name]
+    (let [  fOut?        (open-file file-name "wb") ; open as binary so line breaks don't multiply on Windows
+            bytes2write  (String.length content) ]
+      (if (Result.error? &fOut?)
+        (Result.Error (fmt "error=%d opening file='%s'" (Result.unsafe-from-error fOut?) file-name))
+        (let-do [  fOut           (Result.unsafe-from-success fOut?)
+                   bytes-written  (fwrite2 (String.cstr content) 1 bytes2write fOut) ]
+          (fclose fOut)
+          (if (Int.= bytes-written bytes2write)
+            (Result.Success true)
+            (Result.Error (fmt "only %d of %d bytes were written" bytes-written bytes2write))  )))))
   (doc exit "exit the current program with a return code.")
   (register exit (Fn [Int] ()) "exit")
   (register EOF Char)
