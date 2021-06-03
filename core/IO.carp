@@ -46,7 +46,7 @@
   (register fflush (Fn [(Ptr FILE)] ()) "fflush")
   (doc      rewind "rewinds a file pointer, i.e. puts input and output stream to beginning (thin wrapper for the C standard library).")
   (register rewind (Fn [(Ptr FILE)] ()) "rewind")
-  (doc      unlink "unlinks a file (i.e. deletes it (thin wrapper for POSIX api in <unistd.h>).")
+  (doc      unlink "unlinks a file, i.e. deletes it (thin wrapper for POSIX api in <unistd.h>).")
   (register unlink (Fn [String] ()) "unlink")
   (doc      fseek "sets the position indicator of a file  (thin wrapper for fseek(file, offset, whence) from C standard library).")
   (register fseek (Fn [(Ptr FILE) Int Int] ()) "fseek")

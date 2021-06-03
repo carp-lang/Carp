@@ -29,7 +29,7 @@ String IO_get_MINUS_line() {
     return b;
 }
 
-String IO_read_MINUS_file(const String *filename) {
+String IO_unsafe_MINUS_read_MINUS_file(const String *filename) {
     String buffer = 0;
     Long length;
     FILE *f = fopen(*filename, "rb");
