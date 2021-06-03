@@ -72,6 +72,27 @@
 
   (doc read-file "returns the contents of a file passed as argument as a string.")
   (register read-file (Fn [&String] String))
+  (doc safe-read-file "Reads the content of a file into a (Result String String).\nIt is intended for text files, since the way to determine the length of a String is by strlen() which probably will be inaccurate for binaries:\n(safe-read-file filename).")
+  (defn safe-read-file [filename]
+    (let [  finp?  (open-file filename "rb") ]
+      (if (Result.error? &finp?)
+        (Result.Error (fmt "Failed to open file='%s', error-number=%d" filename (Result.unsafe-from-error finp?) ))
+        (let [  finput  (Result.unsafe-from-success finp?)
+                length  (do
+                            (fseek finput 0 SEEK-END)
+                            (let-do [ flength (ftell finput) ]
+                              (rewind finput)   ; aka (fseek ofile 0 SEEK-SET) 
+                              flength ))
+                buffer  (String.allocate length \0 )  ]  
+          (if (String.not-allocated? &buffer)
+            (do
+              (fclose finput)
+              (Result.Error (fmt "Failed to open buffer with size=%d from file='%s'" length filename)) )
+            (let [  bytes-read  (fread (String.cstr &buffer) 1 length finput)
+                    nop1        (fclose finput)  ]
+              (if (not (Int.= bytes-read length))
+                (Result.Error (fmt "Error: file='%s' has length=%d but bytes-read=%d" filename length bytes-read))
+                (Result.Success buffer)  )))))))
   (doc write-file "Writes a string into a (text) file, overwriting it if it already exists:\n(write-file content file-name)")
   (defn write-file [content file-name]
     (let [  fOut?        (open-file file-name "wb") ; open as binary so line breaks don't multiply on Windows
