@@ -563,7 +563,7 @@ selectConstructor xs =
 deftype :: Context -> XObj -> (Ty -> (XObj, [XObj], ModuleCreator)) -> IO (Context, Either EvalError XObj)
 deftype ctx x@(XObj (Sym (SymPath [] name) _) _ _) constructor =
   do
-    (ctxWithType, e) <- (makeType ctx name [] constructor)
+    (ctxWithType, e) <- makeType ctx name [] constructor
     case e of
       Left err -> pure (evalError ctx (show err) (xobjInfo x))
       Right t -> autoDerive ctxWithType t
@@ -588,7 +588,7 @@ makeType ctx name vars constructor =
   let qpath = (qualifyPath ctx (SymPath [] name))
       ty = StructTy (ConcreteNameTy (unqualify qpath)) vars
       (typeX, members, creator) = constructor ty
-   in case ( unwrapErr (creator ctx name vars members Nothing)
+   in case ( unwrapTypeErr ctx (creator ctx name vars members Nothing)
                >>= \(_, modx, deps) ->
                  pure (existingOr ctx qpath modx)
                    >>= \mod' ->
@@ -605,6 +605,12 @@ makeType ctx name vars constructor =
           (Binder meta (XObj (Mod (e <> ve) te) ii tt))
         _ -> (toBinder x)
     existingOr _ _ x = (toBinder x)
+
+-- | TODO: Possibly use this function in more places where currently 'unwrapErr' is
+-- used, since that function ignores contextExecMode/fppl.
+unwrapTypeErr :: Context -> Either TypeError a -> Either String a
+unwrapTypeErr ctx (Left err) = Left (typeErrorToString ctx err)
+unwrapTypeErr _ (Right x) = Right x
 
 -- | Automatically derive implementations of interfaces.
 autoDerive :: Context -> Ty -> IO (Context, Either EvalError XObj)

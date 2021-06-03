@@ -1,0 +1,1 @@
+deftype_type_var_not_in_scope.carp:3:10 deftype_type_var_not_in_scope.carp:3:21 Can't use 'b' as a type for a member variable.

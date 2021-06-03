@@ -1,0 +1,1 @@
+sumtype_type_var_not_in_scope.carp:3:10 sumtype_type_var_not_in_scope.carp:4:3 Can't use 'x' as a type for a member variable.

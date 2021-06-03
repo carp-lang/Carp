@@ -393,9 +393,6 @@ machineReadableErrorStrings fppl err =
       [machineReadableInfoFromXObj fppl xobj ++ " Main function can not have arguments, got " ++ show c ++ "."]
     (TooManyAnnotateCalls xobj) ->
       [machineReadableInfoFromXObj fppl xobj ++ " Too many annotate calls (infinite loop) when annotating '" ++ pretty xobj ++ "'."]
-    --    (InvalidMemberType msg) ->
-    -- --   msg
-
     (CannotSet xobj) ->
       [machineReadableInfoFromXObj fppl xobj ++ " Can't set! '" ++ pretty xobj ++ "'."]
     (CannotSetVariableFromLambda variable _) ->
@@ -474,6 +471,14 @@ makeEvalError ctx err msg info =
                     Nothing -> msg
            in (ctx, Left (EvalError messageWhenChecking [] fppl Nothing)) -- Passing no history to avoid appending it at the end in 'show' instance for EvalError
         _ -> (ctx, Left (EvalError msg history fppl info))
+
+-- | Converts a TypeError to a string, taking contextExecMode/fppl into account
+typeErrorToString :: Context -> TypeError -> String
+typeErrorToString ctx err =
+  let fppl = projectFilePathPrintLength (contextProj ctx)
+   in case contextExecMode ctx of
+        Check -> joinedMachineReadableErrorStrings fppl err
+        _ -> show err
 
 keysInEnvEditDistance :: SymPath -> Env -> Int -> [String]
 keysInEnvEditDistance (SymPath [] name) env distance =

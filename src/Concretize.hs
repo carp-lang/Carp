@@ -56,17 +56,19 @@ concretizeXObj allowAmbiguityRoot typeEnv rootEnv visitedDefinitions root =
     visit allowAmbig level env xobj@(XObj (Arr arr) i (Just t)) =
       do
         visited <- fmap sequence (mapM (visit allowAmbig level env) arr)
-        _ <- concretizeTypeOfXObj typeEnv xobj
-        pure $ do
-          okVisited <- visited
-          Right (XObj (Arr okVisited) i (Just t))
+        concretizeResult <- concretizeTypeOfXObj typeEnv xobj
+        whenRight concretizeResult $
+          pure $ do
+            okVisited <- visited
+            Right (XObj (Arr okVisited) i (Just t))
     visit allowAmbig level env xobj@(XObj (StaticArr arr) i (Just t)) =
       do
         visited <- fmap sequence (mapM (visit allowAmbig level env) arr)
-        _ <- concretizeTypeOfXObj typeEnv xobj
-        pure $ do
-          okVisited <- visited
-          Right (XObj (StaticArr okVisited) i (Just t))
+        concretizeResult <- concretizeTypeOfXObj typeEnv xobj
+        whenRight concretizeResult $
+          pure $ do
+            okVisited <- visited
+            Right (XObj (StaticArr okVisited) i (Just t))
     visit _ _ _ x = pure (Right x)
     visitList :: Bool -> Level -> Env -> XObj -> State [XObj] (Either TypeError [XObj])
     visitList _ _ _ (XObj (Lst []) _ _) = pure (Right [])
@@ -74,14 +76,15 @@ concretizeXObj allowAmbiguityRoot typeEnv rootEnv visitedDefinitions root =
       if not (null argsArr)
         then pure $ Left (MainCannotHaveArguments nameSymbol (length argsArr))
         else do
-          _ <- concretizeTypeOfXObj typeEnv body
-          visitedBody <- visit False Inside env body
-          pure $ do
-            okBody <- visitedBody
-            let t = fromMaybe UnitTy (xobjTy okBody)
-            if not (isTypeGeneric t) && t /= UnitTy && t /= IntTy
-              then Left (MainCanOnlyReturnUnitOrInt nameSymbol t)
-              else return [defn, nameSymbol, args, okBody]
+          concretizeResult <- concretizeTypeOfXObj typeEnv body
+          whenRight concretizeResult $ do
+            visitedBody <- visit False Inside env body
+            pure $ do
+              okBody <- visitedBody
+              let t = fromMaybe UnitTy (xobjTy okBody)
+              if not (isTypeGeneric t) && t /= UnitTy && t /= IntTy
+                then Left (MainCanOnlyReturnUnitOrInt nameSymbol t)
+                else return [defn, nameSymbol, args, okBody]
     visitList _ Toplevel env (XObj (Lst [defn@(XObj (Defn _) _ _), nameSymbol, args@(XObj (Arr argsArr) _ _), body]) _ t) =
       do
         mapM_ (concretizeTypeOfXObj typeEnv) argsArr
@@ -97,11 +100,12 @@ concretizeXObj allowAmbiguityRoot typeEnv rootEnv visitedDefinitions root =
                 argsArr
             Just funcTy = t
             allowAmbig = isTypeGeneric funcTy
-        _ <- concretizeTypeOfXObj typeEnv body
-        visitedBody <- visit allowAmbig Inside (incrementEnvNestLevel envWithArgs) body
-        pure $ do
-          okBody <- visitedBody
-          pure [defn, nameSymbol, args, okBody]
+        concretizeResult <- concretizeTypeOfXObj typeEnv body
+        whenRight concretizeResult $ do
+          visitedBody <- visit allowAmbig Inside (incrementEnvNestLevel envWithArgs) body
+          pure $ do
+            okBody <- visitedBody
+            pure [defn, nameSymbol, args, okBody]
     visitList _ Inside _ xobj@(XObj (Lst [XObj (Defn _) _ _, _, XObj (Arr _) _ _, _]) _ _) =
       pure (Left (DefinitionsMustBeAtToplevel xobj))
     visitList allowAmbig _ env (XObj (Lst [XObj (Fn _ _) fni fnt, args@(XObj (Arr argsArr) ai at), body]) i t) =
@@ -221,11 +225,12 @@ concretizeXObj allowAmbiguityRoot typeEnv rootEnv visitedDefinitions root =
       do
         visitedBindings <- fmap sequence (mapM (visit allowAmbig level env) bindings)
         visitedBody <- visit allowAmbig level env body
-        mapM_ (concretizeTypeOfXObj typeEnv . fst) (pairwise bindings)
-        pure $ do
-          okVisitedBindings <- visitedBindings
-          okVisitedBody <- visitedBody
-          pure [letExpr, XObj (Arr okVisitedBindings) bindi bindt, okVisitedBody]
+        concretizeResults <- mapM (concretizeTypeOfXObj typeEnv . fst) (pairwise bindings)
+        whenRight (sequence concretizeResults) $
+          pure $ do
+            okVisitedBindings <- visitedBindings
+            okVisitedBody <- visitedBody
+            pure [letExpr, XObj (Arr okVisitedBindings) bindi bindt, okVisitedBody]
     visitList allowAmbig level env (XObj (Lst [theExpr@(XObj The _ _), typeXObj, value]) _ _) =
       do
         visitedValue <- visit allowAmbig level env value
@@ -234,14 +239,15 @@ concretizeXObj allowAmbiguityRoot typeEnv rootEnv visitedDefinitions root =
           pure [theExpr, typeXObj, okVisitedValue]
     visitList allowAmbig level env (XObj (Lst (matchExpr@(XObj (Match _) _ _) : expr : rest)) _ _) =
       do
-        _ <- concretizeTypeOfXObj typeEnv expr
-        visitedExpr <- visit allowAmbig level env expr
-        mapM_ (concretizeTypeOfXObj typeEnv . snd) (pairwise rest)
-        visitedRest <- fmap sequence (mapM (visitMatchCase allowAmbig level env) (pairwise rest))
-        pure $ do
-          okVisitedExpr <- visitedExpr
-          okVisitedRest <- fmap concat visitedRest
-          pure ([matchExpr, okVisitedExpr] ++ okVisitedRest)
+        concretizeResult <- concretizeTypeOfXObj typeEnv expr
+        whenRight concretizeResult $ do
+          visitedExpr <- visit allowAmbig level env expr
+          mapM_ (concretizeTypeOfXObj typeEnv . snd) (pairwise rest)
+          visitedRest <- fmap sequence (mapM (visitMatchCase allowAmbig level env) (pairwise rest))
+          pure $ do
+            okVisitedExpr <- visitedExpr
+            okVisitedRest <- fmap concat visitedRest
+            pure ([matchExpr, okVisitedExpr] ++ okVisitedRest)
     visitList allowAmbig _ env (XObj (Lst [setbangExpr@(XObj SetBang _ _), variable, value]) _ _) =
       do
         visitedValue <- visit allowAmbig Inside env value
@@ -250,14 +256,16 @@ concretizeXObj allowAmbiguityRoot typeEnv rootEnv visitedDefinitions root =
           pure [setbangExpr, variable, okVisitedValue]
     visitList allowAmbig level env (XObj (Lst (func : args)) _ _) =
       do
-        _ <- concretizeTypeOfXObj typeEnv func
-        mapM_ (concretizeTypeOfXObj typeEnv) args
-        f <- visit allowAmbig level env func
-        a <- fmap sequence (mapM (visit allowAmbig level env) args)
-        pure $ do
-          okF <- f
-          okA <- a
-          pure (okF : okA)
+        concretizeResult <- concretizeTypeOfXObj typeEnv func
+        whenRight concretizeResult $ do
+          concretizeResults <- mapM (concretizeTypeOfXObj typeEnv) args
+          whenRight (sequence concretizeResults) $ do
+            f <- visit allowAmbig level env func
+            a <- fmap sequence (mapM (visit allowAmbig level env) args)
+            pure $ do
+              okF <- f
+              okA <- a
+              pure (okF : okA)
     visitList _ _ _ _ = error "visitlist"
     visitMatchCase :: Bool -> Level -> Env -> (XObj, XObj) -> State [XObj] (Either TypeError [XObj])
     visitMatchCase allowAmbig level env (lhs, rhs) =
@@ -533,7 +541,7 @@ instantiateGenericStructType typeEnv originalStructTy@(StructTy _ _) genericStru
               concretelyTypedMembers = replaceGenericTypeSymbolsOnMembers mappings memberXObjs
            in -- We only used the renamed types for validation--passing the
               -- renamed xobjs further down leads to syntactical issues.
-              case validateMembers typeEnv renamedOrig validMembers of
+              case validateMembers AllowAnyTypeVariableNames typeEnv renamedOrig validMembers of
                 Left err -> Left err
                 Right () ->
                   let deps = mapM (depsForStructMemberPair typeEnv) (pairwise concretelyTypedMembers)
@@ -572,7 +580,7 @@ instantiateGenericSumtype typeEnv originalStructTy@(StructTy _ originalTyVars) g
           let nameFixedCases = map (renameGenericTypeSymbolsOnSum (zip originalTyVars renamedOrig)) cases
               concretelyTypedCases = map (replaceGenericTypeSymbolsOnCase mappings) nameFixedCases
               deps = mapM (depsForCase typeEnv) concretelyTypedCases
-           in case toCases typeEnv renamedOrig concretelyTypedCases of -- Don't care about the cases, this is done just for validation.
+           in case toCases typeEnv AllowAnyTypeVariableNames renamedOrig concretelyTypedCases of -- Don't care about the cases, this is done just for validation.
                 Left err -> Left err
                 Right _ ->
                   case deps of
