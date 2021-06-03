@@ -8,8 +8,11 @@ String String_allocate(int len, char byte) {
      * String_alloc(10, "a") == "aaaaaaaaaa"
      */
     String ptr = CARP_MALLOC(len + 1);
-    memset(ptr, byte, len);
-    ptr[len] = '\0';
+    if( ptr!=NULL) {  
+        // calling memset(NULL,...) would exercise undefined behaviour...
+        memset(ptr, byte, len);
+        ptr[len] = '\0';
+    }
     return ptr;
 }
 
