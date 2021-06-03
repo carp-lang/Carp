@@ -138,12 +138,9 @@ concretizeXObj allowAmbiguityRoot typeEnv rootEnv visitedDefinitions root =
                 lambdaNameSymbol = XObj (Sym lambdaPath Symbol) (Just dummyInfo) Nothing
                 -- Anonymous functions bound to a let name might call themselves. These recursive instances will have already been qualified as LookupRecursive symbols.
                 -- Rename the recursive calls according to the generated lambda name so that we can call these correctly from C.
-                renameRecursives x = case x of
-                                       (XObj (Sym _ LookupRecursive) si st) -> (XObj (Sym lambdaPath LookupRecursive) si st)
-                                       y@(XObj (Lst _) _ _) -> endoMap renameRecursives y
-                                       y@(XObj (Arr _) _ _) -> endoMap renameRecursives y
-                                       _ -> x
-                recBody = (endoMap renameRecursives okBody)
+                renameRecursives (XObj (Sym _ LookupRecursive) si st) = (XObj (Sym lambdaPath LookupRecursive) si st)
+                renameRecursives x = x
+                recBody = endoMap renameRecursives okBody
                 environmentTypeName = pathToC lambdaPath ++ "_ty"
                 tyPath = (SymPath [] environmentTypeName)
                 extendedArgs =
