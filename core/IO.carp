@@ -25,7 +25,7 @@
   (register exit (Fn [Int] ()) "exit")
   (doc      EOF "the End-Of-File character as a literal (thin wrapper for the C standard library)")
   (register EOF Char)
-  (doc      fopen "opens a file for input/output/appending (thin wrapper for fopen(pathname, mode) from C standard library). Consider using the function open-file instead.")
+  (doc      fopen "opens a file for input/output/appending (thin wrapper for fopen(pathname, mode) from C standard library). Consider using the function [`open-file`](#open-file) instead.")
   (register fopen (Fn [&String &String] (Ptr FILE)))
   (doc open-file "opens a file by name using a mode (e.g. [r]ead, [w]rite, [a]ppend),  [rb] read binary...). See fopen() in the C standard library for a detailed description of valid parameters.")
   (defn open-file [filename mode]
@@ -38,9 +38,9 @@
   (register fclose (Fn [(Ptr FILE)] ()))
   (doc      fgetc "gets a character from a file pointer (thin wrapper for the C standard library).")
   (register fgetc (Fn [(Ptr FILE)] Char))
-  (doc      fwrite "writes a C-string to a file and returns the number of written items (thin wrapper for fwrite(cstr, item-size, items-count, file) from C standard library). Consider using write-file instead.")
+  (doc      fwrite "writes a C-string to a file and returns the number of written items (thin wrapper for fwrite(cstr, item-size, items-count, file) from C standard library). Consider using [`write-file`](#write-file) instead.")
   (register fwrite (Fn [(Ptr CChar) Int Int (Ptr FILE)] Int) "fwrite")   ; any reason to use 'a' instead of '(Ptr CChar)' here?
-  (doc      fread "reads from a file into C-String (thin wrapper for fread(cstr, item-size, items-count, file) from C standard library). Consider using read-file or unsafe-read-file instead.")
+  (doc      fread "reads from a file into C-String (thin wrapper for fread(cstr, item-size, items-count, file) from C standard library). Consider using [`read-file`](#read-file) or [`unsafe-read-file`](#unsafe-read-file) instead.")
   (register fread (Fn [a Int Int (Ptr FILE)] Int) "fread")
   (doc      fflush "flushes a file pointer, i.e. commits every write (thin wrapper for the C standard library).")
   (register fflush (Fn [(Ptr FILE)] ()) "fflush")
