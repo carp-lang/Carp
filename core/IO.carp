@@ -38,7 +38,7 @@
   (register fclose (Fn [(Ptr FILE)] ()))
   (doc      fgetc "gets a character from a file pointer (thin wrapper for the C standard library).")
   (register fgetc (Fn [(Ptr FILE)] Char))
-  (doc      fwrite "writes a C-string to a file and returns the number of item written items (thin wrapper for fwrite(cstr, item-size, items-count, file) from C standard library). Consider using write-file instead.")
+  (doc      fwrite "writes a C-string to a file and returns the number of written items (thin wrapper for fwrite(cstr, item-size, items-count, file) from C standard library). Consider using write-file instead.")
   (register fwrite (Fn [(Ptr CChar) Int Int (Ptr FILE)] Int) "fwrite")   ; any reason to use 'a' instead of '(Ptr CChar)' here?
   (doc      fread "reads from a file into C-String (thin wrapper for fread(cstr, item-size, items-count, file) from C standard library). Consider using read-file or safe-read-file instead.")
   (register fread (Fn [a Int Int (Ptr FILE)] Int) "fread")
