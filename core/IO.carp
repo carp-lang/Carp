@@ -40,7 +40,7 @@
   (register fgetc (Fn [(Ptr FILE)] Char))
   (doc      fwrite "writes a C-string to a file and returns the number of written items (thin wrapper for fwrite(cstr, item-size, items-count, file) from C standard library). Consider using write-file instead.")
   (register fwrite (Fn [(Ptr CChar) Int Int (Ptr FILE)] Int) "fwrite")   ; any reason to use 'a' instead of '(Ptr CChar)' here?
-  (doc      fread "reads from a file into C-String (thin wrapper for fread(cstr, item-size, items-count, file) from C standard library). Consider using read-file or safe-read-file instead.")
+  (doc      fread "reads from a file into C-String (thin wrapper for fread(cstr, item-size, items-count, file) from C standard library). Consider using read-file or unsafe-read-file instead.")
   (register fread (Fn [a Int Int (Ptr FILE)] Int) "fread")
   (doc      fflush "flushes a file pointer, i.e. commits every write (thin wrapper for the C standard library).")
   (register fflush (Fn [(Ptr FILE)] ()) "fflush")
@@ -74,10 +74,10 @@
                                (IO.fclose f)
                                (Result.Success (String.from-chars &r)))))))
 
-  (doc      read-file "returns the contents of a file passed as argument as a string.")
-  (register read-file (Fn [&String] String))
-  (doc  safe-read-file "Reads the content of a file into a (Result String String).\nIt is intended for text files, since the way to determine the length of a String is to use strlen() which probably will be inaccurate for binaries:\n(safe-read-file filename).")
-  (defn safe-read-file [filename]
+  (doc      unsafe-read-file "returns the contents of a file passed as argument as a string. Note: there is no way to distinguish the output for an empty file and a missing file!")
+  (register unsafe-read-file (Fn [&String] String))
+  (doc  read-file "Reads the content of a file into a (Result String String).\nIt is intended for text files, since the way to determine the length of a String is to use strlen() which probably will be inaccurate for binaries.")
+  (defn read-file [filename]
     (let [  finp?  (open-file filename "rb") ]
       (if (Result.error? &finp?)
         (Result.Error (fmt "Failed to open file='%s', error-number=%d" filename (Result.unsafe-from-error finp?) ))
@@ -97,7 +97,7 @@
               (if (not (Int.= bytes-read length))
                 (Result.Error (fmt "Error: file='%s' has length=%d but bytes-read=%d" filename length bytes-read))
                 (Result.Success buffer)  )))))))
-  (doc  write-file "Writes a string into a (text) file, overwriting it if it already exists:\n(write-file content file-name)")
+  (doc  write-file "Writes a string into a (text) file, overwriting it if it already exists.")
   (defn write-file [content file-name]
     (let [  fOut?        (open-file file-name "wb") ; open as binary so line breaks don't multiply on Windows
             bytes2write  (String.length content) ]
