@@ -44,12 +44,12 @@ String IO_read_MINUS_file(const String *filename) {
             assert(sz == length);
             buffer[sz] = '\0';
         } else {
-            printf("Failed to open buffer from file: %s\n", *filename);
+            fprintf(stderr, "Failed to open buffer from file: %s\n", *filename);
             buffer = String_empty();
         }
         fclose(f);
     } else {
-        printf("Failed to open file: %s\n", *filename);
+        fprintf(stderr, "Failed to open file: %s\n", *filename);
         buffer = String_empty();
     }
 
