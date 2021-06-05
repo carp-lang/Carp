@@ -144,7 +144,7 @@ concretizeXObj allowAmbiguityRoot typeEnv rootEnv visitedDefinitions root =
                 -- Rename the recursive calls according to the generated lambda name so that we can call these correctly from C.
                 renameRecursives (XObj (Sym _ LookupRecursive) si st) = (XObj (Sym lambdaPath LookupRecursive) si st)
                 renameRecursives x = x
-                recBody = endoMap renameRecursives okBody
+                recBody = walk renameRecursives okBody
                 environmentTypeName = pathToC lambdaPath ++ "_ty"
                 tyPath = (SymPath [] environmentTypeName)
                 extendedArgs =

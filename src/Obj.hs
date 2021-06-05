@@ -1124,7 +1124,7 @@ falseXObj = XObj (Bol False) Nothing Nothing
 
 -- | Applies an XObj transformation over all atomic XObjs in a form, retaining
 -- list and array structure.
-endoMap :: (XObj -> XObj) -> XObj -> XObj
-endoMap f (XObj (Arr xs) i t) = XObj (Arr (map (endoMap f) xs)) i t
-endoMap f (XObj (Lst xs) i t) = XObj (Lst (map (endoMap f) xs)) i t
-endoMap f x = f x
+walk :: (XObj -> XObj) -> XObj -> XObj
+walk f (XObj (Arr xs) i t) = XObj (Arr (map (walk f) xs)) i t
+walk f (XObj (Lst xs) i t) = XObj (Lst (map (walk f) xs)) i t
+walk f x = f x
