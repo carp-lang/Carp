@@ -1,5 +1,6 @@
 {-# LANGUAGE DeriveGeneric #-}
 {-# LANGUAGE RecordWildCards #-}
+{-# LANGUAGE PatternSynonyms #-}
 
 module Obj where
 
@@ -212,6 +213,10 @@ isLiteral (XObj (Num _ _) _ _) = True
 isLiteral (XObj (Chr _) _ _) = True
 isLiteral (XObj (Bol _) _ _) = True
 isLiteral _ = False
+
+isBool :: XObj -> Bool
+isBool (XObj (Bol _) _ _) = True
+isBool _ = False
 
 isExternalFunction :: XObj -> Bool
 isExternalFunction (XObj (Lst (XObj (External _) _ _ : _)) _ _) = True
@@ -561,7 +566,7 @@ instance Show EvalError where
         if null t
           then ""
           else
-            "\n\nTraceback:\n"
+            "\n\nTraceback:\n  "
               ++ unlines (map (\x -> prettyUpTo 60 x ++ showInfo (xobjInfo x)) t)
 
 -- | Get the type of an XObj as a string.
@@ -1121,3 +1126,8 @@ trueXObj = XObj (Bol True) Nothing Nothing
 -- | Dynamic 'false'.
 falseXObj :: XObj
 falseXObj = XObj (Bol False) Nothing Nothing
+
+isList :: XObj -> Bool
+isList (XObj (Lst _) _ _) = True
+isList _ = False
+
