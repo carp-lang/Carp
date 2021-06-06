@@ -1,5 +1,4 @@
 (system-include "carp_system.h")
-(system-include "errno.h")
 
 (defmodule System
   (doc carp-init-globals "Initializes all global variables (in correct order, based on interdependencies). Called automatically by `main` if the project is compiled as an executable. Client code needs to call this function manually when using a library written in Carp.")
@@ -29,6 +28,9 @@
   (register abort (Fn [] ()) "abort")
 
   (register errno Int "errno")
+  (doc error-text "returns a description for the last function from the C standard library to set System.errno. Please note that System.errno may change if strerror() does not know it (and thus sets it to EINVAL), so consider copying it before, if you should need it. Calling error-text after a successful call will return 'SUCCESS' and leave System.errno unchanged.")
+  (register error-text (Fn [] String) "System_error_text")
+
   (register EACCES Int "EACCES")
   (register EEXIST Int "EEXIST")
   (register EINVAL Int "EINVAL")
