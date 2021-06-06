@@ -1131,3 +1131,9 @@ isList :: XObj -> Bool
 isList (XObj (Lst _) _ _) = True
 isList _ = False
 
+-- | Applies an XObj transformation over all atomic XObjs in a form, retaining
+-- list and array structure.
+walk :: (XObj -> XObj) -> XObj -> XObj
+walk f (XObj (Arr xs) i t) = XObj (Arr (map (walk f) xs)) i t
+walk f (XObj (Lst xs) i t) = XObj (Lst (map (walk f) xs)) i t
+walk f x = f x
