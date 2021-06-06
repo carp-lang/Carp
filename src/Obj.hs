@@ -1121,3 +1121,10 @@ trueXObj = XObj (Bol True) Nothing Nothing
 -- | Dynamic 'false'.
 falseXObj :: XObj
 falseXObj = XObj (Bol False) Nothing Nothing
+
+-- | Applies an XObj transformation over all atomic XObjs in a form, retaining
+-- list and array structure.
+walk :: (XObj -> XObj) -> XObj -> XObj
+walk f (XObj (Arr xs) i t) = XObj (Arr (map (walk f) xs)) i t
+walk f (XObj (Lst xs) i t) = XObj (Lst (map (walk f) xs)) i t
+walk f x = f x
