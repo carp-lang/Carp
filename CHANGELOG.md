@@ -1,7 +1,7 @@
 # 0.5.1
 - fix: Don't crash on invalid member in struct / sumtype (#1228)
 - feat: Additional local documentation as html  (#1229)
-- feat: Remove `address` (#1223)
+- feat: Remove `address` as a special form, it is now `Pointer.address` (#1223)
 - feat: Add Dynamic.get-env and Dynamic.set-env (#1227)
 - fix: Unify aupdate and aupdate! with other update functions  (#1220)
 - fix: Allow function arguments to shadow commands (#1217)
