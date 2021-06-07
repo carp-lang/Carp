@@ -86,6 +86,7 @@ instance Show Malformed where
                  (MacroPat sym _ _) -> getName sym
                  (CommandPat _ sym _) -> getName sym
                  (PrimitivePat _ sym _) -> getName sym
+                 XObj Ref _ _ -> "ref"
                  _ -> pretty form
      in name ++ " expected "
           ++ show lenExpected
@@ -100,6 +101,7 @@ instance Show Malformed where
                  (MacroPat sym _ _) -> getName sym
                  (CommandPat _ sym _) -> getName sym
                  (PrimitivePat _ sym _) -> getName sym
+                 XObj Ref _ _ -> "ref"
                  _ -> pretty form
      in name ++ " expected "
           ++ show lenExpected
@@ -199,6 +201,7 @@ validate xs =
     AppPat (MacroPat _ _ _) _ -> validateApp xs
     AppPat (CommandPat _ _ _) _ -> validateApp xs
     AppPat (PrimitivePat _ _ _) _ -> validateApp xs
+    AppPat (XObj Ref _ _) _ -> validateApp xs
     _ -> Right xs
 
 -- TODO: Complete validation of if currently relies on evaluating its condition
@@ -282,6 +285,9 @@ validateDo doo = Left (GenericMalformed (XObj (Lst doo) Nothing Nothing))
 
 -- | Validation of (function arguments) function applications.
 validateApp :: [XObj] -> Either Malformed [XObj]
+-- Special case for Refs
+validateApp x@(AppPat f@(XObj Ref _ _) args) =
+  checkAppArity f [(XObj (Sym (SymPath [] "x") Symbol) Nothing Nothing)] args >> Right x
 validateApp x@(AppPat f@(ClosurePat params _ _) args) =
   checkAppArity f params args >> Right x
 validateApp x@(AppPat f@(DynamicFnPat _ params _) args) =

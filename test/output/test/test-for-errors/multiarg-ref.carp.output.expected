@@ -1,1 +1,3 @@
-multiarg-ref.carp:2:1 `ref` takes a single argument, but I got `(ref 1 2)`.
+multiarg-ref.carp:2:2 [ERROR] ref expected 1 arguments but received 2.
+
+The arguments 2 are not needed.
