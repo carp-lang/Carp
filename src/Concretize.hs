@@ -5,11 +5,10 @@ module Concretize where
 import AssignTypes
 import Constraints
 import Control.Monad.State
-import Data.Either (fromRight)
 import Data.List (foldl')
 import Data.Maybe (fromMaybe)
 import Debug.Trace
-import Env (envIsExternal, findPoly, getTypeBinder, getValue, insert, insertX, lookupEverywhere, searchValue)
+import Env (envIsExternal, getTypeBinder, insert, insertX, searchValue)
 import FindFunction
 import Info
 import InitialTypes
@@ -17,9 +16,7 @@ import Managed
 import qualified Map
 import Memory (manageMemory)
 import Obj
-import Polymorphism
 import Reify
-import Set ((\\))
 import qualified Set
 import SumtypeCase
 import ToTemplate
