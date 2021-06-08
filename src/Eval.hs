@@ -204,6 +204,7 @@ eval ctx xobj@(XObj o info ty) preference resolver =
             (WithPat (SymPat sym path) forms) -> specialCommandWith ctx sym path forms
             (DoPat forms) -> evaluateSideEffects forms
             (WhilePat cond body) -> specialCommandWhile ctx cond body
+            (SetPat iden value) -> specialCommandSet ctx (iden:[value])
             -- This next match is a bit redundant looking at first glance, but
             -- it is necessary to prevent hangs on input such as: `((def foo 2)
             -- 4)`. Ideally, we could perform only *one* static check (the one
@@ -217,14 +218,14 @@ eval ctx xobj@(XObj o info ty) preference resolver =
             -- Importantly, the loop *is only broken on literal nested lists*.
             -- That is, passing a *symbol* that, e.g. resolves to a defn list, won't
             -- break our normal loop.
-            (AppPat (ListPat self ((SymPat x _):xs)) args) ->
+            (AppPat (ListPat self ((SymPat x _):_)) args) ->
               do (_, evald) <- eval ctx x preference ResolveGlobal
                  case evald of
                    Left err -> pure (evalError ctx (show err) (xobjInfo xobj))
                    Right x' -> case checkStatic' x' of
-                                 Right _ -> evaluateApp ((XObj (Lst (x':xs)) (xobjInfo self) (xobjTy self)):args)
+                                 Right _ -> evaluateApp (self:args)
                                  Left er -> pure (evalError ctx (show er) (xobjInfo xobj))
-            (SetPat iden value) -> specialCommandSet ctx (iden:[value])
+            (AppPat (ListPat _ _) _)  -> evaluateApp form'
             (AppPat (SymPat _ _) _)  -> evaluateApp form'
             [] -> pure (ctx, dynamicNil)
             _ -> pure (throwErr (UnknownForm xobj) ctx (xobjInfo xobj))
@@ -397,11 +398,11 @@ eval ctx xobj@(XObj o info ty) preference resolver =
     evaluateApp :: Evaluator
     evaluateApp (AppPat f' args) =
       case f' of
-        (ListPat l _) -> go l
-        (SymPat sym _) -> go sym
+        (ListPat l _) -> go l ResolveLocal
+        (SymPat sym _) -> go sym resolver
         _ -> pure (evalError ctx (format (GenericMalformed xobj)) (xobjInfo xobj))
-      where go x =
-              do (newCtx, f) <- eval ctx x preference ResolveLocal
+      where go x resolve =
+              do (newCtx, f) <- eval ctx x preference resolve
                  case f of
                    Right fun -> do
                      (newCtx', res) <- eval (pushFrame newCtx xobj) (XObj (Lst (fun : args)) (xobjInfo x) (xobjTy x)) preference ResolveLocal
