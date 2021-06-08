@@ -14,6 +14,7 @@ import Concretize
 import Constraints
 import GenerateConstraints
 import InitialTypes
+import Memory
 import Obj
 import Qualify
 import TypeError
@@ -28,7 +29,8 @@ annotate typeEnv globalEnv qualifiedXObj rootSig =
   do
     initiated <- initialTypes typeEnv globalEnv (unQualified qualifiedXObj)
     (annotated, dependencies) <- annotateUntilDone typeEnv globalEnv initiated rootSig [] 100
-    (final, deleteDeps) <- manageMemory typeEnv globalEnv annotated
+    (final, deleteDepsTys) <- manageMemory typeEnv globalEnv annotated
+    let deleteDeps = depsForDeleteFuncs typeEnv globalEnv deleteDepsTys
     finalWithNiceTypes <- beautifyTypeVariables final
     pure (finalWithNiceTypes, dependencies ++ deleteDeps)
 

@@ -702,7 +702,8 @@ concretizeDefinition allowAmbiguity typeEnv globalEnv visitedDefinitions definit
                     then pure (withNewPath, [])
                     else do
                       (concrete, deps) <- concretizeXObj allowAmbiguity typeEnv globalEnv (newPath : visitedDefinitions) typed
-                      (managed, memDeps) <- manageMemory typeEnv globalEnv concrete
+                      (managed, memDepsTys) <- manageMemory typeEnv globalEnv concrete
+                      let memDeps = depsForDeleteFuncs typeEnv globalEnv memDepsTys
                       pure (managed, deps ++ memDeps)
                 Left e -> Left e
         XObj (Lst (XObj (Defn _) _ _ : _)) _ _ ->
@@ -714,7 +715,8 @@ concretizeDefinition allowAmbiguity typeEnv globalEnv visitedDefinitions definit
                     then pure (withNewPath, [])
                     else do
                       (concrete, deps) <- concretizeXObj allowAmbiguity typeEnv globalEnv (newPath : visitedDefinitions) typed
-                      (managed, memDeps) <- manageMemory typeEnv globalEnv concrete
+                      (managed, memDepsTys) <- manageMemory typeEnv globalEnv concrete
+                      let memDeps = depsForDeleteFuncs typeEnv globalEnv memDepsTys
                       pure (managed, deps ++ memDeps)
                 Left e -> Left e
         XObj (Lst (XObj (Deftemplate (TemplateCreator templateCreator)) _ _ : _)) _ _ ->
@@ -764,6 +766,10 @@ depsForDeleteFunc typeEnv env t =
   if isManaged typeEnv env t
     then depsOfPolymorphicFunction typeEnv env [] "delete" (FuncTy [t] UnitTy StaticLifetimeTy)
     else []
+
+-- | Helper for finding the 'delete' functions for several types.
+depsForDeleteFuncs :: TypeEnv -> Env -> Set.Set Ty -> [XObj]
+depsForDeleteFuncs typeEnv env tys = concatMap (depsForDeleteFunc typeEnv env) (Set.toList tys)
 
 -- | Helper for finding the 'copy' function for a type.
 depsForCopyFunc :: TypeEnv -> Env -> Ty -> [XObj]
@@ -828,6 +834,21 @@ concreteDeleteTakePtr typeEnv env members =
           (filter (isManaged typeEnv env) (map snd members))
     )
 
+-- | Generate the C code for deleting a single member of the deftype.
+-- | TODO: Should return an Either since this can fail!
+memberDeletionGeneral :: String -> TypeEnv -> Env -> (String, Ty) -> String
+memberDeletionGeneral separator typeEnv env (memberName, memberType) =
+  case findFunctionForMember typeEnv env "delete" (typesDeleterFunctionType memberType) (memberName, memberType) of
+    FunctionFound functionFullName -> "    " ++ functionFullName ++ "(p" ++ separator ++ memberName ++ ");"
+    FunctionNotFound msg -> error msg
+    FunctionIgnored -> "    /* Ignore non-managed member '" ++ memberName ++ "' : " ++ show memberType ++ " */"
+
+memberDeletion :: TypeEnv -> Env -> (String, Ty) -> String
+memberDeletion = memberDeletionGeneral "."
+
+memberRefDeletion :: TypeEnv -> Env -> (String, Ty) -> String
+memberRefDeletion = memberDeletionGeneral "Ref->"
+
 -- | The template for the 'copy' function of a concrete deftype.
 concreteCopy :: TypeEnv -> Env -> [(String, Ty)] -> Template
 concreteCopy typeEnv env memberPairs =
@@ -852,3 +873,54 @@ concreteCopyPtr typeEnv env memberPairs =
           (depsOfPolymorphicFunction typeEnv env [] "copy" . typesCopyFunctionType)
           (filter (isManaged typeEnv env) (map snd memberPairs))
     )
+
+tokensForCopy :: TypeEnv -> Env -> [(String, Ty)] -> [Token]
+tokensForCopy typeEnv env memberPairs =
+  toTemplate $
+    unlines
+      [ "$DECL {",
+        "    $p copy = *pRef;",
+        joinLines (map (memberCopy typeEnv env) memberPairs),
+        "    return copy;",
+        "}"
+      ]
+
+-- | Generate the C code for copying the member of a deftype.
+-- | TODO: Should return an Either since this can fail!
+memberCopy :: TypeEnv -> Env -> (String, Ty) -> String
+memberCopy typeEnv env (memberName, memberType) =
+  case findFunctionForMember typeEnv env "copy" (typesCopyFunctionType memberType) (memberName, memberType) of
+    FunctionFound functionFullName ->
+      "    copy." ++ memberName ++ " = " ++ functionFullName ++ "(&(pRef->" ++ memberName ++ "));"
+    FunctionNotFound msg -> error msg
+    FunctionIgnored -> "    /* Ignore non-managed member '" ++ memberName ++ "' : " ++ show memberType ++ " */"
+
+tokensForCopyPtr :: TypeEnv -> Env -> [(String, Ty)] -> [Token]
+tokensForCopyPtr typeEnv env memberPairs =
+  toTemplate $
+    unlines
+      [ "$DECL {",
+        "    $p* copy = CARP_MALLOC(sizeof(*pRef));",
+        "    *copy = *pRef;",
+        joinLines (map (memberCopyPtr typeEnv env) memberPairs),
+        "    return copy;",
+        "}"
+      ]
+
+memberCopyPtr :: TypeEnv -> Env -> (String, Ty) -> String
+memberCopyPtr typeEnv env (memberName, memberType) =
+  case findFunctionForMember typeEnv env "copy" (typesCopyFunctionType memberType) (memberName, memberType) of
+    FunctionFound functionFullName ->
+      "    copy->" ++ memberName ++ " = " ++ functionFullName ++ "(&(pRef->" ++ memberName ++ "));"
+    FunctionNotFound msg -> error msg
+    FunctionIgnored -> "    /* Ignore non-managed member '" ++ memberName ++ "' : " ++ show memberType ++ " */"
+
+suffixTyVars :: String -> Ty -> Ty
+suffixTyVars suffix t =
+  case t of
+    VarTy key -> VarTy (key ++ suffix)
+    FuncTy argTys retTy ltTy -> FuncTy (map (suffixTyVars suffix) argTys) (suffixTyVars suffix retTy) (suffixTyVars suffix ltTy)
+    StructTy name tyArgs -> StructTy name (fmap (suffixTyVars suffix) tyArgs)
+    PointerTy x -> PointerTy (suffixTyVars suffix x)
+    RefTy x lt -> RefTy (suffixTyVars suffix x) (suffixTyVars suffix lt)
+    _ -> t

@@ -2,72 +2,25 @@
 
 module Memory where
 
-import AssignTypes
-import Constraints
 import Control.Monad.State
-import Data.Either (fromRight)
-import Data.List (foldl')
-import Data.Maybe (fromMaybe)
-import Debug.Trace
-import Env (envIsExternal, findPoly, getTypeBinder, getValue, insert, insertX, lookupEverywhere, searchValue)
-import FindFunction
 import Info
-import InitialTypes
 import Managed
 import qualified Map
 import Obj
 import Polymorphism
-import Reify
 import Set ((\\))
 import qualified Set
-import SumtypeCase
-import ToTemplate
 import TypeError
-import TypePredicates
 import Types
-import TypesToC
 import Util
-import Validate
 import Prelude hiding (lookup)
-
--- | Assign a set of Deleters to the 'infoDelete' field on Info.
-setDeletersOnInfo :: Maybe Info -> Set.Set Deleter -> Maybe Info
-setDeletersOnInfo i deleters = fmap (\i' -> i' {infoDelete = deleters}) i
-
-addDeletersToInfo :: Maybe Info -> Set.Set Deleter -> Maybe Info
-addDeletersToInfo i deleters =
-  fmap (\i' -> i' {infoDelete = Set.union (infoDelete i') deleters}) i
-
--- | Helper function for setting the deleters for an XObj.
-del :: XObj -> Set.Set Deleter -> XObj
-del xobj deleters = xobj {xobjInfo = setDeletersOnInfo (xobjInfo xobj) deleters}
-
--- | Differentiate between lifetimes depending on variables in a lexical scope and depending on something outside the function
-data LifetimeMode
-  = LifetimeInsideFunction String
-  | LifetimeOutsideFunction
-  deriving (Show)
-
--- | To keep track of the deleters when recursively walking the form.
-data MemState = MemState
-  { memStateDeleters :: Set.Set Deleter,
-    memStateDeps :: [XObj],
-    memStateLifetimes :: Map.Map String LifetimeMode
-  }
-  deriving (Show)
-
-prettyLifetimeMappings :: Map.Map String LifetimeMode -> String
-prettyLifetimeMappings mappings =
-  joinLines (map prettyMapping (Map.toList mappings))
-  where
-    prettyMapping (key, value) = "  " ++ key ++ " => " ++ show value
 
 -- | Find out what deleters are needed and where in an XObj.
 -- | Deleters will be added to the info field on XObj so that
 -- | the code emitter can access them and insert calls to destructors.
-manageMemory :: TypeEnv -> Env -> XObj -> Either TypeError (XObj, [XObj])
+manageMemory :: TypeEnv -> Env -> XObj -> Either TypeError (XObj, Set.Set Ty)
 manageMemory typeEnv globalEnv root =
-  let (finalObj, finalState) = runState (visit root) (MemState (Set.fromList []) [] Map.empty)
+  let (finalObj, finalState) = runState (visit root) (MemState Set.empty Set.empty Map.empty)
       deleteThese = memStateDeleters finalState
       deps = memStateDeps finalState
    in -- (trace ("Delete these: " ++ joinWithComma (map show (Set.toList deleteThese)))) $
@@ -78,7 +31,7 @@ manageMemory typeEnv globalEnv root =
            in -- This final check of lifetimes works on the lifetimes mappings after analyzing the function form, and
               --  after all the local variables in it have been deleted. This is needed for values that are created
               --  directly in body position, e.g. (defn f [] &[1 2 3])
-              case evalState (checkThatRefTargetIsAlive ok) (MemState (Set.fromList []) [] (memStateLifetimes finalState)) of
+              case evalState (checkThatRefTargetIsAlive ok) (MemState Set.empty Set.empty (memStateLifetimes finalState)) of
                 Left err -> Left err
                 Right _ -> Right (ok {xobjInfo = newInfo}, deps)
   where
@@ -137,7 +90,7 @@ manageMemory typeEnv globalEnv root =
                       error ("No deleter found for Static Array : " ++ show t) --Just (FakeDeleter var)
               MemState deleters deps lifetimes <- get
               let newDeleters = Set.insert deleter deleters
-                  newDeps = deps ++ depsForDeleteFunc typeEnv globalEnv t
+                  newDeps = Set.insert t deps
                   newState = MemState newDeleters newDeps lifetimes
               put newState --(trace (show newState) newState)
               pure (Right xobj)
@@ -367,7 +320,7 @@ manageMemory typeEnv globalEnv root =
                 delsTrue = Set.union (deletedInFalse \\ deletedInBoth) createdAndDeletedInTrue
                 delsFalse = Set.union (deletedInTrue \\ deletedInBoth) createdAndDeletedInFalse
                 stillAliveAfter = preDeleters \\ Set.union deletedInTrue deletedInFalse
-                depsAfter = memStateDeps stillAliveTrue ++ memStateDeps stillAliveFalse ++ deps -- Note: This merges all previous deps and the new ones, could be optimized..?!
+                depsAfter = Set.union (Set.union (memStateDeps stillAliveTrue) (memStateDeps stillAliveFalse)) deps -- Note: This merges all previous deps and the new ones, could be optimized..?!
 
             -- traceDeps = trace ("IF-deleters for " ++ pretty xobj ++ " at " ++ prettyInfoFromXObj xobj ++ " " ++ identifierStr xobj ++ ":\n" ++
             --                    "preDeleters: " ++ show preDeleters ++ "\n" ++
@@ -412,10 +365,10 @@ manageMemory typeEnv globalEnv root =
                     Left e -> pure (Left e)
                     Right okCasesAndDeps ->
                       let visitedCases = map fst okCasesAndDeps
-                          depsFromCases = concatMap snd okCasesAndDeps
+                          depsFromCases = Set.unions (map snd okCasesAndDeps)
                           (finalXObj, postDeleters) = figureOutStuff okVisitedExpr visitedCases preDeleters
                        in do
-                            put (MemState postDeleters (deps ++ depsFromCases) lifetimes)
+                            put (MemState postDeleters (Set.union deps depsFromCases) lifetimes)
                             manage xobj
                             pure (Right finalXObj)
           where
@@ -492,7 +445,7 @@ manageMemory typeEnv globalEnv root =
       let newElems = map (searchForInnerBreak diff) elems
        in XObj (Lst newElems) i' t'
     searchForInnerBreak _ e = e
-    visitMatchCase :: (XObj, XObj) -> State MemState (Either TypeError ((Set.Set Deleter, (XObj, XObj)), [XObj]))
+    visitMatchCase :: (XObj, XObj) -> State MemState (Either TypeError ((Set.Set Deleter, (XObj, XObj)), Set.Set Ty))
     visitMatchCase (lhs@XObj {}, rhs@XObj {}) =
       do
         MemState preDeleters _ _ <- get
@@ -663,7 +616,7 @@ manageMemory typeEnv globalEnv root =
             MemState deleters deps lifetimes <- get
             let newDeleters = Set.insert deleter deleters
                 Just t = xobjTy xobj
-                newDeps = deps ++ depsForDeleteFunc typeEnv globalEnv t
+                newDeps = Set.insert t deps
             put (MemState newDeleters newDeps lifetimes)
           Nothing -> pure ()
     deletersMatchingXObj :: XObj -> Set.Set Deleter -> [Deleter]
@@ -726,6 +679,39 @@ manageMemory typeEnv globalEnv root =
             manage to --(trace ("Transfered from " ++ getName from ++ " '" ++ varOfXObj from ++ "' to " ++ getName to ++ " '" ++ varOfXObj to ++ "'") to)
             pure (Right ())
 
+-- | Assign a set of Deleters to the 'infoDelete' field on Info.
+setDeletersOnInfo :: Maybe Info -> Set.Set Deleter -> Maybe Info
+setDeletersOnInfo i deleters = fmap (\i' -> i' {infoDelete = deleters}) i
+
+addDeletersToInfo :: Maybe Info -> Set.Set Deleter -> Maybe Info
+addDeletersToInfo i deleters =
+  fmap (\i' -> i' {infoDelete = Set.union (infoDelete i') deleters}) i
+
+-- | Helper function for setting the deleters for an XObj.
+del :: XObj -> Set.Set Deleter -> XObj
+del xobj deleters = xobj {xobjInfo = setDeletersOnInfo (xobjInfo xobj) deleters}
+
+-- | Differentiate between lifetimes depending on variables in a lexical scope and depending on something outside the function
+data LifetimeMode
+  = LifetimeInsideFunction String
+  | LifetimeOutsideFunction
+  deriving (Show)
+
+-- | To keep track of the deleters when recursively walking the form.
+-- To avoid having to concretize the deleters here, they are just stored as their Ty in `memStateDeps`.
+data MemState = MemState
+  { memStateDeleters :: Set.Set Deleter,
+    memStateDeps :: Set.Set Ty,
+    memStateLifetimes :: Map.Map String LifetimeMode
+  }
+  deriving (Show)
+
+prettyLifetimeMappings :: Map.Map String LifetimeMode -> String
+prettyLifetimeMappings mappings =
+  joinLines (map prettyMapping (Map.toList mappings))
+  where
+    prettyMapping (key, value) = "  " ++ key ++ " => " ++ show value
+
 varOfXObj :: XObj -> String
 varOfXObj xobj =
   case xobj of
@@ -733,72 +719,3 @@ varOfXObj xobj =
     _ -> case xobjInfo xobj of
       Just i -> freshVar i
       Nothing -> error ("Missing info on " ++ show xobj)
-
-suffixTyVars :: String -> Ty -> Ty
-suffixTyVars suffix t =
-  case t of
-    VarTy key -> VarTy (key ++ suffix)
-    FuncTy argTys retTy ltTy -> FuncTy (map (suffixTyVars suffix) argTys) (suffixTyVars suffix retTy) (suffixTyVars suffix ltTy)
-    StructTy name tyArgs -> StructTy name (fmap (suffixTyVars suffix) tyArgs)
-    PointerTy x -> PointerTy (suffixTyVars suffix x)
-    RefTy x lt -> RefTy (suffixTyVars suffix x) (suffixTyVars suffix lt)
-    _ -> t
-
--- | The following functions will generate deleters and copy:ing methods for structs, they are shared with the Deftype module
-data AllocationMode = StackAlloc | HeapAlloc
-
--- | Generate the C code for deleting a single member of the deftype.
--- | TODO: Should return an Either since this can fail!
-memberDeletionGeneral :: String -> TypeEnv -> Env -> (String, Ty) -> String
-memberDeletionGeneral separator typeEnv env (memberName, memberType) =
-  case findFunctionForMember typeEnv env "delete" (typesDeleterFunctionType memberType) (memberName, memberType) of
-    FunctionFound functionFullName -> "    " ++ functionFullName ++ "(p" ++ separator ++ memberName ++ ");"
-    FunctionNotFound msg -> error msg
-    FunctionIgnored -> "    /* Ignore non-managed member '" ++ memberName ++ "' : " ++ show memberType ++ " */"
-
-memberDeletion :: TypeEnv -> Env -> (String, Ty) -> String
-memberDeletion = memberDeletionGeneral "."
-
-memberRefDeletion :: TypeEnv -> Env -> (String, Ty) -> String
-memberRefDeletion = memberDeletionGeneral "Ref->"
-
-tokensForCopy :: TypeEnv -> Env -> [(String, Ty)] -> [Token]
-tokensForCopy typeEnv env memberPairs =
-  toTemplate $
-    unlines
-      [ "$DECL {",
-        "    $p copy = *pRef;",
-        joinLines (map (memberCopy typeEnv env) memberPairs),
-        "    return copy;",
-        "}"
-      ]
-
--- | Generate the C code for copying the member of a deftype.
--- | TODO: Should return an Either since this can fail!
-memberCopy :: TypeEnv -> Env -> (String, Ty) -> String
-memberCopy typeEnv env (memberName, memberType) =
-  case findFunctionForMember typeEnv env "copy" (typesCopyFunctionType memberType) (memberName, memberType) of
-    FunctionFound functionFullName ->
-      "    copy." ++ memberName ++ " = " ++ functionFullName ++ "(&(pRef->" ++ memberName ++ "));"
-    FunctionNotFound msg -> error msg
-    FunctionIgnored -> "    /* Ignore non-managed member '" ++ memberName ++ "' : " ++ show memberType ++ " */"
-
-tokensForCopyPtr :: TypeEnv -> Env -> [(String, Ty)] -> [Token]
-tokensForCopyPtr typeEnv env memberPairs =
-  toTemplate $
-    unlines
-      [ "$DECL {",
-        "    $p* copy = CARP_MALLOC(sizeof(*pRef));",
-        "    *copy = *pRef;",
-        joinLines (map (memberCopyPtr typeEnv env) memberPairs),
-        "    return copy;",
-        "}"
-      ]
-
-memberCopyPtr :: TypeEnv -> Env -> (String, Ty) -> String
-memberCopyPtr typeEnv env (memberName, memberType) =
-  case findFunctionForMember typeEnv env "copy" (typesCopyFunctionType memberType) (memberName, memberType) of
-    FunctionFound functionFullName ->
-      "    copy->" ++ memberName ++ " = " ++ functionFullName ++ "(&(pRef->" ++ memberName ++ "));"
-    FunctionNotFound msg -> error msg
-    FunctionIgnored -> "    /* Ignore non-managed member '" ++ memberName ++ "' : " ++ show memberType ++ " */"

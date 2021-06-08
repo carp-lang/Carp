@@ -29,6 +29,7 @@ library
                        EvalError,
                        Eval,
                        Expand,
+                       FindFunction,
                        Forms,
                        GenerateConstraints,
                        Infer,

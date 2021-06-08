@@ -3,6 +3,7 @@
 module ArrayTemplates where
 
 import Concretize
+import FindFunction
 import Obj
 import StructUtils
 import Template
