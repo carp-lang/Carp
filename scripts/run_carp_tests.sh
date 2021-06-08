@@ -25,6 +25,7 @@ echo "Build and run some tests that print (check their output)"
 ./test/execute.sh ./test/produces-output/globals.carp
 ./test/execute.sh ./test/produces-output/lambdas.carp
 ./test/execute.sh ./test/produces-output/setting_variables.carp
+./test/execute.sh ./test/produces-output/repl.carp
 
 echo "Actual tests (using the test suite)"
 for f in ./test/*.carp; do
