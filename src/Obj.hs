@@ -1,6 +1,6 @@
 {-# LANGUAGE DeriveGeneric #-}
-{-# LANGUAGE RecordWildCards #-}
 {-# LANGUAGE PatternSynonyms #-}
+{-# LANGUAGE RecordWildCards #-}
 
 module Obj where
 
@@ -1022,6 +1022,15 @@ unwrapBoolXObj x = Left ("The value '" ++ pretty x ++ "' at " ++ prettyInfoFromX
 unwrapSymPathXObj :: XObj -> Either String SymPath
 unwrapSymPathXObj (XObj (Sym p _) _ _) = Right p
 unwrapSymPathXObj x = Left ("The value '" ++ pretty x ++ "' at " ++ prettyInfoFromXObj x ++ " is not a Symbol.")
+
+-- | Gives the name used to refer to a specific XObj (in emitted code)
+varOfXObj :: XObj -> String
+varOfXObj xobj =
+  case xobj of
+    XObj (Sym path _) _ _ -> pathToC path
+    _ -> case xobjInfo xobj of
+      Just i -> freshVar i
+      Nothing -> error ("Missing info on " ++ show xobj)
 
 -- | Given a form, what definition mode will it generate?
 definitionMode :: XObj -> DefinitionMode

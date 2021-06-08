@@ -10,6 +10,8 @@ module Info
     freshVar,
     machineReadableInfo,
     makeTypeVariableNameFromInfo,
+    setDeletersOnInfo,
+    addDeletersToInfo,
   )
 where
 
@@ -105,3 +107,12 @@ makeTypeVariableNameFromInfo :: Maybe Info -> String
 makeTypeVariableNameFromInfo (Just i) =
   "tyvar-from-info-" ++ show (infoIdentifier i) ++ "_" ++ show (infoLine i) ++ "_" ++ show (infoColumn i)
 makeTypeVariableNameFromInfo Nothing = error "unnamed-typevariable"
+
+-- | Assign a set of Deleters to the 'infoDelete' field on Info.
+setDeletersOnInfo :: Maybe Info -> Set.Set Deleter -> Maybe Info
+setDeletersOnInfo i deleters = fmap (\i' -> i' {infoDelete = deleters}) i
+
+-- | Add to the set of Deleters in the 'infoDelete' field on Info.
+addDeletersToInfo :: Maybe Info -> Set.Set Deleter -> Maybe Info
+addDeletersToInfo i deleters =
+  fmap (\i' -> i' {infoDelete = Set.union (infoDelete i') deleters}) i
