@@ -3,62 +3,64 @@
 (register-type FILE)
 
 (defmodule IO
+  (doc      stdin "the standard input file (thin wrapper for the C standard library).")
   (register stdin (Ptr FILE) "stdin")
+  (doc      stdout "the standard output file (thin wrapper for the C standard library).")
   (register stdout (Ptr FILE) "stdout")
+  (doc      stderr "the standard error file (thin wrapper for the C standard library).")
   (register stderr (Ptr FILE) "stderr")
-  (doc println "prints a string ref to stdout, appends a newline.")
+  (doc      println "prints a string ref to stdout, appends a newline.")
   (register println (Fn [(Ref String)] ()))
-  (doc print "prints a string ref to stdout, does not append a newline.")
+  (doc      print "prints a string ref to stdout, does not append a newline.")
   (register print (Fn [(Ref String)] ()))
-  (doc errorln "prints a string ref to stderr, appends a newline.")
+  (doc      errorln "prints a string ref to stderr, appends a newline.")
   (register errorln (Fn [(Ref String)] ()))
-  (doc error "prints a string ref to stderr, does not append a newline.")
+  (doc      error "prints a string ref to stderr, does not append a newline.")
   (register error (Fn [(Ref String)] ()))
-  (doc get-line "gets a line from stdin.")
+  (doc      get-line "gets a line from stdin.")
   (register get-line (Fn [] String))
-  (doc get-char "gets a character from stdin.")
+  (doc      get-char "gets a character from stdin (thin wrapper for getchar() from C standard library).")
   (register get-char (Fn [] Char) "getchar")
-  (doc read-file "returns the contents of a file passed as argument as a string.")
-  (register read-file (Fn [&String] String))
-  (doc exit "exit the current program with a return code.")
+  (doc      exit "exit the current program with a return code (thin wrapper for the C standard library).")
   (register exit (Fn [Int] ()) "exit")
+  (doc      EOF "the End-Of-File character as a literal (thin wrapper for the C standard library)")
   (register EOF Char)
-  (doc EOF "the End-Of-File character as a literal.")
-  (doc fopen "opens a file by name using a mode (one or multiple of [r]ead, [w]rite, and [a]ppend), returns a file pointer. Consider using the function open-file instead.")
+  (doc      fopen "opens a file for input/output/appending (thin wrapper for fopen(pathname, mode) from C standard library). Consider using the function [`open-file`](#open-file) instead.")
   (register fopen (Fn [&String &String] (Ptr FILE)))
-
-  (doc open-file "opens a file by name using a mode (one or multiple of [r]ead, [w]rite, and [a]ppend), returns a Result type that contains an error string or a file pointer.")
+  (doc open-file "opens a file by name using a mode (e.g. [r]ead, [w]rite, [a]ppend),  [rb] read binary...). See fopen() in the C standard library for a detailed description of valid parameters.")
   (defn open-file [filename mode]
     (let [ptr (IO.fopen filename mode)]
       (if (null? ptr)
         (do
           (Result.Error System.errno))
         (Result.Success ptr))))
-
-  (doc fclose "closes a file pointer.")
+  (doc      fclose "closes a file pointer (thin wrapper for the C standard library).")
   (register fclose (Fn [(Ptr FILE)] ()))
-  (doc fgetc "gets a character from a file pointer.")
+  (doc      fgetc "gets a character from a file pointer (thin wrapper for the C standard library).")
   (register fgetc (Fn [(Ptr FILE)] Char))
-  (doc fwrite "writes to a file pointer.")
-  (register fwrite (Fn [a Int Int (Ptr FILE)] ()) "fwrite")
-  (doc fread "reads from a file pointer into a pointer.")
+  (doc      fwrite "writes a C-string to a file and returns the number of written items (thin wrapper for fwrite(cstr, item-size, items-count, file) from C standard library). Consider using [`write-file`](#write-file) instead.")
+  (register fwrite (Fn [(Ptr CChar) Int Int (Ptr FILE)] Int) "fwrite")   ; any reason to use 'a' instead of '(Ptr CChar)' here?
+  (doc      fread "reads from a file into C-String (thin wrapper for fread(cstr, item-size, items-count, file) from C standard library). Consider using [`read-file`](#read-file) or [`unsafe-read-file`](#unsafe-read-file) instead.")
   (register fread (Fn [a Int Int (Ptr FILE)] Int) "fread")
-  (doc fflush "flushes a file pointer (i.e. commits every write).")
+  (doc      fflush "flushes a file pointer, i.e. commits every write (thin wrapper for the C standard library).")
   (register fflush (Fn [(Ptr FILE)] ()) "fflush")
-  (doc rewind "rewinds a file pointer (i.e. puts input and output stream to beginning).")
+  (doc      rewind "rewinds a file pointer, i.e. puts input and output stream to beginning (thin wrapper for the C standard library).")
   (register rewind (Fn [(Ptr FILE)] ()) "rewind")
-  (doc unlink "unlinks a file (i.e. deletes it).")
+  (doc      unlink "unlinks a file, i.e. deletes it (thin wrapper for POSIX api in <unistd.h>).")
   (register unlink (Fn [String] ()) "unlink")
-  (doc fseek "sets the position indicator of a file.")
+  (doc      fseek "sets the position indicator of a file  (thin wrapper for fseek(file, offset, whence) from C standard library).")
   (register fseek (Fn [(Ptr FILE) Int Int] ()) "fseek")
-  (doc ftell "gets the position indicator of a file.")
+  (doc      ftell "gets the position indicator of a file (thin wrapper for the C standard library).")
   (register ftell (Fn [(Ptr FILE)] Int) "ftell")
 
+  (doc      SEEK-SET "to be used with fseek (thin wrapper for the C standard library).")
   (register SEEK-SET Int "SEEK_SET")
+  (doc      SEEK-CUR "to be used with fseek (thin wrapper for the C standard library).")
   (register SEEK-CUR Int "SEEK_CUR")
+  (doc      SEEK-END "to be used with fseek (thin wrapper for the C standard library).")
   (register SEEK-END Int "SEEK_END")
 
-  (doc read->EOF "reads a file given by name until the End-Of-File character is reached.")
+  (doc  read->EOF "reads a file given by name until the End-Of-File character is reached.")
   (defn read->EOF [filename]
     (let [maybe (IO.open-file filename "rb")]
       (match maybe
@@ -72,9 +74,47 @@
                                (IO.fclose f)
                                (Result.Success (String.from-chars &r)))))))
 
+  (doc      unsafe-read-file "returns the contents of a file passed as argument as a string. Note: there is no way to distinguish the output for an empty file and a missing file!")
+  (register unsafe-read-file (Fn [&String] String))
+  (doc  read-file "Reads the content of a file into a (Result String String).\nIt is intended for text files, since the way to determine the length of a String is to use strlen() which probably will be inaccurate for binaries.")
+  (defn read-file [filename]
+    (let [  finp?  (open-file filename "rb") ]
+      (if (Result.error? &finp?)
+        (Result.Error (fmt "Failed to open file='%s', error-number=%d" filename (Result.unsafe-from-error finp?) ))
+        (let [  finput  (Result.unsafe-from-success finp?)
+                length  (do
+                            (fseek finput 0 SEEK-END)
+                            (let-do [ flength (ftell finput) ]
+                              (rewind finput)   ; aka (fseek ofile 0 SEEK-SET) 
+                              flength ))
+                buffer  (String.allocate length \0 )  ]  
+          (if (not (String.allocated? &buffer))
+            (do
+              (fclose finput)
+              (Result.Error (fmt "Failed to open buffer with size=%d from file='%s'" length filename)) )
+            (let [  bytes-read  (fread (String.cstr &buffer) 1 length finput)
+                    nop1        (fclose finput)  ]
+              (if (not (Int.= bytes-read length))
+                (Result.Error (fmt "Error: file='%s' has length=%d but bytes-read=%d" filename length bytes-read))
+                (Result.Success buffer)  )))))))
+  (doc  write-file "Writes a string into a (text) file, overwriting it if it already exists.")
+  (defn write-file [content file-name]
+    (let [  fOut?        (open-file file-name "wb") ; open as binary so line breaks don't multiply on Windows
+            bytes2write  (String.length content) ]
+      (if (Result.error? &fOut?)
+        (Result.Error (fmt "error=%d opening file='%s'" (Result.unsafe-from-error fOut?) file-name))
+        (let-do [  fOut           (Result.unsafe-from-success fOut?)
+                   bytes-written  (fwrite (String.cstr content) 1 bytes2write fOut) ]
+          (fclose fOut)
+          (if (Int.= bytes-written bytes2write)
+            (Result.Success true)
+            (Result.Error (fmt "only %d of %d bytes were written" bytes-written bytes2write))  )))))
+
   (private getenv-)
   (hidden getenv-)
+  (doc      getenv- "gets the value of an environment variable (thin wrapper for the C standard library)")
   (register getenv- (Fn [String] (Ptr CChar)) "getenv")
+  (doc  getenv "gets the value of an environment variable (Carp-style wrapper for the C standard library)")
   (defn getenv [s]
     (let [e (getenv- s)]
       (if (null? e)
