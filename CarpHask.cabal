@@ -1,5 +1,5 @@
 name:                CarpHask
-version:             0.5.0.0
+version:             0.5.1.0
 -- synopsis:
 -- description:
 homepage:            https://github.com/eriksvedang/Carp
@@ -29,6 +29,7 @@ library
                        EvalError,
                        Eval,
                        Expand,
+                       Forms,
                        GenerateConstraints,
                        Infer,
                        Info,
