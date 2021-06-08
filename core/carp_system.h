@@ -1,4 +1,3 @@
-
 void System_free(void *p) {
     CARP_FREE(p);
 }
@@ -40,3 +39,10 @@ int System_system(const String *command) {
 }
 
 Array System_args;
+
+#include <errno.h>
+#include <string.h>
+String System_error_text() {
+    return String_from_MINUS_cstr( strerror(errno) );
+}
+

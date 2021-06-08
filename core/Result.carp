@@ -87,7 +87,7 @@ It is the inverse of [`error?`](#error?).")
       (Error _) false
       (Success _) true))
 
-  (doc success? "checks whether the given value `a` is an `Error`.
+  (doc error? "checks whether the given value `a` is an `Error`.
 
 It is the inverse of [`success?`](#success?).")
   (defn error? [a]

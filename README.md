@@ -64,7 +64,7 @@ We are always looking for more help &ndash; check out the [contributing guide](d
 
 ## License
 
-Copyright 2016 - 2020 Erik Svedäng
+Copyright 2016 - 2021 Erik Svedäng
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
