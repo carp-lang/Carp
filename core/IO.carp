@@ -88,7 +88,7 @@
                               (rewind finput)   ; aka (fseek ofile 0 SEEK-SET) 
                               flength ))
                 buffer  (String.allocate length \0 )  ]  
-          (if (String.not-allocated? &buffer)
+          (if (not (String.allocated? &buffer))
             (do
               (fclose finput)
               (Result.Error (fmt "Failed to open buffer with size=%d from file='%s'" length filename)) )

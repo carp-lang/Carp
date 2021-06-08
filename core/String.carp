@@ -25,8 +25,8 @@
   (register string-set-at! (Fn [&String Int &String] ()))
   (register allocate (Fn [Int Char] String))
   (doc not-allocated? "checks if a String returned by String.allocate (e.g. when created under out-of-memory conditions) is NULL.")
-  (defn not-allocated? [s]
-    (null? (cstr s)) )
+  (defn allocated? [s]
+    (not (null? (cstr s))) )
   (register from-bytes (Fn [&(Array Byte)] String))
   (register to-bytes (Fn [&String] (Array Byte)))
 
