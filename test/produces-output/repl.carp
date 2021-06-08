@@ -1,0 +1,11 @@
+(Project.config "prompt" ">")
+
+(defn f [x] (+ x 10))
+
+(macro-log (type f))
+
+(f)
+
+(quit)
+
+(macro-log "don't print this line")
