@@ -1,6 +1,6 @@
 {-# LANGUAGE DeriveGeneric #-}
-{-# LANGUAGE RecordWildCards #-}
 {-# LANGUAGE PatternSynonyms #-}
+{-# LANGUAGE RecordWildCards #-}
 
 module Obj where
 
@@ -227,6 +227,10 @@ isTypeDef (XObj (Lst (XObj (Defalias _) _ _ : _)) _ _) = True
 isTypeDef (XObj (Lst (XObj (Deftype _) _ _ : _)) _ _) = True
 isTypeDef (XObj (Lst (XObj (DefSumtype _) _ _ : _)) _ _) = True
 isTypeDef _ = False
+
+isMod :: XObj -> Bool
+isMod (XObj (Mod _ _) _ _) = True
+isMod _ = False
 
 -- | This instance is needed for the dynamic Dictionary
 instance Ord Obj where

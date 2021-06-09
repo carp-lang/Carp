@@ -37,9 +37,11 @@ saveDocsForEnvs ctx pathsAndEnvBinders =
   let dir = projectDocsDir ctx
       title = projectTitle ctx
       generateIndex = projectDocsGenerateIndex ctx
-      allEnvNames = fmap (getModuleName . fst . getEnvAndMetaFromBinder . snd) pathsAndEnvBinders
+      dependencies = getDependenciesForEnvs (Prelude.map (\(p, b) -> (p, fst (getEnvAndMetaFromBinder b))) pathsAndEnvBinders)
+      pathsAndEnvBinders' = pathsAndEnvBinders ++ dependencies
+      allEnvNames = fmap fst pathsAndEnvBinders'
    in do
-        mapM_ (saveDocsForEnvBinder ctx allEnvNames) pathsAndEnvBinders
+        mapM_ (saveDocsForEnvBinder ctx allEnvNames) pathsAndEnvBinders'
         when
           generateIndex
           ( writeFile
@@ -47,6 +49,18 @@ saveDocsForEnvs ctx pathsAndEnvBinders =
               (projectIndexPage ctx allEnvNames)
           )
         putStrLn ("Generated docs to '" ++ dir ++ "'")
+  where
+    getDependenciesForEnvs = Prelude.concat . Prelude.map getEnvDependencies
+    getEnvDependencies (SymPath ps p, e) =
+      Prelude.map
+        (\(n, b) -> (SymPath (ps ++ [p]) n, b))
+        ( Prelude.filter
+            (\(_, Binder _ x) -> isMod x)
+            ( Prelude.filter
+                shouldEmitDocsForBinder
+                (Map.toList (envBindings e))
+            )
+        )
 
 -- | This function expects a binder that contains an environment, anything else is a runtime error.
 getEnvAndMetaFromBinder :: Binder -> (Env, MetaData)
@@ -55,7 +69,7 @@ getEnvAndMetaFromBinder envBinder =
     Binder meta (XObj (Mod env _) _ _) -> (env, meta)
     _ -> error "Binder's not a module. This should be detected in 'commandSaveDocsInternal'."
 
-projectIndexPage :: Project -> [String] -> String
+projectIndexPage :: Project -> [SymPath] -> String
 projectIndexPage ctx moduleNames =
   let logo = projectDocsLogo ctx
       url = projectDocsURL ctx
@@ -91,17 +105,17 @@ headOfPage css =
 getModuleName :: Env -> String
 getModuleName env = fromMaybe "Global" (envModuleName env)
 
-saveDocsForEnvBinder :: Project -> [String] -> (SymPath, Binder) -> IO ()
+saveDocsForEnvBinder :: Project -> [SymPath] -> (SymPath, Binder) -> IO ()
 saveDocsForEnvBinder ctx moduleNames (envPath, envBinder) =
   do
-    let SymPath _ moduleName = envPath
+    let moduleName = show envPath
         dir = projectDocsDir ctx
         fullPath = dir </> moduleName ++ ".html"
         string = renderHtml (envBinderToHtml envBinder ctx (show envPath) moduleNames)
     createDirectoryIfMissing False dir
     writeFile fullPath string
 
-envBinderToHtml :: Binder -> Project -> String -> [String] -> H.Html
+envBinderToHtml :: Binder -> Project -> String -> [SymPath] -> H.Html
 envBinderToHtml envBinder ctx moduleName moduleNames =
   let (env, meta) = getEnvAndMetaFromBinder envBinder
       title = projectTitle ctx
@@ -128,24 +142,35 @@ envBinderToHtml envBinder ctx moduleName moduleNames =
                     moduleIndex moduleNames
                 H.h1 (H.toHtml moduleName)
                 H.div ! A.class_ "module-description" $ H.preEscapedToHtml moduleDescriptionHtml
-                mapM_ (binderToHtml . snd) (Prelude.filter shouldEmitDocsForBinder (Map.toList (envBindings env)))
+                mapM_ (binderToHtml moduleName . snd) (Prelude.filter shouldEmitDocsForBinder (Map.toList (envBindings env)))
 
 shouldEmitDocsForBinder :: (String, Binder) -> Bool
 shouldEmitDocsForBinder (_, Binder meta _) =
   not (metaIsTrue meta "hidden")
 
-moduleIndex :: [String] -> H.Html
+moduleIndex :: [SymPath] -> H.Html
 moduleIndex moduleNames =
-  H.div ! A.class_ "index" $
-    H.ul $
-      mapM_ moduleLink moduleNames
+  H.div ! A.class_ "index" $ grouped moduleNames
+  where
+    grouped names = H.ul $ mapM_ gen (order names)
+    gen (m, subs) =
+      H.li $
+        do
+          moduleLink (show m)
+          grouped subs
+    order [] = []
+    order (m : mods) =
+      let (isIn, isNotIn) = List.partition (symBelongsToMod m) mods
+       in (m, isIn) : order isNotIn
+    symBelongsToMod (SymPath xs x) (SymPath ys y) =
+      List.isPrefixOf (xs ++ [x]) (ys ++ [y])
 
 moduleLink :: String -> H.Html
 moduleLink name =
-  H.li $ H.a ! A.href (H.stringValue (name ++ ".html")) $ H.toHtml name
+  H.a ! A.href (H.stringValue (name ++ ".html")) $ H.toHtml name
 
-binderToHtml :: Binder -> H.Html
-binderToHtml (Binder meta xobj) =
+binderToHtml :: String -> Binder -> H.Html
+binderToHtml moduleName (Binder meta xobj) =
   let name = getSimpleName xobj
       maybeNameAndArgs = getSimpleNameWithArgs xobj
       description = getBinderDescription xobj
@@ -169,7 +194,9 @@ binderToHtml (Binder meta xobj) =
           H.a ! A.class_ "anchor" ! A.href (H.stringValue ("#" ++ name)) $
             H.h3 ! A.id (H.stringValue name) $
               do
-                H.toHtml name
+                if isMod xobj
+                  then H.a ! A.href (H.stringValue (moduleName ++ "." ++ pretty xobj ++ ".html")) $ H.toHtml (pretty xobj)
+                  else H.toHtml name
                 when isDeprecated $
                   H.span ! A.class_ "deprecation-notice" $
                     H.toHtml ("deprecated" :: String)
