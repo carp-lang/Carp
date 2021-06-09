@@ -52,15 +52,18 @@ saveDocsForEnvs ctx pathsAndEnvBinders =
   where
     getDependenciesForEnvs = Prelude.concat . Prelude.map getEnvDependencies
     getEnvDependencies (SymPath ps p, e) =
-      Prelude.map
-        (\(n, b) -> (SymPath (ps ++ [p]) n, b))
-        ( Prelude.filter
-            (\(_, Binder _ x) -> isMod x)
-            ( Prelude.filter
-                shouldEmitDocsForBinder
-                (Map.toList (envBindings e))
-            )
-        )
+      let envs =
+            Prelude.map
+              (\(n, b) -> (SymPath (ps ++ [p]) n, b))
+              ( Prelude.filter
+                  (\(_, Binder _ x) -> isMod x)
+                  ( Prelude.filter
+                      shouldEmitDocsForBinder
+                      (Map.toList (envBindings e))
+                  )
+              )
+       in envs
+            ++ getDependenciesForEnvs (Prelude.map (\(n, Binder _ (XObj (Mod env _) _ _)) -> (n, env)) envs)
 
 -- | This function expects a binder that contains an environment, anything else is a runtime error.
 getEnvAndMetaFromBinder :: Binder -> (Env, MetaData)
