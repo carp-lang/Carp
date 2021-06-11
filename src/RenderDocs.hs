@@ -159,7 +159,7 @@ moduleIndex moduleNames =
     gen (m, subs) =
       H.li $
         do
-          moduleLink (show m)
+          moduleLink m
           grouped subs
     order [] = []
     order (m : mods) =
@@ -168,9 +168,9 @@ moduleIndex moduleNames =
     symBelongsToMod (SymPath xs x) (SymPath ys y) =
       List.isPrefixOf (xs ++ [x]) (ys ++ [y])
 
-moduleLink :: String -> H.Html
-moduleLink name =
-  H.a ! A.href (H.stringValue (name ++ ".html")) $ H.toHtml name
+moduleLink :: SymPath -> H.Html
+moduleLink p@(SymPath _ name) =
+  H.a ! A.href (H.stringValue (show p ++ ".html")) $ H.toHtml name
 
 binderToHtml :: String -> Binder -> H.Html
 binderToHtml moduleName (Binder meta xobj) =
