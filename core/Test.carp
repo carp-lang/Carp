@@ -2,6 +2,7 @@
 
 (defmodule Test
   (deftype State [passed Int, failed Int])
+  (hidden State)
   (use Color.Id)
   (hidden handler)
   (defn handler [state expected actual descr what op]

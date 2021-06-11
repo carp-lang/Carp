@@ -18,15 +18,27 @@ a:hover {
 }
 
 .logo {
-    text-align: right;
     float: right;
-    width: 150px;
     font-family: "Hasklig", "Lucida Console", monospace;
+    width: 20%;
+    margin-right: 10%;
 }
 
 .logo img {
     width: 150px;
     margin-bottom: 1em;
+}
+
+details summary {
+  cursor: pointer;
+}
+
+details summary > * {
+  display: inline;
+}
+
+.index {
+  text-align: left;
 }
 
 .args {
@@ -42,6 +54,7 @@ ul {
     list-style-type: none;
     font-family: "Hasklig", "Lucida Console", monospace;
     line-height: 1.4em;
+    padding-left: 1em;
 }
 
 .title {
@@ -49,9 +62,13 @@ ul {
 }
 
 .content {
-    margin: 3em auto auto auto;
-    width: 80%;
+    width: 100%;
+}
+
+.module {
     max-width: 800px;
+    margin: auto;
+    margin-top: 5em;
 }
 
 h1 {

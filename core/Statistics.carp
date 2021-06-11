@@ -17,6 +17,7 @@
     quartiles (Array Double),
     iqr Double
   ])
+  (hidden Summary)
 
   (doc mean "Compute the mean of the samples data.")
   (defn mean [data]

@@ -125,7 +125,8 @@ functionModule =
   where
     bindEnv env =
       let Just name = envModuleName env
-       in (name, Binder emptyMeta (XObj (Mod env E.empty) Nothing Nothing))
+          meta = Meta.set "hidden" trueXObj emptyMeta
+       in (name, Binder meta (XObj (Mod env E.empty) Nothing Nothing))
     bindings = Map.fromList (map (bindEnv . generateInnerFunctionModule) [0 .. maxArity])
 
 -- | Each arity of functions need their own module to enable copying and string representation
