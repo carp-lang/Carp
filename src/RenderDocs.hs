@@ -143,9 +143,11 @@ envBinderToHtml envBinder ctx moduleName moduleNames =
                     --span_ "CARP DOCS FOR"
                     H.div ! A.class_ "title" $ H.toHtml title
                     moduleIndex moduleNames
-                H.h1 (H.toHtml moduleName)
-                H.div ! A.class_ "module-description" $ H.preEscapedToHtml moduleDescriptionHtml
-                mapM_ (binderToHtml moduleName . snd) (Prelude.filter shouldEmitDocsForBinder (Map.toList (envBindings env)))
+                H.div ! A.class_ "module" $
+                  do
+                    H.h1 (H.toHtml moduleName)
+                    H.div ! A.class_ "module-description" $ H.preEscapedToHtml moduleDescriptionHtml
+                    mapM_ (binderToHtml moduleName . snd) (Prelude.filter shouldEmitDocsForBinder (Map.toList (envBindings env)))
 
 shouldEmitDocsForBinder :: (String, Binder) -> Bool
 shouldEmitDocsForBinder (_, Binder meta _) =
@@ -158,9 +160,12 @@ moduleIndex moduleNames =
     grouped names = H.ul $ mapM_ gen (order names)
     gen (m, subs) =
       H.li $
-        do
-          moduleLink m
-          grouped subs
+        if Prelude.null subs
+          then moduleLink m
+          else H.details $
+            do
+              H.summary (moduleLink m)
+              grouped subs
     order [] = []
     order (m : mods) =
       let (isIn, isNotIn) = List.partition (symBelongsToMod m) mods
