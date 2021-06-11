@@ -29,6 +29,10 @@ a:hover {
     margin-bottom: 1em;
 }
 
+.index {
+  text-align: left;
+}
+
 .args {
   background-color: #eee;
   padding: 3px;
