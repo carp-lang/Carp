@@ -1,5 +1,3 @@
-; TODO: check if documentation needs parameters listed or if they are in function signature
-
 (system-include "carp_io.h")
 
 (register-type FILE)
@@ -23,7 +21,7 @@
     (private  fopen-)
     (hidden   fopen-)
     (register fopen- (Fn [(Ptr CChar) (Ptr CChar)] (Ptr FILE)) "fopen" )
-    (doc      fopen "opens a file for input/output/appending (thin wrapper for fopen(pathname, mode) from C standard library). Consider using the function IO.open-file instead.")
+    (doc      fopen "opens a file for input/output/appending (thin wrapper for the C standard library). Consider using the function IO.open-file instead.")
     (defn     fopen [pathname mode]
       (fopen- (String.cstr pathname) (String.cstr mode)) )
     (doc      fclose "closes a file pointer (thin wrapper for the C standard library).") 
@@ -34,7 +32,7 @@
     (private  fwrite-)
     (hidden   fwrite-)
     (register fwrite- (Fn [(Ptr CChar) Int Int (Ptr FILE)] Int) "fwrite")  
-    (doc      fwrite "writes a C-string to a file and returns the number of written items (thin wrapper for fwrite(cstr, item-size, items-count, file) from C standard library). Consider using [`write-file`](#write-file) instead.")
+    (doc      fwrite "writes a C-string to a file and returns the number of written items (thin wrapper for the C standard library). Consider using [`write-file`](#write-file) instead.")
     (defn     fwrite [data item-size items-count file]
       (fwrite- (String.cstr data) item-size items-count file) )
     (private  fread-)
