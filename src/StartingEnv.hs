@@ -296,7 +296,7 @@ dynamicModule =
       let f = makeUnaryPrim . spath
        in [ f "quote" (\_ ctx x -> pure (ctx, Right x)) "quotes any value." "(quote x) ; where x is an actual symbol",
             f "info" primitiveInfo "prints all information associated with a symbol." "(info mysymbol)",
-            f "managed?" primitiveIsManaged "" "",
+            f "managed?" primitiveIsManaged "checks whether a type is managed by Carp by checking whether `delete` was implemented for it. If a type is unmanaged, the user will need to write their own code to handle drops." "(register-type Unmanaged \"void*\")\n(managed? Unmanaged) ; => false",
             f "members" primitiveMembers "returns the members of a type as an array." "(members MyType)",
             f "use" primitiveUse "uses a module, i.e. imports the symbols inside that module into the current module." "(use MyModule)",
             f "eval" primitiveEval "evaluates a list." "(eval mycode)",
