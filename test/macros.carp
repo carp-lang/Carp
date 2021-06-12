@@ -97,7 +97,7 @@
                (and true true)
                "and macro works as expected II")
   (assert-false test
-               (and false (do (IO.exit 1) false))
+               (and false (do (System.exit 1) false))
                "and macro shortcircuits")
   (assert-false test
                (or false false)
@@ -106,7 +106,7 @@
                (or false true)
                "or macro works as expected II")
   (assert-true test
-               (or true (do (IO.exit 2) false))
+               (or true (do (System.exit 2) false))
                "or macro shortcircuits")
   (assert-true test
                (or true true)
