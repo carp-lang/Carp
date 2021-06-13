@@ -35,6 +35,9 @@
     (doc      fwrite "writes a C-string to a file and returns the number of written items (thin wrapper for the C standard library). Consider using [`write-file`](#write-file) instead.")
     (defn     fwrite [data item-size items-count file]
       (fwrite- (String.cstr data) item-size items-count file) )
+    (doc      fwrite! "like fwrite but returns no indicator whether writing to file succeeded. Consider using fwrite instead.")
+    (defn     fwrite! [data item-size items-count file]
+      (ignore (fwrite data item-size items-count file)) )
     (private  fread-)
     (hidden   fread-)
     (register fread- (Fn [a Int Int (Ptr FILE)] Int) "fread")
