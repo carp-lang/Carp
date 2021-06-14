@@ -27,7 +27,7 @@ In the example above s is of type String and it's contents are temporarily borro
 
 ## Rule of thumb
 
-To know whether a function takes over the responsibility of freeing some memory (through its args) or generates some new memory that the caller has to handle (through the return value), just look at the type of the function (right now the easiest way to do that is with the ```(env)``` command). If the value is a non-referenced struct type like String, Vector3, or similar, it means that the memory ownership gets handed over. If it's a reference signature (i.e. ```(Ref String)```), the memory is just temporarily lended out and someone else will make sure it gets deleted. When interoping with existing C code it's often correct to send your data structures to C as refs or pointers (using ```(Pointer.address <variable>)```), keeping the memory management inside the Carp section of the program.
+To know whether a function takes over the responsibility of freeing some memory (through its args) or generates some new memory that the caller has to handle (through the return value), just look at the type of the function (right now the easiest way to do that is with the `(env)` command). If the value is a non-referenced struct type like String, Vector3, or similar, it means that the memory ownership gets handed over. If it's a reference signature (i.e. `(Ref String)`), the memory is just temporarily lended out and someone else will make sure it gets deleted. When interoping with existing C code it's often correct to send your data structures to C as refs or pointers (using `(Pointer.address <variable>)`), keeping the memory management inside the Carp section of the program.
 
 
 ## Working with arrays
@@ -136,17 +136,21 @@ string say_MINUS_what(string text) {
 
 ## Custom deletion functions
 
-The Carp compiler will autogenerate a deletion function for your types unless
-you specify your own—`delete` is an interface like any other. Sometimes you
-might want to do some work of your own when a value goes out of scope, be it
-because it’s an value defined in C or because it references an OS resource that
-needs a cleanup action, like a file or socket.
+The Carp compiler will auto-generate a deletion function for types created on
+the Carp side. The `delete` function is responsible for cleaning up any memory
+associated with its associated value when it goes out of scope. Type that are
+defined in C do not have a `delete` function generated for them automatically,
+you can write your own deletion function, declare it to be implementing `delete`
+and the Carp compiler will call it automatically for you. You can check if a
+type has `delete` implemented by using `Dynamic.managed?`.
 
-The `delete` function is responsible for cleaning up any memory associated with
-the value—otherwise the program will leak memory. It can execute arbitrary
-code, however, and can thus be used for other purposes as well.
+As the `delete` interface is responsible for freeing memory, it is **unsafe**
+to override it, if you are looking for how to release other type of resources
+(sockets, file handle, etc...) when a value goes out of scope use the [`drop`
+interface](./Drop.md) instead.
 
-Let’s look at an example program:
+Let’s look at an example program of how to add a deletion function to a type
+defined in C:
 
 ```clojure
 (register-type Foo)
