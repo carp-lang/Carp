@@ -119,11 +119,7 @@ manageMemory typeEnv globalEnv root =
       case lst of
         [defn@(XObj (Defn maybeCaptures) _ _), nameSymbol@(XObj (Sym _ _) _ _), args@(XObj (Arr argList) _ _), body] ->
           let captures = maybe [] Set.toList maybeCaptures
-           in --case defnReturnType of
-              -- RefTy _ _ ->
-              --   pure (Left (FunctionsCantReturnRefTy xobj funcTy))
-              --  _ ->
-              do
+           in do
                 mapM_ (manage typeEnv globalEnv) argList
                 -- Add the captured variables (if any, only happens in lifted lambdas) as fake deleters
                 -- TODO: Use another kind of Deleter for this case since it's pretty special?
@@ -444,6 +440,8 @@ manageMemory typeEnv globalEnv root =
                   ( XObj (Lst ([matchExpr, okVisitedExpr] ++ concat okVisitedCasesWithAllDeleters)) i t,
                     deletersAfterTheMatch
                   )
+
+        -- Deref (only works in function application)
         XObj (Lst [deref@(XObj Deref _ _), f]) xi xt : uargs ->
           do
             -- Do not visit f in this case, we don't want to manage it's memory since it is a ref!
@@ -457,6 +455,8 @@ manageMemory typeEnv globalEnv root =
                   pure $ do
                     okArgs <- unmanagedArgs
                     Right (XObj (Lst (XObj (Lst [deref, f]) xi xt : okArgs)) i t)
+
+        -- Function application
         f : uargs ->
           do
             visitedF <- visit f
