@@ -9,6 +9,7 @@ module Forms
     format,
     Malformed (GenericMalformed),
     pattern ArrPat,
+    pattern StaticArrPat,
     pattern ListPat,
     pattern SymPat,
     pattern UnqualifiedSymPat,
@@ -16,6 +17,7 @@ module Forms
     pattern DefnPat,
     pattern IfPat,
     pattern ThePat,
+    pattern RefPat,
     pattern LetPat,
     pattern FnPat,
     pattern ClosurePat,
@@ -369,8 +371,8 @@ checkAppArity xobj params args =
 pattern ArrPat :: [XObj] -> XObj
 pattern ArrPat members <- XObj (Arr members) _ _
 
---pattern StaticArrPat :: [XObj] -> XObj
---pattern StaticArrPat members <- XObj (StaticArr members) _ _
+pattern StaticArrPat :: [XObj] -> XObj
+pattern StaticArrPat members <- XObj (StaticArr members) _ _
 
 pattern ListPat :: [XObj] -> XObj
 pattern ListPat members <- XObj (Lst members) _ _
@@ -392,6 +394,9 @@ pattern IfPat ifHead cond true false <- [ifHead@(XObj If _ _), cond, true, false
 
 pattern ThePat :: XObj -> XObj -> XObj -> [XObj]
 pattern ThePat theHead t value <- [theHead@(XObj The _ _), t, value]
+
+pattern RefPat :: XObj -> XObj -> [XObj]
+pattern RefPat refHead value <- [refHead@(XObj Ref _ _), value]
 
 pattern LetPat :: XObj -> XObj -> XObj -> [XObj]
 pattern LetPat letHead bindings body <- [letHead@(XObj Let _ _), bindings, body]

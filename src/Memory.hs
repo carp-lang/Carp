@@ -3,6 +3,7 @@
 module Memory (manageMemory) where
 
 import Control.Monad.State
+import Forms
 import Info
 import Managed
 import qualified Map
@@ -76,7 +77,7 @@ manageMemory typeEnv globalEnv root =
           Left err -> pure (Left err)
 
     visitArray :: XObj -> State MemState (Either TypeError XObj)
-    visitArray xobj@(XObj (Arr arr) _ _) =
+    visitArray xobj@(ArrPat arr) =
       do
         mapM_ visit arr
         results <- mapM (unmanage typeEnv globalEnv) arr
@@ -89,7 +90,7 @@ manageMemory typeEnv globalEnv root =
     visitArray _ = error "Must visit array."
 
     visitStaticArray :: XObj -> State MemState (Either TypeError XObj)
-    visitStaticArray xobj@(XObj (StaticArr arr) _ _) =
+    visitStaticArray xobj@(StaticArrPat arr) =
       do
         mapM_ visit arr
         results <- mapM (unmanage typeEnv globalEnv) arr
@@ -112,6 +113,7 @@ manageMemory typeEnv globalEnv root =
               put newState --(trace (show newState) newState)
               pure (Right xobj)
     visitStaticArray _ = error "Must visit static array."
+
     visitList :: XObj -> State MemState (Either TypeError XObj)
     visitList xobj@(XObj (Lst lst) i t) =
       case lst of
@@ -146,14 +148,16 @@ manageMemory typeEnv globalEnv root =
                       do
                         okBody <- visitedBody
                         pure (XObj (Lst [defn, nameSymbol, args, okBody]) i t)
+
         -- Fn / λ (Lambda)
         [fn@(XObj (Fn _ captures) _ _), args@(XObj (Arr _) _ _), body] ->
           do
             manage typeEnv globalEnv xobj -- manage inner lambdas but leave their bodies unvisited, they will be visited in the lifted version...
             mapM_ (unmanage typeEnv globalEnv) captures
             pure (Right (XObj (Lst [fn, args, body]) i t))
+
         -- Def
-        [def@(XObj Def _ _), nameSymbol@(XObj (Sym _ _) _ _), expr] ->
+        DefPat def nameSymbol expr ->
           do
             visitedExpr <- visit expr
             result <- unmanage typeEnv globalEnv expr
@@ -165,7 +169,7 @@ manageMemory typeEnv globalEnv root =
                     okExpr <- visitedExpr
                     pure (XObj (Lst [def, nameSymbol, okExpr]) i t)
         -- Let
-        [letExpr@(XObj Let _ _), XObj (Arr bindings) bindi bindt, body] ->
+        LetPat letExpr (XObj (Arr bindings) bindi bindt) body ->
           do
             MemState preDeleters _ _ <- get
             visitedBindings <- mapM visitLetBinding (pairwise bindings)
@@ -187,8 +191,9 @@ manageMemory typeEnv globalEnv root =
                     let finalBody = searchForInnerBreak diff okBody
                     okBindings <- fmap (concatMap (\(n, x) -> [n, x])) (sequence visitedBindings)
                     pure (XObj (Lst [letExpr, XObj (Arr okBindings) bindi bindt, finalBody]) newInfo t)
+
         -- Set!
-        [setbangExpr@(XObj SetBang _ _), variable, value] ->
+        SetPat setbangExpr variable value ->
           let varInfo = xobjInfo variable
               correctVariableAndMode =
                 case variable of
@@ -242,7 +247,9 @@ manageMemory typeEnv globalEnv root =
                           okValue <- visitedValue
                           _ <- ownsTheVarBefore -- Force Either to fail
                           pure (XObj (Lst [setbangExpr, newVariable, okValue]) i t)
-        [theExpr@(XObj The _ _), typeXObj, value] ->
+
+        -- The
+        ThePat theExpr typeXObj value ->
           do
             visitedValue <- visit value
             result <- transferOwnership typeEnv globalEnv value xobj
@@ -251,7 +258,9 @@ manageMemory typeEnv globalEnv root =
               Right _ -> do
                 okValue <- visitedValue
                 pure (XObj (Lst [theExpr, typeXObj, okValue]) i t)
-        [refExpr@(XObj Ref _ _), value] ->
+
+        -- Ref
+        RefPat refExpr value ->
           do
             visited <- visit value
             case visited of
@@ -264,9 +273,12 @@ manageMemory typeEnv globalEnv root =
                     Right () -> do
                       let reffed = XObj (Lst [refExpr, visitedValue]) i t
                       pure $ Right reffed
+
+        -- Deref
         (XObj Deref _ _ : _) ->
           error "Shouldn't end up here, deref only works when calling a function, i.e. ((deref f) 1 2 3)."
-        doExpr@(XObj Do _ _) : expressions ->
+        -- Do
+        DoPat doExpr expressions ->
           do
             visitedExpressions <- mapM visit expressions
             result <- transferOwnership typeEnv globalEnv (last expressions) xobj
@@ -275,7 +287,9 @@ manageMemory typeEnv globalEnv root =
               Right _ -> do
                 okExpressions <- sequence visitedExpressions
                 pure (XObj (Lst (doExpr : okExpressions)) i t)
-        [whileExpr@(XObj While _ _), expr, body] ->
+
+        -- While
+        WhilePat whileExpr expr body ->
           do
             MemState preDeleters _ _ <- get
             visitedExpr <- visit expr
@@ -300,7 +314,9 @@ manageMemory typeEnv globalEnv root =
                   newExpr = XObj objExpr newExprInfo objTy
                   finalBody = searchForInnerBreak diff okBody
               pure (XObj (Lst [whileExpr, newExpr, finalBody]) newInfo t)
-        [ifExpr@(XObj If _ _), expr, ifTrue, ifFalse] ->
+
+        -- If
+        IfPat ifExpr expr ifTrue ifFalse ->
           do
             visitedExpr <- visit expr
             MemState preDeleters deps lifetimes <- get
@@ -364,6 +380,8 @@ manageMemory typeEnv globalEnv root =
               okTrue <- visitedTrue
               okFalse <- visitedFalse
               pure (XObj (Lst [ifExpr, okExpr, setDeletersOnXObj okTrue delsTrue, setDeletersOnXObj okFalse delsFalse]) i t)
+
+        -- Match
         matchExpr@(XObj (Match _) _ _) : expr : cases ->
           -- General idea of how to figure out what to delete in a 'match' statement:
           -- 1. Visit each case and investigate which variables are deleted in each one of the cases
