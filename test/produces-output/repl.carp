@@ -3,8 +3,6 @@
 
 (macro-log (type M.f))
 
-(build)
-
 (M.f 2)
 
 (quit)
