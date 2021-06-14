@@ -157,13 +157,10 @@ manageMemory typeEnv globalEnv root =
           do
             visitedExpr <- visit expr
             result <- unmanage typeEnv globalEnv expr
-            pure $
-              case result of
-                Left e -> Left e
-                Right () ->
-                  do
-                    okExpr <- visitedExpr
-                    pure (XObj (Lst [def, nameSymbol, okExpr]) i t)
+            whenOK result $
+              do
+                okExpr <- visitedExpr
+                pure (XObj (Lst [def, nameSymbol, okExpr]) i t)
         -- Let
         LetPat letExpr (XObj (Arr bindings) bindi bindt) body ->
           do
@@ -249,9 +246,8 @@ manageMemory typeEnv globalEnv root =
           do
             visitedValue <- visit value
             result <- transferOwnership typeEnv globalEnv value xobj
-            pure $ case result of
-              Left e -> Left e
-              Right _ -> do
+            whenOK result $
+              do
                 okValue <- visitedValue
                 pure (XObj (Lst [theExpr, typeXObj, okValue]) i t)
 
@@ -263,8 +259,8 @@ manageMemory typeEnv globalEnv root =
               Left e -> pure (Left e)
               Right visitedValue ->
                 do
-                  checkResult <- canBeReferenced typeEnv globalEnv visitedValue
-                  case checkResult of
+                  result <- canBeReferenced typeEnv globalEnv visitedValue
+                  case result of
                     Left e -> pure (Left e)
                     Right () -> do
                       let reffed = XObj (Lst [refExpr, visitedValue]) i t
@@ -754,3 +750,10 @@ isSymbolThatCaptures xobj =
 --   joinLines (map prettyMapping (Map.toList mappings))
 --   where
 --     prettyMapping (key, value) = "  " ++ key ++ " => " ++ show value
+
+-- Better name?
+whenOK :: Applicative f => Either a () -> Either a b -> f (Either a b)
+whenOK result cont =
+  pure $ case result of
+    Left e -> Left e
+    Right () -> cont
