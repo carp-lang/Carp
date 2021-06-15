@@ -342,7 +342,11 @@ commandBuild ctx [XObj (Bol shutUp) _ _] = do
         if generateOnly
           then pure (ctx, dynamicNil)
           else case Map.lookup "main" (envBindings env) of
-            Just _ -> compile True
+            Just (Binder _ (XObj _ _ (Just (FuncTy _ IntTy _)))) -> compile True
+            Just (Binder _ (XObj _ _ (Just (FuncTy _ UnitTy _)))) -> compile True
+            Just (Binder _ (XObj _ _ (Just (FuncTy _ _ _)))) -> pure (evalError ctx "`main` was generic at build time, it must return either `Int` or `()`." Nothing)
+            Just (Binder _ (XObj _ _ (Just t))) -> pure (evalError ctx ("`main` is expected to be a function, but was `" ++ show t ++ "`.") Nothing)
+            Just (Binder _ (XObj _ _ Nothing)) -> pure (evalError ctx ("The type of `main` is not set at build time. This should not happen, consider raising an issue with the code that caused it.") Nothing)
             Nothing -> compile False
   where
     removeSpecials env =
