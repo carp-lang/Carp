@@ -53,9 +53,3 @@ String IO_unsafe_MINUS_read_MINUS_file(const String *filename) {
 
     return buffer;
 }
-
-char IO_fgetc(FILE *f) {
-    return (char)fgetc(f);  // TODO: handle fgetc()==EOF
-}
-
-

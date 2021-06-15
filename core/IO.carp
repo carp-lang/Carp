@@ -13,9 +13,11 @@
     (doc      stderr "the standard error file (thin wrapper for the C standard library).")
     (register stderr (Ptr FILE) "stderr")
     (doc      get-char "gets a character from stdin (thin wrapper for getchar() from C standard library).")
-    (register get-char (Fn [] Char) "getchar")  ; TODO: handle EOF?!
+    (register get-char (Fn [] Int) "getchar") 
+    (doc      fgetc "gets a character from file (thin wrapper for the from C standard library).")
+    (register fgetc (Fn [(Ptr FILE)] Int) "fgetc") 
     (doc      EOF "the End-Of-File character as a literal (thin wrapper for the C standard library)")
-    (register EOF Char "EOF")
+    (register EOF Int "EOF")
     (private  fopen-)
     (hidden   fopen-)
     (register fopen- (Fn [(Ptr CChar) (Ptr CChar)] (Ptr FILE)) "fopen" )
@@ -92,18 +94,20 @@
         (Result.Error (System.error-text)) 
         (Result.Success ptr) )))
 
-  (doc  read->EOF "reads a file given by name until the End-Of-File character is reached.")
-  (defn read->EOF [filename]  ; TODO: verify that this (still) works!
+  (doc  read->EOF "reads a file given by name until the End-Of-File character is reached. Please consider using read-file instead, even though this works fine for UTF-8 encoded input files.")
+  (defn read->EOF [filename]  
     (let [file? (IO.open-file filename "rb")]
       (match file?
         (Result.Error x) (Result.Error x)
         (Result.Success f) (let [c (zero)
                                  r []]
                              (do
-                               (while (do (set! c (IO.fgetc f))
-                                          (/= c IO.Raw.EOF))                                 (set! r (Array.push-back r c)))
+                               (while (do 
+                                   (set! c (IO.Raw.fgetc f))
+                                   (/= c IO.Raw.EOF))
+                                 (set! r (Array.push-back r (Byte.from-int c))))
                                (IO.Raw.fclose! f)
-                               (Result.Success (String.from-chars &r)))))))
+                               (Result.Success (String.from-bytes &r)))))))
 
   (doc      unsafe-read-file "returns the contents of a file passed as argument as a string. Note: there is no way to distinguish the output for an empty file and a missing file!")
   (register unsafe-read-file (Fn [&String] String))
