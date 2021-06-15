@@ -1,0 +1,10 @@
+(defmodule M
+  (defn f [x] (+ x 10)))
+
+(macro-log (type M.f))
+
+(M.f 2)
+
+(quit)
+
+(macro-log "don't print this line")
