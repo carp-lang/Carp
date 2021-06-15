@@ -1,4 +1,5 @@
 (system-include "carp_string.h")
+(system-include "ctype.h")
 
 (defmodule String
 
@@ -169,6 +170,19 @@
 
   (doc contains? "Checks whether the string `s` contains the character `c`.")
   (defn contains? [s c] (> (index-of s c) -1))
+
+  (private  tolower-)
+  (hidden   tolower-)
+  (register tolower- (Fn [Byte] Byte) "tolower")
+  (private  toupper-)
+  (hidden   toupper-)
+  (register toupper- (Fn [Byte] Byte) "toupper")    
+  (doc  ascii-to-lower "converts each character in this string to upper case using toupper() from standard C library. Note: this will only work for ASCII characters.")
+  (defn ascii-to-lower [s]
+    (String.from-bytes &(Array.endo-map &(fn [c] (tolower- c)) (String.to-bytes s))) )
+  (doc  ascii-to-lower "converts each character in this string to lower case using toupper() from standard C library. Note: this will only work for ASCII characters.")
+  (defn ascii-to-upper [s]
+    (String.from-bytes &(Array.endo-map &(fn [c] (toupper- c)) (String.to-bytes s))) )
 )
 
 (defmodule StringCopy
@@ -501,3 +515,4 @@
         (cons (String.head s) (String.to-list (String.tail s)))))
   )
 )
+
