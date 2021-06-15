@@ -32,7 +32,7 @@ immediately, raising a `SIGABRT` if it fails.")
          (unless (= balance (Debug.memory-balance))
            (do
              (IO.println &(fmt "Invalid memory balance: %d" (Debug.memory-balance)))
-             (System.exit! 1))))))
+             (ignore (System.exit 1)))))))
 
   (doc trace "prints the value of an expression to `stdout`, then returns its value.")
   (defmacro trace [x]

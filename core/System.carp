@@ -56,9 +56,7 @@
   (register EROFS Int "EROFS")
   (register EINTR  Int "EINTR")
 
-  (doc      exit! "exits the program with the supplied exit code (thin wrapper for the C standard library).")
-  (register exit! (Fn [Int] ()) "exit")
-  (doc exit "exits the program. This version is often used with SDL.")
+  (doc         exit "exits the program with the supplied exit code (thin wrapper for the C standard library).")
   (deftemplate exit (Fn [Int] a) "$a $NAME(int code)" "$DECL { exit(code); }")
   
 )
