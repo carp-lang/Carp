@@ -14,8 +14,6 @@
     (register stderr (Ptr FILE) "stderr")
     (doc      get-char "gets a character from stdin (thin wrapper for getchar() from C standard library).")
     (register get-char (Fn [] Char) "getchar")  ; TODO: handle EOF?!
-    (doc      exit "exit the current program with a return code (thin wrapper for the C standard library).")
-    (register exit (Fn [Int] ()) "exit")  ; TODO: compare to System.exit for and remove 1 of them!
     (doc      EOF "the End-Of-File character as a literal (thin wrapper for the C standard library)")
     (register EOF Char "EOF")
     (private  fopen-)
