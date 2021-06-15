@@ -119,7 +119,7 @@
         (let [  finput  (Result.unsafe-from-success finput?)
                 length  (do
                             (IO.Raw.fseek! finput 0 IO.Raw.SEEK-END)
-                            (let-do [ flength (IO.Raw.ftell finput) ]
+                            (let-do [flength (IO.Raw.ftell finput)]
                               (IO.Raw.rewind finput)
                               flength ))
                 buffer  (String.allocate length \0 )  ]
@@ -154,7 +154,7 @@
     (let [e (getenv- (String.cstr s))]
       (if (null? e)
         (Maybe.Nothing)
-        (Maybe.Just (from-cstr e)) )))
+        (Maybe.Just (from-cstr e)))))
 )
 
 ; TODO: document this cool stuff, possibly even include an example!
