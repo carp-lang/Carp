@@ -84,10 +84,12 @@ findFunctionForMemberIncludePrimitives typeEnv env functionName functionType (me
             ++ show functionType
         )
 
--- | TODO: COMMENT THIS
+-- | Creates a new SymPath with a suffix added to the name,
+-- for differentiating the concrete version of the function from
+-- its generic ancestor.
 getConcretizedPath :: XObj -> Ty -> SymPath
-getConcretizedPath single functionType =
-  let Just t' = xobjTy single
-      (SymPath pathStrings name) = getPath single
+getConcretizedPath defn functionType =
+  let Just t' = xobjTy defn
+      SymPath pathStrings name = getPath defn
       suffix = polymorphicSuffix t' functionType
    in SymPath pathStrings (name ++ suffix)
