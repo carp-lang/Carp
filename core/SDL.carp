@@ -365,8 +365,7 @@
   (defn stop [app]
     (do (SDL.destroy-window @(window app))
         (SDL.quit)
-        (System.exit 0)
-        0))
+        (System.exit 0)))
 
   (doc default-draw "is a default rendering function that can be passed to `run-with-callbacks`.")
   (defn default-draw [app rend state-ref]
