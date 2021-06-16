@@ -748,7 +748,7 @@ commandSaveDocsInternal ctx modulePaths filePaths = do
        in do
             okMods <- mods
             okGlobs <- globs
-            pure (okMods ++ okGlobs)
+            pure (okMods ++ [okGlobs])
 
     modules :: (Context, Either EvalError [(SymPath, Binder)])
     modules = do
@@ -763,14 +763,18 @@ commandSaveDocsInternal ctx modulePaths filePaths = do
         x ->
           evalError ctx ("Invalid first arg to save-docs-internal (expected list of symbols): " ++ pretty x) (xobjInfo modulePaths)
 
-    filesWithGlobals :: (Context, Either EvalError [(SymPath, Binder)])
+    filesWithGlobals :: (Context, Either EvalError (SymPath, Binder))
     filesWithGlobals = do
       case filePaths of
         XObj (Lst xobjs) _ _ ->
           case mapM unwrapStringXObj xobjs of
             Left err -> evalError ctx err (xobjInfo filePaths)
             Right okPaths ->
-              (ctx, Right (concat (mapM (getGlobalBindersForDocumentation globalEnv) okPaths)))
+              let globalBinders = Map.fromList $ concat (mapM (getGlobalBindersForDocumentation globalEnv) okPaths)
+                  fauxGlobalModule = E.new Nothing (Just "Global")
+                  fauxGlobalModuleWithBindings = fauxGlobalModule {envBindings = globalBinders}
+                  fauxTypeEnv = E.new Nothing Nothing
+               in (ctx, Right (SymPath [] "Global", Binder emptyMeta (XObj (Mod fauxGlobalModuleWithBindings fauxTypeEnv) Nothing Nothing)))
         x ->
           evalError ctx ("Invalid second arg to save-docs-internal (expected list of strings containing filenames): " ++ pretty x) (xobjInfo filePaths)
 
@@ -784,8 +788,12 @@ commandSaveDocsInternal ctx modulePaths filePaths = do
         Left _ ->
           Left ("I can’t find the module `" ++ show path ++ "`")
 
-    getGlobalBindersForDocumentation :: Env -> String -> [(SymPath, Binder)]
-    getGlobalBindersForDocumentation _ _ = []
+    getGlobalBindersForDocumentation :: Env -> String -> [(String, Binder)]
+    getGlobalBindersForDocumentation env filename =
+      Map.toList $ Map.filter (\bind -> (binderFilename bind) == filename) (envBindings env)
+
+    binderFilename :: Binder -> String
+    binderFilename = takeFileName . fromMaybe "" . fmap infoFile . xobjInfo . binderXObj
 
 -- | Command for emitting literal C code from Carp.
 -- The string passed to this function will be emitted as is.
