@@ -736,18 +736,24 @@ commandHostBitWidth ctx =
 
 commandSaveDocsInternal :: UnaryCommandCallback
 commandSaveDocsInternal ctx modulePaths = do
-  let globalEnv = contextGlobalEnv ctx
-  case modulePaths of
-    XObj (Lst xobjs) _ _ ->
-      case mapM unwrapSymPathXObj xobjs of
-        Left err -> pure (evalError ctx err (xobjInfo modulePaths))
-        Right okPaths ->
-          case mapM (getEnvironmentBinderForDocumentation globalEnv) okPaths of
-            Left err -> pure (evalError ctx err (xobjInfo modulePaths))
-            Right okEnvBinders -> saveDocs ctx (zip okPaths okEnvBinders)
-    x ->
-      pure (evalError ctx ("Invalid arg to save-docs-internal (expected list of symbols): " ++ pretty x) (xobjInfo modulePaths))
+  case modules of
+    (ctx', Left err) -> pure (ctx', Left err)
+    (ctx', Right ok) -> saveDocs ctx' ok
   where
+    modules :: (Context, Either EvalError [(SymPath, Binder)])
+    modules = do
+      let globalEnv = contextGlobalEnv ctx
+      case modulePaths of
+        XObj (Lst xobjs) _ _ ->
+          case mapM unwrapSymPathXObj xobjs of
+            Left err -> evalError ctx err (xobjInfo modulePaths)
+            Right okPaths ->
+              case mapM (getEnvironmentBinderForDocumentation globalEnv) okPaths of
+                Left err -> evalError ctx err (xobjInfo modulePaths)
+                Right okEnvBinders -> (ctx, Right (zip okPaths okEnvBinders))
+        x ->
+          evalError ctx ("Invalid arg to save-docs-internal (expected list of symbols): " ++ pretty x) (xobjInfo modulePaths)
+
     getEnvironmentBinderForDocumentation :: Env -> SymPath -> Either String Binder
     getEnvironmentBinderForDocumentation env path =
       case E.searchValueBinder env path of
