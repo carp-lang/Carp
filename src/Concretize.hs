@@ -9,13 +9,13 @@ import Data.List (foldl')
 import Data.Maybe (fromMaybe)
 import Debug.Trace
 import Env (envIsExternal, getTypeBinder, insert, insertX, searchValue)
-import FindFunction
 import Info
 import InitialTypes
 import Managed
 import qualified Map
 import Memory (manageMemory)
 import Obj
+import Polymorphism
 import Reify
 import qualified Set
 import SumtypeCase
