@@ -323,4 +323,12 @@
                 &[\� \�]
                 &(chars &(from-bytes &[255b 255b]))
                 "check for invalid UTF-8 sequences")
+  (assert-equal test
+                "hällo wörld"
+                &(ascii-to-lower "HälLo WöRld")
+                "ascii-to-lower works for valid UTF-8" )
+  (assert-equal test
+                "HäLLO WöRLD"
+                &(ascii-to-upper "HälLo WöRld")
+                "ascii-to-upper works for valid UTF-8" )
 )
