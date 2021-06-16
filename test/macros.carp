@@ -217,18 +217,18 @@
   (assert-false test
                 (test-= veit "veit")
                 "= macro works as expected across types")
-  (assert-false test      ; debug-1: this compiles but takes >400MBytes extra Memory?!
+  (assert-false test 
                 (and true true false)
                 "vararg-and macro works as expected I")
-  ;~ (assert-true test       ; debug-2: like debug-1, but when both are active, then >4GB memory are used and compilation fails 
-               ;~ (and true true true)
-               ;~ "vararg-and macro works as expected II")
-  ;~ (assert-false test   ; TODO: activate after debugging
-                ;~ (or false false false)
-                ;~ "vararg-or macro works as expected I")
-  ;~ (assert-true test    ; TODO: activate after debugging
-               ;~ (or true false true)
-               ;~ "vararg-or macro works as expected II")
+  (assert-true test 
+               (and true true true)
+               "vararg-and macro works as expected II")
+  (assert-false test 
+                (or false false false)
+                "vararg-or macro works as expected I")
+  (assert-true test 
+               (or true false true)
+               "vararg-or macro works as expected II")
   (assert-equal test
                 "1 thing 2 things"
                 &(str* 1 " thing " 2 " things")
