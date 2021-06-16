@@ -28,6 +28,9 @@ intersection (Set a) (Set b) = Set (S.intersection a b)
 union :: Ord v => Set v -> Set v -> Set v
 union (Set a) (Set b) = Set (S.union a b)
 
+unions :: (Functor f, Foldable f, Ord a) => f (Set a) -> Set a
+unions sets = Set $ S.unions (fmap unSet sets)
+
 member :: Ord v => v -> Set v -> Bool
 member k (Set s) = S.member k s
 

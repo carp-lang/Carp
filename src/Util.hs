@@ -130,6 +130,10 @@ toMaybe f e = either (const Nothing) (Just . f) e
 maybeId :: Either a b -> Maybe b
 maybeId = toMaybe id
 
-whenRight :: Monad m => Either a b -> m (Either a c) -> m (Either a c)
+whenRight :: Applicative f => Either a b -> f (Either a c) -> f (Either a c)
 whenRight (Right _) cont = cont
 whenRight (Left err) _ = pure (Left err)
+
+whenRightReturn :: Applicative f => Either a b -> Either a c -> f (Either a c)
+whenRightReturn (Right _) cont = pure cont
+whenRightReturn (Left err) _ = pure (Left err)

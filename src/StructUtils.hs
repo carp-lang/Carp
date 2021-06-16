@@ -5,6 +5,8 @@ import Obj
 import Polymorphism
 import Types
 
+data AllocationMode = StackAlloc | HeapAlloc
+
 -- | The 'str'/'prn' functions for primitive types don't take refs, while other types do
 -- so we need to adjust for that when finding and calling them in compound types.
 -- The returned tuple contains ("" || "&", `str function type`).

@@ -37,6 +37,7 @@ library
                        Interfaces,
                        Managed,
                        Map,
+                       Memory,
                        Meta,
                        Obj,
                        Parsing,

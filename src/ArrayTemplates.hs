@@ -4,6 +4,7 @@ module ArrayTemplates where
 
 import Concretize
 import Obj
+import Polymorphism
 import StructUtils
 import Template
 import ToTemplate

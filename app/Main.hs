@@ -125,9 +125,9 @@ main = do
           []
       coreModulesToLoad = if core then coreModules (projectCarpDir project) else []
       execStr :: String -> String -> Context -> IO Context
-      execStr info str ctx = executeString True False ctx str info
+      execStr i s ctx = executeString True False ctx s i
       execStrs :: String -> [String] -> Context -> IO Context
-      execStrs info strs ctx = foldM (\ctx str -> execStr info str ctx) ctx strs
+      execStrs i strs ctx = foldM (\ctx' str' -> execStr i str' ctx') ctx strs
       preloads = optPreload fullOpts
       postloads = optPostload fullOpts
       load = flip loadFiles
