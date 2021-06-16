@@ -258,7 +258,6 @@ dynamicModule =
             f "expand" commandExpand "expands a macro and prints the result." "(expand '(when true 1)) ; => (if true 1 ())",
             f "system-include" commandAddSystemInclude "adds a system include, i.e. a C `#include` with angle brackets (`<>`)." "(system-include \"stdint.h\")",
             f "relative-include" commandAddRelativeInclude "adds a relative include, i.e. a C `include` with quotes. It also prepends the current directory." "(relative-include \"myheader.h\")",
-            f "save-docs-internal" commandSaveDocsInternal "is the internal companion command to `save-docs`. `save-docs` should be called instead." "(save-docs-internal 'Module)",
             f "read-file" commandReadFile "reads a file into a string." "(read-file \"myfile.txt\")",
             f "get-env" commandGetEnv "gets an environment variable. The result will be `()` if it isn’t set." "(read-file \"CARP_DIR\")",
             f "hash" commandHash "calculates the hash associated with a value." "(hash '('my 'value)) ; => 3175346968842793108",
@@ -278,7 +277,8 @@ dynamicModule =
             f "/" commandDiv "divides its first argument by its second." "(/ 4 2) ; => 2",
             f "*" commandMul "multiplies its two arguments." "(* 2 3) ; => 6",
             f "write-file" commandWriteFile "writes a string to a file." "(write-file \"myfile\" \"hello there!\")",
-            f "set-env" commandSetEnv "sets an environment variable." "(set-env \"CARP_WAS_HERE\" \"true\")"
+            f "set-env" commandSetEnv "sets an environment variable." "(set-env \"CARP_WAS_HERE\" \"true\")",
+            f "save-docs-internal" commandSaveDocsInternal "is the internal companion command to `save-docs`. Takes two lists, one with paths to modules (as symbols), and one with filenames (as strings). The filenames are used to emit global symbols in those files into a 'Global' module." "(save-docs-internal '(ModuleA ModuleB) '(\"globals.carp\"))"
           ]
     variadics =
       let f = addVariadicCommand . spath

@@ -734,15 +734,24 @@ commandHostBitWidth ctx =
   let bitSize = Integral (finiteBitSize (undefined :: Int))
    in pure (ctx, Right (XObj (Num IntTy bitSize) (Just dummyInfo) (Just IntTy)))
 
-commandSaveDocsInternal :: UnaryCommandCallback
-commandSaveDocsInternal ctx modulePaths = do
-  case modules of
-    (ctx', Left err) -> pure (ctx', Left err)
-    (ctx', Right ok) -> saveDocs ctx' ok
+commandSaveDocsInternal :: BinaryCommandCallback
+commandSaveDocsInternal ctx modulePaths filePaths = do
+  case modulesAndGlobals of
+    Left err -> pure (ctx, Left err)
+    Right ok -> saveDocs ctx ok
   where
+    globalEnv = contextGlobalEnv ctx
+
+    modulesAndGlobals =
+      let (_, mods) = modules
+          (_, globs) = filesWithGlobals
+       in do
+            okMods <- mods
+            okGlobs <- globs
+            pure (okMods ++ okGlobs)
+
     modules :: (Context, Either EvalError [(SymPath, Binder)])
     modules = do
-      let globalEnv = contextGlobalEnv ctx
       case modulePaths of
         XObj (Lst xobjs) _ _ ->
           case mapM unwrapSymPathXObj xobjs of
@@ -752,7 +761,18 @@ commandSaveDocsInternal ctx modulePaths = do
                 Left err -> evalError ctx err (xobjInfo modulePaths)
                 Right okEnvBinders -> (ctx, Right (zip okPaths okEnvBinders))
         x ->
-          evalError ctx ("Invalid arg to save-docs-internal (expected list of symbols): " ++ pretty x) (xobjInfo modulePaths)
+          evalError ctx ("Invalid first arg to save-docs-internal (expected list of symbols): " ++ pretty x) (xobjInfo modulePaths)
+
+    filesWithGlobals :: (Context, Either EvalError [(SymPath, Binder)])
+    filesWithGlobals = do
+      case filePaths of
+        XObj (Lst xobjs) _ _ ->
+          case mapM unwrapStringXObj xobjs of
+            Left err -> evalError ctx err (xobjInfo filePaths)
+            Right okPaths ->
+              (ctx, Right (concat (mapM (getGlobalBindersForDocumentation globalEnv) okPaths)))
+        x ->
+          evalError ctx ("Invalid second arg to save-docs-internal (expected list of strings containing filenames): " ++ pretty x) (xobjInfo filePaths)
 
     getEnvironmentBinderForDocumentation :: Env -> SymPath -> Either String Binder
     getEnvironmentBinderForDocumentation env path =
@@ -763,6 +783,9 @@ commandSaveDocsInternal ctx modulePaths = do
           Left ("I can’t generate documentation for `" ++ pretty x ++ "` because it isn’t a module")
         Left _ ->
           Left ("I can’t find the module `" ++ show path ++ "`")
+
+    getGlobalBindersForDocumentation :: Env -> String -> [(SymPath, Binder)]
+    getGlobalBindersForDocumentation _ _ = []
 
 -- | Command for emitting literal C code from Carp.
 -- The string passed to this function will be emitted as is.

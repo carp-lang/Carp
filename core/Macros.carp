@@ -257,7 +257,7 @@
 
 (defmacro save-docs [:rest modules]
   ;; A trick to be able to send unquoted symbols to 'save-docs'
-  (eval (list 'save-docs-internal (list 'quote modules))))
+  (eval (list 'save-docs-internal (list 'quote modules) (list))))
 
 (defndynamic implement-declaration [mod interface]
   (list 'implements interface (Symbol.prefix mod interface)))
