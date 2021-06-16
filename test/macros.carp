@@ -52,13 +52,13 @@
 
 (defmacro test-map []
   (let [mapped (Dynamic.map length '((a) (b c) (d e f)))]
-    (and* (= 1 (Dynamic.car mapped)) (= 2 (Dynamic.cadr mapped))
+    (and  (= 1 (Dynamic.car mapped)) (= 2 (Dynamic.cadr mapped))
           (= 3 (Dynamic.caddr mapped)))))
 
 (defmacro test-zip []
   (let [zipped (Dynamic.zip array '('a 'd) '('c 'o) '('e 'g))]
-    (and (= 'ace (Symbol.concat (eval (Dynamic.car zipped))))
-      (= 'dog (Symbol.concat (eval (Dynamic.cadr zipped)))))))
+    (and (= 'ace (Symbol.concat (eval (Dynamic.car  zipped))))
+         (= 'dog (Symbol.concat (eval (Dynamic.cadr zipped)))))))
 
 (defmodule TestDyn
   (defndynamic x [] true))
@@ -218,17 +218,17 @@
                 (test-= veit "veit")
                 "= macro works as expected across types")
   (assert-false test
-                (and* true true false)
-                "and* macro works as expected I")
+                (and true true false)
+                "vararg-and macro works as expected I")
   (assert-true test
-               (and* true true true)
-               "and* macro works as expected II")
+               (and true true true)
+               "vararg-and macro works as expected II")
   (assert-false test
-                (or* false false false)
-                "or* macro works as expected I")
+                (or false false false)
+                "vararg-or macro works as expected I")
   (assert-true test
-               (or* true false true)
-               "or* macro works as expected II")
+               (or true false true)
+               "vararg-or macro works as expected II")
   (assert-equal test
                 "1 thing 2 things"
                 &(str* 1 " thing " 2 " things")
