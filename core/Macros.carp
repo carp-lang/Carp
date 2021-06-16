@@ -1,11 +1,5 @@
 ;; Defining the meta data macros early so that they can be used by all the other code.
 
-(defmacro and [x y]
-  (list 'if x y false))
-
-(defmacro or [x y]
-  (list 'if x true y))
-
 ;; Defined early so that `doc` can accept a rest arg
 (defndynamic map-internal [f xs acc]
     (if (= 0 (length xs))
@@ -108,6 +102,24 @@
 (doc private "Mark a binding as private, this will make it inaccessible from other modules.")
 (defmacro private [name]
   (eval (list 'meta-set! name "private" true)))
+
+(hidden      and-)
+(defndynamic and- [xs]
+  (if (= 0 (length xs))
+    true
+    (list 'if (car xs) (and- (cdr xs)) false) ))
+(defmacro and [:rest xs] 
+  (and- xs))
+
+(hidden      or-)
+(defndynamic or- [xs]
+  (if (= 0 (length xs))
+    false
+    (list 'if (car xs) true (or- (cdr xs))) ))
+(defmacro or [:rest xs] 
+  (or- xs))
+
+
 
 (doc todo "sets the todo property for a binding.")
 (defmacro todo [name value]
