@@ -735,21 +735,21 @@ commandHostBitWidth ctx =
    in pure (ctx, Right (XObj (Num IntTy bitSize) (Just dummyInfo) (Just IntTy)))
 
 commandSaveDocsInternal :: UnaryCommandCallback
-commandSaveDocsInternal ctx modulePath = do
+commandSaveDocsInternal ctx modulePaths = do
   let globalEnv = contextGlobalEnv ctx
-  case modulePath of
+  case modulePaths of
     XObj (Lst xobjs) _ _ ->
       case mapM unwrapSymPathXObj xobjs of
-        Left err -> pure (evalError ctx err (xobjInfo modulePath))
+        Left err -> pure (evalError ctx err (xobjInfo modulePaths))
         Right okPaths ->
-          case mapM (getEnvironmentBinderForDocumentation ctx globalEnv) okPaths of
-            Left err -> pure (evalError ctx err (xobjInfo modulePath))
+          case mapM (getEnvironmentBinderForDocumentation globalEnv) okPaths of
+            Left err -> pure (evalError ctx err (xobjInfo modulePaths))
             Right okEnvBinders -> saveDocs ctx (zip okPaths okEnvBinders)
     x ->
-      pure (evalError ctx ("Invalid arg to save-docs-internal (expected list of symbols): " ++ pretty x) (xobjInfo modulePath))
+      pure (evalError ctx ("Invalid arg to save-docs-internal (expected list of symbols): " ++ pretty x) (xobjInfo modulePaths))
   where
-    getEnvironmentBinderForDocumentation :: Context -> Env -> SymPath -> Either String Binder
-    getEnvironmentBinderForDocumentation _ env path =
+    getEnvironmentBinderForDocumentation :: Env -> SymPath -> Either String Binder
+    getEnvironmentBinderForDocumentation env path =
       case E.searchValueBinder env path of
         Right foundBinder@(Binder _ (XObj (Mod _ _) _ _)) ->
           Right foundBinder
