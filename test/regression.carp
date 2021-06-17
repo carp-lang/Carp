@@ -94,9 +94,9 @@
                 @&Int.MAX
                 "test that the address of Int.MAX can be taken")
   (assert-equal test
-                &(Result.Error System.ENOENT)
+                &(Result.Error (System.strerror System.ENOENT))
                 &(IO.read->EOF "foobar")
-                "test that reading from an undefined file works")
+                "test that reading from a non existing file fails")
   (assert-equal test
                 "(SingleC 1)"
                 &(str &(SumT.SingleC 1))
