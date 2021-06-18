@@ -8,8 +8,10 @@
 (Project.config "echo-compiler-cmd" true )      ; uncomment this line for debugging
 ; (Project.config "cflag" "-O2")  ; note: including -Os or -O3 will significantly increase compile time
 
-(Project.config "cflag" "-I lib/ lib/entity.c lib/md4c.c lib/md4c-html.c lib/Md2Html.c") 
-; on Windows we don't need -Wno-typedef-redefinition for gcc/llvm/msvc/zig! :-)
+; on Windows we don't need -Wno-typedef-redefinition for gcc/llvm/msvc/zig, on Linux however we do!
+;(Project.config "cflag" "-I lib/ lib/entity.c lib/md4c.c lib/md4c-html.c lib/Md2Html.c") 
+;  trouble is: msvc does not know -Wno-typedef-redefinition :-/ 
+(Project.config "cflag" "-I lib/ -Wno-typedef-redefinition lib/entity.c lib/md4c.c lib/md4c-html.c lib/Md2Html.c") 
 
 (relative-include "lib/Md2Html.h")
 (defmodule Md2Html
@@ -34,6 +36,8 @@
 		wend   (if (Int.< wstart tmpend) tmpend slen) ]
     (String.slice data wstart wend) ))
 
+
+; TODO: check if this can be re-written using (reduce) or (iterate)
 (defn change-links [sMarkdown]
   (Loop.start [alltexts (Pattern.split        #"\[.-\]\(.-\)"     sMarkdown) 
                links    (Pattern.global-match #"\[(.-)\]\((.-)\)" sMarkdown) 
