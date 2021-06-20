@@ -513,42 +513,6 @@ Array Pattern_match_MINUS_groups(Pattern *p, String *s) {
     return a;
 }
 
-Array Pattern_find_MINUS_all(Pattern *p, String *s) {
-    String str = *s;
-    Pattern pat = *p;
-    int lstr = strlen(str);
-    int lpat = strlen(pat);
-    Array res;
-    res.len = 0;
-    res.capacity = 0;
-    res.data = NULL;
-    /* explicit request or no special characters? */
-    if (Pattern_internal_nospecials(pat, lpat)) {
-        while (1) {
-            /* do a plain search */
-            String s2 = Pattern_internal_lmemfind(str, lstr, pat, lpat);
-            if (!s2) return res;
-            Pattern_internal_update_int_array(&res, s2 - str);
-        }
-    }
-    PatternMatchState ms;
-    String s1 = str;
-    int anchor = (*pat == '^');
-    if (anchor) {
-        pat++;
-        lpat--; /* skip anchor character */
-    }
-    Pattern_internal_prepstate(&ms, str, lstr, pat, lpat);
-    do {
-        Pattern_internal_reprepstate(&ms);
-        if (Pattern_internal_match(&ms, s1, pat)) {
-            Pattern_internal_update_int_array(&res, s1 - str);
-        }
-    } while (s1++ < ms.src_end && !anchor);
-    return res;
-}
-
-/// gub-new
 typedef struct PatternMatchResult { 
     int start;	// negative start or end indicates a non-match
     int end;

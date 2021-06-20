@@ -34,18 +34,23 @@ Returns `-1` if it doesn’t find a matching pattern.")
   (doc find-all "finds all indices of a pattern in a string. The patterns may _not_ overlap.
 
 Returns `[]` if it doesn’t find a matching pattern.")
-  (register find-all (Fn [&Pattern &String] (Array Int)))
-  ;~ (defn find-all [pattern data]
-    ;~ (let-do [result []
-             ;~ stop   (String.length data)
-             ;~ found  (match-from pattern data 0)
-             ;~ start  @(MatchResult.end &found) ]
-      ;~ (while-do (and (Int.<= start stop)
-                     ;~ (not (non-match? &found)) )
-        ;~ (set! result (Array.push-back result found))
-        ;~ (set! found  (match-from pattern data start))
-        ;~ (set! start  @(MatchResult.end &found)) )
-      ;~ result ))
+  ;~ (register find-all (Fn [&Pattern &String] (Array Int)))
+  (defn find-all-matches [pattern data]
+    (let-do [result []
+             stop   (String.length data)
+             found  (match-from pattern data 0)
+             start  @(MatchResult.end &found) ]
+      (while-do (and (Int.<= start stop)
+                     (not (non-match? &found)) )
+        (set! result (Array.push-back result found))
+        (set! found  (match-from pattern data start))
+        (set! start  @(MatchResult.end &found)) )
+      result ))
+  (defn find-all [pattern data]
+    (Array.copy-map 
+      &(fn [m] @(MatchResult.start m)) 
+      &(find-all-matches pattern data) ))
+  
   
   (doc match-groups "finds the match groups of the first match of a pattern in
 a string.
