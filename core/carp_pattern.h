@@ -601,7 +601,7 @@ PatternMatchResult Pattern_match(Pattern *p, String *s) {
         Pattern_internal_reprepstate(&ms);
         if ((res = Pattern_internal_match(&ms, s1, pat))) {
             result.start = (s1 - str);
-            result.end = res - str;
+            result.end = res - str - 1;
             break;
         }
     } while (s1++ < ms.src_end && !anchor);
