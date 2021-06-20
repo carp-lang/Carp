@@ -10,14 +10,14 @@
 	    (MatchResult.end   match-res) ))
   (implements str Pattern.match2str)
 
-  (defn non-match? [match]
-    (or* (Int.< @(MatchResult.start match) 0)
-         (Int.< @(MatchResult.end   match) 0) ))
-  (defn extract [match data]
-    (if (non-match? match)
+  (defn non-match? [match-res]
+    (or (Int.< @(MatchResult.start match-res) 0)
+        (Int.< @(MatchResult.end   match-res) 0) ))
+  (defn extract [match-res data]
+    (if (non-match? match-res)
       (Maybe.Nothing)
-      (Maybe.Just (String.slice data @(MatchResult.start match)
-                                     @(MatchResult.end   match) ))))
+      (Maybe.Just (String.slice data @(MatchResult.start match-res)
+                                     @(MatchResult.end   match-res) ))))
 
   (doc      match-from "returns start and end indizes of the first match after start-pos. Note that the end index points to the 1st character _after_ the match (like all slice functions).")
   (register match-from (Fn [&Pattern &String Int] Pattern.MatchResult))
@@ -38,13 +38,13 @@ Returns `[]` if it doesn’t find a matching pattern.")
   ;~ (defn find-all [pattern data]
     ;~ (let-do [result []
              ;~ stop   (String.length data)
-             ;~ match  (match-from pattern data 0)
-             ;~ start  @(MatchResult.end &match) ]
+             ;~ found  (match-from pattern data 0)
+             ;~ start  @(MatchResult.end &found) ]
       ;~ (while-do (and (Int.<= start stop)
-                     ;~ (not (non-match? &match)) )
-        ;~ (set! result (Array.push-back result match))
-        ;~ (set! match  (match-from pattern data start))
-        ;~ (set! start  @(MatchResult.end &match)) )
+                     ;~ (not (non-match? &found)) )
+        ;~ (set! result (Array.push-back result found))
+        ;~ (set! found  (match-from pattern data start))
+        ;~ (set! start  @(MatchResult.end &found)) )
       ;~ result ))
   
   (doc match-groups "finds the match groups of the first match of a pattern in
