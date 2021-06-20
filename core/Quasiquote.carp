@@ -46,7 +46,7 @@ Example:
          (macro-error "unquote-splicing takes exactly one argument.")
        (reduce
          (fn [acc elem]
-           (if (and* (list? elem)
+           (if (and  (list? elem)
                      (= (length elem) 2)
                      (= (car elem) 'unquote-splicing))
              (list 'append acc (cadr elem))

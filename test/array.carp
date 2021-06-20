@@ -237,7 +237,7 @@
            five (Array.pop-back! &arr)
            four (Array.pop-back! &arr)]
     (assert-true test
-                 (and* (= &exp &arr)
+                 (and  (= &exp &arr)
                        (= six  6)
                        (= five 5)
                        (= four 4))
