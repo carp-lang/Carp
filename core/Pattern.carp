@@ -63,8 +63,7 @@ Returns an empty string if it doesn’t find a matching pattern.")
   (defn match-str [pattern data]
     (Maybe.from (Pattern.extract &(Pattern.match pattern data) data) @"") )
 
-  ; TODO: remove?!  
-  (doc global-match "finds all matches of a pattern in a string as a nested
+  (doc global-match "finds all match groups of a pattern in a string as a nested
 array.
 
 Returns `[]` if it doesn’t find a matching pattern.")
