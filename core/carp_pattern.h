@@ -476,18 +476,21 @@ void Pattern_internal_reprepstate(PatternMatchState *ms) {
     assert(ms->matchdepth == MAXCCALLS);
 }
 
-int Pattern_find(Pattern *p, String *s) {
+/* TODO: this is duplicated behavior, almost equivalent to Array_push_back */
+void Pattern_internal_update_int_array(Array *a, int value) {
+    a->len++;
+    if (a->len > a->capacity) {
+        a->capacity = a->len * 2;
+        a->data = CARP_REALLOC(a->data, sizeof(int) * a->capacity);
+    }
+    ((int *)a->data)[a->len - 1] = value;
+}
+
+Array Pattern_match_MINUS_groups(Pattern *p, String *s) {
     String str = *s;
     Pattern pat = *p;
     int lstr = strlen(str);
     int lpat = strlen(pat);
-    /* explicit request or no special characters? */
-    if (Pattern_internal_nospecials(pat, lpat)) {
-        /* do a plain search */
-        String s2 = Pattern_internal_lmemfind(str, lstr, pat, lpat);
-        if (!s2) return -1;
-        return s2 - str;
-    }
     PatternMatchState ms;
     String s1 = str;
     int anchor = (*pat == '^');
@@ -499,19 +502,15 @@ int Pattern_find(Pattern *p, String *s) {
     do {
         String res;
         Pattern_internal_reprepstate(&ms);
-        if ((res = Pattern_internal_match(&ms, s1, pat))) return s1 - str;
+        if ((res = Pattern_internal_match(&ms, s1, pat))) {
+            return Pattern_internal_push_captures(&ms, s1, res);
+        }
     } while (s1++ < ms.src_end && !anchor);
-    return -1;
-}
-
-/* TODO: this is duplicated behavior, almost equivalent to Array_push_back */
-void Pattern_internal_update_int_array(Array *a, int value) {
-    a->len++;
-    if (a->len > a->capacity) {
-        a->capacity = a->len * 2;
-        a->data = CARP_REALLOC(a->data, sizeof(int) * a->capacity);
-    }
-    ((int *)a->data)[a->len - 1] = value;
+    Array a;
+    a.len = 0;
+    a.capacity = 0;
+    a.data = NULL;
+    return a;
 }
 
 Array Pattern_find_MINUS_all(Pattern *p, String *s) {
@@ -549,42 +548,15 @@ Array Pattern_find_MINUS_all(Pattern *p, String *s) {
     return res;
 }
 
-Array Pattern_match_MINUS_groups(Pattern *p, String *s) {
-    String str = *s;
-    Pattern pat = *p;
-    int lstr = strlen(str);
-    int lpat = strlen(pat);
-    PatternMatchState ms;
-    String s1 = str;
-    int anchor = (*pat == '^');
-    if (anchor) {
-        pat++;
-        lpat--; /* skip anchor character */
-    }
-    Pattern_internal_prepstate(&ms, str, lstr, pat, lpat);
-    do {
-        String res;
-        Pattern_internal_reprepstate(&ms);
-        if ((res = Pattern_internal_match(&ms, s1, pat))) {
-            return Pattern_internal_push_captures(&ms, s1, res);
-        }
-    } while (s1++ < ms.src_end && !anchor);
-    Array a;
-    a.len = 0;
-    a.capacity = 0;
-    a.data = NULL;
-    return a;
-}
-
 /// gub-new
 typedef struct PatternMatchResult { 
     int start;	// negative start or end indicates a non-match
     int end;
 } PatternMatchResult;
 
-PatternMatchResult Pattern_match(Pattern *p, String *s) {
+PatternMatchResult Pattern_match_MINUS_from(Pattern *p, String *s, int startpos) {
 	PatternMatchResult result = { .start=-1, .end=-1 };
-    String str = *s;
+    String str = *s + startpos;
     Pattern pat = *p;
     int lstr = strlen(str);
     int lpat = strlen(pat);
@@ -600,23 +572,12 @@ PatternMatchResult Pattern_match(Pattern *p, String *s) {
 		String res;
         Pattern_internal_reprepstate(&ms);
         if ((res = Pattern_internal_match(&ms, s1, pat))) {
-            result.start = (s1 - str);
-            result.end = res - str - 1;
+            result.start = startpos + (s1 - str);
+            result.end   = startpos + res - str;
             break;
         }
     } while (s1++ < ms.src_end && !anchor);
     return result;
-}
-
-String Pattern_match_MINUS_str(Pattern *p, String *s) {
-	PatternMatchResult mres = Pattern_match( p, s );
-	if(mres.start < 0 || mres.end < 0)
-		return String_empty();
-	int len = mres.end - mres.start + 1;
-	String res = CARP_MALLOC(len + 1);
-	memcpy(res, *s + mres.start, len);
-	res[len] = '\0';
-	return res;
 }
 
 /* state for 'gmatch' */

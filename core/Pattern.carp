@@ -1,23 +1,49 @@
 (system-include "carp_pattern.h")
 
 (defmodule Pattern
+
   (register-type MatchResult "PatternMatchResult" [start Int, end Int])
-  (defn       match2str [match-res] 
-	(fmt "#<MatchResult start=%d end=%d>" 
-	  (MatchResult.start match-res) 
-	  (MatchResult.end   match-res) ))
+  (hidden match2str)
+  (defn   match2str [match-res] 
+	  (fmt "(MatchResult start=%d end=%d)" 
+	    (MatchResult.start match-res) 
+	    (MatchResult.end   match-res) ))
   (implements str Pattern.match2str)
-  (doc match "returns start and end indizes of the first match.")
-  (register match (Fn [&Pattern &String] Pattern.MatchResult))
+
+  (defn extract [match data]
+    (let [start @(MatchResult.start match)
+          end   @(MatchResult.end   match) ]
+      (if (or* (Int.< start 0)
+               (Int.< end   0) )
+        (Maybe.Nothing)
+        (Maybe.Just (String.slice data start end)) )))  ; slice takes end as 1st index AFTER the match
+
+  (doc      match-from "returns start and end indizes of the first match after start-pos. Note that the end index points to the 1st character _after_ the match (like all slice functions).")
+  (register match-from (Fn [&Pattern &String Int] Pattern.MatchResult))
+  (doc  match "returns start and end indizes of the first match after the start of the string. Note that the end index points to the 1st character _after_ the match (like all slice functions).")
+  (defn match [pattern data]
+    (match-from pattern data 0) )
 
   (doc find "finds the index of a pattern in a string.
 
 Returns `-1` if it doesn’t find a matching pattern.")
-  (register find (Fn [&Pattern &String] Int))
-  (doc find-all "finds all indices of a pattern in a string.
+  (defn find [pattern data]
+    @(Pattern.MatchResult.start &(Pattern.match pattern data)) )
+  
+  (doc find-all "finds all indices of a pattern in a string. The patterns may _not_ overlap.
 
 Returns `[]` if it doesn’t find a matching pattern.")
   (register find-all (Fn [&Pattern &String] (Array Int)))
+  ;~ (defn find-all [pattern data]
+    ;~ (let-do [result []
+             ;~ start  0
+             ;~ stop   (String.length data)
+             ;~ ;match  (match
+             ;~ ]
+      ;~ result
+    ;~ )
+  ;~ )
+  
   (doc match-groups "finds the match groups of the first match of a pattern in
 a string.
 
@@ -25,8 +51,10 @@ Returns `[]` if it doesn’t find a matching pattern.")
   (register match-groups (Fn [&Pattern &String] (Array String)))
   (doc match-str "finds the first match of a pattern in a string.
 
-Returns `[]` if it doesn’t find a matching pattern.")
-  (register match-str (Fn [&Pattern &String] String))
+Returns an empty string if it doesn’t find a matching pattern.")
+  (defn match-str [pattern data]
+    (Maybe.from (Pattern.extract &(Pattern.match pattern data) data) @"") )
+  
   (doc global-match "finds all matches of a pattern in a string as a nested
 array.
 
