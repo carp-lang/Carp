@@ -78,7 +78,7 @@
                 1 (inc y)
                 3 (dec y)
                 y)]
-    (if (or* (< new-x 0)
+    (if (or (< new-x 0)
              (< new-y 0)
              (>= new-x @(State.width &state))
              (>= new-y @(State.height &state)))
