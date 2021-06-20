@@ -1,6 +1,15 @@
 (system-include "carp_pattern.h")
 
 (defmodule Pattern
+  (register-type MatchResult "PatternMatchResult" [start Int, end Int])
+  (defn       match2str [match-res] 
+	(fmt "#<MatchResult start=%d end=%d>" 
+	  (MatchResult.start match-res) 
+	  (MatchResult.end   match-res) ))
+  (implements str Pattern.match2str)
+  (doc match "returns start and end indizes of the first match.")
+  (register match (Fn [&Pattern &String] Pattern.MatchResult))
+
   (doc find "finds the index of a pattern in a string.
 
 Returns `-1` if it doesn’t find a matching pattern.")

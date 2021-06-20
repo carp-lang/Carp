@@ -576,7 +576,14 @@ Array Pattern_match_MINUS_groups(Pattern *p, String *s) {
     return a;
 }
 
-String Pattern_match_MINUS_str(Pattern *p, String *s) {
+/// gub-new
+typedef struct PatternMatchResult { 
+    int start;	// negative start or end indicates a non-match
+    int end;
+} PatternMatchResult;
+
+PatternMatchResult Pattern_match(Pattern *p, String *s) {
+	PatternMatchResult result = { .start=-1, .end=-1 };
     String str = *s;
     Pattern pat = *p;
     int lstr = strlen(str);
@@ -590,19 +597,26 @@ String Pattern_match_MINUS_str(Pattern *p, String *s) {
     }
     Pattern_internal_prepstate(&ms, str, lstr, pat, lpat);
     do {
-        String res;
+		String res;
         Pattern_internal_reprepstate(&ms);
         if ((res = Pattern_internal_match(&ms, s1, pat))) {
-            int start = (s1 - str) + 1;
-            int end = res - str + 1;
-            int len = end - start;
-            res = CARP_MALLOC(len + 1);
-            memcpy(res, s1, len);
-            res[len] = '\0';
-            return res;
+            result.start = (s1 - str);
+            result.end = res - str;
+            break;
         }
     } while (s1++ < ms.src_end && !anchor);
-    return String_empty();
+    return result;
+}
+
+String Pattern_match_MINUS_str(Pattern *p, String *s) {
+	PatternMatchResult mres = Pattern_match( p, s );
+	if(mres.start < 0 || mres.end < 0)
+		return String_empty();
+	int len = mres.end - mres.start + 1;
+	String res = CARP_MALLOC(len + 1);
+	memcpy(res, *s + mres.start, len);
+	res[len] = '\0';
+	return res;
 }
 
 /* state for 'gmatch' */
