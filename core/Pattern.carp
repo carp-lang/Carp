@@ -62,7 +62,8 @@ Returns `[]` if it doesn’t find a matching pattern.")
 Returns an empty string if it doesn’t find a matching pattern.")
   (defn match-str [pattern data]
     (Maybe.from (Pattern.extract &(Pattern.match pattern data) data) @"") )
-  
+
+  ; TODO: remove?!  
   (doc global-match "finds all matches of a pattern in a string as a nested
 array.
 
@@ -97,8 +98,11 @@ list of those characters.")
   (defn from-chars [chars]
     (Pattern.init &(str* @"[" (String.from-chars chars) @"]")))
 
-  (defn global-match-str [p s]
-    (Array.copy-map &(fn [x] @(Array.unsafe-first x)) &(global-match p s)))
+  (defn global-match-str [pattern data]
+    (Array.copy-map 
+      &(fn [m] (Maybe.unsafe-from (extract m data))) 
+      &(find-all-matches pattern data)))
+
 
   (doc split "splits a string by a pattern.")
   (defn split [p s]
