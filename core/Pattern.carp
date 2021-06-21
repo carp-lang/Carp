@@ -3,12 +3,21 @@
 (defmodule Pattern
 
   (register-type MatchResult "PatternMatchResult" [start Int, end Int])
-  (hidden match2str)
-  (defn   match2str [match-res] 
-	  (fmt "(MatchResult start=%d end=%d)" 
-	    (MatchResult.start match-res) 
-	    (MatchResult.end   match-res) ))
-  (implements str Pattern.match2str)
+  (defmodule MatchResult
+    ;(hidden refstr)
+    (defn   refstr [match-res] 
+      (fmt "(MatchResult start=%d end=%d)" 
+        (MatchResult.start match-res) 
+        (MatchResult.end   match-res) ))
+    (implements str Pattern.MatchResult.refstr)
+    (implements prn Pattern.MatchResult.refstr)
+    ;
+    ;(hidden str)
+    (defn   str [match-res] 
+      (Pattern.MatchResult.refstr &match-res) )
+    (implements str Pattern.MatchResult.str)
+    (implements prn Pattern.MatchResult.str)
+  )
 
   (defn non-match? [match-res]
     (or (Int.< @(MatchResult.start match-res) 0)
