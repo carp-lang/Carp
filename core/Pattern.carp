@@ -4,19 +4,17 @@
 
   (register-type MatchResult "PatternMatchResult" [start Int, end Int])
   (defmodule MatchResult
-    ;(hidden refstr)
-    (defn   refstr [match-res] 
+    (defn refmatch2str [ref-matchres] 
       (fmt "(MatchResult start=%d end=%d)" 
-        (MatchResult.start match-res) 
-        (MatchResult.end   match-res) ))
-    (implements str Pattern.MatchResult.refstr)
-    (implements prn Pattern.MatchResult.refstr)
+        (MatchResult.start ref-matchres) 
+        (MatchResult.end   ref-matchres) ))
+    (implements str Pattern.MatchResult.refmatch2str)
+    (implements prn Pattern.MatchResult.refmatch2str)
     ;
-    ;(hidden str)
-    (defn   str [match-res] 
-      (Pattern.MatchResult.refstr &match-res) )
-    (implements str Pattern.MatchResult.str)
-    (implements prn Pattern.MatchResult.str)
+    (defn match2str [matchres] 
+      (Pattern.MatchResult.refmatch2str &matchres) )
+    (implements str Pattern.MatchResult.match2str)
+    (implements prn Pattern.MatchResult.match2str)
   )
 
   (defn non-match? [match-res]
