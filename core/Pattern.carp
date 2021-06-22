@@ -70,11 +70,11 @@ Returns an empty string if it doesn’t find a matching pattern.")
   (defn match-str [pattern data]
     (Maybe.from (Pattern.extract &(Pattern.match pattern data) data) @"") )
 
-  (doc global-match "finds all match groups of a pattern in a string as a nested
+  (doc match-all-groups "finds all match groups of a pattern in a string as a nested
 array.
 
 Returns `[]` if it doesn’t find a matching pattern.")
-  (register global-match (Fn [&Pattern &String] (Array (Array String))))
+  (register match-all-groups (Fn [&Pattern &String] (Array (Array String))))
   (doc substitute "finds all matches of a pattern in a string and replaces it
 by another pattern `n` times.
 

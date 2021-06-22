@@ -542,7 +542,7 @@ Array Array_push_back(Array res, Array tmp) {
     return res;
 }
 
-Array Pattern_global_MINUS_match(Pattern *p, String *s) {
+Array Pattern_match_MINUS_all_MINUS_groups(Pattern *p, String *s) {
     String str = *s;
     Pattern pat = *p;
     int lstr = strlen(str);
