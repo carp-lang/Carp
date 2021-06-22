@@ -30,7 +30,7 @@ defaultProject =
         _ ->
           [ "-fPIC",
             "-g",
-            "-std=c99",
+            "-std=c11",
             -- , "-pedantic"
             "-D_DEFAULT_SOURCE",
             "-Wall",
@@ -157,13 +157,14 @@ main = do
   pure ()
 
 -- | Options for how to run the compiler.
-data FullOptions = FullOptions
-  { optExecMode :: ExecutionMode,
-    optOthers :: OtherOptions,
-    optPreload :: [String],
-    optPostload :: [String],
-    optFiles :: [FilePath]
-  }
+data FullOptions
+  = FullOptions
+      { optExecMode :: ExecutionMode,
+        optOthers :: OtherOptions,
+        optPreload :: [String],
+        optPostload :: [String],
+        optFiles :: [FilePath]
+      }
   deriving (Show)
 
 parseFull :: Parser FullOptions
@@ -175,14 +176,15 @@ parseFull =
     <*> many (strOption (long "eval-postload" <> metavar "CODE" <> help "Eval CODE after loading FILES"))
     <*> parseFiles
 
-data OtherOptions = OtherOptions
-  { otherNoCore :: Bool,
-    otherNoProfile :: Bool,
-    otherLogMemory :: Bool,
-    otherOptimize :: Bool,
-    otherGenerateOnly :: Bool,
-    otherPrompt :: Maybe String
-  }
+data OtherOptions
+  = OtherOptions
+      { otherNoCore :: Bool,
+        otherNoProfile :: Bool,
+        otherLogMemory :: Bool,
+        otherOptimize :: Bool,
+        otherGenerateOnly :: Bool,
+        otherPrompt :: Maybe String
+      }
   deriving (Show)
 
 parseOther :: Parser OtherOptions
