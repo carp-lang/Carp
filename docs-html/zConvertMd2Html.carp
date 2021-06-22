@@ -6,12 +6,11 @@
 
 (Project.config "title" "zConvertMd2Html.exe" )
 (Project.config "echo-compiler-cmd" true )      ; uncomment this line for debugging
-; (Project.config "cflag" "-O2")  ; note: including -Os or -O3 will significantly increase compile time
+(Project.config "cflag" "-Os")  ; note: including -Os or -O3 will significantly increase compile time
+;(Project.config "compiler" "zig cc --target=x86_64-linux-musl")	; uncomment for really small executable
 
-; on Windows we don't need -Wno-typedef-redefinition for gcc/llvm/msvc/zig, on Linux however we do!
-;(Project.config "cflag" "-I lib/ lib/entity.c lib/md4c.c lib/md4c-html.c lib/Md2Html.c") 
-;  trouble is: msvc does not know -Wno-typedef-redefinition :-/ 
-(Project.config "cflag" "-I lib/ -Wno-typedef-redefinition lib/entity.c lib/md4c.c lib/md4c-html.c lib/Md2Html.c") 
+; on Windows we don't need -Wno-typedef-redefinition for gcc/llvm/msvc/zig, on Linux however we do!  => this is fixed by PR # 1262
+(Project.config "cflag" "-I lib/ lib/entity.c lib/md4c.c lib/md4c-html.c lib/Md2Html.c") 
 
 (relative-include "lib/Md2Html.h")
 (defmodule Md2Html
@@ -54,7 +53,7 @@
                fname-base  &(fancy-slice link-file 0 -3)
                link-anchor (Array.nth ref-parts 1)
                lcasefile   &(String.ascii-to-lower link-file)
-               new-link    (if (or* (String.starts-with? lcasefile "http")
+               new-link    (if (or  (String.starts-with? lcasefile "http")
                                     (String.starts-with? lcasefile "../")  
                                     (not (String.ends-with? lcasefile ".md")) )
                              (do ; not a reference to a local .md file => return unchanged match
