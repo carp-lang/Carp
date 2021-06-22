@@ -79,7 +79,7 @@
           written? (IO.write-file &sHtml fnOutput) ]
     (if (Result.error? &written?)
       (abort 3 &(fmt "error='%s' writing output to file='%s'" &(Result.unsafe-from-error written?) fnOutput))
-      (finish  "\ndone :-)")  )))))
+      (finish  "\tdone :-)")  )))))
 
 (defn main []
   (let [args (Int.- (StaticArray.length &System.args) 1) ]    ; 1st argument is executable!
