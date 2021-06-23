@@ -4,17 +4,16 @@
 
   (register-type MatchResult "PatternMatchResult" [start Int, end Int])
   (defmodule MatchResult
-    (defn refmatch2str [ref-matchres] 
+    (defn ref-str [ref-matchres] 
       (fmt "(MatchResult start=%d end=%d)" 
         (MatchResult.start ref-matchres) 
         (MatchResult.end   ref-matchres) ))
-    (implements str Pattern.MatchResult.refmatch2str)
-    (implements prn Pattern.MatchResult.refmatch2str)
-    ;
-    (defn match2str [matchres] 
-      (Pattern.MatchResult.refmatch2str &matchres) )
-    (implements str Pattern.MatchResult.match2str)
-    (implements prn Pattern.MatchResult.match2str)
+    (implements str Pattern.MatchResult.ref-str)
+    (implements prn Pattern.MatchResult.ref-str)
+    (defn str [matchres] 
+      (Pattern.MatchResult.ref-str &matchres) )
+    (implements str Pattern.MatchResult.str)
+    (implements prn Pattern.MatchResult.str)
   )
 
   (defn non-match? [match-res]
@@ -41,7 +40,6 @@ Returns `-1` if it doesn’t find a matching pattern.")
   (doc find-all "finds all indices of a pattern in a string. The patterns may _not_ overlap.
 
 Returns `[]` if it doesn’t find a matching pattern.")
-  ;~ (register find-all (Fn [&Pattern &String] (Array Int)))
   (defn find-all-matches [pattern data]
     (let-do [result []
              stop   (String.length data)
