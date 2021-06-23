@@ -5,11 +5,11 @@
 ; doc lambda vs. fn
 
 (Project.config "title" "zConvertMd2Html.exe" ) ; this is needed on Windows with some compilers, but does not hurt otherwise
-(Project.config "echo-compiler-cmd" true )      ; uncomment this line for debugging
-;(Project.config "cflag" "-Os")  ; note: including -Os or -O3 will significantly increase compile time
+;(Project.config "echo-compiler-cmd" true )      ; uncomment this line for debugging
+;(Project.config "cflag" "-Os")                 ; note: including -Os or -O3 will significantly increase compile time
 ;(Project.config "compiler" "zig cc --target=x86_64-linux-musl")	; uncomment for really small executable
+;(Project.config "compiler" "tcc")							; uncomment for faster builds
 
-; on Windows we don't need -Wno-typedef-redefinition for gcc/llvm/msvc/zig, on Linux however we do!  => this is fixed by PR # 1262
 (Project.config "cflag" "-I lib/ lib/entity.c lib/md4c.c lib/md4c-html.c lib/Md2Html.c") 
 
 (relative-include "lib/Md2Html.h")
@@ -26,7 +26,6 @@
     (String.slice data wstart wend) ))
 
 
-; TODO: check if this can be re-written using (reduce) or (iterate)
 (defn change-links [sMarkdown]
   (let-do [alltexts (Pattern.split        #"\[.-\]\(.-\)"     sMarkdown) 
            links    (Pattern.global-match #"\[(.-)\]\((.-)\)" sMarkdown) 

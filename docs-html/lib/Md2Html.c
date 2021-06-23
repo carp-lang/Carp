@@ -105,10 +105,10 @@ process_output(const MD_CHAR* text, MD_SIZE size, void* userdata)
     membuf_append((struct membuffer*) userdata, text, size);
 }
 
-String
-Md2Html_convert(String *in)
+Carp_String
+Md2Html_convert(Carp_String *in)
 {
-    String result = NULL;
+    Carp_String result = NULL;
 
     struct membuffer buf_in = {0};
     struct membuffer buf_out = {0};
