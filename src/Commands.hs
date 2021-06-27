@@ -50,9 +50,9 @@ boolToXObj b = if b then trueXObj else falseXObj
 
 addCmd :: SymPath -> CommandFunctionType -> String -> String -> (String, Binder)
 addCmd path callback doc example =
-  (name, Binder meta cmd)
+  (filename, Binder meta cmd)
   where
-    SymPath _ name = path
+    SymPath _ filename = path
     exampleUsage = "Example Usage:\n```\n" ++ example ++ "\n```\n"
     docString = doc ++ "\n\n" ++ exampleUsage
     meta = Meta.set "doc" (XObj (Str docString) Nothing Nothing) emptyMeta
@@ -383,7 +383,7 @@ commandProject ctx = do
   liftIO (print (contextProj ctx))
   pure (ctx, dynamicNil)
 
--- | Command for getting the name of the operating system you're on.
+-- | Command for getting the filename of the operating system you're on.
 commandHostOS :: NullaryCommandCallback
 commandHostOS ctx =
   pure (ctx, Right (XObj (Str os) (Just dummyInfo) (Just StringTy)))
@@ -736,8 +736,8 @@ commandHostBitWidth ctx =
   let bitSize = Integral (finiteBitSize (undefined :: Int))
    in pure (ctx, Right (XObj (Num IntTy bitSize) (Just dummyInfo) (Just IntTy)))
 
-commandSaveDocsInternal :: BinaryCommandCallback
-commandSaveDocsInternal ctx modulePaths filePaths = do
+commandSaveDocsEx :: BinaryCommandCallback
+commandSaveDocsEx ctx modulePaths filePaths = do
   case modulesAndGlobals of
     Left err -> pure (ctx, Left err)
     Right ok -> saveDocs ctx ok
@@ -750,12 +750,12 @@ commandSaveDocsInternal ctx modulePaths filePaths = do
        in do
             okMods <- mods
             okGlobs <- globs
-            pure (okMods ++ [okGlobs])
+            pure (okMods ++ okGlobs)
 
     modules :: (Context, Either EvalError [(SymPath, Binder)])
     modules = do
       case modulePaths of
-        XObj (Lst xobjs) _ _ ->
+        XObj (Arr xobjs) _ _ ->
           case mapM unwrapSymPathXObj xobjs of
             Left err -> evalError ctx err (xobjInfo modulePaths)
             Right okPaths ->
@@ -763,22 +763,28 @@ commandSaveDocsInternal ctx modulePaths filePaths = do
                 Left err -> evalError ctx err (xobjInfo modulePaths)
                 Right okEnvBinders -> (ctx, Right (zip okPaths okEnvBinders))
         x ->
-          evalError ctx ("Invalid first arg to save-docs-internal (expected list of symbols): " ++ pretty x) (xobjInfo modulePaths)
+          evalError ctx ("Invalid first arg to save-docs-internal (expected array of symbols): " ++ pretty x) (xobjInfo modulePaths)
 
-    filesWithGlobals :: (Context, Either EvalError (SymPath, Binder))
+    filesWithGlobals :: (Context, Either EvalError [(SymPath, Binder)])
     filesWithGlobals = do
       case filePaths of
-        XObj (Lst xobjs) _ _ ->
+        XObj (Arr xobjs) _ _ ->
           case mapM unwrapStringXObj xobjs of
             Left err -> evalError ctx err (xobjInfo filePaths)
             Right okPaths ->
-              let globalBinders = Map.fromList $ concat (mapM (getGlobalBindersForDocumentation globalEnv) okPaths)
-                  fauxGlobalModule = E.new Nothing (Just "Global")
-                  fauxGlobalModuleWithBindings = fauxGlobalModule {envBindings = globalBinders}
-                  fauxTypeEnv = E.new Nothing Nothing
-               in (ctx, Right (SymPath [] "Global", Binder emptyMeta (XObj (Mod fauxGlobalModuleWithBindings fauxTypeEnv) Nothing Nothing)))
+              let globalBinders = map (getGlobalBindersForDocumentation globalEnv) okPaths
+                  fauxModules = zipWith createFauxModule okPaths globalBinders
+               in (ctx, Right fauxModules)
         x ->
-          evalError ctx ("Invalid second arg to save-docs-internal (expected list of strings containing filenames): " ++ pretty x) (xobjInfo filePaths)
+          evalError ctx ("Invalid second arg to save-docs-internal (expected array of strings containing filenames): " ++ pretty x) (xobjInfo filePaths)
+
+    createFauxModule :: String -> Map.Map String Binder -> (SymPath, Binder)
+    createFauxModule filename binders =
+      let moduleName = "Globals in " ++ filename
+          fauxGlobalModule = E.new Nothing (Just moduleName)
+          fauxGlobalModuleWithBindings = fauxGlobalModule {envBindings = binders}
+          fauxTypeEnv = E.new Nothing Nothing
+       in (SymPath [] moduleName, Binder emptyMeta (XObj (Mod fauxGlobalModuleWithBindings fauxTypeEnv) Nothing Nothing))
 
     getEnvironmentBinderForDocumentation :: Env -> SymPath -> Either String Binder
     getEnvironmentBinderForDocumentation env path =
@@ -790,9 +796,9 @@ commandSaveDocsInternal ctx modulePaths filePaths = do
         Left _ ->
           Left ("I can’t find the module `" ++ show path ++ "`")
 
-    getGlobalBindersForDocumentation :: Env -> String -> [(String, Binder)]
+    getGlobalBindersForDocumentation :: Env -> String -> Map.Map String Binder
     getGlobalBindersForDocumentation env filename =
-      Map.toList $ Map.filter (\bind -> (binderFilename bind) == filename) (envBindings env)
+      Map.filter (\bind -> (binderFilename bind) == filename) (envBindings env)
 
     binderFilename :: Binder -> String
     binderFilename = takeFileName . fromMaybe "" . fmap infoFile . xobjInfo . binderXObj

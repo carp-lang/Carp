@@ -278,7 +278,7 @@ dynamicModule =
             f "*" commandMul "multiplies its two arguments." "(* 2 3) ; => 6",
             f "write-file" commandWriteFile "writes a string to a file." "(write-file \"myfile\" \"hello there!\")",
             f "set-env" commandSetEnv "sets an environment variable." "(set-env \"CARP_WAS_HERE\" \"true\")",
-            f "save-docs-internal" commandSaveDocsInternal "is the internal companion command to `save-docs`. Takes two lists, one with paths to modules (as symbols), and one with filenames (as strings). The filenames are used to emit global symbols in those files into a 'Global' module." "(save-docs-internal '(ModuleA ModuleB) '(\"globals.carp\"))"
+            f "save-docs-ex" commandSaveDocsEx "takes two arrays, one with paths to modules (as symbols), and one with filenames (as strings). The filenames are used to emit global symbols in those files into a 'Global' module." "(save-docs-internal '(ModuleA ModuleB) '(\"globals.carp\"))"
           ]
     variadics =
       let f = addVariadicCommand . spath

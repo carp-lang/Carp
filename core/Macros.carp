@@ -113,7 +113,7 @@
     (if (= 1 (length xs))
       (car xs)
       (list 'if (car xs) (and- (cdr xs)) false) )))
-(defmacro and [:rest xs] 
+(defmacro and [:rest xs]
   (and- xs))
 
 (hidden      or-)
@@ -126,7 +126,7 @@
     (if (= 1 (length xs))
       (car xs)
       (list 'if (car xs) true (or- (cdr xs))) )))
-(defmacro or [:rest xs] 
+(defmacro or [:rest xs]
   (or- xs))
 
 
@@ -269,10 +269,6 @@
           msg)))
     (list 'System.abort)
     (list 'bottom)))
-
-(defmacro save-docs [:rest modules]
-  ;; A trick to be able to send unquoted symbols to 'save-docs'
-  (eval (list 'save-docs-internal (list 'quote modules) (list))))
 
 (defndynamic implement-declaration [mod interface]
   (list 'implements interface (Symbol.prefix mod interface)))
