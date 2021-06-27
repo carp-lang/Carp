@@ -1,14 +1,62 @@
 (system-include "carp_pattern.h")
 
 (defmodule Pattern
+
+  (register-type MatchResult "PatternMatchResult" [start Int, end Int])
+  (defmodule MatchResult
+    (defn ref-str [ref-matchres] 
+      (fmt "(MatchResult start=%d end=%d)" 
+        (MatchResult.start ref-matchres) 
+        (MatchResult.end   ref-matchres) ))
+    (implements str Pattern.MatchResult.ref-str)
+    (implements prn Pattern.MatchResult.ref-str)
+    (defn str [matchres] 
+      (Pattern.MatchResult.ref-str &matchres) )
+    (implements str Pattern.MatchResult.str)
+    (implements prn Pattern.MatchResult.str)
+  )
+
+  (defn non-match? [match-res]
+    (or (Int.< @(MatchResult.start match-res) 0)
+        (Int.< @(MatchResult.end   match-res) 0) ))
+  (defn extract [match-res data]
+    (if (non-match? match-res)
+      (Maybe.Nothing)
+      (Maybe.Just (String.slice data @(MatchResult.start match-res)
+                                     @(MatchResult.end   match-res) ))))
+
+  (doc      match-from "returns start and end indizes of the first match after start-pos. Note that the end index points to the 1st character _after_ the match (like all slice functions).")
+  (register match-from (Fn [&Pattern &String Int] Pattern.MatchResult))
+  (doc  match "returns start and end indizes of the first match after the start of the string. Note that the end index points to the 1st character _after_ the match (like all slice functions).")
+  (defn match [pattern data]
+    (match-from pattern data 0) )
+
   (doc find "finds the index of a pattern in a string.
 
 Returns `-1` if it doesn’t find a matching pattern.")
-  (register find (Fn [&Pattern &String] Int))
-  (doc find-all "finds all indices of a pattern in a string.
+  (defn find [pattern data]
+    @(Pattern.MatchResult.start &(Pattern.match pattern data)) )
+  
+  (doc find-all "finds all indices of a pattern in a string. The patterns may _not_ overlap.
 
 Returns `[]` if it doesn’t find a matching pattern.")
-  (register find-all (Fn [&Pattern &String] (Array Int)))
+  (defn find-all-matches [pattern data]
+    (let-do [result []
+             stop   (String.length data)
+             found  (match-from pattern data 0)
+             start  @(MatchResult.end &found) ]
+      (while-do (and (Int.<= start stop)
+                     (not (non-match? &found)) )
+        (set! result (Array.push-back result found))
+        (set! found  (match-from pattern data start))
+        (set! start  @(MatchResult.end &found)) )
+      result ))
+  (defn find-all [pattern data]
+    (Array.copy-map 
+      &(fn [m] @(MatchResult.start m)) 
+      &(find-all-matches pattern data) ))
+  
+  
   (doc match-groups "finds the match groups of the first match of a pattern in
 a string.
 
@@ -16,13 +64,15 @@ Returns `[]` if it doesn’t find a matching pattern.")
   (register match-groups (Fn [&Pattern &String] (Array String)))
   (doc match-str "finds the first match of a pattern in a string.
 
-Returns `[]` if it doesn’t find a matching pattern.")
-  (register match-str (Fn [&Pattern &String] String))
-  (doc global-match "finds all matches of a pattern in a string as a nested
+Returns an empty string if it doesn’t find a matching pattern.")
+  (defn match-str [pattern data]
+    (Maybe.from (Pattern.extract &(Pattern.match pattern data) data) @"") )
+
+  (doc match-all-groups "finds all match groups of a pattern in a string as a nested
 array.
 
 Returns `[]` if it doesn’t find a matching pattern.")
-  (register global-match (Fn [&Pattern &String] (Array (Array String))))
+  (register match-all-groups (Fn [&Pattern &String] (Array (Array String))))
   (doc substitute "finds all matches of a pattern in a string and replaces it
 by another pattern `n` times.
 
@@ -52,8 +102,11 @@ list of those characters.")
   (defn from-chars [chars]
     (Pattern.init &(str* @"[" (String.from-chars chars) @"]")))
 
-  (defn global-match-str [p s]
-    (Array.copy-map &(fn [x] @(Array.unsafe-first x)) &(global-match p s)))
+  (defn global-match-str [pattern data]
+    (Array.copy-map 
+      &(fn [m] (Maybe.unsafe-from (extract m data))) 
+      &(find-all-matches pattern data)))
+
 
   (doc split "splits a string by a pattern.")
   (defn split [p s]

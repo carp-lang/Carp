@@ -33,12 +33,12 @@
 
 (defn vararg-and []
   (do (set! g 0)
-      (ignore (and* (inc-true) (inc-true) (inc-false) (inc-true) (inc-true))) ;; 3 expressions will evaluate.
+      (ignore (and (inc-true) (inc-true) (inc-false) (inc-true) (inc-true))) ;; 3 expressions will evaluate.
       g))
 
 (defn vararg-or []
   (do (set! g 0)
-      (ignore (or* (inc-false) (inc-false) (inc-true) (inc-false) (inc-false))) ;; 3 expressions will evaluate.
+      (ignore (or (inc-false) (inc-false) (inc-true) (inc-false) (inc-false))) ;; 3 expressions will evaluate.
       g))
 
 (deftest test
@@ -61,9 +61,9 @@
   (assert-equal test
                 3
                 (vararg-and)
-                "'and*' works")
+                "vararg-'and' works")
   (assert-equal test
                 3
                 (vararg-or)
-                "'or*' works")
+                "vararg-'or' works")
   )

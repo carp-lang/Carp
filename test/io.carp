@@ -6,18 +6,18 @@
     (if (Result.error? &written?)
       (Result.unsafe-from-error written?)
       (let-do [ read? (IO.read-file file-name) ]
-        (IO.unlink @file-name)
+        (IO.Raw.unlink! file-name)
         (if (Result.error? &read?)
           (Result.unsafe-from-error   read?)
           (Result.unsafe-from-success read?)  )))))
 
 (deftest test
   (assert-nothing test
-                  &(IO.getenv @"thisdoesnotexist")
+                  &(IO.getenv "thisdoesnotexist")
                   "getenv works on non-existant variable"
   )
   (assert-just test
-               &(IO.getenv @"PATH")
+               &(IO.getenv "PATH")
                "getenv works on existant variable"
   )
   (let [ data "Icke\n\tdette\n\tkieke mal,\nOochen, Flesch und Beene." ]  ; include \n in test data!

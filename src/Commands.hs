@@ -573,7 +573,9 @@ commandSubstring :: TernaryCommandCallback
 commandSubstring ctx a b c =
   pure $ case (a, b, c) of
     (XObj (Str s) _ _, XObj (Num IntTy (Integral f)) _ _, XObj (Num IntTy (Integral t)) _ _) ->
-      (ctx, Right (XObj (Str (take t (drop f s))) (Just dummyInfo) (Just StringTy)))
+      if f > t
+        then evalError ctx ("Can't call substring with indices " ++ show f ++ " and " ++ show t ++ ". The stop index must be higher than the start index") (xobjInfo a)
+        else (ctx, Right (XObj (Str (take (t - f) (drop f s))) (Just dummyInfo) (Just StringTy)))
     _ -> evalError ctx ("Can't call substring with " ++ pretty a ++ ", " ++ pretty b ++ " and " ++ pretty c) (xobjInfo a)
 
 commandStringLength :: UnaryCommandCallback

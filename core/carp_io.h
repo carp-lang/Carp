@@ -12,8 +12,6 @@ void IO_error(String *s) {
     fprintf(stderr, "%s", *s);
 }
 
-char IO_EOF = (char)EOF;
-
 String IO_get_MINUS_line() {
     char *b = NULL;
     size_t cap = 64;
@@ -54,16 +52,4 @@ String IO_unsafe_MINUS_read_MINUS_file(const String *filename) {
     }
 
     return buffer;
-}
-
-char IO_fgetc(FILE *f) {
-    return (char)fgetc(f);
-}
-
-void IO_fclose(FILE *f) {
-    fclose(f);
-}
-
-FILE *IO_fopen(const String *filename, const String *mode) {
-    return fopen(*filename, *mode);
 }

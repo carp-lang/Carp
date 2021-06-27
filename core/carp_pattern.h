@@ -390,24 +390,6 @@ init:                     /* using goto's to optimize tail recursion */
     return s;
 }
 
-String Pattern_internal_lmemfind(String s1, size_t l1, String s2, size_t l2) {
-    if (l2 == 0) return s1;   /* empty Strings are everywhere */
-    if (l2 > l1) return NULL; /* avoids a negative 'l1' */
-    String init;              /* to search for a '*s2' inside 's1' */
-    l2--;                     /* 1st char will be checked by 'memchr' */
-    l1 = l1 - l2;             /* 's2' cannot be found after that */
-    while (l1 > 0 && (init = (String)memchr(s1, *s2, l1))) {
-        init++; /* 1st char is already checked */
-        if (!memcmp(init, s2 + 1, l2)) {
-            return init - 1;
-        } else { /* correct 'l1' and 's1' to try again */
-            l1 -= init - s1;
-            s1 = init;
-        }
-    }
-    return NULL; /* not found */
-}
-
 String String_copy_len(String s, int len) {
     String ptr = CARP_MALLOC(len + 1);
     memcpy(ptr, s, len);
@@ -452,17 +434,6 @@ Array Pattern_internal_push_captures(PatternMatchState *ms, String s,
     return res;
 }
 
-/* check whether Pattern has no special characters */
-int Pattern_internal_nospecials(String p, size_t l) {
-    size_t upto = 0;
-    do {
-        if (strpbrk(p + upto, SPECIALS))
-            return 0;                 /* Pattern has a special character */
-        upto += strlen(p + upto) + 1; /* may have more after \0 */
-    } while (upto <= l);
-    return 1; /* no special chars found */
-}
-
 void Pattern_internal_prepstate(PatternMatchState *ms, String s, size_t ls,
                                 String p, size_t lp) {
     ms->matchdepth = MAXCCALLS;
@@ -474,79 +445,6 @@ void Pattern_internal_prepstate(PatternMatchState *ms, String s, size_t ls,
 void Pattern_internal_reprepstate(PatternMatchState *ms) {
     ms->level = 0;
     assert(ms->matchdepth == MAXCCALLS);
-}
-
-int Pattern_find(Pattern *p, String *s) {
-    String str = *s;
-    Pattern pat = *p;
-    int lstr = strlen(str);
-    int lpat = strlen(pat);
-    /* explicit request or no special characters? */
-    if (Pattern_internal_nospecials(pat, lpat)) {
-        /* do a plain search */
-        String s2 = Pattern_internal_lmemfind(str, lstr, pat, lpat);
-        if (!s2) return -1;
-        return s2 - str;
-    }
-    PatternMatchState ms;
-    String s1 = str;
-    int anchor = (*pat == '^');
-    if (anchor) {
-        pat++;
-        lpat--; /* skip anchor character */
-    }
-    Pattern_internal_prepstate(&ms, str, lstr, pat, lpat);
-    do {
-        String res;
-        Pattern_internal_reprepstate(&ms);
-        if ((res = Pattern_internal_match(&ms, s1, pat))) return s1 - str;
-    } while (s1++ < ms.src_end && !anchor);
-    return -1;
-}
-
-/* TODO: this is duplicated behavior, almost equivalent to Array_push_back */
-void Pattern_internal_update_int_array(Array *a, int value) {
-    a->len++;
-    if (a->len > a->capacity) {
-        a->capacity = a->len * 2;
-        a->data = CARP_REALLOC(a->data, sizeof(int) * a->capacity);
-    }
-    ((int *)a->data)[a->len - 1] = value;
-}
-
-Array Pattern_find_MINUS_all(Pattern *p, String *s) {
-    String str = *s;
-    Pattern pat = *p;
-    int lstr = strlen(str);
-    int lpat = strlen(pat);
-    Array res;
-    res.len = 0;
-    res.capacity = 0;
-    res.data = NULL;
-    /* explicit request or no special characters? */
-    if (Pattern_internal_nospecials(pat, lpat)) {
-        while (1) {
-            /* do a plain search */
-            String s2 = Pattern_internal_lmemfind(str, lstr, pat, lpat);
-            if (!s2) return res;
-            Pattern_internal_update_int_array(&res, s2 - str);
-        }
-    }
-    PatternMatchState ms;
-    String s1 = str;
-    int anchor = (*pat == '^');
-    if (anchor) {
-        pat++;
-        lpat--; /* skip anchor character */
-    }
-    Pattern_internal_prepstate(&ms, str, lstr, pat, lpat);
-    do {
-        Pattern_internal_reprepstate(&ms);
-        if (Pattern_internal_match(&ms, s1, pat)) {
-            Pattern_internal_update_int_array(&res, s1 - str);
-        }
-    } while (s1++ < ms.src_end && !anchor);
-    return res;
 }
 
 Array Pattern_match_MINUS_groups(Pattern *p, String *s) {
@@ -576,8 +474,14 @@ Array Pattern_match_MINUS_groups(Pattern *p, String *s) {
     return a;
 }
 
-String Pattern_match_MINUS_str(Pattern *p, String *s) {
-    String str = *s;
+typedef struct PatternMatchResult { 
+    int start;	// negative start or end indicates a non-match
+    int end;
+} PatternMatchResult;
+
+PatternMatchResult Pattern_match_MINUS_from(Pattern *p, String *s, int startpos) {
+	PatternMatchResult result = { .start=-1, .end=-1 };
+    String str = *s + startpos;
     Pattern pat = *p;
     int lstr = strlen(str);
     int lpat = strlen(pat);
@@ -590,19 +494,15 @@ String Pattern_match_MINUS_str(Pattern *p, String *s) {
     }
     Pattern_internal_prepstate(&ms, str, lstr, pat, lpat);
     do {
-        String res;
+		String res;
         Pattern_internal_reprepstate(&ms);
         if ((res = Pattern_internal_match(&ms, s1, pat))) {
-            int start = (s1 - str) + 1;
-            int end = res - str + 1;
-            int len = end - start;
-            res = CARP_MALLOC(len + 1);
-            memcpy(res, s1, len);
-            res[len] = '\0';
-            return res;
+            result.start = startpos + (s1 - str);
+            result.end   = startpos + res - str;
+            break;
         }
     } while (s1++ < ms.src_end && !anchor);
-    return String_empty();
+    return result;
 }
 
 /* state for 'gmatch' */
@@ -642,7 +542,7 @@ Array Array_push_back(Array res, Array tmp) {
     return res;
 }
 
-Array Pattern_global_MINUS_match(Pattern *p, String *s) {
+Array Pattern_match_MINUS_all_MINUS_groups(Pattern *p, String *s) {
     String str = *s;
     Pattern pat = *p;
     int lstr = strlen(str);
