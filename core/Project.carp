@@ -7,3 +7,9 @@
 (doc defproject "Define a project configuration.")
 (defmacro defproject [:rest bindings]
   (project-config bindings))
+
+(doc save-docs "A simple version of `save-docs-ex` that lets you list all the modules directly as unquoted symbols. Does not handle global symbols, use `save-docs-ex` for that.
+
+Example usage: `(save-docs Int Float String)`")
+(defmacro save-docs [:rest modules]
+  (eval (list 'save-docs-ex (list quote (collect-into modules array)) [])))
