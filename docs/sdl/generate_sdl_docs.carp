@@ -10,12 +10,18 @@
 (load "SDL_mixer.carp")
 (load "SDL_ttf.carp")
 
-(save-docs SDL
-           SDLApp
-           IMG
-           GFX
-           Mixer
-           TTF
-           )
+(save-docs-ex
+ ['SDL
+  'SDLApp
+  'IMG
+  'GFX
+  'Mixer
+  'TTF]
+ ["SDL.carp"
+  "SDL_image.carp"
+  "SDL_gfx.carp"
+  "SDL_mixer.carp"
+  "SDL_ttf.carp"
+  ])
 
 (quit)
