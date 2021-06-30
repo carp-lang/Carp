@@ -1,4 +1,11 @@
 #if defined _WIN32
+
+#ifdef __TINYC__
+// missing definitions for tcc-0.9.27-win32-bin.zip => 32bit TCC
+#define CP_UTF8 65001
+#define strtof strtod
+#endif
+
 #include <windows.h>
 #if !defined __CYGWIN__ && !defined __MINGW32__
 typedef intptr_t ssize_t;
