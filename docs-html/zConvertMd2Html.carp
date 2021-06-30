@@ -27,8 +27,8 @@
 
 
 (defn change-links [sMarkdown]
-  (let-do [alltexts (Pattern.split            #"\[[^\[\]\(\)]-\]\([^\[\]\(\)]-\)"     sMarkdown) 
-           links    (Pattern.match-all-groups #"\[([^\[\]\(\)]-)\]\(([^\[\]\(\)]-)\)" sMarkdown) 
+  (let-do [alltexts (Pattern.split            #"\[[^\[\]]-\]\([^\(\)]-\)"     sMarkdown) 
+           links    (Pattern.match-all-groups #"\[([^\[\]]-)\]\(([^\(\)]-)\)" sMarkdown) 
            texts    (Array.rest &alltexts)                         ; => (Array String)
            result   (Maybe.unsafe-from (Array.first &alltexts)) ]  ; => String
     (while (not (Array.empty? &links))
