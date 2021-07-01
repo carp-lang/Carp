@@ -1,10 +1,12 @@
 ;; Defining the meta data macros early so that they can be used by all the other code.
 ;; Defined early so that `doc` can accept a rest arg
+(meta-set! map-internal "hidden" true)
 (defndynamic map-internal [f xs acc]
     (if (= 0 (length xs))
         acc
         (map-internal f (cdr xs) (cons-last (f (car xs)) acc))))
 
+(meta-set! list-to-array-internal "hidden" true)
 (defndynamic list-to-array-internal [xs acc]
     (if (= 0 (length xs))
         acc
@@ -80,7 +82,7 @@
                                             (Dynamic.String.concat [x newline])))
                                 strings
                                 ())]
-    (list 'meta-set! name "doc" (Dynamic.String.concat (list-to-array-internal separated [])))))
+    (eval (list 'meta-set! name "doc" (Dynamic.String.concat (list-to-array-internal separated []))))))
 
 (doc print-doc "Print the documentation for a binding.")
 (defmacro print-doc [name]
@@ -113,6 +115,10 @@
     (if (= 1 (length xs))
       (car xs)
       (list 'if (car xs) (and- (cdr xs)) false) )))
+(doc and "evaluates the forms `xs` one at a time, from left to right. If a form
+evaluates to `false`, `and` returns that value and doesn't evaluate any of the
+other expressions, otherwise it returns the value of the last form in `xs`.
+`(and)` returns `true`.")
 (defmacro and [:rest xs]
   (and- xs))
 
@@ -126,6 +132,10 @@
     (if (= 1 (length xs))
       (car xs)
       (list 'if (car xs) true (or- (cdr xs))) )))
+(doc or "evaluates the forms `xs` one at a time, from left to right. If a form
+evaluates to `true`, `or` returns that value and doesn't evaluate any of the
+other expressions, otherwise it returns the value of the last form in `xs`.
+`(or)` returns `false`.")
 (defmacro or [:rest xs]
   (or- xs))
 
@@ -142,6 +152,7 @@
 (defmacro hidden? [name]
   (eval (list 'not (list 'list? (list 'meta name "hidden")))))
 
+(hidden annotate-helper)
 (defndynamic annotate-helper [name annotation]
   (list 'cons annotation (list 'meta name "annotations")))
 
@@ -168,6 +179,7 @@
    (eval (list 'hidden name))
    (list 'def name value)))
 
+(hidden cond-internal)
 (defndynamic cond-internal [xs]
   (if (= (length xs) 0)
     (list)
@@ -194,16 +206,22 @@
 (defmacro cond [:rest xs]
   (cond-internal xs))
 
+(doc refstr "stringifies `x` and takes the reference of that string.")
 (defmacro refstr [x]
   (list 'ref
         (list 'str x)))
 
+(doc swap! "swaps its arguments `x` and `y` in place.
+
+*Note*: Unhygienic!")
 (defmacro swap! [x y]
   (list 'let (array 'tmp y) (list 'do (list 'set! y x) (list 'set! x 'tmp))))
 
+(doc update! "updates `x` in place using the function `f`.")
 (defmacro update! [x f]
   (list 'set! x (list f x)))
 
+(hidden use-all-fn)
 (defndynamic use-all-fn [names]
   (if (= (length names) 0)
     (macro-error "Trying to call use-all without arguments")
@@ -213,17 +231,22 @@
         ()
         (use-all-fn (cdr names))))))
 
+(doc use-all "is a variadic version of `use`.")
 (defmacro use-all [:rest names]
   (use-all-fn names))
 
+(doc load-and-use "loads a file and uses the module with in it. Assumes that
+the filename and module name are the same.")
 (defmacro load-and-use [name]
   (do
     (eval (list 'load (str name ".carp")))
     (eval (list 'use name))))
 
+(doc comment "ignores `forms`.")
 (defmacro comment [:rest forms]
   ())
 
+(hidden build-vararg)
 (defndynamic build-vararg [func forms]
   (if (= (length forms) 0)
     (macro-error "vararg macro needs at least one argument")
@@ -231,6 +254,7 @@
       (car forms)
       (list func (car forms) (build-vararg func (cdr forms))))))
 
+(doc ignore "ignores the return value of the expression `form`.")
 (defmacro ignore [form]
   (list 'let (array '_ form) (list)))
 
@@ -253,6 +277,7 @@
 (defmacro inline-c [name defcode :rest declcode]
   (eval (list 'deftemplate name (list) defcode (if (empty? declcode) "" (car declcode)))))
 
+(doc bottom "aborts the program if reached.")
 (deftemplate bottom (Fn [] a) "$a $NAME()" "$DECL { abort(); }")
 
 (doc unreachable
@@ -270,6 +295,7 @@
     (list 'System.abort)
     (list 'bottom)))
 
+(hidden implement-declaration)
 (defndynamic implement-declaration [mod interface]
   (list 'implements interface (Symbol.prefix mod interface)))
 

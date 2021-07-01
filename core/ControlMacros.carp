@@ -1,3 +1,4 @@
+(hidden thread-first-internal)
 (defndynamic thread-first-internal [xs]
   (if (= (length xs) 2)
     (if (list? (last xs))
@@ -13,6 +14,7 @@
        (cdr (last xs)))
       (list (last xs) (thread-first-internal (all-but-last xs))))))
 
+(hidden thread-last-internal)
 (defndynamic thread-last-internal [xs]
   (if (= (length xs) 2)
     (if (list? (last xs))
@@ -30,12 +32,35 @@
 (defmacro ==> [:rest forms]
   (thread-last-internal forms))
 
+(doc -> "threads the first form through the following ones, making it the first
+argument.
+
+Example:
+
+```
+(-> 1
+    (- 10)
+    (* 5)
+) ; => -45
+```")
 (defmacro -> [:rest forms]
   (thread-first-internal forms))
 
+(doc --> "threads the first form through the following ones, making it the last
+argument.
+
+Example:
+
+```
+(--> 1
+    (- 10)
+    (/ 45)
+) ; => 5
+```")
 (defmacro --> [:rest forms]
   (thread-last-internal forms))
 
+(hidden comp-internal)
 (defndynamic comp-internal [sym fns]
   (if (= (length fns) 0)
     sym
@@ -90,26 +115,33 @@
   (list 'while (list 'not cnd)
         body))
 
+(doc let-do "is a `let` with an implicit `do` body.")
 (defmacro let-do [bindings :rest forms]
   (list 'let bindings
         (cons 'do forms)))
 
+(doc while-do "is a `while` with an implicit `do` body.")
 (defmacro while-do [condition :rest forms]
   (list 'while condition
         (cons 'do forms)))
 
+(doc defn-do "is a `defn` with an implicit `do` body.")
 (defmacro defn-do [name arguments :rest body]
   (eval (list 'defn name arguments (cons 'do body))))
 
+(doc forever-do "is a `forever` with an implicit `do` body.")
 (defmacro forever-do [:rest forms]
   (list 'while true (cons 'do forms)))
 
+(doc when "is an `if` without an else branch.")
 (defmacro when [condition form]
   (list 'if condition form (list)))
 
+(doc unless "is an `if` without a then branch.")
 (defmacro unless [condition form]
   (list 'if condition (list) form))
 
+(hidden case-internal)
 (defndynamic case-internal [name xs]
   (if (= (length xs) 0)
     (list)
@@ -122,8 +154,20 @@
               (cadr xs)
               (case-internal name (cddr xs)))))))
 
-(defmacro case [name :rest forms]
-  (case-internal name forms))
+(doc case "takes a form and a list of branches which are value and operation
+pairs. If a value matches, the operation is executed. It takes a catch-all else
+branch that is executed if nothing matches.
+
+Example:
+```
+(case (+ 10 1)
+  10 (println* \"nope\")
+  11 (println* \"yup\")
+  (println* \"else branch\")
+)
+```")
+(defmacro case [form :rest branches]
+  (case-internal form branches))
 
 (defmodule Dynamic
   (doc flip
