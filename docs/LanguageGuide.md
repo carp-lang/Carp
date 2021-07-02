@@ -496,3 +496,22 @@ Here is a little overview of the API:
 ; if you want to replace every occurrence, use -1
 (Pattern.substitute #"sub-me" "sub-me sub-me sub-me" "replaced" -1) ; => "replaced replaced replaced"
 ```
+
+#### Limitations of Patterns
+
+As mentioned above, patterns are not as expressive as regular expressions. The
+fundamental difference is that patterns do not backtrack. This means that they
+cannot express alternation (because we can’t go back to where we branched) and
+we cannot reduce non-greedy matches on the left. The latter point might not be
+obvious, so let us look at an example:
+
+```
+(Pattern.match-all-groups #"1.-2" "1 1 2") ; => [[@"1 1 2"]]
+```
+
+A valid, less greedy match would have been `"1 2"`, but since it would have
+required us to go back to the left after we had started matching to reduce the
+match size, this is not done. As such, while `-` is similar to `*?` in regular
+expressions, it is not the same. Often, a more explicit variant of the pattern
+can be found that is able to resolve the issues (in the case above, `#"1\s-2"`
+might have been desirable, for instance).
