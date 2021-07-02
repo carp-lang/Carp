@@ -16,10 +16,12 @@ import Data.Maybe (fromJust, fromMaybe)
 import Deftype
 import Emit
 import Env (addUsePath, contextEnv, insert, lookupBinderEverywhere, lookupEverywhere, lookupMeta, searchValueBinder)
+import EvalError
 import Infer
 import Info
 import Interfaces
 import Managed
+import qualified Map
 import qualified Meta
 import Obj
 import PrimitiveError
@@ -347,6 +349,48 @@ primitiveInfo _ ctx target@(XObj (Sym path@(SymPath _ name) _) _ _) =
 primitiveInfo _ ctx notName =
   argumentErr ctx "info" "a name" "first" notName
 
+-- | Get information about a binding.
+primitiveMachineInfo :: UnaryPrimitiveCallback
+primitiveMachineInfo (XObj _ i _) ctx (XObj (Sym path _) _ _) =
+  case lookupBinderInTypeEnv ctx path of
+    Right bind -> return (ctx, Right $ workOnBinder bind)
+    Left _ ->
+      case lookupBinderInContextEnv ctx path of
+        Right bind -> return (ctx, Right $ workOnBinder bind)
+        Left e -> return $ throwErr e ctx i
+  where
+    workOnBinder :: Binder -> XObj
+    workOnBinder (Binder metaData (XObj _ (Just (Info l c f _ _)) t)) =
+      makeX
+        ( Lst
+            [ makeX (maybe (Lst []) tyToObj t),
+              makeX
+                ( Lst
+                    [ makeX (Str f),
+                      makeX (Num IntTy (Integral l)),
+                      makeX (Num IntTy (Integral c))
+                    ]
+                ),
+              metaList metaData
+            ]
+        )
+    workOnBinder (Binder metaData (XObj _ _ t)) =
+      makeX
+        ( Lst
+            [ makeX (maybe (Lst []) tyToObj t),
+              makeX (Lst []),
+              metaList metaData
+            ]
+        )
+    metaList :: MetaData -> XObj
+    metaList (MetaData m) =
+      makeX (Lst (map genPair (Map.toList m)))
+      where
+        genPair (s, x) = makeX (Lst [XObj (Str s) Nothing Nothing, x])
+    makeX o = XObj o Nothing Nothing
+primitiveMachineInfo _ ctx notName =
+  argumentErr ctx "machine-info" "a name" "first" notName
+
 dynamicOrMacroWith :: Context -> (SymPath -> [XObj]) -> Ty -> String -> XObj -> IO (Context, Either EvalError XObj)
 dynamicOrMacroWith ctx producer ty name body = do
   let qpath = qualifyPath ctx (SymPath [] name)
@@ -371,7 +415,6 @@ primitiveMembers _ ctx xobj@(XObj (Sym path _) _ _) =
     go (XObj (Lst ((XObj (DefSumtype _) _ _) : _ : cases)) _ _) =
       pure $ (ctx, (either Left (\a -> Right (XObj (Arr (concat a)) Nothing Nothing)) (mapM getMembersFromCase cases)))
     go x = pure (toEvalError ctx x (NonTypeInTypeEnv path x))
-
     getMembersFromCase :: XObj -> Either EvalError [XObj]
     getMembersFromCase (XObj (Lst members) _ _) =
       Right (map (\(a, b) -> XObj (Lst [a, b]) Nothing Nothing) (pairwise members))
@@ -666,7 +709,6 @@ primitiveUse xobj ctx (XObj (Sym path _) _ _) =
     updateGlobalUsePaths :: Env -> SymPath -> (Context, Either EvalError XObj)
     updateGlobalUsePaths e spath =
       ((replaceGlobalEnv ctx (addUsePath e spath)), dynamicNil)
-
     updateModuleUsePaths :: Env -> SymPath -> Binder -> SymPath -> (Context, Either EvalError XObj)
     updateModuleUsePaths e p (Binder meta (XObj (Mod ev et) i t)) spath =
       either
