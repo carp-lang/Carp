@@ -350,8 +350,8 @@ primitiveInfo _ ctx notName =
   argumentErr ctx "info" "a name" "first" notName
 
 -- | Get information about a binding.
-primitiveMachineInfo :: UnaryPrimitiveCallback
-primitiveMachineInfo (XObj _ i _) ctx (XObj (Sym path _) _ _) =
+primitiveStructuredInfo :: UnaryPrimitiveCallback
+primitiveStructuredInfo (XObj _ i _) ctx (XObj (Sym path _) _ _) =
   case lookupBinderInTypeEnv ctx path of
     Right bind -> return (ctx, Right $ workOnBinder bind)
     Left _ ->
@@ -388,7 +388,7 @@ primitiveMachineInfo (XObj _ i _) ctx (XObj (Sym path _) _ _) =
       where
         genPair (s, x) = makeX (Lst [XObj (Str s) Nothing Nothing, x])
     makeX o = XObj o Nothing Nothing
-primitiveMachineInfo _ ctx notName =
+primitiveStructuredInfo _ ctx notName =
   argumentErr ctx "machine-info" "a name" "first" notName
 
 dynamicOrMacroWith :: Context -> (SymPath -> [XObj]) -> Ty -> String -> XObj -> IO (Context, Either EvalError XObj)
