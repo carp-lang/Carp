@@ -1,3 +1,4 @@
+(doc Function "provides operations on functions.")
 (defmodule Function
   (doc unsafe-ptr "returns a void pointer to the function passed in.
 
