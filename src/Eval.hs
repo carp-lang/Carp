@@ -184,7 +184,6 @@ eval ctx xobj@(XObj o info ty) preference resolver =
     resolveDef (XObj (Lst [XObj DefDynamic _ _, _, value]) _ _) = value
     resolveDef (XObj (Lst [XObj LocalDef _ _, _, value]) _ _) = value
     resolveDef x = x
-
     eval' form =
       case validate form of
         Left e -> pure (evalError ctx (format e) (xobjInfo xobj))
@@ -247,7 +246,6 @@ eval ctx xobj@(XObj o info ty) preference resolver =
           pure $ case evald of
             Right res -> (newCtx, Right (l ++ [res]))
             Left err -> (newCtx, Left err)
-
     evaluateIf :: Evaluator
     evaluateIf (IfPat _ cond true false) = do
       (newCtx, evd) <- eval ctx cond preference ResolveLocal
@@ -259,7 +257,6 @@ eval ctx xobj@(XObj o info ty) preference resolver =
               pure (throwErr (IfContainsNonBool cond) ctx (xobjInfo cond))
         Left e -> pure (newCtx, Left e)
     evaluateIf _ = pure (evalError ctx (format (GenericMalformed xobj)) (xobjInfo xobj))
-
     evaluateThe :: Evaluator
     evaluateThe (ThePat the t value) = do
       (newCtx, evaledValue) <- expandAll (evalDynamic ResolveLocal) ctx value -- TODO: Why expand all here?
@@ -270,7 +267,6 @@ eval ctx xobj@(XObj o info ty) preference resolver =
             Right (XObj (Lst [the, t, okValue]) info ty)
         )
     evaluateThe _ = pure (evalError ctx (format (GenericMalformed xobj)) (xobjInfo xobj))
-
     evaluateLet :: Evaluator
     evaluateLet (LetPat _ (ArrPat bindings) body) = do
       let binds = unwrapVar (pairwise bindings) []
@@ -310,7 +306,6 @@ eval ctx xobj@(XObj o info ty) preference resolver =
                   pure $ Right (fromRight (error "Failed to eval let binding!!") (bindLetDeclaration (newCtx {contextInternalEnv = origin}) n okX))
                 Left err -> pure $ Left err
     evaluateLet _ = pure (evalError ctx (format (GenericMalformed xobj)) (xobjInfo xobj))
-
     evaluateFn :: Evaluator
     evaluateFn (FnPat self args body) = do
       (newCtx, expanded) <- macroExpand ctx body
@@ -320,7 +315,6 @@ eval ctx xobj@(XObj o info ty) preference resolver =
             (newCtx, Right (XObj (Closure (XObj (Lst [self, args, b]) info ty) (CCtx newCtx)) info ty))
           Left err -> (ctx, Left err)
     evaluateFn _ = pure (evalError ctx (format (GenericMalformed xobj)) (xobjInfo xobj))
-
     evaluateClosure :: Evaluator
     evaluateClosure (AppPat (ClosurePat params body c) args) = do
       (newCtx, evaledArgs) <- foldlM successiveEval (ctx, Right []) args
@@ -333,7 +327,6 @@ eval ctx xobj@(XObj o info ty) preference resolver =
           pure (replaceGlobalEnv newCtx (contextGlobalEnv ctx'), res)
         Left err -> pure (newCtx, Left err)
     evaluateClosure _ = pure (evalError ctx (format (GenericMalformed xobj)) (xobjInfo xobj))
-
     evaluateDynamicFn :: Evaluator
     evaluateDynamicFn (AppPat (DynamicFnPat _ params body) args) = do
       (newCtx, evaledArgs) <- foldlM successiveEval (ctx, Right []) args
@@ -341,7 +334,6 @@ eval ctx xobj@(XObj o info ty) preference resolver =
         Right okArgs -> apply newCtx body params okArgs
         Left err -> pure (newCtx, Left err)
     evaluateDynamicFn _ = pure (evalError ctx (format (GenericMalformed xobj)) (xobjInfo xobj))
-
     evaluateMacro :: Evaluator
     evaluateMacro (AppPat (MacroPat _ params body) args) = do
       (ctx', res) <- apply ctx body params args
@@ -349,7 +341,6 @@ eval ctx xobj@(XObj o info ty) preference resolver =
         Right xobj' -> macroExpand ctx' xobj'
         Left _ -> pure (ctx, res)
     evaluateMacro _ = pure (evalError ctx (format (GenericMalformed xobj)) (xobjInfo xobj))
-
     evaluateCommand :: Evaluator
     evaluateCommand (AppPat (CommandPat (NullaryCommandFunction nullary) _ _) []) =
       nullary ctx
@@ -377,7 +368,6 @@ eval ctx xobj@(XObj o info ty) preference resolver =
     evaluateCommand (AppPat (CommandPat _ _ _) _) =
       pure (evalError ctx (format (GenericMalformed xobj)) (xobjInfo xobj))
     evaluateCommand _ = pure (evalError ctx (format (GenericMalformed xobj)) (xobjInfo xobj))
-
     evaluatePrimitive :: Evaluator
     evaluatePrimitive (AppPat p@(PrimitivePat (NullaryPrimitive nullary) _ _) []) =
       nullary p ctx
@@ -395,7 +385,6 @@ eval ctx xobj@(XObj o info ty) preference resolver =
     evaluatePrimitive (AppPat (PrimitivePat _ _ _) _) =
       pure (evalError ctx (format (GenericMalformed xobj)) (xobjInfo xobj))
     evaluatePrimitive _ = pure (evalError ctx (format (GenericMalformed xobj)) (xobjInfo xobj))
-
     evaluateApp :: Evaluator
     evaluateApp (AppPat f' args) =
       case f' of
@@ -412,7 +401,6 @@ eval ctx xobj@(XObj o info ty) preference resolver =
                 pure (popFrame newCtx', res)
               x' -> pure (newCtx, x')
     evaluateApp _ = pure (evalError ctx (format (GenericMalformed xobj)) (xobjInfo xobj))
-
     evaluateSideEffects :: Evaluator
     evaluateSideEffects forms = do
       foldlM successiveEval' (ctx, dynamicNil) forms
@@ -721,7 +709,7 @@ annotateWithinContext ctx xobj = do
                     Right ok -> pure (ctx, Right ok)
 
 primitiveDefmodule :: VariadicPrimitiveCallback
-primitiveDefmodule xobj ctx@(Context env i tenv pathStrings _ _ _ _) (XObj (Sym (SymPath [] moduleName) _) _ _ : innerExpressions) =
+primitiveDefmodule xobj ctx@(Context env i tenv pathStrings _ _ _ _) (XObj (Sym (SymPath [] moduleName) _) si _ : innerExpressions) =
   -- N.B. The `envParent` rewrite at the end of this line is important!
   -- lookups delve into parent envs by default, which is normally what we want, but in this case it leads to problems
   -- when submodules happen to share a name with an existing module or type at the global level.
@@ -753,7 +741,7 @@ primitiveDefmodule xobj ctx@(Context env i tenv pathStrings _ _ _ _) (XObj (Sym 
       where
         moduleDefs = E.new (Just (fromRight env (E.getInnerEnv env pathStrings))) (Just moduleName)
         moduleTypes = E.new (Just tenv) (Just moduleName)
-        newModule = XObj (Mod moduleDefs moduleTypes) (xobjInfo xobj) (Just ModuleTy)
+        newModule = XObj (Mod moduleDefs moduleTypes) si (Just ModuleTy)
         updater = \c ->
           insertInGlobalEnv' (markQualified (SymPath pathStrings moduleName)) (Binder meta newModule) c
             >>= pure . replaceInternalEnv' (moduleDefs {envParent = i})
