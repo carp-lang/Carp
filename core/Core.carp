@@ -19,6 +19,7 @@
 (load-once "Blitable.carp")
 (load-once "Bool.carp")
 (load-once "Macros.carp")
+(load-once "BoolExtras.carp")
 (load-once "List.carp")
 (load-once "Derive.carp")
 (load-once "Gensym.carp")

@@ -1,7 +1,5 @@
 (system-include "carp_bool.h")
 
-(doc Bool "is the basic boolean data type, inhabited by the values represented
-by the literals `true` and `false`.")
 (defmodule Bool
   (register = (Fn [Bool Bool] Bool))
   (implements = Bool.=)
