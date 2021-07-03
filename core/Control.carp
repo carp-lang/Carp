@@ -1,5 +1,7 @@
 ;; This module contains functions that deal with functions, control flow, etc.
 
+(doc Control "contaisn functions that deal with functions, control flow, and
+other higher order concepts.")
 (defmodule Control
 
   (doc iterate "Apply function `f` `n` times, first to `start` and then to the result of `f`. TODO: Mention fix points.")
