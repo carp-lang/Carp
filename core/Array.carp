@@ -22,7 +22,8 @@
 
 Its literal uses brackets, so an array of integers would look like this:
 `[1 2 3]`. It provides both a functional and an imperative API, and is one of
-the core data structures of Carp.")
+the core data structures of Carp. It is heap-allocated, for a stack-allocated
+variant you might want to check out [`StaticArray`](./StaticArray.html).")
 (defmodule Array
 
   (doc reduce "will reduce an array `xs` into a single value using a function `f` that takes the reduction thus far and the next value. The initial reduction value is `x`.

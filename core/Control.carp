@@ -1,6 +1,6 @@
 ;; This module contains functions that deal with functions, control flow, etc.
 
-(doc Control "contaisn functions that deal with functions, control flow, and
+(doc Control "contains functions that deal with functions, control flow, and
 other higher order concepts.")
 (defmodule Control
 
