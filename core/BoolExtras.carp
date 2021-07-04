@@ -1,0 +1,3 @@
+; this requires doc to work
+(doc Bool "is the basic boolean data type, inhabited by the values represented
+by the literals `true` and `false`.")
