@@ -2,6 +2,8 @@
 (use Double)
 (use Array)
 
+(doc Statistics "is a module for providing various statistical analyses on a
+collection of values.")
 (defmodule Statistics
   (deftype Summary [
     sum Double,

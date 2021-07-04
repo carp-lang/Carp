@@ -39,6 +39,8 @@
   (register b (Fn [&SDL_Color] Int))
   (register a (Fn [&SDL_Color] Int)))
 
+(doc SDL "is a thin wrapper around the [SDL
+framework](https://www.libsdl.org/).")
 (defmodule SDL
   ;; Setup and teardown
   (register INIT_EVERYTHING Int)

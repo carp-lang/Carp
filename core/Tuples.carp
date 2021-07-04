@@ -21,8 +21,7 @@
   (private deftuple-module-)
   (hidden deftuple-module-)
   (defndynamic deftuple-module- [name props]
-    (let [sname (Symbol.str name)
-          module-name (Symbol.concat [name 'Ref])]
+    (let [module-name (Symbol.concat [name 'Ref])]
       `(do
         (defmodule %module-name
           (defn < [t1 t2] %(deftuple-lt- name props))
@@ -31,9 +30,10 @@
           (defn > [t1 t2] (%(Symbol.prefix module-name '<) t2 t1))
           (implements > %(Symbol.prefix module-name '>)))
 
+        (doc %name %(str "is a tuple of length " (length props) "."))
         (defmodule %name
           (doc init-from-refs
-            %(String.concat ["initializes a `" sname "` from member references."]))
+            %(str "initializes a `" name "` from member references."))
           %(let [prop-vars (map (fn [x] (Symbol.concat [x '-val])) props)]
             `(defn init-from-refs %(collect-into prop-vars array)
               (init %@(map (fn [x] `(copy %x)) prop-vars))))
@@ -47,7 +47,7 @@
           (implements > %(Symbol.prefix name '>))
 
           (doc reverse
-            %(String.concat ["reverses a `" sname "` by reversing its member positions."]))
+            %(str "reverses a `" name "` by reversing its member positions."))
           (defn reverse [t]
             (init %@(map (fn [x] `(copy (%x t))) (reverse props))))))))
 

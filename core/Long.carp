@@ -1,5 +1,7 @@
 (system-include "carp_long.h")
 
+(doc Long "is a bigger integral data type (its size is 64 bits). Its suffix is
+`l`.")
 (defmodule Long
   (register MAX Long "LONG_MAX")
   (register MIN Long "LONG_MIN")

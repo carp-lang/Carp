@@ -1,5 +1,8 @@
 (system-include "carp_pattern.h")
 
+(doc Pattern "is a data type for pattern matching, similar to, but not the same
+as, Regular Expressions. [See the docs for more
+information](../LanguageGuide.html#patterns).")
 (defmodule Pattern
 
   (register-type MatchResult "PatternMatchResult" [start Int, end Int])

@@ -8,6 +8,7 @@
  (system-include "gl.h")
  (add-lib "-lopengl32"))
 
+(doc GL "is a thin wrapper around [OpenGL](https://www.opengl.org/).")
 (defmodule GL
 
   (register-type GLenum)

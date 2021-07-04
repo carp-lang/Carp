@@ -1,3 +1,4 @@
+(doc Pointer "is a data type for representing C pointers.")
 (defmodule Pointer
   (doc eq "checks two pointers for equality.")
   (deftemplate eq (Fn [(Ptr p) (Ptr p)] Bool) "bool $NAME($p *p1, $p *p2)" " $DECL { return p1 == p2; }")
