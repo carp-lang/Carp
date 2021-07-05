@@ -2,6 +2,7 @@
 (derive Vector2 zero)
 (derive Vector2 =)
 
+(doc Vector2 "is a two-dimensional vector data type.")
 (defmodule Vector2
   (defn map [f v]
     (init (f @(x v))
@@ -99,6 +100,7 @@
 (derive Vector3 zero)
 (derive Vector3 =)
 
+(doc Vector3 "is a three-dimensional vector data type.")
 (defmodule Vector3
   (defn map [f v]
     (init (f @(x v))
@@ -202,6 +204,8 @@
 (deftype (VectorN f) [n Int, v (Array f)])
 (derive VectorN =)
 
+(doc VectorN "is an n-dimensional vector data type. Its implementation is
+array-backed.")
 (defmodule VectorN
   (defn zero-sized [n]
     (let [z (zero)]

@@ -1,5 +1,7 @@
 (system-include "carp_byte.h")
 
+(doc Byte "is the data type for single bytes. Literals of type `Byte` are
+suffixed with `b`.")
 (defmodule Byte
   (register = (λ [Byte Byte] Bool))
   (register copy (λ [&Byte] Byte))

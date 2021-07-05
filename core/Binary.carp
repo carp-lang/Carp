@@ -29,6 +29,7 @@
     significant byte occurs first in a given byte sequence.")
   (deftype ByteOrder LittleEndian BigEndian)
 
+(doc Binary "provides various helper functions to work with bits and bytes.")
 (defmodule Binary
   (register to-int16 (λ [Byte Byte] Uint16))
   (register to-int32 (λ [Byte Byte Byte Byte] Uint32))

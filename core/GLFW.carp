@@ -1,6 +1,8 @@
 (system-include "GLFW/glfw3.h")
 (add-pkg "glfw3")
 
+(doc GFLW "is a thin wrapper around the [GLFW](https://www.glfw.org/)
+library.")
 (defmodule GLFW
   ;; Methods
   (register init (λ [] Int) "glfwInit")

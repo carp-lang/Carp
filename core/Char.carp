@@ -1,5 +1,6 @@
 (system-include "carp_char.h")
 
+(doc Char "is the single character data type.")
 (defmodule Char
   (register = (Fn [Char Char] Bool))
   (register < (Fn [Char Char] Bool))

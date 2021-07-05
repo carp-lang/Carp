@@ -2,6 +2,10 @@
   (Success [a])
   (Error [b]))
 
+(doc Result "is a data type for computations that might fail with an error. It
+has two constructors, `(Success <value>)` and `(Error <value>)`, and provides
+many functions for working with, combining, and wrapping and unwrapping
+values.")
 (defmodule Result
   (doc apply "takes a `Result` `a` and applies functions to them, one in the case that it is an `Error`, one in the case that it is a `Success`.")
   (defn apply [a success-f error-f]

@@ -1,5 +1,6 @@
 (system-include "carp_double.h")
 
+(doc Double "is the default floating point number type.")
 (defmodule Double
   (def pi 3.141592653589793)
   (implements pi Double.pi)

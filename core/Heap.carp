@@ -4,6 +4,8 @@
 ;
 ; for any two items `a` and `b`,
 ;   `a` will be higher in the Heap then `b` if `(ord a b)`
+(doc Heap "is a heap data structure that uses a user-supplied ordering function
+to order its values.")
 (defmodule Heap
     (hidden lchild)
     (defn lchild [i]
@@ -17,7 +19,7 @@
     (defn parent [i]
         (/ (- i 1) 2))
 
-    (hidden max-of-three-until)
+    (hidden max-of-three-until!)
     (doc max-of-three-until! "Get the index for the largest (by ord) of an element and its two children.")
     (defn max-of-three-until! [heap i len ord]
         (let-do [lchild-i (lchild i)
@@ -80,6 +82,7 @@
             (Array.pop-back! heap)))
 )
 
+(doc MinHeap "is a heap that uses `<` to order its values.")
 (defmodule MinHeap
     (hidden ord)
     (defn ord [a b]
@@ -111,6 +114,7 @@
         (Heap.pop! heap &ord))
 )
 
+(doc MaxHeap "is a heap that uses `>` to order its values.")
 (defmodule MaxHeap
     (hidden ord)
     (defn ord [a b]
@@ -142,6 +146,7 @@
         (Heap.pop! heap &ord))
 )
 
+(doc HeapSort "is a module for sorting using the heap data structure.")
 (defmodule HeapSort
     (hidden ord)
     (defn ord [a b]

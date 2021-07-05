@@ -2,8 +2,10 @@
 
 (register-type FILE)
 
+(doc IO "is a module for performing I/O operations. Most functions found in this
+module are wrappers around the C standard library.")
 (defmodule IO
-  
+
   (doc Raw "wrappers for functions from the C standard library. Consider using a more carpesque function from IO when it exists. For detailed documentation please consult the documentation of your system (e.g. under Linux try man fprint).")
   (defmodule Raw
     (doc      stdin "the standard input file (thin wrapper for the C standard library).")

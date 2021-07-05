@@ -2,6 +2,9 @@
   (Just [a])
   (Nothing []))
 
+(doc Maybe "is a data type to represent optional values. It has two
+constructors, `(Just <value>)` and `Nothing`, and provides many functions to
+wrap and unwrap values.")
 (defmodule Maybe
   (doc apply "applies a function to the value inside `a` if it is a `Just`, and wraps it up again. If it is `Nothing`, it is just returned.")
   (defn apply [a f]
