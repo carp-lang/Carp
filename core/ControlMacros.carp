@@ -169,7 +169,9 @@ Example:
 )
 ```")
 (defmacro case [form :rest branches]
-  (case-internal form branches))
+  (let [name (gensym)]
+    (list 'let [name form]
+      (case-internal name branches))))
 
 (defmodule Dynamic
   (doc flip

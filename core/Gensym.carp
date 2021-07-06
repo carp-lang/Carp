@@ -7,7 +7,7 @@
 (doc gensym-with "Generates symbols dynamically, based on a symbol name.")
 (defndynamic gensym-with [x]
   (do
-    (set! *gensym-counter* (inc *gensym-counter*))
+    (set! *gensym-counter* (+ *gensym-counter* 1))
     (Symbol.concat [x (Symbol.from *gensym-counter*)])))
 
 (doc gensym "Generates symbols dynamically as needed.")
