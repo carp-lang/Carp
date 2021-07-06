@@ -74,7 +74,7 @@ makePrim path callback doc example =
               XObj (Arr args) Nothing Nothing
             ]
         )
-        (Just dummyInfo)
+        (Just dummyInfo {infoFile = "Core Primitives"})
         (Just DynamicTy)
     args = (\x -> XObj (Sym (SymPath [] x) Symbol) Nothing Nothing) <$> argnames
     argnames = case callback of
@@ -371,7 +371,6 @@ primitiveMembers _ ctx xobj@(XObj (Sym path _) _ _) =
     go (XObj (Lst ((XObj (DefSumtype _) _ _) : _ : cases)) _ _) =
       pure $ (ctx, (either Left (\a -> Right (XObj (Arr (concat a)) Nothing Nothing)) (mapM getMembersFromCase cases)))
     go x = pure (toEvalError ctx x (NonTypeInTypeEnv path x))
-
     getMembersFromCase :: XObj -> Either EvalError [XObj]
     getMembersFromCase (XObj (Lst members) _ _) =
       Right (map (\(a, b) -> XObj (Lst [a, b]) Nothing Nothing) (pairwise members))
@@ -666,7 +665,6 @@ primitiveUse xobj ctx (XObj (Sym path _) _ _) =
     updateGlobalUsePaths :: Env -> SymPath -> (Context, Either EvalError XObj)
     updateGlobalUsePaths e spath =
       ((replaceGlobalEnv ctx (addUsePath e spath)), dynamicNil)
-
     updateModuleUsePaths :: Env -> SymPath -> Binder -> SymPath -> (Context, Either EvalError XObj)
     updateModuleUsePaths e p (Binder meta (XObj (Mod ev et) i t)) spath =
       either
