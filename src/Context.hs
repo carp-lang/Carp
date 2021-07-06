@@ -61,13 +61,13 @@ insertFailure path binder =
 instance Show ContextError where
   show (FailedToInsertInGlobalEnv path binder) =
     insertFailure path binder
-      ++ "in the context's global environment."
+      ++ " in the context's global environment."
   show (FailedToInsertInTypeEnv path binder) =
     insertFailure path binder
-      ++ "in the context's type environment."
+      ++ " in the context's type environment."
   show (FailedToInsertInInternalEnv path binder) =
     insertFailure path binder
-      ++ "in the context's internal environment."
+      ++ " in the context's internal environment."
   show (AttemptedToInsertQualifiedInternalBinder path) =
     "Attempted to insert a qualified binder: " ++ show path
       ++ " into a context's internal environment."
@@ -76,16 +76,16 @@ instance Show ContextError where
       ++ pathstring
   show (NotFoundGlobal path) =
     "Couldn't find the symbol: " ++ show path
-      ++ "in the context's global environment."
+      ++ " in the context's global environment."
   show (NotFoundType path) =
     "Couldn't find the symbol: " ++ show path
-      ++ "in the context's type environment."
+      ++ " in the context's type environment."
   show (NotFoundContext path) =
     "Couldn't find the symbol: " ++ show path
-      ++ "in the context's context environment."
+      ++ " in the context's context environment."
   show (NotFoundInternal path) =
     "Couldn't find the symbol: " ++ show path
-      ++ "in the context's internal environment."
+      ++ " in the context's internal environment."
 
 --------------------------------------------------------------------------------
 -- Contextual Class
