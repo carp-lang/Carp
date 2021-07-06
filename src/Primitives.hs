@@ -363,7 +363,7 @@ primitiveStructuredInfo (XObj _ i _) ctx (XObj (Sym path _) _ _) =
     workOnBinder (Binder metaData (XObj _ (Just (Info l c f _ _)) t)) =
       makeX
         ( Lst
-            [ makeX (maybe (Lst []) tyToObj t),
+            [ (maybe (makeX (Lst [])) reify t),
               makeX
                 ( Lst
                     [ makeX (Str f),
@@ -377,7 +377,7 @@ primitiveStructuredInfo (XObj _ i _) ctx (XObj (Sym path _) _ _) =
     workOnBinder (Binder metaData (XObj _ _ t)) =
       makeX
         ( Lst
-            [ makeX (maybe (Lst []) tyToObj t),
+            [ (maybe (makeX (Lst [])) reify t),
               makeX (Lst []),
               metaList metaData
             ]

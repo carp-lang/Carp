@@ -9,7 +9,6 @@ import Control.Monad.State
 import Data.Char
 import Data.Hashable
 import Data.List (intercalate)
-import Data.List.Split (splitOn)
 import Data.Maybe (fromMaybe)
 import GHC.Generics (Generic)
 import Info
@@ -1151,42 +1150,3 @@ walk :: (XObj -> XObj) -> XObj -> XObj
 walk f (XObj (Arr xs) i t) = XObj (Arr (map (walk f) xs)) i t
 walk f (XObj (Lst xs) i t) = XObj (Lst (map (walk f) xs)) i t
 walk f x = f x
-
-tyToObj :: Ty -> Obj
-tyToObj UnitTy = Lst []
-tyToObj (StructTy s []) = simpleSym (show s)
-tyToObj (StructTy s typeArgs) =
-  Lst ((XObj (simpleSym (show s)) Nothing Nothing) : (map oX typeArgs))
-  where
-    oX o = XObj (tyToObj o) Nothing Nothing
-tyToObj (FuncTy argTys retTy StaticLifetimeTy) =
-  Lst
-    [ XObj (simpleSym "Fn") Nothing Nothing,
-      XObj (Arr (map oX argTys)) Nothing Nothing,
-      oX retTy
-    ]
-  where
-    oX o = XObj (tyToObj o) Nothing Nothing
-tyToObj (FuncTy argTys retTy lt) =
-  Lst
-    [ XObj (simpleSym "Fn") Nothing Nothing,
-      XObj (Arr (map oX argTys)) Nothing Nothing,
-      oX retTy,
-      oX lt
-    ]
-  where
-    oX o = XObj (tyToObj o) Nothing Nothing
-tyToObj (PointerTy p) =
-  Lst [XObj (simpleSym "Ptr") Nothing Nothing, XObj (tyToObj p) Nothing Nothing]
-tyToObj (RefTy r lt) =
-  Lst
-    [ XObj (simpleSym "Ref") Nothing Nothing,
-      XObj (tyToObj r) Nothing Nothing,
-      XObj (tyToObj lt) Nothing Nothing
-    ]
-tyToObj t = simpleSym (show t)
-
-simpleSym :: String -> Obj
-simpleSym s = Sym (SymPath (init path) (last path)) Symbol
-  where
-    path = splitOn "." s
