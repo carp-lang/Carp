@@ -389,7 +389,7 @@ primitiveStructuredInfo (XObj _ i _) ctx (XObj (Sym path _) _ _) =
         genPair (s, x) = makeX (Lst [XObj (Str s) Nothing Nothing, x])
     makeX o = XObj o Nothing Nothing
 primitiveStructuredInfo _ ctx notName =
-  argumentErr ctx "machine-info" "a name" "first" notName
+  argumentErr ctx "structured-info" "a name" "first" notName
 
 dynamicOrMacroWith :: Context -> (SymPath -> [XObj]) -> Ty -> String -> XObj -> IO (Context, Either EvalError XObj)
 dynamicOrMacroWith ctx producer ty name body = do
