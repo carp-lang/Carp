@@ -149,20 +149,22 @@ Example:
       (macro-error "case has even number of branches; add an else branch")
       (if (= (length xs) 1)
         (car xs)
-        (list 'if
-              (list '= name (car xs))
-              (cadr xs)
-              (case-internal name (cddr xs)))))))
+        (let [values (if (list? (car xs)) (car xs) (list (car xs)))]
+          (list 'if
+                (cons 'or (map (fn [val] (list '= name val)) values))
+                (cadr xs)
+                (case-internal name (cddr xs))))))))
 
 (doc case "takes a form and a list of branches which are value and operation
-pairs. If a value matches, the operation is executed. It takes a catch-all else
-branch that is executed if nothing matches.
+pairs. If a value matches (or any in a list of values), the operation is
+executed. It takes a catch-all else branch that is executed if nothing matches.
 
 Example:
 ```
 (case (+ 10 1)
   10 (println* \"nope\")
   11 (println* \"yup\")
+  (12 13) (println* \"multibranch, but nope\")
   (println* \"else branch\")
 )
 ```")
