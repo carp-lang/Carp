@@ -34,6 +34,12 @@
     1 true
     false))
 
+(defn test-case-multi []
+  (case 1
+    2 false
+    (:or 1 3) true
+    false))
+
 (defmacro test-not [a] (not a))
 (defmacro test-< [a b] (< a b))
 (defmacro test-> [a b] (> a b))
@@ -84,6 +90,9 @@
   (assert-true test
                (test-case-select)
                "case correctly selects branch")
+  (assert-true test
+               (test-case-multi)
+               "case correctly selects multibranch")
   (assert-true test
                (test-comment)
                "comment ignores input")

@@ -141,6 +141,12 @@ Example:
 (defmacro unless [condition form]
   (list 'if condition (list) form))
 
+(hidden treat-case-handler)
+(defndynamic treat-case-handler [name handler]
+  (if (and (list? handler) (> (length handler) 1) (= ':or (car handler)))
+    (cons 'or (map (fn [val] (list '= name val)) (cdr handler)))
+    (list '= name handler)))
+
 (hidden case-internal)
 (defndynamic case-internal [name xs]
   (if (= (length xs) 0)
@@ -150,24 +156,28 @@ Example:
       (if (= (length xs) 1)
         (car xs)
         (list 'if
-              (list '= name (car xs))
+              (treat-case-handler name (car xs))
               (cadr xs)
               (case-internal name (cddr xs)))))))
 
 (doc case "takes a form and a list of branches which are value and operation
-pairs. If a value matches, the operation is executed. It takes a catch-all else
-branch that is executed if nothing matches.
+pairs. If a value matches (or any in a list of values preced by `:or`), the
+operation is executed. It takes a catch-all else branch that is executed if
+nothing matches.
 
 Example:
 ```
 (case (+ 10 1)
   10 (println* \"nope\")
   11 (println* \"yup\")
+  (:or 12 13) (println* \"multibranch, but nope\")
   (println* \"else branch\")
 )
 ```")
 (defmacro case [form :rest branches]
-  (case-internal form branches))
+  (let [name (gensym)]
+    (list 'let [name form]
+      (case-internal name branches))))
 
 (defmodule Dynamic
   (doc flip
