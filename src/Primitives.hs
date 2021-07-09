@@ -16,10 +16,12 @@ import Data.Maybe (fromJust, fromMaybe)
 import Deftype
 import Emit
 import Env (addUsePath, contextEnv, insert, lookupBinderEverywhere, lookupEverywhere, lookupMeta, searchValueBinder)
+import EvalError
 import Infer
 import Info
 import Interfaces
 import Managed
+import qualified Map
 import qualified Meta
 import Obj
 import PrimitiveError
@@ -346,6 +348,48 @@ primitiveInfo _ ctx target@(XObj (Sym path@(SymPath _ name) _) _ _) =
     printMetaVal s f xobj = putStrLn ("  " ++ s ++ ": " ++ f xobj)
 primitiveInfo _ ctx notName =
   argumentErr ctx "info" "a name" "first" notName
+
+-- | Get information about a binding.
+primitiveStructuredInfo :: UnaryPrimitiveCallback
+primitiveStructuredInfo (XObj _ i _) ctx (XObj (Sym path _) _ _) =
+  case lookupBinderInTypeEnv ctx path of
+    Right bind -> return (ctx, Right $ workOnBinder bind)
+    Left _ ->
+      case lookupBinderInContextEnv ctx path of
+        Right bind -> return (ctx, Right $ workOnBinder bind)
+        Left e -> return $ throwErr e ctx i
+  where
+    workOnBinder :: Binder -> XObj
+    workOnBinder (Binder metaData (XObj _ (Just (Info l c f _ _)) t)) =
+      makeX
+        ( Lst
+            [ (maybe (makeX (Lst [])) reify t),
+              makeX
+                ( Lst
+                    [ makeX (Str f),
+                      makeX (Num IntTy (Integral l)),
+                      makeX (Num IntTy (Integral c))
+                    ]
+                ),
+              metaList metaData
+            ]
+        )
+    workOnBinder (Binder metaData (XObj _ _ t)) =
+      makeX
+        ( Lst
+            [ (maybe (makeX (Lst [])) reify t),
+              makeX (Lst []),
+              metaList metaData
+            ]
+        )
+    metaList :: MetaData -> XObj
+    metaList (MetaData m) =
+      makeX (Lst (map genPair (Map.toList m)))
+      where
+        genPair (s, x) = makeX (Lst [XObj (Str s) Nothing Nothing, x])
+    makeX o = XObj o Nothing Nothing
+primitiveStructuredInfo _ ctx notName =
+  argumentErr ctx "structured-info" "a name" "first" notName
 
 dynamicOrMacroWith :: Context -> (SymPath -> [XObj]) -> Ty -> String -> XObj -> IO (Context, Either EvalError XObj)
 dynamicOrMacroWith ctx producer ty name body = do
