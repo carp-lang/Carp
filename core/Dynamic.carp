@@ -73,6 +73,22 @@ integers [`imod`](#imod).")
     (defndynamic tail [s]
       (String.suffix s 1))
   )
+
+  (defmodule Debug
+    (doc trace "prints the value of an expression to `stdout`, then returns its value.")
+    (defmacro trace [x]
+      (let [sym (gensym)]
+        `(let-do [%sym %x]
+          ; we use eval here to ensure we resolve the symbol before putting it
+          ; into file, line, and column
+          (macro-log
+            %(eval `(file %x)) ":"
+            %(eval `(line %x)) ":"
+            %(eval `(column %x)) ": "
+            %sym)
+          %sym))
+      )
+    )
 )
 
 
