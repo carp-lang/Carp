@@ -2,6 +2,7 @@ module Context
   ( ContextError (..),
     replaceGlobalEnv,
     replaceInternalEnv,
+    replaceInternalEnvMaybe,
     replaceTypeEnv,
     replaceHistory,
     replaceProject,
@@ -117,6 +118,11 @@ instance Contextual QualifiedPath where
 replaceInternalEnv :: Context -> Env -> Context
 replaceInternalEnv ctx env =
   ctx {contextInternalEnv = Just env}
+
+-- The previous environment is completely replaced and will not be recoverable.
+replaceInternalEnvMaybe :: Context -> Maybe Env -> Context
+replaceInternalEnvMaybe ctx env =
+  ctx {contextInternalEnv = env}
 
 -- | Replace a context's global environment with a new environment.
 --

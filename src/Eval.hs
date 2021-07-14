@@ -277,9 +277,9 @@ eval ctx xobj@(XObj o info ty) preference resolver =
         Right newCtx -> do
           (finalCtx, evaledBody) <- eval newCtx body (PreferLocal (map (\(name, _) -> (SymPath [] name)) binds)) ResolveLocal
           let Just e = contextInternalEnv finalCtx
-              parentEnv = fromMaybe e (envParent e)
+              parentEnv = envParent e
           pure
-            ( replaceInternalEnv finalCtx parentEnv,
+            ( replaceInternalEnvMaybe finalCtx parentEnv,
               do
                 okBody <- evaledBody
                 Right okBody
@@ -298,7 +298,7 @@ eval ctx xobj@(XObj o info ty) preference resolver =
               --   (let [f (fn [x] (if (= x 1) x (f (dec x))))] (f 10))
               let origin = (contextInternalEnv ctx')
                   recFix = (E.recursive origin (Just "let-rec-env") 0)
-                  Right envWithSelf = E.insertX recFix (SymPath [] n) x
+                  Right envWithSelf = if isFn x then E.insertX recFix (SymPath [] n) x else Right recFix
                   ctx'' = replaceInternalEnv ctx' envWithSelf
               (newCtx, res) <- eval ctx'' x preference resolver
               case res of
