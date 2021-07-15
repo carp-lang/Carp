@@ -119,6 +119,8 @@ replaceInternalEnv :: Context -> Env -> Context
 replaceInternalEnv ctx env =
   ctx {contextInternalEnv = Just env}
 
+-- | Replace a context's internal environment with a new environment or nothing.
+--
 -- The previous environment is completely replaced and will not be recoverable.
 replaceInternalEnvMaybe :: Context -> Maybe Env -> Context
 replaceInternalEnvMaybe ctx env =
