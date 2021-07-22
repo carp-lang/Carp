@@ -2,6 +2,7 @@
 
 module Parsing
   ( parse,
+    parseAtLine,
     validCharacters,
     balance,
   )
@@ -598,6 +599,11 @@ lispSyntax = do
   result <- Parsec.sepBy sexpr whitespaceOrNothing
   Parsec.eof
   pure result
+
+parseAtLine :: Int -> String -> String -> Either Parsec.ParseError [XObj]
+parseAtLine line text fileName =
+  let initState = ParseState (Info line 1 fileName (Set.fromList []) 0)
+   in Parsec.runParser lispSyntax initState fileName text
 
 parse :: String -> String -> Either Parsec.ParseError [XObj]
 parse text fileName =
