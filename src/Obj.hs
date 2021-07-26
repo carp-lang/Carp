@@ -232,6 +232,11 @@ isMod :: XObj -> Bool
 isMod (XObj (Mod _ _) _ _) = True
 isMod _ = False
 
+isFn :: XObj -> Bool
+isFn (XObj (Lst (XObj (Fn _ _) _ _ : _)) _ _) = True
+isFn (XObj (Lst (XObj (Sym (SymPath [] "fn") _) _ _ : _)) _ _) = True
+isFn _ = False
+
 -- | This instance is needed for the dynamic Dictionary
 instance Ord Obj where
   compare (Str a) (Str b) = compare a b

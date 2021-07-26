@@ -1,5 +1,19 @@
 (load "Color.carp")
 
+(doc Test "is the standard test framework.
+
+Example:
+```
+(load-and-use Test)
+
+(deftest test
+  (assert-equal test
+                2
+                (+ 1 1)
+                \"addition works\"
+  )
+)
+```")
 (defmodule Test
   (deftype State [passed Int, failed Int])
   (hidden State)

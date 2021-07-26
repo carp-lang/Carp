@@ -1,3 +1,5 @@
+(doc StaticArray "is a data type for static, immutable arrays. They are
+stack-allocated. For a more flexible, heap-allocated version, you might want to look at the [`Array`](./Array.html) module.")
 (defmodule StaticArray
 
   (doc map! "Maps a function over the static array `xs`, mutating it in place. The difference to Array.endo-map (which does the same thing internally) is that this function takes a ref (since you can never have static arrays as values) and that it returns ().")

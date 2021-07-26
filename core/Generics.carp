@@ -1,5 +1,7 @@
 ;; The following generic functions make use of the interfaces
 
+(doc Generics "provides generic functions on top of the numerical interfaces
+`zero`, `inc`, `dec`, arithematic, and comparators.")
 (defmodule Generics
   (defn one [] (inc (zero)))
   (defn minus-one [] (dec (zero)))

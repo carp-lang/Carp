@@ -1,3 +1,5 @@
+(doc Unsafe "is a module containing unsafe operations. Lasciate ogne speranza,
+voi ch'intrate.")
 (defmodule Unsafe
   (doc coerce "coerces a value of type `b` to a value of type `a`.")
   (deftemplate coerce (Fn [b] a) "$a $NAME($b b)" "$DECL { return ($a)b; }")

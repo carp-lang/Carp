@@ -1,3 +1,4 @@
+(doc Random "is a simple, non-cryptographic random number generator.")
 (defmodule Random
 
   (def- a 69069.0)

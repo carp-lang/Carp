@@ -1,3 +1,4 @@
+(doc Color "provides ANSI color operations.")
 (defmodule Color
   (hidden table)
   (deftype Id
