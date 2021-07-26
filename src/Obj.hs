@@ -330,6 +330,9 @@ data XObj = XObj
   }
   deriving (Show, Eq, Ord)
 
+setObj :: XObj -> Obj -> XObj
+setObj x o = x {xobjObj = o}
+
 instance Hashable XObj where
   hashWithSalt s XObj {..} = s `hashWithSalt` xobjObj
 
