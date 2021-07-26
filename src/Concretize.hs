@@ -3,7 +3,24 @@
 -- | Module Concretize determines the dependencies of polymorphic objects and
 -- resolves the object into a "concrete" version, where its types are no longer
 -- variables.
-module Concretize where
+module Concretize
+  ( concretizeXObj,
+    concretizeType,
+    depsForCopyFunc,
+    depsForPrnFunc,
+    depsForDeleteFunc,
+    depsForDeleteFuncs,
+    depsOfPolymorphicFunction,
+    typesStrFunctionType,
+    concreteDelete,
+    memberDeletion,
+    memberRefDeletion,
+    concreteCopy,
+    tokensForCopy,
+    memberCopy,
+    replaceGenericTypeSymbolsOnMembers,
+  )
+where
 
 import AssignTypes
 import Constraints
