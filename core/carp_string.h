@@ -8,7 +8,7 @@ String String_allocate(int len, char byte) {
      * String_alloc(10, "a") == "aaaaaaaaaa"
      */
     String ptr = CARP_MALLOC(len + 1);
-    if( ptr!=NULL) {  
+    if (ptr != NULL) {
         // calling memset(NULL,...) would exercise undefined behaviour...
         memset(ptr, byte, len);
         ptr[len] = '\0';
@@ -107,10 +107,28 @@ String String_str(const String *s) {
     return String_copy(s);
 }
 
+int count_occurrences(String s, char c) {
+    int res = 0;
+    while (*s != '\0') {
+        if (*s == c) res++;
+        s++;
+    }
+    return res;
+}
+
 String String_prn(const String *s) {
-    int n = strlen(*s) + 4;
+    int n = strlen(*s) + 4 + count_occurrences(*s, '"');
     String buffer = CARP_MALLOC(n);
-    sprintf(buffer, "@\"%s\"", *s);
+    buffer[0] = '@';
+    buffer[1] = '"';
+    String c = *s;
+    for (int i = 2; i < n - 2; i++) {
+        if (*c == '"') buffer[i++] = '\\';
+        buffer[i] = *c;
+        c++;
+    }
+    buffer[n - 2] = '"';
+    buffer[n - 1] = '\0';
     return buffer;
 }
 
