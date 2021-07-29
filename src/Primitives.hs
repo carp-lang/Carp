@@ -122,9 +122,9 @@ primitiveColumn x@(XObj _ i _) ctx args =
 -- | Defines a new protocol.
 primitiveProtocol :: VariadicPrimitiveCallback
 primitiveProtocol x ctx (s@(XObj (Sym ppath@(SymPath [] _) _) i _):paths) =
-  let ty = (Just (ProtocolTy []))
+  let ty = (Just (ProtocolTy ppath []))
       ps = (map getPath paths)
-      pro = XObj (Lst [XObj (Protocol ps []) i (Just (ProtocolTy [])), s]) i ty
+      pro = XObj (Lst [XObj (Protocol ps []) i ty, s]) i ty
       binder = toBinder pro
    in if (any (not . isSym) paths)
         -- TODO: Better error here.
@@ -490,15 +490,16 @@ primitiveDefinterface xobj ctx nameXObj@(XObj (Sym path@(SymPath [] name) _) _ _
     invalidType = evalError ctx ("Invalid type for interface `" ++ name ++ "`: " ++ pretty ty) (xobjInfo ty)
     validType t = either (const defInterface) updateInterface (lookupBinderInTypeEnv ctx path)
       where
-        defInterface =
-          let interface = defineInterface name t [] (xobjInfo nameXObj)
+        withProtocols = resolveProtocols ctx t
+        defInterface  =
+          let interface = defineInterface name withProtocols [] (xobjInfo nameXObj)
               binder = toBinder interface
               Right ctx' = insertTypeBinder ctx (markQualified (SymPath [] name)) binder
               Right newCtx = retroactivelyRegisterInInterface ctx' binder
            in (newCtx, dynamicNil)
         updateInterface binder = case binder of
           Binder _ (XObj (Lst (XObj (Interface foundType _) _ _ : _)) _ _) ->
-            if foundType == t
+            if protocolEq foundType withProtocols
               then (ctx, dynamicNil)
               else
                 evalError

@@ -9,6 +9,7 @@ import qualified Set
 import TypeError
 import Types
 import Util
+import Protocol
 
 -- | Create a fresh type variable (eg. 'VarTy t0', 'VarTy t1', etc...)
 genVarTyWithPrefix :: String -> State Integer Ty
@@ -138,7 +139,7 @@ initialTypes typeEnv rootEnv root = evalState (visit rootEnv root) 0
                 -- Don't rename internal symbols like parameters etc!
                 Just theType
                   | envIsExternal foundEnv -> do
-                    renamed <- renameVarTys theType
+                    renamed <- renameVarTys (updateProtocols typeEnv theType)
                     pure (Right (xobj {xobjTy = Just renamed}))
                   | otherwise -> pure (Right (xobj {xobjTy = Just theType}))
                 Nothing -> pure (Left (SymbolMissingType xobj foundEnv))
@@ -153,7 +154,7 @@ initialTypes typeEnv rootEnv root = evalState (visit rootEnv root) 0
     visitInterfaceSym _ xobj@(XObj (InterfaceSym name) _ _) =
       do
         freshTy <- case getTypeBinder typeEnv name of
-          Right (Binder _ (XObj (Lst [XObj (Interface interfaceSignature _) _ _, _]) _ _)) -> renameVarTys interfaceSignature
+          Right (Binder _ (XObj (Lst [XObj (Interface interfaceSignature _) _ _, _]) _ _)) -> (renameVarTys (updateProtocols typeEnv interfaceSignature))
           Right (Binder _ x) -> error ("A non-interface named '" ++ name ++ "' was found in the type environment: " ++ pretty x)
           Left _ -> genVarTy
         pure (Right xobj {xobjTy = Just freshTy})

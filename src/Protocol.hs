@@ -2,15 +2,26 @@
 --
 -- Protocols are bundles of interfaces that can be used for forming type
 -- hierarchies.
+--
+-- Protocols have global state in the type environment. The functions
+-- resolveProtocols and updateProtocols allow callees to fetch the latest
+-- protocol state to update the protocol types associated with functions.
+--
+-- Protocols leverage the same polymorphism resolution as type variables, but
+-- permissible substitutions are given by their members.
 module Protocol
-  (registerInstance)
+  (registerInstance
+  ,resolveProtocols
+  ,protocolEq
+  ,updateProtocols
+  ,containsProtocol
+  ,isProtocol)
 where
 
+import Data.Maybe (fromJust)
 import Data.Either (rights)
-import Debug.Trace
 
 import Context
-import Interfaces
 import Obj
 import Qualify
 import Types
@@ -59,35 +70,61 @@ registerInstance ctx protocol inst =
            in pure $ toBinder newX
         updateProtocol x _ _ = Left (NotAProtocol (getPath x))
         addInstance :: Ty -> Ty -> Ty
-        addInstance i (ProtocolTy is) = (ProtocolTy (addIfNotPresent i is))
-        addInstance _ t = t      
+        addInstance i (ProtocolTy n is) = (ProtocolTy n (addIfNotPresent i is))
+        addInstance _ t = t
+
+-- | Given a designation of a protocol, resolve it to the protocol's current
+-- memberships in the given context.
+resolveProtocols :: Context -> Ty -> Ty
+resolveProtocols ctx (FuncTy args ret lt) = (FuncTy (map (resolveProtocols ctx) args) (resolveProtocols ctx ret) lt)
+resolveProtocols ctx p@(ProtocolTy path _) =
+  case lookupBinderInTypeEnv ctx (markQualified path) of
+    Right p' -> fromJust (xobjTy (binderXObj p'))
+    Left  _ ->  p
+resolveProtocols _ t = t
+
+-- | Same as resolveProtocols, but operates on a type environment.
+updateProtocols :: TypeEnv -> Ty -> Ty
+updateProtocols tenv (FuncTy args ret lt) = (FuncTy (map (updateProtocols tenv) args) (updateProtocols tenv ret) lt)
+updateProtocols tenv p@(ProtocolTy path _) =
+  case findTypeBinder tenv path of
+    Right p' -> fromJust (xobjTy (binderXObj p'))
+    Left  _ ->  p
+updateProtocols _ t = t
+
+-- | Check that two types are equal, ignoring differences in protocol membership.
+protocolEq :: Ty -> Ty -> Bool
+protocolEq (FuncTy args ret lt) (FuncTy args' ret' lt') =
+  (foldl (&&) True (zipWith protocolEq args args')) && protocolEq ret ret' && lt == lt'
+protocolEq (ProtocolTy name _) (ProtocolTy name' _) = name == name'
+protocolEq t t' = t == t'
 
 --------------------------------------------------------------------------------
 -- Private utilities
 
 -- | Given a context and path, try to retrieve an associated protocol.
-getProtocol :: Context -> QualifiedPath -> Either ProtocolError XObj 
-getProtocol ctx protocol = 
-  case lookupBinderInTypeEnv ctx protocol of 
+getProtocol :: Context -> QualifiedPath -> Either ProtocolError XObj
+getProtocol ctx protocol =
+  case lookupBinderInTypeEnv ctx protocol of
     Right (Binder _ x@(ProtocolPat _ _ _)) -> pure x
-    _ -> Left $ NotAProtocol (unqualify protocol)   
+    _ -> Left $ NotAProtocol (unqualify protocol)
 
 -- | Just a wrapper around xobjToTy.
 getTypeFromPath :: SymPath -> Either ProtocolError Ty
 getTypeFromPath typath =
   let x = XObj (Sym typath Symbol) Nothing Nothing
    in maybe (Left (NotAType typath)) Right (xobjToTy x)
-  
+
 -- | Given a list of interfaces and a type, verify that the type appears in at
 -- least one implementation of each interface.
 checkImplementations :: Context -> [SymPath] -> Ty -> Either ProtocolError ()
 checkImplementations ctx interfaces t =
-  let actual  = traceShowId $ map binderXObj (rights (map (lookupBinderInTypeEnv ctx . markQualified) interfaces))
-      impls   = traceShowId $ map ((map (typeFromPath (contextGlobalEnv ctx))) . getImplementations) actual
+  let actual  = map binderXObj (rights (map (lookupBinderInTypeEnv ctx . markQualified) interfaces))
+      impls   = map ((map (typeFromPath (contextGlobalEnv ctx))) . getImplementations) actual
       matches = map (any ((flip isSubType) t)) impls
    in if (all (==True) matches)
         then pure ()
-        else Left (NotImplemented t interfaces) 
+        else Left (NotImplemented t (map snd (filter (\(tf, _) -> (not tf)) (zip matches interfaces))))
 
 -- | Get the type of a symbol at a given path.
 --
@@ -99,3 +136,17 @@ typeFromPath env p =
       | envIsExternal e -> forceTy found
       | otherwise -> error "Local bindings shouldn't be ambiguous."
     _ -> error ("Couldn't find " ++ show p ++ " in env:\n" ++ prettyEnvironmentChain env)
+
+-- | Get the paths of interface implementations.
+getImplementations :: XObj -> [SymPath]
+getImplementations (XObj (Lst ((XObj (Interface _ paths) _ _):_)) _ _) = paths
+getImplementations _ = []
+
+containsProtocol :: Ty -> Bool
+containsProtocol (FuncTy args ret _) = (any containsProtocol args) || containsProtocol ret
+containsProtocol (ProtocolTy _ _) = True
+containsProtocol _ = False
+
+isProtocol :: Ty -> Bool
+isProtocol (ProtocolTy _ _) = True
+isProtocol _ = False

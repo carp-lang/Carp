@@ -176,6 +176,18 @@ solveOneInternal mappings constraint =
        in case solveOneInternal mappings (Constraint v (RefTy b ltB) i1 i2 ctx ord) of
             Left err -> Left err
             Right ok -> foldM (\m (aa, bb) -> solveOneInternal m (Constraint aa bb i1 i2 ctx ord)) ok (zip args [b, ltB])
+    Constraint (ProtocolTy path _) (ProtocolTy path' _) _ _ _ _ ->
+      if path == path'
+        then Right mappings
+        else Left (UnificationFailure constraint mappings)
+    Constraint t (ProtocolTy (SymPath [] key) ts) _ _ _ _ ->
+      if t `elem` ts
+        then Right (Map.insert key t mappings)
+        else Left (UnificationFailure constraint mappings)
+    Constraint (ProtocolTy (SymPath [] key) ts) t _ _ _ _ ->
+      if t `elem` ts
+        then Right (Map.insert key t mappings)
+        else Left (UnificationFailure constraint mappings)
     -- Else
     Constraint aTy bTy _ _ _ _ ->
       if aTy == bTy

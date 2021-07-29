@@ -27,6 +27,7 @@ import TypesToC
 import Util
 import Validate
 import Prelude hiding (lookup)
+import Protocol
 
 data Level = Toplevel | Inside
 
@@ -337,13 +338,13 @@ concretizeXObj allowAmbiguityRoot typeEnv rootEnv visitedDefinitions root =
     visitInterfaceSym allowAmbig env xobj@(XObj (InterfaceSym name) i t) =
       case getTypeBinder typeEnv name of
         Right (Binder _ (XObj (Lst [XObj (Interface _ interfacePaths) _ _, _]) _ _)) ->
-          let Just actualType = t
+          let Just actualType = fmap (updateProtocols typeEnv) t
               tys = map (typeFromPath env) interfacePaths
               tysToPathsDict = zip tys interfacePaths
            in case filter (matchingSignature actualType) tysToPathsDict of
                 [] ->
                   pure $ --(trace ("No matching signatures for interface lookup of " ++ name ++ " of type " ++ show actualType ++ " " ++ prettyInfoFromXObj xobj ++ ", options are:\n" ++ joinLines (map show tysToPathsDict))) $
-                    if allowAmbig
+                    if allowAmbig || containsProtocol actualType
                       then Right xobj -- No exact match of types
                       else Left (NoMatchingSignature xobj name actualType tysToPathsDict)
                 [(theType, singlePath)] ->
@@ -685,7 +686,7 @@ modeFromPath env p =
 concretizeDefinition :: Bool -> TypeEnv -> Env -> [SymPath] -> XObj -> Ty -> Either TypeError (XObj, [XObj])
 concretizeDefinition allowAmbiguity typeEnv globalEnv visitedDefinitions definition concreteType =
   let SymPath pathStrings name = getPath definition
-      Just polyType = xobjTy definition
+      Just polyType = fmap (updateProtocols typeEnv) (xobjTy definition)
       suffix = polymorphicSuffix polyType concreteType
       newPath = SymPath pathStrings (name ++ suffix)
    in case definition of

@@ -926,6 +926,7 @@ toDeclaration (Binder meta xobj@(XObj (Lst xobjs) _ ty)) =
       ""
     XObj (Primitive _) _ _ : _ ->
       ""
+    XObj (Protocol _ _) _ _ : _ -> ""
     _ -> error ("Internal compiler error: Can't emit other kinds of definitions: " ++ show xobj)
 toDeclaration _ = error "Missing case."
 

@@ -69,7 +69,7 @@ data Ty
   | InterfaceTy
   | CTy -- C literals
   | Universe -- the type of types of types (the type of TypeTy)
-  | ProtocolTy [Ty] -- the type of protocols
+  | ProtocolTy SymPath [Ty] -- the type of protocols
   deriving (Eq, Ord, Generic)
 
 instance Hashable Ty
@@ -197,7 +197,8 @@ instance Show Ty where
   show DynamicTy = "Dynamic"
   show Universe = "Universe"
   show CTy = "C"
-  show (ProtocolTy is) = "(" ++ "Protocol " ++ joinWithSpace (map show is) ++ ")"
+  show (ProtocolTy s []) = "(" ++ "Protocol " ++ show s ++ ")"
+  show (ProtocolTy s is) = "(" ++ "Protocol " ++ show s ++ ": " ++ joinWithComma (map show is) ++ ")"
 
 showMaybeTy :: Maybe Ty -> String
 showMaybeTy (Just t) = show t
@@ -245,6 +246,7 @@ unifySignatures at ct = Map.fromList (unify at ct)
     unify :: Ty -> Ty -> [(String, Ty)]
     unify (VarTy _) (VarTy _) = [] -- if a == b then [] else error ("Can't unify " ++ show a ++ " with " ++ show b)
     unify (VarTy a) value = [(a, value)]
+    unify (ProtocolTy (SymPath [] name) ts) t = if t `elem` ts then [(name,t)] else []
     unify (StructTy v'@(VarTy _) aArgs) (StructTy n bArgs) = unify v' n ++ concat (zipWith unify aArgs bArgs)
     unify (StructTy a@(ConcreteNameTy _) aArgs) (StructTy b bArgs)
       | a == b = concat (zipWith unify aArgs bArgs)
@@ -281,6 +283,9 @@ areUnifiable (StructTy (VarTy _) aArgs) (FuncTy bArgs _ _)
 areUnifiable (StructTy (VarTy _) args) (RefTy _ _)
   | length args == 2 = True
   | otherwise = False
+areUnifiable (ProtocolTy n _) (ProtocolTy n' _) = n == n'
+areUnifiable t (ProtocolTy _ ts) = t `elem` ts
+areUnifiable (ProtocolTy _ ts) t = t `elem` ts
 areUnifiable (StructTy _ _) _ = False
 areUnifiable (PointerTy a) (PointerTy b) = areUnifiable a b
 areUnifiable (PointerTy _) _ = False
@@ -316,6 +321,7 @@ replaceTyVars :: TypeMappings -> Ty -> Ty
 replaceTyVars mappings t =
   case t of
     (VarTy key) -> fromMaybe t (Map.lookup key mappings)
+    (ProtocolTy (SymPath [] key) _) -> fromMaybe t (Map.lookup key mappings)
     (FuncTy argTys retTy lt) -> FuncTy (map (replaceTyVars mappings) argTys) (replaceTyVars mappings retTy) (replaceTyVars mappings lt)
     (StructTy name tyArgs) ->
       case replaceTyVars mappings name of

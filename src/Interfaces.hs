@@ -8,7 +8,6 @@ module Interfaces
     retroactivelyRegisterInInterface,
     interfaceImplementedForTy,
     removeInterfaceFromImplements,
-    getImplementations,
     InterfaceError (..),
   )
 where
@@ -24,6 +23,7 @@ import Obj
 import qualified Qualify
 import Types
 import Util
+import Protocol
 
 data InterfaceError
   = KindMismatch SymPath Ty Ty
@@ -76,11 +76,6 @@ getFirstMatchingImplementation ctx paths ty =
     predicate = (== Just ty) . (xobjTy . binderXObj)
     global = contextGlobalEnv ctx
 
--- | Get the paths of interface implementations.
-getImplementations :: XObj -> [SymPath]
-getImplementations (XObj (Lst ((XObj (Interface _ paths) _ _):_)) _ _) = paths
-getImplementations _ = []
-
 -- | Remove an interface from a binder's list of implemented interfaces
 removeInterfaceFromImplements :: SymPath -> XObj -> Context -> Context
 removeInterfaceFromImplements oldImplPath interface ctx =
@@ -105,7 +100,7 @@ registerInInterfaceIfNeeded ctx implementation interface definitionSignature =
   case interface of
     Binder _ (XObj (Lst [inter@(XObj (Interface interfaceSignature paths) ii it), isym]) i t) ->
       if checkKinds interfaceSignature definitionSignature
-        then case solve [Constraint interfaceSignature definitionSignature inter inter inter OrdInterfaceImpl] of
+        then case solve [Constraint (resolveProtocols ctx interfaceSignature) definitionSignature inter inter inter OrdInterfaceImpl] of
           Left _ -> (Right ctx, Just (TypeMismatch implPath definitionSignature interfaceSignature))
           Right _ -> case getFirstMatchingImplementation ctx paths definitionSignature of
             Nothing -> (updatedCtx, Nothing)
