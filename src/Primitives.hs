@@ -38,6 +38,7 @@ import Types
 import Util
 import Web.Browser (openBrowser)
 import Protocol
+import Forms
 
 makeNullaryPrim :: SymPath -> NullaryPrimitiveCallback -> String -> String -> (String, Binder)
 makeNullaryPrim p = makePrim p . NullaryPrimitive
@@ -308,6 +309,7 @@ primitiveInfo _ ctx target@(XObj (Sym path@(SymPath _ name) _) _ _) =
         let found = lookupBinderInTypeEnv ctx path
         _ <- printIfFound found
         _ <- printInterfaceImplementationsOrAll found otherBindings
+        _ <- printProtocolInterfaces found
         either (const (notFound ctx target path)) (const ok) (found <> fmap head otherBindings)
       where
         otherBindings =
@@ -323,6 +325,10 @@ primitiveInfo _ ctx target@(XObj (Sym path@(SymPath _ name) _) _ _) =
   where
     ok :: IO (Context, Either EvalError XObj)
     ok = pure (ctx, dynamicNil)
+    printProtocolInterfaces :: Either ContextError Binder -> IO ()
+    printProtocolInterfaces (Right (Binder _ (ProtocolPat _ interfaces _))) =
+      putStrLn $ "  Required Definitions: " ++ joinWithComma (map show interfaces)
+    printProtocolInterfaces _ = pure ()
     printInterfaceImplementationsOrAll :: Either ContextError Binder -> Either ContextError [Binder] -> IO ()
     printInterfaceImplementationsOrAll interface impls =
       either
