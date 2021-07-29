@@ -173,6 +173,7 @@ toC toCMode (Binder meta root) = emitterSrc (execState (visit startingIndent roo
             (Match _) -> dontVisit
             With -> dontVisit
             MetaStub -> dontVisit
+            (Protocol _ _) -> dontVisit
             C c -> pure c
     visitStr' indent str i shouldEscape =
       -- This will allocate a new string every time the code runs:

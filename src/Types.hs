@@ -28,6 +28,7 @@ module Types
     getNameFromStructName,
     getStructPath,
     promoteNumber,
+    isSubType,
   )
 where
 
@@ -68,6 +69,7 @@ data Ty
   | InterfaceTy
   | CTy -- C literals
   | Universe -- the type of types of types (the type of TypeTy)
+  | ProtocolTy [Ty] -- the type of protocols
   deriving (Eq, Ord, Generic)
 
 instance Hashable Ty
@@ -195,6 +197,7 @@ instance Show Ty where
   show DynamicTy = "Dynamic"
   show Universe = "Universe"
   show CTy = "C"
+  show (ProtocolTy is) = "(" ++ "Protocol " ++ joinWithSpace (map show is) ++ ")"
 
 showMaybeTy :: Maybe Ty -> String
 showMaybeTy (Just t) = show t
@@ -375,3 +378,8 @@ promoteNumber DoubleTy _ = DoubleTy
 promoteNumber _ DoubleTy = DoubleTy
 promoteNumber a b =
   error ("promoteNumber called with non-numbers: " ++ show a ++ ", " ++ show b)
+
+-- | Checks if one type contains another.
+isSubType :: Ty -> Ty -> Bool
+isSubType (FuncTy args ret _) t = (any (==t) args) || ret == t
+isSubType t t' = t == t'

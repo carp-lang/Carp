@@ -128,8 +128,8 @@ instance Show Number where
 -- | The canonical Lisp object.
 data Obj
   = Sym SymPath SymbolMode
-  | MultiSym String [SymPath] -- refering to multiple functions with the same name
-  | InterfaceSym String -- refering to an interface. TODO: rename to InterfaceLookupSym?
+  | MultiSym String [SymPath] -- referring to multiple functions with the same name
+  | InterfaceSym String -- referring to an interface. TODO: rename to InterfaceLookupSym?
   | Num Ty Number
   | Str String
   | Pattern String
@@ -171,6 +171,7 @@ data Obj
   | Deref
   | Interface Ty [SymPath]
   | C String -- C literal
+  | Protocol [SymPath] [SymPath]
   deriving (Show, Eq, Generic)
 
 instance Hashable Obj
@@ -401,6 +402,7 @@ getPath (XObj (Lst (XObj (Mod _ _) _ _ : XObj (Sym path _) _ _ : _)) _ _) = path
 getPath (XObj (Lst (XObj (Interface _ _) _ _ : XObj (Sym path _) _ _ : _)) _ _) = path
 getPath (XObj (Lst (XObj (Command _) _ _ : XObj (Sym path _) _ _ : _)) _ _) = path
 getPath (XObj (Lst (XObj (Primitive _) _ _ : XObj (Sym path _) _ _ : _)) _ _) = path
+getPath (XObj (Lst (XObj (Protocol _ _) _ _ : XObj (Sym path _) _ _ : _)) _ _) = path
 getPath (XObj (Sym path _) _ _) = path
 getPath x = SymPath [] (pretty x)
 
@@ -486,6 +488,7 @@ pretty = visit 0
         Deref -> "deref"
         Break -> "break"
         Interface _ _ -> "interface"
+        Protocol _ _ -> "defprotocol"
         With -> "with"
 
 prettyUpTo :: Int -> XObj -> String
@@ -551,6 +554,7 @@ prettyUpTo lim xobj =
         Deref -> ""
         Break -> ""
         Interface _ _ -> ""
+        Protocol _ _ -> ""
         With -> ""
 
 prettyCaptures :: Set.Set XObj -> String

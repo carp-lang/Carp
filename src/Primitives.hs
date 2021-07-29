@@ -11,7 +11,7 @@ import Control.Monad.IO.Class (MonadIO, liftIO)
 import Data.Bifunctor
 import Data.Either (fromRight, rights)
 import Data.Functor ((<&>))
-import Data.List (foldl')
+import Data.List (foldl', find)
 import Data.Maybe (fromJust, fromMaybe)
 import Deftype
 import Emit
@@ -37,6 +37,7 @@ import TypePredicates
 import Types
 import Util
 import Web.Browser (openBrowser)
+import Protocol
 
 makeNullaryPrim :: SymPath -> NullaryPrimitiveCallback -> String -> String -> (String, Binder)
 makeNullaryPrim p = makePrim p . NullaryPrimitive
@@ -117,6 +118,32 @@ primitiveColumn x@(XObj _ i _) ctx args =
     _ -> toEvalError ctx x (ArgumentArityError x "0 or 1" args)
   where
     err = toEvalError ctx x (MissingInfo x)
+
+-- | Defines a new protocol.
+primitiveProtocol :: VariadicPrimitiveCallback
+primitiveProtocol x ctx (s@(XObj (Sym ppath@(SymPath [] _) _) i _):paths) =
+  let ty = (Just (ProtocolTy []))
+      ps = (map getPath paths)
+      pro = XObj (Lst [XObj (Protocol ps []) i (Just (ProtocolTy [])), s]) i ty
+      binder = toBinder pro
+   in if (any (not . isSym) paths)
+        -- TODO: Better error here.
+        then pure $ toEvalError ctx x (ArgumentTypeError "defprotocol" "symbols" "other" (fromJust (find (not . isSym) paths)))
+        else case insertTypeBinder ctx (markQualified ppath) binder of
+               Right ctx' -> pure (ctx', dynamicNil)
+               Left err -> pure $ throwErr err ctx (xobjInfo x)
+primitiveProtocol x ctx y = pure $ toEvalError ctx x (ArgumentTypeError "defprotocol" "an unqualified symbol" "first" (head y))
+
+-- | Make a type as an instance of a protocol.
+primitiveInstance :: BinaryPrimitiveCallback
+primitiveInstance x ctx (XObj (Sym protocol@(SymPath _ _) _) _ _) (XObj (Sym path _) _ _) =
+  case registerInstance ctx protocol path of
+    Left err -> pure $ throwErr err ctx (xobjInfo x)
+    Right ctx' -> pure (ctx', dynamicNil)
+primitiveInstance x ctx (XObj (Sym _ _) _ _) y =
+  pure $ toEvalError ctx x (ArgumentTypeError "instance" "a symbol" "second" y)
+primitiveInstance _ ctx x _ =
+  pure $ toEvalError ctx x (ArgumentTypeError "instance" "a symbol" "first" x)
 
 primitiveImplements :: BinaryPrimitiveCallback
 primitiveImplements _ ctx x@(XObj (Sym interface@(SymPath _ _) _) _ _) (XObj (Sym path _) _ _) =

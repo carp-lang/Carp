@@ -30,6 +30,7 @@ module Forms
     pattern DoPat,
     pattern WhilePat,
     pattern SetPat,
+    pattern ProtocolPat,
   )
 where
 
@@ -430,6 +431,9 @@ pattern CommandPat arity sym params <- XObj (Lst [XObj (Command arity) _ _, sym,
 
 pattern PrimitivePat :: PrimitiveFunctionType -> XObj -> [XObj] -> XObj
 pattern PrimitivePat arity sym params <- XObj (Lst [XObj (Primitive arity) _ _, sym, (ArrPat params)]) _ _
+
+pattern ProtocolPat :: XObj -> [SymPath] -> [SymPath] -> XObj
+pattern ProtocolPat name interfaces instances <- XObj (Lst [XObj (Protocol interfaces instances) _ _, name]) _ _
 
 pattern AppPat :: XObj -> [XObj] -> [XObj]
 pattern AppPat f args <- (f : args)

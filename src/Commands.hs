@@ -950,3 +950,4 @@ commandType ctx (XObj x _ _) =
     typeOf Ref = "ref"
     typeOf Deref = "deref"
     typeOf (Interface _ _) = "interface"
+    typeOf (Protocol _ _) = "protocol"

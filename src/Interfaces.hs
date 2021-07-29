@@ -8,6 +8,7 @@ module Interfaces
     retroactivelyRegisterInInterface,
     interfaceImplementedForTy,
     removeInterfaceFromImplements,
+    getImplementations,
     InterfaceError (..),
   )
 where
@@ -74,6 +75,11 @@ getFirstMatchingImplementation ctx paths ty =
   where
     predicate = (== Just ty) . (xobjTy . binderXObj)
     global = contextGlobalEnv ctx
+
+-- | Get the paths of interface implementations.
+getImplementations :: XObj -> [SymPath]
+getImplementations (XObj (Lst ((XObj (Interface _ paths) _ _):_)) _ _) = paths
+getImplementations _ = []
 
 -- | Remove an interface from a binder's list of implemented interfaces
 removeInterfaceFromImplements :: SymPath -> XObj -> Context -> Context
