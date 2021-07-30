@@ -55,4 +55,5 @@ tyToCManglePtr _ ty = f ty
     f (PointerTy _) = err "pointers"
     f (RefTy _ _) = err "references"
     f CTy = "c_code" -- Literal C; we shouldn't emit anything.
+    f (ProtocolTy _ _) = err "protocols"
     err s = error ("Can't emit the type of " ++ s ++ ".")

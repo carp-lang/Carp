@@ -11,7 +11,7 @@ import Control.Monad.IO.Class (MonadIO, liftIO)
 import Data.Bifunctor
 import Data.Either (fromRight, rights)
 import Data.Functor ((<&>))
-import Data.List (foldl')
+import Data.List (foldl', find)
 import Data.Maybe (fromJust, fromMaybe)
 import Deftype
 import Emit
@@ -37,6 +37,8 @@ import TypePredicates
 import Types
 import Util
 import Web.Browser (openBrowser)
+import Protocol
+import Forms
 
 makeNullaryPrim :: SymPath -> NullaryPrimitiveCallback -> String -> String -> (String, Binder)
 makeNullaryPrim p = makePrim p . NullaryPrimitive
@@ -117,6 +119,32 @@ primitiveColumn x@(XObj _ i _) ctx args =
     _ -> toEvalError ctx x (ArgumentArityError x "0 or 1" args)
   where
     err = toEvalError ctx x (MissingInfo x)
+
+-- | Defines a new protocol.
+primitiveProtocol :: VariadicPrimitiveCallback
+primitiveProtocol x ctx (s@(XObj (Sym ppath@(SymPath [] _) _) i _):paths) =
+  let ty = (Just (ProtocolTy ppath []))
+      ps = (map getPath paths)
+      pro = XObj (Lst [XObj (Protocol ps []) i ty, s]) i ty
+      binder = toBinder pro
+   in if (any (not . isSym) paths)
+        -- TODO: Better error here.
+        then pure $ toEvalError ctx x (ArgumentTypeError "defprotocol" "symbols" "other" (fromJust (find (not . isSym) paths)))
+        else case insertTypeBinder ctx (markQualified ppath) binder of
+               Right ctx' -> pure (ctx', dynamicNil)
+               Left err -> pure $ throwErr err ctx (xobjInfo x)
+primitiveProtocol x ctx y = pure $ toEvalError ctx x (ArgumentTypeError "defprotocol" "an unqualified symbol" "first" (head y))
+
+-- | Make a type as an instance of a protocol.
+primitiveInstance :: BinaryPrimitiveCallback
+primitiveInstance x ctx (XObj (Sym protocol@(SymPath _ _) _) _ _) (XObj (Sym path _) _ _) =
+  case registerInstance ctx protocol path of
+    Left err -> pure $ throwErr err ctx (xobjInfo x)
+    Right ctx' -> pure (ctx', dynamicNil)
+primitiveInstance x ctx (XObj (Sym _ _) _ _) y =
+  pure $ toEvalError ctx x (ArgumentTypeError "instance" "a symbol" "second" y)
+primitiveInstance _ ctx x _ =
+  pure $ toEvalError ctx x (ArgumentTypeError "instance" "a symbol" "first" x)
 
 primitiveImplements :: BinaryPrimitiveCallback
 primitiveImplements _ ctx x@(XObj (Sym interface@(SymPath _ _) _) _ _) (XObj (Sym path _) _ _) =
@@ -281,6 +309,7 @@ primitiveInfo _ ctx target@(XObj (Sym path@(SymPath _ name) _) _ _) =
         let found = lookupBinderInTypeEnv ctx path
         _ <- printIfFound found
         _ <- printInterfaceImplementationsOrAll found otherBindings
+        _ <- printProtocolInterfaces found
         either (const (notFound ctx target path)) (const ok) (found <> fmap head otherBindings)
       where
         otherBindings =
@@ -296,6 +325,10 @@ primitiveInfo _ ctx target@(XObj (Sym path@(SymPath _ name) _) _ _) =
   where
     ok :: IO (Context, Either EvalError XObj)
     ok = pure (ctx, dynamicNil)
+    printProtocolInterfaces :: Either ContextError Binder -> IO ()
+    printProtocolInterfaces (Right (Binder _ (ProtocolPat _ interfaces _))) =
+      putStrLn $ "  Required Definitions: " ++ joinWithComma (map show interfaces)
+    printProtocolInterfaces _ = pure ()
     printInterfaceImplementationsOrAll :: Either ContextError Binder -> Either ContextError [Binder] -> IO ()
     printInterfaceImplementationsOrAll interface impls =
       either
@@ -463,15 +496,16 @@ primitiveDefinterface xobj ctx nameXObj@(XObj (Sym path@(SymPath [] name) _) _ _
     invalidType = evalError ctx ("Invalid type for interface `" ++ name ++ "`: " ++ pretty ty) (xobjInfo ty)
     validType t = either (const defInterface) updateInterface (lookupBinderInTypeEnv ctx path)
       where
-        defInterface =
-          let interface = defineInterface name t [] (xobjInfo nameXObj)
+        withProtocols = resolveProtocols ctx t
+        defInterface  =
+          let interface = defineInterface name withProtocols [] (xobjInfo nameXObj)
               binder = toBinder interface
               Right ctx' = insertTypeBinder ctx (markQualified (SymPath [] name)) binder
               Right newCtx = retroactivelyRegisterInInterface ctx' binder
            in (newCtx, dynamicNil)
         updateInterface binder = case binder of
           Binder _ (XObj (Lst (XObj (Interface foundType _) _ _ : _)) _ _) ->
-            if foundType == t
+            if protocolEq foundType withProtocols
               then (ctx, dynamicNil)
               else
                 evalError

@@ -173,6 +173,7 @@ toC toCMode (Binder meta root) = emitterSrc (execState (visit startingIndent roo
             (Match _) -> dontVisit
             With -> dontVisit
             MetaStub -> dontVisit
+            (Protocol _ _) -> dontVisit
             C c -> pure c
     visitStr' indent str i shouldEscape =
       -- This will allocate a new string every time the code runs:
@@ -925,6 +926,7 @@ toDeclaration (Binder meta xobj@(XObj (Lst xobjs) _ ty)) =
       ""
     XObj (Primitive _) _ _ : _ ->
       ""
+    XObj (Protocol _ _) _ _ : _ -> ""
     _ -> error ("Internal compiler error: Can't emit other kinds of definitions: " ++ show xobj)
 toDeclaration _ = error "Missing case."
 

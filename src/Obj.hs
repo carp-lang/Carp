@@ -128,8 +128,8 @@ instance Show Number where
 -- | The canonical Lisp object.
 data Obj
   = Sym SymPath SymbolMode
-  | MultiSym String [SymPath] -- refering to multiple functions with the same name
-  | InterfaceSym String -- refering to an interface. TODO: rename to InterfaceLookupSym?
+  | MultiSym String [SymPath] -- referring to multiple functions with the same name
+  | InterfaceSym String -- referring to an interface. TODO: rename to InterfaceLookupSym?
   | Num Ty Number
   | Str String
   | Pattern String
@@ -171,6 +171,7 @@ data Obj
   | Deref
   | Interface Ty [SymPath]
   | C String -- C literal
+  | Protocol [SymPath] [SymPath]
   deriving (Show, Eq, Generic)
 
 instance Hashable Obj
@@ -401,6 +402,7 @@ getPath (XObj (Lst (XObj (Mod _ _) _ _ : XObj (Sym path _) _ _ : _)) _ _) = path
 getPath (XObj (Lst (XObj (Interface _ _) _ _ : XObj (Sym path _) _ _ : _)) _ _) = path
 getPath (XObj (Lst (XObj (Command _) _ _ : XObj (Sym path _) _ _ : _)) _ _) = path
 getPath (XObj (Lst (XObj (Primitive _) _ _ : XObj (Sym path _) _ _ : _)) _ _) = path
+getPath (XObj (Lst (XObj (Protocol _ _) _ _ : XObj (Sym path _) _ _ : _)) _ _) = path
 getPath (XObj (Sym path _) _ _) = path
 getPath x = SymPath [] (pretty x)
 
@@ -486,6 +488,7 @@ pretty = visit 0
         Deref -> "deref"
         Break -> "break"
         Interface _ _ -> "interface"
+        Protocol _ _ -> "defprotocol"
         With -> "with"
 
 prettyUpTo :: Int -> XObj -> String
@@ -551,6 +554,7 @@ prettyUpTo lim xobj =
         Deref -> ""
         Break -> ""
         Interface _ _ -> ""
+        Protocol _ _ -> ""
         With -> ""
 
 prettyCaptures :: Set.Set XObj -> String
@@ -813,8 +817,12 @@ xobjToTy (XObj (Sym (SymPath _ "Pattern") _) _ _) = Just PatternTy
 xobjToTy (XObj (Sym (SymPath _ "Char") _) _ _) = Just CharTy
 xobjToTy (XObj (Sym (SymPath _ "Bool") _) _ _) = Just BoolTy
 xobjToTy (XObj (Sym (SymPath _ "Static") _) _ _) = Just StaticLifetimeTy
-xobjToTy (XObj (Sym spath@(SymPath _ s@(firstLetter : _)) _) _ _)
+xobjToTy (XObj (Sym spath@(SymPath _ s@(firstLetter : rest)) _) _ _)
   | isLower firstLetter = Just (VarTy s)
+  | firstLetter == '!' =
+      if (not (null rest))
+        then Just (ProtocolTy (SymPath [] rest) [])
+        else Nothing
   | otherwise = Just (StructTy (ConcreteNameTy spath) [])
 xobjToTy (XObj (Lst [XObj (Sym (SymPath _ "Ptr") _) _ _, innerTy]) _ _) =
   do
@@ -890,6 +898,13 @@ polymorphicSuffix signature actualType =
             else do
               put (a : visitedTypeVariables) -- now it's visited
               pure [tyToC b]
+        (p@(ProtocolTy _ _), t) -> do
+          visitedTypeVariables <- get
+          if p `elem` visitedTypeVariables
+            then pure []
+            else do
+              put (p : visitedTypeVariables) -- now it's visited
+              pure [tyToC t]
         (FuncTy argTysA retTyA _, FuncTy argTysB retTyB _) -> do
           visitedArgs <- fmap concat (zipWithM visit argTysA argTysB)
           visitedRets <- visit retTyA retTyB

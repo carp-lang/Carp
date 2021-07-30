@@ -4,6 +4,7 @@ import Types
 
 isTypeGeneric :: Ty -> Bool
 isTypeGeneric (VarTy _) = True
+isTypeGeneric (ProtocolTy _ _) = True
 isTypeGeneric (FuncTy argTys retTy _) = any isTypeGeneric argTys || isTypeGeneric retTy
 isTypeGeneric (StructTy n tyArgs) = isTypeGeneric n || any isTypeGeneric tyArgs
 isTypeGeneric (PointerTy p) = isTypeGeneric p
