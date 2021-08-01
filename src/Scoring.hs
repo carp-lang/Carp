@@ -10,8 +10,8 @@ import TypesToC
 -- | Scoring of types.
 -- | The score is used for sorting the bindings before emitting them.
 -- | A lower score means appearing earlier in the emitted file.
-scoreTypeBinder :: TypeEnv -> Binder -> (Int, Binder)
-scoreTypeBinder typeEnv b@(Binder _ (XObj (Lst (XObj x _ _ : XObj (Sym _ _) _ _ : _)) _ _)) =
+scoreTypeBinder :: TypeEnv -> Env -> Binder -> (Int, Binder)
+scoreTypeBinder typeEnv env b@(Binder _ (XObj (Lst (XObj x _ _ : XObj (Sym _ _) _ _ : _)) _ _)) =
   case x of
     Defalias aliasedType ->
       let selfName = ""
@@ -24,14 +24,16 @@ scoreTypeBinder typeEnv b@(Binder _ (XObj (Lst (XObj x _ _ : XObj (Sym _ _) _ _ 
     ExternalType _ -> (0, b)
     _ -> (500, b)
   where
-    depthOfStruct (StructTy (ConcreteNameTy (SymPath _ name)) varTys) =
-      case E.getTypeBinder typeEnv name of
+    depthOfStruct (StructTy (ConcreteNameTy path@(SymPath _ name)) varTys) =
+      case E.getTypeBinder typeEnv name <> findTypeBinder env path of
         Right (Binder _ typedef) -> (depthOfDeftype typeEnv Set.empty typedef varTys + 1, b)
+        -- TODO: This function should return (Either ScoringError (Int,
+        -- Binder)) instead of calling error.
         Left e -> error (show e)
     depthOfStruct _ = error "depthofstruct"
-scoreTypeBinder _ b@(Binder _ (XObj (Mod _ _) _ _)) =
+scoreTypeBinder _ _ b@(Binder _ (XObj (Mod _ _) _ _)) =
   (1000, b)
-scoreTypeBinder _ x = error ("Can't score: " ++ show x)
+scoreTypeBinder _ _ x = error ("Can't score: " ++ show x)
 
 depthOfDeftype :: TypeEnv -> Set.Set Ty -> XObj -> [Ty] -> Int
 depthOfDeftype typeEnv visited (XObj (Lst (_ : XObj (Sym (SymPath path selfName) _) _ _ : rest)) _ _) varTys =
