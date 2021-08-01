@@ -228,6 +228,10 @@ isTypeDef (XObj (Lst (XObj (Deftype _) _ _ : _)) _ _) = True
 isTypeDef (XObj (Lst (XObj (DefSumtype _) _ _ : _)) _ _) = True
 isTypeDef _ = False
 
+isType :: XObj -> Bool
+isType (XObj (Lst (XObj (ExternalType _) _ _ : _)) _ _) = True
+isType x = isTypeDef x
+
 isMod :: XObj -> Bool
 isMod (XObj (Mod _ _) _ _) = True
 isMod _ = False
