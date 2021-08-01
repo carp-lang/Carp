@@ -64,7 +64,28 @@ depthOfType typeEnv visited selfName theType =
     visitType t@(StructTy _ varTys) = depthOfStructType t varTys
     visitType (FuncTy argTys retTy ltTy) =
       -- trace ("Depth of args of " ++ show argTys ++ ": " ++ show (map (visitType . Just) argTys))
-      maximum (visitType ltTy : visitType retTy : fmap visitType argTys)
+      --
+      -- The `+ 1` in the function clause below is an important band-aid.
+      -- Here's the issue: 
+      --   When we resolve declarations, some types may reference other types
+      --   that have not been scored yet. When that happens, we add 500 to the
+      --   binder to ensure it appears later than the types we'll resolve later
+      --   on.
+      --
+      --   However, this means that function types can be tied w/ such binders
+      --   when this case holds since they only took the maximum of their type
+      --   members. e.g. both a struct and its functions might be
+      --   scored "504" and we might incorrectly emit the functions before the
+      --   struct.
+      --
+      --   Since functions are *always* dependent on the types in their
+      --   signature, add 1 to ensure they appear after those types in all
+      --   possible scenarios.
+      --
+      --   TODO: Should we find a more robust solution that explicitly
+      --   accounts for unresolved types and scores based on these rather than
+      --   relying on our hardcoded adjustments being correct?
+      maximum (visitType ltTy : visitType retTy : fmap visitType argTys) + 1
     visitType (PointerTy p) = visitType p
     visitType (RefTy r lt) = max (visitType r) (visitType lt)
     visitType _ = 1
