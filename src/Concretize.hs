@@ -75,6 +75,7 @@ concretizeXObj allowAmbiguityRoot typeEnv rootEnv visitedDefinitions root =
 
 -- | The type of visit functions. These functions convert the types of the
 -- components of a form into concrete types and take the following arguments:
+--   - A List of paths that have already been visited.
 --   - A bool indicating whether or not type variables are allowed
 --   - A level indicating if we are in an inner component of a form or the top level
 --   - A type environment
@@ -85,23 +86,23 @@ type Visitor = [SymPath] -> Bool -> Level -> TypeEnv -> Env -> XObj -> State [XO
 -- | Process the components of a form, yielding a concretely typed (no
 -- generics) version of the form.
 visit :: [SymPath] -> Bool -> Level -> TypeEnv -> Env -> XObj -> State [XObj] (Either TypeError XObj)
-visit vs ambig _ tenv env xobj@(SymPat _ _) = visitSymbol vs ambig tenv env xobj
-visit vs ambig _ tenv env xobj@(MultiSymPat _ _) = visitMultiSym vs ambig tenv env xobj
-visit vs ambig _ tenv env xobj@(InterfaceSymPat _) = visitInterfaceSym vs ambig tenv env xobj
-visit vs allowAmbig level tenv env xobj@(ListPat _) =
+visit visited ambig _ tenv env xobj@(SymPat _ _) = visitSymbol visited ambig tenv env xobj
+visit visited ambig _ tenv env xobj@(MultiSymPat _ _) = visitMultiSym visited ambig tenv env xobj
+visit visited ambig _ tenv env xobj@(InterfaceSymPat _) = visitInterfaceSym visited ambig tenv env xobj
+visit visited allowAmbig level tenv env xobj@(ListPat _) =
   do
-    v <- visitList vs allowAmbig level tenv env xobj
-    pure (v >>= \ok -> pure (setObj xobj (Lst ok)))
-visit vs allowAmbig level tenv env xobj@(ArrPat arr) =
+    vLst <- visitList visited allowAmbig level tenv env xobj
+    pure (vLst >>= \ok -> pure (setObj xobj (Lst ok)))
+visit visited allowAmbig level tenv env xobj@(ArrPat arr) =
   do
-    v <- fmap sequence (mapM (visit vs allowAmbig level tenv env) arr)
+    vArr <- fmap sequence (mapM (visit visited allowAmbig level tenv env) arr)
     c <- concretizeTypeOfXObj tenv xobj
-    pure (c >> v >>= \ok -> pure (setObj xobj (Arr ok)))
-visit vs allowAmbig level tenv env xobj@(StaticArrPat arr) =
+    pure (c >> vArr >>= \ok -> pure (setObj xobj (Arr ok)))
+visit visited allowAmbig level tenv env xobj@(StaticArrPat arr) =
   do
-    v <- fmap sequence (mapM (visit vs allowAmbig level tenv env) arr)
+    vArr <- fmap sequence (mapM (visit visited allowAmbig level tenv env) arr)
     c <- concretizeTypeOfXObj tenv xobj
-    pure (c >> v >>= \ok -> pure (setObj xobj (StaticArr ok)))
+    pure (c >> vArr >>= \ok -> pure (setObj xobj (StaticArr ok)))
 visit _ _ _ _ _ x = pure (Right x)
 
 -- | Entry point for concretely typing the components of a list form.
@@ -133,14 +134,14 @@ envWithFunctionArgs env arr =
 -- "main" is treated as a special case.
 visitDefn :: Visitor
 visitDefn p a l t e x@(ListPat (DefnPat _ (SymPat (SymPath [] "main") _) _ _)) = visitMain p a l t e x
-visitDefn vs _ Toplevel tenv env x@(ListPat (DefnPat defn name args@(ArrPat arr) body)) =
+visitDefn visited _ Toplevel tenv env x@(ListPat (DefnPat defn name args@(ArrPat arr) body)) =
   do
     mapM_ (concretizeTypeOfXObj tenv) arr
     let envWithArgs = fromRight Env.empty (envWithFunctionArgs env arr)
         allowAmbig = maybe True isTypeGeneric (xobjTy x)
     c <- concretizeTypeOfXObj tenv body
-    v <- visit (getPath x : vs) allowAmbig Inside tenv (incrementEnvNestLevel envWithArgs) body
-    pure (c >> v >>= go)
+    vBody <- visit (getPath x : visited) allowAmbig Inside tenv (incrementEnvNestLevel envWithArgs) body
+    pure (c >> vBody >>= go)
   where
     go b = pure [defn, name, args, b]
 visitDefn _ _ Inside _ _ x@(ListPat (DefnPat _ _ _ _)) =
@@ -149,11 +150,11 @@ visitDefn _ _ _ _ _ x = pure (Left (CannotConcretize x))
 
 -- | Concretely type a program entry point. Can only return Int or Unit.
 visitMain :: Visitor
-visitMain vs _ Toplevel tenv env (ListPat (DefnPat defn name@(SymPat (SymPath [] "main") _) args@(ArrPat []) body)) =
+visitMain visited _ Toplevel tenv env (ListPat (DefnPat defn name@(SymPat (SymPath [] "main") _) args@(ArrPat []) body)) =
   do
     c <- concretizeTypeOfXObj tenv body
-    v <- visit vs False Inside tenv env body
-    pure (c >> v >>= typeCheck)
+    vBody <- visit visited False Inside tenv env body
+    pure (c >> vBody >>= typeCheck)
   where
     typeCheck b =
       let t = fromMaybe UnitTy (xobjTy b)
@@ -167,10 +168,10 @@ visitMain _ _ _ _ _ x = pure (Left (CannotConcretize x))
 
 -- | Concretely type a Def form.
 visitDef :: Visitor
-visitDef vs _ Toplevel tenv env x@(ListPat (DefPat def name body)) =
+visitDef visited _ Toplevel tenv env x@(ListPat (DefPat def name body)) =
   do
-    v <- visit vs allowAmbig Inside tenv env body
-    pure (v >>= \ok -> pure [def, name, ok])
+    vBody <- visit visited allowAmbig Inside tenv env body
+    pure (vBody >>= \ok -> pure [def, name, ok])
   where
     allowAmbig = isTypeGeneric (fromMaybe (VarTy "a") (xobjTy x))
 visitDef _ _ Inside _ _ x@(ListPat (DefPat _ _ _)) =
@@ -179,10 +180,10 @@ visitDef _ _ _ _ _ x = pure (Left (CannotConcretize x))
 
 -- | Concretely type a Let (let [bindings...] <body>) form.
 visitLet :: Visitor
-visitLet vs allowAmbig level tenv env (ListPat (LetPat letExpr arr@(ArrPat bindings) body)) =
+visitLet visited allowAmbig level tenv env (ListPat (LetPat letExpr arr@(ArrPat bindings) body)) =
   do
-    bindings' <- fmap sequence (mapM (visit vs allowAmbig level tenv env) bindings)
-    body' <- visit vs allowAmbig level tenv env body
+    bindings' <- fmap sequence (mapM (visit visited allowAmbig level tenv env) bindings)
+    body' <- visit visited allowAmbig level tenv env body
     c <- mapM (concretizeTypeOfXObj tenv . fst) (pairwise bindings)
     pure (sequence c >> go bindings' body')
   where
@@ -194,21 +195,21 @@ visitLet _ _ _ _ _ x = pure (Left (CannotConcretize x))
 
 -- | Concretely type a The (the <type> <value>) form.
 visitThe :: Visitor
-visitThe vs allowAmbig level tenv env (ListPat (ThePat the ty value)) =
+visitThe visited allowAmbig level tenv env (ListPat (ThePat the ty value)) =
   do
-    v <- visit vs allowAmbig level tenv env value
-    pure (v >>= \ok -> pure [the, ty, ok])
+    vVal <- visit visited allowAmbig level tenv env value
+    pure (vVal >>= \ok -> pure [the, ty, ok])
 visitThe _ _ _ _ _ x = pure (Left (CannotConcretize x))
 
 -- | Concretely type a Match (match <expr> <clauses...>) form.
 visitMatch :: Visitor
-visitMatch vs allowAmbig level tenv env (ListPat (MatchPat match expr rest)) =
+visitMatch visited allowAmbig level tenv env (ListPat (MatchPat match expr rest)) =
   do
     c <- concretizeTypeOfXObj tenv expr
-    v <- visit vs allowAmbig level tenv env expr
+    vExpr <- visit visited allowAmbig level tenv env expr
     mapM_ (concretizeTypeOfXObj tenv . snd) (pairwise rest)
-    r <- fmap sequence (mapM (visitMatchCase vs allowAmbig level tenv env) (pairwise rest))
-    pure (c >> go v r)
+    vCases <- fmap sequence (mapM (visitMatchCase visited allowAmbig level tenv env) (pairwise rest))
+    pure (c >> go vExpr vCases)
   where
     go x y = do
       okExpr <- x
@@ -218,41 +219,41 @@ visitMatch _ _ _ _ _ x = pure (Left (CannotConcretize x))
 
 -- | Concretely type a Match form case.
 visitMatchCase :: [SymPath] -> Bool -> Level -> TypeEnv -> Env -> (XObj, XObj) -> State [XObj] (Either TypeError [XObj])
-visitMatchCase vs allowAmbig level tenv env (lhs, rhs) =
+visitMatchCase visited allowAmbig level tenv env (lhs, rhs) =
   -- TODO! This changes the names of some tags (which is corrected in Emit) but perhaps there is a better way where they can be identified as tags and not changed?
   do
-    vl <- visit vs allowAmbig level tenv env lhs
-    vr <- visit vs allowAmbig level tenv env rhs
+    vl <- visit visited allowAmbig level tenv env lhs
+    vr <- visit visited allowAmbig level tenv env rhs
     pure (liftA2 (\x y -> [x, y]) vl vr)
 
 -- | Concretely type a Set (set! <var> <value>) form.
 visitSetBang :: Visitor
-visitSetBang vs allowAmbig _ tenv env (ListPat (SetPat set var value)) =
+visitSetBang visited allowAmbig _ tenv env (ListPat (SetPat set var value)) =
   do
-    v <- visit vs allowAmbig Inside tenv env value
-    pure (v >>= \ok -> pure [set, var, ok])
+    vVal <- visit visited allowAmbig Inside tenv env value
+    pure (vVal >>= \ok -> pure [set, var, ok])
 visitSetBang _ _ _ _ _ x = pure (Left (CannotConcretize x))
 
 -- | Concretely type a function application (<function> <args...>) form.
 visitApp :: Visitor
-visitApp vs allowAmbig level tenv env (ListPat (AppPat func args)) =
+visitApp visited allowAmbig level tenv env (ListPat (AppPat func args)) =
   do
     c <- concretizeTypeOfXObj tenv func
     cs <- fmap sequence $ mapM (concretizeTypeOfXObj tenv) args
-    f <- visit vs allowAmbig level tenv env func
-    a <- fmap sequence (mapM (visit vs allowAmbig level tenv env) args)
-    pure (c >> cs >> liftA2 (:) f a)
+    vFunc <- visit visited allowAmbig level tenv env func
+    vArgs <- fmap sequence (mapM (visit visited allowAmbig level tenv env) args)
+    pure (c >> cs >> liftA2 (:) vFunc vArgs)
 visitApp _ _ _ _ _ x = pure (Left (CannotConcretize x))
 
 -- | Concretely type an anonymous function and convert it into a
 -- resolvable/retrievable lambda.
 mkLambda :: Visitor
-mkLambda vs allowAmbig _ tenv env root@(ListPat (FnPat fn arr@(ArrPat args) body)) =
+mkLambda visited allowAmbig _ tenv env root@(ListPat (FnPat fn arr@(ArrPat args) body)) =
   let capturedVars = filter (\xobj -> xobjObj (toGeneralSymbol xobj) `notElem` (map xobjObj args)) (collectCapturedVars body)
       -- Create a new (top-level) function that will be used when the lambda is called.
       -- Its name will contain the name of the (normal, non-lambda) function it's contained within,
       -- plus the identifier of the particular s-expression that defines the lambda.
-      SymPath spath name = (last vs)
+      SymPath spath name = (last visited)
       Just funcTy = xobjTy root
       lambdaPath = SymPath spath ("_Lambda_" ++ lambdaToCName name (envFunctionNestingLevel env) ++ "_" ++ show (maybe 0 infoIdentifier (xobjInfo root)) ++ "_env")
       lambdaNameSymbol = XObj (Sym lambdaPath Symbol) (Just dummyInfo) Nothing
@@ -266,7 +267,7 @@ mkLambda vs allowAmbig _ tenv env root@(ListPat (FnPat fn arr@(ArrPat args) body
       extendedArgs =
         if null capturedVars
           then arr
-          else -- If the lambda captures anything it need an extra arg for its env:
+          else-- If the lambda captures anything it need an extra arg for its env:
 
             ( setObj
                 arr
@@ -274,8 +275,8 @@ mkLambda vs allowAmbig _ tenv env root@(ListPat (FnPat fn arr@(ArrPat args) body
                     ( XObj
                         (Sym (SymPath [] "_env") Symbol)
                         (Just dummyInfo)
-                        (Just (PointerTy (StructTy (ConcreteNameTy tyPath) []))) :
-                      args
+                        (Just (PointerTy (StructTy (ConcreteNameTy tyPath) [])))
+                        : args
                     )
                 )
             )
@@ -310,7 +311,7 @@ mkLambda vs allowAmbig _ tenv env root@(ListPat (FnPat fn arr@(ArrPat args) body
       -- TODO: Support modules in type envs.
       extendedTypeEnv = replaceLeft (FailedToAddLambdaStructToTyEnv tyPath environmentStruct) (insert tenv tyPath (toBinder environmentStruct))
    in --(fromMaybe UnitTy (xobjTy root))
-      case (extendedTypeEnv >>= \ext -> concretizeDefinition allowAmbig ext env vs lambdaCallback funcTy) of
+      case (extendedTypeEnv >>= \ext -> concretizeDefinition allowAmbig ext env visited lambdaCallback funcTy) of
         Left e -> pure (Left e)
         Right (concreteLiftedLambda, deps) ->
           do
@@ -335,12 +336,12 @@ mkLambda _ _ _ _ _ root = pure (Left (CannotConcretize root))
 -- in the global scope. That function definition will be set as the lambdas '.callback' in
 -- the C code.
 visitFn :: Visitor
-visitFn vs allowAmbig level tenv env x@(ListPat (FnPat fn args@(ArrPat arr) body)) =
+visitFn visited allowAmbig level tenv env x@(ListPat (FnPat fn args@(ArrPat arr) body)) =
   do
     mapM_ (concretizeTypeOfXObj tenv) arr
     let envWithArgs = fromRight Env.empty (envWithFunctionArgs env arr)
-    v <- visit vs allowAmbig Inside tenv (incrementEnvNestLevel envWithArgs) body
-    either (pure . Left) (\b -> mkLambda vs allowAmbig level tenv envWithArgs (setObj x (Lst [fn, args, b]))) v
+    vBody <- visit visited allowAmbig Inside tenv (incrementEnvNestLevel envWithArgs) body
+    either (pure . Left) (\b -> mkLambda visited allowAmbig level tenv envWithArgs (setObj x (Lst [fn, args, b]))) vBody
 visitFn _ _ _ _ _ x = pure (Left (CannotConcretize x))
 
 --------------------------------------------------------------------------------
@@ -358,7 +359,7 @@ visitFn _ _ _ _ _ x = pure (Left (CannotConcretize x))
 
 -- | Concretely type a unique symbol.
 visitSymbol :: [SymPath] -> Bool -> TypeEnv -> Env -> XObj -> State [XObj] (Either TypeError XObj)
-visitSymbol vs allowAmbig tenv env xobj@(SymPat path mode) =
+visitSymbol visited allowAmbig tenv env xobj@(SymPat path mode) =
   case searchValue env path of
     Right (foundEnv, binder)
       | envIsExternal foundEnv ->
@@ -367,7 +368,7 @@ visitSymbol vs allowAmbig tenv env xobj@(SymPat path mode) =
             typeOfVisited = fromMaybe (error ("Missing type on " ++ show xobj ++ " at " ++ prettyInfoFromXObj xobj ++ " when looking up path " ++ show path)) (xobjTy xobj)
          in if --(trace $ "CHECKING " ++ getName xobj ++ " : " ++ show theType ++ " with visited type " ++ show typeOfVisited ++ " and visited definitions: " ++ show visitedDefinitions) $
             (isTypeGeneric theType && not (isTypeGeneric typeOfVisited))
-              then case concretizeDefinition allowAmbig tenv env vs theXObj typeOfVisited of
+              then case concretizeDefinition allowAmbig tenv env visited theXObj typeOfVisited of
                 Left err -> pure (Left err)
                 Right (concrete, deps) ->
                   do
@@ -381,7 +382,7 @@ visitSymbol _ _ _ _ x = pure (Left (CannotConcretize x))
 
 -- | Concretely type a context-dependent multi-symbol.
 visitMultiSym :: [SymPath] -> Bool -> TypeEnv -> Env -> XObj -> State [XObj] (Either TypeError XObj)
-visitMultiSym vs allowAmbig tenv env xobj@(MultiSymPat name paths) =
+visitMultiSym visited allowAmbig tenv env xobj@(MultiSymPat name paths) =
   case (filter (matchingSignature3 actualType) tysPathsModes) of
     [] -> pure (Left (NoMatchingSignature xobj name actualType tysToPathsDict))
     [x] -> go x
@@ -394,18 +395,16 @@ visitMultiSym vs allowAmbig tenv env xobj@(MultiSymPat name paths) =
     tysPathsModes = zip3 tys paths modes
     fake1 = XObj (Sym (SymPath [] "theType") Symbol) Nothing Nothing
     fake2 = XObj (Sym (SymPath [] "xobjType") Symbol) Nothing Nothing
-
     go :: (Ty, SymPath, SymbolMode) -> State [XObj] (Either TypeError XObj)
     go (ty, path, mode) =
       either
         (pure . convertError)
-        (visitSymbol vs allowAmbig tenv env)
+        (visitSymbol visited allowAmbig tenv env)
         ( solve [Constraint ty actualType fake1 fake2 fake1 OrdMultiSym]
             >>= pure . (flip replaceTyVars) actualType
             >>= pure . suffixTyVars ("_x" ++ show (infoIdentifier (fromMaybe dummyInfo (xobjInfo xobj))))
             >>= \t' -> pure (XObj (Sym path mode) (xobjInfo xobj) (Just t'))
         )
-
     convertError :: UnificationFailure -> Either TypeError XObj
     convertError failure@(UnificationFailure _ _) =
       Left (UnificationFailed (unificationFailure failure) (unificationMappings failure) [])
@@ -414,7 +413,7 @@ visitMultiSym _ _ _ _ x = pure (Left (CannotConcretize x))
 
 -- | Concretely type an interface symbol.
 visitInterfaceSym :: [SymPath] -> Bool -> TypeEnv -> Env -> XObj -> State [XObj] (Either TypeError XObj)
-visitInterfaceSym vs allowAmbig tenv env xobj@(InterfaceSymPat name) =
+visitInterfaceSym visited allowAmbig tenv env xobj@(InterfaceSymPat name) =
   either (pure . const (Left (CannotConcretize xobj))) go (getTypeBinder tenv name)
   where
     Just actualType = (xobjTy xobj)
@@ -430,14 +429,13 @@ visitInterfaceSym vs allowAmbig tenv env xobj@(InterfaceSymPat name) =
               [y] -> updateSym y
               ps -> pure (Left (SeveralExactMatches xobj name actualType ps))
     go _ = pure (Left (CannotConcretize xobj))
-
     -- TODO: Should we also check for allowAmbig here?
     updateSym (_, path) = if isTypeGeneric actualType then pure (Right xobj) else replace path
     replace path =
       -- We pass the original xobj ty here, should we be passing the type found via matching signature?
       let normalSymbol = XObj (Sym path (LookupGlobal CarpLand AFunction)) (xobjInfo xobj) (xobjTy xobj) -- TODO: Is it surely AFunction here? Could be AVariable as well...!?
        in visitSymbol
-            vs
+            visited
             allowAmbig
             tenv
             env -- trace ("Replacing symbol " ++ pretty xobj ++ " with type " ++ show theType ++ " to single path " ++ show singlePath)
@@ -611,7 +609,6 @@ instantiateGenericStructType typeEnv originalStructTy@(StructTy _ _) genericStru
     XObj (Arr memberXObjs) _ _ = head membersXObjs
     rename@(StructTy _ renamedOrig) = evalState (renameVarTys originalStructTy) 0
     solution = solve [Constraint originalStructTy genericStructTy fake1 fake2 fake1 OrdMultiSym]
-
     go mappings = do
       mappings' <- replaceLeft (FailedToInstantiateGenericType originalStructTy) (solve [Constraint rename genericStructTy fake1 fake2 fake1 OrdMultiSym])
       let nameFixedMembers = renameGenericTypeSymbolsOnProduct renamedOrig memberXObjs
@@ -622,14 +619,14 @@ instantiateGenericStructType typeEnv originalStructTy@(StructTy _ _) genericStru
       let xobj =
             XObj
               ( Lst
-                  ( XObj (Deftype genericStructTy) Nothing Nothing :
-                    XObj (Sym (SymPath [] (tyToC genericStructTy)) Symbol) Nothing Nothing :
-                    [XObj (Arr concretelyTypedMembers) Nothing Nothing]
+                  ( XObj (Deftype genericStructTy) Nothing Nothing
+                      : XObj (Sym (SymPath [] (tyToC genericStructTy)) Symbol) Nothing Nothing
+                      : [XObj (Arr concretelyTypedMembers) Nothing Nothing]
                   )
               )
               (Just dummyInfo)
-              (Just TypeTy) :
-            concat deps
+              (Just TypeTy)
+              : concat deps
       pure xobj
 instantiateGenericStructType _ t _ _ = Left (FailedToInstantiateGenericType t)
 
@@ -659,14 +656,14 @@ instantiateGenericSumtype typeEnv originalStructTy@(StructTy _ originalTyVars) g
                       Right $
                         XObj
                           ( Lst
-                              ( XObj (DefSumtype genericStructTy) Nothing Nothing :
-                                XObj (Sym (SymPath [] (tyToC genericStructTy)) Symbol) Nothing Nothing :
-                                concretelyTypedCases
+                              ( XObj (DefSumtype genericStructTy) Nothing Nothing
+                                  : XObj (Sym (SymPath [] (tyToC genericStructTy)) Symbol) Nothing Nothing
+                                  : concretelyTypedCases
                               )
                           )
                           (Just dummyInfo)
-                          (Just TypeTy) :
-                        concat okDeps
+                          (Just TypeTy)
+                          : concat okDeps
                     Left err -> Left err
 instantiateGenericSumtype _ _ _ _ = error "instantiategenericsumtype"
 
