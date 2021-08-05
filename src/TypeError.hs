@@ -61,6 +61,7 @@ data TypeError
   | UninhabitedConstructor Ty XObj Int Int
   | InconsistentKinds String [XObj]
   | FailedToAddLambdaStructToTyEnv SymPath XObj
+  | FailedToInstantiateGenericType Ty
 
 instance Show TypeError where
   show (SymbolMissingType xobj env) =
@@ -310,6 +311,8 @@ instance Show TypeError where
     "Failed to add the lambda: " ++ show path ++ " represented by struct: "
       ++ pretty xobj
       ++ " to the type environment."
+  show (FailedToInstantiateGenericType ty) =
+    "I couldn't instantiate the generic type " ++ show ty
 
 machineReadableErrorStrings :: FilePathPrintLength -> TypeError -> [String]
 machineReadableErrorStrings fppl err =
