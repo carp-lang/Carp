@@ -1,56 +1,42 @@
-module AssignTypes where
+-- | Module AssignTypes defines routines for replacing type variables with
+-- concrete types.
+module AssignTypes
+  ( assignTypes,
+    beautifyTypeVariables,
+  )
+where
 
 import Data.List (nub)
+import Forms
 import qualified Map
 import Obj
 import TypeError
 import Types
 
+--------------------------------------------------------------------------------
+-- Public functions
+
 {-# ANN assignTypes "HLint: ignore Eta reduce" #-}
 
--- | Walk the whole expression tree and replace all occurences of VarTy with their corresponding actual type.
+-- | Walk the whole expression tree and replace all occurrences of VarTy with
+-- their corresponding actual type.
 assignTypes :: TypeMappings -> XObj -> Either TypeError XObj
-assignTypes mappings root = visit root
-  where
-    visit xobj =
-      case xobjObj xobj of
-        (Lst _) -> visitList xobj
-        (Arr _) -> visitArray xobj
-        (StaticArr _) -> visitStaticArray xobj
-        _ -> assignType xobj
-    visitList :: XObj -> Either TypeError XObj
-    visitList (XObj (Lst xobjs) i t) =
-      do
-        visited <- mapM (assignTypes mappings) xobjs
-        let xobj' = XObj (Lst visited) i t
-        assignType xobj'
-    visitList _ = error "The function 'visitList' only accepts XObjs with lists in them."
-    visitArray :: XObj -> Either TypeError XObj
-    visitArray (XObj (Arr xobjs) i t) =
-      do
-        visited <- mapM (assignTypes mappings) xobjs
-        let xobj' = XObj (Arr visited) i t
-        assignType xobj'
-    visitArray _ = error "The function 'visitArray' only accepts XObjs with arrays in them."
-    visitStaticArray :: XObj -> Either TypeError XObj
-    visitStaticArray (XObj (StaticArr xobjs) i t) =
-      do
-        visited <- mapM (assignTypes mappings) xobjs
-        let xobj' = XObj (StaticArr visited) i t
-        assignType xobj'
-    visitStaticArray _ = error "The function 'visitStaticArray' only accepts XObjs with arrays in them."
-    assignType :: XObj -> Either TypeError XObj
-    assignType xobj = case xobjTy xobj of
-      Just startingType ->
-        let finalType = replaceTyVars mappings startingType
-         in if isArrayTypeOK finalType
-              then Right (xobj {xobjTy = Just finalType})
-              else Left (ArraysCannotContainRefs xobj)
-      Nothing -> pure xobj
-
-isArrayTypeOK :: Ty -> Bool
-isArrayTypeOK (StructTy (ConcreteNameTy (SymPath [] "Array")) [RefTy _ _]) = False -- An array containing refs!
-isArrayTypeOK _ = True
+assignTypes mappings x@(ListPat xs) =
+  do
+    visited <- mapM (assignTypes mappings) xs
+    let xobj' = XObj (Lst visited) (xobjInfo x) (xobjTy x)
+    assignType mappings xobj'
+assignTypes mappings x@(ArrPat xs) =
+  do
+    visited <- mapM (assignTypes mappings) xs
+    let xobj' = XObj (Arr visited) (xobjInfo x) (xobjTy x)
+    assignType mappings xobj'
+assignTypes mappings x@(StaticArrPat xs) =
+  do
+    visited <- mapM (assignTypes mappings) xs
+    let xobj' = XObj (StaticArr visited) (xobjInfo x) (xobjTy x)
+    assignType mappings xobj'
+assignTypes mappings xobj = assignType mappings xobj
 
 -- | Change auto generated type names (i.e. 't0') to letters (i.e. 'a', 'b', 'c', etc...)
 -- | TODO: Only change variables that are machine generated.
@@ -65,3 +51,25 @@ beautifyTypeVariables root =
               (map (VarTy . (: [])) ['a' ..])
           )
    in assignTypes mappings root
+
+--------------------------------------------------------------------------------
+-- Private functions
+
+-- | Replace a type variable with a concrete type, ensuring refs aren't passed
+-- as members of arrays.
+assignType :: TypeMappings -> XObj -> Either TypeError XObj
+assignType mappings xobj =
+  case xobjTy xobj of
+    Just startingType ->
+      let finalType = replaceTyVars mappings startingType
+       in if isArrayTypeOK finalType
+            then Right (xobj {xobjTy = Just finalType})
+            else Left (ArraysCannotContainRefs xobj)
+    Nothing -> pure xobj
+
+-- | Returns false if an array contains a Ref type as a member.
+isArrayTypeOK :: Ty -> Bool
+isArrayTypeOK (StructTy (ConcreteNameTy (SymPath [] "Array")) [RefTy _ _]) =
+  -- An array containing refs!
+  False
+isArrayTypeOK _ = True
