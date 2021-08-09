@@ -30,7 +30,7 @@ import Data.Either (fromRight)
 import Data.List (foldl')
 import Data.Maybe (fromMaybe)
 import Debug.Trace
-import Env (EnvironmentError, empty, envIsExternal, getTypeBinder, insert, insertX, searchValue, findTypeBinder)
+import Env (EnvironmentError, empty, envIsExternal, findTypeBinder, getTypeBinder, insert, insertX, searchValue)
 import Forms
 import Info
 import InitialTypes
@@ -267,7 +267,7 @@ mkLambda visited allowAmbig _ tenv env root@(ListPat (FnPat fn arr@(ArrPat args)
       extendedArgs =
         if null capturedVars
           then arr
-          else-- If the lambda captures anything it need an extra arg for its env:
+          else -- If the lambda captures anything it need an extra arg for its env:
 
             ( setObj
                 arr
@@ -275,8 +275,8 @@ mkLambda visited allowAmbig _ tenv env root@(ListPat (FnPat fn arr@(ArrPat args)
                     ( XObj
                         (Sym (SymPath [] "_env") Symbol)
                         (Just dummyInfo)
-                        (Just (PointerTy (StructTy (ConcreteNameTy tyPath) [])))
-                        : args
+                        (Just (PointerTy (StructTy (ConcreteNameTy tyPath) []))) :
+                      args
                     )
                 )
             )
@@ -617,14 +617,14 @@ instantiateGenericStructType typeEnv env originalStructTy@(StructTy _ _) generic
       let xobj =
             XObj
               ( Lst
-                  ( XObj (Deftype genericStructTy) Nothing Nothing
-                      : XObj (Sym (SymPath [] (tyToC genericStructTy)) Symbol) Nothing Nothing
-                      : [XObj (Arr concretelyTypedMembers) Nothing Nothing]
+                  ( XObj (Deftype genericStructTy) Nothing Nothing :
+                    XObj (Sym (SymPath [] (tyToC genericStructTy)) Symbol) Nothing Nothing :
+                    [XObj (Arr concretelyTypedMembers) Nothing Nothing]
                   )
               )
               (Just dummyInfo)
-              (Just TypeTy)
-              : concat deps
+              (Just TypeTy) :
+            concat deps
       pure xobj
 instantiateGenericStructType _ _ t _ _ = Left (FailedToInstantiateGenericType t)
 
@@ -654,14 +654,14 @@ instantiateGenericSumtype typeEnv env originalStructTy@(StructTy _ originalTyVar
                       Right $
                         XObj
                           ( Lst
-                              ( XObj (DefSumtype genericStructTy) Nothing Nothing
-                                  : XObj (Sym (SymPath [] (tyToC genericStructTy)) Symbol) Nothing Nothing
-                                  : concretelyTypedCases
+                              ( XObj (DefSumtype genericStructTy) Nothing Nothing :
+                                XObj (Sym (SymPath [] (tyToC genericStructTy)) Symbol) Nothing Nothing :
+                                concretelyTypedCases
                               )
                           )
                           (Just dummyInfo)
-                          (Just TypeTy)
-                          : concat okDeps
+                          (Just TypeTy) :
+                        concat okDeps
                     Left err -> Left err
 instantiateGenericSumtype _ _ _ _ _ = error "instantiategenericsumtype"
 
