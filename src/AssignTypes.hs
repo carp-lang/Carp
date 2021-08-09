@@ -22,21 +22,12 @@ import Types
 -- their corresponding actual type.
 assignTypes :: TypeMappings -> XObj -> Either TypeError XObj
 assignTypes mappings x@(ListPat xs) =
-  do
-    visited <- mapM (assignTypes mappings) xs
-    let xobj' = XObj (Lst visited) (xobjInfo x) (xobjTy x)
-    assignType mappings xobj'
+  mapM (assignTypes mappings) xs >>= pure . (setObj x) . Lst
 assignTypes mappings x@(ArrPat xs) =
-  do
-    visited <- mapM (assignTypes mappings) xs
-    let xobj' = XObj (Arr visited) (xobjInfo x) (xobjTy x)
-    assignType mappings xobj'
+  mapM (assignTypes mappings) xs >>= pure . (setObj x) . Arr
 assignTypes mappings x@(StaticArrPat xs) =
-  do
-    visited <- mapM (assignTypes mappings) xs
-    let xobj' = XObj (StaticArr visited) (xobjInfo x) (xobjTy x)
-    assignType mappings xobj'
-assignTypes mappings xobj = assignType mappings xobj
+  mapM (assignTypes mappings) xs >>= pure . (setObj x) . StaticArr
+assignTypes mappings x = assignType mappings x
 
 -- | Change auto generated type names (i.e. 't0') to letters (i.e. 'a', 'b', 'c', etc...)
 -- | TODO: Only change variables that are machine generated.
