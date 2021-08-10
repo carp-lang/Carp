@@ -61,13 +61,13 @@ moduleForSumtype innerEnv typeEnv env pathStrings typeName typeVariables rest i 
         (okPrn, _) <- binderForStrOrPrn typeEnv env insidePath structTy cases "prn"
         okDelete <- binderForDelete typeEnv env insidePath structTy cases
         (okCopy, okCopyDeps) <- binderForCopy typeEnv env insidePath structTy cases
-        okMemberDeps <- memberDeps typeEnv cases
+        okMemberDeps <- memberDeps typeEnv env cases
         let moduleEnvWithBindings = addListOfBindings moduleValueEnv (okIniters ++ [okStr, okPrn, okDelete, okCopy, okTag])
             typeModuleXObj = XObj (Mod moduleEnvWithBindings moduleTypeEnv) i (Just ModuleTy)
         pure (typeName, typeModuleXObj, okMemberDeps ++ okCopyDeps ++ okStrDeps)
 
-memberDeps :: TypeEnv -> [SumtypeCase] -> Either TypeError [XObj]
-memberDeps typeEnv cases = fmap concat (mapM (concretizeType typeEnv) (concatMap caseTys cases))
+memberDeps :: TypeEnv -> Env -> [SumtypeCase] -> Either TypeError [XObj]
+memberDeps typeEnv env cases = fmap concat (mapM (concretizeType typeEnv env) (concatMap caseTys cases))
 
 replaceGenericTypesOnCases :: TypeMappings -> [SumtypeCase] -> [SumtypeCase]
 replaceGenericTypesOnCases mappings = map replaceOnCase
@@ -110,7 +110,7 @@ genericCaseInit allocationMode pathStrings originalStructTy sumtypeCase =
     t = FuncTy (caseTys sumtypeCase) originalStructTy StaticLifetimeTy
     docs = "creates a `" ++ caseName sumtypeCase ++ "`."
     templateCreator = TemplateCreator $
-      \typeEnv _ ->
+      \typeEnv env ->
         Template
           (FuncTy (caseTys sumtypeCase) (VarTy "p") StaticLifetimeTy)
           ( \(FuncTy _ concreteStructTy _) ->
@@ -124,7 +124,7 @@ genericCaseInit allocationMode pathStrings originalStructTy sumtypeCase =
                in tokensForCaseInit allocationMode concreteStructTy (sumtypeCase {caseTys = correctedTys})
           )
           ( \(FuncTy _ concreteStructTy _) ->
-              case concretizeType typeEnv concreteStructTy of
+              case concretizeType typeEnv env concreteStructTy of
                 Left _ -> []
                 Right ok -> ok
           )

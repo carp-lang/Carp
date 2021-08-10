@@ -382,7 +382,7 @@ genericInit allocationMode pathStrings originalStructTy@(StructTy (ConcreteNameT
     t = FuncTy (map snd (memberXObjsToPairs membersXObjs)) originalStructTy StaticLifetimeTy
     docs = "creates a `" ++ show originalStructTy ++ "`."
     templateCreator = TemplateCreator $
-      \typeEnv _ ->
+      \typeEnv env ->
         Template
           (FuncTy (map snd (memberXObjsToPairs membersXObjs)) (VarTy "p") StaticLifetimeTy)
           ( \(FuncTy _ concreteStructTy _) ->
@@ -397,7 +397,7 @@ genericInit allocationMode pathStrings originalStructTy@(StructTy (ConcreteNameT
                in tokensForInit allocationMode (show originalStructTy) correctedMembers
           )
           ( \(FuncTy _ concreteStructTy _) ->
-              case concretizeType typeEnv concreteStructTy of
+              case concretizeType typeEnv env concreteStructTy of
                 Left _ -> []
                 Right ok -> ok
           )
