@@ -133,6 +133,13 @@ Example:
 (defmacro forever-do [:rest forms]
   (list 'while true (cons 'do forms)))
 
+ (doc ignore-do 
+ ("Wraps side-effecting `forms` in a `do`, " false)
+ "ignoring all of their results."
+ "In other words, executes `forms` only for their side effects.")
+ (defmacro ignore-do [:rest forms]
+   (cons 'do (expand (apply ignore-all forms))))
+
 (doc when "is an `if` without an else branch.")
 (defmacro when [condition form]
   (list 'if condition form (list)))
