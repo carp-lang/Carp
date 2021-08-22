@@ -130,3 +130,7 @@ float Float_floor(float x) {
 float Float_mod(float x, float y) {
     return fmodf(x, y);
 }
+
+int Float_round(float x) {
+  return roundf(x);
+}
