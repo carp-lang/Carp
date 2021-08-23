@@ -138,7 +138,7 @@ Example:
  "ignoring all of their results."
  "In other words, executes `forms` only for their side effects.")
  (defmacro ignore-do [:rest forms]
-   (cons 'do (expand (apply ignore-all forms))))
+   (cons 'do (expand (apply ignore* forms))))
 
 (doc when "is an `if` without an else branch.")
 (defmacro when [condition form]
