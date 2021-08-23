@@ -258,7 +258,7 @@ the filename and module name are the same.")
 (defmacro ignore [form]
   (list 'let (array '_ form) (list)))
 
-(doc ignore* "Wraps all forms passed as an argument in an ignore call.")
+(doc ignore* "Wraps all forms passed as an argument in a call to [`ignore`](#ignore).")
 (defmacro ignore* [:rest forms]
    (map (fn [x] (cons-last x (list 'ignore))) forms))
 
