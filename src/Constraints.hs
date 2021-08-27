@@ -177,6 +177,8 @@ solveOneInternal mappings constraint =
             Left err -> Left err
             Right ok -> foldM (\m (aa, bb) -> solveOneInternal m (Constraint aa bb i1 i2 ctx ord)) ok (zip args [b, ltB])
     -- Else
+    Constraint _ CTy _ _ _ _ -> Right mappings
+    Constraint CTy _ _ _ _ _ -> Right mappings
     Constraint aTy bTy _ _ _ _ ->
       if aTy == bTy
         then Right mappings

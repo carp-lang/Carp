@@ -291,6 +291,8 @@ areUnifiable (FuncTy argTysA retTyA ltA) (FuncTy argTysB retTyB ltB)
         ltBool = areUnifiable ltA ltB
      in all (== True) (ltBool : retBool : argBools)
 areUnifiable FuncTy {} _ = False
+areUnifiable CTy _ = True
+areUnifiable _ CTy = True
 areUnifiable a b
   | a == b = True
   | otherwise = False
