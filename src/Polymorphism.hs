@@ -7,7 +7,8 @@ module Polymorphism
   )
 where
 
-import Data.Either (fromRight)
+import Data.Either (fromRight, rights)
+import Data.List (unionBy)
 import Env
 import Managed
 import Obj
@@ -54,14 +55,16 @@ allImplementations typeEnv env functionName functionType =
     foundBindings = case getTypeBinder typeEnv functionName of
       -- this function is an interface; lookup implementations
       Right (Binder _ (XObj (Lst (XObj (Interface _ paths) _ _ : _)) _ _)) ->
-        case sequence $ map (\p -> searchValue env p) (paths ++ [(SymPath [] functionName)]) of
-          Right found -> found
-          Left _ ->
-            case findPoly env functionName functionType of
-              Right r -> [r]
-              Left _ -> (lookupEverywhere env functionName)
+        case rights $ map (\p -> searchValue env p) (paths ++ [(SymPath [] functionName)]) of
+          [] -> getPoly
+          -- getPoly might return some functions we already found. Use set ops
+          -- to remove duplicates.
+          found -> (unionBy (\x y -> (snd x) == (snd y)) found getPoly)
       -- just a regular function; look for it
       _ -> fromRight [] ((fmap (: []) (Env.getValue env functionName)) <> pure (lookupEverywhere env functionName))
+    getPoly = case findPoly env functionName functionType of
+                Right r -> [r]
+                Left _ -> (lookupEverywhere env functionName)
 
 -- | The various results when trying to find a function using 'findFunctionForMember'.
 data FunctionFinderResult
