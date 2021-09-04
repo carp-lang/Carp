@@ -307,7 +307,7 @@ toC toCMode (Binder meta root) = emitterSrc (execState (visit startingIndent roo
                 appendToSrc (addIndent indent ++ "{\n")
                 let innerIndent = indent + indentAmount
                 ret <- visit innerIndent expr
-                appendToSrc (addIndent innerIndent ++ pathToC path ++ " = " ++ ret ++ ";\n")
+                when (ret /= "") $ appendToSrc (addIndent innerIndent ++ pathToC path ++ " = " ++ ret ++ ";\n")
                 delete innerIndent info
                 appendToSrc (addIndent indent ++ "}\n")
                 pure ""
@@ -895,7 +895,9 @@ toDeclaration (Binder meta xobj@(XObj (Lst xobjs) _ ty)) =
        in defnToDeclaration meta path argList retTy ++ ";\n"
     [XObj Def _ _, XObj (Sym path _) _ _, _] ->
       let Just t = ty
-       in "" ++ tyToCLambdaFix t ++ " " ++ pathToC path ++ ";\n"
+       in if (isUnit t)
+            then ""
+            else tyToCLambdaFix t ++ " " ++ pathToC path ++ ";\n"
     XObj (Deftype t) _ _ : XObj (Sym path _) _ _ : rest ->
       defStructToDeclaration t path rest
     XObj (DefSumtype t) _ _ : XObj (Sym _ _) _ _ : rest ->

@@ -2,6 +2,9 @@
 (load "Test.carp")
 (load "Vector.carp")
 
+; void definitions should get elided (issue #1296)
+(def is-void ())
+
 ; this is a test-only module to test module resolution (see #288)
 (defmodule Foo
   (register init (Fn [] Int) "fooInit")
