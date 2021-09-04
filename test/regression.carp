@@ -2,6 +2,9 @@
 (load "Test.carp")
 (load "Vector.carp")
 
+; void definitions should get elided (issue #1296)
+(def is-void ())
+
 ; this is a test-only module to test module resolution (see #288)
 (defmodule Foo
   (register init (Fn [] Int) "fooInit")
@@ -85,6 +88,17 @@
 (defn weird [m]
    (the (Map String AType) m))
 
+;; nested polymorphic types are resolved and emitted (#1293)
+(defmodule Bar 
+  (deftype (Baz a) [it a])
+  (deftype (Qux a) [it (Bar.Baz a)])
+)
+
+(deftype (PolyNest a) [it (Bar.Baz a)])
+
+(defn poly-nest-one [x] (Bar.Baz x))
+(defn poly-nest-two [x] (Bar.Qux.init (Bar.Baz x)))
+(defn poly-nest-three [x] (PolyNest (Bar.Baz x)))
 
 (deftest test
   (assert-equal test
@@ -132,4 +146,18 @@
                 1
                 (dynamic-closure-referring-to-itself-test)
                 "test that dynamic closure can refer to itself")
+  (assert-equal test
+                2
+                @(Bar.Baz.it &(poly-nest-one 2))
+                "test that polymorphic types in modules are emitted")
+  (assert-equal test
+                2
+                @(Bar.Baz.it (Bar.Qux.it &(poly-nest-two 2)))
+                "test that polymorphic types in modules are emitted and can
+                refer to each other")
+  (assert-equal test
+                2
+                @(Bar.Baz.it (PolyNest.it &(poly-nest-three 2)))
+                "test that polymorphic types in modules can be referred to using
+                other types outside the module")
 )

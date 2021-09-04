@@ -228,9 +228,18 @@ isTypeDef (XObj (Lst (XObj (Deftype _) _ _ : _)) _ _) = True
 isTypeDef (XObj (Lst (XObj (DefSumtype _) _ _ : _)) _ _) = True
 isTypeDef _ = False
 
+isType :: XObj -> Bool
+isType (XObj (Lst (XObj (ExternalType _) _ _ : _)) _ _) = True
+isType x = isTypeDef x
+
 isMod :: XObj -> Bool
 isMod (XObj (Mod _ _) _ _) = True
 isMod _ = False
+
+isFn :: XObj -> Bool
+isFn (XObj (Lst (XObj (Fn _ _) _ _ : _)) _ _) = True
+isFn (XObj (Lst (XObj (Sym (SymPath [] "fn") _) _ _ : _)) _ _) = True
+isFn _ = False
 
 -- | This instance is needed for the dynamic Dictionary
 instance Ord Obj where
@@ -329,6 +338,9 @@ data XObj = XObj
     xobjTy :: Maybe Ty
   }
   deriving (Show, Eq, Ord)
+
+setObj :: XObj -> Obj -> XObj
+setObj x o = x {xobjObj = o}
 
 instance Hashable XObj where
   hashWithSalt s XObj {..} = s `hashWithSalt` xobjObj

@@ -331,4 +331,8 @@
                 "HäLLO WöRLD"
                 &(ascii-to-upper "HälLo WöRld")
                 "ascii-to-upper works for valid UTF-8" )
+  (assert-equal test
+                "@\"\\\"h\\\"i\\\"\""
+                &(prn "\"h\"i\"")
+                "prn works on quoted strings")
 )

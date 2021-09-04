@@ -1,0 +1,15 @@
+(load "Test.carp")
+(use Test)
+
+(def test-string @"")
+
+(defn test-ignore-do []
+  (ignore-do (+ 2 2) ;; ignored
+             (set! test-string @"new-string") ;; ignored, but side-effect performed
+             (- 4 4)))
+
+(deftest test
+  (assert-true test
+    (and (= () (test-ignore-do)) (= &test-string "new-string"))
+    "ignore-do performs side effects and ignores all results")
+)

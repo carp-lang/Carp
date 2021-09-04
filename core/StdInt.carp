@@ -9,6 +9,8 @@
 (register-type Int32)
 (register-type Int64)
 
+(doc Int8 "is a thin wrapper around the `int8_t` C data type, a signed 8-bit
+integer.")
 (defmodule Int8
   (register = (λ [Int8 Int8] Bool))
   (register > (λ [Int8 Int8] Bool))
@@ -53,6 +55,8 @@
   (implements = Int8Extra.=)
 )
 
+(doc Int16 "is a thin wrapper around the `int16_t` C data type, a signed 16-bit
+integer.")
 (defmodule Int16
   (register = (λ [Int16 Int16] Bool))
   (register > (λ [Int16 Int16] Bool))
@@ -97,6 +101,8 @@
   (implements = Int16Extra.=)
 )
 
+(doc Int32 "is a thin wrapper around the `int32_t` C data type, a signed 32-bit
+integer.")
 (defmodule Int32
   (register = (λ [Int32 Int32] Bool))
   (register > (λ [Int32 Int32] Bool))
@@ -141,6 +147,8 @@
   (implements = Int32Extra.=)
 )
 
+(doc Int64 "is a thin wrapper around the `int64_t` C data type, a signed 64-bit
+integer.")
 (defmodule Int64
   (register = (λ [Int64 Int64] Bool))
   (register > (λ [Int64 Int64] Bool))
@@ -185,6 +193,8 @@
   (implements = Int64Extra.=)
 )
 
+(doc Uint8 "is a thin wrapper around the `uint8_t` C data type, an unsigned
+8-bit integer.")
 (defmodule Uint8
   (register = (λ [Uint8 Uint8] Bool))
   (register > (λ [Uint8 Uint8] Bool))
@@ -229,6 +239,8 @@
   (implements = Uint8Extra.=)
 )
 
+(doc Uint16 "is a thin wrapper around the `uint16_t` C data type, an unsigned
+16-bit integer.")
 (defmodule Uint16
   (register = (λ [Uint16 Uint16] Bool))
   (register > (λ [Uint16 Uint16] Bool))
@@ -273,6 +285,8 @@
   (implements = Uint16Extra.=)
 )
 
+(doc Uint32 "is a thin wrapper around the `uint32_t` C data type, an unsigned
+32-bit integer.")
 (defmodule Uint32
   (register = (λ [Uint32 Uint32] Bool))
   (register > (λ [Uint32 Uint32] Bool))
@@ -317,6 +331,8 @@
   (implements = Uint32Extra.=)
 )
 
+(doc Uint64 "is a thin wrapper around the `uint64_t` C data type, an unsigned
+64-bit integer.")
 (defmodule Uint64
   (register = (λ [Uint64 Uint64] Bool))
   (register > (λ [Uint64 Uint64] Bool))

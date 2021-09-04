@@ -1,3 +1,5 @@
+(doc Unit "is the empty type, also represented as `()` and equivalent to `void`
+in C.")
 (defmodule Unit
   (implements prn prn)
   (sig prn (Fn [Unit] String))

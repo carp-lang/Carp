@@ -2,6 +2,12 @@
 
 (defmodule Dynamic
   ;; Functions for doing things at the REPL and during compile time.
+  (doc proc? "checks whether `x` is callable.")
+  (defndynamic proc? [x]
+    (or
+      (List.in? (dynamic-type x) '(fn closure))
+      (let [s (s-expr x)]
+        (and (not (empty? s)) (= 'dynamic (dynamic-type (car s)))))))
 
   (doc nil "is the value `nil`, i.e. the empty list.")
   (defdynamic nil '())
@@ -67,6 +73,22 @@ integers [`imod`](#imod).")
     (defndynamic tail [s]
       (String.suffix s 1))
   )
+
+  (defmodule Debug
+    (doc trace "prints the value of an expression to `stdout`, then returns its value.")
+    (defmacro trace [x]
+      (let [sym (gensym)]
+        `(let-do [%sym %x]
+          ; we use eval here to ensure we resolve the symbol before putting it
+          ; into file, line, and column
+          (macro-log
+            %(eval `(file %x)) ":"
+            %(eval `(line %x)) ":"
+            %(eval `(column %x)) ": "
+            %sym)
+          %sym))
+      )
+    )
 )
 
 

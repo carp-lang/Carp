@@ -60,7 +60,7 @@ moduleForDeftype innerEnv typeEnv env pathStrings typeName typeVariables rest i 
       -- For example (module Vec2 [x Float]) creates bindings like Vec2.create, Vec2.x, etc.
       insidePath = pathStrings ++ [typeName]
    in do
-        validateMemberCases typeEnv typeVariables rest
+        validateMemberCases typeEnv env typeVariables rest
         let structTy = StructTy (ConcreteNameTy (SymPath pathStrings typeName)) typeVariables
         (okMembers, membersDeps) <- templatesForMembers typeEnv env insidePath structTy rest
         okInit <- binderForInit insidePath structTy rest
@@ -83,7 +83,7 @@ bindingsForRegisteredType typeEnv env pathStrings typeName rest i existingEnv =
       moduleTypeEnv = fromMaybe (new (Just typeEnv) (Just typeName)) (fmap snd existingEnv)
       insidePath = pathStrings ++ [typeName]
    in do
-        validateMemberCases typeEnv [] rest
+        validateMemberCases typeEnv env [] rest
         let structTy = StructTy (ConcreteNameTy (SymPath pathStrings typeName)) []
         (binders, deps) <- templatesForMembers typeEnv env insidePath structTy rest
         okInit <- binderForInit insidePath structTy rest
@@ -382,7 +382,7 @@ genericInit allocationMode pathStrings originalStructTy@(StructTy (ConcreteNameT
     t = FuncTy (map snd (memberXObjsToPairs membersXObjs)) originalStructTy StaticLifetimeTy
     docs = "creates a `" ++ show originalStructTy ++ "`."
     templateCreator = TemplateCreator $
-      \typeEnv _ ->
+      \typeEnv env ->
         Template
           (FuncTy (map snd (memberXObjsToPairs membersXObjs)) (VarTy "p") StaticLifetimeTy)
           ( \(FuncTy _ concreteStructTy _) ->
@@ -397,7 +397,7 @@ genericInit allocationMode pathStrings originalStructTy@(StructTy (ConcreteNameT
                in tokensForInit allocationMode (show originalStructTy) correctedMembers
           )
           ( \(FuncTy _ concreteStructTy _) ->
-              case concretizeType typeEnv concreteStructTy of
+              case concretizeType typeEnv env concreteStructTy of
                 Left _ -> []
                 Right ok -> ok
           )

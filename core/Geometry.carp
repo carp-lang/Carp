@@ -1,3 +1,4 @@
+(doc Geometry "provides numerical geometrical operations.")
 (defmodule Geometry
   (doc degree-to-radians "converts degrees expressed as a double `n` into radians.")
   (defn degree-to-radians [n]

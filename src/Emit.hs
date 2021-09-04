@@ -307,7 +307,7 @@ toC toCMode (Binder meta root) = emitterSrc (execState (visit startingIndent roo
                 appendToSrc (addIndent indent ++ "{\n")
                 let innerIndent = indent + indentAmount
                 ret <- visit innerIndent expr
-                appendToSrc (addIndent innerIndent ++ pathToC path ++ " = " ++ ret ++ ";\n")
+                when (ret /= "") $ appendToSrc (addIndent innerIndent ++ pathToC path ++ " = " ++ ret ++ ";\n")
                 delete innerIndent info
                 appendToSrc (addIndent indent ++ "}\n")
                 pure ""
@@ -895,7 +895,9 @@ toDeclaration (Binder meta xobj@(XObj (Lst xobjs) _ ty)) =
        in defnToDeclaration meta path argList retTy ++ ";\n"
     [XObj Def _ _, XObj (Sym path _) _ _, _] ->
       let Just t = ty
-       in "" ++ tyToCLambdaFix t ++ " " ++ pathToC path ++ ";\n"
+       in if (isUnit t)
+            then ""
+            else tyToCLambdaFix t ++ " " ++ pathToC path ++ ";\n"
     XObj (Deftype t) _ _ : XObj (Sym path _) _ _ : rest ->
       defStructToDeclaration t path rest
     XObj (DefSumtype t) _ _ : XObj (Sym _ _) _ _ : rest ->
@@ -926,6 +928,7 @@ toDeclaration (Binder meta xobj@(XObj (Lst xobjs) _ ty)) =
     XObj (Primitive _) _ _ : _ ->
       ""
     _ -> error ("Internal compiler error: Can't emit other kinds of definitions: " ++ show xobj)
+toDeclaration (Binder _ (XObj (Sym (SymPath [] "dummy") Symbol) Nothing (Just IntTy))) = ""
 toDeclaration _ = error "Missing case."
 
 paramListToC :: [XObj] -> String
@@ -1006,7 +1009,7 @@ globalsToC globalEnv =
 typeEnvToDeclarations :: TypeEnv -> Env -> Either ToCError String
 typeEnvToDeclarations typeEnv global =
   let -- We need to carry the type environment to pass the correct environment on the binderToDeclaration call.
-      addEnvToScore tyE = (sortDeclarationBinders tyE (map snd (Map.toList (binders tyE))))
+      addEnvToScore tyE = (sortDeclarationBinders tyE global (map snd (Map.toList (binders tyE))))
       bindersWithScore = (addEnvToScore typeEnv)
       mods = (findModules global)
       folder =
@@ -1027,7 +1030,7 @@ typeEnvToDeclarations typeEnv global =
 
 envToDeclarations :: TypeEnv -> Env -> Either ToCError String
 envToDeclarations typeEnv env =
-  let bindersWithScore = sortDeclarationBinders typeEnv (map snd (Map.toList (envBindings env)))
+  let bindersWithScore = sortDeclarationBinders typeEnv env (map snd (Map.toList (envBindings env)))
    in do
         okDecls <-
           mapM
@@ -1042,10 +1045,10 @@ envToDeclarations typeEnv env =
 -- debugScorePair :: (Int, Binder) -> (Int, Binder)
 -- debugScorePair (s,b) = trace ("Scored binder: " ++ show b ++ ", score: " ++ show s) (s,b)
 
-sortDeclarationBinders :: TypeEnv -> [Binder] -> [(Int, Binder)]
-sortDeclarationBinders typeEnv binders' =
+sortDeclarationBinders :: TypeEnv -> Env -> [Binder] -> [(Int, Binder)]
+sortDeclarationBinders typeEnv env binders' =
   --trace ("\nSORTED: " ++ (show (sortOn fst (map (scoreBinder typeEnv) binders))))
-  sortOn fst (map (scoreTypeBinder typeEnv) binders')
+  sortOn fst (map (scoreTypeBinder typeEnv env) binders')
 
 sortGlobalVariableBinders :: Env -> [Binder] -> [(Int, Binder)]
 sortGlobalVariableBinders globalEnv binders' =

@@ -1,5 +1,7 @@
 (system-include "carp_debug.h")
 
+(doc Debug "is a module that provides functions and commands to debug faulty
+programs and functions.")
 (defmodule Debug
 
   (doc sanitize-addresses "instructs the compiler to sanitize addresses.

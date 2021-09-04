@@ -329,6 +329,13 @@ elements is uneven, the trailing element will be discarded.")
         (= n 0) (car l)
         (List.nth (cdr l) (dec n))))
 
+    (doc remove-nth "removes the nth element from the list `l`.")
+    (defndynamic remove-nth [l n]
+      (cond
+        (empty? l) '()
+        (= n 0) (cdr l)
+        (cons (car l) (List.remove-nth (cdr l) (dec n)))))
+
     (doc update-nth "updates the nth element of the list `l` using the function `f`.")
     (defndynamic update-nth [l n f]
       (cond

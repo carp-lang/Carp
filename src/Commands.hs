@@ -64,7 +64,7 @@ addCmd path callback doc example =
               XObj (Arr args) Nothing Nothing
             ]
         )
-        (Just dummyInfo)
+        (Just dummyInfo {infoFile = "Core Commands"})
         (Just DynamicTy)
     args = (\x -> XObj (Sym (SymPath [] x) Symbol) Nothing Nothing) <$> argnames
     argnames = case callback of
@@ -614,6 +614,8 @@ commandSymConcat ctx a =
 commandSymPrefix :: BinaryCommandCallback
 commandSymPrefix ctx (XObj (Sym (SymPath [] prefix) _) _ _) (XObj (Sym (SymPath [] suffix) st) i t) =
   pure (ctx, Right (XObj (Sym (SymPath [prefix] suffix) st) i t))
+commandSymPrefix ctx (XObj (Sym (SymPath ps prefix) _) _ _) (XObj (Sym (SymPath [] suffix) st) i t) =
+  pure (ctx, Right (XObj (Sym (SymPath (ps++[prefix]) suffix) st) i t))
 commandSymPrefix ctx x (XObj (Sym (SymPath [] _) _) _ _) =
   pure $ evalError ctx ("Can’t call `prefix` with " ++ pretty x) (xobjInfo x)
 commandSymPrefix ctx _ x =
@@ -743,7 +745,6 @@ commandSaveDocsEx ctx modulePaths filePaths = do
     Right ok -> saveDocs ctx ok
   where
     globalEnv = contextGlobalEnv ctx
-
     modulesAndGlobals =
       let (_, mods) = modules
           (_, globs) = filesWithGlobals
@@ -751,7 +752,6 @@ commandSaveDocsEx ctx modulePaths filePaths = do
             okMods <- mods
             okGlobs <- globs
             pure (okMods ++ okGlobs)
-
     modules :: (Context, Either EvalError [(SymPath, Binder)])
     modules = do
       case modulePaths of
@@ -764,7 +764,6 @@ commandSaveDocsEx ctx modulePaths filePaths = do
                 Right okEnvBinders -> (ctx, Right (zip okPaths okEnvBinders))
         x ->
           evalError ctx ("Invalid first arg to save-docs-internal (expected array of symbols): " ++ pretty x) (xobjInfo modulePaths)
-
     filesWithGlobals :: (Context, Either EvalError [(SymPath, Binder)])
     filesWithGlobals = do
       case filePaths of
@@ -777,7 +776,6 @@ commandSaveDocsEx ctx modulePaths filePaths = do
                in (ctx, Right fauxModules)
         x ->
           evalError ctx ("Invalid second arg to save-docs-internal (expected array of strings containing filenames): " ++ pretty x) (xobjInfo filePaths)
-
     createFauxModule :: String -> Map.Map String Binder -> (SymPath, Binder)
     createFauxModule filename binders =
       let moduleName = "Globals in " ++ filename
@@ -785,7 +783,6 @@ commandSaveDocsEx ctx modulePaths filePaths = do
           fauxGlobalModuleWithBindings = fauxGlobalModule {envBindings = binders}
           fauxTypeEnv = E.new Nothing Nothing
        in (SymPath [] moduleName, Binder emptyMeta (XObj (Mod fauxGlobalModuleWithBindings fauxTypeEnv) Nothing Nothing))
-
     getEnvironmentBinderForDocumentation :: Env -> SymPath -> Either String Binder
     getEnvironmentBinderForDocumentation env path =
       case E.searchValueBinder env path of
@@ -795,11 +792,9 @@ commandSaveDocsEx ctx modulePaths filePaths = do
           Left ("I can’t generate documentation for `" ++ pretty x ++ "` because it isn’t a module")
         Left _ ->
           Left ("I can’t find the module `" ++ show path ++ "`")
-
     getGlobalBindersForDocumentation :: Env -> String -> Map.Map String Binder
     getGlobalBindersForDocumentation env filename =
       Map.filter (\bind -> (binderFilename bind) == filename) (envBindings env)
-
     binderFilename :: Binder -> String
     binderFilename = takeFileName . fromMaybe "" . fmap infoFile . xobjInfo . binderXObj
 

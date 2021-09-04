@@ -1,5 +1,6 @@
 (system-include "carp_int.h")
 
+(doc Int "is the default integral data type.")
 (defmodule Int
   (register + (λ [Int Int] Int))
   (register - (λ [Int Int] Int))

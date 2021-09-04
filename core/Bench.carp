@@ -2,6 +2,9 @@
 
 (system-include "carp_bench.h")
 
+(doc Bench "is a module for benchmarking. The most important function of the
+module is [`Bench.bench`](#bench), which takes a function, benchmarks it, and
+prints the results.")
 (defmodule Bench
   (def- min-runs 50)
 

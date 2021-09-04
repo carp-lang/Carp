@@ -1,3 +1,4 @@
+(doc Filepath "is a module that provides operations on paths to files.")
 (defmodule Filepath
 
   (use Array)

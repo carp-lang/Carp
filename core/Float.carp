@@ -1,5 +1,7 @@
 (system-include "carp_float.h")
 
+(doc Float "is a smaller numerical floating point type. Its literals are
+suffixed with `f`.")
 (defmodule Float
   (def pi 3.1415926536f)
   (register MAX Float "CARP_FLT_MAX")
@@ -12,6 +14,7 @@
   (register to-bytes (Fn [Float] Int))
   (register from-int (Fn [Int] Float))
   (register copy (Fn [(Ref Float)] Float))
+  (register round (Fn [Float] Int))
 
   (register = (Fn [Float Float] Bool))
   (register < (Fn [Float Float] Bool))

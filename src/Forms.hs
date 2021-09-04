@@ -30,12 +30,17 @@ module Forms
     pattern DoPat,
     pattern WhilePat,
     pattern SetPat,
+    pattern MultiSymPat,
+    pattern InterfaceSymPat,
+    pattern MatchPat,
+    pattern InterfacePat,
   )
 where
 
 import Data.List (intercalate)
 import Obj
 import SymPath
+import Types
 import Util
 
 --------------------------------------------------------------------------------
@@ -244,7 +249,7 @@ validateWhile invalid = Left (GenericMalformed (XObj (Lst invalid) Nothing Nothi
 -- | Validation of (def name value) expressions.
 validateDef :: [XObj] -> Either Malformed [XObj]
 validateDef x@(DefPat _ (UnqualifiedSymPat _) _) = Right x
-validateDef (DefPat _ invalid@(SymPat _) _) = Left (QualifiedIdentifier invalid None)
+validateDef (DefPat _ invalid@(SymPat _ _) _) = Left (QualifiedIdentifier invalid None)
 validateDef (DefPat _ invalid _) = Left (InvalidIdentifier invalid None)
 validateDef def = Left (GenericMalformed (XObj (Lst def) Nothing Nothing))
 
@@ -257,7 +262,7 @@ validateDefn x@(DefnPat _ (UnqualifiedSymPat _) arr@(ArrPat args) _)
   | otherwise = pure x
 validateDefn (DefnPat _ (UnqualifiedSymPat _) invalid _) =
   Left (InvalidArguments invalid (DefnNonArrayArgs invalid))
-validateDefn (DefnPat _ invalid@(SymPat _) _ _) = Left (QualifiedIdentifier invalid None)
+validateDefn (DefnPat _ invalid@(SymPat _ _) _ _) = Left (QualifiedIdentifier invalid None)
 validateDefn (DefnPat _ invalid _ _) = Left (InvalidIdentifier invalid None)
 validateDefn defn = Left (GenericMalformed (XObj (Lst defn) Nothing Nothing))
 
@@ -348,7 +353,7 @@ validateApp app = Left (GenericMalformed (XObj (Lst app) Nothing Nothing))
 
 -- | Validation of (with module body) expressions
 validateWith :: [XObj] -> Either Malformed [XObj]
-validateWith x@(WithPat _ (SymPat _) _) = Right x
+validateWith x@(WithPat _ (SymPat _ _) _) = Right x
 validateWith (WithPat _ invalid _) = Left (InvalidIdentifier invalid (InvalidWith invalid))
 validateWith with = Left (GenericMalformed (XObj (Lst with) Nothing Nothing))
 
@@ -377,8 +382,8 @@ pattern StaticArrPat members <- XObj (StaticArr members) _ _
 pattern ListPat :: [XObj] -> XObj
 pattern ListPat members <- XObj (Lst members) _ _
 
-pattern SymPat :: SymPath -> XObj
-pattern SymPat path <- XObj (Sym path _) _ _
+pattern SymPat :: SymPath -> SymbolMode -> XObj
+pattern SymPat path mode <- XObj (Sym path mode) _ _
 
 pattern UnqualifiedSymPat :: SymPath -> XObj
 pattern UnqualifiedSymPat path <- XObj (Sym path@(SymPath [] _) _) _ _
@@ -433,3 +438,15 @@ pattern PrimitivePat arity sym params <- XObj (Lst [XObj (Primitive arity) _ _, 
 
 pattern AppPat :: XObj -> [XObj] -> [XObj]
 pattern AppPat f args <- (f : args)
+
+pattern InterfaceSymPat :: String -> XObj
+pattern InterfaceSymPat name <- XObj (InterfaceSym name) _ _
+
+pattern MultiSymPat :: String -> [SymPath] -> XObj
+pattern MultiSymPat name candidates <- XObj (MultiSym name candidates) _ _
+
+pattern MatchPat :: XObj -> XObj -> [XObj] -> [XObj]
+pattern MatchPat match value stanzas <- (match@(XObj (Match _) _ _) : value : stanzas)
+
+pattern InterfacePat :: Ty -> [SymPath] -> [XObj]
+pattern InterfacePat ty paths <- [XObj (Interface ty paths) _ _, _]

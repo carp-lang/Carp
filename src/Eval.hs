@@ -200,7 +200,7 @@ eval ctx xobj@(XObj o info ty) preference resolver =
             (AppPat (MacroPat _ _ _) _) -> evaluateMacro form'
             (AppPat (CommandPat _ _ _) _) -> evaluateCommand form'
             (AppPat (PrimitivePat _ _ _) _) -> evaluatePrimitive form'
-            (WithPat _ sym@(SymPat path) forms) -> specialCommandWith ctx sym path forms
+            (WithPat _ sym@(SymPat path _) forms) -> specialCommandWith ctx sym path forms
             (DoPat _ forms) -> evaluateSideEffects forms
             (WhilePat _ cond body) -> specialCommandWhile ctx cond body
             (SetPat _ iden value) -> specialCommandSet ctx (iden : [value])
@@ -217,7 +217,7 @@ eval ctx xobj@(XObj o info ty) preference resolver =
             -- Importantly, the loop *is only broken on literal nested lists*.
             -- That is, passing a *symbol* that, e.g. resolves to a defn list, won't
             -- break our normal loop.
-            (AppPat self@(ListPat (x@(SymPat _) : _)) args) ->
+            (AppPat self@(ListPat (x@(SymPat _ _) : _)) args) ->
               do
                 (_, evald) <- eval ctx x preference ResolveGlobal
                 case evald of
@@ -226,7 +226,7 @@ eval ctx xobj@(XObj o info ty) preference resolver =
                     Right _ -> evaluateApp (self : args)
                     Left er -> pure (evalError ctx (show er) (xobjInfo xobj))
             (AppPat (ListPat _) _) -> evaluateApp form'
-            (AppPat (SymPat _) _) -> evaluateApp form'
+            (AppPat (SymPat _ _) _) -> evaluateApp form'
             [] -> pure (ctx, dynamicNil)
             _ -> pure (throwErr (UnknownForm xobj) ctx (xobjInfo xobj))
     checkStatic' (XObj Def _ _) = Left (HasStaticCall xobj info)
@@ -277,9 +277,9 @@ eval ctx xobj@(XObj o info ty) preference resolver =
         Right newCtx -> do
           (finalCtx, evaledBody) <- eval newCtx body (PreferLocal (map (\(name, _) -> (SymPath [] name)) binds)) ResolveLocal
           let Just e = contextInternalEnv finalCtx
-              parentEnv = fromMaybe e (envParent e)
+              parentEnv = envParent e
           pure
-            ( replaceInternalEnv finalCtx parentEnv,
+            ( replaceInternalEnvMaybe finalCtx parentEnv,
               do
                 okBody <- evaledBody
                 Right okBody
@@ -298,7 +298,7 @@ eval ctx xobj@(XObj o info ty) preference resolver =
               --   (let [f (fn [x] (if (= x 1) x (f (dec x))))] (f 10))
               let origin = (contextInternalEnv ctx')
                   recFix = (E.recursive origin (Just "let-rec-env") 0)
-                  Right envWithSelf = E.insertX recFix (SymPath [] n) x
+                  Right envWithSelf = if isFn x then E.insertX recFix (SymPath [] n) x else Right recFix
                   ctx'' = replaceInternalEnv ctx' envWithSelf
               (newCtx, res) <- eval ctx'' x preference resolver
               case res of
@@ -389,7 +389,7 @@ eval ctx xobj@(XObj o info ty) preference resolver =
     evaluateApp (AppPat f' args) =
       case f' of
         l@(ListPat _) -> go l ResolveLocal
-        sym@(SymPat _) -> go sym resolver
+        sym@(SymPat _ _) -> go sym resolver
         _ -> pure (evalError ctx (format (GenericMalformed xobj)) (xobjInfo xobj))
       where
         go x resolve =
@@ -501,10 +501,13 @@ apply ctx@Context {contextInternalEnv = internal} body params args =
 
 -- | Parses a string and then converts the resulting forms to commands, which are evaluated in order.
 executeString :: Bool -> Bool -> Context -> String -> String -> IO Context
-executeString doCatch printResult ctx input fileName =
+executeString = executeStringAtLine 1
+
+executeStringAtLine :: Int -> Bool -> Bool -> Context -> String -> String -> IO Context
+executeStringAtLine line doCatch printResult ctx input fileName =
   if doCatch then catch exec (catcher ctx) else exec
   where
-    exec = case parse input fileName of
+    exec = case parseAtLine line input fileName of
       Left parseError ->
         let sourcePos = Parsec.errorPos parseError
             parseErrorXObj =

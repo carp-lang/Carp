@@ -8,6 +8,7 @@
   (register toupper- (Fn [Byte] Byte) "toupper")    
 )
 
+(doc String "is the string data type for representing text.")
 (defmodule String
 
   (register =          (Fn [&String &String] Bool))
