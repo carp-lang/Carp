@@ -11,17 +11,17 @@ data SumtypeCase = SumtypeCase
   }
   deriving (Show, Eq)
 
-toCases :: TypeEnv -> TypeVarRestriction -> [Ty] -> [XObj] -> Either TypeError [SumtypeCase]
-toCases typeEnv restriction typeVars = mapM (toCase typeEnv restriction typeVars)
+toCases :: TypeEnv -> Env -> TypeVarRestriction -> [Ty] -> [XObj] -> Either TypeError [SumtypeCase]
+toCases typeEnv globalEnv restriction typeVars = mapM (toCase typeEnv globalEnv restriction typeVars)
 
-toCase :: TypeEnv -> TypeVarRestriction -> [Ty] -> XObj -> Either TypeError SumtypeCase
-toCase typeEnv restriction typeVars x@(XObj (Lst [XObj (Sym (SymPath [] name) Symbol) _ _, XObj (Arr tyXObjs) _ _]) _ _) =
+toCase :: TypeEnv -> Env -> TypeVarRestriction -> [Ty] -> XObj -> Either TypeError SumtypeCase
+toCase typeEnv globalEnv restriction typeVars x@(XObj (Lst [XObj (Sym (SymPath [] name) Symbol) _ _, XObj (Arr tyXObjs) _ _]) _ _) =
   let tys = map xobjToTy tyXObjs
    in case sequence tys of
         Nothing ->
           Left (InvalidSumtypeCase x)
         Just okTys ->
-          let validated = map (\t -> canBeUsedAsMemberType restriction typeEnv typeVars t x) okTys
+          let validated = map (\t -> canBeUsedAsMemberType restriction typeEnv globalEnv typeVars t x) okTys
            in case sequence validated of
                 Left e ->
                   Left e
@@ -31,11 +31,11 @@ toCase typeEnv restriction typeVars x@(XObj (Lst [XObj (Sym (SymPath [] name) Sy
                       { caseName = name,
                         caseTys = okTys
                       }
-toCase _ _ _ (XObj (Sym (SymPath [] name) Symbol) _ _) =
+toCase _ _ _ _ (XObj (Sym (SymPath [] name) Symbol) _ _) =
   Right $
     SumtypeCase
       { caseName = name,
         caseTys = []
       }
-toCase _ _ _ x =
+toCase _ _ _ _ x =
   Left (InvalidSumtypeCase x)

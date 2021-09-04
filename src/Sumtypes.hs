@@ -54,7 +54,7 @@ moduleForSumtype innerEnv typeEnv env pathStrings typeName typeVariables rest i 
       insidePath = pathStrings ++ [typeName]
    in do
         let structTy = StructTy (ConcreteNameTy (SymPath pathStrings typeName)) typeVariables
-        cases <- toCases typeEnv AllowOnlyNamesInScope typeVariables rest
+        cases <- toCases typeEnv env AllowOnlyNamesInScope typeVariables rest
         okIniters <- initers insidePath structTy cases
         okTag <- binderForTag insidePath structTy
         (okStr, okStrDeps) <- binderForStrOrPrn typeEnv env insidePath structTy cases "str"
