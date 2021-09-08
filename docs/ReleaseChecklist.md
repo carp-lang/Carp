@@ -16,7 +16,7 @@ See [README.md](../README.md)
 
 # 4. Update the changelog
 
-TODO: Create CHANGELOG.md
+See [CHANGELOG.md](../CHANGELOG.md)
 
 # 5. Make a commit on master
 
