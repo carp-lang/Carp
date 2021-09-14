@@ -1,5 +1,7 @@
 (system-include "carp_io.h")
 
+(load-once "Platform.carp")
+
 (register-type FILE)
 
 (doc IO "is a module for performing I/O operations. Most functions found in this
@@ -55,7 +57,10 @@ module are wrappers around the C standard library.")
     (register rewind (Fn [(Ptr FILE)] ()) "rewind")
     (private  unlink-)
     (hidden   unlink-)
-    (register unlink- (Fn [(Ptr CChar)] Int) "unlink") 
+    (register unlink- (Fn [(Ptr CChar)] Int) "unlink")
+    (windows-only
+      ; override unlink for windows
+      (register unlink- (Fn [(Ptr CChar)] Int) "_unlink"))
     (doc      unlink "unlinks a file, i.e. deletes it (thin wrapper for POSIX api in <unistd.h>).")
     (defn     unlink [file-name]
       (unlink- (String.cstr file-name)) )
