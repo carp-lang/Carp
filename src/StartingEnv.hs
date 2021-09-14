@@ -256,6 +256,7 @@ dynamicModule =
             f "not" commandNot "negates its boolean argument." "(not false) ; => true",
             f "c" commandC "prints the C code emitted for a binding." "(c '(+ 2 3)) ; => int _3 = Int__PLUS_(2, 3);",
             f "expand" commandExpand "expands a macro and prints the result." "(expand '(when true 1)) ; => (if true 1 ())",
+            f "expand-compiled" commandExpandCompiled "expands and desugars the code." "(expand-compiled '(+ 2 3)) ; => (Int.+ 2 3)",
             f "system-include" commandAddSystemInclude "adds a system include, i.e. a C `#include` with angle brackets (`<>`)." "(system-include \"stdint.h\")",
             f "relative-include" commandAddRelativeInclude "adds a relative include, i.e. a C `include` with quotes. It also prepends the current directory." "(relative-include \"myheader.h\")",
             f "read-file" commandReadFile "reads a file into a string." "(read-file \"myfile.txt\")",
