@@ -1,7 +1,5 @@
 (system-include "carp_io.h")
 
-(load-once "Platform.carp")
-
 (register-type FILE)
 
 (doc IO "is a module for performing I/O operations. Most functions found in this
