@@ -615,7 +615,7 @@ commandSymPrefix :: BinaryCommandCallback
 commandSymPrefix ctx (XObj (Sym (SymPath [] prefix) _) _ _) (XObj (Sym (SymPath [] suffix) st) i t) =
   pure (ctx, Right (XObj (Sym (SymPath [prefix] suffix) st) i t))
 commandSymPrefix ctx (XObj (Sym (SymPath ps prefix) _) _ _) (XObj (Sym (SymPath [] suffix) st) i t) =
-  pure (ctx, Right (XObj (Sym (SymPath (ps++[prefix]) suffix) st) i t))
+  pure (ctx, Right (XObj (Sym (SymPath (ps ++ [prefix]) suffix) st) i t))
 commandSymPrefix ctx x (XObj (Sym (SymPath [] _) _) _ _) =
   pure $ evalError ctx ("Can’t call `prefix` with " ++ pretty x) (xobjInfo x)
 commandSymPrefix ctx _ x =

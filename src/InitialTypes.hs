@@ -228,7 +228,7 @@ initialTypes typeEnv rootEnv root = evalState (visit rootEnv root) 0
               okArgs <- sequence visitedArgs
               let final = XObj (Lst [fn, XObj (Arr okArgs) argsi argst, okBody]) i funcTy
               pure final --(trace ("FINAL: " ++ show final) final)
-        -- Let bindings
+              -- Let bindings
         [XObj LocalDef _ _, _, value] ->
           visit env value
         -- Unbound anonymous Fn

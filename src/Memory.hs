@@ -75,7 +75,6 @@ manageMemory typeEnv globalEnv root =
             addToLifetimesMappingsIfRef True ok -- (***)
             pure r'
           Left err -> pure (Left err)
-
     visitArray :: XObj -> State MemState (Either TypeError XObj)
     visitArray xobj@(ArrPat arr) =
       do
@@ -86,7 +85,6 @@ manageMemory typeEnv globalEnv root =
             _ <- manage typeEnv globalEnv xobj -- TODO: result is discarded here, is that OK?
             pure (Right xobj)
     visitArray _ = error "Must visit array."
-
     visitStaticArray :: XObj -> State MemState (Either TypeError XObj)
     visitStaticArray xobj@(StaticArrPat arr) =
       do
@@ -108,7 +106,6 @@ manageMemory typeEnv globalEnv root =
           put newState --(trace (show newState) newState)
           pure (Right xobj)
     visitStaticArray _ = error "Must visit static array."
-
     visitList :: XObj -> State MemState (Either TypeError XObj)
     visitList xobj@(XObj (Lst lst) i t) =
       case lst of
@@ -387,7 +384,6 @@ manageMemory typeEnv globalEnv root =
                in ( XObj (Lst ([matchExpr, okVisitedExpr] ++ concat okVisitedCasesWithAllDeleters)) i t,
                     deletersAfterTheMatch
                   )
-
         -- Deref (only works in function application)
         XObj (Lst [deref@(XObj Deref _ _), f]) xi xt : uargs ->
           do
@@ -419,7 +415,6 @@ manageMemory typeEnv globalEnv root =
                   Right (XObj (Lst (okF : okArgs)) i t)
         [] -> pure (Right xobj)
     visitList _ = error "Must visit list."
-
     visitMatchCase :: (XObj, XObj) -> State MemState (Either TypeError ((Set.Set Deleter, (XObj, XObj)), Set.Set Ty))
     visitMatchCase (lhs@XObj {}, rhs@XObj {}) =
       do
@@ -432,7 +427,6 @@ manageMemory typeEnv globalEnv root =
         pure $ do
           okVisitedRhs <- visitedRhs
           pure ((postDeleters, (lhs, okVisitedRhs)), postDeps)
-
     visitCaseLhs :: XObj -> State MemState (Either TypeError [()])
     visitCaseLhs (XObj (Lst vars) _ _) =
       do
@@ -448,7 +442,6 @@ manageMemory typeEnv globalEnv root =
       pure (Right [])
     visitCaseLhs x =
       error ("Unhandled: " ++ show x)
-
     visitLetBinding :: (XObj, XObj) -> State MemState (Either TypeError (XObj, XObj))
     visitLetBinding (name, expr) =
       do
@@ -458,7 +451,6 @@ manageMemory typeEnv globalEnv root =
         whenRightReturn result $ do
           okExpr <- visitedExpr
           pure (name, okExpr)
-
     visitArg :: XObj -> State MemState (Either TypeError XObj)
     visitArg xobj@(XObj _ _ (Just _)) =
       do
@@ -470,7 +462,6 @@ manageMemory typeEnv globalEnv root =
           Left err -> pure (Left err)
     visitArg xobj@XObj {} =
       visit xobj
-
     unmanageArg :: XObj -> State MemState (Either TypeError XObj)
     unmanageArg xobj@(XObj _ _ (Just t)) =
       if isManaged typeEnv globalEnv t

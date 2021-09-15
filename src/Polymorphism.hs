@@ -63,8 +63,8 @@ allImplementations typeEnv env functionName functionType =
       -- just a regular function; look for it
       _ -> fromRight [] ((fmap (: []) (Env.getValue env functionName)) <> pure (lookupEverywhere env functionName))
     getPoly = case findPoly env functionName functionType of
-                Right r -> [r]
-                Left _ -> (lookupEverywhere env functionName)
+      Right r -> [r]
+      Left _ -> (lookupEverywhere env functionName)
 
 -- | The various results when trying to find a function using 'findFunctionForMember'.
 data FunctionFinderResult

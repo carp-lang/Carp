@@ -68,7 +68,7 @@ depthOfType typeEnv visited selfName theType =
       -- trace ("Depth of args of " ++ show argTys ++ ": " ++ show (map (visitType . Just) argTys))
       --
       -- The `+ 1` in the function clause below is an important band-aid.
-      -- Here's the issue: 
+      -- Here's the issue:
       --   When we resolve declarations, some types may reference other types
       --   that have not been scored yet. When that happens, we add 500 to the
       --   binder to ensure it appears later than the types we'll resolve later
