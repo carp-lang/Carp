@@ -293,12 +293,14 @@ getTypeBinder = getBinder
 -- Restricts the final step of a search to binders in a module's *type* environment.
 findType :: Environment e => e -> SymPath -> Either EnvironmentError (TypeEnv, Binder)
 findType e path = go $ find' (inj (prj e)) path
-  -- Make sure the binder is actually a type.
-  where go :: Either EnvironmentError (TypeEnv, Binder) -> Either EnvironmentError (TypeEnv, Binder)
-        go (Right (t, b)) = if isType (binderXObj b)
-                              then Right (t, b) 
-                              else Left (BindingNotFound (show path) (prj e))
-        go x = x
+  where
+    -- Make sure the binder is actually a type.
+    go :: Either EnvironmentError (TypeEnv, Binder) -> Either EnvironmentError (TypeEnv, Binder)
+    go (Right (t, b)) =
+      if isType (binderXObj b)
+        then Right (t, b)
+        else Left (BindingNotFound (show path) (prj e))
+    go x = x
 
 findTypeBinder :: Environment e => e -> SymPath -> Either EnvironmentError Binder
 findTypeBinder e path = fmap snd (findType e path)

@@ -474,13 +474,14 @@ Array Pattern_match_MINUS_groups(Pattern *p, String *s) {
     return a;
 }
 
-typedef struct PatternMatchResult { 
-    int start;	// negative start or end indicates a non-match
+typedef struct PatternMatchResult {
+    int start;  // negative start or end indicates a non-match
     int end;
 } PatternMatchResult;
 
-PatternMatchResult Pattern_match_MINUS_from(Pattern *p, String *s, int startpos) {
-	PatternMatchResult result = { .start=-1, .end=-1 };
+PatternMatchResult Pattern_match_MINUS_from(Pattern *p, String *s,
+                                            int startpos) {
+    PatternMatchResult result = {.start = -1, .end = -1};
     String str = *s + startpos;
     Pattern pat = *p;
     int lstr = strlen(str);
@@ -494,11 +495,11 @@ PatternMatchResult Pattern_match_MINUS_from(Pattern *p, String *s, int startpos)
     }
     Pattern_internal_prepstate(&ms, str, lstr, pat, lpat);
     do {
-		String res;
+        String res;
         Pattern_internal_reprepstate(&ms);
         if ((res = Pattern_internal_match(&ms, s1, pat))) {
             result.start = startpos + (s1 - str);
-            result.end   = startpos + res - str;
+            result.end = startpos + res - str;
             break;
         }
     } while (s1++ < ms.src_end && !anchor);
