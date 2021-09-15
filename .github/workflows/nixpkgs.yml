@@ -1,7 +1,9 @@
 name: "Nixpkgs CI"
 on:
-  pull_request:
   push:
+    branches: [ master ]
+  pull_request:
+    branches: [ master ]
 jobs:
   tests:
     runs-on: ${{ matrix.os }}
