@@ -347,11 +347,26 @@ elements is uneven, the trailing element will be discarded.")
     (defndynamic set-nth [l n elem]
       (List.update-nth l n (fn [_] elem)))
 
-    (doc find "finds the first element in the list `l` that matches `pred`.")
+    (doc find
+      "finds the first element in the list `l` that matches `pred`.
+
+Returns `nil` on failure")
     (defndynamic find [l pred]
       (cond
         (empty? l) '()
         (pred (car l)) (car l)
         (List.find (cdr l) pred)))
+
+    (doc find-index "like [`find](#find), but returns the index instead.
+
+Returns `nil` on failure")
+    (defndynamic find-index [l pred]
+      (cond
+        (empty? l) '()
+        (pred (car l)) 0
+        (let [res (List.find-index (cdr l) pred)]
+          (if (nil? res)
+            res
+            (inc res)))))
   )
 )
