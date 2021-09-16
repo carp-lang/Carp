@@ -19,6 +19,7 @@ data PrimitiveError
   | StructNotFound XObj
   | NonTypeInTypeEnv SymPath XObj
   | InvalidSumtypeCase XObj
+  | TooManySumtypeCases
 
 data PrimitiveWarning
   = NonExistentInterfaceWarning XObj
@@ -74,6 +75,8 @@ instance Show PrimitiveError where
   show (PrimitiveError.InvalidSumtypeCase xobj) =
     "Can't get members for an invalid sumtype case: "
       ++ pretty xobj
+  show TooManySumtypeCases =
+    "Got too many sumtype cases (>128) for type"
 
 instance Show PrimitiveWarning where
   show (NonExistentInterfaceWarning x) =
