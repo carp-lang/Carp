@@ -986,6 +986,18 @@ commandC ctx xobj = do
             liftIO (putStr c)
             pure (newCtx, dynamicNil)
 
+-- | This function will return the compiled AST.
+commandExpandCompiled :: UnaryCommandCallback
+commandExpandCompiled ctx xobj = do
+  (newCtx, result) <- expandAll (evalDynamic ResolveLocal) ctx xobj
+  case result of
+    Left err -> pure (newCtx, Left err)
+    Right expanded -> do
+      (_, annotated) <- annotateWithinContext newCtx expanded
+      case annotated of
+        Left err -> pure $ evalError newCtx (show err) (xobjInfo xobj)
+        Right (annXObj, _) -> pure (newCtx, Right annXObj)
+
 -- | Helper function for commandC
 printC :: XObj -> String
 printC xobj =
