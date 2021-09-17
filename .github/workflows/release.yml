@@ -1,0 +1,136 @@
+on:
+  push:
+    tags:
+      - 'v*' # Push events to matching v*, i.e. v1.0, v20.15.10
+
+name: Create Release
+
+jobs:
+  build:
+    name: Build Release
+    runs-on: ${{ matrix.runner }}
+    strategy:
+      matrix:
+       include:
+         - os: Linux
+           runner: ubuntu-latest
+           artefact-name: "x86_64-linux"
+
+         - os: MacOS
+           runner: macos-latest
+           artefact-name: "x86_64-macos"
+
+         - os: Windows
+           runner: windows-latest
+           artefact-name: "x86_64-windows"
+
+    steps:
+      - name: Get tag name
+        id: get_tag_name
+        shell: bash
+        run: echo ::set-output name=VERSION::${GITHUB_REF#refs/*/}
+
+      - name: Checkout code
+        uses: actions/checkout@v2
+
+      - if: matrix.os == 'MacOS'
+        uses: actions/setup-haskell@v1
+
+      - if: matrix.os == 'Windows'
+        name: Install Scoop
+        run: |
+          iwr -useb get.scoop.sh | iex
+          echo "~\scoop\shims" | Out-File -FilePath $env:GITHUB_PATH -Encoding utf8 -Append
+          echo "C:\ProgramData\scoop\shims" | Out-File -FilePath $env:GITHUB_PATH -Encoding utf8 -Append
+
+      - if: matrix.os == 'Windows'
+        name: Install Stack
+        run: scoop install stack
+
+      - if: matrix.os == 'Windows'
+        name: Install Zip
+        run: scoop install zip --global
+
+      - if: matrix.os == 'Windows'
+        name: Install Clang
+        run: scoop install llvm --global
+
+      - if: matrix.os == 'Windows'
+        uses: actions/cache@v1
+        name: Cache stack dependencies
+        with:
+          path: C:\\Users\\runneradmin\\AppData\\Local\\Programs\\stack
+          key: ${{ runner.os }}-stack-deps-${{ github.sha }}
+          restore-keys: ${{ runner.os }}-stack-deps
+
+      - if: matrix.os == 'Windows'
+        uses: actions/cache@v1
+        name: Cache stack build
+        with:
+          path: C:\\Users\\runneradmin\\AppData\\Roaming\\stack\
+          key: ${{ runner.os }}-stack-build-${{ github.sha }}
+          restore-keys: ${{ runner.os }}-stack-build
+
+      - name: Build and zip
+        shell: bash
+        run: "./scripts/release.sh carp-${{ steps.get_tag_name.outputs.VERSION }}-${{ matrix.artefact-name }} --noprompt"
+
+      - name: Upload Artefact
+        uses: actions/upload-artifact@v2
+        with:
+          name: carp-${{ steps.get_tag_name.outputs.VERSION }}-${{ matrix.artefact-name }}.zip
+          path: ./releases/carp-${{ steps.get_tag_name.outputs.VERSION }}-${{ matrix.artefact-name }}.zip
+          if-no-files-found: error
+
+  release:
+    name: Upload Release
+    needs: build
+    runs-on: ubuntu-latest
+    steps:
+      - name: Get tag name
+        id: get_tag_name
+        shell: bash
+        run: echo ::set-output name=VERSION::${GITHUB_REF#refs/*/}
+
+      - name: Creates releases folder
+        run: mkdir ./releases
+
+      - name: Retrieve Windows artefact
+        uses: actions/download-artifact@v2
+        with:
+          name: carp-${{ steps.get_tag_name.outputs.VERSION }}-x86_64-windows.zip
+          path: ./releases
+
+      - name: Retrieve MacOS artefact
+        uses: actions/download-artifact@v2
+        with:
+          name: carp-${{ steps.get_tag_name.outputs.VERSION }}-x86_64-macos.zip
+          path: ./releases
+
+      - name: Retrieve Linux artefact
+        uses: actions/download-artifact@v2
+        with:
+          name: carp-${{ steps.get_tag_name.outputs.VERSION }}-x86_64-linux.zip
+          path: ./releases
+
+      - name: Release
+        uses: ncipollo/release-action@v1
+        with:
+          artifacts: "./releases/*.zip"
+          body: |
+            This is a release of the Carp compiler.
+
+            See [CHANGELOG.md](CHANGELOG.md) for a list of changes.
+
+            ## Installation
+            - Download and unzip the corresponding zip file for your platform
+            - Export an environment variable called `CARP_DIR` containing the path to the unzipped folder
+            - Add `$CARP_DIR/bin` to your path
+
+            You should now be able to run the REPL by calling `carp`
+          token: ${{ secrets.GITHUB_TOKEN }}
+          tag: ${{ steps.get_tag_name.outputs.VERSION }}
+          allowUpdates: true
+          removeArtifacts: true
+          replacesArtifacts: true
+          artifactContentType: "application/zip"
