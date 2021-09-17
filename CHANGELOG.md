@@ -1,3 +1,9 @@
+# 0.5.3
+- ci: Merges different platform releases into one (#1313)
+- feat: Add Dynamic.List.find-index (#1316)
+- feat: Add expand-compiled (#1310)
+- fix: Use non-deprecated unlink function on windows (#1311)
+
 # 0.5.2
 - fix: Elide void definitions (#1305)
 - fix: Allow types defined in modules to be members (#1303)
