@@ -237,6 +237,8 @@ Note that match works with *values* (not references) takes ownership over the va
 
 Note that this code would not take ownership over `might-be-a-string`. Also, the `s` in the first case is a reference, since it wouldn't be safe to destructure the `Maybe` into values in this situation.
 
+**Note:** A sumtype cannot have more than 128 inhabitants, also known as constructors. If that reads to you like a byte limitation, you’re on the right track. While this is a limitation, it has not proved to be a problem as of yet.
+
 ### Modules and Name Lookup
 Functions and variables can be stored in modules which are named and can be nested. To use a symbol inside a module
 you need to qualify it with the module name, like this: `Float.cos`.

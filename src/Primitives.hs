@@ -413,7 +413,7 @@ primitiveMembers _ ctx xobj@(XObj (Sym path _) _ _) =
     go (XObj (Lst [(XObj (Deftype _) _ _), _, (XObj (Arr members) _ _)]) _ _) =
       pure (ctx, Right (XObj (Arr (map (\(a, b) -> XObj (Lst [a, b]) Nothing Nothing) (pairwise members))) Nothing Nothing))
     go (XObj (Lst ((XObj (DefSumtype _) _ _) : _ : cases)) _ _) =
-      pure $ (ctx, (either Left (\a -> Right (XObj (Arr (concat a)) Nothing Nothing)) (mapM getMembersFromCase cases)))
+      pure (ctx, (either Left (\a -> Right (XObj (Arr (concat a)) Nothing Nothing)) (mapM getMembersFromCase cases)))
     go x = pure (toEvalError ctx x (NonTypeInTypeEnv path x))
     getMembersFromCase :: XObj -> Either EvalError [XObj]
     getMembersFromCase (XObj (Lst members) _ _) =
@@ -576,8 +576,10 @@ primitiveDeftype xobj ctx (name : rest@(XObj (Arr a) _ _ : _)) =
       if all isUnqualifiedSym objs
         then deftype ctx name (selectConstructor rest)
         else pure (toEvalError ctx xobj (QualifiedTypeMember rest))
-primitiveDeftype _ ctx (name : rest) =
-  deftype ctx name (selectConstructor rest)
+primitiveDeftype x ctx (name : rest) =
+  if length rest > 128
+    then pure (toEvalError ctx x TooManySumtypeCases)
+    else deftype ctx name (selectConstructor rest)
 primitiveDeftype _ _ _ = error "primitivedeftype"
 
 type ModuleCreator = Context -> String -> [Ty] -> [XObj] -> Maybe Info -> Either TypeError (String, XObj, [XObj])
