@@ -309,6 +309,31 @@ the filename and module name are the same.")
 (defmacro implements-all [mod :rest interfaces]
   (cons 'do (map (curry implement-declaration mod) interfaces)))
 
+(doc ++
+  "Sets the value of a variable to its current value incremented by one.")
+(defmacro ++ [var]
+  (list 'set! var (list 'inc var)))
+
+(doc --
+  "Sets the value of a variable to its current value decremented by one.")
+(defmacro -- [var]
+  (list 'set! var (list 'dec var)))
+
+(doc +=
+  "Sets the value of a variable to its current value plus `val`.")
+(defmacro += [var val]
+  (list 'set! var (list '+ var val)))
+
+(doc -=
+  "Sets the value of a variable to its current value minus `val`.")
+(defmacro -= [var val]
+  (list 'set! var (list '- var val)))
+
+(doc *=
+  "Sets the value of a variable to its current value multiplied by `val`.")
+(defmacro *= [var val]
+  (list 'set! var (list '* var val)))
+
 (defmodule Unsafe
   (defmodule C
     (defndynamic emit-c-line [append-strings args]
