@@ -224,9 +224,12 @@ eval ctx xobj@(XObj o info ty) preference resolver =
                   Left err -> pure (evalError ctx (show err) (xobjInfo xobj))
                   Right x' -> case checkStatic' x' of
                     Right _ -> evaluateApp (self : args)
-                    Left er -> pure (evalError ctx (show er) (xobjInfo xobj))
+                    Left er -> pure (ctx, Left er)
             (AppPat (ListPat _) _) -> evaluateApp form'
             (AppPat (SymPat _ _) _) -> evaluateApp form'
+            (AppPat (XObj other _ _) _)
+              | isResolvableStaticObj other ->
+                pure (ctx, (Left (HasStaticCall xobj info)))
             [] -> pure (ctx, dynamicNil)
             _ -> pure (throwErr (UnknownForm xobj) ctx (xobjInfo xobj))
     checkStatic' (XObj Def _ _) = Left (HasStaticCall xobj info)
