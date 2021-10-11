@@ -104,7 +104,7 @@ instance Show TypeError where
     "I didn’t understand the `if` statement at " ++ prettyInfoFromXObj xobj
       ++ ".\n\nIs it valid? Every `if` needs to follow the form `(if cond iftrue iffalse)`."
   show (InvalidObj (Mod _ _) xobj) =
-    "I didn’t understand the `if` statement at " ++ prettyInfoFromXObj xobj
+    "I didn’t understand the form mentioning a module at " ++ prettyInfoFromXObj xobj
       ++ ".\n\nAre you using a module or type where a value is expected?"
   show (InvalidObj o xobj) =
     "I didn’t understand the form `" ++ prettyObj o ++ "` at "
