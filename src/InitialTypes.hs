@@ -98,7 +98,7 @@ initialTypes typeEnv rootEnv root = evalState (visit rootEnv root) 0
       If -> pure (Left (InvalidObj If xobj))
       While -> pure (Left (InvalidObj While xobj))
       Do -> pure (Left (InvalidObj Do xobj))
-      m@(Mod _ _) -> pure (Left (InvalidObj m xobj))
+      m@(Mod _ _) -> pure (Left (InvalidObj m root))
       e@(Deftype _) -> pure (Left (InvalidObj e xobj))
       e@(External _) -> pure (Left (InvalidObj e xobj))
       e@(ExternalType _) -> pure (Left (InvalidObj e xobj))
