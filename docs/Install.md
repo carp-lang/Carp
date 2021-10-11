@@ -55,3 +55,7 @@ The examples involving graphics/sound/interaction will require the following lib
 On macOS and Linux we use [pkg-config](https://www.freedesktop.org/wiki/Software/pkg-config/) to handle include paths and linking flags, so make sure you have that properly installed and configured to find the external libraries.
 
 Please let us know if you have trouble getting these bindings to work! We have tried making everything as reliable as possible but there are often corner cases when it comes to dependency management. And remember that you're always welcome to start an issue or ask questions in [the gitter channel](https://gitter.im/carp-lang/Carp).
+
+## Footnote for Windows
+You can install clang with mingw64 but you'll also want to run `vcvarsall.bat amd64` or `vcvarsall.bat x86` each time you start your shell to help clang find the right headers.
+See https://github.com/carp-lang/Carp/issues/700 or https://github.com/carp-lang/Carp/issues/1323 for more information.
