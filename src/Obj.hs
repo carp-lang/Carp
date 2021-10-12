@@ -1097,6 +1097,7 @@ isResolvableStaticObj (Deftemplate _) = True
 isResolvableStaticObj (Instantiate _) = True
 isResolvableStaticObj (Fn _ _) = True
 isResolvableStaticObj (Interface _ _) = True
+isResolvableStaticObj Ref = True
 isResolvableStaticObj _ = False
 
 -- | Left biased semigroup instance for Envs.
