@@ -246,7 +246,7 @@ genConstraints _ root rootSig = fmap sort (gen root)
                           retConstraint = Constraint xobjTy' retTy xobj func xobj OrdFuncAppRet
                        in pure (retConstraint : funcConstraints ++ argConstraints ++ variablesConstraints)
                 funcVarTy@(VarTy _) ->
-                  let fabricatedFunctionType = FuncTy (List.map forceTy args) (forceTy xobj) (VarTy "what?!")
+                  let fabricatedFunctionType = FuncTy (List.map forceTy args) (forceTy xobj) StaticLifetimeTy
                       expected = XObj (Sym (SymPath [] ("Calling '" ++ getName func ++ "'")) Symbol) (xobjInfo func) Nothing
                       wholeTypeConstraint = Constraint funcVarTy fabricatedFunctionType func expected xobj OrdFuncAppVarTy
                    in pure (wholeTypeConstraint : funcConstraints ++ variablesConstraints)
@@ -321,7 +321,7 @@ genConstraintsForCaseMatcher matchMode = gen
                     retConstraint = Constraint xobjTy' retTy xobj caseName xobj OrdFuncAppRet
                  in pure (retConstraint : caseNameConstraints ++ argConstraints ++ variablesConstraints)
           funcVarTy@(VarTy _) ->
-            let fabricatedFunctionType = FuncTy (List.map forceTy variables) (forceTy xobj) (VarTy "what?!") -- TODO: Fix
+            let fabricatedFunctionType = FuncTy (List.map forceTy variables) (forceTy xobj) StaticLifetimeTy
                 expected = XObj (Sym (SymPath [] ("Matchin on '" ++ getName caseName ++ "'")) Symbol) (xobjInfo caseName) Nothing
                 wholeTypeConstraint = Constraint funcVarTy fabricatedFunctionType caseName expected xobj OrdFuncAppVarTy
              in pure (wholeTypeConstraint : caseNameConstraints ++ variablesConstraints)
