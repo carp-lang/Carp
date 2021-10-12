@@ -394,7 +394,7 @@ genericInit allocationMode pathStrings originalStructTy@(StructTy (ConcreteNameT
   defineTypeParameterizedTemplate templateCreator path t docs
   where
     path = SymPath pathStrings "init"
-    t = FuncTy (map snd (memberXObjsToPairs membersXObjs)) originalStructTy StaticLifetimeTy
+    t = FuncTy (map snd (nodummy (memberXObjsToPairs membersXObjs))) originalStructTy StaticLifetimeTy
     docs = "creates a `" ++ show originalStructTy ++ "`."
     templateCreator = TemplateCreator $
       \typeEnv env ->
