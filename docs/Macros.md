@@ -4,13 +4,13 @@ Macros are among the most divisive features about any Lisp. There are many
 different design decisions to be made, and all of them have proponents and
 detractors.
 
-This document aims to give a comprehensive overview of the macro system and
-how to use it. If you’re in a hurry or want to see whether Carp implements your
+This document aims to give a comprehensive overview of the macro system and how
+to use it. If you’re in a hurry or want to see whether Carp implements your
 favorite macro feature, you probably want to read the section [“In a
-Nutshell”](#in-a-nutshell). If you want to spend some quality understanding
-how to work on or with the macro systems, the sections [“Working with
-Macros”](#working-with-macros) and [“Inner Workings”](#inner-workings) will
-probably be more useful to you.
+Nutshell”](#in-a-nutshell). If you want to spend some quality time
+understanding how to work on or with the macro systems, the sections [“Working
+with Macros”](#working-with-macros) and [“Inner Workings”](#inner-workings)
+will probably be more useful to you.
 
 ## In a Nutshell
 
