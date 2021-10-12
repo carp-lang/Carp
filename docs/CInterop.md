@@ -500,6 +500,21 @@ functions for registered types. So, even if you have Carp generate initializers
 for convenience, remember that you still need to manage the memory associated
 with registered types manually.
 
+If needed, you can override the name Carp emits for a registered type by
+providing an additional string argument. This comes in handy when the type's
+name in C does not follow lisp or Carp naming conventions. For example, the
+type in C might begin with a lowercase letter, while Carp requires all types to
+begin with uppercase letters:
+
+```clojure
+;; Emitted in C code as "A"
+(register-type A)
+;; Emitted in C code a "a_type"
+(register-type A "a_type")
+;; Emitted in C code as "b_type"
+(register-type B "b_type" [x Int])
+```
+
 ## Callbacks
 
 Some C APIs rely on callbacks, let's define a C function that accepts a
