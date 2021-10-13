@@ -612,7 +612,8 @@ instantiateGenericStructType typeEnv env originalStructTy@(StructTy _ _) generic
       let nameFixedMembers = renameGenericTypeSymbolsOnProduct renamedOrig memberXObjs
           validMembers = replaceGenericTypeSymbolsOnMembers mappings' nameFixedMembers
           concretelyTypedMembers = replaceGenericTypeSymbolsOnMembers mappings memberXObjs
-      validateMembers AllowAnyTypeVariableNames typeEnv env renamedOrig validMembers
+          candidate = TypeCandidate {restriction = AllowAnyTypeVariableNames, typename = (getStructName originalStructTy), typemembers = validMembers, variables = renamedOrig}
+      validateMembers typeEnv env candidate
       deps <- mapM (depsForStructMemberPair typeEnv env) (pairwise concretelyTypedMembers)
       let xobj =
             XObj
@@ -646,7 +647,8 @@ instantiateGenericSumtype typeEnv env originalStructTy@(StructTy _ originalTyVar
           let nameFixedCases = map (renameGenericTypeSymbolsOnSum (zip originalTyVars renamedOrig)) cases
               concretelyTypedCases = map (replaceGenericTypeSymbolsOnCase mappings) nameFixedCases
               deps = mapM (depsForCase typeEnv env) concretelyTypedCases
-           in case toCases typeEnv env AllowAnyTypeVariableNames renamedOrig concretelyTypedCases of -- Don't care about the cases, this is done just for validation.
+              candidate = TypeCandidate {restriction = AllowAnyTypeVariableNames, typename = (getStructName originalStructTy), variables = renamedOrig, typemembers = concretelyTypedCases }
+           in case toCases typeEnv env candidate of -- Don't care about the cases, this is done just for validation.
                 Left err -> Left err
                 Right _ ->
                   case deps of

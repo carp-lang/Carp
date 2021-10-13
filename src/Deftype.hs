@@ -59,8 +59,13 @@ moduleForDeftype innerEnv typeEnv env pathStrings typeName typeVariables rest i 
       -- The variable 'insidePath' is the path used for all member functions inside the 'typeModule'.
       -- For example (module Vec2 [x Float]) creates bindings like Vec2.create, Vec2.x, etc.
       insidePath = pathStrings ++ [typeName]
+      candidate = TypeCandidate {restriction = AllowOnlyNamesInScope, typename = typeName, variables = typeVariables, typemembers = []}
    in do
-        validateMemberCases typeEnv env typeVariables rest
+        mems <- case rest of
+                  [XObj (Arr membersXObjs) _ _] -> Right membersXObjs
+                  _ -> Left $ NotAValidType (XObj (Sym (SymPath pathStrings typeName) Symbol) i (Just TypeTy))
+        validateMembers typeEnv env (candidate {typemembers = mems})
+        --validateMemberCases typeEnv env typeVariables rest
         let structTy = StructTy (ConcreteNameTy (SymPath pathStrings typeName)) typeVariables
         (okMembers, membersDeps) <- templatesForMembers typeEnv env insidePath structTy rest
         okInit <- binderForInit insidePath structTy rest
@@ -82,8 +87,12 @@ bindingsForRegisteredType typeEnv env pathStrings typeName rest i existingEnv =
   let moduleValueEnv = fromMaybe (new (Just env) (Just typeName)) (fmap fst existingEnv)
       moduleTypeEnv = fromMaybe (new (Just typeEnv) (Just typeName)) (fmap snd existingEnv)
       insidePath = pathStrings ++ [typeName]
+      candidate = TypeCandidate {restriction = AllowOnlyNamesInScope, typename = typeName, variables = [], typemembers = []}
    in do
-        validateMemberCases typeEnv env [] rest
+        mems <- case rest of
+                  [XObj (Arr membersXObjs) _ _] -> Right membersXObjs
+                  _ -> Left $ NotAValidType (XObj (Sym (SymPath pathStrings typeName) Symbol) i (Just TypeTy))
+        validateMembers typeEnv env (candidate {typemembers = mems})
         let structTy = StructTy (ConcreteNameTy (SymPath pathStrings typeName)) []
         (binders, deps) <- templatesForMembers typeEnv env insidePath structTy rest
         okInit <- binderForInit insidePath structTy rest
