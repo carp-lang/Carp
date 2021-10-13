@@ -494,11 +494,13 @@ the generated initializer might cause errors.
 The `prn` and `str` functions for the type will also automatically implement
 their corresponding interfaces.
 
-Be mindful that Carp *does not manage the memory associated with external
-types!* Unlike types defined in Carp, Carp will not generate `copy` and `delete`
-functions for registered types. So, even if you have Carp generate initializers
-for convenience, remember that you still need to manage the memory associated
-with registered types manually.
+Be mindful that Carp *does not manage the memory associated with external types
+by default!* Unlike types defined in Carp, Carp will not generate `copy` and
+`delete` functions for registered types. If you use generated initializers for
+a registered type for convenience, remember that you still need to manage the
+memory associated with values of the type manually. If you want Carp to manage
+the memory for a registered type, you can provide implementations of the `copy`
+and `delete` interfaces.
 
 If needed, you can override the name Carp emits for a registered type by
 providing an additional string argument. This comes in handy when the type's
