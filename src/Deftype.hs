@@ -21,6 +21,7 @@ import ToTemplate
 import TypeError
 import TypePredicates
 import Types
+import RecType
 import TypesToC
 import Util
 import Validate
@@ -65,16 +66,18 @@ moduleForDeftype innerEnv typeEnv env pathStrings typeName typeVariables rest i 
                   [XObj (Arr membersXObjs) _ _] -> Right membersXObjs
                   _ -> Left $ NotAValidType (XObj (Sym (SymPath pathStrings typeName) Symbol) i (Just TypeTy))
         validateMembers typeEnv env (candidate {typemembers = mems})
-        --validateMemberCases typeEnv env typeVariables rest
         let structTy = StructTy (ConcreteNameTy (SymPath pathStrings typeName)) typeVariables
-        (okMembers, membersDeps) <- templatesForMembers typeEnv env insidePath structTy rest
-        okInit <- binderForInit insidePath structTy rest
-        (okStr, strDeps) <- binderForStrOrPrn typeEnv env insidePath structTy rest "str"
-        (okPrn, _) <- binderForStrOrPrn typeEnv env insidePath structTy rest "prn"
-        (okDelete, deleteDeps) <- binderForDelete typeEnv env insidePath structTy rest
-        (okCopy, copyDeps) <- binderForCopy typeEnv env insidePath structTy rest
+            ptrmembers = map (recursiveMembersToPointers structTy) rest
+        (okMembers, membersDeps) <- templatesForMembers typeEnv env insidePath structTy ptrmembers
+        okInit <- binderForInit insidePath structTy ptrmembers
+        okMake <- recursiveProductMakeBinder insidePath structTy ptrmembers
+        (okStr, strDeps) <- binderForStrOrPrn typeEnv env insidePath structTy ptrmembers "str"
+        (okPrn, _) <- binderForStrOrPrn typeEnv env insidePath structTy ptrmembers"prn"
+        (okDelete, deleteDeps) <- binderForDelete typeEnv env insidePath structTy ptrmembers
+        (okCopy, copyDeps) <- binderForCopy typeEnv env insidePath structTy ptrmembers
         let funcs = okInit : okStr : okPrn : okDelete : okCopy : okMembers
-            moduleEnvWithBindings = addListOfBindings moduleValueEnv funcs
+            funcs' = if (any (isRecursive structTy) ptrmembers) then (okMake : funcs) else funcs
+            moduleEnvWithBindings = addListOfBindings moduleValueEnv funcs'
             typeModuleXObj = XObj (Mod moduleEnvWithBindings moduleTypeEnv) i (Just ModuleTy)
             deps = deleteDeps ++ membersDeps ++ copyDeps ++ strDeps
         pure (typeName, typeModuleXObj, deps)

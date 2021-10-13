@@ -58,6 +58,7 @@ data Ty
   | UnitTy
   | ModuleTy
   | PointerTy Ty
+  | RecTy Ty -- Recursive type, wraps members in a type definition.
   | RefTy Ty Ty -- second Ty is the lifetime
   | StaticLifetimeTy
   | StructTy Ty [Ty] -- the name (possibly a var) of the struct, and it's type parameters
@@ -195,6 +196,7 @@ instance Show Ty where
   show DynamicTy = "Dynamic"
   show Universe = "Universe"
   show CTy = "C"
+  show (RecTy rec) = "Rec " ++ show rec
 
 showMaybeTy :: Maybe Ty -> String
 showMaybeTy (Just t) = show t
@@ -248,6 +250,9 @@ unifySignatures at ct = Map.fromList (unify at ct)
       | otherwise = [] -- error ("Can't unify " ++ a ++ " with " ++ b)
     unify (StructTy _ _) _ = [] -- error ("Can't unify " ++ show a ++ " with " ++ show b)
     unify (PointerTy a) (PointerTy b) = unify a b
+    unify (PointerTy a) (RecTy b) = unify a b
+    unify (RecTy a) (PointerTy b) = unify a b
+    unify (RecTy a) (RecTy b) = unify a b
     unify (PointerTy _) _ = [] -- error ("Can't unify " ++ show a ++ " with " ++ show b)
     unify (RefTy a ltA) (RefTy b ltB) = unify a b ++ unify ltA ltB
     unify (RefTy _ _) _ = [] -- error ("Can't unify " ++ show a ++ " with " ++ show b)
@@ -280,6 +285,9 @@ areUnifiable (StructTy (VarTy _) args) (RefTy _ _)
   | otherwise = False
 areUnifiable (StructTy _ _) _ = False
 areUnifiable (PointerTy a) (PointerTy b) = areUnifiable a b
+areUnifiable (RecTy a) (RecTy b) = areUnifiable a b
+areUnifiable (RecTy a) (PointerTy b) = areUnifiable a b
+areUnifiable (PointerTy a) (RecTy b) = areUnifiable a b
 areUnifiable (PointerTy _) _ = False
 areUnifiable (RefTy a ltA) (RefTy b ltB) = areUnifiable a b && areUnifiable ltA ltB
 areUnifiable RefTy {} _ = False
@@ -326,6 +334,7 @@ replaceTyVars mappings t =
         (RefTy a lt) -> replaceTyVars mappings (RefTy a lt)
         _ -> StructTy (replaceTyVars mappings name) (fmap (replaceTyVars mappings) tyArgs)
     (PointerTy x) -> PointerTy (replaceTyVars mappings x)
+    (RecTy x) -> PointerTy (replaceTyVars mappings x)
     (RefTy x lt) -> RefTy (replaceTyVars mappings x) (replaceTyVars mappings lt)
     _ -> t
 

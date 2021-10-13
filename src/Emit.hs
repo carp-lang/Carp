@@ -24,6 +24,7 @@ import qualified Meta
 import Obj
 import Path (takeFileName)
 import Project
+import RecType
 import Scoring
 import qualified Set
 import Template
@@ -814,11 +815,16 @@ templateToDeclaration template path actualTy =
       term = if "#define" `isPrefixOf` stokens then "\n" else ";\n"
    in stokens ++ term
 
-memberToDecl :: Int -> (XObj, XObj) -> State EmitterState ()
-memberToDecl indent (memberName, memberType) =
+memberToDecl :: Ty -> Int -> (XObj, XObj) -> State EmitterState ()
+memberToDecl recty indent (memberName, memberType) =
   case xobjToTy memberType of
     -- Handle function pointers as members specially to allow members that are functions referring to the struct itself.
-    Just t -> appendToSrc (addIndent indent ++ tyToCLambdaFix t ++ " " ++ mangle (getName memberName) ++ ";\n")
+    Just rt@(RecTy t) ->
+      if t == recty
+        then appendToSrc (addIndent indent ++ "struct " ++ tyToCLambdaFix rt ++ " " ++ mangle (getName memberName) ++ ";\n")
+        else appendToSrc (addIndent indent ++ tyToCLambdaFix t ++ " " ++ mangle (getName memberName) ++ ";\n")
+    Just t ->
+      appendToSrc (addIndent indent ++ tyToCLambdaFix t ++ " " ++ mangle (getName memberName) ++ ";\n")
     Nothing -> error ("Invalid memberType: " ++ show memberType)
 
 defStructToDeclaration :: Ty -> SymPath -> [XObj] -> String
@@ -827,12 +833,18 @@ defStructToDeclaration structTy@(StructTy _ _) _ rest =
       typedefCaseToMemberDecl :: XObj -> State EmitterState [()]
       -- ANSI C doesn't allow empty structs, insert a dummy member to keep the compiler happy.
       typedefCaseToMemberDecl (XObj (Arr []) _ _) = sequence $ pure $ appendToSrc (addIndent indent ++ "char __dummy;\n")
-      typedefCaseToMemberDecl (XObj (Arr members) _ _) = mapM (memberToDecl indent) (remove (isUnit . fromJust . xobjToTy . snd) (pairwise members))
+      typedefCaseToMemberDecl (XObj (Arr members) _ _) = mapM (memberToDecl structTy indent) (remove (isUnit . fromJust . xobjToTy . snd) (pairwise members))
       typedefCaseToMemberDecl _ = error "Invalid case in typedef."
+      pointerfix = map (recursiveMembersToPointers structTy) rest
       -- Note: the names of types are not namespaced
       visit = do
-        appendToSrc "typedef struct {\n"
-        mapM_ typedefCaseToMemberDecl rest
+        -- forward declaration for recursive types.
+        when (any (isRecursive structTy) pointerfix) $
+          do appendToSrc ("// Recursive type \n")
+             appendToSrc ("typedef struct " ++ tyToC structTy ++ " {\n")
+        when (all (not . isRecursive structTy) pointerfix) $ appendToSrc "typedef struct {\n"
+        --appendToSrc ("typedef struct " ++ tyToC structTy ++ " " ++ tyToC structTy ++ ";\n")
+        mapM_ typedefCaseToMemberDecl pointerfix
         appendToSrc ("} " ++ tyToC structTy ++ ";\n")
    in if isTypeGeneric structTy
         then "" -- ("// " ++ show structTy ++ "\n")
@@ -859,7 +871,7 @@ defSumtypeToDeclaration sumTy@(StructTy _ _) rest =
         do
           appendToSrc (addIndent ind ++ "struct {\n")
           let members = zip anonMemberSymbols (remove (isUnit . fromJust . xobjToTy) memberTys)
-          mapM_ (memberToDecl (ind + indentAmount)) members
+          mapM_ (memberToDecl sumTy (ind + indentAmount)) members
           appendToSrc (addIndent ind ++ "} " ++ caseName ++ ";\n")
       emitSumtypeCase ind (XObj (Sym (SymPath [] caseName) _) _ _) =
         appendToSrc (addIndent ind ++ "// " ++ caseName ++ "\n")

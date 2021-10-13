@@ -47,6 +47,7 @@ library
                        PrimitiveError
                        Project,
                        Qualify,
+                       RecType,
                        Reify,
                        RenderDocs,
                        Repl,

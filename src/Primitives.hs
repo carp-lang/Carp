@@ -27,6 +27,7 @@ import Obj
 import PrimitiveError
 import Project
 import Qualify (Qualified (..), QualifiedPath, getQualifiedPath, markQualified, qualify, qualifyNull, qualifyPath, unqualify)
+--import RecType
 import Reify
 import Sumtypes
 import SymPath

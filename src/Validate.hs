@@ -80,7 +80,8 @@ checkKindConsistency candidate =
 
 -- | Returns an error if one of the types members can't be used as a member.
 checkMembers :: TypeEnv -> Env -> TypeCandidate -> Either TypeError ()
-checkMembers typeEnv globalEnv candidate = mapM_ (okXObjForType (typename candidate) (restriction candidate) typeEnv globalEnv (variables candidate) . snd) (pairwise (typemembers candidate))
+checkMembers typeEnv globalEnv candidate =
+  mapM_ (okXObjForType (typename candidate) (restriction candidate) typeEnv globalEnv (variables candidate) . snd) (pairwise (typemembers candidate))
 
 okXObjForType :: String -> TypeVarRestriction -> TypeEnv -> Env -> [Ty] -> XObj -> Either TypeError ()
 okXObjForType tyname typeVarRestriction typeEnv globalEnv typeVariables xobj =
@@ -134,14 +135,17 @@ canBeUsedAsMemberType tyname typeVarRestriction typeEnv globalEnv typeVariables 
       canBeUsedAsMemberType tyname typeVarRestriction typeEnv globalEnv typeVariables innerType xobj
         >> pure ()
     checkStruct (ConcreteNameTy path@(SymPath _ pname)) vars =
-      case E.getTypeBinder typeEnv pname <> E.findTypeBinder globalEnv path of
-        Right (Binder _ (XObj (Lst (XObj (ExternalType _) _ _ : _)) _ _)) ->
-          pure ()
-        Right (Binder _ (XObj (Lst (XObj (Deftype t) _ _ : _)) _ _)) ->
-          checkInhabitants t >> foldM (\_ typ -> canBeUsedAsMemberType tyname typeVarRestriction typeEnv globalEnv typeVariables typ xobj) () vars
-        Right (Binder _ (XObj (Lst (XObj (DefSumtype t) _ _ : _)) _ _)) ->
-          checkInhabitants t >> foldM (\_ typ -> canBeUsedAsMemberType tyname typeVarRestriction typeEnv globalEnv typeVariables typ xobj) () vars
-        _ -> Left (NotAmongRegisteredTypes ty xobj)
+      if pname == tyname && length vars == length typeVariables
+        then foldM (\_ typ -> canBeUsedAsMemberType tyname typeVarRestriction typeEnv globalEnv typeVariables typ xobj) () vars
+        else
+          case E.getTypeBinder typeEnv pname <> E.findTypeBinder globalEnv path of
+            Right (Binder _ (XObj (Lst (XObj (ExternalType _) _ _ : _)) _ _)) ->
+              pure ()
+            Right (Binder _ (XObj (Lst (XObj (Deftype t) _ _ : _)) _ _)) ->
+              checkInhabitants t >> foldM (\_ typ -> canBeUsedAsMemberType tyname typeVarRestriction typeEnv globalEnv typeVariables typ xobj) () vars
+            Right (Binder _ (XObj (Lst (XObj (DefSumtype t) _ _ : _)) _ _)) ->
+              checkInhabitants t >> foldM (\_ typ -> canBeUsedAsMemberType tyname typeVarRestriction typeEnv globalEnv typeVariables typ xobj) () vars
+            _ -> Left (NotAmongRegisteredTypes ty xobj)
       where
         checkInhabitants :: Ty -> Either TypeError ()
         checkInhabitants (StructTy _ vs) =

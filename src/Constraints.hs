@@ -149,6 +149,13 @@ solveOneInternal mappings constraint =
                 Right ok -> solveOneInternal ok (Constraint ltA ltB i1 i2 ctx ord)
                 Left err -> Left err
         else Left (UnificationFailure constraint mappings)
+    -- Rec types
+    Constraint (PointerTy a) (RecTy b) _ _ _ _ ->
+      let (Constraint _ _ i1 i2 ctx ord) = constraint
+       in solveOneInternal mappings (Constraint a b i1 i2 ctx ord)
+    Constraint (RecTy a) (PointerTy b) _ _ _ _ ->
+      let (Constraint _ _ i1 i2 ctx ord) = constraint
+       in solveOneInternal mappings (Constraint a b i1 i2 ctx ord)
     -- Pointer types
     Constraint (PointerTy a) (PointerTy b) _ _ _ _ ->
       let (Constraint _ _ i1 i2 ctx ord) = constraint
@@ -231,6 +238,7 @@ checkConflictInternal mappings constraint name otherTy =
           case otherTy of
             PointerTy otherInnerTy -> solveOneInternal mappings (mkConstraint OrdPtr xobj1 xobj2 ctx innerTy otherInnerTy)
             VarTy _ -> Right mappings
+            RecTy otherInnerTy -> solveOneInternal mappings (mkConstraint OrdPtr xobj1 xobj2 ctx innerTy otherInnerTy)
             _ -> Left (UnificationFailure constraint mappings)
         Just (RefTy innerTy lifetimeTy) ->
           case otherTy of

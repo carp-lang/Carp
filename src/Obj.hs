@@ -823,6 +823,12 @@ xobjToTy (XObj (Sym (SymPath _ "Static") _) _ _) = Just StaticLifetimeTy
 xobjToTy (XObj (Sym spath@(SymPath _ s@(firstLetter : _)) _) _ _)
   | isLower firstLetter = Just (VarTy s)
   | otherwise = Just (StructTy (ConcreteNameTy spath) [])
+xobjToTy (XObj (Lst [XObj (Sym (SymPath _ "RecTy") _) _ _, innerTy]) _ _) =
+  do
+    okInnerTy <- xobjToTy innerTy
+    pure (RecTy okInnerTy)
+xobjToTy (XObj (Lst (XObj (Sym (SymPath _ "RecTy") _) _ _ : _)) _ _) =
+  Nothing
 xobjToTy (XObj (Lst [XObj (Sym (SymPath _ "Ptr") _) _ _, innerTy]) _ _) =
   do
     okInnerTy <- xobjToTy innerTy

@@ -27,6 +27,7 @@ tyToCRawFunctionPtrFix t = tyToCManglePtr False t
 
 tyToCManglePtr :: Bool -> Ty -> String
 tyToCManglePtr b (PointerTy p) = tyToCManglePtr b p ++ (if b then mangle "*" else "*")
+tyToCManglePtr b (RecTy p) = tyToCManglePtr b p ++ (if b then mangle "*" else "*")
 tyToCManglePtr b (RefTy r _) = tyToCManglePtr b r ++ (if b then mangle "*" else "*")
 tyToCManglePtr _ ty = f ty
   where
@@ -55,4 +56,5 @@ tyToCManglePtr _ ty = f ty
     f (PointerTy _) = err "pointers"
     f (RefTy _ _) = err "references"
     f CTy = "c_code" -- Literal C; we shouldn't emit anything.
+    f (RecTy _) = err "recty"
     err s = error ("Can't emit the type of " ++ s ++ ".")
