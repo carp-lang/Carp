@@ -28,7 +28,7 @@
 (defmacro => [:rest forms]
   (thread-first-internal forms))
 
-(deprecated ==> "deprecated in favor of `==>`.")
+(deprecated ==> "deprecated in favor of `-->`.")
 (defmacro ==> [:rest forms]
   (thread-last-internal forms))
 
