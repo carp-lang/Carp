@@ -69,7 +69,7 @@ moduleForDeftype innerEnv typeEnv env pathStrings typeName typeVariables rest i 
         let structTy = StructTy (ConcreteNameTy (SymPath pathStrings typeName)) typeVariables
             ptrmembers = map (recursiveMembersToPointers structTy) rest
         (okMembers, membersDeps) <- templatesForMembers typeEnv env insidePath structTy ptrmembers
-        okInit <- binderForInit insidePath structTy ptrmembers
+        okInit <- if (any (isRecursive structTy) ptrmembers) then recursiveProductInitBinder insidePath structTy ptrmembers else binderForInit insidePath structTy ptrmembers
         okMake <- recursiveProductMakeBinder insidePath structTy ptrmembers
         (okStr, strDeps) <- binderForStrOrPrn typeEnv env insidePath structTy ptrmembers "str"
         (okPrn, _) <- binderForStrOrPrn typeEnv env insidePath structTy ptrmembers"prn"
@@ -125,6 +125,12 @@ templatesForSingleMember typeEnv env insidePath p@(StructTy (ConcreteNameTy _) _
         (FuncTy [p, t] p StaticLifetimeTy)
         (FuncTy [RefTy p (VarTy "q"), t] UnitTy StaticLifetimeTy)
         (FuncTy [p, RefTy (FuncTy [] UnitTy (VarTy "fq")) (VarTy "q")] p StaticLifetimeTy)
+    (RecTy t') ->
+      binders
+        (FuncTy [RefTy p (VarTy "q")] (RefTy t' (VarTy "q")) StaticLifetimeTy)
+        (FuncTy [p, t] p StaticLifetimeTy)
+        (FuncTy [RefTy p (VarTy "q"), t] UnitTy StaticLifetimeTy)
+        (FuncTy [p, RefTy (FuncTy [t] t (VarTy "fq")) (VarTy "q")] p StaticLifetimeTy)
     _ ->
       binders
         (FuncTy [RefTy p (VarTy "q")] (RefTy t (VarTy "q")) StaticLifetimeTy)
@@ -152,6 +158,7 @@ templatesForSingleMember _ _ _ _ _ = error "templatesforsinglemember"
 
 -- | The template for getters of a deftype.
 templateGetter :: String -> Ty -> Template
+templateGetter member t@(RecTy _) = recTemplateGetter member t
 templateGetter _ UnitTy =
   Template
     (FuncTy [RefTy (VarTy "p") (VarTy "q")] UnitTy StaticLifetimeTy)
@@ -347,7 +354,7 @@ templateUpdater member _ =
 
 -- | Helper function to create the binder for the 'init' template.
 binderForInit :: [String] -> Ty -> [XObj] -> Either TypeError (String, Binder)
-binderForInit insidePath structTy@(StructTy (ConcreteNameTy _) _) [XObj (Arr membersXObjs) _ _] =
+binderForInit insidePath structTy@(StructTy (ConcreteNameTy _) _) [(XObj (Arr membersXObjs) _ _)] =
   if isTypeGeneric structTy
     then Right (genericInit StackAlloc insidePath structTy membersXObjs)
     else

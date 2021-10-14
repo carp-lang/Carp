@@ -843,6 +843,8 @@ depsForCopyFunc typeEnv env t =
 
 -- | Helper for finding the 'str' function for a type.
 depsForPrnFunc :: TypeEnv -> Env -> Ty -> [XObj]
+depsForPrnFunc typeEnv env (RecTy t) =
+  depsOfPolymorphicFunction typeEnv env [] "str" (FuncTy [PointerTy t] StringTy StaticLifetimeTy)
 depsForPrnFunc typeEnv env t =
   if isManaged typeEnv env t
     then depsOfPolymorphicFunction typeEnv env [] "prn" (FuncTy [RefTy t (VarTy "q")] StringTy StaticLifetimeTy)
@@ -900,6 +902,8 @@ concreteDeleteTakePtr typeEnv env members =
 -- | Generate the C code for deleting a single member of the deftype.
 -- | TODO: Should return an Either since this can fail!
 memberDeletionGeneral :: String -> TypeEnv -> Env -> (String, Ty) -> String
+memberDeletionGeneral separator _ _ (memberName, (RecTy _)) =
+  "    " ++ "CARP_FREE(p" ++ separator ++ memberName ++ ");"
 memberDeletionGeneral separator typeEnv env (memberName, memberType) =
   case findFunctionForMember typeEnv env "delete" (typesDeleterFunctionType memberType) (memberName, memberType) of
     FunctionFound functionFullName -> "    " ++ functionFullName ++ "(p" ++ separator ++ memberName ++ ");"

@@ -3,6 +3,8 @@ module RecType
    recursiveMembersToPointers,
    isRecursive,
    recursiveProductMakeBinder,
+   recursiveProductInitBinder,
+   recTemplateGetter,
   )
 where
 
@@ -18,7 +20,7 @@ import Data.Maybe (fromJust)
 import Concretize
 import ToTemplate
 
-isRecursive :: Ty -> XObj -> Bool 
+isRecursive :: Ty -> XObj -> Bool
 isRecursive structTy@(StructTy _ _) (XObj (Arr members) _ _) =
   any go members
   where go :: XObj -> Bool
@@ -44,7 +46,7 @@ recursiveMembersToPointers _ xobj = xobj
 
 recursiveProductMakeBinder :: [String] -> Ty -> [XObj] -> Either TypeError (String, Binder)
 recursiveProductMakeBinder insidePath structTy@(StructTy (ConcreteNameTy _) _) [XObj (Arr membersXObjs) _ _] =
-  Right $ 
+  Right $
     instanceBinder
       (SymPath insidePath "make")
       (FuncTy (initArgListTypes membersXObjs) structTy StaticLifetimeTy)
@@ -54,6 +56,84 @@ recursiveProductMakeBinder insidePath structTy@(StructTy (ConcreteNameTy _) _) [
         initArgListTypes xobjs =
           map (fromJust . xobjToTy . snd) (remove (isRecType . fromJust . xobjToTy . snd) (pairwise xobjs))
 recursiveProductMakeBinder _ _ _ = error "TODO"
+
+recursiveProductInitBinder :: [String] -> Ty -> [XObj] -> Either TypeError (String, Binder)
+recursiveProductInitBinder insidePath structTy@(StructTy (ConcreteNameTy _) _) [XObj (Arr membersXObjs) _ _] =
+  Right $
+    instanceBinder
+      (SymPath insidePath "init")
+      (FuncTy (initArgListTypes membersXObjs) structTy StaticLifetimeTy)
+      (recursiveProductInit HeapAlloc structTy membersXObjs)
+      ("creates a `" ++ show structTy ++ "`.")
+  where initArgListTypes :: [XObj] -> [Ty]
+        initArgListTypes xobjs =
+          map (fixRec . fromJust . xobjToTy . snd) (pairwise xobjs)
+        fixRec (RecTy t) = t
+        fixRec t = t
+recursiveProductInitBinder _ _ _ = error "TODO"
+
+-- | The template for the 'make' and 'new' functions for a concrete deftype.
+recursiveProductInit :: AllocationMode -> Ty -> [XObj] -> Template
+recursiveProductInit allocationMode originalStructTy@(StructTy (ConcreteNameTy _) _) membersXObjs =
+  let pairs = memberXObjsToPairs membersXObjs
+      unitless = remove (isUnit . snd)
+      unrec = map go . unitless
+      go (x, (RecTy t)) = (x, t)
+      go (x, t) = (x, t)
+   in Template
+        (FuncTy (map snd (unrec pairs)) (VarTy "p") StaticLifetimeTy)
+        ( \(FuncTy _ concreteStructTy _) ->
+            let mappings = unifySignatures originalStructTy concreteStructTy
+                correctedMembers = replaceGenericTypeSymbolsOnMembers mappings membersXObjs
+                memberPairs = memberXObjsToPairs correctedMembers
+             in (toTemplate $ "$p $NAME(" ++ joinWithComma (map memberArg (unrec memberPairs)) ++ ")")
+        )
+        ( \(FuncTy _ concreteStructTy _) ->
+            let mappings = unifySignatures originalStructTy concreteStructTy
+                correctedMembers = replaceGenericTypeSymbolsOnMembers mappings membersXObjs
+             in productInitTokens allocationMode (show originalStructTy) correctedMembers
+        )
+        (\FuncTy {} -> [])
+  where memberArg :: (String, Ty) -> String
+        memberArg (memberName, memberTy) =
+          tyToCLambdaFix (templatizeTy memberTy) ++ " " ++ memberName
+        templatizeTy :: Ty -> Ty
+        templatizeTy (VarTy vt) = VarTy ("$" ++ vt)
+        templatizeTy (FuncTy argTys retTy ltTy) = FuncTy (map templatizeTy argTys) (templatizeTy retTy) (templatizeTy ltTy)
+        templatizeTy (StructTy name tys) = StructTy name (map templatizeTy tys)
+        templatizeTy (RefTy t lt) = RefTy (templatizeTy t) (templatizeTy lt)
+        templatizeTy (PointerTy t) = PointerTy (templatizeTy t)
+        templatizeTy t = t
+recursiveProductInit _ _ _ = error "concreteinit"
+
+productInitTokens :: AllocationMode -> String -> [XObj] -> [Token]
+productInitTokens allocationMode typeName membersXObjs =
+  let pairs = (memberXObjsToPairs membersXObjs)
+   in toTemplate $
+        unlines
+          [ "$DECL {",
+            case allocationMode of
+              StackAlloc -> "    $p instance;"
+              HeapAlloc  -> "    $p *instance = CARP_MALLOC(sizeof(" ++ typeName ++ "));",
+            assignments pairs,
+            "    return *instance;",
+            "}"
+          ]
+  where
+    assignments ps = go (remove (isUnit . snd) ps)
+      where
+        go [] = ""
+        go xobjs = joinLines $ assign allocationMode <$> xobjs
+        assign _ (name, (RecTy _)) =
+          "    instance" ++ "->" ++ name ++ " = " ++ "CARP_MALLOC(sizeof(" ++ typeName ++ "));\n"
+          ++ "    *instance->" ++ name ++ " = " ++ name ++ ";\n"
+          -- ++ "    instance" ++ "->" ++ name ++ " = " ++ "&" ++ name ++ ";\n"
+          -- ++ "    " ++ typeName ++"_delete(" ++ name ++ ");"
+        assign alloc (name, _) =
+          let accessor = case alloc of
+                           StackAlloc -> "."
+                           HeapAlloc ->  "->"
+           in "    instance" ++ accessor ++ name ++ " = " ++ name ++ ";"
 
 -- | The template for the 'make' and 'new' functions for a concrete deftype.
 recursiveProductMake :: AllocationMode -> Ty -> [XObj] -> Template
@@ -104,82 +184,21 @@ productMakeTokens allocationMode typeName membersXObjs =
       where
         go [] = ""
         go xobjs = joinLines $ assign allocationMode <$> xobjs
-        assign alloc (name, ty) = 
+        assign alloc (name, ty) =
           let accessor = case alloc of
                            StackAlloc -> "."
                            HeapAlloc ->  "->"
-           in if isRecType ty 
+           in if isRecType ty
                 then "    instance" ++ accessor ++ name ++ " = " ++ "NULL ;"
                 else "    instance" ++ accessor ++ name ++ " = " ++ name ++ ";"
 
----- | Generate a list of types from a deftype declaration.
---initArgListTypes :: [XObj] -> [Ty]
---initArgListTypes xobjs =
---  map (fromJust . xobjToTy . snd) (pairwise xobjs)
+-- | The template for getters of recursive types.
+recTemplateGetter :: String -> Ty -> Template
+recTemplateGetter member (RecTy t) =
+  Template
+    (FuncTy [RefTy (VarTy "p") (VarTy "q")] (RefTy t (VarTy "q")) StaticLifetimeTy)
+    (const (toTemplate ((tyToC (PointerTy t)) ++ " $NAME($(Ref p) p)")))
+    (const $ toTemplate ("$DECL { return p->" ++ member ++"; }\n"))
+    (const [])
+recTemplateGetter _ _ = error "rectemplate getter"
 
---tokensForRecInit :: AllocationMode -> String -> [XObj] -> [Token]
---tokensForRecInit allocationMode typeName membersXObjs =
---  toTemplate $
---    unlines
---      [ "$DECL {",
---        case allocationMode of
---          StackAlloc -> case unitless of
---            -- if this is truly a memberless struct, init it to 0;
---            -- This can happen, e.g. in cases where *all* members of the struct are of type Unit.
---            -- Since we do not generate members for Unit types.
---            [] -> "    $p instance = {};"
---            _ -> "    $p instance;"
---          HeapAlloc -> "    $p instance = CARP_MALLOC(sizeof(" ++ typeName ++ "));",
---        assignments membersXObjs,
---        recAssignment recmembers,
---        "    return instance;",
---        "}"
---      ]
---  where
---    recmembers = filter (isRecType . snd) (memberXObjsToPairs membersXObjs)
---    assignments [] = "    instance.__dummy = 0;"
---    assignments _ = go unitless
---      where
---        go [] = ""
---        go xobjs = joinLines $ memberAssignment allocationMode . fst <$> xobjs
---    unitless = remove isRecType (remove (isUnit . snd) (memberXObjsToPairs membersXObjs))
---    recAssignment xs = 
---
---memberAssignment :: AllocationMode -> String -> String
---memberAssignment allocationMode memberName = "    instance" ++ sep ++ memberName ++ " = " ++ memberName ++ ";"
---  where
---    sep = case allocationMode of
---      StackAlloc -> "."
---      HeapAlloc -> "->"
-
-
---
----- | The template for the 'init' and 'new' functions for a generic deftype.
---genericInit :: AllocationMode -> [String] -> Ty -> [XObj] -> (String, Binder)
---genericInit allocationMode pathStrings originalStructTy@(StructTy (ConcreteNameTy _) _) membersXObjs =
---  defineTypeParameterizedTemplate templateCreator path t docs
---  where
---    path = SymPath pathStrings "init"
---    t = FuncTy (map snd (memberXObjsToPairs membersXObjs)) originalStructTy StaticLifetimeTy
---    docs = "creates a `" ++ show originalStructTy ++ "`."
---    templateCreator = TemplateCreator $
---      \typeEnv env ->
---        Template
---          (FuncTy (map snd (memberXObjsToPairs membersXObjs)) (VarTy "p") StaticLifetimeTy)
---          ( \(FuncTy _ concreteStructTy _) ->
---              let mappings = unifySignatures originalStructTy concreteStructTy
---                  correctedMembers = replaceGenericTypeSymbolsOnMembers mappings membersXObjs
---                  memberPairs = memberXObjsToPairs correctedMembers
---               in (toTemplate $ "$p $NAME(" ++ joinWithComma (map memberArg (remove (isUnit . snd) memberPairs)) ++ ")")
---          )
---          ( \(FuncTy _ concreteStructTy _) ->
---              let mappings = unifySignatures originalStructTy concreteStructTy
---                  correctedMembers = replaceGenericTypeSymbolsOnMembers mappings membersXObjs
---               in tokensForInit allocationMode (show originalStructTy) correctedMembers
---          )
---          ( \(FuncTy _ concreteStructTy _) ->
---              case concretizeType typeEnv env concreteStructTy of
---                Left _ -> []
---                Right ok -> ok
---          )
---genericInit _ _ _ _ = error "genericinit"
