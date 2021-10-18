@@ -49,14 +49,11 @@ and then all intermediate values.
 For example, a scan using `Int.+` over the array [1 1 1 1 1] (starting at 0) will return [0 1 2 3 4 5].")
   (defn scan [f x xs]
     (let [n (length xs)
-          ys (allocate (inc n))
-          total x]
+          ys (allocate (inc n))]
       (do
-        (aset! &ys 0 @&total)
-        (for [i 0 n]
-          (do
-            (set! total (~f total (unsafe-nth xs i)))
-            (aset! &ys (inc i) @&total)))
+        (aset! &ys 0 @&x)
+        (for [i 1 (inc n)]
+          (aset! &ys i (~f (unsafe-nth &ys (dec i)) (unsafe-nth xs (dec i)))))
         ys)))
 
   (doc endo-scan "Similar to `Array.scan`, but uses the first element of the array as the starting value.

@@ -337,15 +337,15 @@
                     "map-reduce works")
   (assert-ref-equal test
                     [0 1 2 3 4 5]
-                    (scan &(fn [x y] (+ x @y)) 0 &[1 1 1 1 1])
+                    (scan &(fn [x y] (+ @x @y)) 0 &[1 1 1 1 1])
                     "scan works")
   (assert-ref-equal test
                     [@"" @"a" @"ab" @"abc"]
-                    (Array.scan &(fn [a b] (String.append &a b)) @"" &[@"a" @"b" @"c"])
+                    (Array.scan &(fn [a b] (String.append a b)) @"" &[@"a" @"b" @"c"])
                     "scan works on managed type")
   (assert-ref-equal test
                     [1 2 3 4 5]
-                    (endo-scan &Int.+ [1 1 1 1 1])
+                    (endo-scan &(fn [x y] (+ @x @y)) [1 1 1 1 1])
                     "endo-scan works")
   (assert-ref-equal test
                     [@"a" @"ab" @"abc"]
