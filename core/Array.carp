@@ -56,7 +56,7 @@ For example, a scan using `Int.+` over the array [1 1 1 1 1] (starting at 0) wil
           (aset! &ys i (~f (unsafe-nth &ys (dec i)) (unsafe-nth xs (dec i)))))
         ys)))
 
-  (doc endo-scan "Similar to `Array.scan`, but uses the first element of the array as the starting value.
+  (doc endo-scan "Like `Array.scan`, but uses the first element of the array as the starting value.
 Also does not create a new array, but reuses the initial one instead (by taking ownership over `xs`.)
 
 For example, an endo-scan using `Int.+` over the array [1 1 1 1 1] will return [1 2 3 4 5]")
