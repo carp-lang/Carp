@@ -335,4 +335,12 @@
                     (Pair.init 6 [2 4 6])
                     (map-reduce &(fn [acc x] (Pair.init (+ @x @acc) (* @x 2))) 0 &[1 2 3])
                     "map-reduce works")
+  (assert-ref-equal test
+                    [0 1 2 3 4 5]
+                    (scan &Int.+ 0 &[1 1 1 1 1])
+                    "scan works")
+  (assert-ref-equal test
+                    [1 2 3 4 5]
+                    (endo-scan &Int.+ [1 1 1 1 1])
+                    "endo-scan works")
 )
