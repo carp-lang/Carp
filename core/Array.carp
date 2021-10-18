@@ -50,13 +50,13 @@ For example, a scan using `Int.+` over the array [1 1 1 1 1] (starting at 0) wil
   (defn scan [f x xs]
     (let [n (length xs)
           ys (allocate (inc n))
-          r x]
+          total x]
       (do
-        (aset! &ys 0 r)
+        (aset! &ys 0 @&total)
         (for [i 0 n]
           (do
-            (set! r (~f r @(unsafe-nth xs i)))
-            (aset! &ys (inc i) r)))
+            (set! total (~f total (unsafe-nth xs i)))
+            (aset! &ys (inc i) @&total)))
         ys)))
 
   (doc endo-scan "Similar to `Array.scan`, but uses the first element of the array as the starting value.
@@ -67,7 +67,7 @@ For example, an endo-scan using `Int.+` over the array [1 1 1 1 1] will return [
     (let [n (length &xs)]
       (do
         (for [i 1 n]
-          (aset! &xs i (~f @(unsafe-nth &xs (dec i)) @(unsafe-nth &xs i))))
+          (aset! &xs i (~f (unsafe-nth &xs (dec i)) (unsafe-nth &xs i))))
         xs)))
 
   (doc empty? "checks whether the array `a` is empty.")
