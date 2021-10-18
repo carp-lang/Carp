@@ -17,7 +17,5 @@ isManaged _ _ StringTy =
   True
 isManaged _ _ PatternTy =
   True
-isManaged _ _ (RecTy _) =
-  True
 isManaged _ _ _ =
   False

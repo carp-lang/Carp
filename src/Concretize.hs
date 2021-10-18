@@ -902,8 +902,10 @@ concreteDeleteTakePtr typeEnv env members =
 -- | Generate the C code for deleting a single member of the deftype.
 -- | TODO: Should return an Either since this can fail!
 memberDeletionGeneral :: String -> TypeEnv -> Env -> (String, Ty) -> String
-memberDeletionGeneral separator _ _ (memberName, (RecTy _)) =
-  "    " ++ "CARP_FREE(p" ++ separator ++ memberName ++ ");"
+memberDeletionGeneral separator _ _ (memberName, (RecTy t)) =
+  "    if(p"++ separator ++ memberName ++") {" ++ recur ++ "CARP_FREE(p" ++ separator ++ memberName ++ "); p" ++ separator ++ memberName ++ "= NULL;}"
+  -- TODO: Brittle. Come up with a better solution.
+  where recur = tyToC t ++ "_delete(*p" ++ separator ++ memberName ++ "); "
 memberDeletionGeneral separator typeEnv env (memberName, memberType) =
   case findFunctionForMember typeEnv env "delete" (typesDeleterFunctionType memberType) (memberName, memberType) of
     FunctionFound functionFullName -> "    " ++ functionFullName ++ "(p" ++ separator ++ memberName ++ ");"
