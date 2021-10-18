@@ -46,7 +46,7 @@ It will sum the previous sum with each new value, starting at `0`.")
   (doc scan "Similar to `Array.reduce`, but instead returns an array with the starting element,
 and then all intermediate values.
 
-For example, a scan using `Int.+` over the array [1 1 1 1 1] (starting at 0) will return [0 1 2 3 4 5]")
+For example, a scan using `Int.+` over the array [1 1 1 1 1] (starting at 0) will return [0 1 2 3 4 5].")
   (defn scan [f x xs]
     (let [n (length xs)
           ys (allocate (inc n))
@@ -55,9 +55,20 @@ For example, a scan using `Int.+` over the array [1 1 1 1 1] (starting at 0) wil
         (aset! &ys 0 r)
         (for [i 0 n]
           (do
-            (set! r (f r @(unsafe-nth xs i)))
+            (set! r (~f r @(unsafe-nth xs i)))
             (aset! &ys (inc i) r)))
         ys)))
+
+  (doc endo-scan "Similar to `Array.scan`, but uses the first element of the array as the starting value.
+Also does not create a new array, but reuses the initial one instead (by taking ownership over `xs`.)
+
+For example, an endo-scan using `Int.+` over the array [1 1 1 1 1] will return [1 2 3 4 5]")
+  (defn endo-scan [f xs]
+    (let [n (length &xs)]
+      (do
+        (for [i 1 n]
+          (aset! &xs i (~f @(unsafe-nth &xs (dec i)) @(unsafe-nth &xs i))))
+        xs)))
 
   (doc empty? "checks whether the array `a` is empty.")
   (defn empty? [a]
