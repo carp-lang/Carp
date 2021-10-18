@@ -33,8 +33,7 @@ memberPrn _ _ (_, (RecTy t)) =
   unlines
     [ "  temp = \"" ++ tyToC t ++ "\";",
       "  sprintf(bufferPtr, \"%s \", temp);",
-      "  bufferPtr += strlen(temp) + 1;",
-      "  if(temp) { CARP_FREE(temp); temp = NULL; }"
+      "  bufferPtr += strlen(temp) + 1;"
     ]
 memberPrn typeEnv env (memberName, memberTy) =
   let (prefix, strFuncType) = memberStrCallingConvention "prn" typeEnv env memberTy
@@ -63,8 +62,7 @@ memberPrnSize :: TypeEnv -> Env -> (String, Ty) -> String
 memberPrnSize _ _ (_, (RecTy t)) =
    unlines
       [ "  temp = \"" ++ tyToC t ++ "\";",
-        "  size += snprintf(NULL, 0, \"%s \", temp);",
-        "  if(temp) { CARP_FREE(temp); temp = NULL; }"
+        "  size += snprintf(NULL, 0, \"%s \", temp);"
       ]
 memberPrnSize typeEnv env (memberName, memberTy) =
   let (prefix, strFuncType) = memberStrCallingConvention "prn" typeEnv env memberTy
