@@ -63,7 +63,7 @@ recursiveProductInitBinder insidePath structTy@(StructTy (ConcreteNameTy _) _) [
     instanceBinder
       (SymPath insidePath "init")
       (FuncTy (initArgListTypes membersXObjs) structTy StaticLifetimeTy)
-      (recursiveProductInit HeapAlloc structTy membersXObjs)
+      (recursiveProductInit StackAlloc structTy membersXObjs)
       ("creates a `" ++ show structTy ++ "`.")
   where initArgListTypes :: [XObj] -> [Ty]
         initArgListTypes xobjs =
@@ -116,7 +116,7 @@ productInitTokens allocationMode typeName membersXObjs =
               StackAlloc -> "    $p instance;"
               HeapAlloc  -> "    $p *instance = CARP_MALLOC(sizeof(" ++ typeName ++ "));",
             assignments pairs,
-            "    return *instance;",
+            "    return instance;",
             "}"
           ]
   where
@@ -125,8 +125,8 @@ productInitTokens allocationMode typeName membersXObjs =
         go [] = ""
         go xobjs = joinLines $ assign allocationMode <$> xobjs
         assign _ (name, (RecTy _)) =
-          "    instance" ++ "->" ++ name ++ " = " ++ "CARP_MALLOC(sizeof(" ++ typeName ++ "));\n"
-          ++ "    *instance->" ++ name ++ " = " ++ name ++ ";\n"
+          "    instance" ++ "." ++ name ++ " = " ++ "CARP_MALLOC(sizeof(" ++ typeName ++ "));\n"
+          ++ "    *instance." ++ name ++ " = " ++ name ++ ";\n"
           -- ++ "    instance" ++ "->" ++ name ++ " = " ++ "&" ++ name ++ ";\n"
           -- ++ "    " ++ typeName ++"_delete(" ++ name ++ ");"
         assign alloc (name, _) =
