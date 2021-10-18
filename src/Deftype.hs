@@ -59,11 +59,17 @@ moduleForDeftype innerEnv typeEnv env pathStrings typeName typeVariables rest i 
       -- The variable 'insidePath' is the path used for all member functions inside the 'typeModule'.
       -- For example (module Vec2 [x Float]) creates bindings like Vec2.create, Vec2.x, etc.
       insidePath = pathStrings ++ [typeName]
+      initmembers = case rest of
+                      -- ANSI C does not allow empty structs. We add a dummy member here to account for this.
+                      -- Note that we *don't* add this member for external types--we leave those definitions up to the user.
+                      -- The corresponding field is emitted for the struct definition in Emit.hs
+                      [(XObj (Arr []) ii t)] -> [(XObj (Arr [(XObj (Sym (SymPath [] "__dummy") Symbol) Nothing Nothing), (XObj (Sym (SymPath [] "Char") Symbol) Nothing Nothing)]) ii t)]
+                      _ -> rest
    in do
         validateMemberCases typeEnv env typeVariables rest
         let structTy = StructTy (ConcreteNameTy (SymPath pathStrings typeName)) typeVariables
         (okMembers, membersDeps) <- templatesForMembers typeEnv env insidePath structTy rest
-        okInit <- binderForInit insidePath structTy rest
+        okInit <- binderForInit insidePath structTy initmembers
         (okStr, strDeps) <- binderForStrOrPrn typeEnv env insidePath structTy rest "str"
         (okPrn, _) <- binderForStrOrPrn typeEnv env insidePath structTy rest "prn"
         (okDelete, deleteDeps) <- binderForDelete typeEnv env insidePath structTy rest
@@ -336,15 +342,21 @@ templateUpdater member _ =
 -- | Helper function to create the binder for the 'init' template.
 binderForInit :: [String] -> Ty -> [XObj] -> Either TypeError (String, Binder)
 binderForInit insidePath structTy@(StructTy (ConcreteNameTy _) _) [XObj (Arr membersXObjs) _ _] =
-  if isTypeGeneric structTy
-    then Right (genericInit StackAlloc insidePath structTy membersXObjs)
-    else
-      Right $
-        instanceBinder
-          (SymPath insidePath "init")
-          (FuncTy (initArgListTypes membersXObjs) structTy StaticLifetimeTy)
-          (concreteInit StackAlloc structTy membersXObjs)
-          ("creates a `" ++ show structTy ++ "`.")
+  -- Remove the __dummy field from the members array to ensure we can call the initializer with no arguments.
+  -- See the implementation of moduleForDeftype for more details.
+  let nodummy = case membersXObjs of
+                  [(XObj (Sym (SymPath [] "__dummy") Symbol) Nothing Nothing), (XObj (Sym (SymPath [] "Char") Symbol) Nothing Nothing)] -> []
+                  _ -> membersXObjs
+   in if isTypeGeneric structTy
+        then Right (genericInit StackAlloc insidePath structTy membersXObjs)
+        else
+          Right $
+            instanceBinder
+              (SymPath insidePath "init")
+              -- don't include the dummy field in arg lists
+              (FuncTy (initArgListTypes nodummy) structTy StaticLifetimeTy)
+              (concreteInit StackAlloc structTy membersXObjs)
+              ("creates a `" ++ show structTy ++ "`.")
 binderForInit _ _ _ = error "binderforinit"
 
 -- | Generate a list of types from a deftype declaration.
@@ -361,7 +373,7 @@ concreteInit allocationMode originalStructTy@(StructTy (ConcreteNameTy _) _) mem
         let mappings = unifySignatures originalStructTy concreteStructTy
             correctedMembers = replaceGenericTypeSymbolsOnMembers mappings membersXObjs
             memberPairs = memberXObjsToPairs correctedMembers
-         in (toTemplate $ "$p $NAME(" ++ joinWithComma (map memberArg (unitless memberPairs)) ++ ")")
+         in (toTemplate $ "$p $NAME(" ++ joinWithComma (map memberArg (nodummy (unitless memberPairs))) ++ ")")
     )
     ( \(FuncTy _ concreteStructTy _) ->
         let mappings = unifySignatures originalStructTy concreteStructTy
@@ -371,6 +383,9 @@ concreteInit allocationMode originalStructTy@(StructTy (ConcreteNameTy _) _) mem
     (\FuncTy {} -> [])
   where
     unitless = remove (isUnit . snd)
+    nodummy  = remove (isDummy . fst)
+    isDummy "__dummy" = True
+    isDummy _ = False
 concreteInit _ _ _ = error "concreteinit"
 
 -- | The template for the 'init' and 'new' functions for a generic deftype.
@@ -379,7 +394,7 @@ genericInit allocationMode pathStrings originalStructTy@(StructTy (ConcreteNameT
   defineTypeParameterizedTemplate templateCreator path t docs
   where
     path = SymPath pathStrings "init"
-    t = FuncTy (map snd (memberXObjsToPairs membersXObjs)) originalStructTy StaticLifetimeTy
+    t = FuncTy (map snd (nodummy (memberXObjsToPairs membersXObjs))) originalStructTy StaticLifetimeTy
     docs = "creates a `" ++ show originalStructTy ++ "`."
     templateCreator = TemplateCreator $
       \typeEnv env ->
@@ -389,7 +404,7 @@ genericInit allocationMode pathStrings originalStructTy@(StructTy (ConcreteNameT
               let mappings = unifySignatures originalStructTy concreteStructTy
                   correctedMembers = replaceGenericTypeSymbolsOnMembers mappings membersXObjs
                   memberPairs = memberXObjsToPairs correctedMembers
-               in (toTemplate $ "$p $NAME(" ++ joinWithComma (map memberArg (remove (isUnit . snd) memberPairs)) ++ ")")
+               in (toTemplate $ "$p $NAME(" ++ joinWithComma (map memberArg (nodummy (remove (isUnit . snd) memberPairs))) ++ ")")
           )
           ( \(FuncTy _ concreteStructTy _) ->
               let mappings = unifySignatures originalStructTy concreteStructTy
@@ -401,6 +416,9 @@ genericInit allocationMode pathStrings originalStructTy@(StructTy (ConcreteNameT
                 Left _ -> []
                 Right ok -> ok
           )
+    nodummy  = remove (isDummy . fst)
+    isDummy "__dummy" = True
+    isDummy _ = False
 genericInit _ _ _ _ = error "genericinit"
 
 tokensForInit :: AllocationMode -> String -> [XObj] -> [Token]
@@ -421,7 +439,7 @@ tokensForInit allocationMode typeName membersXObjs =
         "}"
       ]
   where
-    assignments [] = "    instance.__dummy = 0;"
+    assignments [] = ""
     assignments _ = go unitless
       where
         go [] = ""
@@ -537,9 +555,13 @@ calculateStructStrSize typeEnv env members s@(StructTy (ConcreteNameTy _) _) =
 calculateStructStrSize _ _ _ _ = error "calculatestructstrsize"
 
 -- | Generate C code for assigning to a member variable.
--- | Needs to know if the instance is a pointer or stack variable.
+-- Needs to know if the instance is a pointer or stack variable.
+-- Also handles the special dummy member we add for empty structs to be ANSI C compatible.
 memberAssignment :: AllocationMode -> String -> String
-memberAssignment allocationMode memberName = "    instance" ++ sep ++ memberName ++ " = " ++ memberName ++ ";"
+memberAssignment allocationMode memberName =
+  case memberName of
+    "__dummy" -> "    instance" ++ sep ++ memberName ++ " = " ++ "0" ++ ";"
+    _ -> "    instance" ++ sep ++ memberName ++ " = " ++ memberName ++ ";"
   where
     sep = case allocationMode of
       StackAlloc -> "."

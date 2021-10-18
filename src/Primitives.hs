@@ -263,7 +263,10 @@ primitiveRegisterTypeWithFields ctx x t override members =
             Right ctx' = update ctx
         -- TODO: Another case where define does not get formally qualified deps!
         contextWithDefs <- liftIO $ foldM (define True) ctx' (map Qualified deps)
-        pure (contextWithDefs, dynamicNil)
+        autoDerive contextWithDefs (StructTy (ConcreteNameTy (unqualify path')) [])
+          [ lookupBinderInTypeEnv contextWithDefs (markQualified (SymPath [] "str")),
+            lookupBinderInTypeEnv contextWithDefs (markQualified (SymPath [] "prn"))
+          ]
     path = SymPath [] t
     preExistingModule = case lookupBinderInGlobalEnv ctx path of
       Right (Binder _ (XObj (Mod found et) _ _)) -> Just (found, et)
@@ -612,6 +615,10 @@ deftype ctx x@(XObj (Sym (SymPath [] name) _) _ _) constructor =
     case e of
       Left err -> pure (evalError ctx (show err) (xobjInfo x))
       Right t -> autoDerive ctxWithType t
+        [ lookupBinderInTypeEnv ctxWithType (markQualified (SymPath [] "delete")),
+          lookupBinderInTypeEnv ctxWithType (markQualified (SymPath [] "str")),
+          lookupBinderInTypeEnv ctxWithType (markQualified (SymPath [] "copy"))
+        ]
 deftype ctx x@(XObj (Lst ((XObj (Sym (SymPath [] name) _) _ _) : tyvars)) _ _) constructor =
   do
     (ctxWithType, e) <-
@@ -623,6 +630,10 @@ deftype ctx x@(XObj (Lst ((XObj (Sym (SymPath [] name) _) _ _) : tyvars)) _ _) c
     case e of
       Left err -> pure (evalError ctx (show err) (xobjInfo x))
       Right t -> autoDerive ctxWithType t
+        [ lookupBinderInTypeEnv ctxWithType (markQualified (SymPath [] "delete")),
+          lookupBinderInTypeEnv ctxWithType (markQualified (SymPath [] "str")),
+          lookupBinderInTypeEnv ctxWithType (markQualified (SymPath [] "copy"))
+        ]
 deftype ctx name _ = pure $ toEvalError ctx name (InvalidTypeName name)
 
 checkVariables :: [XObj] -> Maybe [Ty]
@@ -658,21 +669,17 @@ unwrapTypeErr ctx (Left err) = Left (typeErrorToString ctx err)
 unwrapTypeErr _ (Right x) = Right x
 
 -- | Automatically derive implementations of interfaces.
-autoDerive :: Context -> Ty -> IO (Context, Either EvalError XObj)
-autoDerive c ty =
+autoDerive :: Context -> Ty -> [Either ContextError Binder] -> IO (Context, Either EvalError XObj)
+autoDerive c ty interfaces =
   let (SymPath mods tyname) = (getStructPath ty)
       implBinder :: String -> Ty -> Binder
       implBinder name t = Binder emptyMeta (XObj (Sym (SymPath (mods ++ [tyname]) name) Symbol) (Just dummyInfo) (Just t))
       getSig :: String -> Ty
       getSig "delete" = FuncTy [ty] UnitTy StaticLifetimeTy
       getSig "str" = FuncTy [RefTy ty (VarTy "q")] StringTy StaticLifetimeTy
+      getSig "prn" = FuncTy [RefTy ty (VarTy "q")] StringTy StaticLifetimeTy
       getSig "copy" = FuncTy [RefTy ty (VarTy "q")] ty StaticLifetimeTy
       getSig _ = VarTy "z"
-      interfaces =
-        [ lookupBinderInTypeEnv c (markQualified (SymPath [] "delete")),
-          lookupBinderInTypeEnv c (markQualified (SymPath [] "str")),
-          lookupBinderInTypeEnv c (markQualified (SymPath [] "copy"))
-        ]
       registration interface =
         let name = getSimpleName (binderXObj interface)
             sig = getSig name
