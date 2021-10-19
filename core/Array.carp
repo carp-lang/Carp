@@ -51,9 +51,9 @@ For example, a scan using `Int.+` over the array [1 1 1 1 1] (starting at 0) wil
     (let [n (length xs)
           ys (allocate (inc n))]
       (do
-        (aset! &ys 0 @&x)
+        (aset-uninitialized! &ys 0 @&x)
         (for [i 1 (inc n)]
-          (aset! &ys i (~f (unsafe-nth &ys (dec i)) (unsafe-nth xs (dec i)))))
+          (aset-uninitialized! &ys i (~f (unsafe-nth &ys (dec i)) (unsafe-nth xs (dec i)))))
         ys)))
 
   (doc endo-scan "Like `Array.scan`, but uses the first element of the array as the starting value.
