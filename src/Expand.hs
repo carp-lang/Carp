@@ -284,6 +284,7 @@ expand eval ctx xobj =
         matchDef (XObj (Lst (XObj (Defn _) _ _ : _)) _ _) = xobj
         matchDef (XObj (Lst (XObj Def _ _ : _)) _ _) = xobj
         matchDef (XObj (Lst (XObj MetaStub _ _ : _)) _ _) = xobj
+        matchDef (XObj (Mod _ _) _ _) = xobj
         matchDef x = x
     expandSymbol _ = pure (evalError ctx "Can't expand non-symbol in expandSymbol." Nothing)
     successiveExpand (ctx', acc) e =
