@@ -228,6 +228,8 @@ primitiveRegisterType _ ctx [XObj (Sym (SymPath [] t) _) _ _] =
   primitiveRegisterTypeWithoutFields ctx t Nothing
 primitiveRegisterType _ ctx [x] =
   pure (evalError ctx ("`register-type` takes a symbol, but it got " ++ pretty x) (xobjInfo x))
+primitiveRegisterType _ ctx [x@(XObj (Sym (SymPath [] _) _) _ _), XObj (Str "") _ _] =
+  pure (evalError ctx ("cannot register type " ++ pretty x ++ " with an empty string override, this will produce invalid C") (xobjInfo x))
 primitiveRegisterType _ ctx [XObj (Sym (SymPath [] t) _) _ _, XObj (Str override) _ _] =
   primitiveRegisterTypeWithoutFields ctx t (Just override)
 primitiveRegisterType _ ctx [x@(XObj (Sym (SymPath [] t) _) _ _), XObj (Str override) _ _, members] =
