@@ -41,6 +41,19 @@ expand eval ctx xobj =
     Lst _ -> expandList xobj
     Arr _ -> expandArray xobj
     Sym _ _ -> expandSymbol xobj
+    -- This case is needed to ensure we expand naked mod names to initers consistently.
+    -- Consider both:
+    --   (width (address &(B 2)))
+    --   (width B)
+    -- The first case is correct code and was handled by expandList. The second case is an error and previously resulted in a loop because
+    -- module expansion wasn't handled in expandSymbol, but handling it there
+    -- by ending the expansion loop breaks init expansion in the first case,
+    -- since expandList calls expand.
+    -- So, we have no choice but to add a case here to cut the recursion and to expand this form consistently in all places.
+    Mod e _ ->
+      let pathToModule = pathToEnv e
+          implicitInit = XObj (Sym (SymPath pathToModule "init") Symbol) (xobjInfo xobj) (xobjTy xobj)
+       in pure (ctx, Right implicitInit)
     _ -> pure (ctx, Right xobj)
   where
     expandList :: XObj -> IO (Context, Either EvalError XObj)
