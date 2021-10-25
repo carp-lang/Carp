@@ -384,17 +384,29 @@ toC toCMode (Binder meta root) = emitterSrc (execState (visit startingIndent roo
               emitCaseMatcher :: (String, String) -> String -> XObj -> Integer -> State EmitterState ()
               emitCaseMatcher (periodOrArrow, ampersandOrNot) caseName (XObj (Sym path _) _ t) index =
                 let Just tt = t
-                 in appendToSrc
-                      ( addIndent indent' ++ tyToCLambdaFix tt ++ " " ++ pathToC path ++ " = "
-                          ++ ampersandOrNot
-                          ++ tempVarToAvoidClash
-                          ++ periodOrArrow
-                          ++ "u."
-                          ++ mangle caseName
-                          ++ ".member"
-                          ++ show index
-                          ++ ";\n"
-                      )
+                 in if tt == exprTy
+                      then appendToSrc
+                              ( addIndent indent' ++ tyToCLambdaFix tt ++ " " ++ pathToC path ++ " = "
+                                  ++ "*"
+                                  ++ tempVarToAvoidClash
+                                  ++ periodOrArrow
+                                  ++ "u."
+                                  ++ mangle caseName
+                                  ++ ".member"
+                                  ++ show index
+                                  ++ ";\n"
+                              )
+                      else appendToSrc
+                              ( addIndent indent' ++ tyToCLambdaFix tt ++ " " ++ pathToC path ++ " = "
+                                  ++ ampersandOrNot
+                                  ++ tempVarToAvoidClash
+                                  ++ periodOrArrow
+                                  ++ "u."
+                                  ++ mangle caseName
+                                  ++ ".member"
+                                  ++ show index
+                                  ++ ";\n"
+                              )
               emitCaseMatcher periodOrArrow caseName (XObj (Lst (XObj (Sym (SymPath _ innerCaseName) _) _ _ : xs)) _ _) index =
                 zipWithM_ (\x i -> emitCaseMatcher periodOrArrow (caseName ++ ".member" ++ show i ++ ".u." ++ removeSuffix innerCaseName) x index) xs ([0 ..] :: [Int])
               emitCaseMatcher _ _ xobj _ =
