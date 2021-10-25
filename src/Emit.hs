@@ -530,7 +530,8 @@ toC toCMode (Binder meta root) = emitterSrc (execState (visit startingIndent roo
             var <- visit indent value
             let Just t = ty
                 fresh = mangle (freshVar info)
-            appendToSrc (addIndent indent ++ tyToCLambdaFix t ++ " " ++ fresh ++ " = " ++ var ++ "; // From the 'the' function.\n")
+            unless (isUnit t)
+              (appendToSrc (addIndent indent ++ tyToCLambdaFix t ++ " " ++ fresh ++ " = " ++ var ++ "; // From the 'the' function.\n"))
             pure fresh
         -- Ref
         [XObj Ref _ _, value] ->
