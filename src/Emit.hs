@@ -867,7 +867,7 @@ defSumtypeToDeclaration sumTy@(StructTy _ _) rest =
                    appendToSrc ("struct " ++ tyToC sumTy ++ " {\n")
            else appendToSrc "typedef struct {\n")
         appendToSrc (addIndent indent ++ "union {\n")
-        mapM_ (emitSumtypeCase indent) rest
+        mapM_ (emitSumtypeCase indent) pointerfix
         appendToSrc (addIndent indent ++ "char __dummy;\n")
         appendToSrc (addIndent indent ++ "} u;\n")
         appendToSrc (addIndent indent ++ "char _tag;\n")
@@ -876,7 +876,7 @@ defSumtypeToDeclaration sumTy@(StructTy _ _) rest =
           (appendToSrc (" " ++ tyToC sumTy))
         appendToSrc ";\n"
         --appendToSrc ("// " ++ show typeVariables ++ "\n")
-        mapM_ emitSumtypeCaseTagDefinition (zip [0 ..] rest)
+        mapM_ emitSumtypeCaseTagDefinition (zip [0 ..] pointerfix)
       emitSumtypeCase :: Int -> XObj -> State EmitterState ()
       emitSumtypeCase ind (XObj (Lst [XObj (Sym (SymPath [] caseName) _) _ _, XObj (Arr []) _ _]) _ _) =
         appendToSrc (addIndent ind ++ "// " ++ caseName ++ "\n")

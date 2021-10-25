@@ -465,6 +465,7 @@ templatizeTy (VarTy vt) = VarTy ("$" ++ vt)
 templatizeTy (FuncTy argTys retTy ltTy) = FuncTy (map templatizeTy argTys) (templatizeTy retTy) (templatizeTy ltTy)
 templatizeTy (StructTy name tys) = StructTy name (map templatizeTy tys)
 templatizeTy (RefTy t lt) = RefTy (templatizeTy t) (templatizeTy lt)
+templatizeTy (RecTy t) = t
 templatizeTy (PointerTy t) = PointerTy (templatizeTy t)
 templatizeTy t = t
 

@@ -56,8 +56,9 @@ moduleForSumtype innerEnv typeEnv env pathStrings typeName typeVariables rest i 
       candidate = TypeCandidate {typename = typeName, variables = typeVariables, restriction = AllowOnlyNamesInScope, typemembers = rest, interfaceConstraints = [], candidateTypeEnv = typeEnv, candidateEnv = env}
    in do
         let structTy = StructTy (ConcreteNameTy (SymPath pathStrings typeName)) typeVariables
+            ptrFix = map (recursiveMembersToPointers structTy) rest
         okRecursive candidate
-        cases <- toCases typeEnv env candidate
+        cases <- toCases typeEnv env (candidate {typemembers = ptrFix})
         okIniters <- initers insidePath structTy cases
         okTag <- binderForTag insidePath structTy
         (okStr, okStrDeps) <- binderForStrOrPrn typeEnv env insidePath structTy cases "str"
@@ -91,19 +92,21 @@ binderForCaseInit _ _ _ = error "binderforcaseinit"
 
 concreteCaseInit :: AllocationMode -> [String] -> Ty -> SumtypeCase -> (String, Binder)
 concreteCaseInit allocationMode insidePath structTy sumtypeCase =
-  instanceBinder (SymPath insidePath (caseName sumtypeCase)) (FuncTy (caseTys sumtypeCase) structTy StaticLifetimeTy) template doc
+  instanceBinder (SymPath insidePath (caseName sumtypeCase)) (FuncTy (map removeRec (caseTys sumtypeCase)) structTy StaticLifetimeTy) template doc
   where
     doc = "creates a `" ++ caseName sumtypeCase ++ "`."
     template =
       Template
-        (FuncTy (caseTys sumtypeCase) (VarTy "p") StaticLifetimeTy)
+        (FuncTy (map removeRec (caseTys sumtypeCase)) (VarTy "p") StaticLifetimeTy)
         ( \(FuncTy _ concreteStructTy _) ->
             let mappings = unifySignatures structTy concreteStructTy
-                correctedTys = map (replaceTyVars mappings) (caseTys sumtypeCase)
+                correctedTys = map (replaceTyVars mappings) (map removeRec (caseTys sumtypeCase))
              in (toTemplate $ "$p $NAME(" ++ joinWithComma (zipWith (curry memberArg) anonMemberNames (remove isUnit correctedTys)) ++ ")")
         )
         (const (tokensForCaseInit allocationMode structTy sumtypeCase))
         (\FuncTy {} -> [])
+    removeRec (RecTy t) = t
+    removeRec t = t
 
 genericCaseInit :: AllocationMode -> [String] -> Ty -> SumtypeCase -> (String, Binder)
 genericCaseInit allocationMode pathStrings originalStructTy sumtypeCase =
@@ -141,18 +144,29 @@ tokensForCaseInit allocationMode sumTy@(StructTy (ConcreteNameTy _) _) sumtypeCa
           StackAlloc -> "    $p instance;"
           HeapAlloc -> "    $p instance = CARP_MALLOC(sizeof(" ++ show sumTy ++ "));",
         joinLines $ caseMemberAssignment allocationMode correctedName . fst <$> unitless,
+        joinLines $ recCaseMemberAssignment allocationMode correctedName sumTy . fst <$> recursive,
         "    instance._tag = " ++ tagName sumTy correctedName ++ ";",
         "    return instance;",
         "}"
       ]
   where
     correctedName = caseName sumtypeCase
-    unitless = zip anonMemberNames $ remove isUnit (caseTys sumtypeCase)
+    unitless  = remove (isRecType . snd) $ zip anonMemberNames  $ remove isUnit (caseTys sumtypeCase)
+    recursive = filter (isRecType . snd) $ zip anonMemberNames (caseTys sumtypeCase)
 tokensForCaseInit _ _ _ = error "tokensforcaseinit"
 
 caseMemberAssignment :: AllocationMode -> String -> String -> String
 caseMemberAssignment allocationMode caseNm memberName =
   "    instance" ++ sep ++ caseNm ++ "." ++ memberName ++ " = " ++ memberName ++ ";"
+  where
+    sep = case allocationMode of
+      StackAlloc -> ".u."
+      HeapAlloc -> "->u."
+
+recCaseMemberAssignment :: AllocationMode -> String -> Ty -> String -> String
+recCaseMemberAssignment allocationMode caseNm sumTy memberName =
+  "    instance" ++ sep ++ caseNm ++ "." ++ memberName ++ " = CARP_MALLOC(sizeof(" ++ show sumTy ++ "));\n"
+  ++ "    *instance" ++ sep ++ caseNm ++ "." ++ memberName ++ " = " ++ memberName ++ ";"
   where
     sep = case allocationMode of
       StackAlloc -> ".u."
