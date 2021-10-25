@@ -446,9 +446,7 @@ toC toCMode (Binder meta root) = emitterSrc (execState (visit startingIndent roo
                 when isNotVoid $
                   appendToSrc (addIndent indent' ++ retVar ++ " = " ++ caseExprRetVal ++ ";\n")
                 let Just caseLhsInfo' = caseLhsInfo
-                when
-                  (matchMode == MatchValue)
-                  (delete indent' caseLhsInfo')
+                delete indent' caseLhsInfo'
                 appendToSrc (addIndent indent ++ "}\n")
            in do
                 exprVar <- visit indent expr
@@ -533,7 +531,8 @@ toC toCMode (Binder meta root) = emitterSrc (execState (visit startingIndent roo
             var <- visit indent value
             let Just t = ty
                 fresh = mangle (freshVar info)
-            appendToSrc (addIndent indent ++ tyToCLambdaFix t ++ " " ++ fresh ++ " = " ++ var ++ "; // From the 'the' function.\n")
+            unless (isUnit t)
+              (appendToSrc (addIndent indent ++ tyToCLambdaFix t ++ " " ++ fresh ++ " = " ++ var ++ "; // From the 'the' function.\n"))
             pure fresh
         -- Ref
         [XObj Ref _ _, value] ->

@@ -107,6 +107,13 @@ instance Show TypeError where
   show (InvalidObj If xobj) =
     "I didn’t understand the `if` statement at " ++ prettyInfoFromXObj xobj
       ++ ".\n\nIs it valid? Every `if` needs to follow the form `(if cond iftrue iffalse)`."
+  show (InvalidObj (Mod env _) xobj) =
+    let moduleName =
+          case envModuleName env of
+            Just name -> "the module '" ++ name ++ "'"
+            Nothing -> "an unnamed module"
+     in "I didn’t understand the form mentioning " ++ moduleName ++ " at " ++ prettyInfoFromXObj xobj
+          ++ ".\n\nAre you using a module or type where a value is expected?"
   show (InvalidObj o xobj) =
     "I didn’t understand the form `" ++ prettyObj o ++ "` at "
       ++ prettyInfoFromXObj xobj

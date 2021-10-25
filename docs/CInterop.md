@@ -14,6 +14,7 @@ This is an extension of what is covered in the [Language Guide](./LanguageGuide.
     - [`Generics`](#generics)
   - [`emit-c`](#unsafe-emit-c)
   - [`preproc`](#unsafe-preproc)
+  - [Registering Types](#register-types)
 - [Callbacks](#callbacks)
 
 
@@ -408,6 +409,113 @@ You can use this technique to add provisional definitions you need to reference
 in compiler output. If your helper functions, macros, or preprocessor
 directives are lengthy or complex, you may want to define them in a separate
 `h` file and `relative-include` it in your Carp source instead.
+
+### Registering Types
+
+Carp supports a few different ways of registering types defined in C. You can
+register types using the `register-type` function. Calling `register-type` with
+only a symbol argument registers the C type with a name corresponding to the
+symbol.  For example, the following code registers the C type `A` as the type
+`A` in Carp.
+
+```c
+typedef int A;
+```
+
+```clojure
+(register-type A)
+```
+
+After this call to `register-type`, you can use the type `A` anywhere type
+names are valid in Carp code. For example, you can use it in function
+signatures:
+
+```clojure
+(sig a-prn (Fn [A] String))
+```
+
+The prior type registration *only* registers the type name in Carp. In other
+words, the type is entirely "opaque" from the perspective of your Carp program.
+Carp knows the type exists, but it knows nothing about its implementation or
+how to construct values of the type--all of that is left up to your C code.
+
+If you want to construct values of this type from Carp code, you have two
+options:
+
+1. You can define your own initializers for the type in C and register them in Carp.
+2. You can use `register-type` to generate initializers for the type in Carp.
+
+If you define an initializer for the type in C, you can access it from Carp by
+using `register`:
+
+```c
+typedef int A;
+
+A initializer() {
+  return 0;
+}
+```
+
+```clojure
+(register-type A)
+(register initializer (Fn [] A))
+;; returns a value of type A
+(initializer)
+```
+
+Alternatively, you can add a non-empty array of type members in your
+`register-type` call to have Carp generate initializers, getters and setters,
+and printing functions for the external type. The initializer Carp generates
+will only initialize the fields you specify. If you omit or misname a field,
+the generated initializer might cause errors.
+
+```clojure
+(register-type B [])
+:i B
+=> B : Type
+     init : (Fn [] B)
+     prn  : (Fn [(Ref B q)] String)
+     str  : (Fn [(Ref B q)] String)
+}
+(register-type C [x Int])
+:i C
+=> C : Type
+   C : Module {
+     init     : (Fn [Int] C)
+     prn      : (Fn [(Ref C q) String])
+     str      : (Fn [(Ref C q) String])
+     set-x    : (Fn [C, Int] C)
+     set-x!   : (Fn [(Ref C q), Int] ())
+     update-x : (Fn [C, (Ref (Fn [Int] Int) q)] C)
+     x        : (Fn [(Ref C q)] (Ref Int q))
+}
+```
+
+The `prn` and `str` functions for the type will also automatically implement
+their corresponding interfaces.
+
+Be mindful that Carp *does not manage the memory associated with external types
+by default!* Unlike types defined in Carp, Carp will not generate `copy` and
+`delete` functions for registered types. If you use generated initializers for
+a registered type for convenience, remember that you still need to manage the
+memory associated with values of the type manually. If you want Carp to manage
+the memory for a registered type, you can provide implementations of the `copy`
+and `delete` interfaces.
+
+If needed, you can override the name Carp emits for a registered type by
+providing an additional string argument. This comes in handy when the type's
+name in C does not follow lisp or Carp naming conventions. For example, the
+type in C might begin with a lowercase letter, while Carp requires all types to
+begin with uppercase letters:
+
+```clojure
+;; Emitted in C code as "A"
+(register-type A)
+;; Emitted in C code a "a_type"
+(register-type A "a_type")
+;; Emitted in C code as "b_type"
+(register-type B "b_type" [x Int])
+```
 
 ## Callbacks
 

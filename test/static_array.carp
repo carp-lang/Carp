@@ -216,4 +216,14 @@
   (assert-equal test
                 &2
                 (Pointer.to-ref (Pointer.inc (unsafe-raw $[1 2 3])))
-                "unsafe-raw works as expected II"))
+                "unsafe-raw works as expected II")
+
+  (let [arr $[1 1 1 1 1]]
+    (assert-equal test
+                  $[1 2 3 4 5]
+                  (do
+                    (StaticArray.scan! &Int.+ arr)
+                    arr)
+                  "scan! works"))
+
+  )

@@ -38,6 +38,14 @@ stack-allocated. For a more flexible, heap-allocated version, you might want to 
           (set! total (~f total (StaticArray.unsafe-nth xs i))))
         total)))
 
+    (doc scan! "Scans and replaces the array in-place, using a binary function.
+
+For example, give `(def numbers [1 1 1])`, a `scan!` using `Int.+` will mutate `numbers` to be `[1 2 3]`.")
+  (defn scan! [f xs]
+    (let [n (StaticArray.length xs)]
+      (for [i 1 n]
+        (StaticArray.aset! xs i (~f @(unsafe-nth xs (dec i)) @(unsafe-nth xs i))))))
+
   (doc = "compares two static arrays.")
   (defn = [a b]
     (if (/= (StaticArray.length a) (StaticArray.length b))
