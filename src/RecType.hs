@@ -1,10 +1,12 @@
 module RecType
   (
    recursiveMembersToPointers,
-   isRecursive,
+   isValueRecursive,
    recursiveProductMakeBinder,
    recursiveProductInitBinder,
    recTemplateGetter,
+   okRecursive,
+   isRecursive,
   )
 where
 
@@ -12,6 +14,7 @@ import Obj
 import Types
 import TypePredicates
 import TypeError
+import TypeCandidate
 import TypesToC
 import StructUtils
 import Template
@@ -19,30 +22,99 @@ import Util
 import Data.Maybe (fromJust)
 import Concretize
 import ToTemplate
+import Validate
 
+--------------------------------------------------------------------------------
+-- Base indirection recursion
+
+-- | Returns true if a candidate type definition is a valid instance of recursivity.
+-- Types have valid recursion if they refer to themselves through indirection.
+okRecursive :: TypeCandidate -> Either TypeError ()
+okRecursive candidate =
+  if any go (typemembers candidate)
+    then validateInterfaceConstraints (candidate { interfaceConstraints = concat $ map go' (typemembers candidate)})
+    else Right ()
+  where go :: XObj -> Bool
+        go (XObj (Sym (SymPath _ name) _) _ _) = name == typename candidate
+        go (XObj (Lst xs) _ _) = any go xs
+        go _ = False
+        go' x@(XObj (Lst _) _ _) = if go x
+                                     then case xobjToTy x of
+                                            Just t@(PointerTy _) -> recInterfaceConstraints t
+                                            Just t@(RefTy _ _) -> recInterfaceConstraints t
+                                            Just t@(StructTy _ [_]) -> recInterfaceConstraints t
+                                            _ -> []
+                                     else []
+        go' _ = []
+
+-- | Generates interface constraints for a recursive type.
+-- The recursive portion of recursive types must be wrapped in a type F that supports indirection.
+-- We enforce this with two interfaces:
+--   allocate: Heap allocates a value T and wraps it in type F<T>
+--   indirect: Returns T from a heap allocated F<T>
+recInterfaceConstraints :: Ty -> [InterfaceConstraint]
+recInterfaceConstraints t =
+  let members = tyMembers t
+   in case members of
+        [] -> []
+        _ -> [ InterfaceConstraint "indirect" [(FuncTy [t] (head members) StaticLifetimeTy)],
+               InterfaceConstraint "alloc" [(FuncTy [(head members)] t StaticLifetimeTy)]
+             ]
+
+-- | Returns true if a type member xobj is recursive (either through indirect recursion or "value" recursion)
 isRecursive :: Ty -> XObj -> Bool
-isRecursive structTy@(StructTy _ _) (XObj (Arr members) _ _) =
+isRecursive (StructTy (ConcreteNameTy spath) _) (XObj (Sym path _) _ _) = spath == path
+isRecursive rec (XObj (Lst xs) _ _) = any (isRecursive rec) xs
+isRecursive rec (XObj (Arr xs) _ _) = any (isRecursive rec) xs
+isRecursive _ _ = False
+
+--------------------------------------------------------------------------------
+-- **Value recursion sugar**
+--
+-- By default, all types may only be recursive using indirection.
+-- However, it can be slightly inconvenient to have to account for indirection when working with recursive types, e.g. using the box type:
+--
+--   (deftype IntList [head Int tail (Box IntList)])
+--   (IntList.init 2 (Box.init (IntList.init 1 (Box.init (IntList.init 0 Nil)))))
+--
+-- So, we also support syntactic sugar called "value recursion" that emulates recursive data type support in functional languages
+--
+--   (deftype IntList [head Int tail IntList])
+--   (IntList.init 2 (IntList.init 1 (IntList.make 0)))
+--
+-- Under the hood, the recursive type is wrapped in a Box (a heap allocated, memory-managed pointer).
+-- But we generate initers and other functions for recursive types such that
+-- all the box wrapping/unwrapping is handled by the compiler instead of the
+-- user.
+
+-- | Returns true if this type is a "value-recursive" type.
+isValueRecursive :: Ty -> XObj -> Bool
+isValueRecursive structTy@(StructTy _ _) (XObj (Arr members) _ _) =
   any go members
   where go :: XObj -> Bool
+        go (XObj (Lst xs) _ _) = any go xs
         go xobj = case xobjTy xobj of
                     Just (RecTy rec) -> rec == structTy
                     _ -> False
-isRecursive _ _ = False
+isValueRecursive _ _ = False
 
--- | Converts member xobjs in a type definition that refer to the type into pointers
+-- | Converts member xobjs in a type definition that refer to the type into pointers.
 recursiveMembersToPointers :: Ty -> XObj -> XObj
 recursiveMembersToPointers rec (XObj (Arr members) ai at) =
   (XObj (Arr (map go members)) ai at)
   where go :: XObj -> XObj
-        go x@(XObj (Sym spath _) i _) = if show spath == tyname
-                                          then (XObj (Lst [XObj (Sym (SymPath [] "RecTy") Symbol) i (Just (RecTy rec)), x]) i (Just (RecTy rec)))
-                                          else x
-        go x = x
-        tyname = getStructName rec
+        go x = case xobjToTy x of
+                 Just s@(StructTy _ _) -> convert s
+                 _ -> x
+          where convert inner = if inner == rec
+                                  then (XObj (Lst [XObj (Sym (SymPath [] "RecTy") Symbol) (xobjInfo x) (Just (RecTy rec)), (XObj (Sym (getStructPath rec) Symbol) (xobjInfo x) (Just rec))]) (xobjInfo x) (Just (RecTy rec)))
+                                  else x
+recursiveMembersToPointers rec (XObj (Lst [name, arr@(XObj (Arr _) _ _)]) li lt) =
+  (XObj (Lst [name, (recursiveMembersToPointers rec arr)]) li lt)
 recursiveMembersToPointers _ xobj = xobj
 
 --------------------------------------------------------------------------------
--- Recursive product types
+-- Value recursive product types
 
 recursiveProductMakeBinder :: [String] -> Ty -> [XObj] -> Either TypeError (String, Binder)
 recursiveProductMakeBinder insidePath structTy@(StructTy (ConcreteNameTy _) _) [XObj (Arr membersXObjs) _ _] =
@@ -69,6 +141,7 @@ recursiveProductInitBinder insidePath structTy@(StructTy (ConcreteNameTy _) _) [
         initArgListTypes xobjs =
           map (fixRec . fromJust . xobjToTy . snd) (pairwise xobjs)
         fixRec (RecTy t) = t
+        fixRec (StructTy name rest) = (StructTy name (map fixRec rest))
         fixRec t = t
 recursiveProductInitBinder _ _ _ = error "TODO"
 
@@ -124,11 +197,13 @@ productInitTokens allocationMode typeName membersXObjs =
       where
         go [] = ""
         go xobjs = joinLines $ assign allocationMode <$> xobjs
+        -- indirected recursion
+        assign _ (name, (StructTy tyName [(RecTy _)])) =
+          "    instance" ++ "." ++ name ++ " = " ++ "CARP_MALLOC(sizeof(" ++ typeName ++ "));\n" ++
+          "    *instance." ++ name ++ " = " ++ show tyName ++ "__indirect(name);\n"
         assign _ (name, (RecTy _)) =
           "    instance" ++ "." ++ name ++ " = " ++ "CARP_MALLOC(sizeof(" ++ typeName ++ "));\n"
           ++ "    *instance." ++ name ++ " = " ++ name ++ ";\n"
-          -- ++ "    instance" ++ "->" ++ name ++ " = " ++ "&" ++ name ++ ";\n"
-          -- ++ "    " ++ typeName ++"_delete(" ++ name ++ ");"
         assign alloc (name, _) =
           let accessor = case alloc of
                            StackAlloc -> "."

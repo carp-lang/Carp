@@ -4,6 +4,7 @@ import Obj
 import TypeError
 import Types
 import Validate
+import TypeCandidate
 
 data SumtypeCase = SumtypeCase
   { caseName :: String,

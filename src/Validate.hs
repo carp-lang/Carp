@@ -10,37 +10,17 @@ import TypeError
 import TypePredicates
 import Types
 import Util
+import TypeCandidate
+import Interfaces
 
 {-# ANN validateMemberCases "HLint: ignore Eta reduce" #-}
-
-data TypeVarRestriction
-  = AllowAnyTypeVariableNames -- Used when checking a type found in the code, e.g. (Foo a), any name is OK for 'a'
-  | AllowOnlyNamesInScope -- Used when checking a type definition, e.g. (deftype (Foo a) [x a]), requires a to be in scope
-  deriving (Eq)
-
--- | TypeCandidate represents a type that's possibly valid or invalid.
-data TypeCandidate = TypeCandidate {
-  -- the name of the type
-  typename :: String,
-  -- a list of all variables in the type head
-  variables :: [Ty],
-  -- all members of the type
-  typemembers :: [XObj],
-  -- what sort of type variables are permitted.
-  restriction :: TypeVarRestriction
-}
 
 -- | Make sure that the member declarations in a type definition
 -- | Follow the pattern [<name> <type>, <name> <type>, ...]
 -- | TODO: This function is only called by the deftype parts of the codebase, which is more specific than the following check implies.
 validateMemberCases :: TypeEnv -> Env -> TypeCandidate -> Either TypeError ()
-validateMemberCases typeEnv globalEnv candidate = --mapM_ visit (members candidate)
+validateMemberCases typeEnv globalEnv candidate =
   validateMembers typeEnv globalEnv (candidate {restriction = AllowOnlyNamesInScope})
-  -- where
-  --  visit (XObj (Arr membersXObjs) _ _) =
-  --    validateMembers typeEnv globalEnv (candidate {restriction = AllowOnlyNamesInScope})
-  --  visit xobj =
-  --    Left (InvalidSumtypeCase xobj)
 
 validateMembers :: TypeEnv -> Env -> TypeCandidate -> Either TypeError ()
 validateMembers typeEnv globalEnv candidate =
@@ -48,6 +28,14 @@ validateMembers typeEnv globalEnv candidate =
   (checkDuplicateMembers candidate) >>
   (checkMembers typeEnv globalEnv candidate) >>
   (checkKindConsistency candidate)
+
+validateInterfaceConstraints :: TypeCandidate -> Either TypeError ()
+validateInterfaceConstraints candidate =
+  let impls = map go (interfaceConstraints candidate)
+   in if all (==True) impls
+        then Right ()
+        else Left $ InterfaceNotImplemented  (interfaceConstraints candidate)
+  where go ic = all (interfaceImplementedForTy (candidateTypeEnv candidate) (candidateEnv candidate) (interfaceName ic)) (types ic)
 
 -- | Returns an error if a type has an uneven number of members.
 checkUnevenMembers :: TypeCandidate -> Either TypeError ()
@@ -108,6 +96,9 @@ canBeUsedAsMemberType tyname typeVarRestriction typeEnv globalEnv typeVariables 
     PointerTy inner ->
       canBeUsedAsMemberType tyname typeVarRestriction typeEnv globalEnv typeVariables inner xobj
         >> pure ()
+    --BoxTy inner ->
+    --  canBeUsedAsMemberType tyname typeVarRestriction typeEnv globalEnv typeVariables inner xobj
+    --    >> pure ()
     -- Struct variables may appear as complete applications or individual
     -- components in the head of a definition; that is the forms:
     --     ((Foo (f a b)) [x (f a b)])
@@ -128,10 +119,14 @@ canBeUsedAsMemberType tyname typeVarRestriction typeEnv globalEnv typeVariables 
     struct@(StructTy sname tyVars) ->
       checkVar struct <> checkStruct sname tyVars
     v@(VarTy _) -> checkVar v
+    (RecTy _) -> pure ()
     _ -> Left (InvalidMemberType ty xobj)
   where
     checkStruct :: Ty -> [Ty] -> Either TypeError ()
     checkStruct (ConcreteNameTy (SymPath [] "Array")) [innerType] =
+      canBeUsedAsMemberType tyname typeVarRestriction typeEnv globalEnv typeVariables innerType xobj
+        >> pure ()
+    checkStruct (ConcreteNameTy (SymPath [] "Box")) [innerType] =
       canBeUsedAsMemberType tyname typeVarRestriction typeEnv globalEnv typeVariables innerType xobj
         >> pure ()
     checkStruct (ConcreteNameTy path@(SymPath _ pname)) vars =

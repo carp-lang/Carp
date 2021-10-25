@@ -27,7 +27,6 @@ import Obj
 import PrimitiveError
 import Project
 import Qualify (Qualified (..), QualifiedPath, getQualifiedPath, markQualified, qualify, qualifyNull, qualifyPath, unqualify)
---import RecType
 import Reify
 import Sumtypes
 import SymPath
@@ -38,6 +37,7 @@ import TypePredicates
 import Types
 import Util
 import Web.Browser (openBrowser)
+import RecType
 
 makeNullaryPrim :: SymPath -> NullaryPrimitiveCallback -> String -> String -> (String, Binder)
 makeNullaryPrim p = makePrim p . NullaryPrimitive
@@ -634,11 +634,15 @@ makeType ctx name vars constructor =
   let qpath = (qualifyPath ctx (SymPath [] name))
       ty = StructTy (ConcreteNameTy (unqualify qpath)) vars
       (typeX, members, creator) = constructor ty
+      -- if the type is recursive, tag it so we can easily find such types in the emitter.
+      tBinder = if any (isRecursive ty) members
+                  then Meta.updateBinderMeta (toBinder typeX) "recursive" trueXObj
+                  else (toBinder typeX)
    in case ( unwrapTypeErr ctx (creator ctx name vars members Nothing)
                >>= \(_, modx, deps) ->
                  pure (existingOr ctx qpath modx)
                    >>= \mod' ->
-                     unwrapErr (insertType ctx qpath (toBinder typeX) mod')
+                     unwrapErr (insertType ctx qpath tBinder mod')
                        >>= \c -> pure (foldM (define True) c (map Qualified deps))
            ) of
         Left e -> pure (evalError ctx e (xobjInfo typeX))

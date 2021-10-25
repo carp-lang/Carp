@@ -9,6 +9,7 @@ import Obj
 import Project
 import Text.EditDistance (defaultEditCosts, levenshteinDistance)
 import Types
+import TypeCandidate
 import Util
 
 data TypeError
@@ -62,8 +63,11 @@ data TypeError
   | InconsistentKinds String [XObj]
   | FailedToAddLambdaStructToTyEnv SymPath XObj
   | FailedToInstantiateGenericType Ty
+  | InterfaceNotImplemented [InterfaceConstraint]
 
 instance Show TypeError where
+  show (InterfaceNotImplemented is) =
+     "One or more types do not implement the interfaces: " ++ show is
   show (SymbolMissingType xobj env) =
     "I couldn’t find a type for the symbol '" ++ getName xobj ++ "' at "
       ++ prettyInfoFromXObj xobj

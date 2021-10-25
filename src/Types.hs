@@ -28,6 +28,9 @@ module Types
     getNameFromStructName,
     getStructPath,
     promoteNumber,
+    tyMembers,
+    setMembers,
+    tyIsRecursive,
   )
 where
 
@@ -82,12 +85,46 @@ data Kind
   | Higher
   deriving (Eq, Ord, Show)
 
+-- | Returns the member types of a type.
+tyMembers :: Ty -> [Ty]
+tyMembers (PointerTy t) = [t]
+tyMembers (RefTy t lt) = [t, lt]
+tyMembers (StructTy _ mems) = mems
+tyMembers (RecTy t) = [t]
+tyMembers (FuncTy ts t lt) = ts ++ [t, lt]
+tyMembers _ = []
+
+-- | Sets the members of a type.
+setMembers :: Ty -> [Ty] -> Ty
+setMembers t [] = t
+setMembers (PointerTy _) ts = (PointerTy (head ts))
+setMembers (RefTy _ lt) ts = (RefTy (head ts) lt)
+setMembers (RecTy _) ts = (RecTy (head ts))
+setMembers (StructTy n _) ts = (StructTy n ts)
+setMembers (FuncTy _ t lt) ts = (FuncTy ts t lt)
+setMembers t _ = t
+
+tyIsRecursive :: Ty -> Bool
+tyIsRecursive t@(StructTy n vars) = any go vars
+  where go (PointerTy o) = t == o
+        go (StructTy p vars') = n == p || any go vars'
+        go _ = False
+tyIsRecursive _ = False
+
 tyToKind :: Ty -> Kind
 tyToKind (StructTy _ _) = Higher
 tyToKind FuncTy {} = Higher -- the type of functions, consider the (->) constructor in Haskell
 tyToKind (PointerTy _) = Higher
 tyToKind (RefTy _ _) = Higher -- Refs may also be treated as a data constructor
 tyToKind _ = Base
+
+kindCardinality :: Ty -> Int
+kindCardinality (RefTy _ _) = 1
+kindCardinality (PointerTy _) = 1
+kindCardinality (StructTy _ args) = (length args)
+kindCardinality (RecTy _ ) = 1
+kindCardinality (FuncTy args _ _) = (length args)
+kindCardinality _ = 0
 
 -- | Check whether or not the kinds of type variables are consistent.
 -- This function will return Left as soon as a variable is used inconsistently,
@@ -196,7 +233,7 @@ instance Show Ty where
   show DynamicTy = "Dynamic"
   show Universe = "Universe"
   show CTy = "C"
-  show (RecTy rec) = "Rec " ++ show rec
+  show (RecTy rec) = "(Rec " ++ show rec ++ ")"
 
 showMaybeTy :: Maybe Ty -> String
 showMaybeTy (Just t) = show t
@@ -280,9 +317,10 @@ areUnifiable (StructTy a aArgs) (StructTy b bArgs)
 areUnifiable (StructTy (VarTy _) aArgs) (FuncTy bArgs _ _)
   | length aArgs /= length bArgs = False
   | otherwise = all (== True) (zipWith areUnifiable aArgs bArgs)
-areUnifiable (StructTy (VarTy _) args) (RefTy _ _)
-  | length args == 2 = True
-  | otherwise = False
+areUnifiable s@(StructTy (VarTy _) _) t =
+  (kindCardinality s) == (kindCardinality t)
+areUnifiable t s@(StructTy (VarTy _) _) =
+  (kindCardinality s) == (kindCardinality t)
 areUnifiable (StructTy _ _) _ = False
 areUnifiable (PointerTy a) (PointerTy b) = areUnifiable a b
 areUnifiable (RecTy a) (RecTy b) = areUnifiable a b

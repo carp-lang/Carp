@@ -14,6 +14,7 @@ import qualified StaticArrayTemplates
 import Template
 import ToTemplate
 import Types
+import qualified BoxTemplates
 
 -- | These modules will be loaded in order before any other code is evaluated.
 coreModules :: String -> [String]
@@ -50,6 +51,28 @@ arrayModule =
           ArrayTemplates.templateDeleteArray,
           ArrayTemplates.templateCopyArray,
           ArrayTemplates.templateStrArray
+        ]
+
+boxModule :: Env
+boxModule =
+  Env
+    {envBindings = bindings,
+     envParent = Nothing,
+     envModuleName = Just "Box",
+     envUseModules = Set.empty,
+     envMode = ExternalEnv,
+     envFunctionNestingLevel = 0}
+  where
+    bindings =
+      Map.fromList
+        [ BoxTemplates.delete,
+          BoxTemplates.nil,
+          BoxTemplates.str,
+          BoxTemplates.init,
+          BoxTemplates.getter,
+          BoxTemplates.prn,
+          BoxTemplates.copy,
+          BoxTemplates.unbox
         ]
 
 -- | The static array module
@@ -506,6 +529,7 @@ startingGlobalEnv noArray =
           ++ [("Dynamic", Binder emptyMeta (XObj (Mod dynamicModule E.empty) Nothing Nothing))]
           ++ [("Function", Binder emptyMeta (XObj (Mod functionModule E.empty) Nothing Nothing))]
           ++ [("Unsafe", Binder emptyMeta (XObj (Mod unsafeModule E.empty) Nothing Nothing))]
+          ++ [("Box", Binder emptyMeta (XObj (Mod boxModule E.empty) Nothing Nothing))]
 
 -- | The type environment (containing deftypes and interfaces) before any code is run.
 startingTypeEnv :: Env
@@ -521,7 +545,14 @@ startingTypeEnv =
   where
     bindings =
       Map.fromList
-        [ interfaceBinder
+        [ productTypeBinder
+            (StructTy (ConcreteNameTy (SymPath [] "Box")) [(VarTy "t")])
+            [XObj (Arr [(XObj (Sym (SymPath [] "data") Symbol) Nothing Nothing),
+                        (XObj (Lst [(XObj (Sym (SymPath [] "Ptr") Symbol) Nothing Nothing), (XObj (Sym (SymPath [] "t") Symbol) Nothing Nothing)]) Nothing Nothing)])
+                  (Just builtInSymbolInfo)
+                  (Just TypeTy)]
+            builtInSymbolInfo,
+          interfaceBinder
             "delete"
             (FuncTy [VarTy "a"] UnitTy StaticLifetimeTy)
             ([SymPath ["Array"] "delete", SymPath ["StaticArray"] "delete"] ++ registerFunctionFunctionsWithInterface "delete")
@@ -529,17 +560,27 @@ startingTypeEnv =
           interfaceBinder
             "copy"
             (FuncTy [RefTy (VarTy "a") (VarTy "q")] (VarTy "a") StaticLifetimeTy)
-            ([SymPath ["Array"] "copy", SymPath ["Pointer"] "copy"] ++ registerFunctionFunctionsWithInterface "copy")
+            ([SymPath ["Array"] "copy", SymPath ["Pointer"] "copy", SymPath ["Box"] "copy"] ++ registerFunctionFunctionsWithInterface "copy")
             builtInSymbolInfo,
           interfaceBinder
             "str"
             (FuncTy [VarTy "a"] StringTy StaticLifetimeTy)
-            (SymPath ["Array"] "str" : SymPath ["StaticArray"] "str" : registerFunctionFunctionsWithInterface "str")
+            (SymPath ["Array"] "str" : SymPath ["StaticArray"] "str" : SymPath ["Box"] "str" : registerFunctionFunctionsWithInterface "str")
             builtInSymbolInfo,
           interfaceBinder
             "prn"
             (FuncTy [VarTy "a"] StringTy StaticLifetimeTy)
-            (SymPath ["StaticArray"] "str" : registerFunctionFunctionsWithInterface "prn") -- QUESTION: Where is 'prn' for dynamic Array:s registered? Can't find it... (but it is)
+            (SymPath ["StaticArray"] "str" : SymPath ["Box"] "prn" : registerFunctionFunctionsWithInterface "prn") -- QUESTION: Where is 'prn' for dynamic Array:s registered? Can't find it... (but it is)
+            builtInSymbolInfo,
+          interfaceBinder
+            "indirect"
+            (FuncTy [(StructTy (VarTy "a") [(VarTy "t")])] (VarTy "t") StaticLifetimeTy)
+            [SymPath ["Box"] "deref"]
+            builtInSymbolInfo,
+          interfaceBinder
+            "alloc"
+            (FuncTy [(VarTy "t")] (StructTy (VarTy "a") [(VarTy "t")]) StaticLifetimeTy)
+            [SymPath ["Box"] "init"]
             builtInSymbolInfo
         ]
     builtInSymbolInfo = Info (-1) (-1) "Built-in." Set.empty (-1)
@@ -552,3 +593,17 @@ registerFunctionFunctionsWithInterface interfaceName =
 -- | Create a binder for an interface definition.
 interfaceBinder :: String -> Ty -> [SymPath] -> Info -> (String, Binder)
 interfaceBinder name t paths i = (name, Binder emptyMeta (defineInterface name t paths (Just i)))
+
+productTypeBinder :: Ty -> [XObj] -> Info -> (String, Binder)
+productTypeBinder t@(StructTy (ConcreteNameTy (SymPath [] name)) _) mems info = (name, Binder emptyMeta xobj)
+  where xobj =
+          ( XObj
+            ( Lst
+                ( XObj (Deftype t) Nothing Nothing :
+                  XObj (Sym (getStructPath t) Symbol) Nothing Nothing :
+                  mems
+                )
+            )
+            (Just info)
+            (Just TypeTy))
+productTypeBinder _ _ _ = error "product incorrect"

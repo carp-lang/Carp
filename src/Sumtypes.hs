@@ -17,7 +17,8 @@ import TypePredicates
 import Types
 import TypesToC
 import Util
-import Validate (TypeVarRestriction (..), TypeCandidate (..))
+import TypeCandidate
+import RecType
 
 getCase :: [SumtypeCase] -> String -> Maybe SumtypeCase
 getCase cases caseNameToFind =
@@ -28,7 +29,7 @@ getCase cases caseNameToFind =
 moduleForSumtypeInContext :: Context -> String -> [Ty] -> [XObj] -> Maybe Info -> Either TypeError (String, XObj, [XObj])
 moduleForSumtypeInContext ctx name vars members info =
   let global = contextGlobalEnv ctx
-      types = contextTypeEnv ctx
+      ts = contextTypeEnv ctx
       path = contextPath ctx
       inner = either (const Nothing) Just (innermostModuleEnv ctx)
       previous =
@@ -45,16 +46,17 @@ moduleForSumtypeInContext ctx name vars members info =
                         _ -> Left "Non module"
                     )
           )
-   in moduleForSumtype inner types global path name vars members info previous
+   in moduleForSumtype inner ts global path name vars members info previous
 
 moduleForSumtype :: Maybe Env -> TypeEnv -> Env -> [String] -> String -> [Ty] -> [XObj] -> Maybe Info -> Maybe (Env, TypeEnv) -> Either TypeError (String, XObj, [XObj])
 moduleForSumtype innerEnv typeEnv env pathStrings typeName typeVariables rest i existingEnv =
   let moduleValueEnv = fromMaybe (new innerEnv (Just typeName)) (fmap fst existingEnv)
       moduleTypeEnv = fromMaybe (new (Just typeEnv) (Just typeName)) (fmap snd existingEnv)
       insidePath = pathStrings ++ [typeName]
-      candidate = TypeCandidate {typename = typeName, variables = typeVariables, restriction = AllowOnlyNamesInScope, typemembers = rest}
+      candidate = TypeCandidate {typename = typeName, variables = typeVariables, restriction = AllowOnlyNamesInScope, typemembers = rest, interfaceConstraints = [], candidateTypeEnv = typeEnv, candidateEnv = env}
    in do
         let structTy = StructTy (ConcreteNameTy (SymPath pathStrings typeName)) typeVariables
+        okRecursive candidate
         cases <- toCases typeEnv env candidate
         okIniters <- initers insidePath structTy cases
         okTag <- binderForTag insidePath structTy

@@ -16,7 +16,7 @@ import Control.Monad.State
 import Data.Char (ord)
 import Data.Functor ((<&>))
 import Data.List (intercalate, isPrefixOf, sortOn)
-import Data.Maybe (fromJust, fromMaybe)
+import Data.Maybe (fromJust, fromMaybe, isJust)
 import Env
 import Info
 import qualified Map
@@ -546,10 +546,10 @@ toC toCMode (Binder meta root) = emitterSrc (execState (visit startingIndent roo
               _ ->
                 if isNumericLiteral value
                   then do
-                    let literal = freshVar info ++ "_lit"
+                    let literal' = freshVar info ++ "_lit"
                         Just literalTy = xobjTy value
-                    appendToSrc (addIndent indent ++ "static " ++ tyToCLambdaFix literalTy ++ " " ++ literal ++ " = " ++ var ++ ";\n")
-                    appendToSrc (addIndent indent ++ tyToCLambdaFix t ++ " " ++ fresh ++ " = &" ++ literal ++ "; // ref\n")
+                    appendToSrc (addIndent indent ++ "static " ++ tyToCLambdaFix literalTy ++ " " ++ literal' ++ " = " ++ var ++ ";\n")
+                    appendToSrc (addIndent indent ++ tyToCLambdaFix t ++ " " ++ fresh ++ " = &" ++ literal' ++ "; // ref\n")
                   else appendToSrc (addIndent indent ++ tyToCLambdaFix t ++ " " ++ fresh ++ " = &" ++ var ++ "; // ref\n")
             pure fresh
         -- Deref
@@ -819,6 +819,10 @@ memberToDecl :: Ty -> Int -> (XObj, XObj) -> State EmitterState ()
 memberToDecl recty indent (memberName, memberType) =
   case xobjToTy memberType of
     -- Handle function pointers as members specially to allow members that are functions referring to the struct itself.
+    -- Just rt@(StructTy _ [t]) ->
+    --  if t == recty
+    --    then appendToSrc (addIndent indent ++ "struct " ++ tyToCLambdaFix rt ++ " " ++ mangle (getName memberName) ++ ";\n")
+    --    else appendToSrc (addIndent indent ++ tyToCLambdaFix t ++ " " ++ mangle (getName memberName) ++ ";\n")
     Just rt@(RecTy t) ->
       if t == recty
         then appendToSrc (addIndent indent ++ "struct " ++ tyToCLambdaFix rt ++ " " ++ mangle (getName memberName) ++ ";\n")
@@ -841,11 +845,13 @@ defStructToDeclaration structTy@(StructTy _ _) _ rest =
         -- forward declaration for recursive types.
         when (any (isRecursive structTy) pointerfix) $
           do appendToSrc ("// Recursive type \n")
-             appendToSrc ("typedef struct " ++ tyToC structTy ++ " {\n")
+             appendToSrc ("struct " ++ tyToC structTy ++ " {\n")
         when (all (not . isRecursive structTy) pointerfix) $ appendToSrc "typedef struct {\n"
-        --appendToSrc ("typedef struct " ++ tyToC structTy ++ " " ++ tyToC structTy ++ ";\n")
         mapM_ typedefCaseToMemberDecl pointerfix
-        appendToSrc ("} " ++ tyToC structTy ++ ";\n")
+        appendToSrc "}"
+        unless (any (isRecursive structTy) pointerfix)
+          (appendToSrc (" " ++ tyToC structTy))
+        appendToSrc ";\n"
    in if isTypeGeneric structTy
         then "" -- ("// " ++ show structTy ++ "\n")
         else emitterSrc (execState visit (EmitterState ""))
@@ -854,14 +860,21 @@ defStructToDeclaration _ _ _ = error "defstructtodeclaration"
 defSumtypeToDeclaration :: Ty -> [XObj] -> String
 defSumtypeToDeclaration sumTy@(StructTy _ _) rest =
   let indent = indentAmount
+      pointerfix = map (recursiveMembersToPointers sumTy) rest
       visit = do
-        appendToSrc "typedef struct {\n"
+        (if (any (isRecursive sumTy) pointerfix)
+           then do appendToSrc ("// Recursive type \n")
+                   appendToSrc ("struct " ++ tyToC sumTy ++ " {\n")
+           else appendToSrc "typedef struct {\n")
         appendToSrc (addIndent indent ++ "union {\n")
         mapM_ (emitSumtypeCase indent) rest
         appendToSrc (addIndent indent ++ "char __dummy;\n")
         appendToSrc (addIndent indent ++ "} u;\n")
         appendToSrc (addIndent indent ++ "char _tag;\n")
-        appendToSrc ("} " ++ tyToC sumTy ++ ";\n")
+        appendToSrc "}"
+        unless (any (isRecursive sumTy) pointerfix)
+          (appendToSrc (" " ++ tyToC sumTy))
+        appendToSrc ";\n"
         --appendToSrc ("// " ++ show typeVariables ++ "\n")
         mapM_ emitSumtypeCaseTagDefinition (zip [0 ..] rest)
       emitSumtypeCase :: Int -> XObj -> State EmitterState ()
@@ -898,6 +911,16 @@ defaliasToDeclaration t path =
   where
     fixer UnitTy = "void*"
     fixer x = tyToCLambdaFix x
+
+toForwardDeclaration :: Binder -> String
+toForwardDeclaration (Binder _ (XObj (Lst xobjs) _ _)) =
+  case xobjs of
+    XObj (Deftype _) _ _ : XObj (Sym path _) _ _ : _ ->
+      "typedef struct " ++ pathToC path ++ " " ++ pathToC path ++ ";\n"
+    XObj (DefSumtype _) _ _ : XObj (Sym path _) _ _ : _ ->
+      "typedef struct " ++ pathToC path ++ " " ++ pathToC path ++ ";\n"
+    _ -> ""
+toForwardDeclaration _ = ""
 
 toDeclaration :: Binder -> String
 toDeclaration (Binder meta xobj@(XObj (Lst xobjs) _ ty)) =
@@ -1029,6 +1052,8 @@ typeEnvToDeclarations typeEnv global =
             sorted ++ (foldl folder (addEnvToScore t) (findModules e))
         )
       allScoredBinders = sortOn fst (foldl folder bindersWithScore mods)
+      -- recursive binders need to be forward declared.
+      recursiveBinders = filter (isJust . Meta.getBinderMetaValue "recursive" . snd) allScoredBinders
    in do
         okDecls <-
           mapM
@@ -1038,7 +1063,7 @@ typeEnvToDeclarations typeEnv global =
                   (binderToDeclaration typeEnv binder)
             )
             allScoredBinders
-        pure (concat okDecls)
+        pure ((concat (map (toForwardDeclaration . snd) recursiveBinders)) ++ (concat okDecls))
 
 envToDeclarations :: TypeEnv -> Env -> Either ToCError String
 envToDeclarations typeEnv env =

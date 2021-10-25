@@ -44,6 +44,7 @@ import qualified Set
 import SumtypeCase
 import ToTemplate
 import TypeError
+import TypeCandidate
 import TypePredicates
 import Types
 import TypesToC
@@ -612,7 +613,7 @@ instantiateGenericStructType typeEnv env originalStructTy@(StructTy _ _) generic
       let nameFixedMembers = renameGenericTypeSymbolsOnProduct renamedOrig memberXObjs
           validMembers = replaceGenericTypeSymbolsOnMembers mappings' nameFixedMembers
           concretelyTypedMembers = replaceGenericTypeSymbolsOnMembers mappings memberXObjs
-          candidate = TypeCandidate {restriction = AllowAnyTypeVariableNames, typename = (getStructName originalStructTy), typemembers = validMembers, variables = renamedOrig}
+          candidate = TypeCandidate {restriction = AllowAnyTypeVariableNames, typename = (getStructName originalStructTy), typemembers = validMembers, variables = renamedOrig, interfaceConstraints = [], candidateTypeEnv = typeEnv, candidateEnv = env  }
       validateMembers typeEnv env candidate
       deps <- mapM (depsForStructMemberPair typeEnv env) (pairwise concretelyTypedMembers)
       let xobj =
@@ -647,7 +648,7 @@ instantiateGenericSumtype typeEnv env originalStructTy@(StructTy _ originalTyVar
           let nameFixedCases = map (renameGenericTypeSymbolsOnSum (zip originalTyVars renamedOrig)) cases
               concretelyTypedCases = map (replaceGenericTypeSymbolsOnCase mappings) nameFixedCases
               deps = mapM (depsForCase typeEnv env) concretelyTypedCases
-              candidate = TypeCandidate {restriction = AllowAnyTypeVariableNames, typename = (getStructName originalStructTy), variables = renamedOrig, typemembers = concretelyTypedCases }
+              candidate = TypeCandidate {restriction = AllowAnyTypeVariableNames, typename = (getStructName originalStructTy), variables = renamedOrig, typemembers = concretelyTypedCases, interfaceConstraints = [], candidateTypeEnv = typeEnv, candidateEnv = env }
            in case toCases typeEnv env candidate of -- Don't care about the cases, this is done just for validation.
                 Left err -> Left err
                 Right _ ->

@@ -18,6 +18,7 @@ import Obj
 import StructUtils
 import Template
 import ToTemplate
+import TypeCandidate
 import TypeError
 import TypePredicates
 import Types
@@ -31,7 +32,7 @@ import Validate
 moduleForDeftypeInContext :: Context -> String -> [Ty] -> [XObj] -> Maybe Info -> Either TypeError (String, XObj, [XObj])
 moduleForDeftypeInContext ctx name vars members info =
   let global = contextGlobalEnv ctx
-      types = contextTypeEnv ctx
+      ts = contextTypeEnv ctx
       path = contextPath ctx
       inner = either (const Nothing) Just (innermostModuleEnv ctx)
       previous =
@@ -48,7 +49,7 @@ moduleForDeftypeInContext ctx name vars members info =
                         _ -> Left "Non module"
                     )
           )
-   in moduleForDeftype inner types global path name vars members info previous
+   in moduleForDeftype inner ts global path name vars members info previous
 
 -- | This function creates a "Type Module" with the same name as the type being defined.
 --   A type module provides a namespace for all the functions that area automatically
@@ -60,23 +61,27 @@ moduleForDeftype innerEnv typeEnv env pathStrings typeName typeVariables rest i 
       -- The variable 'insidePath' is the path used for all member functions inside the 'typeModule'.
       -- For example (module Vec2 [x Float]) creates bindings like Vec2.create, Vec2.x, etc.
       insidePath = pathStrings ++ [typeName]
-      candidate = TypeCandidate {restriction = AllowOnlyNamesInScope, typename = typeName, variables = typeVariables, typemembers = []}
+      candidate = TypeCandidate {restriction = AllowOnlyNamesInScope, typename = typeName, variables = typeVariables, typemembers = [], interfaceConstraints = [], candidateTypeEnv = typeEnv, candidateEnv = env}
    in do
         mems <- case rest of
                   [XObj (Arr membersXObjs) _ _] -> Right membersXObjs
                   _ -> Left $ NotAValidType (XObj (Sym (SymPath pathStrings typeName) Symbol) i (Just TypeTy))
-        validateMembers typeEnv env (candidate {typemembers = mems})
         let structTy = StructTy (ConcreteNameTy (SymPath pathStrings typeName)) typeVariables
             ptrmembers = map (recursiveMembersToPointers structTy) rest
+        innermems <- case ptrmembers of
+                       [XObj (Arr membersXObjs) _ _] -> Right membersXObjs
+                       _ -> Left $ NotAValidType (XObj (Sym (SymPath pathStrings typeName) Symbol) i (Just TypeTy))
+        okRecursive (candidate {typemembers = mems})
+        validateMembers typeEnv env (candidate {typemembers = innermems})
         (okMembers, membersDeps) <- templatesForMembers typeEnv env insidePath structTy ptrmembers
-        okInit <- if (any (isRecursive structTy) ptrmembers) then recursiveProductInitBinder insidePath structTy ptrmembers else binderForInit insidePath structTy ptrmembers
+        okInit <- if (any (isValueRecursive structTy) ptrmembers) then recursiveProductInitBinder insidePath structTy ptrmembers else binderForInit insidePath structTy ptrmembers
         okMake <- recursiveProductMakeBinder insidePath structTy ptrmembers
         (okStr, strDeps) <- binderForStrOrPrn typeEnv env insidePath structTy ptrmembers "str"
         (okPrn, _) <- binderForStrOrPrn typeEnv env insidePath structTy ptrmembers"prn"
         (okDelete, deleteDeps) <- binderForDelete typeEnv env insidePath structTy ptrmembers
         (okCopy, copyDeps) <- binderForCopy typeEnv env insidePath structTy ptrmembers
         let funcs = okInit : okStr : okPrn : okDelete : okCopy : okMembers
-            funcs' = if (any (isRecursive structTy) ptrmembers) then (okMake : funcs) else funcs
+            funcs' = if (any (isValueRecursive structTy) ptrmembers) then (okMake : funcs) else funcs
             moduleEnvWithBindings = addListOfBindings moduleValueEnv funcs'
             typeModuleXObj = XObj (Mod moduleEnvWithBindings moduleTypeEnv) i (Just ModuleTy)
             deps = deleteDeps ++ membersDeps ++ copyDeps ++ strDeps
@@ -90,7 +95,7 @@ bindingsForRegisteredType typeEnv env pathStrings typeName rest i existingEnv =
   let moduleValueEnv = fromMaybe (new (Just env) (Just typeName)) (fmap fst existingEnv)
       moduleTypeEnv = fromMaybe (new (Just typeEnv) (Just typeName)) (fmap snd existingEnv)
       insidePath = pathStrings ++ [typeName]
-      candidate = TypeCandidate {restriction = AllowOnlyNamesInScope, typename = typeName, variables = [], typemembers = []}
+      candidate = TypeCandidate {restriction = AllowOnlyNamesInScope, typename = typeName, variables = [], typemembers = [], interfaceConstraints = [], candidateTypeEnv = typeEnv, candidateEnv = env}
    in do
         mems <- case rest of
                   [XObj (Arr membersXObjs) _ _] -> Right membersXObjs
