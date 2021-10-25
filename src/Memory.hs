@@ -337,7 +337,7 @@ manageMemory typeEnv globalEnv root =
         -- 2. Variables deleted in at least one case has to be deleted in all, so make a union U of all such vars
         --    but remove the ones that were not present before the 'match'
         -- 3. In each case - take the intersection of U and the vars deleted in that case and add this result to its deleters
-        matchExpr@(XObj (Match _) _ _) : expr : cases ->
+        matchExpr@(XObj (Match matchMode) _ _) : expr : cases ->
           do
             visitedExpr <- visit expr
             case visitedExpr of
@@ -346,7 +346,7 @@ manageMemory typeEnv globalEnv root =
                 do
                   _ <- unmanage typeEnv globalEnv okVisitedExpr
                   MemState preDeleters deps lifetimes <- get
-                  vistedCasesAndDeps <- mapM visitMatchCase (pairwise cases)
+                  vistedCasesAndDeps <- mapM (visitMatchCase matchMode) (pairwise cases)
                   case sequence vistedCasesAndDeps of
                     Left e -> pure (Left e)
                     Right okCasesAndDeps ->
@@ -415,11 +415,11 @@ manageMemory typeEnv globalEnv root =
                   Right (XObj (Lst (okF : okArgs)) i t)
         [] -> pure (Right xobj)
     visitList _ = error "Must visit list."
-    visitMatchCase :: (XObj, XObj) -> State MemState (Either TypeError ((Set.Set Deleter, (XObj, XObj)), Set.Set Ty))
-    visitMatchCase (lhs@XObj {}, rhs@XObj {}) =
+    visitMatchCase :: MatchMode -> (XObj, XObj) -> State MemState (Either TypeError ((Set.Set Deleter, (XObj, XObj)), Set.Set Ty))
+    visitMatchCase matchMode (lhs@XObj {}, rhs@XObj {}) =
       do
         MemState preDeleters _ _ <- get
-        _ <- visitCaseLhs lhs
+        _ <- visitCaseLhs matchMode lhs
         visitedRhs <- visit rhs
         _ <- unmanage typeEnv globalEnv rhs
         MemState postDeleters postDeps postLifetimes <- get
@@ -427,20 +427,20 @@ manageMemory typeEnv globalEnv root =
         pure $ do
           okVisitedRhs <- visitedRhs
           pure ((postDeleters, (lhs, okVisitedRhs)), postDeps)
-    visitCaseLhs :: XObj -> State MemState (Either TypeError [()])
-    visitCaseLhs (XObj (Lst vars) _ _) =
+    visitCaseLhs :: MatchMode -> XObj -> State MemState (Either TypeError [()])
+    visitCaseLhs matchMode (XObj (Lst vars) _ _) =
       do
-        result <- mapM visitCaseLhs vars
+        result <- mapM (visitCaseLhs matchMode) vars
         let result' = sequence result
         pure (fmap concat result')
-    visitCaseLhs xobj@(XObj (Sym (SymPath _ name) _) _ _)
-      | isVarName name = do
+    visitCaseLhs matchMode xobj@(XObj (Sym (SymPath _ name) _) _ _)
+      | (matchMode == MatchValue) && isVarName name = do
         manage typeEnv globalEnv xobj
         pure (Right [])
       | otherwise = pure (Right [])
-    visitCaseLhs (XObj Ref _ _) =
+    visitCaseLhs _ (XObj Ref _ _) =
       pure (Right [])
-    visitCaseLhs x =
+    visitCaseLhs _ x =
       error ("Unhandled: " ++ show x)
     visitLetBinding :: (XObj, XObj) -> State MemState (Either TypeError (XObj, XObj))
     visitLetBinding (name, expr) =

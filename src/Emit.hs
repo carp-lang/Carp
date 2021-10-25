@@ -445,9 +445,7 @@ toC toCMode (Binder meta root) = emitterSrc (execState (visit startingIndent roo
                 when isNotVoid $
                   appendToSrc (addIndent indent' ++ retVar ++ " = " ++ caseExprRetVal ++ ";\n")
                 let Just caseLhsInfo' = caseLhsInfo
-                when
-                  (matchMode == MatchValue)
-                  (delete indent' caseLhsInfo')
+                delete indent' caseLhsInfo'
                 appendToSrc (addIndent indent ++ "}\n")
            in do
                 exprVar <- visit indent expr

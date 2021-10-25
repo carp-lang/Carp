@@ -444,6 +444,46 @@
         (match m
           _ 1)))))
 
+(deftype Example
+ One
+ (Two [String]))
+
+(defn sumtype-8 []
+  (let-do [ex [(Example.Two @"OKOK")]]
+    (match-ref (Array.unsafe-nth &ex 0)
+     (Example.Two s) (println* s)
+     _ ())))
+
+(deftype Sum One Two)
+
+(defn sumtype-9 []
+    (let [state @"Ok" sumt &(Sum.One)]
+     (match-ref sumt
+      Sum.One (println* &@&state)
+      Sum.Two ())))
+
+(defn sumtype-10 []
+  (let [state 0]
+   (match-ref &(Sum.One)
+    Sum.One (println* ((fn [] @&state)))
+    Sum.Two ())))
+
+(deftype ExampleA
+ One
+  (Two [(Array String)]))
+
+(defn sumtype-11 []
+  (match-ref &(Just (ExampleA.Two [@"OKOK"]))
+   (Just s) ()
+   _ ())
+  )
+
+(defn sumtype-12 []
+  (match (Just (ExampleA.Two [@"OKOK"]))
+   (Just s) ()
+   _ ())
+  )
+
 (deftest test
   (assert-no-leak test scope-1 "scope-1 does not leak")
   (assert-no-leak test scope-2 "scope-2 does not leak")
@@ -513,4 +553,9 @@
   (assert-no-leak test sumtype-5 "sumtype-5 does not leak")
   (assert-no-leak test sumtype-6 "sumtype-6 does not leak")
   (assert-no-leak test sumtype-7 "sumtype-7 does not leak")
+  (assert-no-leak test sumtype-8 "sumtype-8 does not leak")
+  (assert-no-leak test sumtype-9 "sumtype-9 does not leak")
+  (assert-no-leak test sumtype-10 "sumtype-10 does not leak")
+  (assert-no-leak test sumtype-11 "sumtype-11 does not leak")
+  (assert-no-leak test sumtype-12 "sumtype-12 does not leak")
   )
