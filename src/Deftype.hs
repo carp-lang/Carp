@@ -69,18 +69,19 @@ moduleForDeftype innerEnv typeEnv env pathStrings typeName typeVariables rest i 
                       [(XObj (Arr []) ii t)] -> [(XObj (Arr [(XObj (Sym (SymPath [] "__dummy") Symbol) Nothing Nothing), (XObj (Sym (SymPath [] "Char") Symbol) Nothing Nothing)]) ii t)]
                       _ -> rest
    in do
-        mems <- case initmembers of
+        mems <- case rest of
                   [XObj (Arr membersXObjs) _ _] -> Right membersXObjs
                   _ -> Left $ NotAValidType (XObj (Sym (SymPath pathStrings typeName) Symbol) i (Just TypeTy))
         let structTy = StructTy (ConcreteNameTy (SymPath pathStrings typeName)) typeVariables
-            ptrmembers = map (recursiveMembersToPointers structTy) initmembers
+            ptrmembers = map (recursiveMembersToPointers structTy) rest
+            ptrinitmembers = map (recursiveMembersToPointers structTy) initmembers
         innermems <- case ptrmembers of
                        [XObj (Arr membersXObjs) _ _] -> Right membersXObjs
                        _ -> Left $ NotAValidType (XObj (Sym (SymPath pathStrings typeName) Symbol) i (Just TypeTy))
         okRecursive (candidate {typemembers = mems})
         validateMembers typeEnv env (candidate {typemembers = innermems})
         (okMembers, membersDeps) <- templatesForMembers typeEnv env insidePath structTy ptrmembers
-        okInit <- if (any (isValueRecursive structTy) ptrmembers) then recursiveProductInitBinder insidePath structTy ptrmembers else binderForInit insidePath structTy initmembers
+        okInit <- if (any (isValueRecursive structTy) ptrmembers) then recursiveProductInitBinder insidePath structTy ptrinitmembers else binderForInit insidePath structTy initmembers
         okMake <- recursiveProductMakeBinder insidePath structTy ptrmembers
         (okStr, strDeps) <- binderForStrOrPrn typeEnv env insidePath structTy ptrmembers "str"
         (okPrn, _) <- binderForStrOrPrn typeEnv env insidePath structTy ptrmembers"prn"
