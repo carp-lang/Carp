@@ -1,85 +1,73 @@
 module Validate where
 
 import Control.Monad (foldM)
-import Data.Function (on)
 import Data.List (nubBy, (\\))
-import Data.Maybe (fromJust)
 import qualified Env as E
 import Obj
 import TypeError
 import TypePredicates
 import Types
-import Util
 import TypeCandidate
 import Interfaces
+import Reify
 
 {-# ANN validateMemberCases "HLint: ignore Eta reduce" #-}
 
 -- | Make sure that the member declarations in a type definition
 -- | Follow the pattern [<name> <type>, <name> <type>, ...]
 -- | TODO: This function is only called by the deftype parts of the codebase, which is more specific than the following check implies.
-validateMemberCases :: TypeEnv -> Env -> TypeCandidate -> Either TypeError ()
-validateMemberCases typeEnv globalEnv candidate =
-  validateMembers typeEnv globalEnv (candidate {restriction = AllowOnlyNamesInScope})
+validateMemberCases :: TypeCandidate -> Either TypeError ()
+validateMemberCases candidate =
+  validateMembers (candidate {restriction = AllowOnlyNamesInScope})
 
-validateMembers :: TypeEnv -> Env -> TypeCandidate -> Either TypeError ()
-validateMembers typeEnv globalEnv candidate =
-  (checkUnevenMembers candidate) >>
+-- | Validates whether or not all the members of a type candidate can be used as member types.
+validateMembers :: TypeCandidate -> Either TypeError ()
+validateMembers candidate =
   (checkDuplicateMembers candidate) >>
-  (checkMembers typeEnv globalEnv candidate) >>
+  (checkMembers (candidateTypeEnv candidate) (candidateEnv candidate) candidate) >>
   (checkKindConsistency candidate)
 
+-- | Validates whether or not a candidate's types implement interfaces.
 validateInterfaceConstraints :: TypeCandidate -> Either TypeError ()
 validateInterfaceConstraints candidate =
   let impls = map go (interfaceConstraints candidate)
    in if all (==True) impls
         then Right ()
-        else Left $ InterfaceNotImplemented  (interfaceConstraints candidate)
+        else Left $ InterfaceNotImplemented  (map interfaceName (interfaceConstraints candidate))
   where go ic = all (interfaceImplementedForTy (candidateTypeEnv candidate) (candidateEnv candidate) (interfaceName ic)) (types ic)
 
--- | Returns an error if a type has an uneven number of members.
-checkUnevenMembers :: TypeCandidate -> Either TypeError ()
-checkUnevenMembers candidate =
-  if even (length (typemembers candidate))
-    then Right ()
-    else Left (UnevenMembers (typemembers candidate))
+--------------------------------------------------------------------------------
+-- Private
 
 -- | Returns an error if a type has more than one member with the same name.
 checkDuplicateMembers :: TypeCandidate -> Either TypeError ()
 checkDuplicateMembers candidate =
   if length fields == length uniqueFields
     then Right ()
-    else Left (DuplicatedMembers dups)
+    else Left (DuplicatedMembers (map symbol dups))
   where
-    fields = fst <$> (pairwise (typemembers candidate))
-    uniqueFields = nubBy ((==) `on` xobjObj) fields
+    fields = fmap fst (typemembers candidate)
+    uniqueFields = nubBy (==) fields
     dups = fields \\ uniqueFields
 
 -- | Returns an error if the type variables in the body of the type and variables in the head of the type are of incompatible kinds.
 checkKindConsistency :: TypeCandidate -> Either TypeError ()
 checkKindConsistency candidate =
   case areKindsConsistent varsOnly of
-    Left var -> Left (InconsistentKinds var (typemembers candidate))
+    Left var -> Left (InconsistentKinds var (map reify (concat (map snd (typemembers candidate)))))
     _ -> pure ()
   where
-    -- fromJust is safe here; invalid types will be caught in a prior check.
-    -- TODO: be safer.
-    varsOnly = filter isTypeGeneric (map (fromJust . xobjToTy . snd) (pairwise (typemembers candidate)))
+    varsOnly = filter isTypeGeneric $ concat (map snd (typemembers candidate))
 
 -- | Returns an error if one of the types members can't be used as a member.
 checkMembers :: TypeEnv -> Env -> TypeCandidate -> Either TypeError ()
 checkMembers typeEnv globalEnv candidate =
-  mapM_ (okXObjForType (typename candidate) (restriction candidate) typeEnv globalEnv (variables candidate) . snd) (pairwise (typemembers candidate))
-
-okXObjForType :: String -> TypeVarRestriction -> TypeEnv -> Env -> [Ty] -> XObj -> Either TypeError ()
-okXObjForType tyname typeVarRestriction typeEnv globalEnv typeVariables xobj =
-  case xobjToTy xobj of
-    Just t -> canBeUsedAsMemberType tyname typeVarRestriction typeEnv globalEnv typeVariables t xobj
-    Nothing -> Left (NotAType xobj)
+  let tys = concat $ map snd (typemembers candidate)
+   in mapM_ (canBeUsedAsMemberType (typename candidate) (restriction candidate) typeEnv globalEnv (variables candidate)) tys
 
 -- | Can this type be used as a member for a deftype?
-canBeUsedAsMemberType :: String -> TypeVarRestriction -> TypeEnv -> Env -> [Ty] -> Ty -> XObj -> Either TypeError ()
-canBeUsedAsMemberType tyname typeVarRestriction typeEnv globalEnv typeVariables ty xobj =
+canBeUsedAsMemberType :: String -> TypeVarRestriction -> TypeEnv -> Env -> [Ty] -> Ty -> Either TypeError ()
+canBeUsedAsMemberType tyname typeVarRestriction typeEnv globalEnv typeVariables ty =
   case ty of
     UnitTy -> pure ()
     IntTy -> pure ()
@@ -94,11 +82,8 @@ canBeUsedAsMemberType tyname typeVarRestriction typeEnv globalEnv typeVariables 
     FuncTy {} -> pure ()
     PointerTy UnitTy -> pure ()
     PointerTy inner ->
-      canBeUsedAsMemberType tyname typeVarRestriction typeEnv globalEnv typeVariables inner xobj
+      canBeUsedAsMemberType tyname typeVarRestriction typeEnv globalEnv typeVariables inner
         >> pure ()
-    --BoxTy inner ->
-    --  canBeUsedAsMemberType tyname typeVarRestriction typeEnv globalEnv typeVariables inner xobj
-    --    >> pure ()
     -- Struct variables may appear as complete applications or individual
     -- components in the head of a definition; that is the forms:
     --     ((Foo (f a b)) [x (f a b)])
@@ -120,37 +105,37 @@ canBeUsedAsMemberType tyname typeVarRestriction typeEnv globalEnv typeVariables 
       checkVar struct <> checkStruct sname tyVars
     v@(VarTy _) -> checkVar v
     (RecTy _) -> pure ()
-    _ -> Left (InvalidMemberType ty xobj)
+    _ -> Left (InvalidMemberType ty (reify ty))
   where
     checkStruct :: Ty -> [Ty] -> Either TypeError ()
     checkStruct (ConcreteNameTy (SymPath [] "Array")) [innerType] =
-      canBeUsedAsMemberType tyname typeVarRestriction typeEnv globalEnv typeVariables innerType xobj
+      canBeUsedAsMemberType tyname typeVarRestriction typeEnv globalEnv typeVariables innerType 
         >> pure ()
     checkStruct (ConcreteNameTy (SymPath [] "Box")) [innerType] =
-      canBeUsedAsMemberType tyname typeVarRestriction typeEnv globalEnv typeVariables innerType xobj
+      canBeUsedAsMemberType tyname typeVarRestriction typeEnv globalEnv typeVariables innerType 
         >> pure ()
     checkStruct (ConcreteNameTy path@(SymPath _ pname)) vars =
       if pname == tyname && length vars == length typeVariables
-        then foldM (\_ typ -> canBeUsedAsMemberType tyname typeVarRestriction typeEnv globalEnv typeVariables typ xobj) () vars
+        then foldM (\_ typ -> canBeUsedAsMemberType tyname typeVarRestriction typeEnv globalEnv typeVariables typ) () vars
         else
           case E.getTypeBinder typeEnv pname <> E.findTypeBinder globalEnv path of
             Right (Binder _ (XObj (Lst (XObj (ExternalType _) _ _ : _)) _ _)) ->
               pure ()
             Right (Binder _ (XObj (Lst (XObj (Deftype t) _ _ : _)) _ _)) ->
-              checkInhabitants t >> foldM (\_ typ -> canBeUsedAsMemberType tyname typeVarRestriction typeEnv globalEnv typeVariables typ xobj) () vars
+              checkInhabitants t >> foldM (\_ typ -> canBeUsedAsMemberType tyname typeVarRestriction typeEnv globalEnv typeVariables typ) () vars
             Right (Binder _ (XObj (Lst (XObj (DefSumtype t) _ _ : _)) _ _)) ->
-              checkInhabitants t >> foldM (\_ typ -> canBeUsedAsMemberType tyname typeVarRestriction typeEnv globalEnv typeVariables typ xobj) () vars
-            _ -> Left (NotAmongRegisteredTypes ty xobj)
+              checkInhabitants t >> foldM (\_ typ -> canBeUsedAsMemberType tyname typeVarRestriction typeEnv globalEnv typeVariables typ) () vars
+            _ -> Left (NotAmongRegisteredTypes ty (reify ty))
       where
         checkInhabitants :: Ty -> Either TypeError ()
         checkInhabitants (StructTy _ vs) =
           if length vs == length vars
             then pure ()
-            else Left (UninhabitedConstructor ty xobj (length vs) (length vars))
-        checkInhabitants _ = Left (InvalidMemberType ty xobj)
+            else Left (UninhabitedConstructor ty (reify ty) (length vs) (length vars))
+        checkInhabitants _ = Left (InvalidMemberType ty (reify ty))
     checkStruct v@(VarTy _) vars =
-      canBeUsedAsMemberType tyname typeVarRestriction typeEnv globalEnv typeVariables v xobj
-        >> foldM (\_ typ -> canBeUsedAsMemberType tyname typeVarRestriction typeEnv globalEnv typeVariables typ xobj) () vars
+      canBeUsedAsMemberType tyname typeVarRestriction typeEnv globalEnv typeVariables v
+        >> foldM (\_ typ -> canBeUsedAsMemberType tyname typeVarRestriction typeEnv globalEnv typeVariables typ) () vars
     checkStruct _ _ = error "checkstruct"
     checkVar :: Ty -> Either TypeError ()
     checkVar variable =
@@ -160,7 +145,7 @@ canBeUsedAsMemberType tyname typeVarRestriction typeEnv globalEnv typeVariables 
         AllowOnlyNamesInScope ->
           if any (isCaptured variable) typeVariables
             then pure ()
-            else Left (InvalidMemberType ty xobj)
+            else Left (InvalidMemberType ty (reify ty))
       where
         -- If a variable `a` appears in a higher-order polymorphic form, such as `(f a)`
         -- `a` may be used as a member, sans `f`, but `f` may not appear

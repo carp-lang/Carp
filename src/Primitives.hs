@@ -15,7 +15,7 @@ import Data.List (foldl')
 import Data.Maybe (fromJust, fromMaybe)
 import Deftype
 import Emit
-import Env (addUsePath, contextEnv, insert, lookupBinderEverywhere, lookupEverywhere, lookupMeta, searchValueBinder)
+import Env (addUsePath, contextEnv, insert, lookupBinderEverywhere, lookupEverywhere, lookupMeta, searchValueBinder, empty)
 import EvalError
 import Infer
 import Info
@@ -35,6 +35,7 @@ import ToTemplate
 import TypeError
 import TypePredicates
 import Types
+import TypeCandidate
 import Util
 import Web.Browser (openBrowser)
 import RecType
@@ -647,8 +648,14 @@ makeType ctx name vars constructor =
   let qpath = (qualifyPath ctx (SymPath [] name))
       ty = StructTy (ConcreteNameTy (unqualify qpath)) vars
       (typeX, members, creator) = constructor ty
+      mems = case members of
+               [XObj (Arr xs) _ _] -> xs
+               --(Lst xs) -> xs
+               _ -> members
+      candidate = fromDeftype name vars Env.empty Env.empty mems <> fromSumtype name vars Env.empty Env.empty mems
+      isRec = fromRight False (fmap isRecursive candidate)
       -- if the type is recursive, tag it so we can easily find such types in the emitter.
-      tBinder = if any (isRecursive ty) members
+      tBinder = if isRec
                   then Meta.updateBinderMeta (toBinder typeX) "recursive" trueXObj
                   else (toBinder typeX)
    in case ( unwrapTypeErr ctx (creator ctx name vars members Nothing)

@@ -1,3 +1,4 @@
+-- | Module RecType defines routines for working with recursive data types.
 module RecType
   (
    recursiveMembersToPointers,
@@ -24,6 +25,29 @@ import Concretize
 import ToTemplate
 import Validate
 
+-- | Returns true if a type candidate is recursive.
+isRecursive :: TypeCandidate -> Bool
+isRecursive candidate =
+  let memberTypes = concat $ map snd (typemembers candidate)
+      vars = variables candidate
+      name = typename candidate
+   in any (check name vars) memberTypes
+  where check :: String -> [Ty] -> Ty -> Bool
+        check name vars t = isDirectRecursion name vars t || isIndirectRecursion name vars t
+
+isDirectRecursion :: String -> [Ty] -> Ty -> Bool
+isDirectRecursion name vars (StructTy (ConcreteNameTy (SymPath [] n)) rest) =
+  (n == name && vars == rest)
+isDirectRecursion name vars (RecTy t) = isDirectRecursion name vars t
+isDirectRecursion _ _ _ = False
+
+isIndirectRecursion :: String -> [Ty] -> Ty -> Bool
+isIndirectRecursion name vars t@(StructTy _ rest) =
+  not (isDirectRecursion name vars t) && any (isDirectRecursion name vars) rest
+isIndirectRecursion name vars (PointerTy t) = isDirectRecursion name vars t
+isIndirectRecursion name vars (RefTy t _) = isDirectRecursion name vars t
+isIndirectRecursion _ _ _ = False
+
 --------------------------------------------------------------------------------
 -- Base indirection recursion
 
@@ -31,42 +55,24 @@ import Validate
 -- Types have valid recursion if they refer to themselves through indirection.
 okRecursive :: TypeCandidate -> Either TypeError ()
 okRecursive candidate =
-  if any go (typemembers candidate)
-    then validateInterfaceConstraints (candidate { interfaceConstraints = concat $ map go' (typemembers candidate)})
-    else Right ()
-  where go :: XObj -> Bool
-        go (XObj (Sym (SymPath _ name) _) _ _) = name == typename candidate
-        go (XObj (Lst xs) _ _) = any go xs
-        go _ = False
-        go' x@(XObj (Lst _) _ _) = if go x
-                                     then case xobjToTy x of
-                                            Just t@(PointerTy _) -> recInterfaceConstraints t
-                                            Just t@(RefTy _ _) -> recInterfaceConstraints t
-                                            Just t@(StructTy _ [_]) -> recInterfaceConstraints t
-                                            _ -> []
-                                     else []
-        go' _ = []
+  let name = typename candidate
+      vars = variables candidate
+      memberTypes = concat $ map snd (typemembers candidate)
+      recursives = (filter (isIndirectRecursion name vars) memberTypes)
+      ty = StructTy (ConcreteNameTy (SymPath [] name)) vars
+      constraints = map (recInterfaceConstraints ty) recursives
+   in validateInterfaceConstraints (candidate {interfaceConstraints = concat constraints})
 
 -- | Generates interface constraints for a recursive type.
 -- The recursive portion of recursive types must be wrapped in a type F that supports indirection.
 -- We enforce this with two interfaces:
 --   allocate: Heap allocates a value T and wraps it in type F<T>
 --   indirect: Returns T from a heap allocated F<T>
-recInterfaceConstraints :: Ty -> [InterfaceConstraint]
-recInterfaceConstraints t =
-  let members = tyMembers t
-   in case members of
-        [] -> []
-        _ -> [ InterfaceConstraint "indirect" [(FuncTy [t] (head members) StaticLifetimeTy)],
-               InterfaceConstraint "alloc" [(FuncTy [(head members)] t StaticLifetimeTy)]
-             ]
-
--- | Returns true if a type member xobj is recursive (either through indirect recursion or "value" recursion)
-isRecursive :: Ty -> XObj -> Bool
-isRecursive (StructTy (ConcreteNameTy spath) []) (XObj (Sym path _) _ _) = spath == path
-isRecursive rec (XObj (Lst xs) _ _) = any (isRecursive rec) xs
-isRecursive rec (XObj (Arr xs) _ _) = any (isRecursive rec) xs
-isRecursive _ _ = False
+recInterfaceConstraints :: Ty -> Ty -> [InterfaceConstraint]
+recInterfaceConstraints recTy t =
+  [ InterfaceConstraint "indirect" [(FuncTy [t] recTy StaticLifetimeTy)],
+    InterfaceConstraint "alloc" [(FuncTy [recTy] t StaticLifetimeTy)]
+  ]
 
 --------------------------------------------------------------------------------
 -- **Value recursion sugar**

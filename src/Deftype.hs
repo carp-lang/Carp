@@ -61,7 +61,6 @@ moduleForDeftype innerEnv typeEnv env pathStrings typeName typeVariables rest i 
       -- The variable 'insidePath' is the path used for all member functions inside the 'typeModule'.
       -- For example (module Vec2 [x Float]) creates bindings like Vec2.create, Vec2.x, etc.
       insidePath = pathStrings ++ [typeName]
-      candidate = TypeCandidate {restriction = AllowOnlyNamesInScope, typename = typeName, variables = typeVariables, typemembers = [], interfaceConstraints = [], candidateTypeEnv = typeEnv, candidateEnv = env}
       initmembers = case rest of
                       -- ANSI C does not allow empty structs. We add a dummy member here to account for this.
                       -- Note that we *don't* add this member for external types--we leave those definitions up to the user.
@@ -75,11 +74,9 @@ moduleForDeftype innerEnv typeEnv env pathStrings typeName typeVariables rest i 
         let structTy = StructTy (ConcreteNameTy (SymPath pathStrings typeName)) typeVariables
             ptrmembers = map (recursiveMembersToPointers structTy) rest
             ptrinitmembers = map (recursiveMembersToPointers structTy) initmembers
-        innermems <- case ptrmembers of
-                       [XObj (Arr membersXObjs) _ _] -> Right membersXObjs
-                       _ -> Left $ NotAValidType (XObj (Sym (SymPath pathStrings typeName) Symbol) i (Just TypeTy))
-        okRecursive (candidate {typemembers = mems})
-        validateMembers typeEnv env (candidate {typemembers = innermems})
+        candidate <- fromDeftype typeName typeVariables typeEnv env mems
+        validateMembers candidate
+        okRecursive candidate
         (okMembers, membersDeps) <- templatesForMembers typeEnv env insidePath structTy ptrmembers
         okInit <- if (any (isValueRecursive structTy) ptrmembers) then recursiveProductInitBinder insidePath structTy ptrinitmembers else binderForInit insidePath structTy initmembers
         okMake <- recursiveProductMakeBinder insidePath structTy ptrmembers
@@ -102,12 +99,12 @@ bindingsForRegisteredType typeEnv env pathStrings typeName rest i existingEnv =
   let moduleValueEnv = fromMaybe (new (Just env) (Just typeName)) (fmap fst existingEnv)
       moduleTypeEnv = fromMaybe (new (Just typeEnv) (Just typeName)) (fmap snd existingEnv)
       insidePath = pathStrings ++ [typeName]
-      candidate = TypeCandidate {restriction = AllowOnlyNamesInScope, typename = typeName, variables = [], typemembers = [], interfaceConstraints = [], candidateTypeEnv = typeEnv, candidateEnv = env}
    in do
         mems <- case rest of
                   [XObj (Arr membersXObjs) _ _] -> Right membersXObjs
                   _ -> Left $ NotAValidType (XObj (Sym (SymPath pathStrings typeName) Symbol) i (Just TypeTy))
-        validateMembers typeEnv env (candidate {typemembers = mems})
+        candidate <- fromDeftype typeName [] typeEnv env mems
+        validateMembers candidate
         let structTy = StructTy (ConcreteNameTy (SymPath pathStrings typeName)) []
         (binders, deps) <- templatesForMembers typeEnv env insidePath structTy rest
         okInit <- binderForInit insidePath structTy rest

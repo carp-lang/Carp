@@ -15,6 +15,7 @@ where
 import Control.Monad.State
 import Data.Char (ord)
 import Data.Functor ((<&>))
+import Data.Either (fromRight)
 import Data.List (intercalate, isPrefixOf, sortOn)
 import Data.Maybe (fromJust, fromMaybe, isJust)
 import Env
@@ -31,6 +32,7 @@ import Template
 import TypePredicates
 import Types
 import TypesToC
+import TypeCandidate
 import Util
 
 addIndent :: Int -> String
@@ -843,7 +845,7 @@ memberToDecl recty indent (memberName, memberType) =
     Nothing -> error ("Invalid memberType: " ++ show memberType)
 
 defStructToDeclaration :: Ty -> SymPath -> [XObj] -> String
-defStructToDeclaration structTy@(StructTy _ _) _ rest =
+defStructToDeclaration structTy@(StructTy _ vars) _ rest@[XObj (Arr mems) _ _] =
   let indent = indentAmount
       typedefCaseToMemberDecl :: XObj -> State EmitterState [()]
       -- ANSI C doesn't allow empty structs, insert a dummy member to keep the compiler happy.
@@ -851,17 +853,18 @@ defStructToDeclaration structTy@(StructTy _ _) _ rest =
       typedefCaseToMemberDecl (XObj (Arr members) _ _) = mapM (memberToDecl structTy indent) (remove (isUnit . fromJust . xobjToTy . snd) (pairwise members))
       typedefCaseToMemberDecl _ = error "Invalid case in typedef."
       pointerfix = map (recursiveMembersToPointers structTy) rest
+      candidate = fromDeftype (getStructName structTy) vars empty empty mems
+      isRec = fromRight False (fmap isRecursive candidate)
       -- Note: the names of types are not namespaced
       visit = do
         -- forward declaration for recursive types.
-        when (any (isRecursive structTy) pointerfix) $
+        when isRec $
           do appendToSrc ("// Recursive type \n")
              appendToSrc ("struct " ++ tyToC structTy ++ " {\n")
-        when (all (not . isRecursive structTy) pointerfix) $ appendToSrc "typedef struct {\n"
+        when (not isRec) $ appendToSrc "typedef struct {\n"
         mapM_ typedefCaseToMemberDecl pointerfix
         appendToSrc "}"
-        unless (any (isRecursive structTy) pointerfix)
-          (appendToSrc (" " ++ tyToC structTy))
+        unless isRec (appendToSrc (" " ++ tyToC structTy))
         appendToSrc ";\n"
    in if isTypeGeneric structTy
         then "" -- ("// " ++ show structTy ++ "\n")
@@ -869,22 +872,23 @@ defStructToDeclaration structTy@(StructTy _ _) _ rest =
 defStructToDeclaration _ _ _ = error "defstructtodeclaration"
 
 defSumtypeToDeclaration :: Ty -> [XObj] -> String
-defSumtypeToDeclaration sumTy@(StructTy _ _) rest =
+defSumtypeToDeclaration sumTy@(StructTy _ vars) rest =
   let indent = indentAmount
       pointerfix = map (recursiveMembersToPointers sumTy) rest
+      candidate = fromSumtype (getStructName sumTy) vars empty empty rest
+      isRec = (fromRight False (fmap isRecursive candidate))
       visit = do
-        (if (any (isRecursive sumTy) pointerfix)
-           then do appendToSrc ("// Recursive type \n")
-                   appendToSrc ("struct " ++ tyToC sumTy ++ " {\n")
-           else appendToSrc "typedef struct {\n")
+        if isRec
+          then do appendToSrc ("// Recursive type \n")
+                  appendToSrc ("struct " ++ tyToC sumTy ++ " {\n")
+          else appendToSrc "typedef struct {\n"
         appendToSrc (addIndent indent ++ "union {\n")
         mapM_ (emitSumtypeCase indent) pointerfix
         appendToSrc (addIndent indent ++ "char __dummy;\n")
         appendToSrc (addIndent indent ++ "} u;\n")
         appendToSrc (addIndent indent ++ "char _tag;\n")
         appendToSrc "}"
-        unless (any (isRecursive sumTy) pointerfix)
-          (appendToSrc (" " ++ tyToC sumTy))
+        unless isRec (appendToSrc (" " ++ tyToC sumTy))
         appendToSrc ";\n"
         --appendToSrc ("// " ++ show typeVariables ++ "\n")
         mapM_ emitSumtypeCaseTagDefinition (zip [0 ..] pointerfix)

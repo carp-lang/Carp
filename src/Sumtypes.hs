@@ -53,12 +53,13 @@ moduleForSumtype innerEnv typeEnv env pathStrings typeName typeVariables rest i 
   let moduleValueEnv = fromMaybe (new innerEnv (Just typeName)) (fmap fst existingEnv)
       moduleTypeEnv = fromMaybe (new (Just typeEnv) (Just typeName)) (fmap snd existingEnv)
       insidePath = pathStrings ++ [typeName]
-      candidate = TypeCandidate {typename = typeName, variables = typeVariables, restriction = AllowOnlyNamesInScope, typemembers = rest, interfaceConstraints = [], candidateTypeEnv = typeEnv, candidateEnv = env}
    in do
         let structTy = StructTy (ConcreteNameTy (SymPath pathStrings typeName)) typeVariables
             ptrFix = map (recursiveMembersToPointers structTy) rest
+        candidate <- fromSumtype typeName typeVariables typeEnv env rest
         okRecursive candidate
-        cases <- toCases typeEnv env (candidate {typemembers = ptrFix})
+        candidate' <- fromSumtype typeName typeVariables typeEnv env ptrFix
+        cases <- toCases typeEnv env candidate'
         okIniters <- initers insidePath structTy cases
         okTag <- binderForTag insidePath structTy
         (okStr, okStrDeps) <- binderForStrOrPrn typeEnv env insidePath structTy cases "str"
