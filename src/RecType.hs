@@ -63,7 +63,7 @@ recInterfaceConstraints t =
 
 -- | Returns true if a type member xobj is recursive (either through indirect recursion or "value" recursion)
 isRecursive :: Ty -> XObj -> Bool
-isRecursive (StructTy (ConcreteNameTy spath) _) (XObj (Sym path _) _ _) = spath == path
+isRecursive (StructTy (ConcreteNameTy spath) []) (XObj (Sym path _) _ _) = spath == path
 isRecursive rec (XObj (Lst xs) _ _) = any (isRecursive rec) xs
 isRecursive rec (XObj (Arr xs) _ _) = any (isRecursive rec) xs
 isRecursive _ _ = False
