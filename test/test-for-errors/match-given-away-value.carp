@@ -1,0 +1,9 @@
+(Project.config "file-path-print-length" "short")
+
+(deftype Example (A [String String]))
+
+(defn f []
+  (let-do [e (Example.A @"x" @"y")]
+    (match e
+      (Example.A a b) ())
+    (println* &e)))
