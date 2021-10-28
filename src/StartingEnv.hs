@@ -489,16 +489,16 @@ startingGlobalEnv noArray =
           makeSymbol "do" "is used to group statements." "(do (println* \"hi\") 1) ; => 1" Do,
           makeSymbol "while" "is used for loops." "(while true\n  (loop-forever))" While,
           makeSymbol "fn" "is used to define anonymous functions." "(fn [arg] body)" (Fn Nothing Set.empty),
-          makeSymbol "let" "" "" Let,
-          makeSymbol "break" "" "" Break,
-          makeSymbol "if" "" "" If,
-          makeSymbol "match" "" "" (Match MatchValue),
-          makeSymbol "match-ref" "" "" (Match MatchRef),
-          makeSymbol "set!" "" "" SetBang,
-          makeSymbol "the" "" "" The,
-          makeSymbol "ref" "" "" Ref,
-          makeSymbol "deref" "" "" Deref,
-          makeSymbol "with" "" "" With
+          makeSymbol "let" "is used to introduce local variables." "(let [var-name expression]\n  body-with-var-defined)" Let,
+          makeSymbol "break" "is used to break out of loops." "(while true\n  (break))" Break,
+          makeSymbol "if" "is used for conditional expressions." "(if conditional\n  then-branch\n  else-branch)" If,
+          makeSymbol "match" "is used for matching on sumtypes." "(match expression-returing-a-sumtype\n  (Constructor value) (something-with value)\n  _ \"wildcard\")" (Match MatchValue),
+          makeSymbol "match-ref" "is used for matching, like `match`, but takes references." "(match-ref expression-sumtype-ref\n  (Constructor value-ref) value-ref\n  _ \"wildcard\")" (Match MatchRef),
+          makeSymbol "set!" "is used to rebind a variable." "(set! var new-value)" SetBang,
+          makeSymbol "the" "is used to annotating expressions." "(the Type expression)" The,
+          makeSymbol "ref" "is used to take references. Long form of `&expression`." "(ref expression)" Ref,
+          makeSymbol "deref" "is used to call references. Long form of `~expression`." "(deref expression)" Deref,
+          makeSymbol "with" "makes modules available locally. Like `use`, but not global." "(with Module expression-with-module)" With
         ]
           ++ [("Array", Binder emptyMeta (XObj (Mod arrayModule E.empty) Nothing Nothing)) | not noArray]
           ++ [("StaticArray", Binder emptyMeta (XObj (Mod staticArrayModule E.empty) Nothing Nothing))]
