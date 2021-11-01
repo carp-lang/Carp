@@ -53,6 +53,7 @@ data Ty
   | StringTy
   | PatternTy
   | CharTy
+  | CCharTy
   | FuncTy [Ty] Ty Ty -- In order of appearance: (1) Argument types, (2) Return type, (3) Lifetime
   | VarTy String
   | UnitTy
@@ -171,6 +172,7 @@ instance Show Ty where
   show StringTy = "String"
   show PatternTy = "Pattern"
   show CharTy = "Char"
+  show CCharTy = "CChar"
   show (FuncTy argTys retTy StaticLifetimeTy) = "(" ++ fnOrLambda ++ " [" ++ joinWithComma (map show argTys) ++ "] " ++ show retTy ++ ")"
   show (FuncTy argTys retTy lt) = "(" ++ fnOrLambda ++ " [" ++ joinWithComma (map show argTys) ++ "] " ++ show retTy ++ " " ++ show lt ++ ")"
   show (VarTy t) = t

@@ -16,6 +16,7 @@ import Util
 data Args = Args
   { prefixToRemove :: String,
     kebabCase :: Bool,
+    emitCName :: Bool,
     sourcePath :: String
   }
   deriving (Show)
@@ -25,6 +26,7 @@ parseArgs =
   Args
     <$> strOption (long "prefixtoremove" <> short 'p' <> metavar "ITEM" <> value "")
     <*> switch (long "kebabcase" <> short 'f')
+    <*> switch (long "emitcname" <> short 'c')
     <*> argument str (metavar "FILE")
 
 main = do
@@ -43,13 +45,14 @@ main = do
                     source
                     (prefixToRemove parsedArgs)
                     (kebabCase parsedArgs)
+                    (emitCName parsedArgs)
                 )
             )
         )
     else print parsedArgs
 
-parseHeaderFile :: FilePath -> String -> String -> Bool -> [XObj]
-parseHeaderFile path src prefix kebab =
+parseHeaderFile :: FilePath -> String -> String -> Bool -> Bool -> [XObj]
+parseHeaderFile path src prefix kebab cName =
   case Parsec.runParser cSyntax () path src of
     Left err -> error (show err)
     Right ok -> concat ok
@@ -77,11 +80,11 @@ parseHeaderFile path src prefix kebab =
         Nothing ->
           let tyXObj =
                 XObj (Sym (SymPath [] "a") Symbol) Nothing Nothing
-           in pure (createRegisterForm name tyXObj prefix False)
+           in pure (createRegisterForm name tyXObj prefix False cName)
         Just args ->
           let argsTy = genTypes (length args)
               tyXObj = toFnTypeXObj argsTy ("a", 0)
-           in pure (createRegisterForm name tyXObj prefix False)
+           in pure (createRegisterForm name tyXObj prefix False cName)
       where
         argList = do
           _ <- Parsec.char '('
@@ -128,7 +131,7 @@ parseHeaderFile path src prefix kebab =
       Parsec.char ';'
       Parsec.many (Parsec.noneOf "\n")
       let tyXObj = toFnTypeXObj argTypeStrings (returnTypeString, length stars1 + length stars2)
-      pure (createRegisterForm name tyXObj prefix kebab)
+      pure (createRegisterForm name tyXObj prefix kebab cName)
     voidArg :: Parsec.Parsec String () [(String, Int)]
     voidArg = do
       _ <- Parsec.string "(void)"
@@ -163,8 +166,8 @@ parseHeaderFile path src prefix kebab =
 
 --pure [(XObj (Str ("DISCARDED: " ++ discardedLine)) Nothing Nothing)]
 
-createRegisterForm :: String -> XObj -> String -> Bool -> [XObj]
-createRegisterForm name tyXObj prefix kebab =
+createRegisterForm :: String -> XObj -> String -> Bool -> Bool -> [XObj]
+createRegisterForm name tyXObj prefix kebab cName =
   let carpName =
         (if kebab then (toKebab . lowerFirst) else id)
           (if prefix == "" then name else removePrefix prefix name)
@@ -175,9 +178,9 @@ createRegisterForm name tyXObj prefix kebab =
                   (XObj (Sym (SymPath [] carpName) Symbol) Nothing Nothing),
                   tyXObj
                 ]
-                  ++ if prefix == ""
-                    then []
-                    else [(XObj (Str emitName) Nothing Nothing)]
+                  ++ if (prefix /= "") || kebab || cName
+                    then [(XObj (Str emitName) Nothing Nothing)]
+                    else []
               )
           )
           Nothing
@@ -202,7 +205,7 @@ toTypeXObj typeString =
   (XObj (Sym (SymPath [] (show (cTypeToCarpType typeString))) Symbol) Nothing Nothing)
 
 cTypeToCarpType :: (String, Int) -> Ty
-cTypeToCarpType ("char", 0) = CharTy
+cTypeToCarpType ("char", 0) = CCharTy
 cTypeToCarpType ("int", 0) = IntTy
 cTypeToCarpType ("bool", 0) = BoolTy
 cTypeToCarpType ("long", 0) = LongTy

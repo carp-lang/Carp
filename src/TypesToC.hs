@@ -39,6 +39,7 @@ tyToCManglePtr _ ty = f ty
     f StringTy = "String"
     f PatternTy = "Pattern"
     f CharTy = "Char"
+    f CCharTy = "CChar"
     f UnitTy = "void"
     f (VarTy x) = x
     f (FuncTy argTys retTy _) = "Fn__" ++ joinWithUnderscore (map (tyToCManglePtr True) argTys) ++ "_" ++ tyToCManglePtr True retTy
