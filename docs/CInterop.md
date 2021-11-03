@@ -16,6 +16,7 @@ This is an extension of what is covered in the [Language Guide](./LanguageGuide.
   - [`preproc`](#unsafe-preproc)
   - [Registering Types](#register-types)
 - [Callbacks](#callbacks)
+- [Headerparse](#headerparse)
 
 
 ## How Carp generates identifiers
@@ -557,4 +558,40 @@ Because everything gets turned into a void pointer all type safety is lost so
 it is the responsibility of the caller to ensure the operation is safe. It is
 also important to ensure the lifetime of the `Ptr` doesn't not exceed the
 lifetime of the function/env it represents.
+
+## Headerparse
+
+`headerparse` is a Haskell script to aid in writing C bindings by parsing a C
+header and generating `register` and `register-type` for you. It resides in the
+`./headersparse` folder in Carp source repo and can be used in the following
+way:
+
+```sh
+stack runhaskell ./headerparse/Main.hs -- ../path/to/c/header.h
+```
+
+The script accepts the following flags:
+
+* `[-p|--prefixtoremove thePrefix]` Removes a prefix from the C identifiers
+* `[-f|--kebabcase]` Converts identifiers to kebab-case
+* `[-c|--emitcname]` Always emit the C identifier name after the binding
+
+### Example
+
+Invoking the script on this C header:
+
+```sh
+stack runhaskell ./headerparse/Main.hs -- -p "MyModule_" -f ../path/to/aheader.h
+```
+
+```c
+// aheader.h
+bool MyModule_runThisFile(const char *file);
+```
+
+Will output the following:
+
+```clojure
+(register run-this-file (λ [(Ptr CChar)] Bool) "MyModule_runThisFile")
+```
 
