@@ -326,4 +326,54 @@
   (defn int64-seq->bytes [order is]
     (let [f (fn [i] (int64->bytes order @i))]
       (Array.copy-map &f is)))
+
+  (defn to-hex-str [b]
+    (let [hi (Byte.bit-and b (from-int 0xF0))
+          lo (Byte.bit-shift-left b (from-int 4))
+          nib-one  @""
+          nib-two  @""]
+      (do (case hi
+            (from-int 0x00) (set! nib-one @"0")
+            (from-int 0x10) (set! nib-one @"1")
+            (from-int 0x20) (set! nib-one @"2")
+            (from-int 0x30) (set! nib-one @"3")
+            (from-int 0x40) (set! nib-one @"4")
+            (from-int 0x50) (set! nib-one @"5")
+            (from-int 0x60) (set! nib-one @"6")
+            (from-int 0x70) (set! nib-one @"7")
+            (from-int 0x80) (set! nib-one @"8")
+            (from-int 0x90) (set! nib-one @"9")
+            (from-int 0xA0) (set! nib-one @"A")
+            (from-int 0xB0) (set! nib-one @"B")
+            (from-int 0xC0) (set! nib-one @"C")
+            (from-int 0xD0) (set! nib-one @"D")
+            (from-int 0xE0) (set! nib-one @"E")
+            (from-int 0xF0) (set! nib-one @"F")
+            (set! nib-one @"FATAL ERROR IN BIT LAND! ALL IS LOST"))
+          (case lo
+            (from-int 0x00) (set! nib-two @"0")
+            (from-int 0x10) (set! nib-two @"1")
+            (from-int 0x20) (set! nib-two @"2")
+            (from-int 0x30) (set! nib-two @"3")
+            (from-int 0x40) (set! nib-two @"4")
+            (from-int 0x50) (set! nib-two @"5")
+            (from-int 0x60) (set! nib-two @"6")
+            (from-int 0x70) (set! nib-two @"7")
+            (from-int 0x80) (set! nib-two @"8")
+            (from-int 0x90) (set! nib-two @"9")
+            (from-int 0xA0) (set! nib-two @"A")
+            (from-int 0xB0) (set! nib-two @"B")
+            (from-int 0xC0) (set! nib-two @"C")
+            (from-int 0xD0) (set! nib-two @"D")
+            (from-int 0xE0) (set! nib-two @"E")
+            (from-int 0xF0) (set! nib-two @"F")
+            (set! nib-two @"FATAL ERROR IN BIT LAND! ALL IS LOST"))
+          (String.concat &[nib-one nib-two]))))
+
+  (doc bytes->hex-string
+    "Converts an array of bytes to a string of its hexadecimal representation")
+  (sig bytes->hex-string (Fn [(Ref (Array Byte) q)] String))
+  (defn bytes->hex-string [bs]
+    (let [f (fn [b] (to-hex-str @b))]
+      (String.join " " &(Array.copy-map &f bs))))
 )
