@@ -16,7 +16,6 @@ import Polymorphism
 import Template
 import ToTemplate
 import Types
-import TypesToC
 
 boxTy :: Ty
 boxTy = StructTy (ConcreteNameTy (SymPath [] "Box")) [(VarTy "t")]
@@ -114,7 +113,7 @@ delete =
             ( \(FuncTy [bTy] UnitTy _) ->
                 multilineTemplate
                   [ "$DECL {",
-                    innerDelete tenv env bTy,
+                    "  " ++ innerDelete tenv env bTy,
                     "}"
                   ]
             )
@@ -127,8 +126,8 @@ delete =
     innerDelete tenv env (StructTy (ConcreteNameTy (SymPath [] "Box")) [inner]) =
       case findFunctionForMember tenv env "delete" (typesDeleterFunctionType inner) ("Inside box.", inner) of
         FunctionFound functionFullName ->
-            "  " ++ functionFullName ++ "(((" ++ tyToCLambdaFix inner ++ ")box));\n"
-            -- ++ "  CARP_FREE(box);"
+            "  " ++ functionFullName ++ "(*box);\n"
+            ++ "  CARP_FREE(box);"
         FunctionNotFound msg -> error msg
         FunctionIgnored ->
           "  /* Ignore non-managed type inside Box: '" ++ show inner ++ "' */\n"
