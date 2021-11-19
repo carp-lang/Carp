@@ -26,6 +26,7 @@ tyToCRawFunctionPtrFix FuncTy {} = "void*"
 tyToCRawFunctionPtrFix t = tyToCManglePtr False t
 
 tyToCManglePtr :: Bool -> Ty -> String
+tyToCManglePtr b (StructTy (ConcreteNameTy (SymPath [] "Box")) [t]) = tyToCManglePtr b t ++ (if b then mangle "*" else "*")
 tyToCManglePtr b (PointerTy p) = tyToCManglePtr b p ++ (if b then mangle "*" else "*")
 tyToCManglePtr b (RefTy r _) = tyToCManglePtr b r ++ (if b then mangle "*" else "*")
 tyToCManglePtr _ ty = f ty
