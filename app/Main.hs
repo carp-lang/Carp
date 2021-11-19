@@ -36,7 +36,6 @@ defaultProject =
             "-Wall",
             "-Werror",
             "-Wno-unused-variable",
-            "-Wno-unused-but-set-variable",
             "-Wno-self-assign"
           ],
       projectLibFlags = case platform of
