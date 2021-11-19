@@ -10,14 +10,14 @@
   (implements fmap ArrayExtension.fmap)
   )
 
-(deftype (Box a) [x a])
+(deftype (MyBox a) [x a])
 
-(defmodule Box
-  (defn fmap [f box] (let [new-x (~f @(Box.x &box))]
-                       (Box.set-x box new-x)))
-  (implements fmap Box.fmap))
+(defmodule MyBox
+  (defn fmap [f box] (let [new-x (~f @(MyBox.x &box))]
+                       (MyBox.set-x box new-x)))
+  (implements fmap MyBox.fmap))
 
-(use Box)
+(use MyBox)
 (use ArrayExtension)
 
 ;; TODO: This function currently concretizes to the type of the first (f *) it
@@ -29,8 +29,8 @@
 
 (defn main []
   (do
-    (println &(str @(Box.x &(fmap &Int.inc (Box.init 100)))))
-    (println &(str @(Box.x &(Box.fmap &inc (Box.init 100)))))
+    (println &(str @(MyBox.x &(fmap &Int.inc (MyBox.init 100)))))
+    (println &(str @(MyBox.x &(MyBox.fmap &inc (MyBox.init 100)))))
     (println &(str &(ArrayExtension.fmap &inc [10 20 30 40 50])))
     (println &(str &(fmap &Int.inc [10 20 30 40 50])))
     (println &(Array.str &(fmap &Int.inc [10 20 30 40 50])))
