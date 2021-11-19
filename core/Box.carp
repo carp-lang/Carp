@@ -1,0 +1,5 @@
+(defmodule Box
+  (defn = [box-a box-b]
+    (= (Box.unbox @box-a) (Box.unbox @box-b)))
+  (implements = =)
+)

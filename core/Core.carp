@@ -18,6 +18,7 @@
 (load-once "Interfaces.carp")
 (load-once "Blitable.carp")
 (load-once "Bool.carp")
+(load-once "Box.carp")
 (load-once "Macros.carp")
 (load-once "BoolExtras.carp")
 (load-once "List.carp")

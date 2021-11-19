@@ -1,0 +1,15 @@
+(load "Test.carp")
+(use Test)
+
+(Debug.sanitize-addresses)
+
+(deftest test 
+  (assert-equal test 
+    &(Box.init @"foo")
+    &(Box.init @"foo")
+    "init works as expected")
+  (assert-equal test
+    2
+    (Box.unbox (Box.init 2))
+    "unbox works as expected")
+)
