@@ -88,6 +88,7 @@ depthOfType typeEnv visited selfName theType =
       --   accounts for unresolved types and scores based on these rather than
       --   relying on our hardcoded adjustments being correct?
       maximum (visitType ltTy : visitType retTy : fmap visitType argTys) + 1
+    visitType (RecTy p) = visitType p
     visitType (PointerTy p) = visitType p
     visitType (RefTy r lt) = max (visitType r) (visitType lt)
     visitType _ = 1

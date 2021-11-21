@@ -18,9 +18,11 @@ import Obj
 import StructUtils
 import Template
 import ToTemplate
+import TypeCandidate
 import TypeError
 import TypePredicates
 import Types
+import RecType
 import TypesToC
 import Util
 import Validate
@@ -30,7 +32,7 @@ import Validate
 moduleForDeftypeInContext :: Context -> String -> [Ty] -> [XObj] -> Maybe Info -> Either TypeError (String, XObj, [XObj])
 moduleForDeftypeInContext ctx name vars members info =
   let global = contextGlobalEnv ctx
-      types = contextTypeEnv ctx
+      ts = contextTypeEnv ctx
       path = contextPath ctx
       inner = either (const Nothing) Just (innermostModuleEnv ctx)
       previous =
@@ -47,7 +49,7 @@ moduleForDeftypeInContext ctx name vars members info =
                         _ -> Left "Non module"
                     )
           )
-   in moduleForDeftype inner types global path name vars members info previous
+   in moduleForDeftype inner ts global path name vars members info previous
 
 -- | This function creates a "Type Module" with the same name as the type being defined.
 --   A type module provides a namespace for all the functions that area automatically
@@ -66,16 +68,25 @@ moduleForDeftype innerEnv typeEnv env pathStrings typeName typeVariables rest i 
                       [(XObj (Arr []) ii t)] -> [(XObj (Arr [(XObj (Sym (SymPath [] "__dummy") Symbol) Nothing Nothing), (XObj (Sym (SymPath [] "Char") Symbol) Nothing Nothing)]) ii t)]
                       _ -> rest
    in do
-        validateMemberCases typeEnv env typeVariables rest
+        mems <- case rest of
+                  [XObj (Arr membersXObjs) _ _] -> Right membersXObjs
+                  _ -> Left $ NotAValidType (XObj (Sym (SymPath pathStrings typeName) Symbol) i (Just TypeTy))
         let structTy = StructTy (ConcreteNameTy (SymPath pathStrings typeName)) typeVariables
-        (okMembers, membersDeps) <- templatesForMembers typeEnv env insidePath structTy rest
-        okInit <- binderForInit insidePath structTy initmembers
-        (okStr, strDeps) <- binderForStrOrPrn typeEnv env insidePath structTy rest "str"
-        (okPrn, _) <- binderForStrOrPrn typeEnv env insidePath structTy rest "prn"
-        (okDelete, deleteDeps) <- binderForDelete typeEnv env insidePath structTy rest
-        (okCopy, copyDeps) <- binderForCopy typeEnv env insidePath structTy rest
+            ptrmembers = map (recursiveMembersToPointers structTy) rest
+            ptrinitmembers = map (recursiveMembersToPointers structTy) initmembers
+        candidate <- fromDeftype typeName typeVariables typeEnv env mems
+        validateMembers candidate
+        okRecursive candidate
+        (okMembers, membersDeps) <- templatesForMembers typeEnv env insidePath structTy ptrmembers
+        okInit <- if (any (isValueRecursive structTy) ptrmembers) then recursiveProductInitBinder insidePath structTy ptrinitmembers else binderForInit insidePath structTy initmembers
+        okMake <- recursiveProductMakeBinder insidePath structTy ptrmembers
+        (okStr, strDeps) <- binderForStrOrPrn typeEnv env insidePath structTy ptrmembers "str"
+        (okPrn, _) <- binderForStrOrPrn typeEnv env insidePath structTy ptrmembers"prn"
+        (okDelete, deleteDeps) <- binderForDelete typeEnv env insidePath structTy ptrmembers
+        (okCopy, copyDeps) <- binderForCopy typeEnv env insidePath structTy ptrmembers
         let funcs = okInit : okStr : okPrn : okDelete : okCopy : okMembers
-            moduleEnvWithBindings = addListOfBindings moduleValueEnv funcs
+            funcs' = if (any (isValueRecursive structTy) ptrmembers) then (okMake : funcs) else funcs
+            moduleEnvWithBindings = addListOfBindings moduleValueEnv funcs'
             typeModuleXObj = XObj (Mod moduleEnvWithBindings moduleTypeEnv) i (Just ModuleTy)
             deps = deleteDeps ++ membersDeps ++ copyDeps ++ strDeps
         pure (typeName, typeModuleXObj, deps)
@@ -89,7 +100,11 @@ bindingsForRegisteredType typeEnv env pathStrings typeName rest i existingEnv =
       moduleTypeEnv = fromMaybe (new (Just typeEnv) (Just typeName)) (fmap snd existingEnv)
       insidePath = pathStrings ++ [typeName]
    in do
-        validateMemberCases typeEnv env [] rest
+        mems <- case rest of
+                  [XObj (Arr membersXObjs) _ _] -> Right membersXObjs
+                  _ -> Left $ NotAValidType (XObj (Sym (SymPath pathStrings typeName) Symbol) i (Just TypeTy))
+        candidate <- fromDeftype typeName [] typeEnv env mems
+        validateMembers candidate
         let structTy = StructTy (ConcreteNameTy (SymPath pathStrings typeName)) []
         (binders, deps) <- templatesForMembers typeEnv env insidePath structTy rest
         okInit <- binderForInit insidePath structTy rest
@@ -119,6 +134,12 @@ templatesForSingleMember typeEnv env insidePath p@(StructTy (ConcreteNameTy _) _
         (FuncTy [p, t] p StaticLifetimeTy)
         (FuncTy [RefTy p (VarTy "q"), t] UnitTy StaticLifetimeTy)
         (FuncTy [p, RefTy (FuncTy [] UnitTy (VarTy "fq")) (VarTy "q")] p StaticLifetimeTy)
+    (RecTy t') ->
+      binders
+        (FuncTy [RefTy p (VarTy "q")] (RefTy t' (VarTy "q")) StaticLifetimeTy)
+        (FuncTy [p, t] p StaticLifetimeTy)
+        (FuncTy [RefTy p (VarTy "q"), t] UnitTy StaticLifetimeTy)
+        (FuncTy [p, RefTy (FuncTy [t] t (VarTy "fq")) (VarTy "q")] p StaticLifetimeTy)
     _ ->
       binders
         (FuncTy [RefTy p (VarTy "q")] (RefTy t (VarTy "q")) StaticLifetimeTy)
@@ -146,6 +167,7 @@ templatesForSingleMember _ _ _ _ _ = error "templatesforsinglemember"
 
 -- | The template for getters of a deftype.
 templateGetter :: String -> Ty -> Template
+templateGetter member t@(RecTy _) = recTemplateGetter member t
 templateGetter _ UnitTy =
   Template
     (FuncTy [RefTy (VarTy "p") (VarTy "q")] UnitTy StaticLifetimeTy)
@@ -459,6 +481,7 @@ templatizeTy (VarTy vt) = VarTy ("$" ++ vt)
 templatizeTy (FuncTy argTys retTy ltTy) = FuncTy (map templatizeTy argTys) (templatizeTy retTy) (templatizeTy ltTy)
 templatizeTy (StructTy name tys) = StructTy name (map templatizeTy tys)
 templatizeTy (RefTy t lt) = RefTy (templatizeTy t) (templatizeTy lt)
+templatizeTy (RecTy t) = t
 templatizeTy (PointerTy t) = PointerTy (templatizeTy t)
 templatizeTy t = t
 

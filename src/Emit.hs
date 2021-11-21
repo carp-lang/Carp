@@ -15,8 +15,9 @@ where
 import Control.Monad.State
 import Data.Char (ord)
 import Data.Functor ((<&>))
+import Data.Either (fromRight)
 import Data.List (intercalate, isPrefixOf, sortOn)
-import Data.Maybe (fromJust, fromMaybe)
+import Data.Maybe (fromJust, fromMaybe, isJust)
 import Env
 import Info
 import qualified Map
@@ -24,12 +25,14 @@ import qualified Meta
 import Obj
 import Path (takeFileName)
 import Project
+import RecType
 import Scoring
 import qualified Set
 import Template
 import TypePredicates
 import Types
 import TypesToC
+import TypeCandidate
 import Util
 
 addIndent :: Int -> String
@@ -383,17 +386,29 @@ toC toCMode (Binder meta root) = emitterSrc (execState (visit startingIndent roo
               emitCaseMatcher :: (String, String) -> String -> XObj -> Integer -> State EmitterState ()
               emitCaseMatcher (periodOrArrow, ampersandOrNot) caseName (XObj (Sym path _) _ t) index =
                 let Just tt = t
-                 in appendToSrc
-                      ( addIndent indent' ++ tyToCLambdaFix tt ++ " " ++ pathToC path ++ " = "
-                          ++ ampersandOrNot
-                          ++ tempVarToAvoidClash
-                          ++ periodOrArrow
-                          ++ "u."
-                          ++ mangle caseName
-                          ++ ".member"
-                          ++ show index
-                          ++ ";\n"
-                      )
+                 in if tt == exprTy
+                      then appendToSrc
+                              ( addIndent indent' ++ tyToCLambdaFix tt ++ " " ++ pathToC path ++ " = "
+                                  ++ "*"
+                                  ++ tempVarToAvoidClash
+                                  ++ periodOrArrow
+                                  ++ "u."
+                                  ++ mangle caseName
+                                  ++ ".member"
+                                  ++ show index
+                                  ++ ";\n"
+                              )
+                      else appendToSrc
+                              ( addIndent indent' ++ tyToCLambdaFix tt ++ " " ++ pathToC path ++ " = "
+                                  ++ ampersandOrNot
+                                  ++ tempVarToAvoidClash
+                                  ++ periodOrArrow
+                                  ++ "u."
+                                  ++ mangle caseName
+                                  ++ ".member"
+                                  ++ show index
+                                  ++ ";\n"
+                              )
               emitCaseMatcher periodOrArrow caseName (XObj (Lst (XObj (Sym (SymPath _ innerCaseName) _) _ _ : xs)) _ _) index =
                 zipWithM_ (\x i -> emitCaseMatcher periodOrArrow (caseName ++ ".member" ++ show i ++ ".u." ++ removeSuffix innerCaseName) x index) xs ([0 ..] :: [Int])
               emitCaseMatcher _ _ xobj _ =
@@ -544,10 +559,10 @@ toC toCMode (Binder meta root) = emitterSrc (execState (visit startingIndent roo
               _ ->
                 if isNumericLiteral value
                   then do
-                    let literal = freshVar info ++ "_lit"
+                    let literal' = freshVar info ++ "_lit"
                         Just literalTy = xobjTy value
-                    appendToSrc (addIndent indent ++ "static " ++ tyToCLambdaFix literalTy ++ " " ++ literal ++ " = " ++ var ++ ";\n")
-                    appendToSrc (addIndent indent ++ tyToCLambdaFix t ++ " " ++ fresh ++ " = &" ++ literal ++ "; // ref\n")
+                    appendToSrc (addIndent indent ++ "static " ++ tyToCLambdaFix literalTy ++ " " ++ literal' ++ " = " ++ var ++ ";\n")
+                    appendToSrc (addIndent indent ++ tyToCLambdaFix t ++ " " ++ fresh ++ " = &" ++ literal' ++ "; // ref\n")
                   else appendToSrc (addIndent indent ++ tyToCLambdaFix t ++ " " ++ fresh ++ " = &" ++ var ++ "; // ref\n")
             pure fresh
         -- Deref
@@ -813,44 +828,70 @@ templateToDeclaration template path actualTy =
       term = if "#define" `isPrefixOf` stokens then "\n" else ";\n"
    in stokens ++ term
 
-memberToDecl :: Int -> (XObj, XObj) -> State EmitterState ()
-memberToDecl indent (memberName, memberType) =
+memberToDecl :: Ty -> Int -> (XObj, XObj) -> State EmitterState ()
+memberToDecl recty indent (memberName, memberType) =
   case xobjToTy memberType of
     -- Handle function pointers as members specially to allow members that are functions referring to the struct itself.
-    Just t -> appendToSrc (addIndent indent ++ tyToCLambdaFix t ++ " " ++ mangle (getName memberName) ++ ";\n")
+    -- Just rt@(StructTy _ [t]) ->
+    --  if t == recty
+    --    then appendToSrc (addIndent indent ++ "struct " ++ tyToCLambdaFix rt ++ " " ++ mangle (getName memberName) ++ ";\n")
+    --    else appendToSrc (addIndent indent ++ tyToCLambdaFix t ++ " " ++ mangle (getName memberName) ++ ";\n")
+    Just rt@(RecTy t) ->
+      if t == recty
+        then appendToSrc (addIndent indent ++ "struct " ++ tyToCLambdaFix rt ++ " " ++ mangle (getName memberName) ++ ";\n")
+        else appendToSrc (addIndent indent ++ tyToCLambdaFix t ++ " " ++ mangle (getName memberName) ++ ";\n")
+    Just t ->
+      appendToSrc (addIndent indent ++ tyToCLambdaFix t ++ " " ++ mangle (getName memberName) ++ ";\n")
     Nothing -> error ("Invalid memberType: " ++ show memberType)
 
 defStructToDeclaration :: Ty -> SymPath -> [XObj] -> String
-defStructToDeclaration structTy@(StructTy _ _) _ rest =
+defStructToDeclaration structTy@(StructTy _ vars) _ rest@[XObj (Arr mems) _ _] =
   let indent = indentAmount
       typedefCaseToMemberDecl :: XObj -> State EmitterState [()]
       -- ANSI C doesn't allow empty structs, insert a dummy member to keep the compiler happy.
       typedefCaseToMemberDecl (XObj (Arr []) _ _) = sequence $ pure $ appendToSrc (addIndent indent ++ "char __dummy;\n")
-      typedefCaseToMemberDecl (XObj (Arr members) _ _) = mapM (memberToDecl indent) (remove (isUnit . fromJust . xobjToTy . snd) (pairwise members))
+      typedefCaseToMemberDecl (XObj (Arr members) _ _) = mapM (memberToDecl structTy indent) (remove (isUnit . fromJust . xobjToTy . snd) (pairwise members))
       typedefCaseToMemberDecl _ = error "Invalid case in typedef."
+      pointerfix = map (recursiveMembersToPointers structTy) rest
+      candidate = fromDeftype (getStructName structTy) vars empty empty mems
+      isRec = fromRight False (fmap isRecursive candidate)
       -- Note: the names of types are not namespaced
       visit = do
-        appendToSrc "typedef struct {\n"
-        mapM_ typedefCaseToMemberDecl rest
-        appendToSrc ("} " ++ tyToC structTy ++ ";\n")
+        -- forward declaration for recursive types.
+        when isRec $
+          do appendToSrc ("// Recursive type \n")
+             appendToSrc ("struct " ++ tyToC structTy ++ " {\n")
+        when (not isRec) $ appendToSrc "typedef struct {\n"
+        mapM_ typedefCaseToMemberDecl pointerfix
+        appendToSrc "}"
+        unless isRec (appendToSrc (" " ++ tyToC structTy))
+        appendToSrc ";\n"
    in if isTypeGeneric structTy
         then "" -- ("// " ++ show structTy ++ "\n")
         else emitterSrc (execState visit (EmitterState ""))
 defStructToDeclaration _ _ _ = error "defstructtodeclaration"
 
 defSumtypeToDeclaration :: Ty -> [XObj] -> String
-defSumtypeToDeclaration sumTy@(StructTy _ _) rest =
+defSumtypeToDeclaration sumTy@(StructTy _ vars) rest =
   let indent = indentAmount
+      pointerfix = map (recursiveMembersToPointers sumTy) rest
+      candidate = fromSumtype (getStructName sumTy) vars empty empty rest
+      isRec = (fromRight False (fmap isRecursive candidate))
       visit = do
-        appendToSrc "typedef struct {\n"
+        if isRec
+          then do appendToSrc ("// Recursive type \n")
+                  appendToSrc ("struct " ++ tyToC sumTy ++ " {\n")
+          else appendToSrc "typedef struct {\n"
         appendToSrc (addIndent indent ++ "union {\n")
-        mapM_ (emitSumtypeCase indent) rest
+        mapM_ (emitSumtypeCase indent) pointerfix
         appendToSrc (addIndent indent ++ "char __dummy;\n")
         appendToSrc (addIndent indent ++ "} u;\n")
         appendToSrc (addIndent indent ++ "char _tag;\n")
-        appendToSrc ("} " ++ tyToC sumTy ++ ";\n")
+        appendToSrc "}"
+        unless isRec (appendToSrc (" " ++ tyToC sumTy))
+        appendToSrc ";\n"
         --appendToSrc ("// " ++ show typeVariables ++ "\n")
-        mapM_ emitSumtypeCaseTagDefinition (zip [0 ..] rest)
+        mapM_ emitSumtypeCaseTagDefinition (zip [0 ..] pointerfix)
       emitSumtypeCase :: Int -> XObj -> State EmitterState ()
       emitSumtypeCase ind (XObj (Lst [XObj (Sym (SymPath [] caseName) _) _ _, XObj (Arr []) _ _]) _ _) =
         appendToSrc (addIndent ind ++ "// " ++ caseName ++ "\n")
@@ -858,7 +899,7 @@ defSumtypeToDeclaration sumTy@(StructTy _ _) rest =
         do
           appendToSrc (addIndent ind ++ "struct {\n")
           let members = zip anonMemberSymbols (remove (isUnit . fromJust . xobjToTy) memberTys)
-          mapM_ (memberToDecl (ind + indentAmount)) members
+          mapM_ (memberToDecl sumTy (ind + indentAmount)) members
           appendToSrc (addIndent ind ++ "} " ++ caseName ++ ";\n")
       emitSumtypeCase ind (XObj (Sym (SymPath [] caseName) _) _ _) =
         appendToSrc (addIndent ind ++ "// " ++ caseName ++ "\n")
@@ -885,6 +926,16 @@ defaliasToDeclaration t path =
   where
     fixer UnitTy = "void*"
     fixer x = tyToCLambdaFix x
+
+toForwardDeclaration :: Binder -> String
+toForwardDeclaration (Binder _ (XObj (Lst xobjs) _ _)) =
+  case xobjs of
+    XObj (Deftype _) _ _ : XObj (Sym path _) _ _ : _ ->
+      "typedef struct " ++ pathToC path ++ " " ++ pathToC path ++ ";\n"
+    XObj (DefSumtype _) _ _ : XObj (Sym path _) _ _ : _ ->
+      "typedef struct " ++ pathToC path ++ " " ++ pathToC path ++ ";\n"
+    _ -> ""
+toForwardDeclaration _ = ""
 
 toDeclaration :: Binder -> String
 toDeclaration (Binder meta xobj@(XObj (Lst xobjs) _ ty)) =
@@ -1016,6 +1067,8 @@ typeEnvToDeclarations typeEnv global =
             sorted ++ (foldl folder (addEnvToScore t) (findModules e))
         )
       allScoredBinders = sortOn fst (foldl folder bindersWithScore mods)
+      -- recursive binders need to be forward declared.
+      recursiveBinders = filter (isJust . Meta.getBinderMetaValue "recursive" . snd) allScoredBinders
    in do
         okDecls <-
           mapM
@@ -1025,7 +1078,7 @@ typeEnvToDeclarations typeEnv global =
                   (binderToDeclaration typeEnv binder)
             )
             allScoredBinders
-        pure (concat okDecls)
+        pure ((concat (map (toForwardDeclaration . snd) recursiveBinders)) ++ (concat okDecls))
 
 envToDeclarations :: TypeEnv -> Env -> Either ToCError String
 envToDeclarations typeEnv env =

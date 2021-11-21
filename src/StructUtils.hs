@@ -4,6 +4,7 @@ import Interfaces
 import Obj
 import Polymorphism
 import Types
+import TypesToC
 
 data AllocationMode = StackAlloc | HeapAlloc
 
@@ -28,6 +29,12 @@ memberStrCallingConvention strOrPrn typeEnv globalEnv memberTy =
 
 -- | Generate C code for converting a member variable to a string and appending it to a buffer.
 memberPrn :: TypeEnv -> Env -> (String, Ty) -> String
+memberPrn _ _ (_, (RecTy t)) =
+  unlines
+    [ "  temp = \"" ++ tyToC t ++ "\";",
+      "  sprintf(bufferPtr, \"%s \", temp);",
+      "  bufferPtr += strlen(temp) + 1;"
+    ]
 memberPrn typeEnv env (memberName, memberTy) =
   let (prefix, strFuncType) = memberStrCallingConvention "prn" typeEnv env memberTy
    in case nameOfPolymorphicFunction typeEnv env strFuncType "prn" of
@@ -52,6 +59,11 @@ memberPrn typeEnv env (memberName, memberTy) =
 
 -- | Calculate the size for prn:ing a member of a struct
 memberPrnSize :: TypeEnv -> Env -> (String, Ty) -> String
+memberPrnSize _ _ (_, (RecTy t)) =
+   unlines
+      [ "  temp = \"" ++ tyToC t ++ "\";",
+        "  size += snprintf(NULL, 0, \"%s \", temp);"
+      ]
 memberPrnSize typeEnv env (memberName, memberTy) =
   let (prefix, strFuncType) = memberStrCallingConvention "prn" typeEnv env memberTy
    in case nameOfPolymorphicFunction typeEnv env strFuncType "prn" of

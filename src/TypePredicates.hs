@@ -20,6 +20,10 @@ isUnit UnitTy = True
 isUnit (RefTy UnitTy _) = True
 isUnit _ = False
 
+isRecType :: Ty -> Bool
+isRecType (RecTy _) = True
+isRecType _ = False
+
 -- | Is this type a function type?
 isFunctionType :: Ty -> Bool
 isFunctionType FuncTy {} = True

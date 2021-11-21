@@ -18,6 +18,7 @@ library
   hs-source-dirs:      src
   exposed-modules:     ArrayTemplates,
                        AssignTypes,
+                       BoxTemplates,
                        ColorText,
                        Commands,
                        Concretize,
@@ -47,6 +48,7 @@ library
                        PrimitiveError
                        Project,
                        Qualify,
+                       RecType,
                        Reify,
                        RenderDocs,
                        Repl,
@@ -60,6 +62,7 @@ library
                        SymPath,
                        Template,
                        ToTemplate,
+                       TypeCandidate,
                        TypeError,
                        TypePredicates,
                        Types,

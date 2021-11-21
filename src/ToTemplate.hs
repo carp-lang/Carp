@@ -5,6 +5,7 @@ import Parsing
 import Text.Parsec ((<|>))
 import qualified Text.Parsec as Parsec
 import Util
+import Types
 
 -- | High-level helper function for creating templates from strings of C code.
 toTemplate :: String -> [Token]
@@ -94,6 +95,14 @@ templateLiteral = const . toTemplate
 
 multilineTemplate :: [String] -> [Token]
 multilineTemplate = toTemplate . unlines
+
+simple :: Ty -> String -> [String] -> Template
+simple t declaration body =
+  Template
+    t
+    (templateLiteral declaration)
+    (\_ -> multilineTemplate body)
+    (\_ -> [])
 
 templateReturn :: String -> [Token]
 templateReturn x =

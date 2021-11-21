@@ -62,8 +62,12 @@ data TypeError
   | InconsistentKinds String [XObj]
   | FailedToAddLambdaStructToTyEnv SymPath XObj
   | FailedToInstantiateGenericType Ty
+  | InterfaceNotImplemented [String]
+  | InvalidProductField XObj
 
 instance Show TypeError where
+  show (InterfaceNotImplemented is) =
+     "One or more types do not implement the interfaces: " ++ show is
   show (SymbolMissingType xobj env) =
     "I couldn’t find a type for the symbol '" ++ getName xobj ++ "' at "
       ++ prettyInfoFromXObj xobj
@@ -279,6 +283,10 @@ instance Show TypeError where
     "I failed to read `" ++ pretty xobj ++ "` as a sumtype case at "
       ++ prettyInfoFromXObj xobj
       ++ ".\n\nSumtype cases look like this: `(Foo [Int typevar])`"
+  show (InvalidProductField xobj) =
+    "I failed to read `" ++ pretty xobj ++ "` as a product field at "
+      ++ prettyInfoFromXObj xobj
+      ++ ".\n\nProduct fields look like this: `[field-name Int]`"
   show (InvalidMemberType t xobj) =
     "I can’t use the type `" ++ show t ++ "` as a member type at "
       ++ prettyInfoFromXObj xobj

@@ -44,6 +44,7 @@ import qualified Set
 import SumtypeCase
 import ToTemplate
 import TypeError
+import TypeCandidate
 import TypePredicates
 import Types
 import TypesToC
@@ -612,7 +613,8 @@ instantiateGenericStructType typeEnv env originalStructTy@(StructTy _ _) generic
       let nameFixedMembers = renameGenericTypeSymbolsOnProduct renamedOrig memberXObjs
           validMembers = replaceGenericTypeSymbolsOnMembers mappings' nameFixedMembers
           concretelyTypedMembers = replaceGenericTypeSymbolsOnMembers mappings memberXObjs
-      validateMembers AllowAnyTypeVariableNames typeEnv env renamedOrig validMembers
+      candidate <- (fromDeftype (getStructName originalStructTy) renamedOrig typeEnv env validMembers)
+      validateMembers (candidate {restriction = AllowAnyTypeVariableNames})
       deps <- mapM (depsForStructMemberPair typeEnv env) (pairwise concretelyTypedMembers)
       let xobj =
             XObj
@@ -640,29 +642,22 @@ instantiateGenericSumtype typeEnv env originalStructTy@(StructTy _ originalTyVar
   let fake1 = XObj (Sym (SymPath [] "a") Symbol) Nothing Nothing
       fake2 = XObj (Sym (SymPath [] "b") Symbol) Nothing Nothing
       rename@(StructTy _ renamedOrig) = evalState (renameVarTys originalStructTy) 0
-   in case solve [Constraint rename genericStructTy fake1 fake2 fake1 OrdMultiSym] of
-        Left e -> error (show e)
-        Right mappings ->
-          let nameFixedCases = map (renameGenericTypeSymbolsOnSum (zip originalTyVars renamedOrig)) cases
-              concretelyTypedCases = map (replaceGenericTypeSymbolsOnCase mappings) nameFixedCases
-              deps = mapM (depsForCase typeEnv env) concretelyTypedCases
-           in case toCases typeEnv env AllowAnyTypeVariableNames renamedOrig concretelyTypedCases of -- Don't care about the cases, this is done just for validation.
-                Left err -> Left err
-                Right _ ->
-                  case deps of
-                    Right okDeps ->
-                      Right $
-                        XObj
-                          ( Lst
-                              ( XObj (DefSumtype genericStructTy) Nothing Nothing :
-                                XObj (Sym (SymPath [] (tyToC genericStructTy)) Symbol) Nothing Nothing :
-                                concretelyTypedCases
-                              )
-                          )
-                          (Just dummyInfo)
-                          (Just TypeTy) :
-                        concat okDeps
-                    Left err -> Left err
+   in do mappings <- replaceLeft (FailedToInstantiateGenericType originalStructTy) (solve [Constraint rename genericStructTy fake1 fake2 fake1 OrdMultiSym])
+         let nameFixedCases = map (renameGenericTypeSymbolsOnSum (zip originalTyVars renamedOrig)) cases
+             concretelyTypedCases = map (replaceGenericTypeSymbolsOnCase mappings) nameFixedCases
+         candidate <- fromSumtype (getStructName originalStructTy) renamedOrig typeEnv env concretelyTypedCases
+         _ <- toCases typeEnv env (candidate {restriction = AllowAnyTypeVariableNames})
+         deps <- mapM (depsForCase typeEnv env) concretelyTypedCases
+         pure (XObj
+                ( Lst
+                    ( XObj (DefSumtype genericStructTy) Nothing Nothing :
+                      XObj (Sym (SymPath [] (tyToC genericStructTy)) Symbol) Nothing Nothing :
+                      concretelyTypedCases
+                    )
+                )
+                (Just dummyInfo)
+                (Just TypeTy) :
+                  concat deps)
 instantiateGenericSumtype _ _ _ _ _ = error "instantiategenericsumtype"
 
 -- Resolves dependencies for sumtype cases.
@@ -841,6 +836,8 @@ depsForCopyFunc typeEnv env t =
 
 -- | Helper for finding the 'str' function for a type.
 depsForPrnFunc :: TypeEnv -> Env -> Ty -> [XObj]
+depsForPrnFunc typeEnv env (RecTy t) =
+  depsOfPolymorphicFunction typeEnv env [] "str" (FuncTy [PointerTy t] StringTy StaticLifetimeTy)
 depsForPrnFunc typeEnv env t =
   if isManaged typeEnv env t
     then depsOfPolymorphicFunction typeEnv env [] "prn" (FuncTy [RefTy t (VarTy "q")] StringTy StaticLifetimeTy)
@@ -898,6 +895,10 @@ concreteDeleteTakePtr typeEnv env members =
 -- | Generate the C code for deleting a single member of the deftype.
 -- | TODO: Should return an Either since this can fail!
 memberDeletionGeneral :: String -> TypeEnv -> Env -> (String, Ty) -> String
+memberDeletionGeneral separator _ _ (memberName, (RecTy t)) =
+  "    if(p"++ separator ++ memberName ++") {" ++ recur ++ "CARP_FREE(p" ++ separator ++ memberName ++ "); p" ++ separator ++ memberName ++ "= NULL;}"
+  -- TODO: Brittle. Come up with a better solution.
+  where recur = tyToC t ++ "_delete(*p" ++ separator ++ memberName ++ "); "
 memberDeletionGeneral separator typeEnv env (memberName, memberType) =
   case findFunctionForMember typeEnv env "delete" (typesDeleterFunctionType memberType) (memberName, memberType) of
     FunctionFound functionFullName -> "    " ++ functionFullName ++ "(p" ++ separator ++ memberName ++ ");"
