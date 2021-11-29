@@ -7,6 +7,7 @@ module BoxTemplates
     BoxTemplates.init,
     copy,
     unbox,
+    peek,
   )
 where
 
@@ -55,6 +56,21 @@ unbox = let path = SymPath ["Box"] "unbox"
             deps = const []
             template = TemplateCreator $ \_ _ -> Template t decl body deps
          in defineTypeParameterizedTemplate template path t docs
+
+-- | Defines a template for getting a reference to the value stored in a box without performing an additional allocation.
+peek :: (String, Binder)
+peek = let path = SymPath ["Box"] "peek"
+           t = FuncTy [(RefTy (StructTy (ConcreteNameTy (SymPath [] "Box")) [(VarTy "t")]) (VarTy "q"))] (RefTy (VarTy "t") (VarTy "q")) StaticLifetimeTy
+           docs = "Returns a reference to the value stored in a box without performing an additional allocation."
+           decl = templateLiteral "$t* $NAME($t** box_ref)"
+           body = const (multilineTemplate
+                          [ "$DECL {",
+                            "  return *box_ref;",
+                            "}"
+                          ])
+           deps = const []
+           template = TemplateCreator $ \_ _ -> Template t decl body deps
+        in defineTypeParameterizedTemplate template path t docs
 
 -- | Defines a template for copying a box. The copy will also be heap allocated.
 copy :: (String, Binder)

@@ -124,6 +124,7 @@ boxModule =
     bindings = Map.fromList
       [ BoxTemplates.init,
         BoxTemplates.unbox,
+        BoxTemplates.peek,
         BoxTemplates.delete,
         BoxTemplates.copy,
         BoxTemplates.prn,

@@ -3,8 +3,10 @@
 
 (Debug.sanitize-addresses)
 
-(deftest test 
-  (assert-equal test 
+(deftype Num [val Int])
+
+(deftest test
+  (assert-equal test
     &(Box.init @"foo")
     &(Box.init @"foo")
     "init works as expected")
@@ -12,4 +14,11 @@
     2
     (Box.unbox (Box.init 2))
     "unbox works as expected")
+  (assert-equal test
+    1
+    (let-do [box (Box.init (Num.init 0))]
+      (Num.set-val! (Box.peek &box) 1)
+      @(Num.val (Box.peek &box)))
+    "peek works as expected"
+  )
 )
