@@ -484,6 +484,14 @@
    _ ())
   )
 
+(defn box-1 []
+  (do (ignore (Box.unbox (Box.init 2)))))
+
+(defn box-2 []
+  (let-do [box (Box.init @"foo")
+           crate @&box]
+    (ignore (Box.unbox box))))
+
 (deftest test
   (assert-no-leak test scope-1 "scope-1 does not leak")
   (assert-no-leak test scope-2 "scope-2 does not leak")
@@ -558,4 +566,6 @@
   (assert-no-leak test sumtype-10 "sumtype-10 does not leak")
   (assert-no-leak test sumtype-11 "sumtype-11 does not leak")
   (assert-no-leak test sumtype-12 "sumtype-12 does not leak")
+  (assert-no-leak test box-1 "box-1 does not leak")
+  (assert-no-leak test box-2 "box-2 does not leak")
   )
