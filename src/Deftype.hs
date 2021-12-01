@@ -24,6 +24,7 @@ import Types
 import TypesToC
 import Util
 import Validate
+import qualified TypeCandidate as TC
 
 {-# ANN module "HLint: ignore Reduce duplication" #-}
 
@@ -66,7 +67,11 @@ moduleForDeftype innerEnv typeEnv env pathStrings typeName typeVariables rest i 
                       [(XObj (Arr []) ii t)] -> [(XObj (Arr [(XObj (Sym (SymPath [] "__dummy") Symbol) Nothing Nothing), (XObj (Sym (SymPath [] "Char") Symbol) Nothing Nothing)]) ii t)]
                       _ -> rest
    in do
-        validateMemberCases typeEnv env typeVariables rest
+        let mems = case initmembers of
+                     [(XObj (Arr ms)_ _)] -> ms
+                     _ -> []
+        candidate <- TC.mkStructCandidate typeName typeVariables typeEnv env mems
+        validateType candidate
         let structTy = StructTy (ConcreteNameTy (SymPath pathStrings typeName)) typeVariables
         (okMembers, membersDeps) <- templatesForMembers typeEnv env insidePath structTy rest
         okInit <- binderForInit insidePath structTy initmembers
@@ -89,7 +94,11 @@ bindingsForRegisteredType typeEnv env pathStrings typeName rest i existingEnv =
       moduleTypeEnv = fromMaybe (new (Just typeEnv) (Just typeName)) (fmap snd existingEnv)
       insidePath = pathStrings ++ [typeName]
    in do
-        validateMemberCases typeEnv env [] rest
+        let mems = case rest of
+                     [(XObj (Arr ms)_ _)] -> ms
+                     _ -> []
+        candidate <- TC.mkStructCandidate typeName [] typeEnv env mems
+        validateType candidate
         let structTy = StructTy (ConcreteNameTy (SymPath pathStrings typeName)) []
         (binders, deps) <- templatesForMembers typeEnv env insidePath structTy rest
         okInit <- binderForInit insidePath structTy rest
