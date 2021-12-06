@@ -1,3 +1,5 @@
+{-# LANGUAGE NamedFieldPuns #-}
+
 module Sumtypes
   (
    moduleForSumtypeInContext,
@@ -23,11 +25,12 @@ import TypesToC
 import Util
 import Validate
 import qualified TypeCandidate as TC
+import TemplateGenerator as TG
 
 --------------------------------------------------------------------------------
 -- Public
 
--- |
+-- | Creates a module and generates standard functions for a user defined sum type in the given context.
 moduleForSumtypeInContext :: Context -> String -> [Ty] -> [XObj] -> Maybe Info -> Either TypeError (String, XObj, [XObj])
 moduleForSumtypeInContext ctx name vars members info =
   let global = contextGlobalEnv ctx
@@ -50,7 +53,7 @@ moduleForSumtypeInContext ctx name vars members info =
           )
    in moduleForSumtype inner types global path name vars members info previous
 
--- |
+-- | Creates a module and generates standard functions for a user defined sum type.
 moduleForSumtype :: Maybe Env -> TypeEnv -> Env -> [String] -> String -> [Ty] -> [XObj] -> Maybe Info -> Maybe (Env, TypeEnv) -> Either TypeError (String, XObj, [XObj])
 moduleForSumtype innerEnv typeEnv env pathStrings typeName typeVariables rest i existingEnv =
   let moduleValueEnv = fromMaybe (new innerEnv (Just typeName)) (fmap fst existingEnv)
@@ -162,116 +165,97 @@ binderForTag candidate =
 -- | Helper function to create the binder for the 'str' template.
 binderForStrOrPrn :: TC.TypeCandidate -> String -> Either TypeError ((String, Binder), [XObj])
 binderForStrOrPrn candidate strOrPrn =
-  Right $
-    if isTypeGeneric (TC.toType candidate)
-      then (genericStr, [])
-      else concreteStr
+  let doc = "converts a `" ++ (getStructName (TC.toType candidate)) ++ "` to a string."
+      binderP = SymPath (TC.getFullPath candidate) strOrPrn
+      binderT = FuncTy [RefTy (TC.toType candidate) (VarTy "q")] StringTy StaticLifetimeTy
+   in Right $
+       if isTypeGeneric (TC.toType candidate)
+         then (defineTypeParameterizedTemplate (TG.generateGenericTypeTemplate candidate strGenerator) binderP binderT doc, [])
+         else instanceBinderWithDeps binderP binderT (TG.generateConcreteTypeTemplate candidate strGenerator) doc
   where
-    -- | The template for the 'str' function for a concrete deftype.
-    concreteStr :: ((String, Binder), [XObj])
-    concreteStr =
-      let tenv = TC.getTypeEnv candidate
-          env = TC.getValueEnv candidate
-          concrete = TC.toType candidate
-          fields = TC.getFields candidate
-          doc  = "converts a `" ++ (TC.getName candidate) ++ "` to a string."
-          binderT = FuncTy [RefTy concrete (VarTy "q")] StringTy StaticLifetimeTy
-          decl = const (toTemplate ("String $NAME(" ++ tyToCLambdaFix concrete ++ " *p)"))
-          body = const (tokensForStr tenv env concrete concrete fields)
-          deps = const (depsForStr tenv env concrete concrete fields)
-          temp = Template binderT decl body deps
-          path' = SymPath (TC.getFullPath candidate) strOrPrn
-       in instanceBinderWithDeps path' binderT temp doc
+    strGenerator :: TG.TemplateGenerator TC.TypeCandidate
+    strGenerator = TG.mkTemplateGenerator genT decl body deps
 
-    -- | The template for the 'str' function for a generic deftype.
-    genericStr :: (String, Binder)
-    genericStr =
-      let generic = TC.toType candidate
-          fields = TC.getFields candidate
-          binderPath = SymPath (TC.getFullPath candidate) strOrPrn
-          binderT = FuncTy [RefTy generic (VarTy "q")] StringTy StaticLifetimeTy
-          docs = "stringifies a `" ++ (TC.getName candidate) ++ "`."
-          decl = \(FuncTy [RefTy concrete _] _ _ )-> toTemplate $ "String $NAME(" ++ tyToCLambdaFix concrete ++ " *p)"
-          body tenv env = \(FuncTy [RefTy concrete _] _ _) -> tokensForStr tenv env generic concrete fields
-          deps tenv env = \(FuncTy [RefTy concrete _] _ _) -> depsForStr tenv env generic concrete fields
-          temp = TemplateCreator $ \tenv env -> Template binderT decl (body tenv env) (deps tenv env)
-       in defineTypeParameterizedTemplate temp binderPath binderT docs
+    genT :: TG.TypeGenerator TC.TypeCandidate
+    genT GeneratorArg{value} =
+      FuncTy [RefTy (TC.toType value) (VarTy "q")] StringTy StaticLifetimeTy
+
+    decl :: TG.TokenGenerator TC.TypeCandidate
+    decl GeneratorArg{instanceT=(FuncTy [RefTy ty _] _ _)} =
+      toTemplate $ "String $NAME(" ++ tyToCLambdaFix ty ++ " *p)"
+    decl _ = toTemplate "/* template error! */"
+
+    body :: TG.TokenGenerator TC.TypeCandidate
+    body GeneratorArg{tenv, env, originalT, instanceT=(FuncTy [RefTy ty _] _ _), value} =
+      tokensForStr tenv env originalT ty (TC.getFields value)
+    body _ = toTemplate "/* template error! */"
+
+    deps :: TG.DepenGenerator TC.TypeCandidate
+    deps GeneratorArg{tenv, env, originalT, instanceT=(FuncTy [RefTy ty _] _ _), value} =
+      depsForStr tenv env originalT ty (TC.getFields value)
+    deps _ = []
 
 -- | Helper function to create the binder for the 'delete' template.
 binderForDelete :: BinderGen
 binderForDelete candidate =
-  Right $
-    if isTypeGeneric (TC.toType candidate)
-      then genericSumtypeDelete
-      else concreteSumtypeDelete
+  let t = (TC.toType candidate)
+      doc = "deletes a `" ++ (getStructName t) ++ "`. This should usually not be called manually."
+      binderT = FuncTy [t] UnitTy StaticLifetimeTy
+      binderP = SymPath (TC.getFullPath candidate) "delete"
+   in Right $
+        if isTypeGeneric t
+          then defineTypeParameterizedTemplate (TG.generateGenericTypeTemplate candidate generator) binderP binderT doc
+          else instanceBinder binderP binderT (TG.generateConcreteTypeTemplate candidate generator) doc
   where
-    -- | The template for the 'delete' function of a concrete sumtype
-    concreteSumtypeDelete :: (String, Binder)
-    concreteSumtypeDelete =
-      let concrete = TC.toType candidate
-          fields = TC.getFields candidate
-          tenv = TC.getTypeEnv candidate
-          env = TC.getValueEnv candidate
-          doc = "deletes a `" ++ TC.getName candidate ++ "`. This should usually not be called manually."
-          t   = (FuncTy [VarTy "p"] UnitTy StaticLifetimeTy)
-          binderPath = SymPath (TC.getFullPath candidate) "delete"
-          decl = const (toTemplate "void $NAME($p p)")
-          body = const (tokensForDeleteBody tenv env concrete concrete fields)
-          deps = const (depsForDelete tenv env concrete concrete fields)
-          temp = Template t decl body deps
-       in instanceBinder binderPath (FuncTy [concrete] UnitTy StaticLifetimeTy) temp doc
+    generator :: TG.TemplateGenerator TC.TypeCandidate
+    generator = TG.mkTemplateGenerator genT decl body deps
 
-    -- | The template for the 'delete' function of a generic sumtype.
-    genericSumtypeDelete ::(String, Binder)
-    genericSumtypeDelete =
-      let generic = TC.toType candidate
-          fields = TC.getFields candidate
-          binderT = FuncTy [VarTy "p"] UnitTy StaticLifetimeTy
-          doc = "deletes a `" ++ (TC.getName candidate) ++ "`. Should usually not be called manually."
-          binderPath = SymPath (TC.getFullPath candidate) "delete"
-          decl = (const (toTemplate "void $NAME($p p)"))
-          body tenv env = \(FuncTy [concrete] _ _) -> tokensForDeleteBody tenv env generic concrete fields
-          deps tenv env = \(FuncTy [concrete] _ _) -> depsForDelete tenv env generic concrete fields
-          temp = TemplateCreator $ \tenv env -> (Template binderT decl (body tenv env) (deps tenv env))
-       in defineTypeParameterizedTemplate temp binderPath (FuncTy [generic] UnitTy StaticLifetimeTy) doc
+    genT :: TG.TypeGenerator TC.TypeCandidate
+    genT _ = (FuncTy [VarTy "p"] UnitTy StaticLifetimeTy)
+
+    decl :: TG.TokenGenerator TC.TypeCandidate
+    decl _ = toTemplate "void $NAME($p p)"
+
+    body :: TG.TokenGenerator TC.TypeCandidate
+    body GeneratorArg{tenv, env, originalT, instanceT=(FuncTy [ty] _ _), value} =
+      tokensForDeleteBody tenv env originalT ty (TC.getFields value)
+    body _ = toTemplate "/* template error! */"
+
+    deps :: TG.DepenGenerator TC.TypeCandidate
+    deps GeneratorArg{tenv, env, originalT, instanceT=(FuncTy [ty] _ _), value} =
+      depsForDelete tenv env originalT ty (TC.getFields value)
+    deps _ = []
 
 -- | Helper function to create the binder for the 'copy' template.
 binderForCopy :: BinderGenDeps
 binderForCopy candidate =
-  Right $
-    if isTypeGeneric (TC.toType candidate)
-      then (genericSumtypeCopy, [])
-      else concreteSumtypeCopy
+  let t = TC.toType candidate
+      doc =  "copies a `" ++ (TC.getName candidate) ++ "`."
+      binderT = FuncTy [RefTy t (VarTy "q")] t StaticLifetimeTy
+      binderP = SymPath (TC.getFullPath candidate) "copy"
+   in Right $
+        if isTypeGeneric (TC.toType candidate)
+          then (defineTypeParameterizedTemplate (TG.generateGenericTypeTemplate candidate generator) binderP binderT doc, [])
+          else instanceBinderWithDeps binderP binderT (TG.generateConcreteTypeTemplate candidate generator) doc
   where
-    -- | The template for the 'copy' function of a generic sumtype.
-    genericSumtypeCopy :: (String, Binder)
-    genericSumtypeCopy =
-      let generic = (TC.toType candidate)
-          binderPath = SymPath (TC.getFullPath candidate) "copy"
-          t = FuncTy [RefTy (VarTy "p") (VarTy "q")] (VarTy "p") StaticLifetimeTy
-          fields = TC.getFields candidate
-          doc = "copies a `" ++ (TC.getName candidate) ++ "`."
-          decl = (const (toTemplate "$p $NAME($p* pRef)"))
-          body tenv env = \(FuncTy [RefTy concrete _] _ _) -> tokensForSumtypeCopy tenv env generic concrete fields
-          deps tenv env = \(FuncTy [RefTy concrete _] _ _) -> depsForCopy tenv env generic concrete fields
-          temp = TemplateCreator $ \tenv env -> Template t decl (body tenv env) (deps tenv env)
-       in defineTypeParameterizedTemplate temp binderPath (FuncTy [RefTy generic (VarTy "q")] generic StaticLifetimeTy) doc
+    generator :: TG.TemplateGenerator TC.TypeCandidate
+    generator = TG.mkTemplateGenerator genT decl body deps
 
-    -- | The template for the 'copy' function of a concrete sumtype
-    concreteSumtypeCopy ::((String, Binder), [XObj])
-    concreteSumtypeCopy =
-      let tenv = TC.getTypeEnv candidate
-          env = TC.getValueEnv candidate
-          fields = TC.getFields candidate
-          binderPath = SymPath (TC.getFullPath candidate) "copy"
-          doc = "copies a `" ++ TC.getName candidate ++ "`."
-          t = (FuncTy [RefTy (VarTy "p") (VarTy "q")] (VarTy "p") StaticLifetimeTy)
-          concrete = TC.toType candidate
-          decl = (const (toTemplate "$p $NAME($p* pRef)"))
-          body = const (tokensForSumtypeCopy tenv env concrete concrete fields)
-          deps = const (depsForCopy tenv env concrete concrete fields)
-          temp = Template t decl body deps
-       in instanceBinderWithDeps binderPath (FuncTy [RefTy concrete (VarTy "q")] concrete StaticLifetimeTy) temp doc
+    genT :: TG.TypeGenerator TC.TypeCandidate
+    genT _ = FuncTy [RefTy (VarTy "p") (VarTy "q")] (VarTy "p") StaticLifetimeTy
+
+    decl :: TG.TokenGenerator TC.TypeCandidate
+    decl _ = toTemplate "$p $NAME($p* pRef)"
+
+    body :: TG.TokenGenerator TC.TypeCandidate
+    body GeneratorArg{tenv, env, originalT, instanceT=(FuncTy [RefTy ty _] _ _), value} =
+      tokensForSumtypeCopy tenv env originalT ty (TC.getFields value)
+    body _ = toTemplate "/* template error! */"
+
+    deps :: TG.DepenGenerator TC.TypeCandidate
+    deps GeneratorArg{tenv, env, originalT, instanceT=(FuncTy [RefTy ty _] _ _), value} =
+      depsForCopy tenv env originalT ty (TC.getFields value)
+    deps _ = []
 
 -------------------------------------------------------------------------------
 -- Token and dep generators
