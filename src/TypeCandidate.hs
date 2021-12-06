@@ -16,11 +16,13 @@ module TypeCandidate
    getConstraints,
    getValueEnv,
    getMode,
+   TypeCandidate.getPath,
+   getFullPath,
    fieldName,
    fieldTypes,
    setRestriction,
    toType,
-   TypeCandidate
+   TypeCandidate,
   )
 where
 
@@ -36,7 +38,7 @@ data TypeVarRestriction
   = AllowAny
   | OnlyNamesInScope
   deriving Eq
- 
+
 data InterfaceConstraint = InterfaceConstraint {
   name  :: String,
   types :: Ty
@@ -60,7 +62,8 @@ data TypeCandidate = TypeCandidate {
   constraints :: [InterfaceConstraint],
   typeEnv     :: TypeEnv,
   valueEnv    :: Env,
-  mode        :: TypeMode
+  mode        :: TypeMode,
+  path        :: [String]
 }
 
 --------------------------------------------------------------------------------
@@ -72,13 +75,13 @@ setMembers candidate fields = candidate {members = fields}
 
 -- | Given a pair of XObjs, construct a struct (product type) field.
 mkStructField :: (XObj, XObj) -> Either TypeError TypeField
-mkStructField ((XObj (Sym (SymPath [] fname) _) _ _), tx) = 
+mkStructField ((XObj (Sym (SymPath [] fname) _) _ _), tx) =
   maybe (Left (NotAType tx)) (Right . StructField fname) (xobjToTy tx)
 mkStructField (x, _) = Left (InvalidStructField x)
 
 -- | Given an XObj, construct a sum type field.
 mkSumField :: XObj -> Either TypeError TypeField
-mkSumField x@(XObj (Lst [XObj (Sym (SymPath [] fname) Symbol) _ _, XObj (Arr txs) _ _]) _ _) = 
+mkSumField x@(XObj (Lst [XObj (Sym (SymPath [] fname) Symbol) _ _, XObj (Arr txs) _ _]) _ _) =
   maybe (Left (InvalidSumtypeCase x)) (Right . SumField fname) (mapM xobjToTy txs)
 mkSumField (XObj (Sym (SymPath [] fname) Symbol) _ _) = Right (SumField fname [])
 mkSumField x = Left (InvalidSumtypeCase x)
@@ -97,13 +100,13 @@ getVariables :: TypeCandidate -> [Ty]
 getVariables = variables
 
 getRestriction :: TypeCandidate -> TypeVarRestriction
-getRestriction = restriction 
+getRestriction = restriction
 
 setRestriction :: TypeCandidate -> TypeVarRestriction -> TypeCandidate
 setRestriction candidate restrict = candidate {restriction = restrict}
 
 getTypeEnv :: TypeCandidate -> TypeEnv
-getTypeEnv = typeEnv 
+getTypeEnv = typeEnv
 
 getValueEnv :: TypeCandidate -> Env
 getValueEnv = valueEnv
@@ -113,6 +116,12 @@ getConstraints = constraints
 
 getMode :: TypeCandidate -> TypeMode
 getMode = mode
+
+getPath :: TypeCandidate -> [String]
+getPath = path
+
+getFullPath :: TypeCandidate -> [String]
+getFullPath candidate = TypeCandidate.getPath candidate ++ [TypeCandidate.getName candidate]
 
 -- | Returns the name of a type field.
 fieldName :: TypeField -> String
@@ -125,8 +134,8 @@ fieldTypes (StructField _ ty) = [ty]
 fieldTypes (SumField _ ts) = ts
 
 -- | Creates a struct type candidate.
-mkStructCandidate :: String -> [Ty] -> TypeEnv -> Env -> [XObj] -> Either TypeError TypeCandidate
-mkStructCandidate tname vars tenv env memberxs = 
+mkStructCandidate :: String -> [Ty] -> TypeEnv -> Env -> [XObj] -> [String] -> Either TypeError TypeCandidate
+mkStructCandidate tname vars tenv env memberxs ps =
   let typedMembers = mapM mkStructField (pairwise memberxs)
       candidate = TypeCandidate {
                     typeName = tname,
@@ -135,16 +144,17 @@ mkStructCandidate tname vars tenv env memberxs =
                     restriction = OnlyNamesInScope,
                     constraints = [],
                     typeEnv = tenv,
-                    valueEnv = env, 
-                    mode = Struct
+                    valueEnv = env,
+                    mode = Struct,
+                    path = ps
                   }
    in if even (length memberxs)
         then fmap (setMembers candidate) typedMembers
         else Left (UnevenMembers memberxs)
- 
+
 -- | Creates a sum type candidate.
-mkSumtypeCandidate :: String -> [Ty] -> TypeEnv -> Env -> [XObj] -> Either TypeError TypeCandidate
-mkSumtypeCandidate tname vars tenv env memberxs = 
+mkSumtypeCandidate :: String -> [Ty] -> TypeEnv -> Env -> [XObj] -> [String] -> Either TypeError TypeCandidate
+mkSumtypeCandidate tname vars tenv env memberxs ps =
   let typedMembers = mapM mkSumField memberxs
       candidate = TypeCandidate {
                     typeName = tname,
@@ -154,10 +164,11 @@ mkSumtypeCandidate tname vars tenv env memberxs =
                     constraints = [],
                     typeEnv = tenv,
                     valueEnv = env,
-                    mode = Sum
+                    mode = Sum,
+                    path = ps
                   }
    in fmap (setMembers candidate) typedMembers
 
-toType :: [String] -> TypeCandidate -> Ty
-toType path candidate = 
-  StructTy (ConcreteNameTy (SymPath path (TypeCandidate.getName candidate))) (getVariables candidate)
+toType :: TypeCandidate -> Ty
+toType candidate =
+  StructTy (ConcreteNameTy (SymPath (TypeCandidate.getPath candidate) (TypeCandidate.getName candidate))) (getVariables candidate)

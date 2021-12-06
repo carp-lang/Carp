@@ -59,6 +59,7 @@ library
                        Sumtypes,
                        SymPath,
                        Template,
+                       TemplateGenerator,
                        ToTemplate,
                        TypeCandidate,
                        TypeError,

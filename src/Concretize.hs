@@ -19,6 +19,7 @@ module Concretize
     tokensForCopy,
     memberCopy,
     replaceGenericTypeSymbolsOnMembers,
+    replaceGenericTypeSymbolsOnFields,
   )
 where
 
@@ -612,7 +613,8 @@ instantiateGenericStructType typeEnv env originalStructTy@(StructTy _ _) generic
       let nameFixedMembers = renameGenericTypeSymbolsOnProduct renamedOrig memberXObjs
           validMembers = replaceGenericTypeSymbolsOnMembers mappings' nameFixedMembers
           concretelyTypedMembers = replaceGenericTypeSymbolsOnMembers mappings memberXObjs
-      candidate <- TC.mkStructCandidate (getStructName originalStructTy) renamedOrig typeEnv env validMembers
+          sname = getStructName originalStructTy
+      candidate <- TC.mkStructCandidate sname renamedOrig typeEnv env validMembers (getPathFromStructName sname)
       validateType (TC.setRestriction candidate TC.AllowAny)
       deps <- mapM (depsForStructMemberPair typeEnv env) (pairwise concretelyTypedMembers)
       let xobj =
@@ -645,8 +647,9 @@ instantiateGenericSumtype typeEnv env originalStructTy@(StructTy _ originalTyVar
       fixLeft l = replaceLeft (FailedToInstantiateGenericType originalStructTy) l
    in do mappings <- fixLeft $ solve [Constraint rename genericStructTy fake1 fake2 fake1 OrdMultiSym]
          let concretelyTypedCases = map (replaceGenericTypeSymbolsOnCase mappings) nameFixedCases
+             sname = (getStructName originalStructTy)
          deps <- mapM (depsForCase typeEnv env) concretelyTypedCases
-         candidate <- TC.mkSumtypeCandidate (getStructName originalStructTy) renamedOrig typeEnv env concretelyTypedCases
+         candidate <- TC.mkSumtypeCandidate sname renamedOrig typeEnv env concretelyTypedCases (getPathFromStructName sname)
          validateType (TC.setRestriction candidate TC.AllowAny)
          pure (XObj
                ( Lst
@@ -671,6 +674,12 @@ depsForCase typeEnv env (XObj (Lst [_, XObj (Arr members) _ _]) _ _) =
       (\t -> maybe (Left (NotAType t)) (concretizeType typeEnv env) (xobjToTy t))
       members
 depsForCase _ _ x = Left (InvalidSumtypeCase x)
+
+-- | Replace instances of generic types in type candidate field definitions.
+replaceGenericTypeSymbolsOnFields :: Map.Map String Ty -> [TC.TypeField] -> [TC.TypeField]
+replaceGenericTypeSymbolsOnFields ms fields = map go fields
+  where go (TC.StructField name t) = (TC.StructField name (replaceTyVars ms t))
+        go (TC.SumField name ts) = (TC.SumField name (map (replaceTyVars ms) ts))
 
 replaceGenericTypeSymbolsOnMembers :: Map.Map String Ty -> [XObj] -> [XObj]
 replaceGenericTypeSymbolsOnMembers mappings memberXObjs =

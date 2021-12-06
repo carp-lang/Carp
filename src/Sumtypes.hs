@@ -57,10 +57,10 @@ moduleForSumtype innerEnv typeEnv env pathStrings typeName typeVariables rest i 
       moduleTypeEnv = fromMaybe (new (Just typeEnv) (Just typeName)) (fmap snd existingEnv)
    in do
         -- validate the definition
-        candidate <- TC.mkSumtypeCandidate typeName typeVariables typeEnv env rest
+        candidate <- TC.mkSumtypeCandidate typeName typeVariables typeEnv env rest pathStrings
         validateType candidate
         -- produce standard function bindings
-        (binders, deps) <- generateBinders pathStrings candidate
+        (binders, deps) <- generateBinders candidate
         -- insert the module into the environment
         let moduleEnvWithBindings = addListOfBindings moduleValueEnv binders
             typeModuleXObj = XObj (Mod moduleEnvWithBindings moduleTypeEnv) i (Just ModuleTy)
@@ -70,14 +70,14 @@ moduleForSumtype innerEnv typeEnv env pathStrings typeName typeVariables rest i 
 -- Private
 
 -- | Generate standard binders for the sumtype
-generateBinders :: [String] -> TC.TypeCandidate -> Either TypeError ([(String, Binder)], [XObj])
-generateBinders path candidate =
-  do okIniters <- initers path candidate
-     okTag <- binderForTag path candidate
-     (okStr, okStrDeps) <- binderForStrOrPrn path candidate "str"
-     (okPrn, _) <- binderForStrOrPrn path candidate "prn"
-     okDelete <- binderForDelete path candidate
-     (okCopy, okCopyDeps) <- binderForCopy path candidate
+generateBinders :: TC.TypeCandidate -> Either TypeError ([(String, Binder)], [XObj])
+generateBinders candidate =
+  do okIniters <- initers candidate
+     okTag <- binderForTag candidate
+     (okStr, okStrDeps) <- binderForStrOrPrn candidate "str"
+     (okPrn, _) <- binderForStrOrPrn candidate "prn"
+     okDelete <- binderForDelete candidate
+     (okCopy, okCopyDeps) <- binderForCopy candidate
      okMemberDeps <- memberDeps (TC.getTypeEnv candidate) (TC.getValueEnv candidate) (TC.getFields candidate)
      let binders = okIniters ++ [okStr, okPrn, okDelete, okCopy, okTag]
          deps = okMemberDeps ++ okCopyDeps ++ okStrDeps
@@ -100,42 +100,42 @@ replaceGenericTypesOnCases mappings = map replaceOnCase
 --------------------------------------------------------------------------------
 -- Binding generators
 
-type BinderGen = [String] -> TC.TypeCandidate -> Either TypeError (String, Binder)
-type BinderGenDeps = [String] -> TC.TypeCandidate -> Either TypeError ((String, Binder), [XObj])
-type MultiBinderGen = [String] -> TC.TypeCandidate -> Either TypeError [(String, Binder)]
+type BinderGen = TC.TypeCandidate -> Either TypeError (String, Binder)
+type BinderGenDeps = TC.TypeCandidate -> Either TypeError ((String, Binder), [XObj])
+type MultiBinderGen = TC.TypeCandidate -> Either TypeError [(String, Binder)]
 
 -- | Generate initializer bindings for each sum type case.
 initers :: MultiBinderGen
-initers path candidate = mapM binderForCaseInit (TC.getFields candidate)
+initers candidate = mapM binderForCaseInit (TC.getFields candidate)
   where
     -- | Generate an initializer binding for a single sum type case, using the given candidate.
     binderForCaseInit :: TC.TypeField -> Either TypeError (String, Binder)
     binderForCaseInit sumtypeCase =
-      if isTypeGeneric (TC.toType path candidate)
+      if isTypeGeneric (TC.toType candidate)
         then Right (genericCaseInit StackAlloc sumtypeCase)
         else Right (concreteCaseInit StackAlloc sumtypeCase)
 
     -- | Generates a template for a concrete (no type variables) sum type case.
     concreteCaseInit :: AllocationMode -> TC.TypeField -> (String, Binder)
     concreteCaseInit alloc field@(TC.SumField fieldname tys) =
-      let concrete = (TC.toType path candidate)
+      let concrete = (TC.toType candidate)
           doc      = "creates a `" ++ fieldname ++ "`."
           t        = (FuncTy tys (VarTy "p") StaticLifetimeTy)
           decl     = (const (tokensForCaseInitDecl concrete concrete field))
           body     = (const (tokensForCaseInit alloc concrete concrete field))
           deps     = (const [])
           temp     = Template t decl body deps
-          binderPath = SymPath (path ++ [(TC.getName candidate)]) fieldname
+          binderPath = SymPath (TC.getFullPath candidate) fieldname
        in instanceBinder binderPath (FuncTy tys concrete StaticLifetimeTy) temp doc
     concreteCaseInit _ _ = error "concreteCaseInit"
 
     -- | Generates a template for a generic (has type variables) sum type case.
     genericCaseInit :: AllocationMode -> TC.TypeField -> (String, Binder)
     genericCaseInit alloc field@(TC.SumField fieldname tys) =
-      let generic = (TC.toType path candidate)
+      let generic = (TC.toType candidate)
           docs    = "creates a `" ++ fieldname ++ "`."
           ft      = FuncTy tys generic StaticLifetimeTy
-          binderPath = SymPath (path ++ [(TC.getName candidate)]) fieldname
+          binderPath = SymPath (TC.getFullPath candidate) fieldname
           t       = (FuncTy tys (VarTy "p") StaticLifetimeTy)
           decl    = \(FuncTy _ concrete _) -> tokensForCaseInitDecl generic concrete field
           body    = \(FuncTy _ concrete _) -> tokensForCaseInit alloc generic concrete field
@@ -146,12 +146,12 @@ initers path candidate = mapM binderForCaseInit (TC.getFields candidate)
 
 -- | Generates a binder for retrieving the tag of a sum type.
 binderForTag :: BinderGen
-binderForTag path candidate =
-  let t = FuncTy [RefTy (TC.toType path candidate) (VarTy "q")] IntTy StaticLifetimeTy
+binderForTag candidate =
+  let t = FuncTy [RefTy (TC.toType candidate) (VarTy "q")] IntTy StaticLifetimeTy
       decl = \(FuncTy [RefTy struct _] _ _) -> toTemplate $ proto struct
       body = \(FuncTy [RefTy struct _] _ _) -> toTemplate $ proto struct ++ " { return p->_tag; }"
       deps = const []
-      path' = SymPath (path ++ [(TC.getName candidate)]) "get-tag"
+      path' = SymPath (TC.getFullPath candidate) "get-tag"
       temp = Template t decl body deps
       doc = "Gets the tag from a `" ++ (TC.getName candidate) ++ "`."
    in Right (instanceBinder path' t temp doc)
@@ -160,10 +160,10 @@ binderForTag path candidate =
     proto structTy = "int $NAME(" ++ tyToCLambdaFix structTy ++ " *p)"
 
 -- | Helper function to create the binder for the 'str' template.
-binderForStrOrPrn :: [String] -> TC.TypeCandidate -> String -> Either TypeError ((String, Binder), [XObj])
-binderForStrOrPrn path candidate strOrPrn =
+binderForStrOrPrn :: TC.TypeCandidate -> String -> Either TypeError ((String, Binder), [XObj])
+binderForStrOrPrn candidate strOrPrn =
   Right $
-    if isTypeGeneric (TC.toType path candidate)
+    if isTypeGeneric (TC.toType candidate)
       then (genericStr, [])
       else concreteStr
   where
@@ -172,7 +172,7 @@ binderForStrOrPrn path candidate strOrPrn =
     concreteStr =
       let tenv = TC.getTypeEnv candidate
           env = TC.getValueEnv candidate
-          concrete = TC.toType path candidate
+          concrete = TC.toType candidate
           fields = TC.getFields candidate
           doc  = "converts a `" ++ (TC.getName candidate) ++ "` to a string."
           binderT = FuncTy [RefTy concrete (VarTy "q")] StringTy StaticLifetimeTy
@@ -180,15 +180,15 @@ binderForStrOrPrn path candidate strOrPrn =
           body = const (tokensForStr tenv env concrete concrete fields)
           deps = const (depsForStr tenv env concrete concrete fields)
           temp = Template binderT decl body deps
-          path' = SymPath (path ++ [TC.getName candidate]) strOrPrn
+          path' = SymPath (TC.getFullPath candidate) strOrPrn
        in instanceBinderWithDeps path' binderT temp doc
 
     -- | The template for the 'str' function for a generic deftype.
     genericStr :: (String, Binder)
     genericStr =
-      let generic = TC.toType path candidate
+      let generic = TC.toType candidate
           fields = TC.getFields candidate
-          binderPath = SymPath (path ++ [TC.getName candidate]) strOrPrn
+          binderPath = SymPath (TC.getFullPath candidate) strOrPrn
           binderT = FuncTy [RefTy generic (VarTy "q")] StringTy StaticLifetimeTy
           docs = "stringifies a `" ++ (TC.getName candidate) ++ "`."
           decl = \(FuncTy [RefTy concrete _] _ _ )-> toTemplate $ "String $NAME(" ++ tyToCLambdaFix concrete ++ " *p)"
@@ -199,22 +199,22 @@ binderForStrOrPrn path candidate strOrPrn =
 
 -- | Helper function to create the binder for the 'delete' template.
 binderForDelete :: BinderGen
-binderForDelete path candidate =
+binderForDelete candidate =
   Right $
-    if isTypeGeneric (TC.toType path candidate)
+    if isTypeGeneric (TC.toType candidate)
       then genericSumtypeDelete
       else concreteSumtypeDelete
   where
     -- | The template for the 'delete' function of a concrete sumtype
     concreteSumtypeDelete :: (String, Binder)
     concreteSumtypeDelete =
-      let concrete = TC.toType path candidate
+      let concrete = TC.toType candidate
           fields = TC.getFields candidate
           tenv = TC.getTypeEnv candidate
           env = TC.getValueEnv candidate
           doc = "deletes a `" ++ TC.getName candidate ++ "`. This should usually not be called manually."
           t   = (FuncTy [VarTy "p"] UnitTy StaticLifetimeTy)
-          binderPath = SymPath (path ++ [TC.getName candidate]) "delete"
+          binderPath = SymPath (TC.getFullPath candidate) "delete"
           decl = const (toTemplate "void $NAME($p p)")
           body = const (tokensForDeleteBody tenv env concrete concrete fields)
           deps = const (depsForDelete tenv env concrete concrete fields)
@@ -224,11 +224,11 @@ binderForDelete path candidate =
     -- | The template for the 'delete' function of a generic sumtype.
     genericSumtypeDelete ::(String, Binder)
     genericSumtypeDelete =
-      let generic = TC.toType path candidate
+      let generic = TC.toType candidate
           fields = TC.getFields candidate
           binderT = FuncTy [VarTy "p"] UnitTy StaticLifetimeTy
           doc = "deletes a `" ++ (TC.getName candidate) ++ "`. Should usually not be called manually."
-          binderPath = SymPath (path ++ [TC.getName candidate]) "delete"
+          binderPath = SymPath (TC.getFullPath candidate) "delete"
           decl = (const (toTemplate "void $NAME($p p)"))
           body tenv env = \(FuncTy [concrete] _ _) -> tokensForDeleteBody tenv env generic concrete fields
           deps tenv env = \(FuncTy [concrete] _ _) -> depsForDelete tenv env generic concrete fields
@@ -237,17 +237,17 @@ binderForDelete path candidate =
 
 -- | Helper function to create the binder for the 'copy' template.
 binderForCopy :: BinderGenDeps
-binderForCopy path candidate =
+binderForCopy candidate =
   Right $
-    if isTypeGeneric (TC.toType path candidate)
+    if isTypeGeneric (TC.toType candidate)
       then (genericSumtypeCopy, [])
       else concreteSumtypeCopy
   where
     -- | The template for the 'copy' function of a generic sumtype.
     genericSumtypeCopy :: (String, Binder)
     genericSumtypeCopy =
-      let generic = (TC.toType path candidate)
-          binderPath = SymPath (path ++ [TC.getName candidate]) "copy"
+      let generic = (TC.toType candidate)
+          binderPath = SymPath (TC.getFullPath candidate) "copy"
           t = FuncTy [RefTy (VarTy "p") (VarTy "q")] (VarTy "p") StaticLifetimeTy
           fields = TC.getFields candidate
           doc = "copies a `" ++ (TC.getName candidate) ++ "`."
@@ -263,10 +263,10 @@ binderForCopy path candidate =
       let tenv = TC.getTypeEnv candidate
           env = TC.getValueEnv candidate
           fields = TC.getFields candidate
-          binderPath = SymPath (path ++ [TC.getName candidate]) "copy"
+          binderPath = SymPath (TC.getFullPath candidate) "copy"
           doc = "copies a `" ++ TC.getName candidate ++ "`."
           t = (FuncTy [RefTy (VarTy "p") (VarTy "q")] (VarTy "p") StaticLifetimeTy)
-          concrete = TC.toType path candidate
+          concrete = TC.toType candidate
           decl = (const (toTemplate "$p $NAME($p* pRef)"))
           body = const (tokensForSumtypeCopy tenv env concrete concrete fields)
           deps = const (depsForCopy tenv env concrete concrete fields)
