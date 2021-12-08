@@ -921,7 +921,7 @@ toDeclaration (Binder meta xobj@(XObj (Lst xobjs) _ ty)) =
     XObj (ExternalType Nothing) _ _ : _ ->
       ""
     XObj (ExternalType (Just override)) _ _ : XObj (Sym path _) _ _ : _ ->
-      "typedef " ++ override ++ " " ++ pathToC path ++ ";"
+      "typedef " ++ override ++ " " ++ tyToC (StructTy (ConcreteNameTy path) []) ++ ";"
     XObj (Command _) _ _ : _ ->
       ""
     XObj (Primitive _) _ _ : _ ->
