@@ -269,7 +269,7 @@ primitiveRegisterTypeWithFields ctx x t override members =
           [ lookupBinderInTypeEnv contextWithDefs (markQualified (SymPath [] "str")),
             lookupBinderInTypeEnv contextWithDefs (markQualified (SymPath [] "prn"))
           ]
-    path = SymPath [] t
+    path = SymPath (contextPath ctx) t
     preExistingModule = case lookupBinderInGlobalEnv ctx path of
       Right (Binder _ (XObj (Mod found et) _ _)) -> Just (found, et)
       _ -> Nothing
