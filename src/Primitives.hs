@@ -241,7 +241,7 @@ primitiveRegisterType x ctx _ = pure (toEvalError ctx x RegisterTypeError)
 -- | Register an external type that has no fields.
 primitiveRegisterTypeWithoutFields :: Context -> String -> Maybe String -> IO (Context, Either EvalError XObj)
 primitiveRegisterTypeWithoutFields ctx t override = do
-  let path = SymPath [] t
+  let path = SymPath (contextPath ctx) t
       typeDefinition = XObj (Lst [XObj (ExternalType override) Nothing Nothing, XObj (Sym path Symbol) Nothing Nothing]) Nothing (Just TypeTy)
   -- TODO: Support registering types in modules
   case insertTypeBinder ctx (markQualified path) (toBinder typeDefinition) of

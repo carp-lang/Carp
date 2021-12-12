@@ -374,15 +374,18 @@ mutate :: Environment e => (EnvironmentProducer e) -> e -> SymPath -> Binder -> 
 mutate f e path binder = go path
   where
     go (SymPath [] name) = f e name binder
+    go (SymPath (p : []) name) =
+      do mod' <- getBinder e p
+         env' <- nextEnv (modality e) mod'
+         res <- mutate f (inj env') (SymPath [] name) binder
+         new' <- updateEnv (modality e) (prj res) mod'
+         addBinding e p new'
     go (SymPath (p : ps) name) =
-      getBinder e p
-        >>= \modu ->
-          nextEnv (modality e) modu
-            >>= \oldEnv ->
-              mutate f (inj oldEnv) (SymPath ps name) binder
-                >>= \result ->
-                  updateEnv (modality e) (prj result) modu
-                    >>= addBinding e p
+      do mod' <- getBinder e p
+         old <- nextEnv Values mod'
+         result <- mutate f (inj old) (SymPath ps name) binder
+         new' <- updateEnv Values (prj result) mod'
+         addBinding e p new'
 
 -- | Insert a binding into an environment at the given path.
 insert :: Environment e => e -> SymPath -> Binder -> Either EnvironmentError e
