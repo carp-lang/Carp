@@ -62,6 +62,7 @@ data TypeError
   | InconsistentKinds String [XObj]
   | FailedToAddLambdaStructToTyEnv SymPath XObj
   | FailedToInstantiateGenericType Ty
+  | InvalidStructField XObj
 
 instance Show TypeError where
   show (SymbolMissingType xobj env) =
@@ -279,6 +280,10 @@ instance Show TypeError where
     "I failed to read `" ++ pretty xobj ++ "` as a sumtype case at "
       ++ prettyInfoFromXObj xobj
       ++ ".\n\nSumtype cases look like this: `(Foo [Int typevar])`"
+  show (InvalidStructField xobj) =
+    "I can't use " ++ pretty xobj ++ "as a struct field at "
+      ++ prettyInfoFromXObj xobj
+      ++ ".\n\nStruct fields look like this: x Int, e.g. (deftype Point [x Int y Int])"
   show (InvalidMemberType t xobj) =
     "I can’t use the type `" ++ show t ++ "` as a member type at "
       ++ prettyInfoFromXObj xobj
