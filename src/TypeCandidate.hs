@@ -2,33 +2,33 @@
 --
 -- Type candidates can either be valid or invalid. Invalid type candidates will be rejected by the type system.
 module TypeCandidate
-  (mkStructCandidate,
-   mkSumtypeCandidate,
-   TypeVarRestriction(..),
-   InterfaceConstraint(..),
-   TypeField(..),
-   TypeMode(..),
-   getFields,
-   TypeCandidate.getName,
-   getRestriction,
-   getVariables,
-   TypeCandidate.getTypeEnv,
-   getConstraints,
-   getValueEnv,
-   getMode,
-   TypeCandidate.getPath,
-   getFullPath,
-   fieldName,
-   fieldTypes,
-   setRestriction,
-   toType,
-   TypeCandidate,
+  ( mkStructCandidate,
+    mkSumtypeCandidate,
+    TypeVarRestriction (..),
+    InterfaceConstraint (..),
+    TypeField (..),
+    TypeMode (..),
+    getFields,
+    TypeCandidate.getName,
+    getRestriction,
+    getVariables,
+    TypeCandidate.getTypeEnv,
+    getConstraints,
+    getValueEnv,
+    getMode,
+    TypeCandidate.getPath,
+    getFullPath,
+    fieldName,
+    fieldTypes,
+    setRestriction,
+    toType,
+    TypeCandidate,
   )
 where
 
-import Types
-import TypeError
 import Obj
+import TypeError
+import Types
 import Util
 
 --------------------------------------------------------------------------------
@@ -37,12 +37,13 @@ import Util
 data TypeVarRestriction
   = AllowAny
   | OnlyNamesInScope
-  deriving Eq
+  deriving (Eq)
 
-data InterfaceConstraint = InterfaceConstraint {
-  name  :: String,
-  types :: Ty
-} deriving Show
+data InterfaceConstraint = InterfaceConstraint
+  { name :: String,
+    types :: Ty
+  }
+  deriving (Show)
 
 data TypeField
   = StructField String Ty
@@ -54,17 +55,17 @@ data TypeMode
   | Sum
   deriving (Eq, Show)
 
-data TypeCandidate = TypeCandidate {
-  typeName    :: String,
-  variables   :: [Ty],
-  members     :: [TypeField],
-  restriction :: TypeVarRestriction,
-  constraints :: [InterfaceConstraint],
-  typeEnv     :: TypeEnv,
-  valueEnv    :: Env,
-  mode        :: TypeMode,
-  path        :: [String]
-}
+data TypeCandidate = TypeCandidate
+  { typeName :: String,
+    variables :: [Ty],
+    members :: [TypeField],
+    restriction :: TypeVarRestriction,
+    constraints :: [InterfaceConstraint],
+    typeEnv :: TypeEnv,
+    valueEnv :: Env,
+    mode :: TypeMode,
+    path :: [String]
+  }
 
 --------------------------------------------------------------------------------
 -- Private
@@ -137,17 +138,18 @@ fieldTypes (SumField _ ts) = ts
 mkStructCandidate :: String -> [Ty] -> TypeEnv -> Env -> [XObj] -> [String] -> Either TypeError TypeCandidate
 mkStructCandidate tname vars tenv env memberxs ps =
   let typedMembers = mapM mkStructField (pairwise memberxs)
-      candidate = TypeCandidate {
-                    typeName = tname,
-                    variables = vars,
-                    members = [],
-                    restriction = OnlyNamesInScope,
-                    constraints = [],
-                    typeEnv = tenv,
-                    valueEnv = env,
-                    mode = Struct,
-                    path = ps
-                  }
+      candidate =
+        TypeCandidate
+          { typeName = tname,
+            variables = vars,
+            members = [],
+            restriction = OnlyNamesInScope,
+            constraints = [],
+            typeEnv = tenv,
+            valueEnv = env,
+            mode = Struct,
+            path = ps
+          }
    in if even (length memberxs)
         then fmap (setMembers candidate) typedMembers
         else Left (UnevenMembers memberxs)
@@ -156,17 +158,18 @@ mkStructCandidate tname vars tenv env memberxs ps =
 mkSumtypeCandidate :: String -> [Ty] -> TypeEnv -> Env -> [XObj] -> [String] -> Either TypeError TypeCandidate
 mkSumtypeCandidate tname vars tenv env memberxs ps =
   let typedMembers = mapM mkSumField memberxs
-      candidate = TypeCandidate {
-                    typeName = tname,
-                    variables = vars,
-                    members = [],
-                    restriction = OnlyNamesInScope,
-                    constraints = [],
-                    typeEnv = tenv,
-                    valueEnv = env,
-                    mode = Sum,
-                    path = ps
-                  }
+      candidate =
+        TypeCandidate
+          { typeName = tname,
+            variables = vars,
+            members = [],
+            restriction = OnlyNamesInScope,
+            constraints = [],
+            typeEnv = tenv,
+            valueEnv = env,
+            mode = Sum,
+            path = ps
+          }
    in fmap (setMembers candidate) typedMembers
 
 toType :: TypeCandidate -> Ty

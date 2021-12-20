@@ -1,9 +1,8 @@
 {-# LANGUAGE NamedFieldPuns #-}
 
 module Sumtypes
-  (
-   moduleForSumtypeInContext,
-   moduleForSumtype
+  ( moduleForSumtypeInContext,
+    moduleForSumtype,
   )
 where
 
@@ -17,15 +16,15 @@ import Managed
 import Obj
 import StructUtils
 import Template
+import TemplateGenerator as TG
 import ToTemplate
+import qualified TypeCandidate as TC
 import TypeError
 import TypePredicates
 import Types
 import TypesToC
 import Util
 import Validate
-import qualified TypeCandidate as TC
-import TemplateGenerator as TG
 
 --------------------------------------------------------------------------------
 -- Public
@@ -75,16 +74,17 @@ moduleForSumtype innerEnv typeEnv env pathStrings typeName typeVariables rest i 
 -- | Generate standard binders for the sumtype
 generateBinders :: TC.TypeCandidate -> Either TypeError ([(String, Binder)], [XObj])
 generateBinders candidate =
-  do okIniters <- initers candidate
-     okTag <- binderForTag candidate
-     (okStr, okStrDeps) <- binderForStrOrPrn candidate "str"
-     (okPrn, _) <- binderForStrOrPrn candidate "prn"
-     okDelete <- binderForDelete candidate
-     (okCopy, okCopyDeps) <- binderForCopy candidate
-     okMemberDeps <- memberDeps (TC.getTypeEnv candidate) (TC.getValueEnv candidate) (TC.getFields candidate)
-     let binders = okIniters ++ [okStr, okPrn, okDelete, okCopy, okTag]
-         deps = okMemberDeps ++ okCopyDeps ++ okStrDeps
-     pure (binders, deps)
+  do
+    okIniters <- initers candidate
+    okTag <- binderForTag candidate
+    (okStr, okStrDeps) <- binderForStrOrPrn candidate "str"
+    (okPrn, _) <- binderForStrOrPrn candidate "prn"
+    okDelete <- binderForDelete candidate
+    (okCopy, okCopyDeps) <- binderForCopy candidate
+    okMemberDeps <- memberDeps (TC.getTypeEnv candidate) (TC.getValueEnv candidate) (TC.getFields candidate)
+    let binders = okIniters ++ [okStr, okPrn, okDelete, okCopy, okTag]
+        deps = okMemberDeps ++ okCopyDeps ++ okStrDeps
+    pure (binders, deps)
 
 -- | Gets concrete dependencies for sum type fields.
 memberDeps :: TypeEnv -> Env -> [TC.TypeField] -> Either TypeError [XObj]
@@ -104,44 +104,41 @@ replaceGenericTypesOnCases mappings = map replaceOnCase
 -- Binding generators
 
 type BinderGen = TC.TypeCandidate -> Either TypeError (String, Binder)
+
 type BinderGenDeps = TC.TypeCandidate -> Either TypeError ((String, Binder), [XObj])
+
 type MultiBinderGen = TC.TypeCandidate -> Either TypeError [(String, Binder)]
 
 -- | Generate initializer bindings for each sum type case.
 initers :: MultiBinderGen
 initers candidate = mapM binderForCaseInit (TC.getFields candidate)
   where
-    -- | Generate an initializer binding for a single sum type case, using the given candidate.
     binderForCaseInit :: TC.TypeField -> Either TypeError (String, Binder)
     binderForCaseInit sumtypeCase =
       if isTypeGeneric (TC.toType candidate)
         then Right (genericCaseInit StackAlloc sumtypeCase)
         else Right (concreteCaseInit StackAlloc sumtypeCase)
-
-    -- | Generates a template for a concrete (no type variables) sum type case.
     concreteCaseInit :: AllocationMode -> TC.TypeField -> (String, Binder)
     concreteCaseInit alloc field@(TC.SumField fieldname tys) =
       let concrete = (TC.toType candidate)
-          doc      = "creates a `" ++ fieldname ++ "`."
-          t        = (FuncTy tys (VarTy "p") StaticLifetimeTy)
-          decl     = (const (tokensForCaseInitDecl concrete concrete field))
-          body     = (const (tokensForCaseInit alloc concrete concrete field))
-          deps     = (const [])
-          temp     = Template t decl body deps
+          doc = "creates a `" ++ fieldname ++ "`."
+          t = (FuncTy tys (VarTy "p") StaticLifetimeTy)
+          decl = (const (tokensForCaseInitDecl concrete concrete field))
+          body = (const (tokensForCaseInit alloc concrete concrete field))
+          deps = (const [])
+          temp = Template t decl body deps
           binderPath = SymPath (TC.getFullPath candidate) fieldname
        in instanceBinder binderPath (FuncTy tys concrete StaticLifetimeTy) temp doc
     concreteCaseInit _ _ = error "concreteCaseInit"
-
-    -- | Generates a template for a generic (has type variables) sum type case.
     genericCaseInit :: AllocationMode -> TC.TypeField -> (String, Binder)
     genericCaseInit alloc field@(TC.SumField fieldname tys) =
       let generic = (TC.toType candidate)
-          docs    = "creates a `" ++ fieldname ++ "`."
-          ft      = FuncTy tys generic StaticLifetimeTy
+          docs = "creates a `" ++ fieldname ++ "`."
+          ft = FuncTy tys generic StaticLifetimeTy
           binderPath = SymPath (TC.getFullPath candidate) fieldname
-          t       = (FuncTy tys (VarTy "p") StaticLifetimeTy)
-          decl    = \(FuncTy _ concrete _) -> tokensForCaseInitDecl generic concrete field
-          body    = \(FuncTy _ concrete _) -> tokensForCaseInit alloc generic concrete field
+          t = (FuncTy tys (VarTy "p") StaticLifetimeTy)
+          decl = \(FuncTy _ concrete _) -> tokensForCaseInitDecl generic concrete field
+          body = \(FuncTy _ concrete _) -> tokensForCaseInit alloc generic concrete field
           deps tenv env = \(FuncTy _ concrete _) -> either (const []) id (concretizeType tenv env concrete)
           temp = TemplateCreator $ \tenv env -> Template t decl body (deps tenv env)
        in defineTypeParameterizedTemplate temp binderPath ft docs
@@ -169,29 +166,29 @@ binderForStrOrPrn candidate strOrPrn =
       binderP = SymPath (TC.getFullPath candidate) strOrPrn
       binderT = FuncTy [RefTy (TC.toType candidate) (VarTy "q")] StringTy StaticLifetimeTy
    in Right $
-       if isTypeGeneric (TC.toType candidate)
-         then (defineTypeParameterizedTemplate (TG.generateGenericTypeTemplate candidate strGenerator) binderP binderT doc, [])
-         else instanceBinderWithDeps binderP binderT (TG.generateConcreteTypeTemplate candidate strGenerator) doc
+        if isTypeGeneric (TC.toType candidate)
+          then (defineTypeParameterizedTemplate (TG.generateGenericTypeTemplate candidate strGenerator) binderP binderT doc, [])
+          else instanceBinderWithDeps binderP binderT (TG.generateConcreteTypeTemplate candidate strGenerator) doc
   where
     strGenerator :: TG.TemplateGenerator TC.TypeCandidate
     strGenerator = TG.mkTemplateGenerator genT decl body deps
 
     genT :: TG.TypeGenerator TC.TypeCandidate
-    genT GeneratorArg{value} =
+    genT GeneratorArg {value} =
       FuncTy [RefTy (TC.toType value) (VarTy "q")] StringTy StaticLifetimeTy
 
     decl :: TG.TokenGenerator TC.TypeCandidate
-    decl GeneratorArg{instanceT=(FuncTy [RefTy ty _] _ _)} =
+    decl GeneratorArg {instanceT = (FuncTy [RefTy ty _] _ _)} =
       toTemplate $ "String $NAME(" ++ tyToCLambdaFix ty ++ " *p)"
     decl _ = toTemplate "/* template error! */"
 
     body :: TG.TokenGenerator TC.TypeCandidate
-    body GeneratorArg{tenv, env, originalT, instanceT=(FuncTy [RefTy ty _] _ _), value} =
+    body GeneratorArg {tenv, env, originalT, instanceT = (FuncTy [RefTy ty _] _ _), value} =
       tokensForStr tenv env originalT ty (TC.getFields value)
     body _ = toTemplate "/* template error! */"
 
     deps :: TG.DepenGenerator TC.TypeCandidate
-    deps GeneratorArg{tenv, env, originalT, instanceT=(FuncTy [RefTy ty _] _ _), value} =
+    deps GeneratorArg {tenv, env, originalT, instanceT = (FuncTy [RefTy ty _] _ _), value} =
       depsForStr tenv env originalT ty (TC.getFields value)
     deps _ = []
 
@@ -217,12 +214,12 @@ binderForDelete candidate =
     decl _ = toTemplate "void $NAME($p p)"
 
     body :: TG.TokenGenerator TC.TypeCandidate
-    body GeneratorArg{tenv, env, originalT, instanceT=(FuncTy [ty] _ _), value} =
+    body GeneratorArg {tenv, env, originalT, instanceT = (FuncTy [ty] _ _), value} =
       tokensForDeleteBody tenv env originalT ty (TC.getFields value)
     body _ = toTemplate "/* template error! */"
 
     deps :: TG.DepenGenerator TC.TypeCandidate
-    deps GeneratorArg{tenv, env, originalT, instanceT=(FuncTy [ty] _ _), value} =
+    deps GeneratorArg {tenv, env, originalT, instanceT = (FuncTy [ty] _ _), value} =
       depsForDelete tenv env originalT ty (TC.getFields value)
     deps _ = []
 
@@ -230,7 +227,7 @@ binderForDelete candidate =
 binderForCopy :: BinderGenDeps
 binderForCopy candidate =
   let t = TC.toType candidate
-      doc =  "copies a `" ++ (TC.getName candidate) ++ "`."
+      doc = "copies a `" ++ (TC.getName candidate) ++ "`."
       binderT = FuncTy [RefTy t (VarTy "q")] t StaticLifetimeTy
       binderP = SymPath (TC.getFullPath candidate) "copy"
    in Right $
@@ -248,12 +245,12 @@ binderForCopy candidate =
     decl _ = toTemplate "$p $NAME($p* pRef)"
 
     body :: TG.TokenGenerator TC.TypeCandidate
-    body GeneratorArg{tenv, env, originalT, instanceT=(FuncTy [RefTy ty _] _ _), value} =
+    body GeneratorArg {tenv, env, originalT, instanceT = (FuncTy [RefTy ty _] _ _), value} =
       tokensForSumtypeCopy tenv env originalT ty (TC.getFields value)
     body _ = toTemplate "/* template error! */"
 
     deps :: TG.DepenGenerator TC.TypeCandidate
-    deps GeneratorArg{tenv, env, originalT, instanceT=(FuncTy [RefTy ty _] _ _), value} =
+    deps GeneratorArg {tenv, env, originalT, instanceT = (FuncTy [RefTy ty _] _ _), value} =
       depsForCopy tenv env originalT ty (TC.getFields value)
     deps _ = []
 
@@ -261,7 +258,8 @@ binderForCopy candidate =
 -- Token and dep generators
 
 type TokenGen = TypeEnv -> Env -> Ty -> Ty -> [TC.TypeField] -> [Token]
-type DepGen   = TypeEnv -> Env -> Ty -> Ty -> [TC.TypeField] -> [XObj]
+
+type DepGen = TypeEnv -> Env -> Ty -> Ty -> [TC.TypeField] -> [XObj]
 
 --------------------------------------------------------------------------------
 -- Initializers
@@ -269,7 +267,7 @@ type DepGen   = TypeEnv -> Env -> Ty -> Ty -> [TC.TypeField] -> [XObj]
 -- | Generate an init function declaration.
 tokensForCaseInitDecl :: Ty -> Ty -> TC.TypeField -> [Token]
 tokensForCaseInitDecl orig concrete@(StructTy (ConcreteNameTy _) _) (TC.SumField _ tys) =
-  let mappings    = unifySignatures orig concrete
+  let mappings = unifySignatures orig concrete
       concreteTys = map (replaceTyVars mappings) tys
    in toTemplate ("$p $NAME(" ++ joinWithComma (zipWith (curry memberArg) anonMemberNames (remove isUnit concreteTys)) ++ ")")
 tokensForCaseInitDecl _ _ _ =
@@ -279,24 +277,25 @@ tokensForCaseInitDecl _ _ _ =
 -- concrete type and a sum type field, generate an init function body.
 tokensForCaseInit :: AllocationMode -> Ty -> Ty -> TC.TypeField -> [Token]
 tokensForCaseInit alloc orig concrete (TC.SumField fieldname tys) =
-  let mappings    = unifySignatures orig concrete
+  let mappings = unifySignatures orig concrete
       concreteTys = map (replaceTyVars mappings) tys
       unitless = zip anonMemberNames $ remove isUnit concreteTys
    in multilineTemplate
-          [ "$DECL {",
-            allocate alloc,
-            joinLines (assign alloc fieldname . fst <$> unitless),
-            "    instance._tag = " ++ tagName concrete fieldname ++ ";",
-            "    return instance;",
-            "}"
-          ]
-   where allocate :: AllocationMode -> String
-         allocate StackAlloc = "  $p instance;"
-         allocate HeapAlloc = "  $p instance = CARP_MALLOC(sizeof(" ++ show concrete ++ "));"
+        [ "$DECL {",
+          allocate alloc,
+          joinLines (assign alloc fieldname . fst <$> unitless),
+          "    instance._tag = " ++ tagName concrete fieldname ++ ";",
+          "    return instance;",
+          "}"
+        ]
+  where
+    allocate :: AllocationMode -> String
+    allocate StackAlloc = "  $p instance;"
+    allocate HeapAlloc = "  $p instance = CARP_MALLOC(sizeof(" ++ show concrete ++ "));"
 
-         assign :: AllocationMode -> String -> String -> String
-         assign alloc' name member =
-           "    instance" ++ (accessor alloc') ++ "u." ++ name ++ "." ++ member ++ " = " ++ member ++ ";"
+    assign :: AllocationMode -> String -> String -> String
+    assign alloc' name member =
+      "    instance" ++ (accessor alloc') ++ "u." ++ name ++ "." ++ member ++ " = " ++ member ++ ";"
 tokensForCaseInit _ _ _ _ = error "tokenForCaseInit"
 
 accessor :: AllocationMode -> String
@@ -352,30 +351,32 @@ tokensForDeleteBody :: TokenGen
 tokensForDeleteBody tenv env generic concrete fields =
   let mappings = unifySignatures generic concrete
       concreteFields = replaceGenericTypesOnCases mappings fields
-   in multilineTemplate [
-        "$DECL {",
-        concatMap deleteCase (zip concreteFields (True : repeat False)),
-        "}"
-     ]
-  where deleteCase :: (TC.TypeField, Bool) -> String
-        deleteCase (theCase, isFirstCase) =
-          let (name, tys, correctedTagName) = namesFromCase theCase concrete
-           in unlines
-                [ "  " ++ (if isFirstCase then "" else "else ") ++ "if(p._tag == " ++ correctedTagName ++ ") {",
-                  joinLines $ memberDeletion tenv env <$> unionMembers name tys,
-                  "  }"
-                ]
+   in multilineTemplate
+        [ "$DECL {",
+          concatMap deleteCase (zip concreteFields (True : repeat False)),
+          "}"
+        ]
+  where
+    deleteCase :: (TC.TypeField, Bool) -> String
+    deleteCase (theCase, isFirstCase) =
+      let (name, tys, correctedTagName) = namesFromCase theCase concrete
+       in unlines
+            [ "  " ++ (if isFirstCase then "" else "else ") ++ "if(p._tag == " ++ correctedTagName ++ ") {",
+              joinLines $ memberDeletion tenv env <$> unionMembers name tys,
+              "  }"
+            ]
 
 -- | Generates deps for the body of a delete function.
 depsForDelete :: TypeEnv -> Env -> Ty -> Ty -> [TC.TypeField] -> [XObj]
 depsForDelete tenv env generic concrete fields =
-  let mappings       = unifySignatures generic concrete
+  let mappings = unifySignatures generic concrete
       concreteFields = replaceGenericTypesOnCases mappings fields
    in if isTypeGeneric concrete
         then []
-        else concatMap
-               (depsOfPolymorphicFunction tenv env [] "delete" . typesDeleterFunctionType)
-               (filter (isManaged tenv env) (concatMap (TC.fieldTypes) concreteFields))
+        else
+          concatMap
+            (depsOfPolymorphicFunction tenv env [] "delete" . typesDeleterFunctionType)
+            (filter (isManaged tenv env) (concatMap (TC.fieldTypes) concreteFields))
 
 --------------------------------------------------------------------------------
 -- Str and prn
@@ -409,32 +410,31 @@ tokensForStr typeEnv env generic concrete fields =
           "  return buffer;",
           "}"
         ]
-  where strCase :: TC.TypeField -> String
-        strCase theCase =
-          let (name, tys, correctedTagName) = namesFromCase theCase concrete
-           in unlines
-                [ "  if(p->_tag == " ++ correctedTagName ++ ") {",
-                  "    sprintf(bufferPtr, \"(%s \", \"" ++ name ++ "\");",
-                  "    bufferPtr += strlen(\"" ++ name ++ "\") + 2;\n",
-                  joinLines $ memberPrn typeEnv env <$> unionMembers name tys,
-                  "    bufferPtr--;",
-                  "    sprintf(bufferPtr, \")\");",
-                  "  }"
-                ]
+  where
+    strCase :: TC.TypeField -> String
+    strCase theCase =
+      let (name, tys, correctedTagName) = namesFromCase theCase concrete
+       in unlines
+            [ "  if(p->_tag == " ++ correctedTagName ++ ") {",
+              "    sprintf(bufferPtr, \"(%s \", \"" ++ name ++ "\");",
+              "    bufferPtr += strlen(\"" ++ name ++ "\") + 2;\n",
+              joinLines $ memberPrn typeEnv env <$> unionMembers name tys,
+              "    bufferPtr--;",
+              "    sprintf(bufferPtr, \")\");",
+              "  }"
+            ]
+    calculateStructStrSize :: [TC.TypeField] -> String
+    calculateStructStrSize cases = "  int size = 1;\n" ++ concatMap strSizeCase cases
 
-        -- | Figure out how big the string needed for the string representation of the struct has to be.
-        calculateStructStrSize :: [TC.TypeField] -> String
-        calculateStructStrSize cases = "  int size = 1;\n" ++ concatMap strSizeCase cases
-
-        strSizeCase :: TC.TypeField -> String
-        strSizeCase theCase =
-          let (name, tys, correctedTagName) = namesFromCase theCase concrete
-           in unlines
-                [ "  if(p->_tag == " ++ correctedTagName ++ ") {",
-                  "    size += snprintf(NULL, 0, \"(%s \", \"" ++ name ++ "\");",
-                  joinLines $ memberPrnSize typeEnv env <$> unionMembers name tys,
-                  "  }"
-                ]
+    strSizeCase :: TC.TypeField -> String
+    strSizeCase theCase =
+      let (name, tys, correctedTagName) = namesFromCase theCase concrete
+       in unlines
+            [ "  if(p->_tag == " ++ correctedTagName ++ ") {",
+              "    size += snprintf(NULL, 0, \"(%s \", \"" ++ name ++ "\");",
+              joinLines $ memberPrnSize typeEnv env <$> unionMembers name tys,
+              "  }"
+            ]
 
 --------------------------------------------------------------------------------
 -- Additional utilities
