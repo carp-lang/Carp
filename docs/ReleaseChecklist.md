@@ -21,7 +21,8 @@ See [CHANGELOG.md](../CHANGELOG.md)
 # 5. Make a commit on master
 
 ```bash
-$ git commit -m "Release X.Y.Z"
+$ git add .
+$ git commit -m "build: Release X.Y.Z"
 ```
 
 # 6. Tag the commit and push it
