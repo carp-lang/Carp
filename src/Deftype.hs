@@ -18,15 +18,15 @@ import Managed
 import Obj
 import StructUtils
 import Template
+import TemplateGenerator as TG
 import ToTemplate
+import qualified TypeCandidate as TC
 import TypeError
 import TypePredicates
 import Types
 import TypesToC
 import Util
 import Validate
-import qualified TypeCandidate as TC
-import TemplateGenerator as TG
 
 {-# ANN module "HLint: ignore Reduce duplication" #-}
 
@@ -60,15 +60,15 @@ moduleForDeftype innerEnv typeEnv env pathStrings typeName typeVariables rest i 
   let moduleValueEnv = fromMaybe (new innerEnv (Just typeName)) (fmap fst existingEnv)
       moduleTypeEnv = fromMaybe (new (Just typeEnv) (Just typeName)) (fmap snd existingEnv)
       initmembers = case rest of
-                      -- ANSI C does not allow empty structs. We add a dummy member here to account for this.
-                      -- Note that we *don't* add this member for external types--we leave those definitions up to the user.
-                      -- The corresponding field is emitted for the struct definition in Emit.hs
-                      [(XObj (Arr []) ii t)] -> [(XObj (Arr [(XObj (Sym (SymPath [] "__dummy") Symbol) Nothing Nothing), (XObj (Sym (SymPath [] "Char") Symbol) Nothing Nothing)]) ii t)]
-                      _ -> rest
+        -- ANSI C does not allow empty structs. We add a dummy member here to account for this.
+        -- Note that we *don't* add this member for external types--we leave those definitions up to the user.
+        -- The corresponding field is emitted for the struct definition in Emit.hs
+        [(XObj (Arr []) ii t)] -> [(XObj (Arr [(XObj (Sym (SymPath [] "__dummy") Symbol) Nothing Nothing), (XObj (Sym (SymPath [] "Char") Symbol) Nothing Nothing)]) ii t)]
+        _ -> rest
    in do
         let mems = case initmembers of
-                     [(XObj (Arr ms)_ _)] -> ms
-                     _ -> []
+              [(XObj (Arr ms) _ _)] -> ms
+              _ -> []
         -- Check that this is a valid type definition.
         candidate <- TC.mkStructCandidate typeName typeVariables typeEnv env mems pathStrings
         validateType candidate
@@ -88,8 +88,8 @@ bindingsForRegisteredType typeEnv env pathStrings typeName rest i existingEnv =
       moduleTypeEnv = fromMaybe (new (Just typeEnv) (Just typeName)) (fmap snd existingEnv)
    in do
         let mems = case rest of
-                     [(XObj (Arr ms)_ _)] -> ms
-                     _ -> []
+              [(XObj (Arr ms) _ _)] -> ms
+              _ -> []
         -- Check that this is a valid type definition.
         candidate <- TC.mkStructCandidate typeName [] typeEnv env mems pathStrings
         validateType candidate
@@ -109,14 +109,17 @@ bindingsForRegisteredType typeEnv env pathStrings typeName rest i existingEnv =
 -- | Generate the standard set of functions for a new type.
 generateTypeBindings :: TC.TypeCandidate -> Either TypeError ([(String, Binder)], [XObj])
 generateTypeBindings candidate =
-  do (okMembers, membersDeps) <- templatesForMembers candidate
-     okInit <- binderForInit candidate
-     (okStr, strDeps) <- binderForStrOrPrn "str" candidate
-     (okPrn, _) <- binderForStrOrPrn "prn" candidate
-     (okDelete, deleteDeps) <- binderForDelete candidate
-     (okCopy, copyDeps) <- binderForCopy candidate
-     pure ((okInit : okStr : okPrn : okDelete : okCopy : okMembers),
-           (deleteDeps ++ membersDeps ++ copyDeps ++ strDeps))
+  do
+    (okMembers, membersDeps) <- templatesForMembers candidate
+    okInit <- binderForInit candidate
+    (okStr, strDeps) <- binderForStrOrPrn "str" candidate
+    (okPrn, _) <- binderForStrOrPrn "prn" candidate
+    (okDelete, deleteDeps) <- binderForDelete candidate
+    (okCopy, copyDeps) <- binderForCopy candidate
+    pure
+      ( (okInit : okStr : okPrn : okDelete : okCopy : okMembers),
+        (deleteDeps ++ membersDeps ++ copyDeps ++ strDeps)
+      )
 
 -- | Generate all the templates for ALL the member variables in a deftype declaration.
 templatesForMembers :: TC.TypeCandidate -> Either TypeError ([(String, Binder)], [XObj])
@@ -155,38 +158,42 @@ templatesForSingleMember candidate field@(TC.StructField _ t) =
       ]
 
     getter :: Ty -> ((String, Binder), [XObj])
-    getter sig = let doc = "gets the `" ++ (TC.fieldName field) ++ "` property of a `" ++ (TC.getName candidate) ++ "`."
-                     binderT = sig
-                     binderP = SymPath (TC.getFullPath candidate) (TC.fieldName field)
-                     temp = TG.generateConcreteFieldTemplate candidate field getterGenerator
-                  in instanceBinderWithDeps binderP binderT temp doc
+    getter sig =
+      let doc = "gets the `" ++ (TC.fieldName field) ++ "` property of a `" ++ (TC.getName candidate) ++ "`."
+          binderT = sig
+          binderP = SymPath (TC.getFullPath candidate) (TC.fieldName field)
+          temp = TG.generateConcreteFieldTemplate candidate field getterGenerator
+       in instanceBinderWithDeps binderP binderT temp doc
 
     setter :: Ty -> ((String, Binder), [XObj])
-    setter sig = let doc = "sets the `" ++ (TC.fieldName field) ++ "` property of a `" ++ (TC.getName candidate) ++ "`."
-                     binderT = sig
-                     binderP = SymPath (TC.getFullPath candidate) ("set-" ++ (TC.fieldName field))
-                     concrete = (TG.generateConcreteFieldTemplate candidate field setterGenerator)
-                     generic = (TG.generateGenericFieldTemplate candidate field setterGenerator)
-                  in if isTypeGeneric t
-                       then (defineTypeParameterizedTemplate generic binderP binderT doc, [])
-                       else instanceBinderWithDeps binderP binderT concrete doc
+    setter sig =
+      let doc = "sets the `" ++ (TC.fieldName field) ++ "` property of a `" ++ (TC.getName candidate) ++ "`."
+          binderT = sig
+          binderP = SymPath (TC.getFullPath candidate) ("set-" ++ (TC.fieldName field))
+          concrete = (TG.generateConcreteFieldTemplate candidate field setterGenerator)
+          generic = (TG.generateGenericFieldTemplate candidate field setterGenerator)
+       in if isTypeGeneric t
+            then (defineTypeParameterizedTemplate generic binderP binderT doc, [])
+            else instanceBinderWithDeps binderP binderT concrete doc
 
     mutator :: Ty -> ((String, Binder), [XObj])
-    mutator sig = let doc = "sets the `" ++ (TC.fieldName field) ++ "` property of a `" ++ (TC.getName candidate) ++ "` in place."
-                      binderT = sig
-                      binderP = SymPath (TC.getFullPath candidate) ("set-" ++ (TC.fieldName field) ++ "!")
-                      concrete = (TG.generateConcreteFieldTemplate candidate field mutatorGenerator)
-                      generic = (TG.generateGenericFieldTemplate candidate field mutatorGenerator)
-                   in if isTypeGeneric t
-                        then (defineTypeParameterizedTemplate generic binderP binderT doc, [])
-                        else instanceBinderWithDeps binderP binderT concrete doc
+    mutator sig =
+      let doc = "sets the `" ++ (TC.fieldName field) ++ "` property of a `" ++ (TC.getName candidate) ++ "` in place."
+          binderT = sig
+          binderP = SymPath (TC.getFullPath candidate) ("set-" ++ (TC.fieldName field) ++ "!")
+          concrete = (TG.generateConcreteFieldTemplate candidate field mutatorGenerator)
+          generic = (TG.generateGenericFieldTemplate candidate field mutatorGenerator)
+       in if isTypeGeneric t
+            then (defineTypeParameterizedTemplate generic binderP binderT doc, [])
+            else instanceBinderWithDeps binderP binderT concrete doc
 
     updater :: Ty -> ((String, Binder), [XObj])
-    updater sig = let doc = "updates the `" ++ memberName ++ "` property of a `" ++ show p ++ "` using a function `f`."
-                      binderT = sig
-                      binderP = SymPath (TC.getFullPath candidate) ("update-" ++ (TC.fieldName field))
-                      temp = TG.generateConcreteFieldTemplate candidate field updateGenerator
-                   in instanceBinderWithDeps binderP binderT temp doc
+    updater sig =
+      let doc = "updates the `" ++ memberName ++ "` property of a `" ++ show p ++ "` using a function `f`."
+          binderT = sig
+          binderP = SymPath (TC.getFullPath candidate) ("update-" ++ (TC.fieldName field))
+          temp = TG.generateConcreteFieldTemplate candidate field updateGenerator
+       in instanceBinderWithDeps binderP binderT temp doc
 templatesForSingleMember _ _ = error "templatesforsinglemember"
 
 -- | Helper function to create the binder for the 'init' template.
@@ -194,7 +201,7 @@ binderForInit :: TC.TypeCandidate -> Either TypeError (String, Binder)
 binderForInit candidate =
   -- Remove the __dummy field from the members array to ensure we can call the initializer with no arguments.
   -- See the implementation of moduleForDeftype for more details.
-  let nodummy = remove ((=="__dummy") . TC.fieldName) (TC.getFields candidate)
+  let nodummy = remove ((== "__dummy") . TC.fieldName) (TC.getFields candidate)
       doc = "creates a `" ++ (TC.getName candidate) ++ "`."
       binderP = (SymPath (TC.getFullPath candidate) "init")
       binderT = (FuncTy (concatMap TC.fieldTypes nodummy) (TC.toType candidate) StaticLifetimeTy)
@@ -248,19 +255,19 @@ getterGenerator = TG.mkTemplateGenerator tgen decl body deps
     tgen _ = (FuncTy [RefTy (VarTy "p") (VarTy "q")] (VarTy "t") StaticLifetimeTy)
 
     decl :: TG.TokenGenerator TC.TypeField
-    decl TG.GeneratorArg{instanceT=UnitTy} = toTemplate "void $NAME($(Ref p) p)"
+    decl TG.GeneratorArg {instanceT = UnitTy} = toTemplate "void $NAME($(Ref p) p)"
     decl _ = toTemplate "$t $NAME($(Ref p) p)"
 
     body :: TG.TokenGenerator TC.TypeField
-    body TG.GeneratorArg{value=(TC.StructField _ UnitTy)} = toTemplate "$DECL { return; }\n"
-    body TG.GeneratorArg{instanceT=(FuncTy _ (RefTy UnitTy _) _)} = toTemplate " $DECL { void* ptr = NULL; return ptr; }\n"
-    body TG.GeneratorArg{value=(TC.StructField name ty)} =
+    body TG.GeneratorArg {value = (TC.StructField _ UnitTy)} = toTemplate "$DECL { return; }\n"
+    body TG.GeneratorArg {instanceT = (FuncTy _ (RefTy UnitTy _) _)} = toTemplate " $DECL { void* ptr = NULL; return ptr; }\n"
+    body TG.GeneratorArg {value = (TC.StructField name ty)} =
       let fixForVoidStarMembers =
             if isFunctionType ty && not (isTypeGeneric ty)
               then "(" ++ tyToCLambdaFix (RefTy ty (VarTy "q")) ++ ")"
               else ""
        in toTemplate ("$DECL { return " ++ fixForVoidStarMembers ++ "(&(p->" ++ (mangle name) ++ ")); }\n")
-    body TG.GeneratorArg{} = toTemplate "/* template error! */"
+    body TG.GeneratorArg {} = toTemplate "/* template error! */"
 
     deps :: TG.DepenGenerator TC.TypeField
     deps = const []
@@ -268,154 +275,158 @@ getterGenerator = TG.mkTemplateGenerator tgen decl body deps
 -- | setterGenerator returns a template generator for struct property setters.
 setterGenerator :: TG.TemplateGenerator TC.TypeField
 setterGenerator = TG.mkTemplateGenerator tgen decl body deps
-  where tgen :: TG.TypeGenerator TC.TypeField
-        tgen _ = (FuncTy [VarTy "p", VarTy "t"] (VarTy "p") StaticLifetimeTy)
+  where
+    tgen :: TG.TypeGenerator TC.TypeField
+    tgen _ = (FuncTy [VarTy "p", VarTy "t"] (VarTy "p") StaticLifetimeTy)
 
-        decl :: TG.TokenGenerator TC.TypeField
-        decl GeneratorArg{instanceT=(FuncTy [_, UnitTy] _ _)} = toTemplate "$p $NAME($p p)"
-        decl _ = toTemplate "$p $NAME($p p, $t newValue)"
+    decl :: TG.TokenGenerator TC.TypeField
+    decl GeneratorArg {instanceT = (FuncTy [_, UnitTy] _ _)} = toTemplate "$p $NAME($p p)"
+    decl _ = toTemplate "$p $NAME($p p, $t newValue)"
 
-        body :: TG.TokenGenerator TC.TypeField
-        body GeneratorArg{instanceT=(FuncTy [_, UnitTy] _ _)} = toTemplate "$DECL { return p; }\n"
-        body GeneratorArg{tenv,env,instanceT= (FuncTy [_, ty] _ _),value=(TC.StructField name _)} =
-          multilineTemplate [
-            "$DECL {",
-            memberDeletion tenv env (name, ty),
-            "    p." ++ (mangle name) ++ " = newValue;",
-            "    return p;",
-            "}\n"
-          ]
-        body _ = toTemplate "/* template error! */"
+    body :: TG.TokenGenerator TC.TypeField
+    body GeneratorArg {instanceT = (FuncTy [_, UnitTy] _ _)} = toTemplate "$DECL { return p; }\n"
+    body GeneratorArg {tenv, env, instanceT = (FuncTy [_, ty] _ _), value = (TC.StructField name _)} =
+      multilineTemplate
+        [ "$DECL {",
+          memberDeletion tenv env (name, ty),
+          "    p." ++ (mangle name) ++ " = newValue;",
+          "    return p;",
+          "}\n"
+        ]
+    body _ = toTemplate "/* template error! */"
 
-        deps :: TG.DepenGenerator TC.TypeField
-        deps GeneratorArg{tenv, env, TG.instanceT=(FuncTy [_, ty] _ _)}
-          | isManaged tenv env ty = depsOfPolymorphicFunction tenv env [] "delete" (typesDeleterFunctionType ty)
-          | isFunctionType ty = [defineFunctionTypeAlias ty]
-          | otherwise = []
-        deps _ = []
+    deps :: TG.DepenGenerator TC.TypeField
+    deps GeneratorArg {tenv, env, TG.instanceT = (FuncTy [_, ty] _ _)}
+      | isManaged tenv env ty = depsOfPolymorphicFunction tenv env [] "delete" (typesDeleterFunctionType ty)
+      | isFunctionType ty = [defineFunctionTypeAlias ty]
+      | otherwise = []
+    deps _ = []
 
 -- | mutatorGenerator returns a template generator for struct property setters (in-place).
 mutatorGenerator :: TG.TemplateGenerator TC.TypeField
 mutatorGenerator = TG.mkTemplateGenerator tgen decl body deps
-  where tgen :: TG.TypeGenerator TC.TypeField
-        tgen _ = (FuncTy [RefTy (VarTy "p") (VarTy "q"), VarTy "t"] UnitTy StaticLifetimeTy)
+  where
+    tgen :: TG.TypeGenerator TC.TypeField
+    tgen _ = (FuncTy [RefTy (VarTy "p") (VarTy "q"), VarTy "t"] UnitTy StaticLifetimeTy)
 
-        decl :: TG.TokenGenerator TC.TypeField
-        decl GeneratorArg{instanceT=(FuncTy [_, UnitTy] _ _)} = toTemplate "void $NAME($p* pRef)"
-        decl _ = toTemplate "void $NAME($p* pRef, $t newValue)"
+    decl :: TG.TokenGenerator TC.TypeField
+    decl GeneratorArg {instanceT = (FuncTy [_, UnitTy] _ _)} = toTemplate "void $NAME($p* pRef)"
+    decl _ = toTemplate "void $NAME($p* pRef, $t newValue)"
 
-        body :: TG.TokenGenerator TC.TypeField
-        -- Execution of the action passed as an argument is handled in Emit.hs.
-        body GeneratorArg{instanceT=(FuncTy [_, UnitTy] _ _)} = toTemplate "$DECL { return; }\n"
-        body GeneratorArg{tenv, env, instanceT=(FuncTy [_, ty] _ _), value=(TC.StructField name _)} =
-          multilineTemplate [
-            "$DECL {",
-            memberRefDeletion tenv env (name, ty),
-            "    pRef->" ++ mangle name ++ " = newValue;",
-            "}\n"
-          ]
-        body _ = toTemplate "/* template error! */"
+    body :: TG.TokenGenerator TC.TypeField
+    -- Execution of the action passed as an argument is handled in Emit.hs.
+    body GeneratorArg {instanceT = (FuncTy [_, UnitTy] _ _)} = toTemplate "$DECL { return; }\n"
+    body GeneratorArg {tenv, env, instanceT = (FuncTy [_, ty] _ _), value = (TC.StructField name _)} =
+      multilineTemplate
+        [ "$DECL {",
+          memberRefDeletion tenv env (name, ty),
+          "    pRef->" ++ mangle name ++ " = newValue;",
+          "}\n"
+        ]
+    body _ = toTemplate "/* template error! */"
 
-        deps :: TG.DepenGenerator TC.TypeField
-        deps GeneratorArg{tenv, env, instanceT=(FuncTy [_, ty] _ _)} =
-          if isManaged tenv env ty
-            then depsOfPolymorphicFunction tenv env [] "delete" (typesDeleterFunctionType ty)
-            else []
-        deps _ = []
+    deps :: TG.DepenGenerator TC.TypeField
+    deps GeneratorArg {tenv, env, instanceT = (FuncTy [_, ty] _ _)} =
+      if isManaged tenv env ty
+        then depsOfPolymorphicFunction tenv env [] "delete" (typesDeleterFunctionType ty)
+        else []
+    deps _ = []
 
 -- | Returns a template generator for updating struct properties with a function.
 updateGenerator :: TG.TemplateGenerator TC.TypeField
 updateGenerator = TG.mkTemplateGenerator tgen decl body deps
-  where tgen :: TG.TypeGenerator TC.TypeField
-        tgen GeneratorArg{value=(TC.StructField _ UnitTy)} =
-          (FuncTy [VarTy "p", RefTy (FuncTy [] UnitTy (VarTy "fq")) (VarTy "q")] (VarTy "p") StaticLifetimeTy)
-        tgen _ = (FuncTy [VarTy "p", RefTy (FuncTy [VarTy "t"] (VarTy "t") (VarTy "fq")) (VarTy "q")] (VarTy "p") StaticLifetimeTy)
+  where
+    tgen :: TG.TypeGenerator TC.TypeField
+    tgen GeneratorArg {value = (TC.StructField _ UnitTy)} =
+      (FuncTy [VarTy "p", RefTy (FuncTy [] UnitTy (VarTy "fq")) (VarTy "q")] (VarTy "p") StaticLifetimeTy)
+    tgen _ = (FuncTy [VarTy "p", RefTy (FuncTy [VarTy "t"] (VarTy "t") (VarTy "fq")) (VarTy "q")] (VarTy "p") StaticLifetimeTy)
 
-        decl :: TG.TokenGenerator TC.TypeField
-        decl _ = toTemplate "$p $NAME($p p, Lambda *updater)" -- Lambda used to be (Fn [t] t)
+    decl :: TG.TokenGenerator TC.TypeField
+    decl _ = toTemplate "$p $NAME($p p, Lambda *updater)" -- Lambda used to be (Fn [t] t)
+    body :: TG.TokenGenerator TC.TypeField
+    body GeneratorArg {value = (TC.StructField _ UnitTy)} =
+      toTemplate ("$DECL { " ++ templateCodeForCallingLambda "(*updater)" (FuncTy [] UnitTy (VarTy "fq")) [] ++ "; return p;}\n")
+    body GeneratorArg {value = (TC.StructField name _)} =
+      multilineTemplate
+        [ "$DECL {",
+          "    p." ++ mangle name ++ " = " ++ templateCodeForCallingLambda "(*updater)" (FuncTy [VarTy "t"] (VarTy "t") (VarTy "fq")) ["p." ++ mangle name] ++ ";",
+          "    return p;",
+          "}\n"
+        ]
+    body _ = toTemplate "/* template error! */"
 
-        body :: TG.TokenGenerator TC.TypeField
-        body GeneratorArg{value=(TC.StructField _ UnitTy)} =
-          toTemplate ("$DECL { " ++ templateCodeForCallingLambda "(*updater)" (FuncTy [] UnitTy (VarTy "fq")) [] ++ "; return p;}\n")
-        body GeneratorArg{value=(TC.StructField name _)} = multilineTemplate [
-                   "$DECL {",
-                   "    p." ++ mangle name ++ " = " ++ templateCodeForCallingLambda "(*updater)" (FuncTy [VarTy "t"] (VarTy "t") (VarTy "fq")) ["p." ++ mangle name] ++ ";",
-                   "    return p;",
-                   "}\n"
-                 ]
-        body _ = toTemplate "/* template error! */"
-
-        deps :: TG.DepenGenerator TC.TypeField
-        deps GeneratorArg{instanceT=(FuncTy [_, RefTy t@(FuncTy fArgTys fRetTy _) _] _ _)} =
-          if isTypeGeneric fRetTy
-            then []
-            else [defineFunctionTypeAlias t, defineFunctionTypeAlias (FuncTy (lambdaEnvTy : fArgTys) fRetTy StaticLifetimeTy)]
-        deps _ = []
+    deps :: TG.DepenGenerator TC.TypeField
+    deps GeneratorArg {instanceT = (FuncTy [_, RefTy t@(FuncTy fArgTys fRetTy _) _] _ _)} =
+      if isTypeGeneric fRetTy
+        then []
+        else [defineFunctionTypeAlias t, defineFunctionTypeAlias (FuncTy (lambdaEnvTy : fArgTys) fRetTy StaticLifetimeTy)]
+    deps _ = []
 
 -- | Returns a template generator for a types initializer function.
 initGenerator :: AllocationMode -> TG.TemplateGenerator TC.TypeCandidate
 initGenerator alloc = TG.mkTemplateGenerator genT decl body deps
-  where genT :: TG.TypeGenerator TC.TypeCandidate
-        genT GeneratorArg{value} =
-         (FuncTy (concatMap TC.fieldTypes (TC.getFields value)) (VarTy "p") StaticLifetimeTy)
+  where
+    genT :: TG.TypeGenerator TC.TypeCandidate
+    genT GeneratorArg {value} =
+      (FuncTy (concatMap TC.fieldTypes (TC.getFields value)) (VarTy "p") StaticLifetimeTy)
 
-        decl :: TG.TokenGenerator TC.TypeCandidate
-        decl GeneratorArg{originalT, instanceT=(FuncTy _ concreteT _), value} =
-          let mappings = unifySignatures originalT concreteT
-              concreteFields = replaceGenericTypeSymbolsOnFields mappings (TC.getFields value)
-              cFields = remove isUnitT (remove isDummy concreteFields)
-           in toTemplate ("$p $NAME(" ++ joinWithComma (map fieldArg cFields) ++ ")")
-        decl _ = toTemplate "/* template error! */"
+    decl :: TG.TokenGenerator TC.TypeCandidate
+    decl GeneratorArg {originalT, instanceT = (FuncTy _ concreteT _), value} =
+      let mappings = unifySignatures originalT concreteT
+          concreteFields = replaceGenericTypeSymbolsOnFields mappings (TC.getFields value)
+          cFields = remove isUnitT (remove isDummy concreteFields)
+       in toTemplate ("$p $NAME(" ++ joinWithComma (map fieldArg cFields) ++ ")")
+    decl _ = toTemplate "/* template error! */"
 
-        body :: TG.TokenGenerator TC.TypeCandidate
-        body GeneratorArg{originalT, instanceT=(FuncTy _ concreteT _), value} =
-          let mappings = unifySignatures originalT concreteT
-              concreteFields = replaceGenericTypeSymbolsOnFields mappings (TC.getFields value)
-           in tokensForInit alloc (show originalT) (remove isUnitT concreteFields)
-        body _ = toTemplate "/* template error! */"
+    body :: TG.TokenGenerator TC.TypeCandidate
+    body GeneratorArg {originalT, instanceT = (FuncTy _ concreteT _), value} =
+      let mappings = unifySignatures originalT concreteT
+          concreteFields = replaceGenericTypeSymbolsOnFields mappings (TC.getFields value)
+       in tokensForInit alloc (show originalT) (remove isUnitT concreteFields)
+    body _ = toTemplate "/* template error! */"
 
-        deps :: TG.DepenGenerator TC.TypeCandidate
-        deps GeneratorArg{tenv, env, instanceT=(FuncTy _ concreteT _)} =
-               case concretizeType tenv env concreteT of
-                 Left _ -> []
-                 Right ok -> ok
-        deps _ = []
+    deps :: TG.DepenGenerator TC.TypeCandidate
+    deps GeneratorArg {tenv, env, instanceT = (FuncTy _ concreteT _)} =
+      case concretizeType tenv env concreteT of
+        Left _ -> []
+        Right ok -> ok
+    deps _ = []
 
-        tokensForInit :: AllocationMode -> String -> [TC.TypeField] -> [Token]
-        -- if this is truly a memberless struct, init it to 0;
-        -- This can happen in cases where *all* members of the struct are of type Unit.
-        -- Since we do not generate members for Unit types.
-        tokensForInit StackAlloc _ [] =
-          multilineTemplate [
-            "$DECL {",
-             "    $p instance = {};",
-             "    return instance;",
-             "}"
-          ]
-        tokensForInit StackAlloc _ fields =
-          multilineTemplate [
-            "$DECL {",
-            "    $p instance;",
-            assignments fields,
-            "    return instance;",
-            "}"
-          ]
-        tokensForInit HeapAlloc typeName fields =
-          multilineTemplate [
-            "$DECL {",
-            "    $p instance = CARP_MALLOC(sizeof(" ++ typeName ++ "));",
-            assignments fields,
-            "    return instance;",
-            "}"
-          ]
+    tokensForInit :: AllocationMode -> String -> [TC.TypeField] -> [Token]
+    -- if this is truly a memberless struct, init it to 0;
+    -- This can happen in cases where *all* members of the struct are of type Unit.
+    -- Since we do not generate members for Unit types.
+    tokensForInit StackAlloc _ [] =
+      multilineTemplate
+        [ "$DECL {",
+          "    $p instance = {};",
+          "    return instance;",
+          "}"
+        ]
+    tokensForInit StackAlloc _ fields =
+      multilineTemplate
+        [ "$DECL {",
+          "    $p instance;",
+          assignments fields,
+          "    return instance;",
+          "}"
+        ]
+    tokensForInit HeapAlloc typeName fields =
+      multilineTemplate
+        [ "$DECL {",
+          "    $p instance = CARP_MALLOC(sizeof(" ++ typeName ++ "));",
+          assignments fields,
+          "    return instance;",
+          "}"
+        ]
 
-        assignments :: [TC.TypeField] -> String
-        assignments [] = ""
-        assignments fields = joinLines $ fmap (memberAssignment alloc) fields
+    assignments :: [TC.TypeField] -> String
+    assignments [] = ""
+    assignments fields = joinLines $ fmap (memberAssignment alloc) fields
 
-        isDummy field = TC.fieldName field == "__dummy"
-        isUnitT (TC.StructField _ UnitTy) = True
-        isUnitT _ = False
+    isDummy field = TC.fieldName field == "__dummy"
+    isUnitT (TC.StructField _ UnitTy) = True
+    isUnitT _ = False
 
 -- | Generate C code for assigning to a member variable.
 -- Needs to know if the instance is a pointer or stack variable.
@@ -458,118 +469,121 @@ templatizeTy t = t
 -- | Returns a template generator for a type's str and prn functions.
 strGenerator :: TG.TemplateGenerator TC.TypeCandidate
 strGenerator = TG.mkTemplateGenerator genT decl body deps
-  where genT :: TG.TypeGenerator TC.TypeCandidate
-        genT GeneratorArg{originalT} =
-          FuncTy [RefTy originalT (VarTy "q")] StringTy StaticLifetimeTy
+  where
+    genT :: TG.TypeGenerator TC.TypeCandidate
+    genT GeneratorArg {originalT} =
+      FuncTy [RefTy originalT (VarTy "q")] StringTy StaticLifetimeTy
 
-        decl :: TG.TokenGenerator TC.TypeCandidate
-        decl GeneratorArg{instanceT=(FuncTy [RefTy structT _] _ _)} =
-          toTemplate $ "String $NAME(" ++ tyToCLambdaFix structT ++ " *p)"
-        decl _ = toTemplate "/* template error! */"
+    decl :: TG.TokenGenerator TC.TypeCandidate
+    decl GeneratorArg {instanceT = (FuncTy [RefTy structT _] _ _)} =
+      toTemplate $ "String $NAME(" ++ tyToCLambdaFix structT ++ " *p)"
+    decl _ = toTemplate "/* template error! */"
 
-        body :: TG.TokenGenerator TC.TypeCandidate
-        body GeneratorArg{tenv, env, originalT, instanceT=(FuncTy [RefTy structT _] _ _), value} =
-          let mappings = unifySignatures originalT structT
-              concreteFields = replaceGenericTypeSymbolsOnFields mappings (TC.getFields value)
-           in tokensForStr tenv env (getStructName structT) concreteFields structT
-        body _ = toTemplate "/* template error! */"
+    body :: TG.TokenGenerator TC.TypeCandidate
+    body GeneratorArg {tenv, env, originalT, instanceT = (FuncTy [RefTy structT _] _ _), value} =
+      let mappings = unifySignatures originalT structT
+          concreteFields = replaceGenericTypeSymbolsOnFields mappings (TC.getFields value)
+       in tokensForStr tenv env (getStructName structT) concreteFields structT
+    body _ = toTemplate "/* template error! */"
 
-        deps :: TG.DepenGenerator TC.TypeCandidate
-        deps arg@GeneratorArg{tenv, env, originalT, instanceT=(FuncTy [RefTy structT _] _ _), value} =
-          let mappings = unifySignatures originalT structT
-              concreteFields = replaceGenericTypeSymbolsOnFields mappings (TC.getFields value)
-           in concatMap
-                (depsOfPolymorphicFunction tenv env [] "prn" . typesStrFunctionType tenv env)
-                (remove isFullyGenericType (concatMap TC.fieldTypes concreteFields))
-                ++ [defineFunctionTypeAlias (instanceT arg) | not (isTypeGeneric structT)]
-        deps _ = []
+    deps :: TG.DepenGenerator TC.TypeCandidate
+    deps arg@GeneratorArg {tenv, env, originalT, instanceT = (FuncTy [RefTy structT _] _ _), value} =
+      let mappings = unifySignatures originalT structT
+          concreteFields = replaceGenericTypeSymbolsOnFields mappings (TC.getFields value)
+       in concatMap
+            (depsOfPolymorphicFunction tenv env [] "prn" . typesStrFunctionType tenv env)
+            (remove isFullyGenericType (concatMap TC.fieldTypes concreteFields))
+            ++ [defineFunctionTypeAlias (instanceT arg) | not (isTypeGeneric structT)]
+    deps _ = []
 
-        tokensForStr :: TypeEnv -> Env -> String -> [TC.TypeField] -> Ty -> [Token]
-        tokensForStr typeEnv env typeName fields concreteStructTy =
-          let members = remove ((=="__dummy"). fst) (map fieldToTuple fields)
-           in multilineTemplate
-                  [ "$DECL {",
-                    "  // convert members to String here:",
-                    "  String temp = NULL;",
-                    "  int tempsize = 0;",
-                    "  (void)tempsize; // that way we remove the occasional unused warning ",
-                    calculateStructStrSize typeEnv env members concreteStructTy,
-                    "  String buffer = CARP_MALLOC(size);",
-                    "  String bufferPtr = buffer;",
-                    "",
-                    "  sprintf(bufferPtr, \"(%s \", \"" ++ typeName ++ "\");",
-                    "  bufferPtr += strlen(\"" ++ typeName ++ "\") + 2;\n",
-                    joinLines (map (memberPrn typeEnv env) members),
-                    "  bufferPtr--;",
-                    "  sprintf(bufferPtr, \")\");",
-                    "  return buffer;",
-                    "}"
-                  ]
-
-        -- | Figure out how big the string needed for the string representation of the struct has to be.
-        calculateStructStrSize :: TypeEnv -> Env -> [(String, Ty)] -> Ty -> String
-        calculateStructStrSize typeEnv env fields s =
-          "  int size = snprintf(NULL, 0, \"(%s )\", \"" ++ show s ++ "\");\n"
-            ++ unlines (map (memberPrnSize typeEnv env) fields)
+    tokensForStr :: TypeEnv -> Env -> String -> [TC.TypeField] -> Ty -> [Token]
+    tokensForStr typeEnv env typeName fields concreteStructTy =
+      let members = remove ((== "__dummy") . fst) (map fieldToTuple fields)
+       in multilineTemplate
+            [ "$DECL {",
+              "  // convert members to String here:",
+              "  String temp = NULL;",
+              "  int tempsize = 0;",
+              "  (void)tempsize; // that way we remove the occasional unused warning ",
+              calculateStructStrSize typeEnv env members concreteStructTy,
+              "  String buffer = CARP_MALLOC(size);",
+              "  String bufferPtr = buffer;",
+              "",
+              "  sprintf(bufferPtr, \"(%s \", \"" ++ typeName ++ "\");",
+              "  bufferPtr += strlen(\"" ++ typeName ++ "\") + 2;\n",
+              joinLines (map (memberPrn typeEnv env) members),
+              "  bufferPtr--;",
+              "  sprintf(bufferPtr, \")\");",
+              "  return buffer;",
+              "}"
+            ]
+    calculateStructStrSize :: TypeEnv -> Env -> [(String, Ty)] -> Ty -> String
+    calculateStructStrSize typeEnv env fields s =
+      "  int size = snprintf(NULL, 0, \"(%s )\", \"" ++ show s ++ "\");\n"
+        ++ unlines (map (memberPrnSize typeEnv env) fields)
 
 -- | Returns a template generator for a type's delete function.
 deleteGenerator :: TG.TemplateGenerator TC.TypeCandidate
 deleteGenerator = TG.mkTemplateGenerator genT decl body deps
-  where genT :: TG.TypeGenerator TC.TypeCandidate
-        genT _ = FuncTy [VarTy "p"] UnitTy StaticLifetimeTy
+  where
+    genT :: TG.TypeGenerator TC.TypeCandidate
+    genT _ = FuncTy [VarTy "p"] UnitTy StaticLifetimeTy
 
-        decl :: TG.TokenGenerator TC.TypeCandidate
-        decl _ = toTemplate "void $NAME($p p)"
+    decl :: TG.TokenGenerator TC.TypeCandidate
+    decl _ = toTemplate "void $NAME($p p)"
 
-        body :: TG.TokenGenerator TC.TypeCandidate
-        body GeneratorArg{tenv, env, originalT, instanceT=(FuncTy [structT] _ _), value} =
-          let mappings = unifySignatures originalT structT
-              concreteFields = replaceGenericTypeSymbolsOnFields mappings (TC.getFields value)
-              members = map fieldToTuple concreteFields
-           in multilineTemplate [
-                "$DECL {",
-                joinLines (map (memberDeletion tenv env) members),
-                "}"
-              ]
-        body _ = toTemplate "/* template error! */"
+    body :: TG.TokenGenerator TC.TypeCandidate
+    body GeneratorArg {tenv, env, originalT, instanceT = (FuncTy [structT] _ _), value} =
+      let mappings = unifySignatures originalT structT
+          concreteFields = replaceGenericTypeSymbolsOnFields mappings (TC.getFields value)
+          members = map fieldToTuple concreteFields
+       in multilineTemplate
+            [ "$DECL {",
+              joinLines (map (memberDeletion tenv env) members),
+              "}"
+            ]
+    body _ = toTemplate "/* template error! */"
 
-        deps :: TG.DepenGenerator TC.TypeCandidate
-        deps GeneratorArg{tenv, env, originalT, instanceT=(FuncTy [structT] _ _), value}
-          | isTypeGeneric structT = []
-          | otherwise = let mappings = unifySignatures originalT structT
-                            concreteFields = replaceGenericTypeSymbolsOnFields mappings (TC.getFields value)
-                         in concatMap
-                              (depsOfPolymorphicFunction tenv env [] "delete" . typesDeleterFunctionType)
-                              (filter (isManaged tenv env) (concatMap TC.fieldTypes concreteFields))
-        deps _ = []
+    deps :: TG.DepenGenerator TC.TypeCandidate
+    deps GeneratorArg {tenv, env, originalT, instanceT = (FuncTy [structT] _ _), value}
+      | isTypeGeneric structT = []
+      | otherwise =
+        let mappings = unifySignatures originalT structT
+            concreteFields = replaceGenericTypeSymbolsOnFields mappings (TC.getFields value)
+         in concatMap
+              (depsOfPolymorphicFunction tenv env [] "delete" . typesDeleterFunctionType)
+              (filter (isManaged tenv env) (concatMap TC.fieldTypes concreteFields))
+    deps _ = []
 
 -- | Returns a template generator for a type's copy function.
 copyGenerator :: TG.TemplateGenerator TC.TypeCandidate
 copyGenerator = TG.mkTemplateGenerator genT decl body deps
-  where genT :: TG.TypeGenerator TC.TypeCandidate
-        genT _ = FuncTy [RefTy (VarTy "p") (VarTy "q")] (VarTy "p") StaticLifetimeTy
+  where
+    genT :: TG.TypeGenerator TC.TypeCandidate
+    genT _ = FuncTy [RefTy (VarTy "p") (VarTy "q")] (VarTy "p") StaticLifetimeTy
 
-        decl :: TG.TokenGenerator TC.TypeCandidate
-        decl _ = toTemplate "$p $NAME($p* pRef)"
+    decl :: TG.TokenGenerator TC.TypeCandidate
+    decl _ = toTemplate "$p $NAME($p* pRef)"
 
-        body :: TG.TokenGenerator TC.TypeCandidate
-        body GeneratorArg{tenv, env, originalT, instanceT=(FuncTy [RefTy structT _] _ _), value} =
-          let mappings = unifySignatures originalT structT
-              concreteFields = replaceGenericTypeSymbolsOnFields mappings (TC.getFields value)
-              members = map fieldToTuple concreteFields
-           in tokensForCopy tenv env members
-        body _ = toTemplate "/* template error! */"
+    body :: TG.TokenGenerator TC.TypeCandidate
+    body GeneratorArg {tenv, env, originalT, instanceT = (FuncTy [RefTy structT _] _ _), value} =
+      let mappings = unifySignatures originalT structT
+          concreteFields = replaceGenericTypeSymbolsOnFields mappings (TC.getFields value)
+          members = map fieldToTuple concreteFields
+       in tokensForCopy tenv env members
+    body _ = toTemplate "/* template error! */"
 
-        deps :: TG.DepenGenerator TC.TypeCandidate
-        deps GeneratorArg{tenv, env, originalT, instanceT=(FuncTy [RefTy structT _] _ _), value}
-          | isTypeGeneric structT = []
-          | otherwise = let mappings = unifySignatures originalT structT
-                            concreteFields = replaceGenericTypeSymbolsOnFields mappings (TC.getFields value)
-                            members = map fieldToTuple concreteFields
-                         in concatMap
-                              (depsOfPolymorphicFunction tenv env [] "copy" . typesCopyFunctionType)
-                              (filter (isManaged tenv env) (map snd members))
-        deps _ = []
+    deps :: TG.DepenGenerator TC.TypeCandidate
+    deps GeneratorArg {tenv, env, originalT, instanceT = (FuncTy [RefTy structT _] _ _), value}
+      | isTypeGeneric structT = []
+      | otherwise =
+        let mappings = unifySignatures originalT structT
+            concreteFields = replaceGenericTypeSymbolsOnFields mappings (TC.getFields value)
+            members = map fieldToTuple concreteFields
+         in concatMap
+              (depsOfPolymorphicFunction tenv env [] "copy" . typesCopyFunctionType)
+              (filter (isManaged tenv env) (map snd members))
+    deps _ = []
 
 --------------------------------------------------------------------------------
 -- Utilities
@@ -579,6 +593,6 @@ copyGenerator = TG.mkTemplateGenerator genT decl body deps
 -- functions for handling type members and it should eventually be deprecated
 -- once these functions work on type fields directly.
 fieldToTuple :: TC.TypeField -> (String, Ty)
-fieldToTuple (TC.StructField name t)   = (mangle name, t)
-fieldToTuple (TC.SumField name (t:_)) = (mangle name, t) -- note: not actually used.
+fieldToTuple (TC.StructField name t) = (mangle name, t)
+fieldToTuple (TC.SumField name (t : _)) = (mangle name, t) -- note: not actually used.
 fieldToTuple (TC.SumField name []) = (mangle name, TypeTy) -- note: not actually used.

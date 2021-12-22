@@ -4,11 +4,11 @@ import Control.Monad (foldM)
 import Data.List (nubBy, (\\))
 import qualified Env as E
 import Obj
+import qualified Reify as R
+import qualified TypeCandidate as TC
 import TypeError
 import TypePredicates
 import Types
-import qualified TypeCandidate as TC
-import qualified Reify as R
 
 --------------------------------------------------------------------------------
 -- Public
@@ -16,9 +16,10 @@ import qualified Reify as R
 -- | Determine whether a given type candidate is a valid type.
 validateType :: TC.TypeCandidate -> Either TypeError ()
 validateType candidate =
-  do checkDuplicateMembers candidate
-     checkMembers candidate
-     checkKindConsistency candidate
+  do
+    checkDuplicateMembers candidate
+    checkMembers candidate
+    checkKindConsistency candidate
 
 --------------------------------------------------------------------------------
 -- Private
@@ -36,16 +37,16 @@ checkDuplicateMembers candidate =
 -- | Returns an error if one of the types fields can't be used as a member type.
 checkMembers :: TC.TypeCandidate -> Either TypeError ()
 checkMembers candidate =
-  let  tenv = TC.getTypeEnv candidate
-       env  = TC.getValueEnv candidate
-       tys  = concat (map TC.fieldTypes (TC.getFields candidate))
-     in mapM_ (canBeUsedAsMemberType (TC.getName candidate) (TC.getRestriction candidate) tenv env (TC.getVariables candidate)) tys
+  let tenv = TC.getTypeEnv candidate
+      env = TC.getValueEnv candidate
+      tys = concat (map TC.fieldTypes (TC.getFields candidate))
+   in mapM_ (canBeUsedAsMemberType (TC.getName candidate) (TC.getRestriction candidate) tenv env (TC.getVariables candidate)) tys
 
 -- | Returns an error if the type variables in the body of the type and variables in the head of the type are of incompatible kinds.
 checkKindConsistency :: TC.TypeCandidate -> Either TypeError ()
 checkKindConsistency candidate =
   let allFieldTypes = concat (map TC.fieldTypes (TC.getFields candidate))
-      allGenerics   = filter isTypeGeneric $ allFieldTypes
+      allGenerics = filter isTypeGeneric $ allFieldTypes
    in case areKindsConsistent allGenerics of
         Left var -> Left (InconsistentKinds var (map R.reify allFieldTypes))
         _ -> pure ()
