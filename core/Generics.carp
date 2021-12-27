@@ -76,7 +76,7 @@ The margin of error is 0.00001.")
   (not (neg? x)))
 
 (defn id [x] x)
-(defn const [x] (fn [_] x))
+(defn const [x] @(fn [_] x))
 
 (defn null? [p]
   (Pointer.eq NULL (the (Ptr t) p)))

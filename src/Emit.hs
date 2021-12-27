@@ -253,7 +253,7 @@ toC toCMode (Binder meta root) = emitterSrc (execState (visit startingIndent roo
         -- Fn / λ
         [XObj (Fn name set) _ _, XObj (Arr _) _ _, _] ->
           do
-            let retVar = freshVar info
+            let lambdaVar = freshVar info
                 capturedVars = Set.toList set
                 Just callback = name
                 callbackMangled = pathToC callback
@@ -290,12 +290,14 @@ toC toCMode (Binder meta root) = emitterSrc (execState (visit startingIndent roo
                         )
                   )
                   (remove (isUnit . forceTy) capturedVars)
-            appendToSrc (addIndent indent ++ "Lambda " ++ retVar ++ " = {\n")
+            appendToSrc (addIndent indent ++ "Lambda " ++ lambdaVar ++ " = {\n")
             appendToSrc (addIndent indent ++ "  .callback = (void*)" ++ callbackMangled ++ ",\n")
             appendToSrc (addIndent indent ++ "  .env = " ++ (if needEnv then lambdaEnvName else "NULL") ++ ",\n")
             appendToSrc (addIndent indent ++ "  .delete = (void*)" ++ (if needEnv then "" ++ show lambdaEnvTypeName ++ "_delete" else "NULL") ++ ",\n")
             appendToSrc (addIndent indent ++ "  .copy = (void*)" ++ (if needEnv then "" ++ show lambdaEnvTypeName ++ "_copy" else "NULL") ++ "\n")
             appendToSrc (addIndent indent ++ "};\n")
+            let retVar = freshVar info ++ "_ref"
+            appendToSrc (addIndent indent ++ "Lambda* " ++ retVar ++ " = &" ++ lambdaVar ++ ";\n")
             pure retVar
         -- Def
         [XObj Def _ _, XObj (Sym path _) _ _, expr] ->

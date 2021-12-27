@@ -137,6 +137,7 @@ manageMemory typeEnv globalEnv root =
         -- Fn / λ (Lambda)
         [fn@(XObj (Fn _ captures) _ _), args@(XObj (Arr _) _ _), body] ->
           do
+            --addToLifetimesMappingsIfRef False xobj
             manage typeEnv globalEnv xobj -- manage inner lambdas but leave their bodies unvisited, they will be visited in the lifted version...
             mapM_ (unmanage typeEnv globalEnv) captures
             pure (Right (XObj (Lst [fn, args, body]) i t))

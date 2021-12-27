@@ -119,11 +119,11 @@
     @(Pair.b (Array.unsafe-nth (entries b) i)))
 
   (defn set-idx [b i val]
-    (do (Array.aupdate! (entries &b) i &(fn [p] (Pair.set-b p @val)))
+    (do (Array.aupdate! (entries &b) i (fn [p] (Pair.set-b p @val)))
         b))
 
   (defn set-idx! [b i val]
-    (Array.aupdate! (entries b) i &(fn [p] (Pair.set-b p @val))))
+    (Array.aupdate! (entries b) i (fn [p] (Pair.set-b p @val))))
 
   (defn push-back [b k v]
     (do (Array.push-back! (entries &b) (Pair.init-from-refs k v))
@@ -238,9 +238,9 @@
       (let [idx (Int.positive-mod (hash k) @(n-buckets &m))
             in? (contains? &m k)]
         (update-len
-          (update-buckets m &(fn [b]
-                               (let [n (Array.unsafe-nth &b idx)]
-                                 (Array.aset b idx (Bucket.put @n k v)))))
+         (update-buckets m (fn [b]
+                             (let [n (Array.unsafe-nth &b idx)]
+                               (Array.aset b idx (Bucket.put @n k v)))))
            &(if in? id Int.inc)))))
 
   (doc put! "Put a value v into map m, using the key k, in place.")
@@ -264,7 +264,7 @@
   (doc update "Update value at key k in map with function f, if it exists.")
   (defn update [m k f]
     (let [idx (Int.positive-mod (hash k) @(n-buckets &m))]
-      (update-buckets m &(fn [b]
+      (update-buckets m (fn [b]
         (let [n (Array.unsafe-nth &b idx)
               i (Bucket.find n k)]
           (if (<= 0 i)
@@ -275,7 +275,7 @@
   (doc update-with-default "Update value at key k in map with function f. If k doesn't exist in map, set k to (f v).")
   (defn update-with-default [m k f v]
     (let [idx (Int.positive-mod (hash k) @(n-buckets &m))]
-      (update-buckets m &(fn [b]
+      (update-buckets m (fn [b]
         (let [n (Array.unsafe-nth &b idx)
               i (Bucket.find n k)]
           (if (<= 0 i)
@@ -297,7 +297,7 @@
       (remove (shrink m) k)
       (let [idx (Int.positive-mod (hash k) @(n-buckets &m))]
         (update-len
-          (update-buckets m &(fn [b]
+          (update-buckets m (fn [b]
                                (let [n (Array.unsafe-nth &b idx)]
                                  (Array.aset b idx (Bucket.shrink @n k)))))
           &Int.dec))))
@@ -318,7 +318,7 @@
   (defn = [m1 m2]
     (and (= (length m1) (length m2))
          ;; we could use contains? and get-with-default here to avoid requiring a (zero) for the value type
-         (all? &(fn [k v] (= v &(get m2 k))) m1)))
+         (all? (fn [k v] (= v &(get m2 k))) m1)))
   (implements = Map.=)
 
   (doc for-each "Execute the binary function f for all keys and values in the map m.")
@@ -358,17 +358,17 @@
 
   (doc merge "Merge two maps `m1` and `m2`. On collision the value from `m2` is preferred.")
   (defn merge [m1 m2]
-    (kv-reduce &(fn [m k v] (put m k v)) m1 m2))
+    (kv-reduce (fn [m k v] (put m k v)) m1 m2))
 
   (doc vals "Return an array of the values of the map. Order corresponds to order of (keys m)")
   (defn vals [m]
-    (kv-reduce &(fn [arr _ v] (Array.push-back arr @v))
+    (kv-reduce (fn [arr _ v] (Array.push-back arr @v))
                []
                m))
 
   (doc keys "Return an array of the keys of the map. Order corresponds to order of (vals m)")
   (defn keys [m]
-    (kv-reduce &(fn [arr k _] (Array.push-back arr @k))
+    (kv-reduce (fn [arr k _] (Array.push-back arr @k))
                []
                m))
 
@@ -384,12 +384,12 @@
 
   (doc to-array "Convert Map to Array of Pairs")
   (defn to-array [m]
-    (kv-reduce &(fn [arr k v] (Array.push-back arr (Pair.init-from-refs k v)))
+    (kv-reduce (fn [arr k v] (Array.push-back arr (Pair.init-from-refs k v)))
                []
                m))
 
   (defn str [m]
-    (let [res (kv-reduce &(fn [s k v]
+    (let [res (kv-reduce (fn [s k v]
                            (String.join "" &[s @" " (prn @k) @" " (prn @v)]))
                          @"{"
                          m)]
@@ -504,7 +504,7 @@
             ;; The lifetime system really doesn't like this function, had to put in a bunch of copying to make it compile:
             ]
         (update-len
-          (update-buckets s &(fn [b]
+          (update-buckets s (fn [b]
             (let [n (Array.unsafe-nth &b idx)]
               (let [new-k @v] ;; HACK!
                 (Array.aset b idx (SetBucket.grow n new-k))))))
@@ -533,7 +533,7 @@
         (remove (shrink s) v)
       (let [idx (Int.positive-mod (hash v) @(n-buckets &s))]
         (update-len
-          (update-buckets s &(fn [b]
+          (update-buckets s (fn [b]
                                (let [n (Array.unsafe-nth &b idx)]
                                  (Array.aset b idx (SetBucket.shrink n v)))))
           &Int.dec))))
@@ -551,7 +551,7 @@
 
   (doc subset? "Is set-a a subset of set-b?")
   (defn subset? [set-a set-b]
-    (all? &(fn [e] (Set.contains? set-b e)) set-a))
+    (all? (fn [e] (Set.contains? set-b e)) set-a))
 
   (defn = [set-a set-b]
     (and (= (Set.length set-a) (Set.length set-b))
@@ -590,7 +590,7 @@
 
   (doc intersection "Set of elements that are in both set-a and set-b")
   (defn intersection [set-a set-b]
-    (reduce &(fn [s a] (if (Set.contains? set-b a) (Set.put s a) s))
+    (reduce (fn [s a] (if (Set.contains? set-b a) (Set.put s a) s))
             (Set.create)
             set-a))
 
@@ -608,10 +608,10 @@
 
   (doc to-array "Convert Set to Array of elements")
   (defn to-array [s]
-    (reduce &(fn [arr elt] (Array.push-back arr @elt)) [] s))
+    (reduce (fn [arr elt] (Array.push-back arr @elt)) [] s))
 
   (defn str [set]
-    (let [res (reduce &(fn [s e] (String.join "" &[s @" " (prn e)]))
+    (let [res (reduce (fn [s e] (String.join "" &[s @" " (prn e)]))
                       @"{"
                       set)]
       (String.append &res " }")))

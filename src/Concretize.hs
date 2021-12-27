@@ -255,8 +255,8 @@ mkLambda visited allowAmbig _ tenv env root@(ListPat (FnPat fn arr@(ArrPat args)
       -- Its name will contain the name of the (normal, non-lambda) function it's contained within,
       -- plus the identifier of the particular s-expression that defines the lambda.
       SymPath spath name = (last visited)
-      Just funcTy = xobjTy root
-      lambdaPath = SymPath spath ("_Lambda_" ++ lambdaToCName name (envFunctionNestingLevel env) ++ "_" ++ show (maybe 0 infoIdentifier (xobjInfo root)) ++ "_env")
+      Just (RefTy funcTy _) = xobjTy root
+      lambdaPath = SymPath spath ("_Lambda_" ++ lambdaToCName name (envFunctionNestingLevel env) ++ "_" ++ show (maybe 0 infoIdentifier (xobjInfo root)) ++ "_callback")
       lambdaNameSymbol = XObj (Sym lambdaPath Symbol) (Just dummyInfo) Nothing
       -- Anonymous functions bound to a let name might call themselves. These recursive instances will have already been qualified as LookupRecursive symbols.
       -- Rename the recursive calls according to the generated lambda name so that we can call these correctly from C.
@@ -281,7 +281,7 @@ mkLambda visited allowAmbig _ tenv env root@(ListPat (FnPat fn arr@(ArrPat args)
                     )
                 )
             )
-      lambdaCallback = XObj (Lst [XObj (Defn (Just (Set.fromList capturedVars))) (Just dummyInfo) Nothing, lambdaNameSymbol, extendedArgs, recBody]) (xobjInfo root) (xobjTy root)
+      lambdaCallback = XObj (Lst [XObj (Defn (Just (Set.fromList capturedVars))) (Just dummyInfo) Nothing, lambdaNameSymbol, extendedArgs, recBody]) (xobjInfo root) (Just funcTy) -- (xobjTy root)
       -- The lambda will also carry with it a special made struct containing the variables it captures
       -- (if it captures at least one variable)
       structMemberPairs =
@@ -464,7 +464,7 @@ collectCapturedVars root = removeDuplicates (map decreaseCaptureLevel (visit' ro
                 LookupLocal (Capture n) ->
                   if n <= 1
                     then Symbol
-                    else LookupLocal (Capture (n -1))
+                    else LookupLocal (Capture (n - 1))
                 _ -> error "decreasecapturelevel1"
             )
         )

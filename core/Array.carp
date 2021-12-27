@@ -188,7 +188,7 @@ If the array is empty, returns `Nothing`")
 
   (doc sum "sums an array (elements must support `+` and `zero`).")
   (defn sum [xs]
-    (Array.reduce &(fn [x y] (+ x @y)) (zero) xs))
+    (Array.reduce (fn [x y] (+ x @y)) (zero) xs))
 
   (doc slice "gets a subarray from `start-index` to `end-index`.")
   (defn slice [xs start-index end-index]
@@ -383,7 +383,7 @@ If the `index` is out of bounds, return `Maybe.Nothing`")
 
   (doc remove "removes all occurrences of the element `el` in the array `arr`, in place.")
   (defn remove [el arr]
-    (endo-filter &(fn [x] (not (= el x)))
+    (endo-filter (fn [x] (not (= el x)))
                  arr))
 
   (doc remove-nth "removes element at index `idx` from the array `arr`.")
@@ -468,7 +468,7 @@ Example:
 ```")
   (defn map-reduce [f acc a]
     (reduce
-      &(fn [a el]
+      (fn [a el]
         (let [l (Pair.b &a)
               acc (Pair.a &a)
               p (~f acc el)]
