@@ -258,7 +258,7 @@ toC toCMode (Binder meta root) = emitterSrc (execState (visit startingIndent roo
                 Just callback = name
                 callbackMangled = pathToC callback
                 needEnv = not (null capturedVars)
-                lambdaEnvTypeName = (SymPath [] (callbackMangled ++ "_ty")) -- The name of the struct is the callback name with suffix '_ty'.
+                lambdaEnvTypeName = SymPath [] (callbackMangled ++ "_ty") -- The name of the struct is the callback name with suffix '_ty'.
                 lambdaEnvType = StructTy (ConcreteNameTy lambdaEnvTypeName) []
                 lambdaEnvName = freshVar info ++ "_env"
             appendToSrc
@@ -271,19 +271,15 @@ toC toCMode (Binder meta root) = emitterSrc (execState (visit startingIndent roo
             when needEnv $
               do
                 appendToSrc
-                  ( addIndent indent ++ tyToC lambdaEnvType ++ " *" ++ lambdaEnvName
-                      ++ " = CARP_MALLOC(sizeof("
-                      ++ tyToC lambdaEnvType
-                      ++ "));\n"
-                  )
+                  (addIndent indent ++ tyToC lambdaEnvType ++ " " ++ lambdaEnvName ++ ";\n")
                 mapM_
                   ( \(XObj (Sym path lookupMode) _ _) ->
                       appendToSrc
-                        ( addIndent indent ++ lambdaEnvName ++ "->"
+                        ( addIndent indent ++ lambdaEnvName ++ "."
                             ++ pathToC path
                             ++ " = "
                             ++ ( case lookupMode of
-                                   LookupLocal (Capture _) -> "_env->" ++ pathToC path
+                                   LookupLocal (Capture _) -> "_env." ++ pathToC path
                                    _ -> pathToC path
                                )
                             ++ ";\n"
@@ -292,7 +288,7 @@ toC toCMode (Binder meta root) = emitterSrc (execState (visit startingIndent roo
                   (remove (isUnit . forceTy) capturedVars)
             appendToSrc (addIndent indent ++ "Lambda " ++ lambdaVar ++ " = {\n")
             appendToSrc (addIndent indent ++ "  .callback = (void*)" ++ callbackMangled ++ ",\n")
-            appendToSrc (addIndent indent ++ "  .env = " ++ (if needEnv then lambdaEnvName else "NULL") ++ ",\n")
+            appendToSrc (addIndent indent ++ "  .env = " ++ (if needEnv then "&" ++ lambdaEnvName else "NULL") ++ ",\n")
             appendToSrc (addIndent indent ++ "  .delete = (void*)" ++ (if needEnv then "" ++ show lambdaEnvTypeName ++ "_delete" else "NULL") ++ ",\n")
             appendToSrc (addIndent indent ++ "  .copy = (void*)" ++ (if needEnv then "" ++ show lambdaEnvTypeName ++ "_copy" else "NULL") ++ "\n")
             appendToSrc (addIndent indent ++ "};\n")
