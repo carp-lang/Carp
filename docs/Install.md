@@ -29,6 +29,20 @@ You should now be able to start Carp from anywhere:
 $ carp
 ```
 
+## Ensuring an UTF-8 aware LC_CTYPE locale in POSIX environments
+
+To be able to handle UTF-8 correctly when using `carp`'s interactive repl (binaries from `carp` always handle UTF-8 correctly),
+all POSIX aware environments (Linux, MacOs or even Emacs's eshell inside a Windows 10)
+need to have an `LC_CTYPE` environment variable set and exported to an UTF-8 aware value.
+
+For example, add this to your `.bashrc` or similar:
+```bash
+export LC_CTYPE=C.UTF-8
+```
+Take into account that the the environment variable `LC_ALL`, when set, overrides the value of `LC_CTYPE`.
+So you may want to `unset` `LC_ALL` or to set and export it to an UTF-8 aware value.
+You can see the values of `LC_ALL` and `LC_CTYPE` with the command `locale`.
+
 ## C compiler
 
 The `carp` executable will emit a single file with C code, `main.c` and try to compile it using an external C compiler.
@@ -59,3 +73,7 @@ Please let us know if you have trouble getting these bindings to work! We have t
 ## Footnote for Windows
 You can install clang with mingw64 but you'll also want to run `vcvarsall.bat amd64` or `vcvarsall.bat x86` each time you start your shell to help clang find the right headers.
 See https://github.com/carp-lang/Carp/issues/700 or https://github.com/carp-lang/Carp/issues/1323 for more information.
+
+Also when compiling files with `carp` from Windows you must ensure that :
+* the file is encoded either as ANSI or UTF-8. (Using another encoding like UTF-8-BOM doesn't work.)
+* using either Unix (LF) or Windows (CR LF) as linefeed/newline. (Using Macintosh (CR) as newline doesn't work.)
