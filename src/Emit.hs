@@ -530,7 +530,8 @@ toC toCMode (Binder meta root) = emitterSrc (execState (visit startingIndent roo
             var <- visit indent value
             let Just t = ty
                 fresh = mangle (freshVar info)
-            unless (isUnit t)
+            unless
+              (isUnit t)
               (appendToSrc (addIndent indent ++ tyToCLambdaFix t ++ " " ++ fresh ++ " = " ++ var ++ "; // From the 'the' function.\n"))
             pure fresh
         -- Ref
@@ -921,7 +922,7 @@ toDeclaration (Binder meta xobj@(XObj (Lst xobjs) _ ty)) =
     XObj (ExternalType Nothing) _ _ : _ ->
       ""
     XObj (ExternalType (Just override)) _ _ : XObj (Sym path _) _ _ : _ ->
-      "typedef " ++ override ++ " " ++ pathToC path ++ ";"
+      "typedef " ++ override ++ " " ++ tyToC (StructTy (ConcreteNameTy path) []) ++ ";"
     XObj (Command _) _ _ : _ ->
       ""
     XObj (Primitive _) _ _ : _ ->

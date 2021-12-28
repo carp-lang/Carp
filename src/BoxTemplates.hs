@@ -23,54 +23,66 @@ boxTy = StructTy (ConcreteNameTy (SymPath [] "Box")) [(VarTy "t")]
 
 -- | Defines a template for initializing Boxes.
 init :: (String, Binder)
-init = let path = SymPath ["Box"] "init"
-           t = FuncTy [(VarTy "t")] boxTy StaticLifetimeTy
-           docs = "Initializes a box pointing to value t."
-           decl = templateLiteral "$t* $NAME ($t t)"
-           body = const (multilineTemplate
-                                  [ "$DECL {",
-                                    "  $t* instance;",
-                                    "  instance = CARP_MALLOC(sizeof($t));",
-                                    "  *instance = t;",
-                                    "  return instance;",
-                                    "}"
-                                  ])
-           deps = const []
-           template = TemplateCreator $ \_ _ -> Template t decl body deps
-        in defineTypeParameterizedTemplate template path t docs
+init =
+  let path = SymPath ["Box"] "init"
+      t = FuncTy [(VarTy "t")] boxTy StaticLifetimeTy
+      docs = "Initializes a box pointing to value t."
+      decl = templateLiteral "$t* $NAME ($t t)"
+      body =
+        const
+          ( multilineTemplate
+              [ "$DECL {",
+                "  $t* instance;",
+                "  instance = CARP_MALLOC(sizeof($t));",
+                "  *instance = t;",
+                "  return instance;",
+                "}"
+              ]
+          )
+      deps = const []
+      template = TemplateCreator $ \_ _ -> Template t decl body deps
+   in defineTypeParameterizedTemplate template path t docs
 
 -- | Defines a template for converting a boxed value to a local value.
 unbox :: (String, Binder)
-unbox = let path = SymPath ["Box"] "unbox"
-            t = FuncTy [(StructTy (ConcreteNameTy (SymPath [] "Box")) [(VarTy "t")])] (VarTy "t") StaticLifetimeTy
-            docs = "Converts a boxed value to a reference to the value and delete the box."
-            decl = templateLiteral "$t $NAME($t* box)"
-            body = const (multilineTemplate
-                           [ "$DECL {",
-                             "  $t local;",
-                             "  local = *box;",
-                             "  CARP_FREE(box);",
-                             "  return local;",
-                             "}"
-                           ])
-            deps = const []
-            template = TemplateCreator $ \_ _ -> Template t decl body deps
-         in defineTypeParameterizedTemplate template path t docs
+unbox =
+  let path = SymPath ["Box"] "unbox"
+      t = FuncTy [(StructTy (ConcreteNameTy (SymPath [] "Box")) [(VarTy "t")])] (VarTy "t") StaticLifetimeTy
+      docs = "Converts a boxed value to a reference to the value and delete the box."
+      decl = templateLiteral "$t $NAME($t* box)"
+      body =
+        const
+          ( multilineTemplate
+              [ "$DECL {",
+                "  $t local;",
+                "  local = *box;",
+                "  CARP_FREE(box);",
+                "  return local;",
+                "}"
+              ]
+          )
+      deps = const []
+      template = TemplateCreator $ \_ _ -> Template t decl body deps
+   in defineTypeParameterizedTemplate template path t docs
 
 -- | Defines a template for getting a reference to the value stored in a box without performing an additional allocation.
 peek :: (String, Binder)
-peek = let path = SymPath ["Box"] "peek"
-           t = FuncTy [(RefTy (StructTy (ConcreteNameTy (SymPath [] "Box")) [(VarTy "t")]) (VarTy "q"))] (RefTy (VarTy "t") (VarTy "q")) StaticLifetimeTy
-           docs = "Returns a reference to the value stored in a box without performing an additional allocation."
-           decl = templateLiteral "$t* $NAME($t** box_ref)"
-           body = const (multilineTemplate
-                          [ "$DECL {",
-                            "  return *box_ref;",
-                            "}"
-                          ])
-           deps = const []
-           template = TemplateCreator $ \_ _ -> Template t decl body deps
-        in defineTypeParameterizedTemplate template path t docs
+peek =
+  let path = SymPath ["Box"] "peek"
+      t = FuncTy [(RefTy (StructTy (ConcreteNameTy (SymPath [] "Box")) [(VarTy "t")]) (VarTy "q"))] (RefTy (VarTy "t") (VarTy "q")) StaticLifetimeTy
+      docs = "Returns a reference to the value stored in a box without performing an additional allocation."
+      decl = templateLiteral "$t* $NAME($t** box_ref)"
+      body =
+        const
+          ( multilineTemplate
+              [ "$DECL {",
+                "  return *box_ref;",
+                "}"
+              ]
+          )
+      deps = const []
+      template = TemplateCreator $ \_ _ -> Template t decl body deps
+   in defineTypeParameterizedTemplate template path t docs
 
 -- | Defines a template for copying a box. The copy will also be heap allocated.
 copy :: (String, Binder)
@@ -142,7 +154,7 @@ delete =
     innerDelete tenv env (StructTy (ConcreteNameTy (SymPath [] "Box")) [inner]) =
       case findFunctionForMember tenv env "delete" (typesDeleterFunctionType inner) ("Inside box.", inner) of
         FunctionFound functionFullName ->
-            "  " ++ functionFullName ++ "(*box);\n"
+          "  " ++ functionFullName ++ "(*box);\n"
             ++ "  CARP_FREE(box);"
         FunctionNotFound msg -> error msg
         FunctionIgnored ->
@@ -234,4 +246,3 @@ innerStr tenv env (StructTy _ [t]) =
         ]
     FunctionIgnored -> "    /* Ignore type inside Box: '" ++ show t ++ "' ??? */\n"
 innerStr _ _ _ = ""
-

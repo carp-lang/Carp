@@ -241,7 +241,7 @@ primitiveRegisterType x ctx _ = pure (toEvalError ctx x RegisterTypeError)
 -- | Register an external type that has no fields.
 primitiveRegisterTypeWithoutFields :: Context -> String -> Maybe String -> IO (Context, Either EvalError XObj)
 primitiveRegisterTypeWithoutFields ctx t override = do
-  let path = SymPath [] t
+  let path = SymPath (contextPath ctx) t
       typeDefinition = XObj (Lst [XObj (ExternalType override) Nothing Nothing, XObj (Sym path Symbol) Nothing Nothing]) Nothing (Just TypeTy)
   -- TODO: Support registering types in modules
   case insertTypeBinder ctx (markQualified path) (toBinder typeDefinition) of
@@ -265,11 +265,13 @@ primitiveRegisterTypeWithFields ctx x t override members =
             Right ctx' = update ctx
         -- TODO: Another case where define does not get formally qualified deps!
         contextWithDefs <- liftIO $ foldM (define True) ctx' (map Qualified deps)
-        autoDerive contextWithDefs (StructTy (ConcreteNameTy (unqualify path')) [])
+        autoDerive
+          contextWithDefs
+          (StructTy (ConcreteNameTy (unqualify path')) [])
           [ lookupBinderInTypeEnv contextWithDefs (markQualified (SymPath [] "str")),
             lookupBinderInTypeEnv contextWithDefs (markQualified (SymPath [] "prn"))
           ]
-    path = SymPath [] t
+    path = SymPath (contextPath ctx) t
     preExistingModule = case lookupBinderInGlobalEnv ctx path of
       Right (Binder _ (XObj (Mod found et) _ _)) -> Just (found, et)
       _ -> Nothing
@@ -616,11 +618,14 @@ deftype ctx x@(XObj (Sym (SymPath [] name) _) _ _) constructor =
     (ctxWithType, e) <- makeType ctx name [] constructor
     case e of
       Left err -> pure (evalError ctx (show err) (xobjInfo x))
-      Right t -> autoDerive ctxWithType t
-        [ lookupBinderInTypeEnv ctxWithType (markQualified (SymPath [] "delete")),
-          lookupBinderInTypeEnv ctxWithType (markQualified (SymPath [] "str")),
-          lookupBinderInTypeEnv ctxWithType (markQualified (SymPath [] "copy"))
-        ]
+      Right t ->
+        autoDerive
+          ctxWithType
+          t
+          [ lookupBinderInTypeEnv ctxWithType (markQualified (SymPath [] "delete")),
+            lookupBinderInTypeEnv ctxWithType (markQualified (SymPath [] "str")),
+            lookupBinderInTypeEnv ctxWithType (markQualified (SymPath [] "copy"))
+          ]
 deftype ctx x@(XObj (Lst ((XObj (Sym (SymPath [] name) _) _ _) : tyvars)) _ _) constructor =
   do
     (ctxWithType, e) <-
@@ -631,11 +636,14 @@ deftype ctx x@(XObj (Lst ((XObj (Sym (SymPath [] name) _) _ _) : tyvars)) _ _) c
         )
     case e of
       Left err -> pure (evalError ctx (show err) (xobjInfo x))
-      Right t -> autoDerive ctxWithType t
-        [ lookupBinderInTypeEnv ctxWithType (markQualified (SymPath [] "delete")),
-          lookupBinderInTypeEnv ctxWithType (markQualified (SymPath [] "str")),
-          lookupBinderInTypeEnv ctxWithType (markQualified (SymPath [] "copy"))
-        ]
+      Right t ->
+        autoDerive
+          ctxWithType
+          t
+          [ lookupBinderInTypeEnv ctxWithType (markQualified (SymPath [] "delete")),
+            lookupBinderInTypeEnv ctxWithType (markQualified (SymPath [] "str")),
+            lookupBinderInTypeEnv ctxWithType (markQualified (SymPath [] "copy"))
+          ]
 deftype ctx name _ = pure $ toEvalError ctx name (InvalidTypeName name)
 
 checkVariables :: [XObj] -> Maybe [Ty]

@@ -19,6 +19,7 @@ module Concretize
     tokensForCopy,
     memberCopy,
     replaceGenericTypeSymbolsOnMembers,
+    replaceGenericTypeSymbolsOnFields,
   )
 where
 
@@ -41,8 +42,8 @@ import Obj
 import Polymorphism
 import Reify
 import qualified Set
-import SumtypeCase
 import ToTemplate
+import qualified TypeCandidate as TC
 import TypeError
 import TypePredicates
 import Types
@@ -612,7 +613,9 @@ instantiateGenericStructType typeEnv env originalStructTy@(StructTy _ _) generic
       let nameFixedMembers = renameGenericTypeSymbolsOnProduct renamedOrig memberXObjs
           validMembers = replaceGenericTypeSymbolsOnMembers mappings' nameFixedMembers
           concretelyTypedMembers = replaceGenericTypeSymbolsOnMembers mappings memberXObjs
-      validateMembers AllowAnyTypeVariableNames typeEnv env renamedOrig validMembers
+          sname = getStructName originalStructTy
+      candidate <- TC.mkStructCandidate sname renamedOrig typeEnv env validMembers (getPathFromStructName sname)
+      validateType (TC.setRestriction candidate TC.AllowAny)
       deps <- mapM (depsForStructMemberPair typeEnv env) (pairwise concretelyTypedMembers)
       let xobj =
             XObj
@@ -640,29 +643,27 @@ instantiateGenericSumtype typeEnv env originalStructTy@(StructTy _ originalTyVar
   let fake1 = XObj (Sym (SymPath [] "a") Symbol) Nothing Nothing
       fake2 = XObj (Sym (SymPath [] "b") Symbol) Nothing Nothing
       rename@(StructTy _ renamedOrig) = evalState (renameVarTys originalStructTy) 0
-   in case solve [Constraint rename genericStructTy fake1 fake2 fake1 OrdMultiSym] of
-        Left e -> error (show e)
-        Right mappings ->
-          let nameFixedCases = map (renameGenericTypeSymbolsOnSum (zip originalTyVars renamedOrig)) cases
-              concretelyTypedCases = map (replaceGenericTypeSymbolsOnCase mappings) nameFixedCases
-              deps = mapM (depsForCase typeEnv env) concretelyTypedCases
-           in case toCases typeEnv env AllowAnyTypeVariableNames renamedOrig concretelyTypedCases of -- Don't care about the cases, this is done just for validation.
-                Left err -> Left err
-                Right _ ->
-                  case deps of
-                    Right okDeps ->
-                      Right $
-                        XObj
-                          ( Lst
-                              ( XObj (DefSumtype genericStructTy) Nothing Nothing :
-                                XObj (Sym (SymPath [] (tyToC genericStructTy)) Symbol) Nothing Nothing :
-                                concretelyTypedCases
-                              )
-                          )
-                          (Just dummyInfo)
-                          (Just TypeTy) :
-                        concat okDeps
-                    Left err -> Left err
+      nameFixedCases = map (renameGenericTypeSymbolsOnSum (zip originalTyVars renamedOrig)) cases
+      fixLeft l = replaceLeft (FailedToInstantiateGenericType originalStructTy) l
+   in do
+        mappings <- fixLeft $ solve [Constraint rename genericStructTy fake1 fake2 fake1 OrdMultiSym]
+        let concretelyTypedCases = map (replaceGenericTypeSymbolsOnCase mappings) nameFixedCases
+            sname = (getStructName originalStructTy)
+        deps <- mapM (depsForCase typeEnv env) concretelyTypedCases
+        candidate <- TC.mkSumtypeCandidate sname renamedOrig typeEnv env concretelyTypedCases (getPathFromStructName sname)
+        validateType (TC.setRestriction candidate TC.AllowAny)
+        pure
+          ( XObj
+              ( Lst
+                  ( XObj (DefSumtype genericStructTy) Nothing Nothing :
+                    XObj (Sym (SymPath [] (tyToC genericStructTy)) Symbol) Nothing Nothing :
+                    concretelyTypedCases
+                  )
+              )
+              (Just dummyInfo)
+              (Just TypeTy) :
+            concat deps
+          )
 instantiateGenericSumtype _ _ _ _ _ = error "instantiategenericsumtype"
 
 -- Resolves dependencies for sumtype cases.
@@ -676,6 +677,13 @@ depsForCase typeEnv env (XObj (Lst [_, XObj (Arr members) _ _]) _ _) =
       (\t -> maybe (Left (NotAType t)) (concretizeType typeEnv env) (xobjToTy t))
       members
 depsForCase _ _ x = Left (InvalidSumtypeCase x)
+
+-- | Replace instances of generic types in type candidate field definitions.
+replaceGenericTypeSymbolsOnFields :: Map.Map String Ty -> [TC.TypeField] -> [TC.TypeField]
+replaceGenericTypeSymbolsOnFields ms fields = map go fields
+  where
+    go (TC.StructField name t) = (TC.StructField name (replaceTyVars ms t))
+    go (TC.SumField name ts) = (TC.SumField name (map (replaceTyVars ms) ts))
 
 replaceGenericTypeSymbolsOnMembers :: Map.Map String Ty -> [XObj] -> [XObj]
 replaceGenericTypeSymbolsOnMembers mappings memberXObjs =

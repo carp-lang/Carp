@@ -1,6 +1,7 @@
 module StartingEnv where
 
 import qualified ArrayTemplates
+import qualified BoxTemplates
 import Commands
 import qualified Env as E
 import Eval
@@ -14,7 +15,6 @@ import qualified StaticArrayTemplates
 import Template
 import ToTemplate
 import Types
-import qualified BoxTemplates
 
 -- | These modules will be loaded in order before any other code is evaluated.
 coreModules :: String -> [String]
@@ -121,15 +121,16 @@ boxModule =
       envFunctionNestingLevel = 0
     }
   where
-    bindings = Map.fromList
-      [ BoxTemplates.init,
-        BoxTemplates.unbox,
-        BoxTemplates.peek,
-        BoxTemplates.delete,
-        BoxTemplates.copy,
-        BoxTemplates.prn,
-        BoxTemplates.str
-      ]
+    bindings =
+      Map.fromList
+        [ BoxTemplates.init,
+          BoxTemplates.unbox,
+          BoxTemplates.peek,
+          BoxTemplates.delete,
+          BoxTemplates.copy,
+          BoxTemplates.prn,
+          BoxTemplates.str
+        ]
 
 maxArity :: Int
 maxArity = 9

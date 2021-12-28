@@ -1,77 +1,59 @@
 module Validate where
 
 import Control.Monad (foldM)
-import Data.Function (on)
 import Data.List (nubBy, (\\))
-import Data.Maybe (fromJust)
 import qualified Env as E
 import Obj
+import qualified Reify as R
+import qualified TypeCandidate as TC
 import TypeError
 import TypePredicates
 import Types
-import Util
 
-{-# ANN validateMemberCases "HLint: ignore Eta reduce" #-}
+--------------------------------------------------------------------------------
+-- Public
 
-data TypeVarRestriction
-  = AllowAnyTypeVariableNames -- Used when checking a type found in the code, e.g. (Foo a), any name is OK for 'a'
-  | AllowOnlyNamesInScope -- Used when checking a type definition, e.g. (deftype (Foo a) [x a]), requires a to be in scope
-  deriving (Eq)
+-- | Determine whether a given type candidate is a valid type.
+validateType :: TC.TypeCandidate -> Either TypeError ()
+validateType candidate =
+  do
+    checkDuplicateMembers candidate
+    checkMembers candidate
+    checkKindConsistency candidate
 
--- | Make sure that the member declarations in a type definition
--- | Follow the pattern [<name> <type>, <name> <type>, ...]
--- | TODO: This function is only called by the deftype parts of the codebase, which is more specific than the following check implies.
-validateMemberCases :: TypeEnv -> Env -> [Ty] -> [XObj] -> Either TypeError ()
-validateMemberCases typeEnv globalEnv typeVariables rest = mapM_ visit rest
-  where
-    visit (XObj (Arr membersXObjs) _ _) =
-      validateMembers AllowOnlyNamesInScope typeEnv globalEnv typeVariables membersXObjs
-    visit xobj =
-      Left (InvalidSumtypeCase xobj)
+--------------------------------------------------------------------------------
+-- Private
 
-validateMembers :: TypeVarRestriction -> TypeEnv -> Env -> [Ty] -> [XObj] -> Either TypeError ()
-validateMembers typeVarRestriction typeEnv globalEnv typeVariables membersXObjs =
-  checkUnevenMembers >> checkDuplicateMembers >> checkMembers >> checkKindConsistency
-  where
-    pairs = pairwise membersXObjs
-    -- Are the number of members even?
-    checkUnevenMembers :: Either TypeError ()
-    checkUnevenMembers =
-      if even (length membersXObjs)
+-- | Checks whether any field names in the type are used more than once.
+checkDuplicateMembers :: TC.TypeCandidate -> Either TypeError ()
+checkDuplicateMembers candidate =
+  let allFields = fmap TC.fieldName (TC.getFields candidate)
+      uniqueFields = nubBy (==) allFields
+      duplicates = allFields \\ uniqueFields
+   in if null duplicates
         then Right ()
-        else Left (UnevenMembers membersXObjs)
-    -- Are any members duplicated?
-    checkDuplicateMembers :: Either TypeError ()
-    checkDuplicateMembers =
-      if length fields == length uniqueFields
-        then Right ()
-        else Left (DuplicatedMembers dups)
-      where
-        fields = fst <$> pairs
-        uniqueFields = nubBy ((==) `on` xobjObj) fields
-        dups = fields \\ uniqueFields
-    -- Do all type variables have consistent kinds?
-    checkKindConsistency :: Either TypeError ()
-    checkKindConsistency =
-      case areKindsConsistent varsOnly of
-        Left var -> Left (InconsistentKinds var membersXObjs)
+        else Left (DuplicatedMembers (map R.symbol duplicates))
+
+-- | Returns an error if one of the types fields can't be used as a member type.
+checkMembers :: TC.TypeCandidate -> Either TypeError ()
+checkMembers candidate =
+  let tenv = TC.getTypeEnv candidate
+      env = TC.getValueEnv candidate
+      tys = concat (map TC.fieldTypes (TC.getFields candidate))
+   in mapM_ (canBeUsedAsMemberType (TC.getName candidate) (TC.getRestriction candidate) tenv env (TC.getVariables candidate)) tys
+
+-- | Returns an error if the type variables in the body of the type and variables in the head of the type are of incompatible kinds.
+checkKindConsistency :: TC.TypeCandidate -> Either TypeError ()
+checkKindConsistency candidate =
+  let allFieldTypes = concat (map TC.fieldTypes (TC.getFields candidate))
+      allGenerics = filter isTypeGeneric $ allFieldTypes
+   in case areKindsConsistent allGenerics of
+        Left var -> Left (InconsistentKinds var (map R.reify allFieldTypes))
         _ -> pure ()
-      where
-        -- fromJust is safe here; invalid types will be caught in the prior check.
-        -- todo? be safer anyway?
-        varsOnly = filter isTypeGeneric (map (fromJust . xobjToTy . snd) pairs)
-    checkMembers :: Either TypeError ()
-    checkMembers = mapM_ (okXObjForType typeVarRestriction typeEnv globalEnv typeVariables . snd) pairs
-
-okXObjForType :: TypeVarRestriction -> TypeEnv -> Env -> [Ty] -> XObj -> Either TypeError ()
-okXObjForType typeVarRestriction typeEnv globalEnv typeVariables xobj =
-  case xobjToTy xobj of
-    Just t -> canBeUsedAsMemberType typeVarRestriction typeEnv globalEnv typeVariables t xobj
-    Nothing -> Left (NotAType xobj)
 
 -- | Can this type be used as a member for a deftype?
-canBeUsedAsMemberType :: TypeVarRestriction -> TypeEnv -> Env -> [Ty] -> Ty -> XObj -> Either TypeError ()
-canBeUsedAsMemberType typeVarRestriction typeEnv globalEnv typeVariables ty xobj =
+canBeUsedAsMemberType :: String -> TC.TypeVarRestriction -> TypeEnv -> Env -> [Ty] -> Ty -> Either TypeError ()
+canBeUsedAsMemberType tname typeVarRestriction typeEnv globalEnv typeVariables ty =
   case ty of
     UnitTy -> pure ()
     IntTy -> pure ()
@@ -86,8 +68,7 @@ canBeUsedAsMemberType typeVarRestriction typeEnv globalEnv typeVariables ty xobj
     FuncTy {} -> pure ()
     PointerTy UnitTy -> pure ()
     PointerTy inner ->
-      canBeUsedAsMemberType typeVarRestriction typeEnv globalEnv typeVariables inner xobj
-        >> pure ()
+      canBeUsedAsMemberType tname typeVarRestriction typeEnv globalEnv typeVariables inner
     -- Struct variables may appear as complete applications or individual
     -- components in the head of a definition; that is the forms:
     --     ((Foo (f a b)) [x (f a b)])
@@ -108,41 +89,39 @@ canBeUsedAsMemberType typeVarRestriction typeEnv globalEnv typeVariables ty xobj
     struct@(StructTy name tyVars) ->
       checkVar struct <> checkStruct name tyVars
     v@(VarTy _) -> checkVar v
-    _ -> Left (InvalidMemberType ty xobj)
+    _ -> Left (InvalidMemberType ty (R.reify ty))
   where
     checkStruct :: Ty -> [Ty] -> Either TypeError ()
     checkStruct (ConcreteNameTy (SymPath [] "Array")) [innerType] =
-      canBeUsedAsMemberType typeVarRestriction typeEnv globalEnv typeVariables innerType xobj
-        >> pure ()
+      canBeUsedAsMemberType tname typeVarRestriction typeEnv globalEnv typeVariables innerType
     checkStruct (ConcreteNameTy path@(SymPath _ name)) vars =
       case E.getTypeBinder typeEnv name <> E.findTypeBinder globalEnv path of
         Right (Binder _ (XObj (Lst (XObj (ExternalType _) _ _ : _)) _ _)) ->
           pure ()
         Right (Binder _ (XObj (Lst (XObj (Deftype t) _ _ : _)) _ _)) ->
-          checkInhabitants t >> foldM (\_ typ -> canBeUsedAsMemberType typeVarRestriction typeEnv globalEnv typeVariables typ xobj) () vars
+          checkInhabitants t >> foldM (\_ typ -> canBeUsedAsMemberType tname typeVarRestriction typeEnv globalEnv typeVariables typ) () vars
         Right (Binder _ (XObj (Lst (XObj (DefSumtype t) _ _ : _)) _ _)) ->
-          checkInhabitants t >> foldM (\_ typ -> canBeUsedAsMemberType typeVarRestriction typeEnv globalEnv typeVariables typ xobj) () vars
-        _ -> Left (NotAmongRegisteredTypes ty xobj)
+          checkInhabitants t >> foldM (\_ typ -> canBeUsedAsMemberType tname typeVarRestriction typeEnv globalEnv typeVariables typ) () vars
+        _ -> Left (NotAmongRegisteredTypes ty (R.reify ty))
       where
         checkInhabitants :: Ty -> Either TypeError ()
         checkInhabitants (StructTy _ vs) =
           if length vs == length vars
             then pure ()
-            else Left (UninhabitedConstructor ty xobj (length vs) (length vars))
-        checkInhabitants _ = Left (InvalidMemberType ty xobj)
+            else Left (UninhabitedConstructor ty (R.reify ty) (length vs) (length vars))
+        checkInhabitants _ = Left (InvalidMemberType ty (R.reify ty))
     checkStruct v@(VarTy _) vars =
-      canBeUsedAsMemberType typeVarRestriction typeEnv globalEnv typeVariables v xobj
-        >> foldM (\_ typ -> canBeUsedAsMemberType typeVarRestriction typeEnv globalEnv typeVariables typ xobj) () vars
+      canBeUsedAsMemberType tname typeVarRestriction typeEnv globalEnv typeVariables v
+        >> foldM (\_ typ -> canBeUsedAsMemberType tname typeVarRestriction typeEnv globalEnv typeVariables typ) () vars
     checkStruct _ _ = error "checkstruct"
     checkVar :: Ty -> Either TypeError ()
     checkVar variable =
       case typeVarRestriction of
-        AllowAnyTypeVariableNames ->
-          pure ()
-        AllowOnlyNamesInScope ->
+        TC.AllowAny -> pure ()
+        TC.OnlyNamesInScope ->
           if any (isCaptured variable) typeVariables
             then pure ()
-            else Left (InvalidMemberType ty xobj)
+            else Left (InvalidMemberType ty (R.reify ty))
       where
         -- If a variable `a` appears in a higher-order polymorphic form, such as `(f a)`
         -- `a` may be used as a member, sans `f`, but `f` may not appear

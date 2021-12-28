@@ -1,0 +1,17 @@
+(relative-include "interop.h")
+
+(load "Test.carp")
+(use Test)
+
+(defmodule Wrap
+  (register-type Nested "NESTED")
+  (register make-nested (Fn [] Wrap.Nested) "make_nested")
+  (register test-nested (Fn [Wrap.Nested] Int) "test_nested")
+)
+
+(deftest test
+  (assert-equal test
+                &1
+                &(Wrap.test-nested (Wrap.make-nested))
+                "Types registered in modules are emitted correctly.")
+)

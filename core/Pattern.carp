@@ -4,8 +4,7 @@
 as, Regular Expressions. [See the docs for more
 information](../LanguageGuide.html#patterns).")
 (defmodule Pattern
-
-  (register-type MatchResult "PatternMatchResult" [start Int, end Int])
+  (register-type MatchResult [start Int, end Int])
   (defmodule MatchResult
     (defn ref-str [ref-matchres] 
       (fmt "(MatchResult start=%d end=%d)" 
