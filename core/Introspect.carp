@@ -194,5 +194,5 @@
           call (cons function (map (fn [x] (if (= target x) prox x)) local-names))]
       (if (> pos (Introspect.arity (eval function)))
           (macro-error "with-copy error: the specified argument position is greater than the given function's arity.")
-          (list 'ref (list 'fn local-names call)))))
+          (list 'fn local-names call))))
 )
