@@ -349,21 +349,21 @@
   (let [s @"X"
         f (fn [] @&s)] ;; each call needs to produce a new copy of the string
     (do
-      (assert (= @"X" (f)))
-      (assert (= @"X" (f)))
-      (assert (= @"X" (f))))))
+      (assert (= @"X" (~f)))
+      (assert (= @"X" (~f)))
+      (assert (= @"X" (~f))))))
 
 (defn lambda-2 []
   (let [xs [10 20 30]
         f (fn [ys] (Array.concat &[@&xs ys]))]
-    (assert (= &[10 20 30 40 50] &(f [40 50])))))
+    (assert (= &[10 20 30 40 50] &(~f [40 50])))))
 
 (defn lambda-3 []
   (let-do [stuff [100 200 300]
         f (fn [n] (copy (unsafe-nth &stuff n)))]
-    (assert (= 100 (f 0)))
-    (assert (= 200 (f 1)))
-    (assert (= 300 (f 2)))))
+    (assert (= 100 (~f 0)))
+    (assert (= 200 (~f 1)))
+    (assert (= 300 (~f 2)))))
 
 (defn lambda-4 []
   (let-do [stuff [@"A" @"B" @"C"]]
@@ -376,7 +376,7 @@
 (defn lambda-6 []
   (let [v 1
         adder (fn [x] (+ v x))
-        f @&adder
+        f @adder
         ]
     (assert (= 11 (f 10)))))
 
@@ -465,7 +465,7 @@
 (defn sumtype-10 []
   (let [state 0]
    (match-ref &(Sum.One)
-    Sum.One (println* ((fn [] @&state)))
+    Sum.One (println* (~(fn [] @&state)))
     Sum.Two ())))
 
 (deftype ExampleA
