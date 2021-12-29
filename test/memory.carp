@@ -201,12 +201,12 @@
 
 (defn array-endo-filter []
   (let [xs [@"a" @"b" @"c" @"b" @"a" @"c"]
-        result (Array.endo-filter &(fn [x] (= x "b")) xs)]
+        result (Array.endo-filter (fn [x] (= x "b")) xs)]
     (assert (= &[@"b" @"b"] &result))))
 
 (defn array-copy-filter []
   (let [xs [@"a" @"b" @"c" @"a" @"c"]
-        result (Array.copy-filter &(fn [x] (= x "b")) &xs)]
+        result (Array.copy-filter (fn [x] (= x "b")) &xs)]
     (assert (= &[@"b"] &result))))
 
 (defn array-first []
@@ -330,7 +330,7 @@
     (assert (= &[@"1" @"2" @"3" @"4"] &ys))))
 
 (defn array-map-reduce []
-  (let [r (map-reduce &(fn [acc x] (Pair.init (append acc x) (append "-" x))) @"" &[@"1" @"2" @"3"])]
+  (let [r (map-reduce (fn [acc x] (Pair.init (append acc x) (append "-" x))) @"" &[@"1" @"2" @"3"])]
     (assert (= &r &(Pair.init @"123" [@"-1" @"-2" @"-3"])))))
 
 (defn static-array-aupdate! []
@@ -367,11 +367,11 @@
 
 (defn lambda-4 []
   (let-do [stuff [@"A" @"B" @"C"]]
-    (assert (= &[@"X" @"X" @"X"] &(copy-map &(fn [c] @"X") &stuff)))))
+    (assert (= &[@"X" @"X" @"X"] &(copy-map (fn [c] @"X") &stuff)))))
 
 (defn lambda-5 []
   (let-do [stuff [@"A" @"B" @"C"]]
-    (assert (= &[@"X" @"X" @"X"] &(endo-map &(fn [c] @"X") stuff)))))
+    (assert (= &[@"X" @"X" @"X"] &(endo-map (fn [c] @"X") stuff)))))
 
 (defn lambda-6 []
   (let [v 1

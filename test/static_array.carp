@@ -8,7 +8,7 @@
     (assert-equal test
                   $[2 4 8]
                   (do
-                    (map! arr &(fn [val] (* @val 2)))
+                    (map! arr (fn [val] (* @val 2)))
                     arr)
                   "map! works as expected"))
 
@@ -50,7 +50,7 @@
                 10
                 (let [arr $[2 2 2 2]]
                   (reduce
-                    &(fn [acc val] (+ acc @val))
+                    (fn [acc val] (+ acc @val))
                     2
                     arr))
                 "reduce works as expected")
@@ -67,40 +67,40 @@
 
   (assert-equal test
                 true
-                (any? &(fn [x] (= 0 @x)) $[0 1 2 3])
+                (any? (fn [x] (= 0 @x)) $[0 1 2 3])
                 "any? works as expected I")
 
   (assert-equal test
                 false
-                (any? &(fn [x] (= 0 @x)) $[1 2 3 4])
+                (any? (fn [x] (= 0 @x)) $[1 2 3 4])
                 "any? works as expected II")
 
   (assert-equal test
                 true
-                (all? &(fn [x] (< 0 @x)) $[1 2 3])
+                (all? (fn [x] (< 0 @x)) $[1 2 3])
                 "all? works as expected I")
 
   (assert-equal test
                 false
-                (all? &(fn [x] (< 0 @x)) $[0 1 2])
+                (all? (fn [x] (< 0 @x)) $[0 1 2])
                 "all? works as expected II")
 
   (assert-equal test
                 &(Maybe.Just 3)
-                &(find &(fn [x] (= 3 @x)) $[0 1 2 3])
+                &(find (fn [x] (= 3 @x)) $[0 1 2 3])
                 "find works as expected I")
 
   (assert-nothing test
-                  &(find &(fn [x] (= 4 @x)) $[0 1 2 3])
+                  &(find (fn [x] (= 4 @x)) $[0 1 2 3])
                   "find works as expected II")
 
   (assert-nothing test
-                  &(find-index &(fn [i] (Int.even? @i)) $[1 3 5])
+                  &(find-index (fn [i] (Int.even? @i)) $[1 3 5])
                   "find-index works I")
 
   (assert-equal test
                 &(Maybe.Just 1)
-                &(find-index &(fn [i] (Int.even? @i)) $[1 8 5])
+                &(find-index (fn [i] (Int.even? @i)) $[1 8 5])
                 "find-index works II")
 
   (assert-equal test
@@ -172,7 +172,7 @@
 
   (assert-equal test
                 2
-                (predicate-count $[1 8 5 10 3] &(fn [i] (Int.even? @i)))
+                (predicate-count $[1 8 5 10 3] (fn [i] (Int.even? @i)))
                 "predicate-count works")
 
   (let [arr $[1 2]]

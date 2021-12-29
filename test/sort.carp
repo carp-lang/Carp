@@ -98,7 +98,7 @@
 
   (let-do [arr [1 3 4 2 6 1]
            exp [6 4 3 2 1 1]]
-          (Array.sort-by! &arr &(fn [a b] (< a b)))
+          (Array.sort-by! &arr (fn [a b] (< a b)))
           (assert-equal test
                         &exp
                         &arr
@@ -106,13 +106,13 @@
 
   (let-do [arr [1 3 4 2 6 1]
            exp [6 4 3 2 1 1]
-           res (Array.sorted-by &arr &(fn [a b] (< a b)))]
+           res (Array.sorted-by &arr (fn [a b] (< a b)))]
           (assert-equal test
                         &exp
                         &res
                         "Array.sorted-by works with custom functions"))
 
-  (let-do [res (Array.sort-by [1 3 4 2 6 1] &(fn [a b] (< a b)))
+  (let-do [res (Array.sort-by [1 3 4 2 6 1] (fn [a b] (< a b)))
            exp [6 4 3 2 1 1]]
           (assert-equal test
                         &exp

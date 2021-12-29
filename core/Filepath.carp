@@ -8,7 +8,7 @@
     (let [segments (split-by path &[\/])
           n (dec (length &segments))
           without-last (prefix &segments n)]
-      (concat &(copy-map &(fn [s] (str* s "/")) &without-last))))
+      (concat &(copy-map (fn [s] (str* s "/")) &without-last))))
 
   (doc file-from-path "removes the base name part of a path to a file, similar to the `filename` utility in Shell scripting.")
   (defn file-from-path [path]

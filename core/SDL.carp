@@ -340,7 +340,7 @@ framework](https://www.libsdl.org/).")
 
   (hidden reduce-events)
   (defn reduce-events [app f state-to-reduce-over]
-    (Array.reduce &(fn [s e] (~f app s e)) ;; Note, this will malloc an environment that captures the 'app' variable.
+    (Array.reduce (fn [s e] (~f app s e)) ;; Note, this will malloc an environment that captures the 'app' variable.
                   state-to-reduce-over
                   &(SDL.Event.all)))
 

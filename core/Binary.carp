@@ -52,10 +52,11 @@
 
      If the conversion fails, returns a `Result.Error` containing the byte array passed as an argument.")
   (defn byte-converter [f order]
-     (fn [bs]
+     @(fn [bs]
        (match (~f order bs)
               (Maybe.Nothing) (Result.Error @bs)
               (Maybe.Just i)  (Result.Success i))))
+
   (doc interpreted
     "Returns the interpreted value from a sequence of byte-converion results")
   (private interpreted)
@@ -137,7 +138,7 @@
   (defn bytes->int16-seq [order bs]
     (let [partitions (Array.partition bs 2)
           f (byte-converter &bytes->int16 order)]
-      (let [results (Array.copy-map f &partitions)]
+      (let [results (Array.copy-map &f &partitions)]
         (Pair.init (interpreted &results) (remaining-bytes &results)))))
 
   (doc bytes->int16-seq-exact
@@ -216,7 +217,7 @@
   (defn bytes->int32-seq [order bs]
     (let [partitions (Array.partition bs 4)
           f (byte-converter &bytes->int32 order)]
-      (let [results (Array.copy-map f &partitions)]
+      (let [results (Array.copy-map &f &partitions)]
         (Pair.init (interpreted &results) (remaining-bytes &results)))))
 
   (doc bytes->int32-seq-exact
@@ -306,7 +307,7 @@
   (defn bytes->int64-seq [order bs]
     (let [partitions (Array.partition bs 8)
           f (byte-converter &bytes->int64 order)]
-      (let [results (Array.copy-map f &partitions)]
+      (let [results (Array.copy-map &f &partitions)]
         (Pair.init (interpreted &results) (remaining-bytes &results)))))
 
   (doc bytes->int64-seq-exact

@@ -242,7 +242,7 @@ array-backed.")
   (doc dot "Get the dot product of the two vectors x and y.")
   (defn dot [x y]
     (Maybe.apply (zip * x y)
-                 &(fn [x] (Array.reduce &(fn [x y] (+ x @y)) (zero) (v &x)))))
+                 (fn [x] (Array.reduce (fn [x y] (+ x @y)) (zero) (v &x)))))
 
   (doc mag-sq "Get the squared magnitude of a vector.")
   (defn mag-sq [o]
@@ -254,7 +254,7 @@ array-backed.")
 
   (doc dist "Get the distance between the vectors a and b.")
   (defn dist [a b]
-    (Maybe.apply (sub b a) &(fn [s] (mag &s))))
+    (Maybe.apply (sub b a) (fn [s] (mag &s))))
 
   (doc normalize "Normalize a vector.")
   (defn normalize [o]
@@ -266,21 +266,21 @@ array-backed.")
   (doc angle-between "Get the angle between two vectors a and b.")
   (defn angle-between [a b]
     (Maybe.apply (VectorN.dot a b)
-                 &(fn [x]
+                 (fn [x]
                     (let [dmm (/ x (* (VectorN.mag a) (VectorN.mag b)))]
                       (acos (clamp--1-1 dmm))))))
 
   (doc anti-parallel? "Check whether the two vectors a and b are anti-parallel.")
   (defn anti-parallel? [a b]
-    (Maybe.apply (angle-between a b) &(fn [x] (= x pi))))
+    (Maybe.apply (angle-between a b) (fn [x] (= x pi))))
 
   (doc parallel? "Check whether the two vectors a and b are parallel.")
   (defn parallel? [a b]
-    (Maybe.apply (angle-between a b) &(fn [x] (zero? x))))
+    (Maybe.apply (angle-between a b) (fn [x] (zero? x))))
 
   (doc perpendicular? "Check whether the two vectors a and b are perpendicular.")
   (defn perpendicular? [a b]
-    (Maybe.apply (angle-between a b) &(fn [x] (= x (Generics.half-pi)))))
+    (Maybe.apply (angle-between a b) (fn [x] (= x (Generics.half-pi)))))
 
   (doc vlerp "Linearly interpolate between the two vectors a and b by amnt (between 0 and 1).")
   (defn vlerp [a b amnt]

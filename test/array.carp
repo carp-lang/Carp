@@ -264,30 +264,30 @@
                 (empty? &[1])
                 "empty? works as expected II")
   (assert-true test
-               (any? &(fn [x] (= 0 @x)) &(range-or-default 0 10 1))
+               (any? (fn [x] (= 0 @x)) &(range-or-default 0 10 1))
                "any? works as expected I")
   (assert-false test
-                (any? &(fn [x] (= 0 @x)) &(range-or-default 1 10 1))
+                (any? (fn [x] (= 0 @x)) &(range-or-default 1 10 1))
                 "any? works as expected II")
   (assert-true test
-               (all? &(fn [x] (< 0 @x)) &(range-or-default 1 10 1))
+               (all? (fn [x] (< 0 @x)) &(range-or-default 1 10 1))
                "all? works as expected I")
   (assert-false test
-                (all? &(fn [x] (= 0 @x)) &(range-or-default 10 1 -1))
+                (all? (fn [x] (= 0 @x)) &(range-or-default 10 1 -1))
                 "all? works as expected II")
   (assert-ref-equal test
                     (Maybe.Just 3)
-                    (find &(fn [x] (= 3 @x)) &(range-or-default 1 10 1))
+                    (find (fn [x] (= 3 @x)) &(range-or-default 1 10 1))
                     "find works as expected I")
   (assert-nothing test
-                  &(find &(fn [x] (= 0 @x)) &(range-or-default 1 10 1))
+                  &(find (fn [x] (= 0 @x)) &(range-or-default 1 10 1))
                   "find works as expected II")
   (assert-nothing test
-                  &(find-index &(fn [i] (Int.even? @i)) &[1 3 5])
+                  &(find-index (fn [i] (Int.even? @i)) &[1 3 5])
                   "find-index works I")
   (assert-ref-equal test
                     (Maybe.Just 1)
-                    (find-index &(fn [i] (Int.even? @i)) &[1 8 5])
+                    (find-index (fn [i] (Int.even? @i)) &[1 8 5])
                     "find-index works II")
   (assert-equal test
                 2
@@ -295,7 +295,7 @@
                 "element-count works as expected")
   (assert-equal test
                 2
-                (predicate-count &[1 8 5 10 3] &(fn [i] (Int.even? @i)))
+                (predicate-count &[1 8 5 10 3] (fn [i] (Int.even? @i)))
                 "predicate-count works")
   (assert-equal test
                 &1
@@ -319,7 +319,7 @@
                     "remove-nth works")
   (assert-ref-equal test
                     [1.0 1.5 2.0 2.5]
-                    (unreduce 1.0 &(fn [x] (< x 3.0)) &(fn [x] (+ x 0.5)))
+                    (unreduce 1.0 (fn [x] (< x 3.0)) (fn [x] (+ x 0.5)))
                     "unreduce works")
   (assert-true test
                 (contains? &[0 1 2] &1)
@@ -333,19 +333,19 @@
                     "from-static works")
   (assert-ref-equal test
                     (Pair.init 6 [2 4 6])
-                    (map-reduce &(fn [acc x] (Pair.init (+ @x @acc) (* @x 2))) 0 &[1 2 3])
+                    (map-reduce (fn [acc x] (Pair.init (+ @x @acc) (* @x 2))) 0 &[1 2 3])
                     "map-reduce works")
   (assert-ref-equal test
                     [0 1 2 3 4 5]
-                    (scan &(fn [x y] (+ @x @y)) 0 &[1 1 1 1 1])
+                    (scan (fn [x y] (+ @x @y)) 0 &[1 1 1 1 1])
                     "scan works")
   (assert-ref-equal test
                     [@"" @"a" @"ab" @"abc"]
-                    (Array.scan &(fn [a b] (String.append a b)) @"" &[@"a" @"b" @"c"])
+                    (Array.scan (fn [a b] (String.append a b)) @"" &[@"a" @"b" @"c"])
                     "scan works on managed type")
   (assert-ref-equal test
                     [1 2 3 4 5]
-                    (endo-scan &(fn [x y] (+ @x @y)) [1 1 1 1 1])
+                    (endo-scan (fn [x y] (+ @x @y)) [1 1 1 1 1])
                     "endo-scan works")
   (assert-ref-equal test
                     [@"a" @"ab" @"abc"]

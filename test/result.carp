@@ -48,13 +48,13 @@
                 "map-error works with Error"
   )
   (assert-true test
-               (error? &(and-then (Error @"hi") &(fn [x] (Success (Int.inc x)))))
+               (error? &(and-then (Error @"hi") (fn [x] (Success (Int.inc x)))))
                "and-then works with Error"
   )
   (assert-equal test
                 &(Success 2)
                 &(and-then (the (Result Int String) (Success 1))
-                           &(fn [x] (Success (Int.inc x))))
+                           (fn [x] (Success (Int.inc x))))
                 "and-then works with Success"
   )
   (assert-equal test
@@ -70,23 +70,23 @@
   (assert-equal test
                 &(Error 5)
                 &(or-else (the (Result Int String) (Error @"error"))
-                          &(fn [x] (Error (String.length &x))))
+                          (fn [x] (Error (String.length &x))))
                 "or-else works with Error"
   )
   (assert-equal test
                 &(Success 1)
-                &(or-else (Success 1) &(fn [x] (Error (String.length &x))))
+                &(or-else (Success 1) (fn [x] (Error (String.length &x))))
                 "or-else works with Success"
   )
   (assert-equal test
                 5
                 (unwrap-or-else (the (Result Int String) (Error @"error"))
-                                &(fn [s] (String.length &s)))
+                                (fn [s] (String.length &s)))
                 "unwrap-or-else works with Error"
   )
   (assert-equal test
                 1
-                (unwrap-or-else (Success 1) &(fn [s] (String.length &s)))
+                (unwrap-or-else (Success 1) (fn [s] (String.length &s)))
                 "unwrap-or-else works with Success"
   )
   (assert-equal test
