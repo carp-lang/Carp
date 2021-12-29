@@ -9,21 +9,21 @@
           (f @(y v))))
 
   (defn zip [f a b]
-    (init (f @(x a) @(x b))
-          (f @(y a) @(y b))))
+    (init (~f @(x a) @(x b))
+          (~f @(y a) @(y b))))
 
   (defn vreduce [f i v]
-    (f (f i @(x v)) @(y v)))
+    (~f (~f i @(x v)) @(y v)))
 
   (defn random []
     (init (random-0-1) (random-0-1)))
   (implements random Vector2.random)
 
   (defn add [a b]
-    (zip + a b))
+    (zip &+ a b))
 
   (defn sub [a b]
-    (zip - a b))
+    (zip &- a b))
 
   (defn mul [a n]
     (init (* @(x a) n)
@@ -35,14 +35,14 @@
 
   (doc vapprox "Check whether the vectors a and b are approximately equal.")
   (defn vapprox [a b]
-    (vreduce (fn [i v] (and i v)) true &(zip Generics.approx a b)))
+    (vreduce (fn [i v] (and i v)) true &(zip &Generics.approx a b)))
 
   (defn sum [o]
-    (vreduce + (zero) o))
+    (vreduce &+ (zero) o))
 
   (doc dot "Get the dot product of the two vectors x and y.")
   (defn dot [a b]
-    (sum &(zip * a b)))
+    (sum &(zip &* a b)))
 
   (doc mag-sq "Get the squared magnitude of a vector.")
   (defn mag-sq [o]
@@ -103,17 +103,17 @@
 (doc Vector3 "is a three-dimensional vector data type.")
 (defmodule Vector3
   (defn map [f v]
-    (init (f @(x v))
-          (f @(y v))
-          (f @(z v))))
+    (init (~f @(x v))
+          (~f @(y v))
+          (~f @(z v))))
 
   (defn zip [f a b]
-    (init (f @(x a) @(x b))
-          (f @(y a) @(y b))
-          (f @(z a) @(z b))))
+    (init (~f @(x a) @(x b))
+          (~f @(y a) @(y b))
+          (~f @(z a) @(z b))))
 
   (defn vreduce [f i v]
-    (f (f (f i @(x v)) @(y v)) @(z v)))
+    (~f (~f (~f i @(x v)) @(y v)) @(z v)))
 
   (defn random []
     (init (random-0-1) (random-0-1) (random-0-1)))
@@ -121,19 +121,19 @@
 
   (doc vapprox "Check whether the vectors a and b are approximately equal.")
   (defn vapprox [a b]
-    (vreduce (fn [i v] (and i v)) true &(zip Generics.approx a b)))
+    (vreduce (fn [i v] (and i v)) true &(zip &Generics.approx a b)))
 
   (defn add [a b]
-    (zip + a b))
+    (zip &+ a b))
 
   (defn sub [a b]
-    (zip - a b))
+    (zip &- a b))
 
   (defn cmul [a b]
-    (zip * a b))
+    (zip &* a b))
 
   (defn neg [a]
-    (map neg a))
+    (map &neg a))
 
   (defn mul [v n]
     (map (fn [c] (* n c)) v))
@@ -142,11 +142,11 @@
     (map (fn [c] (/ c n)) v))
 
   (defn sum [o]
-    (vreduce + (zero) o))
+    (vreduce &+ (zero) o))
 
   (doc dot "Get the dot product of the two vectors x and y.")
   (defn dot [a b]
-    (sum &(zip * a b)))
+    (sum &(zip &* a b)))
 
   (doc mag-sq "Get the squared magnitude of a vector.")
   (defn mag-sq [o]
@@ -218,8 +218,8 @@ array-backed.")
     (let [total (Array.allocate (Array.length a))]
       (do
         (for [i 0 (Array.length a)]
-          (Array.aset-uninitialized! &total i (f @(Array.unsafe-nth a i)
-                                                 @(Array.unsafe-nth b i))))
+          (Array.aset-uninitialized! &total i (~f @(Array.unsafe-nth a i)
+                                                  @(Array.unsafe-nth b i))))
         (init (Array.length a) total))))
 
   (defn zip [f a b]
@@ -228,20 +228,20 @@ array-backed.")
       (Maybe.Nothing)))
 
   (defn add [a b]
-    (zip + a b))
+    (zip &+ a b))
 
   (defn sub [a b]
-    (zip - a b))
+    (zip &- a b))
 
   (defn mul [a n]
-    (zip- * (v a) &(Array.replicate @(VectorN.n a) &n)))
+    (zip- &* (v a) &(Array.replicate @(VectorN.n a) &n)))
 
   (defn div [a n]
-    (zip- / (v a) &(Array.replicate @(VectorN.n a) &n)))
+    (zip- &/ (v a) &(Array.replicate @(VectorN.n a) &n)))
 
   (doc dot "Get the dot product of the two vectors x and y.")
   (defn dot [x y]
-    (Maybe.apply (zip * x y)
+    (Maybe.apply (zip &* x y)
                  (fn [x] (Array.reduce (fn [x y] (+ x @y)) (zero) (v &x)))))
 
   (doc mag-sq "Get the squared magnitude of a vector.")
