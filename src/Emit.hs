@@ -285,7 +285,7 @@ toC toCMode (Binder meta root) = emitterSrc (execState (visit startingIndent roo
                             ++ pathToC path
                             ++ " = "
                             ++ ( case lookupMode of
-                                   LookupLocal (Capture _) -> "_env." ++ pathToC path
+                                   LookupLocal (Capture _) -> "_env->" ++ pathToC path
                                    _ -> pathToC path
                                )
                             ++ ";\n"
