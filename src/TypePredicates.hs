@@ -25,6 +25,11 @@ isFunctionType :: Ty -> Bool
 isFunctionType FuncTy {} = True
 isFunctionType _ = False
 
+-- | Is this type a ref to a function type?
+isRefToFunctionType :: Ty -> Bool
+isRefToFunctionType (RefTy FuncTy {} _) = True
+isRefToFunctionType _ = False
+
 -- | Is this type a struct type?
 isStructType :: Ty -> Bool
 isStructType (StructTy _ _) = True

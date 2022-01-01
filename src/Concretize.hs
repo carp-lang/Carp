@@ -250,21 +250,21 @@ visitApp _ _ _ _ _ x = pure (Left (CannotConcretize x))
 -- resolvable/retrievable lambda.
 mkLambda :: Visitor
 mkLambda visited allowAmbig _ tenv env root@(ListPat (FnPat fn arr@(ArrPat args) body)) =
-  let capturedVars = filter (\xobj -> xobjObj (toGeneralSymbol xobj) `notElem` (map xobjObj args)) (collectCapturedVars body)
+  let capturedVars = filter (\xobj -> xobjObj (toGeneralSymbol xobj) `notElem` map xobjObj args) (collectCapturedVars body)
       -- Create a new (top-level) function that will be used when the lambda is called.
       -- Its name will contain the name of the (normal, non-lambda) function it's contained within,
       -- plus the identifier of the particular s-expression that defines the lambda.
-      SymPath spath name = (last visited)
-      Just (RefTy funcTy _) = xobjTy root
+      SymPath spath name = last visited
+      Just (RefTy lambdaTyNoRef _) = xobjTy root
       lambdaPath = SymPath spath ("_Lambda_" ++ lambdaToCName name (envFunctionNestingLevel env) ++ "_" ++ show (maybe 0 infoIdentifier (xobjInfo root)) ++ "_callback")
       lambdaNameSymbol = XObj (Sym lambdaPath Symbol) (Just dummyInfo) Nothing
       -- Anonymous functions bound to a let name might call themselves. These recursive instances will have already been qualified as LookupRecursive symbols.
       -- Rename the recursive calls according to the generated lambda name so that we can call these correctly from C.
-      renameRecursives (XObj (Sym _ LookupRecursive) si st) = (XObj (Sym lambdaPath LookupRecursive) si st)
+      renameRecursives (XObj (Sym _ LookupRecursive) si st) = XObj (Sym lambdaPath LookupRecursive) si st
       renameRecursives x = x
       recBody = walk renameRecursives body
       environmentTypeName = pathToC lambdaPath ++ "_ty"
-      tyPath = (SymPath [] environmentTypeName)
+      tyPath = SymPath [] environmentTypeName
       extendedArgs =
         if null capturedVars
           then arr
@@ -281,7 +281,7 @@ mkLambda visited allowAmbig _ tenv env root@(ListPat (FnPat fn arr@(ArrPat args)
                     )
                 )
             )
-      lambdaCallback = XObj (Lst [XObj (Defn (Just (Set.fromList capturedVars))) (Just dummyInfo) Nothing, lambdaNameSymbol, extendedArgs, recBody]) (xobjInfo root) (Just funcTy) -- (xobjTy root)
+      lambdaCallback = XObj (Lst [XObj (Defn (Just (Set.fromList capturedVars))) (Just dummyInfo) Nothing, lambdaNameSymbol, extendedArgs, recBody]) (xobjInfo root) (Just lambdaTyNoRef) -- (xobjTy root)
       -- The lambda will also carry with it a special made struct containing the variables it captures
       -- (if it captures at least one variable)
       structMemberPairs =
@@ -312,7 +312,7 @@ mkLambda visited allowAmbig _ tenv env root@(ListPat (FnPat fn arr@(ArrPat args)
       -- TODO: Support modules in type envs.
       extendedTypeEnv = replaceLeft (FailedToAddLambdaStructToTyEnv tyPath environmentStruct) (insert tenv tyPath (toBinder environmentStruct))
    in --(fromMaybe UnitTy (xobjTy root))
-      case (extendedTypeEnv >>= \ext -> concretizeDefinition allowAmbig ext env visited lambdaCallback funcTy) of
+      case extendedTypeEnv >>= \ext -> concretizeDefinition allowAmbig ext env visited lambdaCallback lambdaTyNoRef of
         Left e -> pure (Left e)
         Right (concreteLiftedLambda, deps) ->
           do

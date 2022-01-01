@@ -205,6 +205,7 @@ toC toCMode (Binder meta root) = emitterSrc (execState (visit startingIndent roo
       pure overrideWithName
     visitSymbol indent xobj@(XObj sym@(Sym path lookupMode) (Just i) ty) =
       let Just t = ty
+          functionLike = isFunctionType t || isRefToFunctionType t
        in if isTypeGeneric t
             then
               error
@@ -216,11 +217,16 @@ toC toCMode (Binder meta root) = emitterSrc (execState (visit startingIndent roo
                     ++ prettyInfoFromXObj xobj
                 )
             else
-              if isFunctionType t && not (isLookupLocal lookupMode) && not (isGlobalVariableLookup lookupMode)
+              if functionLike && not (isLookupLocal lookupMode) && not (isGlobalVariableLookup lookupMode)
                 then do
                   let var = freshVar i
                   appendToSrc (addIndent indent ++ "Lambda " ++ var ++ " = { .callback = (void*)" ++ pathToC path ++ ", .env = NULL, .delete = NULL, .copy = NULL }; //" ++ show sym ++ "\n")
-                  pure var
+                  if isRefToFunctionType t
+                    then do
+                      let refVar = var ++ "_ref"
+                      appendToSrc (addIndent indent ++ "Lambda *" ++ refVar ++ " = &" ++ var ++ ";\n")
+                      pure refVar
+                    else pure var
                 else pure $ case lookupMode of
                   LookupLocal (Capture _) -> "_env->" ++ pathToC path
                   _ -> pathToC path
