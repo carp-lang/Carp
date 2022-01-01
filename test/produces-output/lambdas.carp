@@ -85,6 +85,16 @@
   (let [arr [(Pair.init 1 1)]]
     (println* &(update-bs arr &Int.inc))))
 
+;; Example 11, capture ref and call the lambda later
+(defn cap-ref [r]
+  (fn [] @r))
+
+(defn example-11 []
+  (let [s @"hello"
+        r &s
+        f (cap-ref r)]
+    (println* (~f))))
+
 (defn-do main []
   ;;(example-1 "!")
   (example-2)
@@ -95,4 +105,5 @@
   (example-7)
   (example-8)
   (example-9)
-  (example-10))
+  (example-10)
+  (example-11))
