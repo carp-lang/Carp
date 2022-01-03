@@ -1,0 +1,1 @@
+return_lambda_that_captures.carp:4:3 The reference '(let [s (String.copy "DATA")] (fn <s : String> [] s))' isn't alive.

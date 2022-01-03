@@ -1,0 +1,7 @@
+(Project.config "file-path-print-length" "short")
+
+(defn not-allowed []
+  (let [s @"DATA"]
+    (fn [] s)
+    ;; Note: 's' will get deleted here (since the lambda is a ref)
+    ))
