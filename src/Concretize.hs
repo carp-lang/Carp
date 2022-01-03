@@ -281,7 +281,7 @@ mkLambda visited allowAmbig _ tenv env root@(ListPat (FnPat fn arr@(ArrPat args)
                     )
                 )
             )
-      lambdaCallback = XObj (Lst [XObj (Defn (Just (Set.fromList capturedVars))) (Just dummyInfo) Nothing, lambdaNameSymbol, extendedArgs, recBody]) (xobjInfo root) (Just lambdaTyNoRef) -- (xobjTy root)
+      lambdaCallback = XObj (Lst [XObj (Defn (Just (Set.fromList capturedVars))) (Just dummyInfo) Nothing, lambdaNameSymbol, extendedArgs, recBody]) (xobjInfo root) (Just lambdaTyNoRef)
       -- The lambda will also carry with it a special made struct containing the variables it captures
       -- (if it captures at least one variable)
       structMemberPairs =
@@ -327,7 +327,7 @@ mkLambda visited allowAmbig _ tenv env root@(ListPat (FnPat fn arr@(ArrPat args)
                     modify (deleterDeps ++)
                     modify (copyFn :)
                     modify (copyDeps ++)
-            pure (Right [XObj (Fn (Just lambdaPath) (Set.fromList capturedVars)) (xobjInfo fn) (xobjTy fn), arr, recBody])
+            pure (Right [XObj (Fn (Just lambdaPath) (Set.fromList capturedVars)) (xobjInfo fn) (xobjTy fn), arr, body])
 mkLambda _ _ _ _ _ root = pure (Left (CannotConcretize root))
 
 -- | Concretize an anonymous function (fn [args...] <body>)
