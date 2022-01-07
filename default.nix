@@ -11,7 +11,7 @@ let
         cabal-install clang gdb
         ormolu hlint flamegraph ghc-prof-flamegraph
       ] ++ lib.optionals stdenv.isLinux [ linuxPackages.perf tinycc zig ];
-      pkgconfigDepends = [ SDL2 SDL2_image SDL2_mixer SDL2_ttf glfw ];
+      pkg-configDepends = [ SDL2 SDL2_image SDL2_mixer SDL2_ttf glfw ];
       enableLibraryProfiling = profiling;
       enableExecutableProfiling = profiling;
       enableSharedLibraries = false;
