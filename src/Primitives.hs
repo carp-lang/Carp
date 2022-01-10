@@ -9,7 +9,7 @@ import Control.Applicative
 import Control.Monad (foldM, unless, when)
 import Control.Monad.IO.Class (MonadIO, liftIO)
 import Data.Bifunctor
-import Data.Either (fromRight, rights)
+import Data.Either (fromRight, isRight, rights)
 import Data.Functor ((<&>))
 import Data.List (foldl')
 import Data.Maybe (fromJust, fromMaybe)
@@ -182,10 +182,12 @@ define hidden ctx qualifiedXObj =
     defineInTypeEnv = pure . fromRight ctx . (insertTypeBinder ctx qpath)
     defineInGlobalEnv :: Binder -> IO Context
     defineInGlobalEnv newBinder =
-      when (projectEchoC (contextProj ctx)) (putStrLn (toC All (Binder emptyMeta annXObj)))
+      when (projectEchoC (contextProj ctx) && canBeEmitted annXObj) (putStrLn (toC All (Binder emptyMeta annXObj)))
         >> case (lookupBinderInGlobalEnv ctx qpath) of
           Left _ -> pure (fromRight ctx (insertInGlobalEnv ctx qpath newBinder))
           Right oldBinder -> redefineExistingBinder oldBinder newBinder
+    canBeEmitted :: XObj -> Bool
+    canBeEmitted x = isRight (checkForUnresolvedSymbols x)
     redefineExistingBinder :: Binder -> Binder -> IO Context
     redefineExistingBinder old@(Binder meta _) (Binder _ x) =
       do
