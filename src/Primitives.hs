@@ -9,7 +9,7 @@ import Control.Applicative
 import Control.Monad (foldM, unless, when)
 import Control.Monad.IO.Class (MonadIO, liftIO)
 import Data.Bifunctor
-import Data.Either (fromRight, rights)
+import Data.Either (fromRight, isRight, rights)
 import Data.Functor ((<&>))
 import Data.List (foldl')
 import Data.Maybe (fromJust, fromMaybe)
@@ -187,10 +187,7 @@ define hidden ctx qualifiedXObj =
           Left _ -> pure (fromRight ctx (insertInGlobalEnv ctx qpath newBinder))
           Right oldBinder -> redefineExistingBinder oldBinder newBinder
     canBeEmitted :: XObj -> Bool
-    canBeEmitted (XObj (Arr xs) _ _) = all canBeEmitted xs
-    canBeEmitted (XObj (Lst xs) _ _) = all canBeEmitted xs
-    canBeEmitted (XObj (Sym _ _) _ (Just t)) = not (isTypeGeneric t)
-    canBeEmitted _ = True
+    canBeEmitted x = isRight (checkForUnresolvedSymbols x)
     redefineExistingBinder :: Binder -> Binder -> IO Context
     redefineExistingBinder old@(Binder meta _) (Binder _ x) =
       do
