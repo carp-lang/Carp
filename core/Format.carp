@@ -14,7 +14,7 @@
         (if (= \% (String.char-at s (inc idx))) ; this is an escaped %
           `(ref
             (String.append
-                "%"
+                %(String.slice s 0 (inc idx))
                 %(fmt-internal (String.slice s (+ idx 2) len) args)))
           (if (= 0 (length args)) ; we need to insert something, but have nothing
             (macro-error
