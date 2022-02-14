@@ -387,6 +387,10 @@
                         '("h" "e" "l" "l" "o")
                         (String.to-list "hello")
                         "Dynamic.String.to-list works as expected")
+  (assert-dynamic-equal test
+                        '["h" "e" "l" "l" "o"]
+                        (String.to-array "hello")
+                        "Dynamic.String.to-array works as expected")
   (assert-equal test
                 2
                 (let-do [src 1 dst 0]
