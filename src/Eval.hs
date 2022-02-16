@@ -100,25 +100,22 @@ eval ctx xobj@(XObj o info ty) mode resolver =
         --      else (ctx, Right (resolveDef found))
     Arr objs -> do
       (newCtx, evaled) <- foldlM (evalAndCollect mode resolver) (ctx, Right []) objs
-      pure
-        ( newCtx,
-          do
-            ok <- evaled
-            Right (XObj (Arr ok) info ty)
-        )
+      either 
+        (\e -> pure (newCtx, Left e))
+        (\x -> pure (newCtx, Right (XObj (Arr x) info ty)))
+        evaled
     StaticArr objs -> do
       (newCtx, evaled) <- foldlM (evalAndCollect mode resolver) (ctx, Right []) objs
-      pure
-        ( newCtx,
-          do
-            ok <- evaled
-            Right (XObj (StaticArr ok) info ty)
-        )
+      either
+        (\e -> pure (newCtx, Left e))
+        (\x -> pure (newCtx, Right (XObj (StaticArr x) info ty)))
+        evaled
     _ -> do
       (nctx, res) <- annotateWithinContext ctx xobj
-      pure $ case res of
-        Left e -> (nctx, Left e)
-        Right (val, _) -> (nctx, Right val)
+      either 
+        (\e -> pure (nctx, Left e)) 
+        (\(v, _) -> pure (nctx, Right v)) 
+        res 
   where
     resolveDef (XObj (Lst [XObj DefDynamic _ _, _, value]) _ _) = value
     resolveDef (XObj (Lst [XObj LocalDef _ _, _, value]) _ _) = value
