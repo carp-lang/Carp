@@ -39,8 +39,6 @@ import Util
 import Prelude hiding (exp, mod)
 import Resolver
 
-type Evaluator = [XObj] -> IO (Context, Either EvalError XObj)
-
 -- Prefer dynamic bindings and use the standard resolution order when evaluating symbols.
 evalDynamic :: Context -> XObj -> IO (Context, Either EvalError XObj)
 evalDynamic ctx xobj = eval ctx xobj ResolveStatic legacyPreferDynamic
@@ -101,7 +99,7 @@ eval ctx xobj@(XObj o info ty) mode resolver =
         --      then throwErr (PrivateBinding (getPath found)) ctx info
         --      else (ctx, Right (resolveDef found))
     Arr objs -> do
-      (newCtx, evaled) <- foldlM successiveEval (ctx, Right []) objs
+      (newCtx, evaled) <- foldlM (evalAndCollect mode resolver) (ctx, Right []) objs
       pure
         ( newCtx,
           do
@@ -109,7 +107,7 @@ eval ctx xobj@(XObj o info ty) mode resolver =
             Right (XObj (Arr ok) info ty)
         )
     StaticArr objs -> do
-      (newCtx, evaled) <- foldlM successiveEval (ctx, Right []) objs
+      (newCtx, evaled) <- foldlM (evalAndCollect mode resolver) (ctx, Right []) objs
       pure
         ( newCtx,
           do
@@ -130,19 +128,19 @@ eval ctx xobj@(XObj o info ty) mode resolver =
         Left e -> pure (evalError ctx (format e) (xobjInfo xobj))
         Right form' ->
           case form' of
-            (IfPat _ _ _ _) -> evaluateIf form'
+            (IfPat _ _ _ _) -> evaluateIf xobj ctx resolver form'
             (DefnPat _ _ _ _) -> specialCommandDefine ctx xobj
             (DefPat _ _ _) -> specialCommandDefine ctx xobj
-            (ThePat _ _ _) -> evaluateThe form'
-            (LetPat _ _ _) -> evaluateLet form'
-            (FnPat _ _ _) -> evaluateFn form'
-            (AppPat (ClosurePat _ _ _) _) -> evaluateClosure form'
-            (AppPat (DynamicFnPat _ _ _) _) -> evaluateDynamicFn form'
-            (AppPat (MacroPat _ _ _) _) -> evaluateMacro form'
-            (AppPat (CommandPat _ _ _) _) -> evaluateCommand form'
-            (AppPat (PrimitivePat _ _ _) _) -> evaluatePrimitive form'
+            (ThePat _ _ _) -> evaluateThe xobj ctx resolver form'
+            (LetPat _ _ _) -> evaluateLet xobj ctx mode resolver form'
+            (FnPat _ _ _) -> evaluateFn xobj ctx resolver form'
+            (AppPat (ClosurePat _ _ _) _) -> evaluateClosure xobj ctx mode resolver form'
+            (AppPat (DynamicFnPat _ _ _) _) -> evaluateDynamicFn xobj ctx mode resolver form'
+            (AppPat (MacroPat _ _ _) _) -> evaluateMacro xobj ctx resolver form'
+            (AppPat (CommandPat _ _ _) _) -> evaluateCommand xobj ctx mode resolver form'
+            (AppPat (PrimitivePat _ _ _) _) -> evaluatePrimitive xobj ctx resolver form'
             (WithPat _ sym@(SymPat path _) forms) -> specialCommandWith ctx sym path forms
-            (DoPat _ forms) -> evaluateSideEffects forms
+            (DoPat _ forms) -> evaluateSideEffects xobj ctx mode resolver forms
             (WhilePat _ cond body) -> specialCommandWhile ctx cond body
             (SetPat _ iden value) -> specialCommandSet ctx (iden : [value])
             -- This next match is a bit redundant looking at first glance, but
@@ -164,11 +162,10 @@ eval ctx xobj@(XObj o info ty) mode resolver =
                 case evald of
                   Left err -> pure (evalError ctx (show err) (xobjInfo xobj))
                   Right x' -> case checkStatic' x' of
-                    --_ -> evaluateApp (self : args)
-                    Right _ -> evaluateApp (self : args)
+                    Right _ -> evaluateApp xobj ctx mode resolver (self : args)
                     Left er -> pure (ctx, Left er)
-            (AppPat (ListPat _) _) -> evaluateApp form'
-            (AppPat (SymPat _ _) _) -> evaluateApp form'
+            (AppPat (ListPat _) _) -> evaluateApp xobj ctx mode resolver form'
+            (AppPat (SymPat _ _) _) -> evaluateApp xobj ctx mode resolver form'
             (AppPat (XObj other _ _) _)
               | isResolvableStaticObj other ->
                   pure (ctx, (Left (HasStaticCall xobj info)))
@@ -183,180 +180,228 @@ eval ctx xobj@(XObj o info ty) mode resolver =
     checkStatic' (XObj (Match _) _ _) = Left (HasStaticCall xobj info)
     checkStatic' (XObj Ref _ _) = Left (HasStaticCall xobj info)
     checkStatic' x' = Right x'
-    successiveEval (ctx', acc) x =
-      case acc of
-        Left _ -> pure (ctx', acc)
-        Right l -> do
-          (newCtx, evald) <- eval ctx' x mode resolver
-          pure $ case evald of
-            Right res -> (newCtx, Right (l ++ [res]))
-            Left err -> (newCtx, Left err)
-    evaluateIf :: Evaluator
-    evaluateIf (IfPat _ cond true false) = do
-      (newCtx, evd) <- eval ctx cond ResolveStatic resolver
-      case evd of
-        Right cond' ->
-          case xobjObj cond' of
-            Bol b -> eval newCtx (if b then true else false) ResolveStatic resolver
-            _ ->
-              pure (throwErr (IfContainsNonBool cond) ctx (xobjInfo cond))
-        Left e -> pure (newCtx, Left e)
-    evaluateIf _ = pure (evalError ctx (format (GenericMalformed xobj)) (xobjInfo xobj))
-    evaluateThe :: Evaluator
-    evaluateThe (ThePat the t value) = do
-      (newCtx, evaledValue) <- expandAll evalDynamic ctx value -- TODO: Why expand all here?
-      pure
-        ( newCtx,
-          do
-            okValue <- evaledValue
-            Right (XObj (Lst [the, t, okValue]) info ty)
-        )
-    evaluateThe _ = pure (evalError ctx (format (GenericMalformed xobj)) (xobjInfo xobj))
-    evaluateLet :: Evaluator
-    evaluateLet (LetPat _ (ArrPat bindings) body) = 
-      do
-        let binds = unwrapVar (pairwise bindings) []
-            ni = Env Map.empty (contextInternalEnv ctx) Nothing Set.empty InternalEnv 0
-        eitherCtx <- foldrM successiveEval' (Right (replaceInternalEnv ctx ni)) binds
-        case eitherCtx of
-          Left err -> pure (ctx, Left err)
-          Right newCtx -> do
-            let shadowResolver =
-                  (legacyLocal (map (\(name, _) -> (SymPath [] name)) binds))
-            (finalCtx, evaledBody) <- eval newCtx body ResolveStatic shadowResolver
+            
+--------------------------------------------------------------------------------
+-- predefined form evaluators
+
+-- | An evaluator takes a root xobj, context, resolver and list of xobjs and
+-- returns the result of evaluating the list given the root and other arguments.
+--
+-- We define evaluators for each predefined form. See Forms.hs
+type Evaluator = XObj -> Context -> Resolver -> [XObj] -> IO (Context, Either EvalError XObj)
+
+-- | Modal evaluators are evaluators that take an additional "ResolveMode"
+-- argument. This is necessary for some forms for which the symbol resolution
+-- mode should change while processing one or all of the form's members.
+type ModalEvaluator = 
+  XObj -> Context -> ResolveMode -> Resolver -> [XObj] -> IO (Context, Either EvalError XObj)
+
+-- | Evaluates an if form. (if condition true false)
+evaluateIf :: Evaluator
+evaluateIf _ ctx resolver (IfPat _ cond true false) =
+  do (nctx, result) <- eval ctx cond ResolveStatic resolver
+     either (pure . const (nctx, result)) (boolCheck nctx . xobjObj) result
+  where boolCheck :: Context -> Obj -> IO (Context, Either EvalError XObj)
+        boolCheck c (Bol b) = eval c (if b then true else false) ResolveStatic resolver
+        boolCheck _ _ = pure $ throwErr (IfContainsNonBool cond) ctx (xobjInfo cond)
+evaluateIf root ctx _ _ = pure $ evalError ctx (format (GenericMalformed root)) (xobjInfo root) 
+
+-- | Evaluates a the form. (the T x)
+evaluateThe :: Evaluator
+evaluateThe root ctx _ (ThePat the t value) = 
+ let info = xobjInfo root
+     ty   = xobjTy root
+  in do (nctx, result) <- expandAll evalDynamic ctx value -- TODO: Why expand all here?
+        let newForm = second (\x -> (XObj (Lst [the, t, x]) info ty)) result
+        pure (nctx, newForm)
+evaluateThe root ctx _ _ = pure (evalError ctx (format (GenericMalformed root)) (xobjInfo root))
+
+-- | Evaluates a let form. (let [name value] body)
+evaluateLet :: ModalEvaluator
+evaluateLet _ ctx mode resolver (LetPat _ (ArrPat bindings) body) =
+  do let binds = unwrapVar (pairwise bindings) []
+         ni = E.nested (contextInternalEnv ctx) Nothing 0
+         sresolver = (legacyLocal (map (\(name, _) -> (SymPath [] name)) binds))
+     eitherCtx <- foldrM (evalAndUpdateBindings mode resolver) (Right (replaceInternalEnv ctx ni)) binds
+     case eitherCtx of
+       Left err -> pure (ctx, Left err)
+       Right newCtx -> 
+         do (finalCtx, evaledBody) <- eval newCtx body ResolveStatic sresolver
             let Just e = contextInternalEnv finalCtx
                 parentEnv = envParent e
-            pure
-              ( replaceInternalEnvMaybe finalCtx parentEnv,
-                do
-                  okBody <- evaledBody
-                  Right okBody
-              )
-      where
-        unwrapVar [] acc = acc
-        unwrapVar ((XObj (Sym (SymPath [] x) _) _ _, y) : xs) acc = unwrapVar xs ((x, y) : acc)
-        unwrapVar _ _ = error "unwrapvar"
-        successiveEval' (n, x) =
-          \case
-            err@(Left _) -> pure err
-            Right ctx' -> do
-              -- Bind a reference to the let bind in a recursive
-              -- environment. This permits recursion in anonymous functions
-              -- in let binds such as:
-              --   (let [f (fn [x] (if (= x 1) x (f (dec x))))] (f 10))
-              let origin = (contextInternalEnv ctx')
-                  recFix = (E.recursive origin (Just "let-rec-env") 0)
-                  Right envWithSelf = if isFn x then E.insertX recFix (SymPath [] n) x else Right recFix
-                  ctx'' = replaceInternalEnv ctx' envWithSelf
-              (newCtx, res) <- eval ctx'' x mode resolver
-              case res of
-                Right okX ->
-                  pure $ Right (fromRight (error "Failed to eval let binding!!") (bindLetDeclaration (newCtx {contextInternalEnv = origin}) n okX))
-                Left err -> pure $ Left err
-    evaluateLet _ = pure (evalError ctx (format (GenericMalformed xobj)) (xobjInfo xobj))
-    evaluateFn :: Evaluator
-    evaluateFn (FnPat self args body) = do
-      (newCtx, expanded) <- macroExpand ctx body
-      pure $
-        case expanded of
-          Right b ->
-            (newCtx, Right (XObj (Closure (XObj (Lst [self, args, b]) info ty) (CCtx newCtx)) info ty))
-          Left err -> (ctx, Left err)
-    evaluateFn _ = pure (evalError ctx (format (GenericMalformed xobj)) (xobjInfo xobj))
-    evaluateClosure :: Evaluator
-    evaluateClosure (AppPat (ClosurePat params body c) args) = do
-      (newCtx, evaledArgs) <- foldlM successiveEval (ctx, Right []) args
-      case evaledArgs of
-        Right okArgs -> do
-          let newGlobals = (contextGlobalEnv newCtx) <> (contextGlobalEnv c)
-              newTypes = TypeEnv $ (getTypeEnv (contextTypeEnv newCtx)) <> (getTypeEnv (contextTypeEnv c))
-              updater = replaceHistory' (contextHistory ctx) . replaceGlobalEnv' newGlobals . replaceTypeEnv' newTypes
-          (ctx', res) <- apply (updater c) body params okArgs
-          pure (replaceGlobalEnv newCtx (contextGlobalEnv ctx'), res)
-        Left err -> pure (newCtx, Left err)
-    evaluateClosure _ = pure (evalError ctx (format (GenericMalformed xobj)) (xobjInfo xobj))
-    evaluateDynamicFn :: Evaluator
-    evaluateDynamicFn (AppPat (DynamicFnPat _ params body) args) = do
-      (newCtx, evaledArgs) <- foldlM successiveEval (ctx, Right []) args
-      case evaledArgs of
-        Right okArgs -> apply newCtx body params okArgs
-        Left err -> pure (newCtx, Left err)
-    evaluateDynamicFn _ = pure (evalError ctx (format (GenericMalformed xobj)) (xobjInfo xobj))
-    evaluateMacro :: Evaluator
-    evaluateMacro (AppPat (MacroPat _ params body) args) = do
-      (ctx', res) <- apply ctx body params args
-      case res of
-        Right xobj' -> macroExpand ctx' xobj'
-        Left _ -> pure (ctx, res)
-    evaluateMacro _ = pure (evalError ctx (format (GenericMalformed xobj)) (xobjInfo xobj))
-    evaluateCommand :: Evaluator
-    evaluateCommand (AppPat (CommandPat (NullaryCommandFunction nullary) _ _) []) =
-      nullary ctx
-    evaluateCommand (AppPat (CommandPat (UnaryCommandFunction unary) _ _) [x]) = do
-      (c, evaledArgs) <- foldlM successiveEval (ctx, Right []) [x]
-      case evaledArgs of
-        Right args -> let [x'] = take 1 args in unary c x'
-        Left err -> pure (ctx, Left err)
-    evaluateCommand (AppPat (CommandPat (BinaryCommandFunction binary) _ _) [x, y]) = do
-      (c, evaledArgs) <- foldlM successiveEval (ctx, Right []) [x, y]
-      case evaledArgs of
-        Right args -> let [x', y'] = take 2 args in binary c x' y'
-        Left err -> pure (ctx, Left err)
-    evaluateCommand (AppPat (CommandPat (TernaryCommandFunction ternary) _ _) [x, y, z]) = do
-      (c, evaledArgs) <- foldlM successiveEval (ctx, Right []) [x, y, z]
-      case evaledArgs of
-        Right args' -> let [x', y', z'] = take 3 args' in ternary c x' y' z'
-        Left err -> pure (ctx, Left err)
-    evaluateCommand (AppPat (CommandPat (VariadicCommandFunction variadic) _ _) args) = do
-      (c, evaledArgs) <- foldlM successiveEval (ctx, Right []) args
-      case evaledArgs of
-        Right args' -> variadic c args'
-        Left err -> pure (ctx, Left err)
-    -- Should be caught during validation
-    evaluateCommand (AppPat (CommandPat _ _ _) _) =
-      pure (evalError ctx (format (GenericMalformed xobj)) (xobjInfo xobj))
-    evaluateCommand _ = pure (evalError ctx (format (GenericMalformed xobj)) (xobjInfo xobj))
-    evaluatePrimitive :: Evaluator
-    evaluatePrimitive (AppPat p@(PrimitivePat (NullaryPrimitive nullary) _ _) []) =
-      nullary p ctx
-    evaluatePrimitive (AppPat p@(PrimitivePat (UnaryPrimitive unary) _ _) [x]) = do
-      unary p ctx x
-    evaluatePrimitive (AppPat p@(PrimitivePat (BinaryPrimitive binary) _ _) [x, y]) = do
-      binary p ctx x y
-    evaluatePrimitive (AppPat p@(PrimitivePat (TernaryPrimitive ternary) _ _) [x, y, z]) = do
-      ternary p ctx x y z
-    evaluatePrimitive (AppPat p@(PrimitivePat (QuaternaryPrimitive quaternary) _ _) [x, y, z, w]) = do
-      quaternary p ctx x y z w
-    evaluatePrimitive (AppPat p@(PrimitivePat (VariadicPrimitive variadic) _ _) args) = do
-      variadic p ctx args
-    -- Should be caught during validation
-    evaluatePrimitive (AppPat (PrimitivePat _ _ _) _) =
-      pure (evalError ctx (format (GenericMalformed xobj)) (xobjInfo xobj))
-    evaluatePrimitive _ = pure (evalError ctx (format (GenericMalformed xobj)) (xobjInfo xobj))
-    evaluateApp :: Evaluator
-    evaluateApp (AppPat f' args) =
-      case f' of
-        l@(ListPat _) -> go l ResolveStatic
-        sym@(SymPat _ _) -> go sym mode
-        _ -> pure (evalError ctx (format (GenericMalformed xobj)) (xobjInfo xobj))
-      where
-        go x mode' =
-          do
-            (newCtx, f) <- eval ctx x mode' resolver
-            case f of
-              Right fun -> do
-                (newCtx', res) <- eval (pushFrame newCtx xobj) (XObj (Lst (fun : args)) (xobjInfo x) (xobjTy x)) ResolveStatic resolver
-                pure (popFrame newCtx', res)
-              x' -> pure (newCtx, x')
-    evaluateApp _ = pure (evalError ctx (format (GenericMalformed xobj)) (xobjInfo xobj))
-    evaluateSideEffects :: Evaluator
-    evaluateSideEffects forms = do
-      foldlM successiveEval' (ctx, dynamicNil) forms
-      where
-        successiveEval' (ctx', acc) x =
-          case acc of
-            err@(Left _) -> pure (ctx', err)
-            Right _ -> eval ctx' x mode resolver
+            pure (replaceInternalEnvMaybe finalCtx parentEnv, evaledBody) 
+  where
+   unwrapVar :: [(XObj, XObj)] -> [(String, XObj)] -> [(String, XObj)]
+   unwrapVar [] acc = acc
+   unwrapVar ((XObj (Sym (SymPath [] x) _) _ _, y) : xs) acc = unwrapVar xs ((x, y) : acc)
+   unwrapVar _ _ = error "unwrapvar"
+evaluateLet root ctx _ _ _ = pure (evalError ctx (format (GenericMalformed root)) (xobjInfo root))
+
+-- | Evaluates a fn form (fn [parameter] body)
+evaluateFn :: Evaluator
+evaluateFn root ctx _ (FnPat self args body) =
+  let info = xobjInfo root
+      ty   = xobjTy root
+   in do (newCtx, expanded) <- macroExpand ctx body
+         pure $
+           either (const (newCtx, expanded))
+             (\b -> (newCtx, Right (XObj (Closure (XObj (Lst [self, args, b]) info ty) (CCtx newCtx)) info ty)))
+             expanded
+evaluateFn root ctx _ _ = pure (evalError ctx (format (GenericMalformed root)) (xobjInfo root))
+
+-- | Evaluates a closure.
+evaluateClosure :: ModalEvaluator
+evaluateClosure _ ctx mode resolver (AppPat (ClosurePat params body c) args) = 
+  do (newCtx, evaledArgs) <- foldlM (evalAndCollect mode resolver) (ctx, Right []) args
+     case evaledArgs of
+       Left err -> pure (newCtx, Left err)
+       Right okArgs -> do
+         let newGlobals = (contextGlobalEnv newCtx) <> (contextGlobalEnv c)
+             newTypes = TypeEnv $ (getTypeEnv (contextTypeEnv newCtx)) <> (getTypeEnv (contextTypeEnv c))
+             updater =
+               replaceHistory' (contextHistory ctx) . replaceGlobalEnv' newGlobals . replaceTypeEnv' newTypes
+         (ctx', res) <- apply (updater c) body params okArgs
+         pure (replaceGlobalEnv newCtx (contextGlobalEnv ctx'), res)
+evaluateClosure root ctx _ _ _ = pure (evalError ctx (format (GenericMalformed root)) (xobjInfo root))
+
+-- | Evaluates a dynamic fn form.
+evaluateDynamicFn :: ModalEvaluator
+evaluateDynamicFn _ ctx mode resolver (AppPat (DynamicFnPat _ params body) args) = 
+  do (newCtx, evaledArgs) <- foldlM (evalAndCollect mode resolver) (ctx, Right []) args
+     case evaledArgs of
+       Right okArgs -> apply newCtx body params okArgs
+       Left err -> pure (newCtx, Left err)
+evaluateDynamicFn root ctx _ _ _ = pure (evalError ctx (format (GenericMalformed root)) (xobjInfo root))
+
+-- | Evaluates a macro (defmacro name [parameter :rest rest-parameter] body)
+evaluateMacro :: Evaluator
+evaluateMacro _ ctx _ (AppPat (MacroPat _ params body) args) = do
+  (ctx', res) <- apply ctx body params args
+  either (pure . const (ctx, res)) (macroExpand ctx') res
+evaluateMacro root ctx _ _ = pure (evalError ctx (format (GenericMalformed root)) (xobjInfo root))
+
+-- | Evaluates a command. (command car argument)
+evaluateCommand :: ModalEvaluator
+evaluateCommand _ ctx _ _ (AppPat (CommandPat (NullaryCommandFunction nullary) _ _) []) =
+  nullary ctx
+evaluateCommand _ ctx mode resolver (AppPat (CommandPat (UnaryCommandFunction unary) _ _) [x]) = do
+  (c, result) <- foldlM (evalAndCollect mode resolver) (ctx, Right []) [x]
+  either (\r -> pure (ctx, Left r)) (unary c . head) result
+evaluateCommand _ ctx mode resolver (AppPat (CommandPat (BinaryCommandFunction binary) _ _) [x, y]) = do
+  (c, result) <- foldlM (evalAndCollect mode resolver) (ctx, Right []) [x, y]
+  either 
+    (\r -> pure (ctx, Left r)) 
+    (\r -> let [x', y'] = take 2 r in binary c x' y') 
+    result 
+evaluateCommand _ ctx mode resolver (AppPat (CommandPat (TernaryCommandFunction ternary) _ _) [x, y, z]) = do
+  (c, result) <- foldlM (evalAndCollect mode resolver) (ctx, Right []) [x, y, z]
+  either 
+    (\r -> pure (ctx, Left r)) 
+    (\r -> let [x', y', z'] = take 3 r in ternary c x' y' z') 
+    result
+evaluateCommand _ ctx mode resolver (AppPat (CommandPat (VariadicCommandFunction variadic) _ _) args) = do
+  (c, result) <- foldlM (evalAndCollect mode resolver) (ctx, Right []) args
+  either 
+    (\r -> pure (ctx, Left r)) 
+    (variadic c) 
+    result
+-- Should be caught during validation
+evaluateCommand root ctx _ _ (AppPat (CommandPat _ _ _) _) =
+  pure (evalError ctx (format (GenericMalformed root)) (xobjInfo root))
+evaluateCommand root ctx _ _ _ = pure (evalError ctx (format (GenericMalformed root)) (xobjInfo root))
+
+-- | Evaluates a primitive. (primitive list arguments)
+evaluatePrimitive :: Evaluator
+evaluatePrimitive _ ctx _ (AppPat p@(PrimitivePat (NullaryPrimitive nullary) _ _) []) =
+  nullary p ctx
+evaluatePrimitive _ ctx _ (AppPat p@(PrimitivePat (UnaryPrimitive unary) _ _) [x]) = do
+  unary p ctx x
+evaluatePrimitive _ ctx _ (AppPat p@(PrimitivePat (BinaryPrimitive binary) _ _) [x, y]) = do
+  binary p ctx x y
+evaluatePrimitive _ ctx _ (AppPat p@(PrimitivePat (TernaryPrimitive ternary) _ _) [x, y, z]) = do
+  ternary p ctx x y z
+evaluatePrimitive _ ctx _ (AppPat p@(PrimitivePat (QuaternaryPrimitive quaternary) _ _) [x, y, z, w]) = do
+  quaternary p ctx x y z w
+evaluatePrimitive _ ctx _ (AppPat p@(PrimitivePat (VariadicPrimitive variadic) _ _) args) = do
+  variadic p ctx args
+-- Should be caught during validation
+evaluatePrimitive root ctx _ (AppPat (PrimitivePat _ _ _) _) =
+  pure (evalError ctx (format (GenericMalformed root)) (xobjInfo root))
+evaluatePrimitive root ctx _ _ = pure (evalError ctx (format (GenericMalformed root)) (xobjInfo root))
+
+-- | Evaluates any number of forms only for their side effects. (do forms)
+evaluateSideEffects :: ModalEvaluator
+evaluateSideEffects _ ctx mode resolver forms =
+  foldlM (evaluateEach mode resolver) (ctx, dynamicNil) forms
+
+-- | Evaluates a function application. (f argument)
+evaluateApp :: ModalEvaluator
+evaluateApp root ctx mode resolver (AppPat f' args) =
+  case f' of
+    l@(ListPat _) -> go l ResolveStatic
+    sym@(SymPat _ _) -> go sym mode
+    _ -> pure (evalError ctx (format (GenericMalformed root)) (xobjInfo root))
+  where
+    evalAndPushFrame c xobj fun = 
+      eval (pushFrame c root) 
+           (XObj (Lst (fun : args)) (xobjInfo xobj) (xobjTy xobj)) 
+           ResolveStatic 
+           resolver
+    go x mode' =
+      do (newCtx, f) <- eval ctx x mode' resolver
+         either 
+           (pure . const (newCtx, f)) 
+           (\fun -> do (newCtx', res) <- evalAndPushFrame newCtx x fun
+                       pure (popFrame newCtx', res))
+           f
+evaluateApp root ctx _ _ _ = 
+  pure (evalError ctx (format (GenericMalformed root)) (xobjInfo root))
+
+--------------------------------------------------------------------------------
+-- evaluation folds 
+--
+-- These functions should be used as arguments to fold* functions to evaluate
+-- each form in a list of forms and return a final result.
+
+-- | Evaluates each form in a list of forms, returning the value of the final
+-- form evaluated. Stops immediately on error.
+evaluateEach :: ResolveMode -> Resolver -> (Context, Either EvalError XObj) -> XObj -> IO (Context, Either EvalError XObj)
+evaluateEach mode resolver prev@(ctx, px) x =
+  either (pure . const prev) (const (eval ctx x mode resolver)) px
+
+-- | Evaluates each form in a list of forms and collects the results of each
+-- evaluation into a list. Stops immediately on error.
+evalAndCollect :: ResolveMode -> Resolver -> (Context, Either EvalError [XObj]) -> XObj -> IO (Context, Either EvalError [XObj])
+evalAndCollect mode resolver (ctx', acc) x =
+  case acc of
+    Left _ -> pure (ctx', acc)
+    Right l -> do
+      (newCtx, evald) <- eval ctx' x mode resolver
+      pure $ case evald of
+        Right res -> (newCtx, Right (l ++ [res]))
+        Left err -> (newCtx, Left err) ---
+
+-- | Evaluates each form in a list of forms and names and updates the
+-- corresponding binding in a context's internal environment with the result of
+-- the evaluation. Stops immediately on error.
+evalAndUpdateBindings :: ResolveMode -> Resolver -> (String, XObj) -> Either EvalError Context -> IO (Either EvalError Context)
+evalAndUpdateBindings _ _ _ e@(Left _) = pure e
+evalAndUpdateBindings mode resolver (name, xobj) (Right ctx) = 
+  do let origin = (contextInternalEnv ctx)
+         recFix = (E.recursive origin (Just "let-rec-env") 0)
+         Right envWithSelf = if isFn xobj 
+                               then E.insertX recFix (SymPath [] name) xobj 
+                               else Right recFix
+         nctx = replaceInternalEnv ctx envWithSelf
+         binderr = error "Failed to eval let binding!!"
+     (newCtx, res) <- eval nctx xobj mode resolver
+     pure $
+       either 
+         Left
+         (Right . fromRight binderr . bindLetDeclaration (newCtx {contextInternalEnv = origin}) name) 
+         res
+
+--------------------------------------------------------------------------------
 
 macroExpand :: Context -> XObj -> IO (Context, Either EvalError XObj)
 macroExpand ctx xobj =
