@@ -33,7 +33,7 @@
 -- If you need to debug resolvers, thier show instance prints a string depicting
 -- the order in which they were run, e.g.:
 --
---   TopLevelReolver -> "LocalDynamicResolver"
+--   TopLevelResolver -> "LocalDynamicResolver"
 module Resolver where
 
 import Obj
