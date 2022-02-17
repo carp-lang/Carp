@@ -74,6 +74,7 @@ instance Ord LookupPreference where
 data ResolveMode
   = ResolveStatic
   | ResolveDynamic
+  deriving(Show)
 
 -- | Specifies how a symbol should be resolved in a given context.
 data Resolver = Resolver {
