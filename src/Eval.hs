@@ -559,7 +559,7 @@ executeCommand ctx@(Context env _ _ _ _ _ _ _) xobj =
     -- when given a naked binding (no path) as an argument; (s-expr inc)
     -- NOTE! The "ResolveDynamic" override call to eval PreferDynamic (which is
     -- otherwise just evalDynamic) is somehow crucial. Without it, function
-    -- names in modules are fully expanded to thier full names, breaking defns.
+    -- names in modules are fully expanded to their full names, breaking defns.
     -- This is because of the calls to "isResolvableStaticXObj" in eval' on list
     -- patterns -- this alters the behavior of succssiveEval such that it drops
     -- certain results? I think? It's a hunch. This behavior is incredibly
