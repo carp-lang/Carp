@@ -288,7 +288,7 @@ setterGenerator = TG.mkTemplateGenerator tgen decl body deps
     body GeneratorArg {tenv, env, instanceT = (FuncTy [_, ty] _ _), value = (TC.StructField name _)} =
       multilineTemplate
         [ "$DECL {",
-          memberDeletion tenv env (name, ty),
+          memberDeletion tenv env (mangle name, ty),
           "    p." ++ (mangle name) ++ " = newValue;",
           "    return p;",
           "}\n"
@@ -319,7 +319,7 @@ mutatorGenerator = TG.mkTemplateGenerator tgen decl body deps
     body GeneratorArg {tenv, env, instanceT = (FuncTy [_, ty] _ _), value = (TC.StructField name _)} =
       multilineTemplate
         [ "$DECL {",
-          memberRefDeletion tenv env (name, ty),
+          memberRefDeletion tenv env (mangle name, ty),
           "    pRef->" ++ mangle name ++ " = newValue;",
           "}\n"
         ]

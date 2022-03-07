@@ -35,6 +35,10 @@
                 &(fmt "%d %% %.1f %s" 10 12.0 "yay")
                 "fmt macro works")
   (assert-equal test
+                "hi % 12.0"
+                &(fmt "hi %% %.1f" 12.0)
+                "fmt macro works with leading % (regression test)")
+  (assert-equal test
                 "1 [2 3] h"
                 &(let [x 1
                        y [2 3]

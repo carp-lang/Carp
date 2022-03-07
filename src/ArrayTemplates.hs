@@ -282,8 +282,7 @@ templateUnsafeRaw :: (String, Binder)
 templateUnsafeRaw =
   defineTemplate
     (SymPath ["Array"] "unsafe-raw")
-    -- TODO: Fix me! Order of members of Ref is incorrect.
-    (FuncTy [RefTy (VarTy "q") (StructTy (ConcreteNameTy (SymPath [] "Array")) [VarTy "t"])] (PointerTy (VarTy "t")) StaticLifetimeTy)
+    (FuncTy [RefTy (StructTy (ConcreteNameTy (SymPath [] "Array")) [VarTy "t"]) (VarTy "q")] (PointerTy (VarTy "t")) StaticLifetimeTy)
     "returns an array `a` as a raw pointer—useful for interacting with C."
     (toTemplate "$t* $NAME (Array* a)")
     (toTemplate "$DECL { return a->data; }")

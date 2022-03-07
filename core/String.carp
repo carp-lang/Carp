@@ -515,6 +515,11 @@
       (if (String.empty? s)
         '()
         (cons (String.head s) (String.to-list (String.tail s)))))
+
+    (doc to-array 
+      "Converts a string to an array of strings of each of its characters.")
+    (defndynamic to-array [s]
+      (cdr (String.split-on "" s)))
   )
 )
 
