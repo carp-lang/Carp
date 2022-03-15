@@ -27,6 +27,7 @@ import Obj
 import qualified Set
 import SymPath
 import Util
+import qualified Meta
 
 --------------------------------------------------------------------------------
 -- Errors
@@ -353,7 +354,7 @@ qualifySym typeEnv globalEnv localEnv xobj@(XObj (Sym path@(SymPath _ name) _) i
           )
       )
         >>= \(origin, (e, binder)) ->
-          resolve (E.prj origin) (E.prj e) (binderXObj binder)
+          resolve (E.prj origin) (E.prj e) binder
             >>= pure . Qualified
     )
       <> ((resolveMulti path (E.lookupInUsed localEnv globalEnv path)) >>= pure . Qualified)
@@ -362,8 +363,8 @@ qualifySym typeEnv globalEnv localEnv xobj@(XObj (Sym path@(SymPath _ name) _) i
       <> pure (Qualified xobj)
   )
   where
-    resolve :: Env -> Env -> XObj -> Either QualificationError XObj
-    resolve _ _ (XObj (Lst (XObj (Interface _ _) _ _ : _)) _ _) =
+    resolve :: Env -> Env -> Binder -> Either QualificationError XObj
+    resolve _ _ (Binder _ (XObj (Lst (XObj (Interface _ _) _ _ : _)) _ _)) =
       -- Before we return an interface, double check that it isn't shadowed by a local let-binding.
       case (E.searchValue localEnv path) of
         Right (e, Binder _ _) ->
@@ -371,25 +372,29 @@ qualifySym typeEnv globalEnv localEnv xobj@(XObj (Sym path@(SymPath _ name) _) i
             InternalEnv -> pure (XObj (Sym (getPath xobj) (LookupLocal (captureOrNot e localEnv))) i t)
             _ -> pure (XObj (InterfaceSym name) i t)
         _ -> pure (XObj (InterfaceSym name) i t)
-    resolve _ _ x@(XObj (Lst (XObj (External (Just overrideName)) _ _ : _)) _ _) =
+    resolve _ _ (Binder _ x@(XObj (Lst (XObj (External (Just overrideName)) _ _ : _)) _ _)) =
       pure (XObj (Sym (getPath x) (LookupGlobalOverride overrideName)) i t)
-    resolve _ _ (XObj (Mod modenv _) _ _) =
+    resolve _ _ (Binder _ (XObj (Mod modenv _) _ _)) =
       nakedInit modenv
-    resolve origin found xobj' =
-      if (isTypeDef xobj')
-        then
-          ( (replaceLeft (FailedToFindSymbol xobj') (fmap (globalEnv,) (E.searchValue globalEnv path)))
-              >>= \(origin', (e', binder)) -> resolve (E.prj origin') (E.prj e') (binderXObj binder)
-          )
-        else case envMode (E.prj found) of
-          RecursionEnv -> pure (XObj (Sym (getPath xobj') LookupRecursive) i t)
-          InternalEnv -> pure (XObj (Sym (getPath xobj') (LookupLocal (captureOrNot found origin))) i t)
-          ExternalEnv -> pure (XObj (Sym (getPath xobj') (LookupGlobal (if isExternalFunction xobj' then ExternalCode else CarpLand) (definitionMode xobj'))) i t)
+    resolve origin found (Binder meta xobj') =
+      let cname = (Meta.getString (Meta.getCompilerKey Meta.CNAME) meta)
+          modality = if (null cname)
+                       then (LookupGlobal (if isExternalFunction xobj' then ExternalCode else CarpLand) (definitionMode xobj'))
+                       else (LookupGlobalOverride cname)
+       in if (isTypeDef xobj')
+          then
+            ( (replaceLeft (FailedToFindSymbol xobj') (fmap (globalEnv,) (E.searchValue globalEnv path)))
+                >>= \(origin', (e', binder)) -> resolve (E.prj origin') (E.prj e') binder
+            )
+          else case envMode (E.prj found) of
+            RecursionEnv -> pure (XObj (Sym (getPath xobj') LookupRecursive) i t)
+            InternalEnv -> pure (XObj (Sym (getPath xobj') (LookupLocal (captureOrNot found origin))) i t)
+            ExternalEnv -> pure (XObj (Sym (getPath xobj') modality) i t)
     resolveMulti :: (Show e, E.Environment e) => SymPath -> [(e, Binder)] -> Either QualificationError XObj
     resolveMulti _ [] =
       Left (FailedToFindSymbol xobj)
     resolveMulti _ [(e, b)] =
-      resolve (E.prj e) (E.prj e) (binderXObj b)
+      resolve (E.prj e) (E.prj e) b
     resolveMulti spath xs =
       let localOnly = remove (E.envIsExternal . fst) xs
           paths = map (getModuleSym . (second binderXObj)) xs

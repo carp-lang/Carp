@@ -306,8 +306,10 @@ toC toCMode (Binder meta root) = emitterSrc (execState (visit startingIndent roo
               do
                 appendToSrc (addIndent indent ++ "{\n")
                 let innerIndent = indent + indentAmount
+                    cname = (Meta.getString (Meta.getCompilerKey Meta.CNAME) meta)
+                    fullname = if (null cname) then pathToC path else cname
                 ret <- visit innerIndent expr
-                when (ret /= "") $ appendToSrc (addIndent innerIndent ++ pathToC path ++ " = " ++ ret ++ ";\n")
+                when (ret /= "") $ appendToSrc (addIndent innerIndent ++ fullname ++ " = " ++ ret ++ ";\n")
                 delete innerIndent info
                 appendToSrc (addIndent indent ++ "}\n")
                 pure ""
@@ -782,16 +784,18 @@ delete indent i = mapM_ deleterToC (infoDelete i)
 
 defnToDeclaration :: MetaData -> SymPath -> [XObj] -> Ty -> String
 defnToDeclaration meta path@(SymPath _ name) argList retTy =
-  let (XObj (Lst annotations) _ _) = fromMaybe emptyList (Meta.get "annotations" meta)
+  let override = Meta.getString (Meta.getCompilerKey Meta.CNAME) meta
+      (XObj (Lst annotations) _ _) = fromMaybe emptyList (Meta.get "annotations" meta)
       annotationsStr = joinWith " " (map strToC annotations)
       sep = if not (null annotationsStr) then " " else ""
+      fullname = if (null override) then (pathToC path) else override
    in annotationsStr ++ sep
         ++ if name == "main"
           then "int main(int argc, char** argv)"
           else
             let retTyAsC = tyToCLambdaFix retTy
                 paramsAsC = paramListToC argList
-             in (retTyAsC ++ " " ++ pathToC path ++ "(" ++ paramsAsC ++ ")")
+             in (retTyAsC ++ " " ++ fullname ++ "(" ++ paramsAsC ++ ")")
   where
     strToC (XObj (Str s) _ _) = s
     strToC xobj = pretty xobj
@@ -895,9 +899,11 @@ toDeclaration (Binder meta xobj@(XObj (Lst xobjs) _ ty)) =
        in defnToDeclaration meta path argList retTy ++ ";\n"
     [XObj Def _ _, XObj (Sym path _) _ _, _] ->
       let Just t = ty
+          cname = (Meta.getString (Meta.getCompilerKey Meta.CNAME) meta)
+          fullname = if (null cname) then pathToC path else cname
        in if (isUnit t)
             then ""
-            else tyToCLambdaFix t ++ " " ++ pathToC path ++ ";\n"
+            else tyToCLambdaFix t ++ " " ++ fullname ++ ";\n"
     XObj (Deftype t) _ _ : XObj (Sym path _) _ _ : rest ->
       defStructToDeclaration t path rest
     XObj (DefSumtype t) _ _ : XObj (Sym _ _) _ _ : rest ->
