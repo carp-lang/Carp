@@ -21,7 +21,7 @@ jobs:
            artefact-name: "x86_64-macos"
 
          - os: Windows
-           runner: windows-latest
+           runner: windows-2022
            artefact-name: "x86_64-windows"
 
     steps:
