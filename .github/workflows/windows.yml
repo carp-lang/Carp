@@ -27,25 +27,28 @@ jobs:
       - uses: actions/cache@v1
         name: Cache stack dependencies
         with:
-          path: C:\\Users\\runneradmin\\AppData\\Local\\Programs\\stack
+          path: C:\Users\runneradmin\AppData\Local\Programs\stack
           key: ${{ runner.os }}-stack-deps-${{ github.sha }}
           restore-keys: ${{ runner.os }}-stack-deps
 
       - uses: actions/cache@v1
         name: Cache stack build
         with:
-          path: C:\\Users\\runneradmin\\AppData\\Roaming\\stack\
+          path: C:\Users\runneradmin\AppData\Roaming\stack
           key: ${{ runner.os }}-stack-build-${{ github.sha }}
           restore-keys: ${{ runner.os }}-stack-build
-
-      - name: Install Clang
-        run: scoop install llvm --global
 
       - name: Build
         run: stack build
 
       - name: Run Compiler Tests
         run: stack test
+
+      # Disabling sanitize-addresses because it fails with following error:
+      # https://github.com/actions/virtual-environments/issues/4978
+      - name: Disable Debug.sanitize-addresses
+        shell: bash
+        run: find ./test ./examples -type f -name '*.carp' | xargs sed 's/^\((Debug.sanitize-addresses)\)/; \1/g' -i
 
       - name: Run Carp Tests
         shell: bash
