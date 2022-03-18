@@ -18,7 +18,6 @@ This is an extension of what is covered in the [Language Guide](./LanguageGuide.
 - [Callbacks](#callbacks)
 - [Headerparse](#headerparse)
 
-
 ## How Carp generates identifiers
 
 When creating a function or def it might be useful to know what identifier gets
@@ -56,8 +55,9 @@ generated on the C side. Here are some examples:
 ; => print_MINUS_first_MINUS_and_MINUS_add__String_Long
 ```
 
-Looking at the examples should be clear enough but let's break it down:
-Carp will replace illegal characters in C with a string representation of them
+Looking at the examples should help illustrate how Carp transforms identifiers
+before producing C code, but let's break it down: Carp will replace illegal
+characters in C with a string representation of them
 (`- => _MINUS_`, `? => _QMARK_`, etc...)
 If in modules it will prefix the identifier with the modules name.
 When the arguments to a function are generic it will suffix the types to the
@@ -66,15 +66,53 @@ a function is potentially generic but you don't want it to be you can add a
 non-generic signature to it to make Carp generate your function like in our
 `true?` example.
 
-When creating bindings to a library it would be hard to coerce this logic into
-creating the exact identifiers the library uses, this is why `register` and
-`register-type` accepts an optional argument to specify what identifiers to use:
+This process is called *mangling* and is necessary to ensure that identifiers
+that are valid in Carp but invalid in C don't produce invalid C code.
+
+### Overriding Carp's default C identifier names
+
+When creating bindings to an existing C library in Carp, it's inconvenient to
+have to replicate C identifiers exactly as they're declared in C. For example,
+due to mangling, you couldn't wrap your Carp bindings in a module, since the
+resulting identifiers would be prefixed, and probably incorrect. It would be
+inconvenient and tedious to have to replicate existing C identifiers exactly
+whenever you had to create bindings to an existing library , so, to help with
+this, `register` and `register-type` accepts an optional argument to specify
+what identifiers to use:
 
 ```clojure
 (defmodule CURL
   (register-type HttpPost "curl_httppost")
   (register form-free (Fn [(Ref HttpPost)] ()) "curl_formfree"))
 ```
+
+This enables you to define whatever structure you want in Carp code (for
+example, here we wrap cURL bindings in a CURL module) while ensuring the
+emitted identifiers are correct and map to the identifiers used by the existing
+C library you're calling. For example, the `form-free` identifier in Carp would
+normally be subject to mangling and emitted as `form_MINUS_free`, but the
+override argument ensures this identifier is emitted as `curl_formfree`
+instead.
+
+Likewise, you can override the C identifiers Carp generates for code
+exclusively defined in Carp. For instance, you may want to migrate
+safety-critical code in an existing C program into Carp, then call the
+resulting safe C code in your original C program. This can become tedious if
+your Carp code utilizes a lot of nested modules, custom types, or special
+characters in identifiers.
+
+You can use the `c-name` meta field to explicitly set the C identifier Carp
+generates for a given definition. This can help make your compiled C more
+readable and easier to call from other languages. For example, given the
+definition and c-name call:
+
+```clojure
+(defn foo-bar [] 2)
+(c-name foo-bar "foo_bar")
+```
+
+Carp will generate a corresponding identifier `foo_bar` in its C output,
+instead of the default `foo_MINUS_bar`.
 
 ## Managed types
 
