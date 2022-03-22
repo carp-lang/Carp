@@ -1174,6 +1174,9 @@ wrapString s = XObj (Str s) Nothing Nothing
 wrapList :: [XObj] -> XObj
 wrapList xs = XObj (Lst xs) Nothing Nothing
 
+wrapArray :: [XObj] -> XObj
+wrapArray xs = XObj (Arr xs) Nothing Nothing
+
 --------------------------------------------------------------------------------
 -- Project + XObj manipulation
 --
@@ -1260,7 +1263,7 @@ projectSetLibFlags _ _ = Left "can't use non-string as library flag"
 projectGetPkgConfigFlags :: ProjectGetter
 projectGetPkgConfigFlags proj =
   let fs = projectPkgConfigFlags proj
-   in wrapList (map wrapString fs)
+   in wrapArray (map wrapString fs)
 
 -- | Set the project's pkg-config flags
 --
@@ -1473,7 +1476,7 @@ projectSetCModules _ _ = Left "can't use non-string as c module"
 
 -- | Get the load stack of a project.
 projectGetLoadStack :: ProjectGetter
-projectGetLoadStack proj = wrapList (map wrapString (projectLoadStack proj))
+projectGetLoadStack proj = wrapArray (map wrapString (projectLoadStack proj))
 
 -- | Mapping of compiler defined project keys to getter and setter functions.
 -- This helps ensure we automatically enable access of project configuration
