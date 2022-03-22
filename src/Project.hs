@@ -15,40 +15,50 @@ instance Show Target where
   show (Target x) = x
 
 -- | Project (represents a lot of useful information for working at the REPL and building executables)
-data Project = Project
-  { projectTitle :: String,
-    projectIncludes :: [Includer],
-    projectPreproc :: [String],
-    projectCFlags :: [String],
-    projectLibFlags :: [String],
-    projectPkgConfigFlags :: [String],
-    projectFiles :: [(FilePath, ReloadMode)],
-    projectAlreadyLoaded :: [FilePath],
-    projectEchoC :: Bool,
-    projectLibDir :: FilePath,
-    projectCarpDir :: FilePath,
-    projectOutDir :: FilePath,
-    projectDocsDir :: FilePath,
-    projectDocsLogo :: FilePath,
-    projectDocsPrelude :: String,
-    projectDocsURL :: String,
-    projectDocsGenerateIndex :: Bool,
-    projectDocsStyling :: String,
-    projectPrompt :: String,
-    projectCarpSearchPaths :: [FilePath],
-    projectPrintTypedAST :: Bool,
-    projectCompiler :: String,
-    projectTarget :: Target,
-    projectCore :: Bool,
-    projectEchoCompilationCommand :: Bool,
-    projectCanExecute :: Bool,
-    projectFilePathPrintLength :: FilePathPrintLength,
-    projectGenerateOnly :: Bool,
-    projectBalanceHints :: Bool,
-    projectForceReload :: Bool, -- Setting this to true will make the `load-once` command work just like `load`.
-    projectCModules :: [FilePath],
-    projectLoadStack :: [FilePath]
-  }
+--
+-- N.B. If you add a new field and want it to be accessible in Carp, via the
+-- get-config and config commands, add it to the projectKeyMap in Obj.hs with an
+-- appropriate getter/setter. The getter you define should usually wrap the raw
+-- value in an XObj. The setter typically validates an input XObj then updates
+-- the project value.
+--
+-- Otherwise, if the field is truly private and only for internal use in the
+-- compiler, add the field to the Project record but omit it from the keyMap.
+data Project
+  = Project
+      { projectTitle :: String,
+        projectIncludes :: [Includer],
+        projectPreproc :: [String],
+        projectCFlags :: [String],
+        projectLibFlags :: [String],
+        projectPkgConfigFlags :: [String],
+        projectFiles :: [(FilePath, ReloadMode)], -- compiler internal only
+        projectAlreadyLoaded :: [FilePath], -- compiler internal only
+        projectEchoC :: Bool,
+        projectLibDir :: FilePath, -- compiler internal only
+        projectCarpDir :: FilePath, -- compiler internal only; currently set via $CARP_DIR
+        projectOutDir :: FilePath,
+        projectDocsDir :: FilePath,
+        projectDocsLogo :: FilePath,
+        projectDocsPrelude :: String,
+        projectDocsURL :: String,
+        projectDocsGenerateIndex :: Bool,
+        projectDocsStyling :: String,
+        projectPrompt :: String,
+        projectCarpSearchPaths :: [FilePath],
+        projectPrintTypedAST :: Bool,
+        projectCompiler :: String,
+        projectTarget :: Target,
+        projectCore :: Bool,
+        projectEchoCompilationCommand :: Bool,
+        projectCanExecute :: Bool, -- compiler internal only
+        projectFilePathPrintLength :: FilePathPrintLength,
+        projectGenerateOnly :: Bool,
+        projectBalanceHints :: Bool,
+        projectForceReload :: Bool, -- Setting this to true will make the `load-once` command work just like `load`.
+        projectCModules :: [FilePath],
+        projectLoadStack :: [FilePath]
+      }
 
 projectFlags :: Project -> String
 projectFlags proj = joinWithSpace (projectCFlags proj ++ projectLibFlags proj)
