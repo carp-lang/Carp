@@ -111,7 +111,7 @@ commandProjectConfig :: BinaryCommandCallback
 commandProjectConfig ctx xobj@(XObj (Str key) _ _) value = do
   let errLabel = "CONFIG ERROR"
       badKey = "Project.config can't understand the key '" ++ key ++ "' at " ++ prettyInfoFromXObj xobj ++ "."
-      readOnly = ("the configuration field " ++ key ++ "is read-only")
+      readOnly = ("the configuration field " ++ key ++ " is read-only")
    in case Map.lookup key projectKeyMap of
         Nothing -> presentErrorWithLabel errLabel badKey (ctx, dynamicNil)
         Just (_, Nothing) -> presentErrorWithLabel errLabel readOnly (ctx, dynamicNil)
@@ -127,7 +127,7 @@ commandProjectGetConfig :: UnaryCommandCallback
 commandProjectGetConfig ctx xobj@(XObj (Str key) _ _) =
   case Map.lookup key projectKeyMap of
     Nothing -> pure $ evalError ctx (labelStr "CONFIG ERROR" ("Project.get-config can't understand the key '" ++ key)) (xobjInfo xobj)
-    Just (Nothing, _) -> presentErrorWithLabel "CONFIG ERROR" ("the configuration field" ++ key ++ "is private and not readable") (ctx, dynamicNil)
+    Just (Nothing, _) -> presentErrorWithLabel "CONFIG ERROR" ("the configuration field" ++ key ++ " is private and not readable") (ctx, dynamicNil)
     Just (Just getter, _) -> pure (ctx, Right (getter (contextProj ctx)))
 commandProjectGetConfig ctx faultyKey =
   presentError ("First argument to 'Project.config' must be a string: " ++ pretty faultyKey) (ctx, dynamicNil)
