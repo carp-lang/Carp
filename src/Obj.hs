@@ -1488,8 +1488,8 @@ projectKeyMap =
     [ ("title", (Just projectGetTitle, Just projectSetTitle)),
       ("includes", (Just projectGetIncludes, Nothing)), -- has special setter variants defined in Commands.hs
       ("preproc", (Just projectGetPreproc, Nothing)), -- has special setter variants defined in Commands.hs
-      ("cflags", (Just projectGetCFlags, Just projectSetCFlags)),
-      ("libflags", (Just projectGetLibFlags, Just projectSetLibFlags)),
+      ("cflag", (Just projectGetCFlags, Just projectSetCFlags)),
+      ("libflag", (Just projectGetLibFlags, Just projectSetLibFlags)),
       ("pkgconfigflag", (Just projectGetPkgConfigFlags, Just projectSetPkgConfigFlags)),
       ("echo-c", (Just projectGetEchoC, Just projectSetEchoC)),
       ("output-directory", (Just projectGetOutDir, Just projectSetOutDir)),
