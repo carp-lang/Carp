@@ -104,6 +104,16 @@
 (defmacro private [name]
   (eval (list 'meta-set! name "private" true)))
 
+(doc c-name
+  "Override the identifiers Carp generates for a given symbol in C output."
+  ""
+  "```"
+  "(defn foo-bar [] 1)"
+  "(c-name foo-bar \"foo_bar\")"
+  "```")
+(defmacro c-name [sym cname]
+  (eval (list 'meta-set! sym "c-name" cname)))
+
 (hidden      and-)
 (defndynamic and- [xs]
 ; (defndynamic and- [xs]   ; shorter but currently not entirely stable
