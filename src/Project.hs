@@ -32,11 +32,11 @@ data Project
         projectCFlags :: [String],
         projectLibFlags :: [String],
         projectPkgConfigFlags :: [String],
-        projectFiles :: [(FilePath, ReloadMode)], -- compiler internal only
-        projectAlreadyLoaded :: [FilePath], -- compiler internal only
+        projectFiles :: [(FilePath, ReloadMode)],
+        projectAlreadyLoaded :: [FilePath],
         projectEchoC :: Bool,
-        projectLibDir :: FilePath, -- compiler internal only
-        projectCarpDir :: FilePath, -- compiler internal only; currently set via $CARP_DIR
+        projectLibDir :: FilePath,
+        projectCarpDir :: FilePath,
         projectOutDir :: FilePath,
         projectDocsDir :: FilePath,
         projectDocsLogo :: FilePath,
@@ -51,7 +51,7 @@ data Project
         projectTarget :: Target,
         projectCore :: Bool,
         projectEchoCompilationCommand :: Bool,
-        projectCanExecute :: Bool, -- compiler internal only
+        projectCanExecute :: Bool,
         projectFilePathPrintLength :: FilePathPrintLength,
         projectGenerateOnly :: Bool,
         projectBalanceHints :: Bool,

@@ -20,6 +20,7 @@ import Obj
 import Parsing (parse)
 import Path
 import Project
+import ProjectConfig
 import Reify
 import RenderDocs
 import System.Directory (makeAbsolute)
