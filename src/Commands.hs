@@ -20,6 +20,7 @@ import Obj
 import Parsing (parse)
 import Path
 import Project
+import ProjectConfig
 import Reify
 import RenderDocs
 import System.Directory (makeAbsolute)
@@ -109,121 +110,26 @@ presentError msg ret =
 -- | Command for changing various project settings.
 commandProjectConfig :: BinaryCommandCallback
 commandProjectConfig ctx xobj@(XObj (Str key) _ _) value = do
-  let proj = contextProj ctx
-      newProj = case key of
-        "cflag" -> do
-          cflag <- unwrapStringXObj value
-          pure (proj {projectCFlags = addIfNotPresent cflag (projectCFlags proj)})
-        "libflag" -> do
-          libflag <- unwrapStringXObj value
-          pure (proj {projectLibFlags = addIfNotPresent libflag (projectLibFlags proj)})
-        "pkgconfigflag" -> do
-          pkgconfigflag <- unwrapStringXObj value
-          pure (proj {projectPkgConfigFlags = addIfNotPresent pkgconfigflag (projectPkgConfigFlags proj)})
-        "cmod" -> do
-          cmod <- unwrapStringXObj value
-          pure (proj {projectCModules = addIfNotPresent cmod (projectCModules proj)})
-        "prompt" -> do
-          prompt <- unwrapStringXObj value
-          pure (proj {projectPrompt = prompt})
-        "search-path" -> do
-          searchPath <- unwrapStringXObj value
-          pure (proj {projectCarpSearchPaths = addIfNotPresent searchPath (projectCarpSearchPaths proj)})
-        "print-ast" -> do
-          printAST <- unwrapBoolXObj value
-          pure (proj {projectPrintTypedAST = printAST})
-        "echo-c" -> do
-          echoC <- unwrapBoolXObj value
-          pure (proj {projectEchoC = echoC})
-        "echo-compiler-cmd" -> do
-          echoCompilerCmd <- unwrapBoolXObj value
-          pure (proj {projectEchoCompilationCommand = echoCompilerCmd})
-        "compiler" -> do
-          compiler <- unwrapStringXObj value
-          pure (proj {projectCompiler = compiler})
-        "target" -> do
-          target <- unwrapStringXObj value
-          pure (proj {projectTarget = Target target})
-        "title" -> do
-          title <- unwrapStringXObj value
-          pure (proj {projectTitle = title})
-        "output-directory" -> do
-          outDir <- unwrapStringXObj value
-          pure (proj {projectOutDir = outDir})
-        "docs-directory" -> do
-          docsDir <- unwrapStringXObj value
-          pure (proj {projectDocsDir = docsDir})
-        "docs-generate-index" ->
-          do
-            docsGenerateIndex <- unwrapBoolXObj value
-            pure (proj {projectDocsGenerateIndex = docsGenerateIndex})
-        "docs-logo" -> do
-          logo <- unwrapStringXObj value
-          pure (proj {projectDocsLogo = logo})
-        "docs-prelude" -> do
-          prelude <- unwrapStringXObj value
-          pure (proj {projectDocsPrelude = prelude})
-        "docs-url" -> do
-          url <- unwrapStringXObj value
-          pure (proj {projectDocsURL = url})
-        "docs-styling" -> do
-          url <- unwrapStringXObj value
-          pure (proj {projectDocsStyling = url})
-        "file-path-print-length" -> do
-          len <- unwrapStringXObj value
-          case len of
-            "short" -> pure (proj {projectFilePathPrintLength = ShortPath})
-            "full" -> pure (proj {projectFilePathPrintLength = ShortPath})
-            _ -> Left ("Project.config can't understand the value '" ++ len ++ "' for key 'file-path-print-length.")
-        "generate-only" -> do
-          generateOnly <- unwrapBoolXObj value
-          pure (proj {projectGenerateOnly = generateOnly})
-        "paren-balance-hints" ->
-          do
-            balanceHints <- unwrapBoolXObj value
-            pure (proj {projectBalanceHints = balanceHints})
-        "force-reload" -> do
-          forceReload <- unwrapBoolXObj value
-          pure (proj {projectForceReload = forceReload})
-        _ -> Left ("Project.config can't understand the key '" ++ key ++ "' at " ++ prettyInfoFromXObj xobj ++ ".")
-  case newProj of
-    Left errorMessage -> presentErrorWithLabel "CONFIG ERROR" errorMessage (ctx, dynamicNil)
-    Right ok -> pure (ctx {contextProj = ok}, dynamicNil)
+  let errLabel = "CONFIG ERROR"
+      badKey = "Project.config can't understand the key '" ++ key ++ "' at " ++ prettyInfoFromXObj xobj ++ "."
+      readOnly = ("the configuration field " ++ key ++ " is read-only")
+   in case Map.lookup key projectKeyMap of
+        Nothing -> presentErrorWithLabel errLabel badKey (ctx, dynamicNil)
+        Just (_, Nothing) -> presentErrorWithLabel errLabel readOnly (ctx, dynamicNil)
+        Just (_, Just setter) ->
+          case setter (contextProj ctx) value of
+            Left err -> presentErrorWithLabel errLabel err (ctx, dynamicNil)
+            Right ok -> pure (ctx {contextProj = ok}, dynamicNil)
 commandProjectConfig ctx faultyKey _ =
   presentError ("First argument to 'Project.config' must be a string: " ++ pretty faultyKey) (ctx, dynamicNil)
 
 -- | Command for changing various project settings.
 commandProjectGetConfig :: UnaryCommandCallback
 commandProjectGetConfig ctx xobj@(XObj (Str key) _ _) =
-  let proj = contextProj ctx
-      xstr s = XObj s (Just dummyInfo) (Just StringTy)
-      getVal _ = case key of
-        "cflag" -> Right $ Str $ show $ projectCFlags proj
-        "libflag" -> Right $ Str $ show $ projectLibFlags proj
-        "pkgconfigflag" -> Right $ Arr $ xstr . Str <$> projectPkgConfigFlags proj
-        "load-stack" -> Right $ Arr $ xstr . Str <$> projectLoadStack proj
-        "prompt" -> Right $ Str $ projectPrompt proj
-        "search-path" -> Right $ Str $ show $ projectCarpSearchPaths proj
-        "print-ast" -> Right $ Bol $ projectPrintTypedAST proj
-        "echo-c" -> Right $ Bol $ projectEchoC proj
-        "echo-compiler-cmd" -> Right $ Bol $ projectEchoCompilationCommand proj
-        "compiler" -> Right $ Str $ projectCompiler proj
-        "target" -> Right $ Str $ show $ projectTarget proj
-        "title" -> Right $ Str $ projectTitle proj
-        "output-directory" -> Right $ Str $ projectOutDir proj
-        "docs-directory" -> Right $ Str $ projectDocsDir proj
-        "docs-logo" -> Right $ Str $ projectDocsLogo proj
-        "docs-prelude" -> Right $ Str $ projectDocsPrelude proj
-        "docs-url" -> Right $ Str $ projectDocsURL proj
-        "docs-generate-index" -> Right $ Bol $ projectDocsGenerateIndex proj
-        "docs-styling" -> Right $ Str $ projectDocsStyling proj
-        "file-path-print-length" -> Right $ Str $ show (projectFilePathPrintLength proj)
-        "generate-only" -> Right $ Bol $ projectGenerateOnly proj
-        "paren-balance-hints" -> Right $ Bol $ projectBalanceHints proj
-        _ -> Left key
-   in pure $ case getVal ctx of
-        Right val -> (ctx, Right $ xstr val)
-        Left k -> evalError ctx (labelStr "CONFIG ERROR" ("Project.get-config can't understand the key '" ++ k)) (xobjInfo xobj)
+  case Map.lookup key projectKeyMap of
+    Nothing -> pure $ evalError ctx (labelStr "CONFIG ERROR" ("Project.get-config can't understand the key '" ++ key)) (xobjInfo xobj)
+    Just (Nothing, _) -> presentErrorWithLabel "CONFIG ERROR" ("the configuration field" ++ key ++ " is private and not readable") (ctx, dynamicNil)
+    Just (Just getter, _) -> pure (ctx, Right (getter (contextProj ctx)))
 commandProjectGetConfig ctx faultyKey =
   presentError ("First argument to 'Project.config' must be a string: " ++ pretty faultyKey) (ctx, dynamicNil)
 

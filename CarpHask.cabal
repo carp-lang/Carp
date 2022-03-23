@@ -47,6 +47,7 @@ library
                        Primitives,
                        PrimitiveError
                        Project,
+                       ProjectConfig,
                        Qualify,
                        Reify,
                        RenderDocs,
