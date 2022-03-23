@@ -332,11 +332,12 @@ machineReadableInfoFromXObj fppl xobj =
     Nothing -> ""
 
 -- | Obj with eXtra information.
-data XObj = XObj
-  { xobjObj :: Obj,
-    xobjInfo :: Maybe Info,
-    xobjTy :: Maybe Ty
-  }
+data XObj
+  = XObj
+      { xobjObj :: Obj,
+        xobjInfo :: Maybe Info,
+        xobjTy :: Maybe Ty
+      }
   deriving (Show, Eq, Ord)
 
 setObj :: XObj -> Obj -> XObj
@@ -719,14 +720,15 @@ data EnvMode = ExternalEnv | InternalEnv | RecursionEnv deriving (Show, Eq, Gene
 instance Hashable EnvMode
 
 -- | Environment
-data Env = Env
-  { envBindings :: Map.Map String Binder,
-    envParent :: Maybe Env,
-    envModuleName :: Maybe String,
-    envUseModules :: Set.Set SymPath,
-    envMode :: EnvMode,
-    envFunctionNestingLevel :: Int -- Normal defn:s have 0, lambdas get +1 for each level of nesting
-  }
+data Env
+  = Env
+      { envBindings :: Map.Map String Binder,
+        envParent :: Maybe Env,
+        envModuleName :: Maybe String,
+        envUseModules :: Set.Set SymPath,
+        envMode :: EnvMode,
+        envFunctionNestingLevel :: Int -- Normal defn:s have 0, lambdas get +1 for each level of nesting
+      }
   deriving (Show, Eq, Generic)
 
 instance Hashable Env
@@ -909,12 +911,13 @@ polymorphicSuffix signature actualType =
 type VisitedTypes = [Ty]
 
 -- | Templates are like macros, but defined inside the compiler and with access to the types they are instantiated with
-data Template = Template
-  { templateSignature :: Ty,
-    templateDeclaration :: Ty -> [Token], -- Will this parameterization ever be useful?
-    templateDefinition :: Ty -> [Token],
-    templateDependencies :: Ty -> [XObj]
-  }
+data Template
+  = Template
+      { templateSignature :: Ty,
+        templateDeclaration :: Ty -> [Token], -- Will this parameterization ever be useful?
+        templateDefinition :: Ty -> [Token],
+        templateDependencies :: Ty -> [XObj]
+      }
 
 instance Hashable Template where
   hashWithSalt s Template {..} = s `hashWithSalt` templateSignature
@@ -934,7 +937,7 @@ data Token
   = TokTy Ty TokTyMode -- Some kind of type, will be looked up if it's a type variable.
   | TokC String -- Plain C code.
   | TokDecl -- Will emit the declaration (i.e. "foo(int x)"), this is useful
-  --   for avoiding repetition in the definition part of the template.
+    --   for avoiding repetition in the definition part of the template.
   | TokName -- Will emit the name of the instantiated function/variable.
   deriving (Eq, Ord)
 
@@ -992,16 +995,17 @@ forceTy xobj = fromMaybe (error ("No type in " ++ show xobj)) (xobjTy xobj)
 data ExecutionMode = Repl | Build | BuildAndRun | Install String | Check deriving (Show, Eq)
 
 -- | Information needed by the REPL
-data Context = Context
-  { contextGlobalEnv :: Env,
-    contextInternalEnv :: Maybe Env,
-    contextTypeEnv :: TypeEnv,
-    contextPath :: [String],
-    contextProj :: Project,
-    contextLastInput :: String,
-    contextExecMode :: ExecutionMode,
-    contextHistory :: ![XObj]
-  }
+data Context
+  = Context
+      { contextGlobalEnv :: Env,
+        contextInternalEnv :: Maybe Env,
+        contextTypeEnv :: TypeEnv,
+        contextPath :: [String],
+        contextProj :: Project,
+        contextLastInput :: String,
+        contextExecMode :: ExecutionMode,
+        contextHistory :: ![XObj]
+      }
   deriving (Show, Generic)
 
 instance Hashable Context where
@@ -1163,3 +1167,12 @@ walk :: (XObj -> XObj) -> XObj -> XObj
 walk f (XObj (Arr xs) i t) = XObj (Arr (map (walk f) xs)) i t
 walk f (XObj (Lst xs) i t) = XObj (Lst (map (walk f) xs)) i t
 walk f x = f x
+
+wrapString :: String -> XObj
+wrapString s = XObj (Str s) Nothing Nothing
+
+wrapList :: [XObj] -> XObj
+wrapList xs = XObj (Lst xs) Nothing Nothing
+
+wrapArray :: [XObj] -> XObj
+wrapArray xs = XObj (Arr xs) Nothing Nothing
