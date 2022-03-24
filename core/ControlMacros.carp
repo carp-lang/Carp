@@ -46,6 +46,26 @@ Example:
 (defmacro -> [:rest forms]
   (thread-first-internal forms))
 
+(doc ?-> 
+  ("threads the value contained in a maybe through the following " false)
+  "forms iff, the Maybe is a Just."
+  ""
+  "Returns Nothing if the Maybe is Maybe.Nothing.")
+(defmacro ?-> [maybe :rest forms]
+  (list 'match maybe
+    (list 'Maybe.Just 'v) (list 'Maybe.Just (thread-first-internal (cons 'v forms)))
+    '_ (list 'Maybe.Nothing)))
+
+(doc /-> 
+  ("threads the value contained in a Result through the following" false) 
+  "forms iff, the Result is a Success"
+  ""
+  "Returns the erorr if the Result is Result.Error.")
+(defmacro /-> [result :rest forms]
+  (list 'match result
+    (list 'Result.Success 'v) (list 'Result.Success (thread-first-internal (cons 'v forms)))
+    'y 'y))
+
 (doc --> "threads the first form through the following ones, making it the last
 argument.
 
