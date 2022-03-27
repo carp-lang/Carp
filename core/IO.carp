@@ -92,7 +92,11 @@ module are wrappers around the C standard library.")
   (doc      get-line "gets a line from stdin.")
   (register get-line (Fn [] String))
   (doc      fgetc "gets a character from a file pointer (thin wrapper for the C standard library).")
-  (register fgetc (Fn [(Ptr FILE)] Char)) ; TODO: check EOF handling (see carp_io.h)!
+  (defn fgetc [file]
+    (let [char (IO.Raw.fgetc file)]
+      (if (or (IO.Raw.feof file) (IO.Raw.ferror file))
+          (Result.Error @"couldn't get char from file")
+          (Result.Success (Char.from-int char)))))
 
   (doc open-file "opens a file by name using a mode (e.g. [r]ead, [w]rite, [a]ppend),  [rb] read binary...). See fopen() in the C standard library for a detailed description of valid parameters.")
   (defn open-file [filename mode]
