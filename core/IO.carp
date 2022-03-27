@@ -77,6 +77,8 @@ module are wrappers around the C standard library.")
     (register SEEK-END Int "SEEK_END")
     (doc      ftell "gets the position indicator of a file (thin wrapper for the C standard library).")
     (register ftell (Fn [(Ptr FILE)] Int) "ftell")
+    (register feof (Fn [(Ptr FILE)] Bool) "feof")
+    (register ferror (Fn [(Ptr FILE)] Bool) "ferror")
   )
 
   (doc      println "prints a string ref to stdout, appends a newline.")
