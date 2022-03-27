@@ -94,9 +94,11 @@ module are wrappers around the C standard library.")
   (doc      fgetc "gets a character from a file pointer (thin wrapper for the C standard library).")
   (defn fgetc [file]
     (let [char (IO.Raw.fgetc file)]
-      (if (or (IO.Raw.feof file) (IO.Raw.ferror file))
-          (Result.Error @"couldn't get char from file")
-          (Result.Success (Char.from-int char)))))
+      (if (IO.Raw.feof file)
+          (Result.Error @"couldn't read char from file, EOF reached")
+          (if (IO.Raw.ferror file)
+              (Result.Error @"error while reading char from file")
+              (Result.Success (Char.from-int char))))))
 
   (doc open-file "opens a file by name using a mode (e.g. [r]ead, [w]rite, [a]ppend),  [rb] read binary...). See fopen() in the C standard library for a detailed description of valid parameters.")
   (defn open-file [filename mode]
