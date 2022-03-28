@@ -24,6 +24,11 @@ jobs:
       - name: Install Stack
         run: scoop install stack
 
+      - name: Install LLVM
+        run: |
+          scoop install llvm
+          echo "C:\Users\runneradmin\scoop\apps\llvm\current\bin" | Out-File -FilePath $env:GITHUB_PATH -Encoding utf8 -Append
+
       - uses: actions/cache@v1
         name: Cache stack dependencies
         with:
@@ -43,12 +48,6 @@ jobs:
 
       - name: Run Compiler Tests
         run: stack test
-
-      # Disabling sanitize-addresses because it fails with following error:
-      # https://github.com/actions/virtual-environments/issues/4978
-      - name: Disable Debug.sanitize-addresses
-        shell: bash
-        run: find ./test ./examples -type f -name '*.carp' | xargs sed 's/^\((Debug.sanitize-addresses)\)/; \1/g' -i
 
       - name: Run Carp Tests
         shell: bash
