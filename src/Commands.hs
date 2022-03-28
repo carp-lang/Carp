@@ -400,6 +400,8 @@ commandConsLast ctx x xs =
   pure $ case xs of
     XObj (Lst lst) i t ->
       (ctx, Right (XObj (Lst (lst ++ [x])) i t)) -- TODO: should they get their own i:s and t:s
+    XObj (Arr arr) i t ->
+      (ctx, Right (XObj (Arr (arr ++ [x])) i t))
     _ -> evalError ctx "Applying 'cons-last' to non-list or empty list." (xobjInfo xs)
 
 commandAppend :: BinaryCommandCallback
