@@ -18,6 +18,32 @@
       (f)
       (assert-equal state 0l (Debug.memory-balance) descr)))
 
+(deftype BlitEnum Copy Move)
+(defmodule BlitEnum
+  (defn blit [x] (the BlitEnum x))
+  (implements blit blit)
+
+  (defn prn [x]
+    (match x
+      (BlitEnum.Copy) @"copy semantics"
+      (BlitEnum.Move) @"move semantics"))
+  (implements prn prn)
+
+  (defn change [x]
+    (match x
+      (BlitEnum.Copy) (BlitEnum.Move)
+      (BlitEnum.Move) (BlitEnum.Copy)))
+)
+
+(defn blit-1 []
+  ;; blit types are not borrow checked and have copy semantics
+  (let-do [enum (BlitEnum.Copy)
+           enum-copy enum]
+    (IO.println &(prn enum))
+    (IO.println &(prn enum-copy))
+    (IO.println &(prn (change enum)))
+    (IO.println &(prn (change enum-copy)))))
+
 (defn scope-1 []
   (let [s @""]
     ()))
@@ -568,4 +594,5 @@
   (assert-no-leak test sumtype-12 "sumtype-12 does not leak")
   (assert-no-leak test box-1 "box-1 does not leak")
   (assert-no-leak test box-2 "box-2 does not leak")
+  (assert-no-leak test blit-1 "blit-1 does not leak")
   )
