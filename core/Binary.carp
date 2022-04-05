@@ -29,6 +29,11 @@
     significant byte occurs first in a given byte sequence.")
   (deftype ByteOrder LittleEndian BigEndian)
 
+(defmodule ByteOrder
+  (defn blit [x] (the ByteOrder x))
+  (implements blit blit)
+)
+
 (doc Binary "provides various helper functions to work with bits and bytes.")
 (defmodule Binary
   (register to-int16 (λ [Byte Byte] Uint16))
