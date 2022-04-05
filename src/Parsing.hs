@@ -627,17 +627,15 @@ balance text =
       parens <- Parsec.getState
       case parens of
         [] -> push c
-        '"' : xs -> case c of
-          '\\' -> do
-            _ <- Parsec.anyChar -- consume next
-            pure ()
-          '"' -> Parsec.putState xs -- close string
-          _ -> pure () -- inside string
         (x : xs) -> case (x, c) of
           ('(', ')') -> Parsec.putState xs
           ('[', ']') -> Parsec.putState xs
           ('{', '}') -> Parsec.putState xs
-          ('"', '"') -> Parsec.putState xs
+          ('"', '"') -> Parsec.putState xs -- close string
+          ('"', '\\') -> do
+            _ <- Parsec.anyChar -- consume next
+            pure ()
+          ('"', _) -> pure ()
           --('\\', _) -> Parsec.putState xs -- ignore char after '\'
           _ -> push c
     push :: Char -> Parsec.Parsec String String ()
