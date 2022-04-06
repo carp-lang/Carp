@@ -313,7 +313,7 @@ Example:
                (let [r (walk-replace-finder pairs x)]
                  (if (empty? r) x (cadr r))))
              form))
-  (doc sort "Sorts a list using the provided predicate
+  (doc sort "Sorts a list using the provided predicate. It is not a stable sort.
 Example:
 ```
 (sort '(1 3 4 2 5 4) <) ; => (1 2 3 4 4 5)
