@@ -7,6 +7,20 @@ typedef int16_t Int16;
 typedef int32_t Int32;
 typedef int64_t Int64;
 
+uint8_t CARP_UINT8_MAX = UINT8_MAX;
+uint16_t CARP_UINT16_MAX = UINT16_MAX;
+uint32_t CARP_UINT32_MAX = UINT32_MAX;
+uint64_t CARP_UINT64_MAX = UINT64_MAX;
+
+int8_t CARP_INT8_MAX = INT8_MAX;
+int8_t CARP_INT8_MIN = INT8_MIN;
+int16_t CARP_INT16_MAX = INT16_MAX;
+int16_t CARP_INT16_MIN = INT16_MIN;
+int32_t CARP_INT32_MAX = INT32_MAX;
+int32_t CARP_INT32_MIN = INT32_MIN;
+int64_t CARP_INT64_MAX = INT64_MAX;
+int64_t CARP_INT64_MIN = INT64_MIN;
+
 Uint8 Uint8__PLUS_(Uint8 x, Uint8 y) {
     return x + y;
 }
