@@ -590,7 +590,9 @@ refTargetIsAlive xobj =
                   [] ->
                     --trace ("Can't use reference " ++ pretty xobj ++ " (with lifetime '" ++ lt ++ "', depending on " ++ show deleterName ++ ") at " ++ prettyInfoFromXObj xobj ++ ", it's not alive here:\n" ++ show xobj ++ "\nMappings: " ++ prettyLifetimeMappings lifetimeMappings ++ "\nAlive: " ++ show deleters ++ "\n") $
                     --pure (Right xobj)
-                    pure (Left (UsingDeadReference xobj deleterName))
+                    pure (case xobjObj xobj of
+                           (Lst (LetPat _ _ body)) -> (Left (UsingDeadReference body deleterName))
+                           _ -> (Left (UsingDeadReference xobj deleterName)))
                   _ ->
                     --trace ("CAN use reference " ++ pretty xobj ++ " (with lifetime '" ++ lt ++ "', depending on " ++ show deleterName ++ ") at " ++ prettyInfoFromXObj xobj ++ ", it's not alive here:\n" ++ show xobj ++ "\nMappings: " ++ prettyLifetimeMappings lifetimeMappings ++ "\nAlive: " ++ show deleters ++ "\n") $
                     pure (Right xobj)
