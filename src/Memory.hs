@@ -447,7 +447,8 @@ manageMemory typeEnv globalEnv root =
       do
         visitedExpr <- visit expr
         addToLifetimesMappingsIfRef True expr
-        result <- transferOwnership typeEnv globalEnv expr name
+        -- ensures this deleter is the only deleter associated with name for the duration of the let scope (shadowing).
+        result <- exclusiveTransferOwnership typeEnv globalEnv expr name
         whenRightReturn result $ do
           okExpr <- visitedExpr
           pure (name, okExpr)
@@ -520,6 +521,21 @@ transferOwnership typeEnv globalEnv from to =
     whenRight result $ do
       manage typeEnv globalEnv to --(trace ("Transfered from " ++ getName from ++ " '" ++ varOfXObj from ++ "' to " ++ getName to ++ " '" ++ varOfXObj to ++ "'") to)
       pure (Right ())
+
+-- | Transfer ownership, and ensure the resulting set has only *one* deleter per variable.
+--
+-- Multiple deleters can arise when one variable shadows an earlier one from a wider scope.
+-- see issue #597
+exclusiveTransferOwnership :: TypeEnv -> Env -> XObj -> XObj -> State MemState (Either TypeError ())
+exclusiveTransferOwnership tenv genv from to =
+  do result <- unmanage tenv genv from
+     whenRight result $ do
+       MemState pre deps lts <- get
+       put (MemState Set.empty deps lts) -- add just this new deleter to the set
+       manage tenv genv to
+       MemState post postDeps postLts <- get
+       put (MemState (uniqueDeleter post pre) postDeps postLts) -- replace any duplicates and union with the prior set
+       pure (Right ())
 
 -- | Control that an `xobj` is OK to reference
 canBeReferenced :: TypeEnv -> Env -> XObj -> State MemState (Either TypeError ())
