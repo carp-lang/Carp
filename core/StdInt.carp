@@ -29,7 +29,9 @@ integer.")
   (register from-long (λ [Long] Int8))
   (register copy (Fn [&Int8] Int8))
   (register MAX Int8 "CARP_INT8_MAX")
+  (implements MAX MAX)
   (register MIN Int8 "CARP_INT8_MIN")
+  (implements MIN MIN)
 
   (defn zero [] (from-long 0l))
 
@@ -77,7 +79,9 @@ integer.")
   (register from-long (λ [Long] Int16))
   (register copy (Fn [&Int16] Int16))
   (register MAX Int16 "CARP_INT16_MAX")
+  (implements MAX MAX)
   (register MIN Int16 "CARP_INT16_MIN")
+  (implements MIN MIN)
 
   (defn zero [] (from-long 0l))
 
@@ -125,7 +129,9 @@ integer.")
   (register from-long (λ [Long] Int32))
   (register copy (Fn [&Int32] Int32))
   (register MAX Int32 "CARP_INT32_MAX")
+  (implements MAX MAX)
   (register MIN Int32 "CARP_INT32_MIN")
+  (implements MIN MIN)
 
   (defn zero [] (from-long 0l))
 
@@ -173,7 +179,9 @@ integer.")
   (register from-long (λ [Long] Int64))
   (register copy (Fn [&Int64] Int64))
   (register MAX Int64 "CARP_INT64_MAX")
+  (implements MAX MAX)
   (register MIN Int64 "CARP_INT64_MIN")
+  (implements MIN MIN)
 
   (defn zero [] (from-long 0l))
 
@@ -221,6 +229,7 @@ integer.")
   (register from-long (λ [Long] Uint8))
   (register copy (Fn [&Uint8] Uint8))
   (register MAX Uint8 "CARP_UINT8_MAX")
+  (implements MAX MAX)
 
   (defn zero [] (from-long 0l))
 
@@ -268,6 +277,7 @@ integer.")
   (register from-long (λ [Long] Uint16))
   (register copy (Fn [&Uint16] Uint16))
   (register MAX Uint16 "CARP_UINT16_MAX")
+  (implements MAX MAX)
 
   (defn zero [] (from-long 0l))
 
@@ -315,6 +325,7 @@ integer.")
   (register from-long (λ [Long] Uint32))
   (register copy (Fn [&Uint32] Uint32))
   (register MAX Uint32 "CARP_UINT32_MAX")
+  (implements MAX MAX)
 
   (defn zero [] (from-long 0l))
 
@@ -362,6 +373,7 @@ integer.")
   (register from-long (λ [Long] Uint64))
   (register copy (Fn [&Uint64] Uint64))
   (register MAX Uint64 "CARP_UINT64_MAX")
+  (implements MAX MAX)
 
   (defn zero [] (from-long 0l))
 

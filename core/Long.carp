@@ -4,7 +4,9 @@
 `l`.")
 (defmodule Long
   (register MAX Long "LONG_MAX")
+  (implements MAX MAX)
   (register MIN Long "LONG_MIN")
+  (implements MIN MIN)
   (register + (λ [Long Long] Long))
   (register - (λ [Long Long] Long))
   (register * (λ [Long Long] Long))

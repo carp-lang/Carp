@@ -5,6 +5,7 @@ suffixed with `f`.")
 (defmodule Float
   (def pi 3.1415926536f)
   (register MAX Float "CARP_FLT_MAX")
+  (implements MAX MAX)
   (register neg (Fn [Float] Float))
   (register + (Fn [Float Float] Float))
   (register - (Fn [Float Float] Float))

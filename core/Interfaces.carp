@@ -63,6 +63,8 @@
 (definterface sqrt (λ [a] a))
 (definterface tan (λ [a] a))
 (definterface tanh (λ [a] a))
+(definterface MAX a)
+(definterface MIN a)
 
 (definterface slice (Fn [&a Int Int] a))
 
