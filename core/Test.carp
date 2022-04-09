@@ -18,9 +18,9 @@ Example:
   (deftype State [passed Int, failed Int])
   (hidden State)
   (use Color.Id)
-  (hidden handler)
-  (defn handler [state expected actual descr what op]
-    (if (op expected actual)
+  (hidden display-test)
+  (defn display-test [state expected actual descr what is-success]
+    (if is-success
       (do
         (IO.colorize (Green) &(str* @"Test '" @descr @"' passed\n"))
         (State.update-passed (State.copy state) &Int.inc))
@@ -32,6 +32,14 @@ Example:
         (IO.println &(str* @"', actual value: '" (str actual) @"'"))
         (IO.color (Reset))
         (State.update-failed (State.copy state) &Int.inc))))
+
+  (hidden handler)
+  (defn handler [state expected actual descr what op]
+    (display-test state expected actual descr what (op expected actual)))
+
+  (hidden dynhandler)
+  (defndynamic dynhandler [state expected actual descr what op]
+    (list 'Test.display-test state (str expected) (str actual) descr what (op expected actual)))
 
   (doc assert-op "Assert that op returns true when given x and y.")
   (defn assert-op [state x y descr op]
@@ -73,13 +81,13 @@ Example:
   (defn assert-error [state x descr]
     (assert-true state (Result.error? x) descr))
 
-  (doc assert-dynamic-equal "Assert that the dynamic expressions `x` and `y` are equal.")
-  (defmacro assert-dynamic-equal [state x y descr]
-    `(Test.assert-equal %state true %(= (eval x) (eval y)) %descr))
-
   (doc assert-dynamic-op "Assert that the dynamic expressions `x` and `y` are equal.")
   (defmacro assert-dynamic-op [state x y descr op]
-    `(Test.assert-equal %state true %(op (eval x) (eval y)) %descr))
+    (dynhandler state (eval x) (eval y) descr "value" op))
+
+  (doc assert-dynamic-equal "Assert that the dynamic expressions `x` and `y` are equal.")
+  (defmacro assert-dynamic-equal [state x y descr]
+    (dynhandler state (eval x) (eval y) descr "value" =))
 
   (doc reset "Reset test state.")
   (defn reset [state]
@@ -170,8 +178,7 @@ Example:
       `@(Test.State.failed %name)
       (cons-last
         `(Test.print-test-results %name)
-        `(do %@(with-test-internal name forms))))
-    ))
+        `(do %@(with-test-internal name forms))))))
 
 (defmacro deftest [name :rest forms]
   (eval
