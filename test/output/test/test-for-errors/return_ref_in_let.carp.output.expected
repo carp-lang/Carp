@@ -1,1 +1,1 @@
-return_ref_in_let.carp:4:3 The reference '(let [xs (ref [1 2 3])] xs)' isn't alive.
+return_ref_in_let.carp:5:5 The reference 'xs' isn't alive.
