@@ -1,0 +1,20 @@
+(load-and-use Test)
+
+(deftest test
+  (assert-dynamic-equal test
+                        '(1 2 3 3 4)
+                        (Dynamic.sort '(3 4 3 1 2) <)
+                        "Dynamic.sort sorts from lower to higher")
+
+  (assert-dynamic-equal test
+                        '(4 3 3 2 1)
+                        (Dynamic.sort '(3 4 3 1 2) >)
+                        "Dynamic.sort sorts from higher to lower")
+
+  (assert-dynamic-equal test
+                        '("one" "four" "three" "two---")
+                        (Dynamic.sort '("one" "two---" "three" "four")
+                                      (fn [a b]
+                                        (< (String.length a) (String.length b))))
+                        "Dynamic.sort sorts using predicate"))
+

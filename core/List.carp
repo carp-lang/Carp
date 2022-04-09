@@ -17,9 +17,9 @@ Example:
         (= 'a (cadr x)) car
         (= 'd (cadr x)) cdr
         (macro-error "`cxr` expects either `a` or `d` symbols, got " (cadr x)))
-        (if (= 1 (car x))
-          (cxr (cddr x) pair)
-          (cxr (cons (- (car x) 1) (cdr x)) pair)))))
+       (if (= 1 (car x))
+         (cxr (cddr x) pair)
+         (cxr (cons (- (car x) 1) (cdr x)) pair)))))
 
   (doc nthcdr "takes the `n`th tail or `cdr` of the list `pair`.")
   (defndynamic nthcdr [n pair]
@@ -313,6 +313,23 @@ Example:
                (let [r (walk-replace-finder pairs x)]
                  (if (empty? r) x (cadr r))))
              form))
+  (doc sort "Sorts a list using the provided predicate. It is not a stable sort.
+Example:
+```
+(sort '(1 3 4 2 5 4) <) ; => (1 2 3 4 4 5)
+(sort '(1 3 4 2 5 4) >) ; => (5 4 4 3 2 1)
+(sort '(\"one\" \"two---\" \"three\" \"four\") (fn [a b] (< (String.length a) (String.length b)))) ; => (\"one\" \"four\" \"three\" \"two---\")
+```")
+  (defndynamic sort [l compare]
+    (if (nil? l)
+      '()
+      (let [x (car l)
+            xs  (cdr l)
+            lower-filtered (filter (fn [y] (compare y x)) xs)
+            lower-sorted (Dynamic.sort lower-filtered compare)
+            higher-filtered (filter (fn [y] (not (compare y x))) xs)
+            higher-sorted (Dynamic.sort higher-filtered compare)]
+       (append lower-sorted (append (list x) higher-sorted)))))
 
   (defmodule List
     (doc pairs "makes a list of pairs out of a list `l`. If the number of
@@ -367,6 +384,5 @@ Returns `nil` on failure")
         (let [res (List.find-index (cdr l) pred)]
           (if (nil? res)
             res
-            (inc res)))))
-  )
-)
+            (inc res)))))))
+
