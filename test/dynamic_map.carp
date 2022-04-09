@@ -3,19 +3,8 @@
 
 (doc list-equal-unordered "Checks two lists have the same values, not necessarily in the same order")
 (defndynamic list-equal-unordered [xs ys]
-  (if (not (= (length xs) (length ys)))
-   false
-   (car (reduce (fn [state x]
-                 (let [keep-going (car state)
-                       l (cadr state)]
-                   (if (not keep-going)
-                     '(false ())
-                     (let [index (List.find-index l (curry = x))]
-                        (if (nil? index)
-                          '(false ())
-                          (list true (List.remove-nth l index)))))))
-               (list true ys)
-               xs))))
+  (= (Dynamic.sort xs <)
+     (Dynamic.sort ys <)))
 
 (deftest test
   (assert-dynamic-equal test
