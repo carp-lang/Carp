@@ -36,6 +36,17 @@
 (defn pikachu [times] (String.repeat times "pika"))
 (implements monster pikachu)
 
+;; issue #1414, make sure we don't overwrite the lookup mode of implementations
+(definterface FOO a)
+(defmodule Foo
+  (register FOO Int "CARP_INT_MAX")
+  (implements FOO FOO)
+)
+(defmodule Bar
+  (defn bar []
+    FOO)
+)
+
 (deftest test
   (assert-equal test
     &2
@@ -59,4 +70,8 @@
     &(monster 3)
     "Implementations may be overwritten, when multiple implementations of the same type
      are provided.")
+  (assert-equal test
+    Int.MAX
+    (Bar.bar)
+    "regression for issue #1414")
 )
