@@ -57,6 +57,13 @@
     (do (print "")
         ())))
 
+;; regression test for issue #597
+;; should compile fine.
+(defn shadow-1 [x]
+  (let [x [1 2 3]
+        y &x]
+    ()))
+
 (defn f []
   @"")
 
@@ -595,4 +602,5 @@
   (assert-no-leak test box-1 "box-1 does not leak")
   (assert-no-leak test box-2 "box-2 does not leak")
   (assert-no-leak test blit-1 "blit-1 does not leak")
+  (assert-no-leak test (fn [] (shadow-1 2)) "shadow-1 does not leak")
   )
