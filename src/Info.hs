@@ -12,12 +12,14 @@ module Info
     makeTypeVariableNameFromInfo,
     setDeletersOnInfo,
     addDeletersToInfo,
+    uniqueDeleter,
   )
 where
 
 import Path (takeFileName)
 import qualified Set
 import SymPath
+import Data.List (unionBy)
 
 -- | Information about where the Obj originated from.
 data Info = Info
@@ -57,6 +59,20 @@ instance Show Deleter where
   show (FakeDeleter var) = "(FakeDel " ++ show var ++ ")"
   show (PrimDeleter var) = "(PrimDel " ++ show var ++ ")"
   show (RefDeleter var) = "(RefDel " ++ show var ++ ")"
+
+-- | Get the variable name associated with a deleter.
+deleterVar :: Deleter -> String
+deleterVar (ProperDeleter _ _ v) = v
+deleterVar (FakeDeleter v) = v
+deleterVar (PrimDeleter v) = v
+deleterVar (RefDeleter v) = v
+
+-- | Given two sets of deleters, take only a single deleter for each variable.
+--
+-- Left biased in the case of duplicates.
+uniqueDeleter :: Set.Set Deleter -> Set.Set Deleter -> Set.Set Deleter
+uniqueDeleter xs ys =
+  Set.fromList (unionBy (\x y -> deleterVar x == deleterVar y) (Set.toList xs) (Set.toList ys))
 
 -- | Whether or not the full path of a source file or a short path should be
 -- printed.
