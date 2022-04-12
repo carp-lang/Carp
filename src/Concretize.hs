@@ -421,20 +421,21 @@ visitInterfaceSym visited allowAmbig tenv env xobj@(InterfaceSymPat name) =
     go :: Binder -> State [XObj] (Either TypeError XObj)
     go (Binder _ (ListPat (InterfacePat _ paths))) =
       let tys = map (typeFromPath env) paths
-          tysToPathsDict = zip tys paths
-       in case filter (matchingSignature actualType) tysToPathsDict of
-            [] -> pure $ if allowAmbig then Right xobj else Left (NoMatchingSignature xobj name actualType tysToPathsDict)
+          modes = map (modeFromPath env) paths
+          tysModesPathsDict = zip3 tys modes paths
+       in case filter (\(t, _, p) -> matchingSignature actualType (t, p)) tysModesPathsDict of
+            [] -> pure $ if allowAmbig then Right xobj else Left (NoMatchingSignature xobj name actualType (map (\(t, _, p) -> (t,p)) tysModesPathsDict))
             [x] -> updateSym x
-            xs -> case filter (typeEqIgnoreLifetimes actualType . fst) xs of
+            xs -> case filter (\(t,_,_) -> typeEqIgnoreLifetimes actualType t) xs of
               [] -> pure (Right xobj) -- No exact match of types
               [y] -> updateSym y
-              ps -> pure (Left (SeveralExactMatches xobj name actualType ps))
+              ps -> pure (Left (SeveralExactMatches xobj name actualType (map (\(t, _, p) -> (t,p)) ps)))
     go _ = pure (Left (CannotConcretize xobj))
     -- TODO: Should we also check for allowAmbig here?
-    updateSym (_, path) = if isTypeGeneric actualType then pure (Right xobj) else replace path
-    replace path =
+    updateSym (_, mode, path) = if isTypeGeneric actualType then pure (Right xobj) else replace mode path
+    replace mode path =
       -- We pass the original xobj ty here, should we be passing the type found via matching signature?
-      let normalSymbol = XObj (Sym path (LookupGlobal CarpLand AFunction)) (xobjInfo xobj) (xobjTy xobj) -- TODO: Is it surely AFunction here? Could be AVariable as well...!?
+      let normalSymbol = XObj (Sym path mode) (xobjInfo xobj) (xobjTy xobj)
        in visitSymbol
             visited
             allowAmbig
