@@ -41,7 +41,9 @@
 
 (defmodule Int
   (register MAX Int "CARP_INT_MAX")
+  (implements MAX MAX)
   (register MIN Int "CARP_INT_MIN")
+  (implements MIN MIN)
   (register bit-shift-left (λ [Int Int] Int))
   (register bit-shift-right (λ [Int Int] Int))
   (register bit-and (λ [Int Int] Int))

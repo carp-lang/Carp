@@ -6,6 +6,7 @@
   (implements pi Double.pi)
   (def e 2.718281828459045)
   (register MAX Double "CARP_DBL_MAX")
+  (implements MAX MAX)
   (register = (Fn [Double Double] Bool))
   (register < (Fn [Double Double] Bool))
   (register > (Fn [Double Double] Bool))
