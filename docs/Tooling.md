@@ -6,7 +6,7 @@
 ## Emacs
 [https://github.com/carp-lang/carp-emacs](https://github.com/carp-lang/carp-emacs)
 
-# Atom
+## Atom
 [language-carp](https://atom.io/packages/language-carp) offers highlight with both TextMate and Tree-sitter, where tree-sitter grammar is more powerful.
 
 ## Other editors

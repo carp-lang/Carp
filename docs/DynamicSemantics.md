@@ -25,8 +25,6 @@ This document will help us rewrite Carp's dynamic evaluator (defined in Eval.hs)
 
 <hr>
 
-# Semantics
-
 ## Index
 [TODO]
 
