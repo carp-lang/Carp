@@ -47,7 +47,7 @@ module are wrappers around the C standard library.")
     (register fread- (Fn [a Int Int (Ptr FILE)] Int) "fread")
     (doc      fread "reads from a file into C-String (thin wrapper for fread(cstr, item-size, items-count, file) from C standard library). Consider using [`read-file`](#read-file) or [`unsafe-read-file`](#unsafe-read-file) instead.")
     (defn     fread [file-name item-size items-count file] 
-      (fread- (String.cstr file-name) item-size items-count file) )
+      (fread- file-name item-size items-count file) )
     (doc      fflush "flushes a file pointer, i.e. commits every write (thin wrapper for the C standard library).")
     (register fflush (Fn [(Ptr FILE)] Int) "fflush")
     (doc      fflush! "same as (fflush) but to be used as a side effect.")
