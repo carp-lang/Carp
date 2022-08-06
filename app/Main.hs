@@ -127,7 +127,7 @@ main = do
       execStr :: String -> String -> Context -> IO Context
       execStr i s ctx = executeString True False ctx s i
       execStrs :: String -> [String] -> Context -> IO Context
-      execStrs i strs ctx = foldM (\ctx' str' -> execStr i str' ctx') ctx strs
+      execStrs i strs ctx = foldM (flip (execStr i)) ctx strs
       preloads = optPreload fullOpts
       postloads = optPostload fullOpts
       load = flip loadFiles
