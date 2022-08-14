@@ -383,7 +383,7 @@ and `Cat.meow` as an implementation of `speak`:
   (implements speak Cat.meow))
 ```
 
-Only functions that satisfy an interface's singature can implement
+Only functions that satisfy an interface's signature can implement
 it. For exmaple, the following function isn't a valid implementation
 of `speak` because it has the wrong number of arguments and its return
 type does not match the return type of `speak`:
