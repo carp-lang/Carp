@@ -57,10 +57,11 @@
 
      If the conversion fails, returns a `Result.Error` containing the byte array passed as an argument.")
   (defn byte-converter [f order]
-     (fn [bs]
+     @(fn [bs]
        (match (~f order bs)
               (Maybe.Nothing) (Result.Error @bs)
               (Maybe.Just i)  (Result.Success i))))
+
   (doc interpreted
     "Returns the interpreted value from a sequence of byte-converion results")
   (private interpreted)
@@ -81,7 +82,7 @@
          (ref)
          (Array.copy-map &Array.length)
          (ref)
-         (Array.reduce &(fn [x y] (+ x @y)) 0)))
+         (Array.reduce (fn [x y] (+ x @y)) 0)))
 
   (doc system-endianness
     "Returns the endianness of the host system.")
@@ -132,7 +133,7 @@
   (defn unsafe-bytes->int16-seq [order bs]
     (let [partitions (Array.partition bs 2)
           f (fn [b] (unsafe-bytes->int16 order b))]
-      (Array.copy-map &f &partitions)))
+      (Array.copy-map f &partitions)))
 
   (doc bytes->int16-seq
     "Interprets a sequence of bytes as a sequence of Uint16 values.
@@ -161,7 +162,7 @@
   (sig int16-seq->bytes (Fn [ByteOrder (Ref (Array Uint16) a)] (Array (Array Byte))))
   (defn int16-seq->bytes [order is]
     (let [f (fn [i] (int16->bytes order @i))]
-      (Array.copy-map &f is)))
+      (Array.copy-map f is)))
 
   (doc unsafe-bytes->int32
     "Interprets the first four bytes in a byte sequence as an Uint32 value.
@@ -199,10 +200,10 @@
       (match order
         (ByteOrder.LittleEndian)
           (Array.copy-map &int32-to-byte
-            &[i (shift 8l) (shift 16l) (shift 24l)])
+            &[i (~shift 8l) (~shift 16l) (~shift 24l)])
         (ByteOrder.BigEndian)
           (Array.copy-map &int32-to-byte
-            &[(shift 24l) (shift 16l) (shift 8l) i]))))
+            &[(~shift 24l) (~shift 16l) (~shift 8l) i]))))
 
   (doc unsafe-bytes->int32-seq
     "Interprets a sequence of bytes as a sequence of Uint32 values.
@@ -211,7 +212,7 @@
   (defn unsafe-bytes->int32-seq [order bs]
     (let [partitions (Array.partition bs 4)
           f (fn [b] (unsafe-bytes->int32 order b))]
-      (Array.copy-map &f &partitions)))
+      (Array.copy-map f &partitions)))
 
   (doc bytes->int32-seq
     "Interprets a sequence of bytes as a sequence of Uint32 values.
@@ -240,7 +241,7 @@
   (sig int32-seq->bytes (Fn [ByteOrder (Ref (Array Uint32) a)] (Array (Array Byte))))
   (defn int32-seq->bytes [order is]
     (let [f (fn [i] (int32->bytes order @i))]
-      (Array.copy-map &f is)))
+      (Array.copy-map f is)))
 
   (doc unsafe-bytes->int64
     "Interprets the first eight bytes in a byte sequence as an Uint64 value.
@@ -285,14 +286,14 @@
       (match order
         (ByteOrder.LittleEndian)
           (Array.copy-map &int64-to-byte
-            &[i (shift 8l) (shift 16l)
-                (shift 24l) (shift 32l)
-                (shift 40l) (shift 48l) (shift 56l)])
+            &[i (~shift 8l) (~shift 16l)
+                (~shift 24l) (~shift 32l)
+                (~shift 40l) (~shift 48l) (~shift 56l)])
         (ByteOrder.BigEndian)
           (Array.copy-map &int64-to-byte
-            &[(shift 56l) (shift 48l)
-              (shift 40l) (shift 32l)
-              (shift 24l) (shift 16l) (shift 8l) i]))))
+            &[(~shift 56l) (~shift 48l)
+              (~shift 40l) (~shift 32l)
+              (~shift 24l) (~shift 16l) (~shift 8l) i]))))
 
   (doc unsafe-bytes->int64-seq
     "Interprets a sequence of bytes as a sequence of Uint64 values.
@@ -301,7 +302,7 @@
   (defn unsafe-bytes->int64-seq [order bs]
     (let [partitions (Array.partition bs 8)
           f (fn [b] (unsafe-bytes->int64 order b))]
-      (Array.copy-map &f &partitions)))
+      (Array.copy-map f &partitions)))
 
   (doc bytes->int64-seq
     "Interprets a sequence of bytes as a sequence of Uint64 values.
@@ -330,7 +331,7 @@
   (sig int64-seq->bytes (Fn [ByteOrder (Ref (Array Uint64) a)] (Array (Array Byte))))
   (defn int64-seq->bytes [order is]
     (let [f (fn [i] (int64->bytes order @i))]
-      (Array.copy-map &f is)))
+      (Array.copy-map f is)))
 
   (defn to-hex-str [b]
     (let [hi (Byte.bit-and b (from-int 0xF0))
@@ -378,5 +379,5 @@
   (sig bytes->hex-string (Fn [(Ref (Array Byte) q)] String))
   (defn bytes->hex-string [bs]
     (let [f (fn [b] (to-hex-str @b))]
-      (String.join " " &(Array.copy-map &f bs))))
+      (String.join " " &(Array.copy-map f bs))))
 )

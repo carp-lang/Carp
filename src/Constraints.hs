@@ -27,6 +27,7 @@ data ConstraintOrder
   | OrdArrHead
   | OrdArg
   | OrdCapture
+  | OrdFnRef
   | OrdDefnBody
   | OrdDefExpr
   | OrdLetBind

@@ -234,12 +234,12 @@
 
 (defn array-endo-filter []
   (let [xs [@"a" @"b" @"c" @"b" @"a" @"c"]
-        result (Array.endo-filter &(fn [x] (= x "b")) xs)]
+        result (Array.endo-filter (fn [x] (= x "b")) xs)]
     (assert (= &[@"b" @"b"] &result))))
 
 (defn array-copy-filter []
   (let [xs [@"a" @"b" @"c" @"a" @"c"]
-        result (Array.copy-filter &(fn [x] (= x "b")) &xs)]
+        result (Array.copy-filter (fn [x] (= x "b")) &xs)]
     (assert (= &[@"b"] &result))))
 
 (defn array-first []
@@ -363,7 +363,7 @@
     (assert (= &[@"1" @"2" @"3" @"4"] &ys))))
 
 (defn array-map-reduce []
-  (let [r (map-reduce &(fn [acc x] (Pair.init (append acc x) (append "-" x))) @"" &[@"1" @"2" @"3"])]
+  (let [r (map-reduce (fn [acc x] (Pair.init (append acc x) (append "-" x))) @"" &[@"1" @"2" @"3"])]
     (assert (= &r &(Pair.init @"123" [@"-1" @"-2" @"-3"])))))
 
 (defn static-array-aupdate! []
@@ -382,34 +382,34 @@
   (let [s @"X"
         f (fn [] @&s)] ;; each call needs to produce a new copy of the string
     (do
-      (assert (= @"X" (f)))
-      (assert (= @"X" (f)))
-      (assert (= @"X" (f))))))
+      (assert (= @"X" (~f)))
+      (assert (= @"X" (~f)))
+      (assert (= @"X" (~f))))))
 
 (defn lambda-2 []
   (let [xs [10 20 30]
         f (fn [ys] (Array.concat &[@&xs ys]))]
-    (assert (= &[10 20 30 40 50] &(f [40 50])))))
+    (assert (= &[10 20 30 40 50] &(~f [40 50])))))
 
 (defn lambda-3 []
   (let-do [stuff [100 200 300]
         f (fn [n] (copy (unsafe-nth &stuff n)))]
-    (assert (= 100 (f 0)))
-    (assert (= 200 (f 1)))
-    (assert (= 300 (f 2)))))
+    (assert (= 100 (~f 0)))
+    (assert (= 200 (~f 1)))
+    (assert (= 300 (~f 2)))))
 
 (defn lambda-4 []
   (let-do [stuff [@"A" @"B" @"C"]]
-    (assert (= &[@"X" @"X" @"X"] &(copy-map &(fn [c] @"X") &stuff)))))
+    (assert (= &[@"X" @"X" @"X"] &(copy-map (fn [c] @"X") &stuff)))))
 
 (defn lambda-5 []
   (let-do [stuff [@"A" @"B" @"C"]]
-    (assert (= &[@"X" @"X" @"X"] &(endo-map &(fn [c] @"X") stuff)))))
+    (assert (= &[@"X" @"X" @"X"] &(endo-map (fn [c] @"X") stuff)))))
 
 (defn lambda-6 []
   (let [v 1
         adder (fn [x] (+ v x))
-        f @&adder
+        f @adder
         ]
     (assert (= 11 (f 10)))))
 
@@ -498,7 +498,7 @@
 (defn sumtype-10 []
   (let [state 0]
    (match-ref &(Sum.One)
-    Sum.One (println* ((fn [] @&state)))
+    Sum.One (println* (~(fn [] @&state)))
     Sum.Two ())))
 
 (deftype ExampleA

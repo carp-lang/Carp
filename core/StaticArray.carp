@@ -167,7 +167,7 @@ If the array is empty, returns `Nothing`")
 
   (doc sum "sums an array (elements must support `+` and `zero`).")
   (defn sum [xs]
-    (reduce &(fn [x y] (+ x @y)) (zero) xs))
+    (reduce (fn [x y] (+ x @y)) (zero) xs))
 
   (doc index-of "gets the index of element `e` in an array and wraps it on a `Just`.
 

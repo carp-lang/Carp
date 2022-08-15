@@ -163,7 +163,7 @@
   (reduce (with-copy + 2) 0 &[1 2 3])
   => 6
   ;; compare this with an inline anonymous function that achieves the same thing:
-  (reduce &(fn [x y] (+ x @y)) 0 &[1 2 3]) === (reduce (with-copy + 2) 0 &[1 2 3])
+  (reduce (fn [x y] (+ x @y)) 0 &[1 2 3]) === (reduce (with-copy + 2) 0 &[1 2 3])
   ```
 
   This is useful when using higher-order functions that operate over structures that
@@ -194,5 +194,5 @@
           call (cons function (map (fn [x] (if (= target x) prox x)) local-names))]
       (if (> pos (Introspect.arity (eval function)))
           (macro-error "with-copy error: the specified argument position is greater than the given function's arity.")
-          (list 'ref (list 'fn local-names call)))))
+          (list 'fn local-names call))))
 )

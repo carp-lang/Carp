@@ -217,8 +217,9 @@ initialTypes typeEnv rootEnv root = evalState (visit rootEnv root) 0
         [XObj LocalDef _ _, XObj (Sym path _) si _, XObj (Lst [fn@(XObj (Fn _ _) _ _), XObj (Arr argList) argsi argst, body]) _ _] ->
           do
             (argTypes, returnType, funcScopeEnv) <- getTys env argList
+            refLt <- genVarTy
             lt <- genVarTy
-            let funcTy = Just (FuncTy argTypes returnType lt)
+            let funcTy = Just (RefTy (FuncTy argTypes returnType lt) refLt)
                 typedNameSymbol = XObj (Sym path LookupRecursive) si funcTy
                 Right envWithSelf = E.insertX funcScopeEnv path typedNameSymbol
             visitedBody <- visit envWithSelf body
@@ -235,8 +236,9 @@ initialTypes typeEnv rootEnv root = evalState (visit rootEnv root) 0
         [fn@(XObj (Fn _ _) _ _), XObj (Arr argList) argsi argst, body] ->
           do
             (argTypes, returnType, funcScopeEnv) <- getTys env argList
+            refLt <- genVarTy
             lt <- genVarTy
-            let funcTy = Just (FuncTy argTypes returnType lt)
+            let funcTy = Just (RefTy (FuncTy argTypes returnType lt) refLt)
             visitedBody <- visit funcScopeEnv body
             visitedArgs <- mapM (visit funcScopeEnv) argList
             pure $ do
@@ -244,7 +246,8 @@ initialTypes typeEnv rootEnv root = evalState (visit rootEnv root) 0
               okArgs <- sequence visitedArgs
               let final = XObj (Lst [fn, XObj (Arr okArgs) argsi argst, okBody]) i funcTy
               pure final --(trace ("FINAL: " ++ show final) final)
-        [XObj (Fn _ _) _ _, XObj (Arr _) _ _] -> pure (Left (NoFormsInBody xobj)) -- TODO: Special error message for lambdas needed?
+        [XObj (Fn _ _) _ _, XObj (Arr _) _ _] ->
+          pure (Left (NoFormsInBody xobj)) -- TODO: Special error message for lambdas needed?
         XObj fn@(Fn _ _) _ _ : _ ->
           pure (Left (InvalidObjExample fn xobj "(fn [<arguments>] <body>)"))
         -- Def

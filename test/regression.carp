@@ -16,9 +16,9 @@
 
 ; make sure nested lambdas don't break again (issue #342)
 (defn nested-lambdas []
-  (let [f (fn [x] ((fn [y] (+ x y))
+  (let [f (fn [x] (~(fn [y] (+ x y))
                    1))]
-    (f 1)))
+    (~f 1)))
 
 ; make sure let bindings get updated in the right scope
 (defmacro let-and-set []
@@ -56,7 +56,7 @@
 
 ;; defining function with def (not defn)
 (defn duplicate-arg [f]
-  (fn [x] (f x x)))
+  @(fn [x] (f x x)))
 
 (def double (duplicate-arg +))
 
@@ -89,7 +89,7 @@
    (the (Map String AType) m))
 
 ;; nested polymorphic types are resolved and emitted (#1293)
-(defmodule Bar 
+(defmodule Bar
   (deftype (Baz a) [it a])
   (deftype (Qux a) [it (Bar.Baz a)])
 )

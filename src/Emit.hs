@@ -205,6 +205,7 @@ toC toCMode (Binder meta root) = emitterSrc (execState (visit startingIndent roo
       pure overrideWithName
     visitSymbol indent xobj@(XObj sym@(Sym path lookupMode) (Just i) ty) =
       let Just t = ty
+          functionLike = isFunctionType t || isRefToFunctionType t
        in if isTypeGeneric t
             then
               error
@@ -216,11 +217,16 @@ toC toCMode (Binder meta root) = emitterSrc (execState (visit startingIndent roo
                     ++ prettyInfoFromXObj xobj
                 )
             else
-              if isFunctionType t && not (isLookupLocal lookupMode) && not (isGlobalVariableLookup lookupMode)
+              if functionLike && not (isLookupLocal lookupMode) && not (isGlobalVariableLookup lookupMode)
                 then do
                   let var = freshVar i
                   appendToSrc (addIndent indent ++ "Lambda " ++ var ++ " = { .callback = (void*)" ++ pathToC path ++ ", .env = NULL, .delete = NULL, .copy = NULL }; //" ++ show sym ++ "\n")
-                  pure var
+                  if isRefToFunctionType t
+                    then do
+                      let refVar = var ++ "_ref"
+                      appendToSrc (addIndent indent ++ "Lambda *" ++ refVar ++ " = &" ++ var ++ ";\n")
+                      pure refVar
+                    else pure var
                 else pure $ case lookupMode of
                   LookupLocal (Capture _) -> "_env->" ++ pathToC path
                   _ -> pathToC path
@@ -253,12 +259,12 @@ toC toCMode (Binder meta root) = emitterSrc (execState (visit startingIndent roo
         -- Fn / λ
         [XObj (Fn name set) _ _, XObj (Arr _) _ _, _] ->
           do
-            let retVar = freshVar info
+            let lambdaVar = freshVar info
                 capturedVars = Set.toList set
                 Just callback = name
                 callbackMangled = pathToC callback
                 needEnv = not (null capturedVars)
-                lambdaEnvTypeName = (SymPath [] (callbackMangled ++ "_ty")) -- The name of the struct is the callback name with suffix '_ty'.
+                lambdaEnvTypeName = SymPath [] (callbackMangled ++ "_ty") -- The name of the struct is the callback name with suffix '_ty'.
                 lambdaEnvType = StructTy (ConcreteNameTy lambdaEnvTypeName) []
                 lambdaEnvName = freshVar info ++ "_env"
             appendToSrc
@@ -271,15 +277,11 @@ toC toCMode (Binder meta root) = emitterSrc (execState (visit startingIndent roo
             when needEnv $
               do
                 appendToSrc
-                  ( addIndent indent ++ tyToC lambdaEnvType ++ " *" ++ lambdaEnvName
-                      ++ " = CARP_MALLOC(sizeof("
-                      ++ tyToC lambdaEnvType
-                      ++ "));\n"
-                  )
+                  (addIndent indent ++ tyToC lambdaEnvType ++ " " ++ lambdaEnvName ++ ";\n")
                 mapM_
                   ( \(XObj (Sym path lookupMode) _ _) ->
                       appendToSrc
-                        ( addIndent indent ++ lambdaEnvName ++ "->"
+                        ( addIndent indent ++ lambdaEnvName ++ "."
                             ++ pathToC path
                             ++ " = "
                             ++ ( case lookupMode of
@@ -290,12 +292,14 @@ toC toCMode (Binder meta root) = emitterSrc (execState (visit startingIndent roo
                         )
                   )
                   (remove (isUnit . forceTy) capturedVars)
-            appendToSrc (addIndent indent ++ "Lambda " ++ retVar ++ " = {\n")
+            appendToSrc (addIndent indent ++ "Lambda " ++ lambdaVar ++ " = {\n")
             appendToSrc (addIndent indent ++ "  .callback = (void*)" ++ callbackMangled ++ ",\n")
-            appendToSrc (addIndent indent ++ "  .env = " ++ (if needEnv then lambdaEnvName else "NULL") ++ ",\n")
+            appendToSrc (addIndent indent ++ "  .env = " ++ (if needEnv then "&" ++ lambdaEnvName else "NULL") ++ ",\n")
             appendToSrc (addIndent indent ++ "  .delete = (void*)" ++ (if needEnv then "" ++ show lambdaEnvTypeName ++ "_delete" else "NULL") ++ ",\n")
             appendToSrc (addIndent indent ++ "  .copy = (void*)" ++ (if needEnv then "" ++ show lambdaEnvTypeName ++ "_copy" else "NULL") ++ "\n")
             appendToSrc (addIndent indent ++ "};\n")
+            let retVar = freshVar info ++ "_ref"
+            appendToSrc (addIndent indent ++ "Lambda* " ++ retVar ++ " = &" ++ lambdaVar ++ ";\n")
             pure retVar
         -- Def
         [XObj Def _ _, XObj (Sym path _) _ _, expr] ->

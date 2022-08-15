@@ -5,7 +5,7 @@
   (hidden   tolower-)   ; helper func for String.ascii-to-lower
   (register tolower- (Fn [Byte] Byte) "tolower")
   (hidden   toupper-)   ; helper func for String.ascii-to-upper
-  (register toupper- (Fn [Byte] Byte) "toupper")    
+  (register toupper- (Fn [Byte] Byte) "toupper")
 )
 
 (doc String "is the string data type for representing text.")
@@ -181,10 +181,10 @@
 
   (doc  ascii-to-lower "converts each character in this string to lower case using tolower() from standard C library. Note: this will only work for ASCII characters.")
   (defn ascii-to-lower [s]
-    (String.from-bytes &(Array.endo-map &(fn [c] (Byte.tolower- c)) (String.to-bytes s))) )
+    (String.from-bytes &(Array.endo-map (fn [c] (Byte.tolower- c)) (String.to-bytes s))) )
   (doc  ascii-to-upper "converts each character in this string to upper case using toupper() from standard C library. Note: this will only work for ASCII characters.")
   (defn ascii-to-upper [s]
-    (String.from-bytes &(Array.endo-map &(fn [c] (Byte.toupper- c)) (String.to-bytes s))) )
+    (String.from-bytes &(Array.endo-map (fn [c] (Byte.toupper- c)) (String.to-bytes s))) )
 )
 
 (defmodule StringCopy
@@ -522,4 +522,3 @@
       (cdr (String.split-on "" s)))
   )
 )
-

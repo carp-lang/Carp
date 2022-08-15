@@ -8,13 +8,15 @@
 
 (deftest test
   (assert-equal test
-                (let [x 42 fnfn (fn [] @&x)]
-                  (runner (Function.unsafe-ptr &fnfn) (Function.unsafe-env-ptr &fnfn)))
+                (let [x 42
+                      fnfn (fn [] @&x)]
+                  (runner (Function.unsafe-ptr fnfn) (Function.unsafe-env-ptr fnfn)))
                 42
                 "Function.unsafe-ptr & Function.unsafe-env-ptr works as expected")
 
   (assert-equal test
-                (let [x 42 fnfn (fn [y] (Int.copy y))]
-                  (runner (Function.unsafe-ptr &fnfn) (Unsafe.coerce &x)))
+                (let [x 42
+                      fnfn (fn [y] (Int.copy y))]
+                  (runner (Function.unsafe-ptr fnfn) (Unsafe.coerce &x)))
                 42
                 "Function.unsafe-ptr & Unsafe.coerce works as expected"))

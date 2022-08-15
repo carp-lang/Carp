@@ -32,7 +32,7 @@ As an example, consider this definition of `sum` based on `reduce`:
 
 ```
 (defn sum [x]
-  (reduce &(fn [x y] (+ x @y)) 0 x))
+  (reduce (fn [x y] (+ x @y)) 0 x))
 ```
 
 It will sum the previous sum with each new value, starting at `0`.")
@@ -188,7 +188,7 @@ If the array is empty, returns `Nothing`")
 
   (doc sum "sums an array (elements must support `+` and `zero`).")
   (defn sum [xs]
-    (Array.reduce &(fn [x y] (+ x @y)) (zero) xs))
+    (Array.reduce (fn [x y] (+ x @y)) (zero) xs))
 
   (doc slice "gets a subarray from `start-index` to `end-index`.")
   (defn slice [xs start-index end-index]
@@ -313,7 +313,7 @@ Example:
 ```
 ; if we didn’t have Array.range, we could define it like this:
 (defn range [start end step]
-  (unreduce start &(fn [x] (< x (+ step end))) &(fn [x] (+ x step)))
+  (unreduce start (fn [x] (< x (+ step end))) &(fn [x] (+ x step)))
 )
 ```")
   (defn unreduce [start test step]
@@ -383,7 +383,7 @@ If the `index` is out of bounds, return `Maybe.Nothing`")
 
   (doc remove "removes all occurrences of the element `el` in the array `arr`, in place.")
   (defn remove [el arr]
-    (endo-filter &(fn [x] (not (= el x)))
+    (endo-filter (fn [x] (not (= el x)))
                  arr))
 
   (doc remove-nth "removes element at index `idx` from the array `arr`.")
@@ -463,12 +463,12 @@ the second one is the element. `f` must return `(Pair accumulator result)`.
 
 Example:
 ```
-(map-reduce &(fn [acc x] (Pair.init (+ @x @acc) (* @x 2))) 0 &[1 2 3])
+(map-reduce (fn [acc x] (Pair.init (+ @x @acc) (* @x 2))) 0 &[1 2 3])
 ; => (Pair 6 [2 4 6])
 ```")
   (defn map-reduce [f acc a]
     (reduce
-      &(fn [a el]
+      (fn [a el]
         (let [l (Pair.b &a)
               acc (Pair.a &a)
               p (~f acc el)]

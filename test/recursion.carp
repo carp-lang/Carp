@@ -23,8 +23,8 @@
 
 ;; let bindings may be recursive in static contexts (issue #402)
 (defn letrec-test []
-  (let [f (fn [x] (if (= x 1) x (f (dec x))))]
-    (f 10)))
+  (let [f (fn [x] (if (= x 1) x (~f (dec x))))]
+    (~f 10)))
 
 (deftest test
   (assert-equal test

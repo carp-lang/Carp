@@ -3,6 +3,6 @@
 (defn this-wont-work []
   (let-do [s @"DATA"
            r &s
-           f (fn [] (IO.println r))]
+           f @(fn [] (IO.println r))]
     (delete s)
     (f)))

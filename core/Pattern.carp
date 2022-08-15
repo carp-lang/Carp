@@ -6,13 +6,13 @@ information](../LanguageGuide.html#patterns).")
 (defmodule Pattern
   (register-type MatchResult [start Int, end Int])
   (defmodule MatchResult
-    (defn ref-str [ref-matchres] 
-      (fmt "(MatchResult start=%d end=%d)" 
-        (MatchResult.start ref-matchres) 
+    (defn ref-str [ref-matchres]
+      (fmt "(MatchResult start=%d end=%d)"
+        (MatchResult.start ref-matchres)
         (MatchResult.end   ref-matchres) ))
     (implements str Pattern.MatchResult.ref-str)
     (implements prn Pattern.MatchResult.ref-str)
-    (defn str [matchres] 
+    (defn str [matchres]
       (Pattern.MatchResult.ref-str &matchres) )
     (implements str Pattern.MatchResult.str)
     (implements prn Pattern.MatchResult.str)
@@ -38,7 +38,7 @@ information](../LanguageGuide.html#patterns).")
 Returns `-1` if it doesn’t find a matching pattern.")
   (defn find [pattern data]
     @(Pattern.MatchResult.start &(Pattern.match pattern data)) )
-  
+
   (doc find-all "finds all indices of a pattern in a string. The patterns may _not_ overlap.
 
 Returns `[]` if it doesn’t find a matching pattern.")
@@ -54,11 +54,11 @@ Returns `[]` if it doesn’t find a matching pattern.")
         (set! start  @(MatchResult.end &found)) )
       result ))
   (defn find-all [pattern data]
-    (Array.copy-map 
-      &(fn [m] @(MatchResult.start m)) 
+    (Array.copy-map
+      (fn [m] @(MatchResult.start m))
       &(find-all-matches pattern data) ))
-  
-  
+
+
   (doc match-groups "finds the match groups of the first match of a pattern in
 a string.
 
@@ -105,8 +105,8 @@ list of those characters.")
     (Pattern.init &(str* @"[" (String.from-chars chars) @"]")))
 
   (defn global-match-str [pattern data]
-    (Array.copy-map 
-      &(fn [m] (Maybe.unsafe-from (extract m data))) 
+    (Array.copy-map
+      (fn [m] (Maybe.unsafe-from (extract m data)))
       &(find-all-matches pattern data)))
 
 
@@ -199,7 +199,7 @@ list of those characters.")
 
   (doc words "splits a string into words.")
   (defn words [s]
-    (Array.endo-filter &(fn [s] (not (empty? s))) (split-by s &[\tab \space \newline])))
+    (Array.endo-filter (fn [s] (not (empty? s))) (split-by s &[\tab \space \newline])))
 
   (doc lines "splits a string into lines.")
   (defn lines [s]

@@ -1,18 +1,18 @@
-(defn my-curry [f] (fn [x] (fn [y] (f x y))))
-(defn double-curry [f] (fn [x] (fn [y] (fn [z] (f x y z)))))
+(defn my-curry [f] @(fn [x] @(fn [y] (f x y))))
+(defn double-curry [f] @(fn [x] @(fn [y] @(fn [z] (f x y z)))))
 
 (defn make-cb []
-  ((fn []
-     (let [x "hi"]
-       (fn [] (IO.println x))))))
+  (~(fn []
+      (let [x "hi"]
+        @(fn [] (IO.println x))))))
 
 (defn make-cb2 []
-  ((fn []
-     (let [x "hello"
-           f (fn [] (IO.println x))]
-       f))))
+  (~(fn []
+      (let [x "hello"
+            f @(fn [] (IO.println x))]
+        f))))
 
 (defn main []
   (do ((make-cb))
       ((make-cb2))
-      (((my-curry (fn [x y] (Int.+ x y))) 1) 2)))
+      (((my-curry @(fn [x y] (Int.+ x y))) 1) 2)))

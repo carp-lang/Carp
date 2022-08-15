@@ -1,4 +1,4 @@
 (defn main []
   (let-do [xs $[1 2 3 4 5]]
-    (StaticArray.map! xs &(fn [x] (* @x 2)))
-    (println* (StaticArray.reduce &(fn [total x] (+ total @x)) 0 xs))))
+    (StaticArray.map! xs (fn [x] (* @x 2)))
+    (println* (StaticArray.reduce (fn [total x] (+ total @x)) 0 xs))))

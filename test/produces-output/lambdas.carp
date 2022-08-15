@@ -9,7 +9,7 @@
 
 (defn create-function []
   (let [x @"hello"
-        f (fn [] @&x)] ; Lambda takes ownership of the string, needs to copy it each time it returns it.
+        f @(fn [] @&x)] ; Lambda takes ownership of the string, needs to copy it each time it returns it.
     f))
 
 ;; Example 2, returning a function
@@ -27,7 +27,7 @@
 
 (defn cap [capture-me]
   (let [and-me 1000]
-    (fn [not-me]
+    @(fn [not-me]
       (let [nor-me 100]
         (+ (+ (+ (+ global-variable capture-me) and-me) not-me) nor-me)))))
 
@@ -41,11 +41,11 @@
 
 ;; Example 6, handle various kinds of functions together
 (defn pow-to [exponent to]
-  (let [ff1 (fn [] ())
+  (let [ff1 @(fn [] ())
         ff2 @&ff1
         to-copy @to
         upper (to-copy)]
-    (endo-map &(fn [x] (Int.pow x exponent)) (range-or-default 0 upper 1))))
+    (endo-map (fn [x] (Int.pow x exponent)) (range-or-default 0 upper 1))))
 
 (defn twenty [] 20)
 
@@ -72,18 +72,28 @@
   (~f 1))
 
 (defn wrapper [f]
-  (call-with-1 &(fn [x] (~f x))))
+  (call-with-1 (fn [x] (~f x))))
 
 (defn example-9 []
   (println* (wrapper &Int.inc)))
 
 ;; Example 10, more realistic example of capturing ref to function
 (defn update-bs [arr f]
-  (Array.endo-map &(fn [p] (Pair.update-b p f)) arr))
+  (Array.endo-map (fn [p] (Pair.update-b p f)) arr))
 
 (defn example-10 []
   (let [arr [(Pair.init 1 1)]]
     (println* &(update-bs arr &Int.inc))))
+
+;; Example 11, capture ref and call the lambda later
+(defn cap-ref [r]
+  (fn [] @r))
+
+(defn example-11 []
+  (let [s @"hello"
+        r &s
+        f (cap-ref r)]
+    (println* (~f))))
 
 (defn-do main []
   ;;(example-1 "!")
@@ -95,4 +105,5 @@
   (example-7)
   (example-8)
   (example-9)
-  (example-10))
+  (example-10)
+  (example-11))
