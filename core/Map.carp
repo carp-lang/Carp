@@ -832,8 +832,8 @@ collision.")
   "Implementation notes: it is a map from elements to number of occurrences"
   "under the hood.")
 (defmodule Bag
-  ;(private internal)
-  ;(hidden internal)
+  (private internal)
+  (hidden internal)
   (private set-internal)
   (hidden set-internal)
   (private update-internal)
@@ -910,5 +910,5 @@ collision.")
                       @"(Bag"
                       set)]
       (String.append &res ")")))
-  (implements str Set.str)
+  (implements str Bag.str)
 )
