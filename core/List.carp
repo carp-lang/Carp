@@ -320,7 +320,7 @@ elements is uneven, the trailing element will be discarded.")
     (defndynamic pairs [l]
       (if (< (length l) 2)
         '()
-        (cons `(%(car l) %(cadr l)) (List.pairs (cddr l)))))
+        (cons (list (car l) (cadr l)) (List.pairs (cddr l)))))
 
     (doc nth "gets the nth element of the list `l`.")
     (defndynamic nth [l n]
