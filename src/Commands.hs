@@ -592,6 +592,10 @@ commandStringConcat ctx a =
       case mapM unwrapStringXObj strings of
         Left err -> evalError ctx err (xobjInfo a)
         Right result -> (ctx, Right (XObj (Str (join result)) (Just dummyInfo) (Just StringTy)))
+    XObj (Lst strings) _ _ ->
+      case mapM unwrapStringXObj strings of
+        Left err -> evalError ctx err (xobjInfo a)
+        Right result -> (ctx, Right (XObj (Str (join result)) (Just dummyInfo) (Just StringTy)))
     _ -> evalError ctx ("Can't call concat with " ++ pretty a) (xobjInfo a)
 
 commandStringSplitOn :: BinaryCommandCallback
