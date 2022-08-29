@@ -356,4 +356,117 @@
                 2
                 (Array.length &(Set.to-array &(Set.from-array &[1 2])))
                 "Set.to-array works 2"
+  )
+  (assert-true test
+               (let-do [s (Bag.create)]
+                 (Bag.put! &s "1")
+                 (Bag.contains? &s "1"))
+               "put! works"
+  )
+  (assert-equal test
+                1
+                (Bag.length &(Bag.put (Bag.create) "1"))
+                "length works"
+  )
+  (assert-equal test
+                2
+                (Bag.length &(Bag.put (Bag.put (Bag.create) "1") "2"))
+                "length works"
+  )
+  (assert-equal test
+                2
+                (Bag.length &(Bag.put (Bag.put (Bag.create) "1") "1"))
+                "putting the same element twice increases size"
+  )
+  (assert-equal test
+                0
+                (Bag.length &(the (Bag Int) (Bag.create)))
+                "length works on empty bag"
+  )
+  (assert-equal test
+                false
+                (Bag.contains? &(the (Bag String) (Bag.create)) "1")
+                "contains? works on empty map"
+  )
+  (assert-equal test
+                true
+                (Bag.contains? &(Bag.put (Bag.create) "1") "1")
+                "contains? works"
+  )
+  (assert-equal test
+                true
+                (Bag.contains? &(Bag.put (Bag.create) &-7) &-7)
+                "contains? works with negative keys"
+  )
+  (assert-equal test
+                true
+                (Bag.empty? &(the (Bag Int) (Bag.create)))
+                "empty? works on empty bag"
+  )
+  (assert-equal test
+                false
+                (Bag.empty? &(Bag.put (Bag.create) "1"))
+                "empty? works"
+  )
+  (assert-equal test
+                true
+                (Bag.empty? &(Bag.remove (Bag.put (Bag.create) "1") "1"))
+                "remove works"
+  )
+  (assert-equal test
+                true
+                (Bag.all? &(fn [i] (Int.even? @i)) &(Bag.from-array &[2 4 6 6]))
+                "Bag.all? works I"
+  )
+  (assert-equal test
+                false
+                (Bag.all? &(fn [i] (Int.even? @i)) &(Bag.from-array &[2 4 7]))
+                "Bag.all? works II"
+  )
+  (assert-equal test
+                true
+                (Bag.all? &(fn [i] false) &(the (Bag Int) (Bag.create)))
+                "Bag.all? works on empty set"
+  )
+  (assert-equal test
+                true
+                (Bag.= &(Bag.from-array &[1 3 5]) &(Bag.from-array &[1 3 5]))
+                "Bag.= works"
+  )
+  (assert-equal test
+                false
+                (Bag.= &(Bag.from-array &[1 3]) &(Bag.from-array &[1 3 5]))
+                "Bag.= works II"
+  )
+  (assert-equal test
+                false
+                (Bag.= &(Bag.from-array &[1 3 5]) &(Bag.from-array &[1 3]))
+                "Bag.= works III"
+  )
+  (assert-equal test
+                false
+                (Bag.= &(Bag.from-array &[1 3 5]) &(Bag.from-array &[1 4 5]))
+                "Bag.= works IV"
+  )
+  (assert-equal test
+                71
+                (Bag.reduce &(fn [state i] (+ state (* 10 @i)))
+                            1
+                            &(Bag.from-array &[1 2 3 1]))
+                "reduce works"
+  )
+  (assert-equal test
+                "(Bag @\"hi\" @\"hi\" @\"bye\")"
+                &(str &(Bag.from-array &[@"hi" @"bye" @"hi"]))
+                "stringification works"
+  )
+  (assert-equal test
+                &[1]
+                &(Bag.to-array &(Bag.put (Bag.create) &1))
+                "Bag.to-array works 1"
+  )
+  (assert-equal test
+                3
+                (Array.length &(Bag.to-array &(Bag.from-array &[1 2 1])))
+                "Bag.to-array works 2"
   ))

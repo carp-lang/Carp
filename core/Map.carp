@@ -274,13 +274,28 @@
 
   (doc update-with-default "Update value at key k in map with function f. If k doesn't exist in map, set k to (f v).")
   (defn update-with-default [m k f v]
-    (let [idx (Int.positive-mod (hash k) @(n-buckets &m))]
-      (update-buckets m &(fn [b]
-        (let [n (Array.unsafe-nth &b idx)
-              i (Bucket.find n k)]
-          (if (<= 0 i)
-            (Array.aset b idx (Bucket.set-idx @n i &(~f (Bucket.get-idx n i))))
-            (Array.aset b idx (Bucket.push-back @n k &(~f @&v)))))))))
+    (let [idx (Int.positive-mod (hash k) @(n-buckets &m))
+          in? (Map.contains? &m k)]
+      (update-len
+        (update-buckets m &(fn [b]
+          (let [n (Array.unsafe-nth &b idx)
+                i (Bucket.find n k)]
+            (if (<= 0 i)
+              (Array.aset b idx (Bucket.set-idx @n i &(~f (Bucket.get-idx n i))))
+              (Array.aset b idx (Bucket.push-back @n k &(~f @&v)))))))
+           &(if in? id Int.inc))))
+
+  (doc update-with-default! "Update value at key k in map with function f, in-place. If k doesn't exist in map, set k to (f v).")
+  (defn update-with-default! [m k f v]
+    (let-do [idx (Int.positive-mod (hash k) @(n-buckets m))
+          b (buckets m)
+          n (Array.unsafe-nth b idx)
+          i (Bucket.find n k)]
+      (if (<= 0 i)
+          (Array.aset! b idx (Bucket.set-idx @n i &(~f (Bucket.get-idx n i))))
+          (do
+            (set-len! m (Int.inc @(len m)))
+            (Array.aset! b idx (Bucket.push-back @n k &(~f @&v)))))))
 
   (doc length "Get the length of the map m.")
   (defn length [m]
@@ -805,4 +820,95 @@ collision.")
     (doc to-array "creates an array of key-value pairs from the map `m`.")
     (defndynamic to-array [m] (collect-into (reduce append '() m) array))
   )
+)
+
+(deftype (Bag a) [
+  internal (Map a Int)
+])
+
+(doc Bag
+  "is an unordered datatype that only stores all its equal elements once while preserving size by storing the count of each element."
+  ""
+  "Implementation notes: it is a map from elements to number of occurrences"
+  "under the hood.")
+(defmodule Bag
+  (private internal)
+  (hidden internal)
+  (private set-internal)
+  (hidden set-internal)
+  (private update-internal)
+  (hidden internal)
+
+  (doc create "Create an empty bag.")
+  (defn create []
+    (init (Map.create)))
+
+  (doc contains? "Check whether the bag `b` contains the value `v`.")
+  (defn contains? [b v]
+    (Map.contains? (internal b) v))
+
+  (doc put "Put a value `v` into the bag `b`.")
+  (defn put [b v]
+    (update-internal b &(fn [m] (Map.update-with-default m v &Int.inc 0))))
+
+  (doc put! "Put a value `v` into the bag `b` in-place.")
+  (defn put! [b v]
+    (Map.update-with-default! (internal b) v &Int.inc 0))
+
+  (doc length "Get the length of bag `b`.")
+  (defn length [b]
+    (Map.kv-reduce &(fn [acc _ v] (+ acc @v)) 0 (internal b)))
+
+  (doc empty? "Check whether the bag `b` is empty.")
+  (defn empty? [b]
+    (Map.empty? (internal b)))
+  (implements empty? Bag.empty?)
+
+  (doc remove "Remove the value `v` from the bag `b`.")
+  (defn remove [b v]
+    (if (not (contains? &b v))
+      b
+      (update-internal b &(fn [m]
+        (let [cnt (Map.get &m v)]
+          (if (= cnt 1)
+            (Map.remove m v)
+            (Map.update m v &Int.dec)))))))
+
+  (doc all? "Does the predicate hold for all values in this bag?")
+  (defn all? [pred bag]
+    (Array.all? pred &(Map.keys (internal bag))))
+
+  (defn = [a b]
+    (= (internal a) (internal b)))
+  (implements = Bag.=)
+
+  (doc for-each "Execute the unary function f for each element in the bag b.")
+  (defn for-each [b f]
+    (doall f (Map.keys (internal b))))
+
+  (doc from-array "Create a bag from the values in array a.")
+  (defn from-array [a]
+    (let-do [b (create)]
+      (for [i 0 (Array.length a)]
+        (let [e (Array.unsafe-nth a i)]
+          (put! &b e)))
+      b))
+
+  (doc reduce "Reduce values of the bag b with function f. Order of reduction is not guaranteed")
+  (defn reduce [f init b]
+    (Map.kv-reduce
+      &(fn [r k cnt] (Array.reduce f r &(Array.replicate @cnt k)))
+      init
+      (internal b)))
+
+  (doc to-array "Convert bag to Array of elements")
+  (defn to-array [b]
+    (reduce &(fn [arr elt] (Array.push-back arr @elt)) [] b))
+
+  (defn str [set]
+    (let [res (reduce &(fn [s e] (String.join "" &[s @" " (prn e)]))
+                      @"(Bag"
+                      set)]
+      (String.append &res ")")))
+  (implements str Bag.str)
 )
