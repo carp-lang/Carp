@@ -103,18 +103,15 @@ isTypeHole :: (String, Ty) -> Bool
 isTypeHole ('?' : _, _) = True
 isTypeHole _ = False
 
-solveOne :: TypeMappings -> Constraint -> Either UnificationFailure TypeMappings
-solveOne = solveOneInternal
-
 debugSolveOne :: TypeMappings -> Constraint -> Either UnificationFailure TypeMappings
 debugSolveOne mappings constraint =
-  let m' = solveOneInternal mappings constraint
+  let m' = solveOne mappings constraint
    in trace
         ("" ++ show constraint ++ ", MAPPINGS: " ++ show m')
         m'
 
-solveOneInternal :: TypeMappings -> Constraint -> Either UnificationFailure TypeMappings
-solveOneInternal mappings constraint =
+solveOne :: TypeMappings -> Constraint -> Either UnificationFailure TypeMappings
+solveOne mappings constraint =
   case constraint of --trace ("SOLVE " ++ show constraint) constraint of
   -- Two type variables
     Constraint aTy@(VarTy aName) bTy@(VarTy bName) _ _ _ _ ->
@@ -129,9 +126,9 @@ solveOneInternal mappings constraint =
     -- Struct types
     Constraint (StructTy nameA varsA) (StructTy nameB varsB) _ _ _ _ ->
       let (Constraint _ _ i1 i2 ctx ord) = constraint
-       in case solveOneInternal mappings (Constraint nameA nameB i1 i2 ctx ord) of
+       in case solveOne mappings (Constraint nameA nameB i1 i2 ctx ord) of
             Left err -> Left err
-            Right ok -> foldM (\m (aa, bb) -> solveOneInternal m (Constraint aa bb i1 i2 ctx ord)) ok (zip varsA varsB)
+            Right ok -> foldM (\m (aa, bb) -> solveOne m (Constraint aa bb i1 i2 ctx ord)) ok (zip varsA varsB)
     -- Func types
     Constraint (FuncTy argsA retA ltA) (FuncTy argsB retB ltB) _ _ _ _ ->
       if length argsA == length argsB
@@ -139,43 +136,43 @@ solveOneInternal mappings constraint =
           let (Constraint _ _ i1 i2 ctx ord) = constraint
               res =
                 foldM
-                  (\m (aa, bb) -> solveOneInternal m (Constraint aa bb i1 i2 ctx ord))
+                  (\m (aa, bb) -> solveOne m (Constraint aa bb i1 i2 ctx ord))
                   mappings
                   ( zip
                       (retA : argsA)
                       (retB : argsB)
                   )
            in case res of
-                Right ok -> solveOneInternal ok (Constraint ltA ltB i1 i2 ctx ord)
+                Right ok -> solveOne ok (Constraint ltA ltB i1 i2 ctx ord)
                 Left err -> Left err
         else Left (UnificationFailure constraint mappings)
     -- Pointer types
     Constraint (PointerTy a) (PointerTy b) _ _ _ _ ->
       let (Constraint _ _ i1 i2 ctx ord) = constraint
-       in solveOneInternal mappings (Constraint a b i1 i2 ctx ord)
+       in solveOne mappings (Constraint a b i1 i2 ctx ord)
     -- Ref types
     -- TODO: This messes up the error message since the constraint is between non-reffed types so the refs don't show in the error message!!!
     Constraint (RefTy a ltA) (RefTy b ltB) _ _ _ _ ->
       let (Constraint _ _ i1 i2 ctx ord) = constraint
-       in case solveOneInternal mappings (Constraint a b i1 i2 ctx ord) of
+       in case solveOne mappings (Constraint a b i1 i2 ctx ord) of
             Left err -> Left err
-            Right ok -> solveOneInternal ok (Constraint ltA ltB i1 i2 ctx ord)
+            Right ok -> solveOne ok (Constraint ltA ltB i1 i2 ctx ord)
     -- As a special case, allow Refs to stand for higher-order polymorphic
     -- structs (f a b) ~ (Ref a b)
     Constraint (StructTy v@(VarTy _) args) (RefTy b ltB) _ _ _ _ ->
       let (Constraint _ _ i1 i2 ctx ord) = constraint
-       in case solveOneInternal mappings (Constraint v (RefTy b ltB) i1 i2 ctx ord) of
+       in case solveOne mappings (Constraint v (RefTy b ltB) i1 i2 ctx ord) of
             Left err -> Left err
-            Right ok -> foldM (\m (aa, bb) -> solveOneInternal m (Constraint aa bb i1 i2 ctx ord)) ok (zip args [b, ltB])
+            Right ok -> foldM (\m (aa, bb) -> solveOne m (Constraint aa bb i1 i2 ctx ord)) ok (zip args [b, ltB])
     -- TODO: The reverse argument order is necessary here since interface code
     -- uses the opposite order of most other solving code (abstract, concrete
     -- vs. concrete, abstract)--we should bring the interface code into
     -- compliance with this to obviate this stanza
     Constraint (RefTy b ltB) (StructTy v@(VarTy _) args) _ _ _ _ ->
       let (Constraint _ _ i1 i2 ctx ord) = constraint
-       in case solveOneInternal mappings (Constraint v (RefTy b ltB) i1 i2 ctx ord) of
+       in case solveOne mappings (Constraint v (RefTy b ltB) i1 i2 ctx ord) of
             Left err -> Left err
-            Right ok -> foldM (\m (aa, bb) -> solveOneInternal m (Constraint aa bb i1 i2 ctx ord)) ok (zip args [b, ltB])
+            Right ok -> foldM (\m (aa, bb) -> solveOne m (Constraint aa bb i1 i2 ctx ord)) ok (zip args [b, ltB])
     -- Else
     Constraint _ CTy _ _ _ _ -> Right mappings
     Constraint CTy _ _ _ _ _ -> Right mappings
@@ -207,37 +204,37 @@ checkConflictInternal mappings constraint name otherTy =
         Just (VarTy _) -> ok
         Just (StructTy (VarTy _) structTyVars) ->
           case otherTy of
-            StructTy _ otherTyVars -> foldM solveOneInternal mappings (zipWith (mkConstraint OrdStruct xobj1 xobj2 ctx) structTyVars otherTyVars)
+            StructTy _ otherTyVars -> foldM solveOne mappings (zipWith (mkConstraint OrdStruct xobj1 xobj2 ctx) structTyVars otherTyVars)
             VarTy _ -> Right mappings
             _ -> Left (UnificationFailure constraint mappings)
         Just (StructTy (ConcreteNameTy structName) structTyVars) ->
           case otherTy of
             StructTy (ConcreteNameTy otherStructName) otherTyVars
-              | structName == otherStructName -> foldM solveOneInternal mappings (zipWith (mkConstraint OrdStruct xobj1 xobj2 ctx) structTyVars otherTyVars)
-            StructTy (VarTy _) otherTyVars -> foldM solveOneInternal mappings (zipWith (mkConstraint OrdStruct xobj1 xobj2 ctx) structTyVars otherTyVars)
+              | structName == otherStructName -> foldM solveOne mappings (zipWith (mkConstraint OrdStruct xobj1 xobj2 ctx) structTyVars otherTyVars)
+            StructTy (VarTy _) otherTyVars -> foldM solveOne mappings (zipWith (mkConstraint OrdStruct xobj1 xobj2 ctx) structTyVars otherTyVars)
             VarTy _ -> Right mappings
             _ -> Left (UnificationFailure constraint mappings)
         Just (FuncTy argTys retTy lifetimeTy) ->
           case otherTy of
             FuncTy otherArgTys otherRetTy otherLifetimeTy ->
               do
-                m <- foldM solveOneInternal mappings (zipWith (mkConstraint OrdFunc xobj1 xobj2 ctx) argTys otherArgTys)
-                case solveOneInternal m (mkConstraint OrdFunc xobj1 xobj2 ctx retTy otherRetTy) of
-                  Right _ -> solveOneInternal m (mkConstraint OrdFunc xobj1 xobj2 ctx lifetimeTy otherLifetimeTy)
+                m <- foldM solveOne mappings (zipWith (mkConstraint OrdFunc xobj1 xobj2 ctx) argTys otherArgTys)
+                case solveOne m (mkConstraint OrdFunc xobj1 xobj2 ctx retTy otherRetTy) of
+                  Right _ -> solveOne m (mkConstraint OrdFunc xobj1 xobj2 ctx lifetimeTy otherLifetimeTy)
                   Left err -> Left err
             VarTy _ -> Right mappings
             _ -> Left (UnificationFailure constraint mappings)
         Just (PointerTy innerTy) ->
           case otherTy of
-            PointerTy otherInnerTy -> solveOneInternal mappings (mkConstraint OrdPtr xobj1 xobj2 ctx innerTy otherInnerTy)
+            PointerTy otherInnerTy -> solveOne mappings (mkConstraint OrdPtr xobj1 xobj2 ctx innerTy otherInnerTy)
             VarTy _ -> Right mappings
             _ -> Left (UnificationFailure constraint mappings)
         Just (RefTy innerTy lifetimeTy) ->
           case otherTy of
             RefTy otherInnerTy otherLifetimeTy ->
-              case solveOneInternal mappings (mkConstraint OrdRef xobj1 xobj2 ctx innerTy otherInnerTy) of
+              case solveOne mappings (mkConstraint OrdRef xobj1 xobj2 ctx innerTy otherInnerTy) of
                 Left err -> Left err
-                Right smappings -> solveOneInternal smappings (mkConstraint OrdRef xobj1 xobj2 ctx lifetimeTy otherLifetimeTy)
+                Right smappings -> solveOne smappings (mkConstraint OrdRef xobj1 xobj2 ctx lifetimeTy otherLifetimeTy)
             VarTy _ -> Right mappings
             _ -> Left (UnificationFailure constraint mappings)
         Just foundNonVar -> case otherTy of
