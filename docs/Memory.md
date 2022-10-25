@@ -1,16 +1,98 @@
 # Memory Management - a closer look
 
-### Related pages
+Carp uses a *linear type system* to manage the memory associated with different
+values throughout a program. The goals of the memory management system in Carp
+are the following:
 
-* [Drop](Drop.md) - a deeper look at the `drop` interface
+* Predictable: The memory management system's behavior should be easy to reason
+  about.
+* Efficient: The memory management system should not have significant impacts
+  on performance.
+* Safe: The memory management system should prevent errors related to memory
+  management, such as "use after free" and "double free"
 
-The goals of the memory management system in Carp are the following:
+This document describes how the memory management system works.
 
-* Predictable
-* Efficient
-* Safe
+## Linear Types and Scopes
 
-This is achieved through a linear type system where memory is owned by the function or let-scope that allocated it. When the scope is exited the memory is deleted, unless it was returned to its outer scope or handed off to another function (passed as an argument). The other thing that can be done is temporarily lending out some piece of memory to another function using a ref:
+Carp's linear type system tracks the *ownership* of the memory associated with
+a given value as part of its type signature. A *linear type* is a traditional
+type with additional information, called a *lifetime* that allows the type
+system to track a value's association with a given memory location.
+
+The memory management system *only* manages linear types; not all types are
+linear. Some of Carp's builtin types are linear by default:
+
+- The String type is linear and managed by the memory system.
+- The Pattern type is linear and managed by the memory system.
+- The Array type is linear and managed by the memory system.
+- The Box type is linear and managed by the memory system.
+- Function types are linear and managed by the memory system.
+
+All other builtin types are not linear, and thus aren't managed by the memory
+system.
+
+A few conditions determine whether or not a user defined type is linear:
+
+- **Implementation of the `blit` interface**: this interface explicitly marks a
+  type as *non-linear*. Any type that implements it is ignored by the memory
+  management system and is assumed to pose no risks in relation to memory
+  allocation and deallocation. For example, any type that can be stack allocated
+  in C and never needs to be passed by reference.
+- **Implementation of the `delete` interface**: this interface explicitly marks
+  a type as *linear*. Any type that implements it is managed by the memory
+  management system. Carp will call the implementation of this interface whenever
+  the memory management system decides it's safe to deallocate the memory
+  associated with a value of the type that implements this interface. 
+ 
+In the next section, we'll explore a few key memory system operations and
+examples to illustrate how the system manages values of linear types.
+
+## Ownership
+
+By default, the memory associated with a value of a linear type is associated
+with the *binding* of the value. The binding is always some name given to the
+value. For example, in a let declaration, such as `[s (make-string)]`, `s` is
+the binding for an associated linear String value. In a function call, such as
+`(do-something (make-string))` the allocated string is instead associated with
+the binding determined by the function declaration's parameters; e.g. if we
+declared `do-something` as `(defun do-something [y])` the linear String value
+would be associated with the binding `y`. 
+
+When a binding is associated with a linear type value, the binding *owns* the
+value. This association is called the value's *lifetime*. In the most basic
+case, the value's lifetime is the same as the binding's *scope*: the binding is
+no longer valid when its lexical scope ends (e.g. we cannot refer to a function
+parameter outside the body of a function), when this happens, the memory system
+ensures that the memory associated with the linear value tied to the binding is
+deallocated. These concepts in concert are often referred to as *ownership*. A
+binding is said to *own* a value when the invalidation of the binding
+corresponds to the invalidation of its associated memory. We could also express
+this by claiming the linear value has a *lexical lifetime*: the validity of its
+memory is determined by lexical scope.
+
+We'll consider a short example to illustrate this point, consider the following
+let declaration:
+
+```
+(let [s (make-string)])
+```
+
+In this short let form, the binding `s` owns the memory associated with a
+linear string value. We don't do anything with this value, and as soon as the
+let scope ends (at the second parenthesis) the memory associated with `s` is
+cleaned up and no longer usable. 
+
+This is all well and good, but we cannot do much with strictly lexical memory.
+We'll explore how we can actually use linear values next.
+
+## Borrowing and Transferring  
+ 
+Where memory is owned by the function or let-scope that allocated it. When the
+scope is exited the memory is deleted, unless it was returned to its outer
+scope or handed off to another function (passed as an argument). The other
+thing that can be done is temporarily lending out some piece of memory to
+another function using a ref:
 
 ```
 (let [s (make-string)]
@@ -188,3 +270,8 @@ void f() {
 Note that a deleter is emitted for the value of type `Foo` once the `let` block
 ends and it goes out of scope, but not for the value of type `Bar`, which has
 no deleter associated with it.
+
+### Related pages
+
+* [Drop](Drop.md) - a deeper look at the `drop` interface
+
