@@ -90,7 +90,7 @@ We'll explore how we can actually use linear values next.
 
 At a high level, the functionality of the linear type system can be organized into three primary operations: *moving*, *borrowing*, and *copying*. These are casual, intuitive terms for what the system does with linear values as it manages them across your program. Well explore precise technical terminology for each of these operations later on.
 
-### Moving: Transferring Ownership 
+### Moving: Transferring Ownership
 
 The memory management system ensures that only one binding ever owns the memory associated with a given linear value. As a result, unlike non-linear values, the compiler won't let you bind the same lonear value to more than one variable. Instead, when you reassign a linear value to another vairable, the old binding is invalidated:
 
@@ -153,6 +153,29 @@ Using references, we can get our initial string reversal and concatenation progr
 
 In this case, we have no idea how `reverse` actually uses the reference to produce a reversed string, but we’ve followed the memory management system’s rules correctly.
 
+### Copying: Increasing Supply
+
+Now that we’ve explored references and borrowing, you might wonder what we can do with references. Again, references are not linear values themselves, but they “point” to linear values. Their behaviors and relation to the type system differ. So, what can we accomplish with references?
+
+In Carp, references support only a single operation, called *copying*. Copying a reference creates a new linear value that *replicates* the linear value the reference is pointing to. This new linear value is completely distinct from the original linear value the reference points to. It has its own lifetime, and, just like other linear values, the memory management system will determine when to remove it. 
+
+Copying allows us to work with some linear value in multiple places in a safe way. To copy the value pointed to by a reference, use the `@` operator. The following example shows how the `reverse` function might be implemented:
+
+```clojure
+(defn reverse [string-ref]
+  (reverse-internal @string-ref))
+```
+
+The function takes a reference to a linear string value, makes a copy of it, reverses the copy, then returns the resulting linear value to the caller. Note that we haven’t touched the original linear string pointed to by the `string-ref` reference, we only work with a copy! 
+
+We can also now understand the syntax we used earlier: 
+
+```clojure
+string @"hello, linear world!"
+```
+
+This binds a *copy* of the string literal to the variable `string`. This reveals an important aspect of Carp’s builtin string literals: they are references! We’ll explore why this makes sense a bit later.
+
 Binding a reference to a linear value is sometimes called "borrowing". In this example, the linear value still has a lexical lifetime, as soon as s is invalidated, its corresponding memory will be too--the system knows, however, that references are safe.
 
 Where memory is owned by the function or let-scope that allocated it. When the
@@ -173,8 +196,6 @@ In the example above s is of type String and it's contents are temporarily borro
   (do (println &s)
       s))
 ```
-
-### Copying: Increasing Supply
 
 ## Rule of thumb
 
