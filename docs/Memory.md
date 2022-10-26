@@ -86,26 +86,95 @@ cleaned up and no longer usable.
 This is all well and good, but we cannot do much with strictly lexical memory.
 We'll explore how we can actually use linear values next.
 
-## Borrowing and Transferring  
- 
+## Moving, Borrowing, and Copying
+
+At a high level, the functionality of the linear type system can be organized into three primary operations: *moving*, *borrowing*, and *copying*. These are casual, intuitive terms for what the system does with linear values as it manages them across your program. Well explore precise technical terminology for each of these operations later on.
+
+### Moving: Transferring Ownership 
+
+The memory management system ensures that only one binding ever owns the memory associated with a given linear value. As a result, unlike non-linear values, the compiler won't let you bind the same lonear value to more than one variable. Instead, when you reassign a linear value to another vairable, the old binding is invalidated:
+
+```clojure
+(let [s (make-string)
+      t s
+      u s]) ;; error here!
+```
+
+In the prior example, the binding s is invalidated as soon as we assign it to the bidning t. The memory associated with s is now associated with the binding t, and t is the linear string's new owner. This process is called a *transfer of ownership*.
+
+Just as we trasferred ownership to another binding, we can use ownership transfers to extend the lifetime of a linear value *beyond* its lexical scope. Consider this next example:
+
+```clojure
+(let [s (make-string)]
+     s)
+```
+  
+In this case, a transfer of ownership occurs across lexical scope boundaries. The linear string associated with s and its corresponding memory are returned from the let form. If the result of this let form is bound to some other variable that new binding will recieve ownership of the linear string. Thus, the lifetimes of linear values are not only limited to their lexical scopes.
+
+In some cases, transferring ownership might be too limiting. Let's reconsider the earlier example, in which we tried to transfer ownership from s more than once:
+
+```clojure
+(let [s (make-string)
+      t s
+      u s]) ;; error!
+```
+
+We might want to write code like this, but under the current rules of the linear type system, we can't. Luckily, there's a way out: references. 
+
+### Borrowing: Lending Ownership
+
+As we explored in the previous section, we can’t assign a linear value to multiple bindings without transferring ownership. At any given time, only one binding can ever own the linear value.
+
+This restriction ensures the type system knows exactly when to deallocate the memory associated with a value, but it can be a bit limiting. For example, what if we wanted to process the value using a function, then use our original value afterwards?
+
+```clojure
+(let [string @"hello, linear world!"
+      reversed (reverse string)]
+  (concatenate string reversed)) ;; error!
+```
+
+This short let block calls some imaginary functions to first reverse our linear string, then join it with itself, returning the result. However there’s a big problem here, once we pass our string to `reverse` the memory management system won’t let us use it in `concat`! (If it’s unclear why, recall the golden rule of the linear type system: only on *binding* can ever own a linear value. When we pass `string` to `reverse` the linear value is moved into the the function’s parameter binding, invalidating `string`, so we cannot use it a second time).
+
+Luckily, there’s a mechanism that allows us to reuse `string` more than once in our let block: *references*.
+
+References are another special type that the memory management system understands how to work with. References are *not* linear types, but they give us another way of working with linear types that allows us to get around the type system’s “one owner” restriction safely.
+
+A reference value points to some linear value, but because the reference is not linear value itself, but rather a new, non-linear value, we’re allowed to pass them around freely, just like we can with other non-linear values. Assigning a reference to a linear value to some binding is called *borrowing*. Instead of transferring ownership of a linear value to a new binding, we’re giving it a temporary way to access the value, without taking it over.
+
+Use the `&` operator to create a reference:
+
+```clojure
+(let [string @"hello, linear world!"
+      reversed (reverse &string)]
+  (concatenate string reversed)
+```
+
+Using references, we can get our initial string reversal and concatenation program to work, the memory manager won’t complain. Since `string` is *borrowed* by `reverse`, using a reference, there’s no longer an issue using it directly in `concat` since this is now the one and only time it transfers ownership (moves).
+
+In this case, we have no idea how `reverse` actually uses the reference to produce a reversed string, but we’ve followed the memory management system’s rules correctly.
+
+Binding a reference to a linear value is sometimes called "borrowing". In this example, the linear value still has a lexical lifetime, as soon as s is invalidated, its corresponding memory will be too--the system knows, however, that references are safe.
+
 Where memory is owned by the function or let-scope that allocated it. When the
 scope is exited the memory is deleted, unless it was returned to its outer
 scope or handed off to another function (passed as an argument). The other
 thing that can be done is temporarily lending out some piece of memory to
 another function using a ref:
 
-```
+```clojure
 (let [s (make-string)]
   (println &s))
 ```
 
 In the example above s is of type String and it's contents are temporarily borrowed by 'println'. When the let-scope ends Carp will make sure that a call to `(String.delete s)` is inserted at the correct position. To avoid 's' being deleted, the let-expression could return it:
 
-```
+```clojure
 (let [s (make-string)]
   (do (println &s)
       s))
 ```
+
+### Copying: Increasing Supply
 
 ## Rule of thumb
 
@@ -122,7 +191,7 @@ The most important thing in Carp is to process arrays of data. Here's an example
     (reduce add 0 &(endo-map square (filter even? stuff)))))
 ```
 
-All the array transforming functions 'endo-map' and 'filter' use C-style mutation of the array and return the same data structure back afterwards, no allocation or deallocation needed. The lifetime analyzer ("borrow checker" in [Rust](https://www.rust-lang.org) parlance) makes sure that the same data structure isn't used in several places.
+All the array transforming functions 'endo-map' and 'filter' use C-style mutation of the array and return the same data structure back afterwards, no allocation or deallocation needed. The lifetime analyzer ("borrow checker" in [Rust][1] parlance) makes sure that the same data structure isn't used in several places.
 
 The restriction of 'endo-map' is that it must return an array of the same type as the input. If that's not possible, use 'copy-map' instead. It works like the normal 'map' found in other functional languages. The 'copy-' prefix is there to remind you of the fact that the function is allocating memory.
 
@@ -273,5 +342,8 @@ no deleter associated with it.
 
 ### Related pages
 
-* [Drop](Drop.md) - a deeper look at the `drop` interface
+* [Drop][2] - a deeper look at the `drop` interface
 
+
+[1]:	https://www.rust-lang.org
+[2]:	Drop.md
