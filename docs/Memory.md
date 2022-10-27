@@ -50,43 +50,102 @@ In the following sections, we'll explore a few key memory system operations.
 Along the way, we'll present examples using Carp's builtin linear String type
 to illustrate how the system manages values of linear types.
 
-## Ownership
+## Bindings, Ownership, and Lexical Scopes
 
-By default, the memory associated with a value of a linear type is associated
-with the *binding* of the value. The binding is always some name given to the
-value. For example, in a let declaration, such as `[s (make-string)]`, `s` is
-the binding for an associated linear String value. In a function call, such as
-`(do-something (make-string))` the allocated string is instead associated with
-the binding determined by the function declaration's parameters; e.g. if we
-declared `do-something` as `(defun do-something [y])` the linear String value
-would be associated with the binding `y`. 
+Unless your program is incredibly short, you'll likely have one or more
+*bindings* that associate names with values in your program. Typically, we can
+assign the value of one binding to another. Consider the following local
+variables in a let form: 
 
-When a binding is associated with a linear type value, the binding *owns* the
-value. This association is called the value's *lifetime*. In the most basic
-case, the value's lifetime is the same as the binding's *scope*: the binding is
-no longer valid when its lexical scope ends (e.g. we cannot refer to a function
-parameter outside the body of a function), when this happens, the memory system
-ensures that the memory associated with the linear value tied to the binding is
-deallocated. These concepts in concert are often referred to as *ownership*. A
-binding is said to *own* a value when the invalidation of the binding
-corresponds to the invalidation of its associated memory. We could also express
-this by claiming the linear value has a *lexical lifetime*: the validity of its
-memory is determined by lexical scope.
-
-We'll consider a short example to illustrate this point, consider the following
-let declaration:
-
-```
-(let [s (make-string)])
+```clojure
+(let [x 1
+      y x
+      z x]
+  x)
 ```
 
-In this short let form, the binding `s` owns the memory associated with a
-linear string value. We don't do anything with this value, and as soon as the
-let scope ends (at the second parenthesis) the memory associated with `s` is
-cleaned up and no longer usable. 
+In the example above, we assign the non-linear value *1* to `x`, then assign the
+value of `x` to `y`, then assign the value of `x` to `z`.
 
-This is all well and good, but we cannot do much with strictly lexical memory.
-We'll explore how we can actually use linear values next.
+In Carp, linear values are treated differently. When we assign a linear value to
+a binding, such as a local variable name, the *memory location* associated with
+the value is also bound to the name. This changes the rules about how we can
+assign values and pass them around a program. If we try to write the same
+program as we did above, using a value of the linear type, `String`, we get
+quite a different result:
+
+```clojure
+;; Don't worry about the @ before the string literal. We'll explain it soon.
+(let [string @"linear types!"
+      other-string string ;; used here!
+      yet-another-string string] ;; and here!
+  string) ;; and again here!
+```
+
+If you try to pass this program to the Carp compiler, you'll get an error in
+return: `You’re using a given-away value string`.
+
+This illustrates the 'golden rule' that the memory management system enforces:
+**every linear value can only be used once**. When we first assign `@"linear
+types!"` to the variable `string`, we've already used it once. When we attempt
+to assign `string` to `other-string` *and* `yet-another-string`, the memory
+management system will detect that we're attempting to use the single value
+`@"linear types!"` multiple times, which it won't allow. Note that *only*
+assigning the value to string, then `string` to `other-string` is OK, as long as
+we return `other-string`—we'll explain why in a later section.
+
+In casual terminology, this concept is called *ownership*. The binding to which
+the linear value is assigned *owns* its associated memory. We can call such a
+binding the value's *owner*. In this example, `string` is the initial owner of
+the memory allocated for the linear value `@"linear types!"`.
+
+Every binding in Carp has a *lexical scope* that determines where in the program
+the binding name is defined and can be validly referenced. The lexical scope of
+`string` in our example happens to be our let form. The lexical scope of a
+function parameter is only the body of the function.
+
+A linear value can only be used *once* in a single *lexical scope*. We "use" a
+linear value whenever we *pass it to a different lexical scope*. For example, we
+"use" `string`, if we return it:
+
+```clojure
+(let [string @"linear types!"]
+  string) ;; used here!
+```
+
+We also use it when we pass it to another function:
+
+```clojure
+(let [string @"linear types!"]
+  (do (reverse string) ;; used here!
+      ())) 
+```
+
+What do both of these cases have in common? They raise the possibility that
+`string`'s value (and it's assocaited memory) is passed to *another binding*
+(when we pass it to a function, it's rebound to the function parameter; when we
+return it, the caller might bind it to a new name in the lexical scope that
+contains our let). As we'll see later, these are two particular examples of a
+specific form of an operation we'll call *moving*. Binding the value of an
+existing linear binding, as in `(let [string @"linear types!" other-string
+string] ()))` is also a case of moving.
+
+### Safe Deallocations
+
+The "use once" restriction is the mechanism that allows the memory management
+system to prevent classical memory errors such as "use after free" and "double
+free". Enforcing that a linear value is only used *once* in any lexical scope,
+allows the management system to determine precisely when a binding's associated
+memory can be freed.
+
+When the memory management system determines some linear value will no longer be
+used in the lexical scope of it's *owner*, it automatically calls the
+corresponding linear type's `delete` implementation to free the associated
+memory.
+
+Now that we have an initial sense about the restrictions the memory management
+system enforces around our use of linear values, we'll explore a few operations
+the system performs that allow us to have greater flexibility.
 
 ## Moving, Borrowing, and Copying
 
@@ -102,71 +161,127 @@ The memory management system ensures that only one binding ever owns the memory
 associated with a given linear value. As a result, unlike non-linear values,
 the compiler won't let you bind the same linear value to more than one
 variable. Instead, when you reassign a linear value to another variable, The
-old binding is invalidated:
+old binding is invalidated, as we saw earlier:
 
 ```clojure
-(let [s (make-string)
-      t s
-      u s]) ;; error here!
+(let [string @"linear types!"
+      other-string string
+      yet-another-string string] ;; error here!
+  ()) 
 ```
 
-In the prior example, the binding s is invalidated as soon as we assign it to
-the binding t. The memory associated with s is now associated with the binding
-t, and t is the linear string's new owner. This process is called a *transfer
-of ownership*.
+In the prior example, the binding `string` is invalidated as soon as we assign
+it to the binding `other-string`. The memory associated with `string` is now
+associated with the binding `other-string`, and `other-string` is the linear
+string's new owner. This process is called a *transfer of ownership*, or
+*moving*.
 
-Just as we transferred ownership to another binding, we can use ownership
-transfers to extend the lifetime of a linear value *beyond* its lexical scope.
-Consider this next example:
+If we were to move our value across a number of bindings in sequence, we'd fix
+our problem! There's no issue with moving some linear value across different
+bindings in a lexical scope, there's only an issue if we attempt to move a value
+out of *the same binding* more than once:
 
 ```clojure
-(let [s (make-string)]
-     s)
+(let [string @"linear types!"          ;; linear string value here.
+      other-string string              ;; moved over to this binding
+      yet-another-string other-string] ;; still ok, moved to this binding
+  ()) 
 ```
-  
-In this case, a transfer of ownership occurs across lexical scope boundaries.
-The linear string associated with s and its corresponding memory are returned
-from the let form. If the result of this let form is bound to some other
-variable that new binding will receive ownership of the linear string. Thus,
-the lifetimes of linear values are not only limited to their lexical scopes.
+
+The important, and only rule about moving linear values is: *you can only move a
+linear value from an individual binding __once__* in any given lexical scope. If
+your code attempts to move a linear value from a binding more than once, the
+memory management system will chastise you!
+
+#### Moving to a New Scope
+
+Just as we transferred ownership of a linear value to another binding in the
+same lexical scope, we can use ownership transfers to move a linear value into a
+binding *beyond* its lexical scope.  Consider this next example:
+
+```clojure
+(let [string @"linear moves!"]
+  string)
+```
+ 
+Though it's not as obvious, a move is happening here! In this case, a transfer
+of ownership occurs across lexical scope boundaries. The linear string
+associated with `string` and its corresponding memory are returned from the let
+form. If the result of this let form is bound to some other variable, that new
+binding will receive ownership of the linear string. Thus, the lifetimes of
+linear values are not only limited to their lexical scopes. We can move linear
+values in and out of other scopes, and the memory management system will
+determine in which part of our code the value can be safely deallocated.
+
+Again, since returning the value is a *move*, or ownership transfer, the same
+rules around moves apply: we can only make *one* move out of a given binding in
+a single lexical scope:
+
+```clojure
+(let [string @"linear moves!"
+      other-string string] ;; ok; first move out of string
+  string) ;; error! Second move out of string
+```
+
+Passing a linear value as an argument to a function is another example of a move
+across lexical scopes. For instance, consider the following example:
+
+```clojure
+(let [string @"linear moves!"
+      reversed (reverse string)] ;; moved here!
+  reversed)
+```
+
+In this example, we *move* the linear value associated with `string` into the
+function's lexical scope, binding it to whatever parameter name the function
+declaration used for its first argument. Since we only moved the value out of
+`string` once, the memory management system happily accepts this program.
+
+#### Beyond Moves
 
 In some cases, transferring ownership might be too limiting. Let's reconsider
-the earlier example, in which we tried to transfer ownership from s more than
-once:
+the earlier example, in which we tried to transfer ownership from `string` more
+than once:
 
 ```clojure
-(let [s (make-string)
-      t s
-      u s]) ;; error!
+(let [string @"linear moves!"
+      other-string string
+      yet-another-string string] ;; error!
+  ())
 ```
 
-We might want to write code like this, but under the current rules of the
-linear type system, we can't. Luckily, there's a way out: references. 
+We might want to write "multi-move" code like this, but under the current rules
+of the linear type system, we can't. Luckily, there's a way out: references. 
 
 ### Borrowing: Lending Ownership
 
 As we explored in the previous section, we can’t assign a linear value to
-multiple bindings without transferring ownership. At any given time, only one
-binding can ever own the linear value.
+multiple bindings without transferring ownership. If we move a value from one
+binding to another, we can only do so once, even if one of those moves transfers
+ownership beyond the current scope. At any given point in a lexical scope, only
+one binding can ever own the linear value.
 
 This restriction ensures the type system knows exactly when to deallocate the
-memory associated with a value, but it can be a bit limiting. For example, what
-if we wanted to process the value using a function, then use our original value
-afterwards?
+memory associated with a linear value, but it can be a bit limiting. For
+example, what if we wanted to process the value using a function, then use our
+original value afterwards?
 
 ```clojure
-(let [string @"hello, linear world!"
+(let [string @"linear borrow!"
       reversed (reverse string)]
   (concatenate string reversed)) ;; error!
 ```
 
 This short let block calls some imaginary functions to first reverse our linear
 string, then join it with itself, returning the result. However there’s a big
-problem here, once we pass our string to `reverse` the memory management system
-won’t let us use it in `concat`! (If it’s unclear why, recall the golden rule
-of the linear type system: only on *binding* can ever own a linear value. When
-we pass `string` to `reverse` the linear value is moved into the function’s
-parameter binding, invalidating `string`, so we cannot use it a second time).
+problem here, once we move our string to `reverse`'s parameter the memory
+management system won’t let us use it in `concatenate` since it violates the
+"one move" rule.
+
+This time, the rule has put us in quite a difficult situation. We want to write
+a program that uses `string` twice, but there's no way for us to use it twice
+directly, thanks to the linear type system rules. Just passing `string` along to
+other bindings won't help us here either.
 
 Luckily, there’s a mechanism that allows us to reuse `string` more than once in
 our let block: *references*.
@@ -174,32 +289,33 @@ our let block: *references*.
 References are another special type that the memory management system
 understands how to work with. References are *not* linear types, but they give
 us another way of working with linear types that allows us to get around the
-type system’s “one owner” restriction safely.
+type system’s “one owner” and "one move" restriction safely.
 
 A reference value points to some linear value, but because the reference is not
 linear value itself, but rather a new, non-linear value, we’re allowed to pass
 them around freely, just like we can with other non-linear values. Assigning a
 reference to a linear value to some binding is called *borrowing*. Instead of
 transferring ownership of a linear value to a new binding, we’re giving it a
-temporary way to access the value, without taking it over.
+temporary way to access the value, without taking it over and moving it.
 
 Use the `&` operator to create a reference:
 
 ```clojure
 (let [string @"hello, linear world!"
-      reversed (reverse &string)]
-  (concatenate string reversed)
+      reversed (reverse &string)] ;; reference to string
+  (concatenate string reversed) ;; ok; first move of string
 ```
 
 Using references, we can get our initial string reversal and concatenation
-program to work, the memory manager won’t complain. Since `string` is
-*borrowed* by `reverse`, using a reference, there’s no longer an issue using it
-directly in `concat` since this is now the one and only time it transfers
-ownership (moves).
+program to work, the memory manager won’t complain. Since `string` is *borrowed*
+by `reverse`, using a reference, there’s no longer an issue using it directly in
+`concatenate` since this is now the one and only time it transfers ownership
+(moves).
 
 In this case, we have no idea how `reverse` actually uses the reference to
 produce a reversed string, but we’ve followed the memory management system’s
-rules correctly.
+rules correctly. In the next section, we'll explore how we can actually make use
+of the reference in an implementation of a function like reverse.
 
 ### Copying: Increasing Supply
 
@@ -208,12 +324,12 @@ do with references. Again, references are not linear values themselves, but
 they “point” to linear values. Their behaviors and relation to the type system
 differ. So, what can we accomplish with references?
 
-In Carp, references support only a single operation, called *copying*. Copying
-a reference creates a new linear value that *replicates* the linear value the
-reference is pointing to. This new linear value is completely distinct from the
-original linear value the reference points to. It has its own lifetime, and,
-just like other linear values, the memory management system will determine when
-to remove it. 
+In Carp, references, in general, (but we'll see that there are some special
+cases) support only a single operation, called *copying*. Copying a reference
+creates a new linear value that *duplicates* the linear value the reference is
+pointing to. This new linear value is completely distinct from the original
+linear value the reference points to. It has its own owner, and, just like other
+linear values, the memory management system will determine when to remove it. 
 
 Copying allows us to work with some linear value in multiple places in a safe
 way. To copy the value pointed to by a reference, use the `@` operator. The
@@ -221,15 +337,16 @@ following example shows how the `reverse` function might be implemented:
 
 ```clojure
 (defn reverse [string-ref]
-  (reverse-internal @string-ref))
+  (reverse-internal @string-ref)) ;; reference copied here!
 ```
 
 The function takes a reference to a linear string value, makes a copy of it,
 reverses the copy, then returns the resulting linear value to the caller. Note
 that we haven’t touched the original linear string pointed to by the
-`string-ref` reference, we only work with a copy! 
+`string-ref` reference, we only work with a copy!
 
-We can also now understand the syntax we used earlier: 
+We can also now understand the general string literal syntax we've used
+throughout this text: 
 
 ```clojure
 string @"hello, linear world!"
