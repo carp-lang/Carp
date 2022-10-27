@@ -17,10 +17,10 @@ currently implemented.
 
 ## Linear Types and Memory Management
 
-Carp's linear type system tracks the *ownership* of the memory associated with
-a given value as part of its type signature. A *linear type* is a traditional
-type with additional information, called a *lifetime* that allows the type
-system to track a value's association with a given memory location.
+Carp's linear type system tracks the *ownership* of the memory associated with a
+given value as part of its type signature. A *linear type* is a traditional type
+with additional information called a *lifetime* that allows the type system to
+track a value's association with a given memory location.
 
 The memory management system *only* manages linear types; not all types are
 linear. Some of Carp's builtin types are linear by default:
@@ -45,7 +45,12 @@ A few conditions determine whether or not a user defined type is linear:
   management system. Carp will call the implementation of this interface whenever
   the memory management system decides it's safe to deallocate the memory
   associated with a value of the type that implements this interface. 
- 
+
+The same conditions hold for [registered types][3] as well. If you register an
+external type defined in C, Carp won't manage it unless you provide an
+implementation of `delete` for the corresponding Carp type. See the [C interop
+documentation][3] for more information.
+
 In the following sections, we'll explore a few key memory system operations.
 Along the way, we'll present examples using Carp's builtin linear String type
 to illustrate how the system manages values of linear types.
@@ -536,3 +541,4 @@ no deleter associated with it.
 
 [1]:	https://www.rust-lang.org
 [2]:	Drop.md
+[3]:    CInterop.md#register-types
