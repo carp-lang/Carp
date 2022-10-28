@@ -46,6 +46,16 @@ A few conditions determine whether or not a user defined type is linear:
   the memory management system decides it's safe to deallocate the memory
   associated with a value of the type that implements this interface. 
 
+When you define a type directly in Carp code, using `deftype` Carp will
+*automatically implement the delete interface for you*. As a consequence, any
+type that you declare using `deftype` will be managed by the memory management
+system. In the most cases, this automatic management of user defined types is
+beneficial. You can always redefine `delete` for your type if you need to write
+a custom memory deallocation routine. However, if you need to define a type
+that requires fine-grained control over its memory deallocation, it might be
+better to define both the type and its deallocation routines in C, and register
+them in Carp.
+
 The same conditions hold for [registered types][3] as well. If you register an
 external type defined in C, Carp won't manage it unless you provide an
 implementation of `delete` for the corresponding Carp type. See the [C interop
@@ -157,7 +167,7 @@ the system performs that allow us to have greater flexibility.
 At a high level, the functionality of the linear type system can be organized
 into three primary operations: *moving*, *borrowing*, and *copying*. These are
 casual, intuitive terms for what the system does with linear values as it
-manages them across your program. Well explore precise technical terminology
+manages them across your program. We'll explore precise technical terminology
 for each of these operations later on.
 
 ### Moving: Transferring Ownership
@@ -201,8 +211,8 @@ memory management system will chastise you!
 #### Moving to a New Scope
 
 Just as we transferred ownership of a linear value to another binding in the
-same lexical scope, we can use ownership transfers to move a linear value into a
-binding *beyond* its lexical scope.  Consider this next example:
+same lexical scope, we can use ownership transfers to move a linear value into
+a binding *beyond* its lexical scope. Consider this next example:
 
 ```clojure
 (let [string @"linear moves!"]
@@ -303,7 +313,7 @@ reference to a linear value to some binding is called *borrowing*. Instead of
 transferring ownership of a linear value to a new binding, we’re giving it a
 temporary way to access the value, without taking it over and moving it.
 
-Use the `&` operator to create a reference:
+Use the `&` operator, or `ref` special form, to create a reference:
 
 ```clojure
 (let [string @"hello, linear world!"
