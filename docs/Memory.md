@@ -192,6 +192,77 @@ to. The anonymous linear value `[1 2 3]` will be deleted at the end of the
 function scope, but the reference will be returned from the function, so its
 lifetime is potentially greater than that of the value it points to. 
 
+The memory management system performs two key checks around ref usage:
+
+1. Check that a newly created reference doesn't point to a linear value binding
+   that has already transferred away ownership.
+2. Check that a reference is alive at a certain point in the program.
+
+Both of these are implemented as separate checks, but they may be viewed as
+specializations of a general operation that checks if every reference form in
+your program is "alive" at the point of use.
+
+Currently, liveness analysis revolves around checking if the value the reference
+points to belongs to the same lexical scope as the reference, and, if so, that
+the value has a deleter in that scope, which indicates the scope properly owns
+the value. If no such deleter exists, it means the reference outlives the value
+it points to, and is invalid.
+
+### Type Dependencies
+
+The final key piece of information the memory system manages are the *type
+dependencies* of the deletion functions for linear values.
+
+Since Carp supports generic programming and polymorphic functions, it's possible
+that some deleter is needed in a polymorphic context. In particular, generic
+functions that "take ownership" of generic values need to be able to find the
+correct deletion routines for the value. For example, in the generic function:
+
+```clojure
+(sig my-generic-force-delete (Fn [a] Unit))
+
+(defn my-generic-force-delete [a]
+  ())
+```
+
+This `my-generic-force-delete` function takes ownership of whatever argument it
+receives and does nothing. Since it takes ownership, however, the value passed
+to `a`, if it's linear, needs to be deleted at the end of the function scope.
+
+Since the function is generic, the memory management system can't know for
+certain what value is being passed. In some cases it might be a linear value, in
+some cases it might not be. Sometimes it might be a `String`, sometimes an
+`Int`, or sometimes an `Array`. Each of these types has a different `delete` 
+implementation.
+
+Rather than having the memory management system figure out what function to use,
+the system instead just keeps track of the types of all the values for the forms
+it analyzes. Later, the component already dedicated to resolving generic
+functions handles finding the right deletion routine for the values passed to
+the generic function. In order to accomplish this, it uses the type information
+captured by the memory system as it analyzes each form.
+
+### Memory State
+
+As we've explored, the memory management system needs to keep track of three key
+pieces of information as it analyzes the forms in your program:
+
+1. The deleters assigned to each AST node to track ownership of linear values
+   and delete them at the right time.
+2. The Lifetimes assigned to each reference to check reference validity.
+3. The types of each form it analyzes to resolve generic deletion functions.
+
+Each of these units of information is bundled into a single data structure,
+called the *memory state* or `MemState` of your program.
+
+As the memory management system analyzes each of the AST nodes in your program
+source, it updates the memory state accordingly. Deleters are added and removed
+from the state at different points as ownership transfers of linear values
+occur. When the system finishes analyzing a node, it update's the node's `Info`
+object, attaching the deleters associated with the current memory state. At any
+point, if the memory management system encounters a problem with the way memory
+is being transferred across your program's AST nodes, it reports an error. 
+
 A simple piece of code:
 
 ```clojure
