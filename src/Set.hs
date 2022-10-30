@@ -54,3 +54,6 @@ size (Set s) = S.size s
 
 map :: Ord b => (a -> b) -> Set a -> Set b
 map f (Set s) = Set $ S.map f s
+
+isSubsetOf :: Ord v => Set v -> Set v -> Bool
+isSubsetOf (Set x) (Set y) = x `S.isSubsetOf` y
