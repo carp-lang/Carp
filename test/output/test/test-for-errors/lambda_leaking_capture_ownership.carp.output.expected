@@ -1,0 +1,2 @@
+lambda_leaking_capture_ownership.carp:4:2 [ERROR] `I expected an array of valid arguments, but got: (let [string (copy "") leaks (fn [] s)])
+  - `defn` requires an array of arugments, but it got: (let [string (copy "") leaks (fn [] s)])
