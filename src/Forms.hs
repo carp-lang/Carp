@@ -149,11 +149,11 @@ data Modifier
 instance Show Modifier where
   show None = ""
   show (DefnQualifiedSyms arg) =
-    "`defn` requires all of its arguments to be unqualified symbols, but the arugment: "
+    "`defn` requires all of its arguments to be unqualified symbols, but the argument: "
       ++ pretty arg
       ++ " is qualified"
   show (DefnNonArrayArgs args) =
-    "`defn` requires an array of arugments, but it got: " ++ pretty args
+    "`defn` requires an array of arguments, but it got: " ++ pretty args
   show (DefnNonSymArgs arg) =
     "`defn` requires an array of symbols as arguments, but the argument: "
       ++ pretty arg
@@ -178,17 +178,17 @@ instance Show Modifier where
   show (LetNonArrayBindings invalid) =
     "`let` requires an array of bindings, but it got: " ++ pretty invalid
   show (FnQualifiedSyms arg) =
-    "`fn` requires all of its arguments to be unqualified symbols, but the arugment: "
+    "`fn` requires all of its arguments to be unqualified symbols, but the argument: "
       ++ pretty arg
       ++ " is qualified"
   show (FnNonArrayArgs args) =
-    "`fn` requires an array of arugments, but it got: " ++ pretty args
+    "`fn` requires an array of arguments, but it got: " ++ pretty args
   show (FnNonSymArgs arg) =
     "`fn` requires an array of symbols as arguments, but the argument: "
       ++ pretty arg
       ++ " is not a symbol"
   show (InvalidWith x) =
-    "`with` requires a symbol as an arugment, but got: " ++ pretty x
+    "`with` requires a symbol as an argument, but got: " ++ pretty x
 
 formatModifier :: Modifier -> String
 formatModifier None = ""
