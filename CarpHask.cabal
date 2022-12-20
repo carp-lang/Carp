@@ -52,6 +52,7 @@ library
                        Reify,
                        RenderDocs,
                        Repl,
+                       Resolver,
                        Set,
                        Scoring,
                        StartingEnv,

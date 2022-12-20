@@ -1096,11 +1096,11 @@ wrapInRefTyIfMatchRef MatchValue t = t
 isResolvableStaticObj :: Obj -> Bool
 isResolvableStaticObj Def = True
 isResolvableStaticObj (Defn _) = True
-isResolvableStaticObj (External _) = True
-isResolvableStaticObj (Deftemplate _) = True
-isResolvableStaticObj (Instantiate _) = True
-isResolvableStaticObj (Fn _ _) = True
 isResolvableStaticObj (Interface _ _) = True
+isResolvableStaticObj (Instantiate _) = True
+isResolvableStaticObj (Deftemplate _) = True
+isResolvableStaticObj (External _) = True
+isResolvableStaticObj (Match _) = True
 isResolvableStaticObj Ref = True
 isResolvableStaticObj _ = False
 
