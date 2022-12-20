@@ -334,8 +334,8 @@
   "`str` implementations. Appends final a newline to the output."
   ""
   "```"
-  (println* "I caught " 4 "carp!")
-  => I caught 4 carp!
+  "(println* \"I caught \" 4 \"carp!\")"
+  "=> I caught 4 carp!"
   "```")
 (defmacro println* [:rest forms]
   `(IO.println %(build-str* forms)))
@@ -345,9 +345,9 @@
   "`str` implementations."
   ""
   "```"
-  (print* "I caught " 4 "carp ")
-  (print* "yesterday")
-  => I caught 4 carp yesterday
+  "(print* \"I caught \" 4 \"carp \")"
+  "(print* \"yesterday\")"
+  "=> I caught 4 carp yesterday"
   "```")
 (defmacro print* [:rest forms]
   `(IO.print %(build-str* forms)))
