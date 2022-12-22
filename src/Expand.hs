@@ -2,6 +2,7 @@ module Expand (expandAll, replaceSourceInfoOnXObj) where
 
 import Context
 import Control.Monad.State (State, evalState, get, put)
+import Data.Either (fromRight)
 import Data.Foldable (foldlM)
 import Env
 import EvalError
@@ -221,7 +222,7 @@ expand eval ctx xobj =
           if isSpecialSym f
             then do
               (ctx', s) <- eval ctx f
-              let Right sym = s
+              let sym = fromRight (error "expand: failed to expand special symbol") $ s
               expand eval ctx' (XObj (Lst (sym : args)) (xobjInfo xobj) (xobjTy xobj))
             else do
               (_, expandedF) <- expand eval ctx f

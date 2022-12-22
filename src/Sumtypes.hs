@@ -137,9 +137,13 @@ initers candidate = mapM binderForCaseInit (TC.getFields candidate)
           ft = FuncTy tys generic StaticLifetimeTy
           binderPath = SymPath (TC.getFullPath candidate) fieldname
           t = (FuncTy tys (VarTy "p") StaticLifetimeTy)
-          decl = \(FuncTy _ concrete _) -> tokensForCaseInitDecl generic concrete field
-          body = \(FuncTy _ concrete _) -> tokensForCaseInit alloc generic concrete field
-          deps tenv env = \(FuncTy _ concrete _) -> either (const []) id (concretizeType tenv env concrete)
+          decl (FuncTy _ concrete _) = tokensForCaseInitDecl generic concrete field
+          decl _ = error "sumtypes: genericCaseInit called with non function type"
+          body (FuncTy _ concrete _) = tokensForCaseInit alloc generic concrete field
+          body _ = error "sumtypes: genericCaseInit called with non function type"
+          deps tenv env = \typ -> case typ of
+            (FuncTy _ concrete _) -> either (const []) id (concretizeType tenv env concrete)
+            _ -> []
           temp = TemplateCreator $ \tenv env -> Template t decl body (deps tenv env)
        in defineTypeParameterizedTemplate temp binderPath ft docs
     genericCaseInit _ _ = error "genericCaseInit"
@@ -148,8 +152,10 @@ initers candidate = mapM binderForCaseInit (TC.getFields candidate)
 binderForTag :: BinderGen
 binderForTag candidate =
   let t = FuncTy [RefTy (TC.toType candidate) (VarTy "q")] IntTy StaticLifetimeTy
-      decl = \(FuncTy [RefTy struct _] _ _) -> toTemplate $ proto struct
-      body = \(FuncTy [RefTy struct _] _ _) -> toTemplate $ proto struct ++ " { return p->_tag; }"
+      decl (FuncTy [RefTy struct _] _ _) = toTemplate $ proto struct
+      decl _ = error "sumtypes: binderForTag called with non function type"
+      body (FuncTy [RefTy struct _] _ _) = toTemplate $ proto struct ++ " { return p->_tag; }"
+      body _ = error "sumtypes: binderForTag called with non function type"
       deps = const []
       path' = SymPath (TC.getFullPath candidate) "get-tag"
       temp = Template t decl body deps

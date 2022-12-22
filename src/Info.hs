@@ -13,13 +13,14 @@ module Info
     setDeletersOnInfo,
     addDeletersToInfo,
     uniqueDeleter,
+    infoOrUnknown,
   )
 where
 
+import Data.List (unionBy)
 import Path (takeFileName)
 import qualified Set
 import SymPath
-import Data.List (unionBy)
 
 -- | Information about where the Obj originated from.
 data Info = Info
@@ -89,6 +90,12 @@ instance Show FilePathPrintLength where
 -- such as compiler generated bindings.
 dummyInfo :: Info
 dummyInfo = Info 0 0 "dummy-file" Set.empty (-1)
+
+-- | Attempts to pull the Info out of a Maybe Info, otherwise, returns an Info
+-- object representing the fact that Info is missing for the binding.
+infoOrUnknown :: Maybe Info -> Info
+infoOrUnknown (Just i) = i
+infoOrUnknown Nothing = Info 0 0 "unknown" Set.empty (-1)
 
 -- | Returns the line number, column number, and filename associated with an
 -- Info.

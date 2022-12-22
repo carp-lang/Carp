@@ -11,17 +11,17 @@ module Meta
     getString,
     getCompilerKey,
     validateAndSet,
-    CompilerKey(..),
+    CompilerKey (..),
   )
 where
 
+import Data.Either (fromRight)
+import Data.Maybe (fromMaybe)
 import Info
 import qualified Map
 import Obj
 import SymPath
 import Types
-import Data.Maybe(fromMaybe)
-import Data.Either(fromRight)
 
 --------------------------------------------------------------------------------
 -- builtin special meta key values
@@ -31,7 +31,7 @@ data CompilerKey = CNAME
 
 -- Given a compiler key, returns the key name as a string along with a default value.
 toKeyValue :: CompilerKey -> (String, XObj)
-toKeyValue CNAME  = ("c-name", (XObj (Str "") Nothing Nothing))
+toKeyValue CNAME = ("c-name", (XObj (Str "") Nothing Nothing))
 
 -- | Get the key associated with a compiler Meta key as a string.
 getCompilerKey :: CompilerKey -> String
@@ -51,7 +51,7 @@ validateCompilerKeyValue CNAME _ = False
 validateAndSet :: MetaData -> CompilerKey -> XObj -> Either MetaData MetaData
 validateAndSet meta key val
   | validateCompilerKeyValue key (xobjObj val) =
-      Right (set (getCompilerKey key) val meta)
+    Right (set (getCompilerKey key) val meta)
   | otherwise = Left meta
 
 --------------------------------------------------------------------------------

@@ -8,6 +8,7 @@ module Env
     empty,
     new,
     parent,
+    parentOrEmpty,
     setParent,
     nested,
     recursive,
@@ -147,6 +148,13 @@ binders = envBindings . prj
 -- | Get the parent of an environment.
 parent :: Environment e => e -> Maybe e
 parent = fmap inj . envParent . prj
+
+-- Attempts to retrieve the parent from an environment.
+-- If the environment has no parent, returns the empty environment.
+parentOrEmpty :: Environment e => e -> e
+parentOrEmpty e = case envParent (prj e) of
+  Just p -> inj p
+  Nothing -> empty
 
 -- | Set the parent of an environment.
 setParent :: Environment e => e -> e -> e

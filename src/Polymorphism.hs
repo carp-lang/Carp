@@ -9,6 +9,7 @@ where
 
 import Data.Either (fromRight, rights)
 import Data.List (unionBy)
+import Data.Maybe (fromMaybe)
 import Env
 import Managed
 import Obj
@@ -32,7 +33,7 @@ nameOfPolymorphicFunction _ env functionType functionName =
         Right (_, (Binder _ (XObj (Lst (XObj (External (Just name)) _ _ : _)) _ _))) ->
           Just (SymPath [] name)
         Right (_, (Binder _ single)) ->
-          let Just t' = xobjTy single
+          let t' = fromMaybe (error "polymorphism: binder without type") $ xobjTy single
               (SymPath pathStrings name) = getPath single
               suffix = polymorphicSuffix t' functionType
               concretizedPath = SymPath pathStrings (name ++ suffix)
@@ -124,7 +125,7 @@ findFunctionForMemberIncludePrimitives typeEnv env functionName functionType (me
 -- its generic ancestor.
 getConcretizedPath :: XObj -> Ty -> SymPath
 getConcretizedPath defn functionType =
-  let Just t' = xobjTy defn
+  let t' = fromMaybe (error "polymorphism: defn without type") $ xobjTy defn
       SymPath pathStrings name = getPath defn
       suffix = polymorphicSuffix t' functionType
    in SymPath pathStrings (name ++ suffix)

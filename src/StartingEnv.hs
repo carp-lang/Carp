@@ -3,6 +3,7 @@ module StartingEnv where
 import qualified ArrayTemplates
 import qualified BoxTemplates
 import Commands
+import Data.Maybe (fromMaybe)
 import qualified Env as E
 import Eval
 import Info
@@ -148,7 +149,7 @@ functionModule =
     }
   where
     bindEnv env =
-      let Just name = envModuleName env
+      let name = fromMaybe (error "env has no module name") $ envModuleName env
           meta = Meta.set "hidden" trueXObj emptyMeta
        in (name, Binder meta (XObj (Mod env E.empty) Nothing Nothing))
     bindings = Map.fromList (map (bindEnv . generateInnerFunctionModule) [0 .. maxArity])
@@ -380,7 +381,7 @@ dynamicStringModule =
   where
     path = ["Dynamic", "String"]
     bindings =
-      Map.fromList $unaries ++ binaries ++ ternaries
+      Map.fromList $ unaries ++ binaries ++ ternaries
     spath = SymPath path
     unaries =
       let f = addUnaryCommand . spath
@@ -429,7 +430,7 @@ dynamicSymModule =
     }
   where
     path = ["Dynamic", "Symbol"]
-    bindings = Map.fromList $unaries ++ binaries
+    bindings = Map.fromList $ unaries ++ binaries
     spath = SymPath path
     unaries =
       let f = addUnaryCommand . spath
@@ -455,7 +456,7 @@ dynamicProjectModule =
     }
   where
     path = ["Dynamic", "Project"]
-    bindings = Map.fromList $unaries ++ binaries
+    bindings = Map.fromList $ unaries ++ binaries
     spath = SymPath path
     unaries =
       let f = addUnaryCommand . spath

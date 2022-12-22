@@ -96,12 +96,18 @@ copy =
           Template
             t
             decl
-            ( \(FuncTy [RefTy (StructTy (ConcreteNameTy (SymPath [] "Box")) [inner]) _] _ _) ->
-                innerCopy tenv env inner
+            ( \ft ->
+                case ft of
+                  (FuncTy [RefTy (StructTy (ConcreteNameTy (SymPath [] "Box")) [inner]) _] _ _) ->
+                    innerCopy tenv env inner
+                  _ -> error "box templates: copy called with non box"
             )
-            ( \(FuncTy [RefTy boxType@(StructTy (ConcreteNameTy (SymPath [] "Box")) [inner]) _] _ _) ->
-                depsForCopyFunc tenv env inner
-                  ++ depsForDeleteFunc tenv env boxType
+            ( \ft ->
+                case ft of
+                  (FuncTy [RefTy boxType@(StructTy (ConcreteNameTy (SymPath [] "Box")) [inner]) _] _ _) ->
+                    depsForCopyFunc tenv env inner
+                      ++ depsForDeleteFunc tenv env boxType
+                  _ -> error "box templates: copy called with non box"
             )
    in defineTypeParameterizedTemplate template path t docs
   where
@@ -138,15 +144,21 @@ delete =
           Template
             t
             decl
-            ( \(FuncTy [bTy] UnitTy _) ->
-                multilineTemplate
-                  [ "$DECL {",
-                    "  " ++ innerDelete tenv env bTy,
-                    "}"
-                  ]
+            ( \ft ->
+                case ft of
+                  (FuncTy [bTy] UnitTy _) ->
+                    multilineTemplate
+                      [ "$DECL {",
+                        "  " ++ innerDelete tenv env bTy,
+                        "}"
+                      ]
+                  _ -> error "box templates: delete called with non box"
             )
-            ( \(FuncTy [StructTy (ConcreteNameTy (SymPath [] "Box")) [insideType]] UnitTy _) ->
-                depsForDeleteFunc tenv env insideType
+            ( \ft ->
+                case ft of
+                  (FuncTy [StructTy (ConcreteNameTy (SymPath [] "Box")) [insideType]] UnitTy _) ->
+                    depsForDeleteFunc tenv env insideType
+                  _ -> error "box templates: delete called with non box"
             )
    in defineTypeParameterizedTemplate templateCreator path t docs
   where
@@ -175,21 +187,27 @@ prn =
               Template
                 t
                 decl
-                ( \(FuncTy [boxT] StringTy _) ->
-                    multilineTemplate
-                      [ "$DECL {",
-                        "  if(!box){",
-                        "    String buffer = CARP_MALLOC(4);",
-                        "    sprintf(buffer, \"Nil\");",
-                        "    return buffer;",
-                        "  }",
-                        innerStr tenv env boxT,
-                        "  return buffer;",
-                        "}"
-                      ]
+                ( \ft ->
+                    case ft of
+                      (FuncTy [boxT] StringTy _) ->
+                        multilineTemplate
+                          [ "$DECL {",
+                            "  if(!box){",
+                            "    String buffer = CARP_MALLOC(4);",
+                            "    sprintf(buffer, \"Nil\");",
+                            "    return buffer;",
+                            "  }",
+                            innerStr tenv env boxT,
+                            "  return buffer;",
+                            "}"
+                          ]
+                      _ -> error "box templates: prn called with non box"
                 )
-                ( \(FuncTy [(StructTy (ConcreteNameTy (SymPath [] "Box")) [inner])] StringTy _) ->
-                    depsForPrnFunc tenv env inner
+                ( \ft ->
+                    case ft of
+                      (FuncTy [(StructTy (ConcreteNameTy (SymPath [] "Box")) [inner])] StringTy _) ->
+                        depsForPrnFunc tenv env inner
+                      _ -> error "box tempaltes: prn called with non box"
                 )
           )
    in defineTypeParameterizedTemplate templateCreator path t docs
@@ -206,21 +224,27 @@ str =
               Template
                 t
                 (templateLiteral "String $NAME ($t** box)")
-                ( \(FuncTy [RefTy boxT _] StringTy _) ->
-                    multilineTemplate
-                      [ "$DECL {",
-                        "  if(!box){",
-                        "    String buffer = CARP_MALLOC(4);",
-                        "    sprintf(buffer, \"Nil\");",
-                        "    return buffer;",
-                        "  }",
-                        innerStr tenv env boxT,
-                        "  return buffer;",
-                        "}"
-                      ]
+                ( \ft ->
+                    case ft of
+                      (FuncTy [RefTy boxT _] StringTy _) ->
+                        multilineTemplate
+                          [ "$DECL {",
+                            "  if(!box){",
+                            "    String buffer = CARP_MALLOC(4);",
+                            "    sprintf(buffer, \"Nil\");",
+                            "    return buffer;",
+                            "  }",
+                            innerStr tenv env boxT,
+                            "  return buffer;",
+                            "}"
+                          ]
+                      _ -> error "box templates: str called with non box ref"
                 )
-                ( \(FuncTy [RefTy (StructTy (ConcreteNameTy (SymPath [] "Box")) [inner]) _] StringTy _) ->
-                    depsForPrnFunc tenv env inner
+                ( \ft ->
+                    case ft of
+                      (FuncTy [RefTy (StructTy (ConcreteNameTy (SymPath [] "Box")) [inner]) _] StringTy _) ->
+                        depsForPrnFunc tenv env inner
+                      _ -> error "box templates: str template called with non box type"
                 )
           )
    in defineTypeParameterizedTemplate templateCreator path t docs

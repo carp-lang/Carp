@@ -135,7 +135,9 @@ primitiveImplements _ ctx x@(XObj (Sym interface@(SymPath _ _) _) _ _) (XObj (Sy
     warn = emitWarning (show (NonExistentInterfaceWarning x))
     addToInterface :: Binder -> Binder -> IO (Context, Either EvalError XObj)
     addToInterface inter impl =
-      let (Right newCtx, maybeErr) = registerInInterface ctx impl inter
+      let (newCtx, maybeErr) = case registerInInterface ctx impl inter of
+            (Right nc, me) -> (nc, me)
+            _ -> error "primitives: failed to register in interface"
        in maybe (updateMeta impl newCtx) (handleError newCtx impl) maybeErr
     handleError :: Context -> Binder -> InterfaceError -> IO (Context, Either EvalError XObj)
     handleError context impl e@(AlreadyImplemented _ oldImplPath _ _) =
@@ -210,7 +212,9 @@ define hidden ctx qualifiedXObj =
       pure
         ( Meta.getBinderMetaValue "implements" binder
             -- TODO: Direct qualification!
-            >>= \(XObj (Lst interfaces) _ _) -> pure (map Qualified interfaces)
+            >>= \x -> case x of
+              (XObj (Lst interfaces) _ _) -> pure (map Qualified interfaces)
+              _ -> pure []
         )
         >>= \maybeinterfaces ->
           pure (rights (fmap (lookupBinderInTypeEnv ctx . getQualifiedPath) (fromMaybe [] maybeinterfaces)))
@@ -264,7 +268,7 @@ primitiveRegisterTypeWithFields ctx x t override members =
         let typeDefinition = XObj (Lst [XObj (ExternalType override) Nothing Nothing, XObj (Sym path Symbol) Nothing Nothing]) Nothing (Just TypeTy)
             path' = (qualifyPath ctx (SymPath [] typeModuleName))
             update = \c -> insertInGlobalEnv' path' (toBinder typeModuleXObj) c >>= insertTypeBinder' path' (toBinder typeDefinition)
-            Right ctx' = update ctx
+            ctx' = fromRight (error "primitives: failed to update context in register type") $ update ctx
         -- TODO: Another case where define does not get formally qualified deps!
         contextWithDefs <- liftIO $ foldM (define True) ctx' (map Qualified deps)
         autoDerive
@@ -325,7 +329,10 @@ primitiveInfo _ ctx target@(XObj (Sym path@(SymPath _ name) _) _ _) =
     implementsInterface binder binder' =
       maybe
         False
-        (\(XObj (Lst impls) _ _) -> getBinderPath binder `elem` map getPath impls)
+        ( \x -> case x of
+            (XObj (Lst impls) _ _) -> getBinderPath binder `elem` map getPath impls
+            _ -> False
+        )
         (Meta.getBinderMetaValue "implements" binder')
     printIfFound :: Either ContextError Binder -> IO ()
     printIfFound = either (const (pure ())) printer
@@ -475,8 +482,8 @@ primitiveDefinterface xobj ctx nameXObj@(XObj (Sym path@(SymPath [] name) _) _ _
         defInterface =
           let interface = defineInterface name t [] (xobjInfo nameXObj)
               binder = toBinder interface
-              Right ctx' = insertTypeBinder ctx (markQualified (SymPath [] name)) binder
-              Right newCtx = retroactivelyRegisterInInterface ctx' binder
+              ctx' = fromRight (error "primitives: couldn't insert type binder for interface") $ insertTypeBinder ctx (markQualified (SymPath [] name)) binder
+              newCtx = fromRight (error "primitives: couldn't retroactively register in interface") $ retroactivelyRegisterInInterface ctx' binder
            in (newCtx, dynamicNil)
         updateInterface binder = case binder of
           Binder _ (XObj (Lst (XObj (Interface foundType _) _ _ : _)) _ _) ->

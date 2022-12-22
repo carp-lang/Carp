@@ -56,12 +56,16 @@ isArrayTypeOK _ = True
 -- | TODO: Only change variables that are machine generated.
 beautifyTypeVariables :: XObj -> Either TypeError XObj
 beautifyTypeVariables root =
-  let Just t = xobjTy root
-      tys = nub (typeVariablesInOrderOfAppearance t)
+  let tys = case xobjTy root of
+        Just t -> nub (typeVariablesInOrderOfAppearance t)
+        Nothing -> []
       mappings =
         Map.fromList
           ( zip
-              (map (\(VarTy name) -> name) tys)
+              (map go tys)
               (map (VarTy . (: [])) ['a' ..])
           )
    in assignTypes mappings root
+  where
+    go (VarTy name) = name
+    go _ = "" -- called with non var type
