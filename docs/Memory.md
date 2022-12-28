@@ -413,7 +413,210 @@ Or `foreach` (works like a foreach loop construct in a lot of other programming 
 ```
 
 
-## Under the hood
+## Under the Hood: The Implementation of Carp's Memory Management System
+
+This section explores the implementation of Carp's memory management system in
+greater technical detail. Most users won't need to read this, but if you'd like
+to have a deeper understanding of how the system works, you'll find an
+explanation in this section.
+
+### AST Info, Identifiers, and Deleters
+
+Like other portions the Carp compiler, the memory management system operates on
+the abstract syntax tree (AST) representation of the forms in your program. When
+the compiler compiles your code, it assigns addition *information objects*,
+called `Info`, to each form in your program; these objects are particularly
+important to the memory management system. Among other things, these `Info`
+objects contain unique identifiers for each form in your program. The memory
+management system uses these identifiers to keep track of memory as it moves
+across different parts of your code.
+
+In addition to identifiers, form information objects also contain `Deleters`.
+These are a special data structure used to hold information about the `delete`
+functions needed for each linear value in your program. One of the memory
+management system's main responsibilities is to assign and keep track of these
+deleters for each form in your program that makes use of a linear value.
+
+Essentially, as the memory management system examines your code, if it finds a
+form that uses a linear value that should be deleted at a certain point, it adds
+an appropriate deleter to the info object for the form. If the linear value is
+*moved* to some other part of your code, the memory management system will
+remove the corresponding deleter, which will be added to the form it's moved
+into later. 
+
+The key point to understand is that the memory management system primarily
+models the movements of linear values using the presence or absence of these
+deleter objects. When the compiler's code emission component encounters a form,
+if the form has an associated deleter, the emitter will produce a call to the
+deletion routine in the corresponding output C code.
+
+As we'll see in a moment, there are some further complications, but this is the
+basic approach taken by the memory management system.
+
+### Lifetimes
+
+The basic operation of the memory management system entails moving deleters
+across different Info objects for the forms in your program. As the system
+performs this task, it also has to account for the way *references* are used
+throughout your code, and how they relate to linear values. In order to track
+this, the memory management system uses *lifetimes* which determine whether or
+not a reference is valid in a given form.
+
+The following function provides an example of this reference validity tracking
+in action:
+
+```clojure
+(defn invalid-ref []
+  &[1 2 3])
+```
+
+In the prior example, our `invalid-ref` function returns a reference to the
+literal linear array value `[1 2 3]`. This code is problematic because the
+linear array value will be deleted at the end of the function, so the returned
+reference will point to nothing! The memory management system catches this for
+us and let's us know about the problem.
+
+Contrarily, the following code is perfectly fine:
+
+```clojure
+(def an-array [1 2 3])
+
+(defn valid-ref []
+  &an-array)
+```
+
+The `valid-ref` function also returns a reference, but this reference is valid
+since it points to a linear array value (`an-array`) that won't be deleted (it
+will still be "alive") by the time the function returns the reference.
+
+The system will also catch cases when we attempt to reference a linear value
+that's already been *moved* into a different location/binding:
+
+```clojure
+(defn unowned-ref []
+  (let [a [1 2 3]
+        b a 
+        c &a]
+  ()))
+```
+
+In this example, we move the linear array from `a` into `b`, but then try to set
+`c` to a reference to `a`, which, after the move, no longer points to anything.
+
+Internally, the memory management system uses *lifetimes* to model the
+relationships between references and linear values and track the validity of
+reference across your code.
+
+#### Lifetimes in Detail
+
+Carp's lifetimes are made up of two pieces of information. Only references have
+lifetimes, and every reference has *exactly one* lifetime assigned to it:
+
+- A unique type variable that identifies the lifetime.
+- A lifetime mode, that indicates if the linear value tied to the reference has
+  a lexical scope that extends beyond the reference's lexical scope or if it's
+  limited to the reference's lexical scope.
+
+In general, a reference is valid only when the value it points to has either an
+equivalent or greater lexical scope. This property is encoded in its lifetime.
+
+Let's look at some examples to help illustrate this:
+
+```clojure
+(def an-array [1 2 3])
+
+(defn valid-ref [] 
+  (let [array-ref &an-arry]) ())
+```
+
+In this example, the anonymous reference `&an-array` has a unique lifetime that
+*extends beyond the lexical scope* of the reference itself. The lexical scope of
+the reference value `[1 2 3]` is greater than or equal to the lexical scope of
+the reference, which only extends across the let form, so, this reference is
+valid.
+
+Contrarily, the following reference is not valid:
+
+```clojure
+(defn invalid-ref []
+  &[1 2 3])
+```
+
+Here, the reference has a greater lexical scope than the linear value it points
+to. The anonymous linear value `[1 2 3]` will be deleted at the end of the
+function scope, but the reference will be returned from the function, so its
+lifetime is potentially greater than that of the value it points to. 
+
+The memory management system performs two key checks around ref usage:
+
+1. Check that a newly created reference doesn't point to a linear value binding
+   that has already transferred away ownership.
+2. Check that a reference is alive at a certain point in the program.
+
+Both of these are implemented as separate checks, but they may be viewed as
+specializations of a general operation that checks if every reference form in
+your program is "alive" at the point of use.
+
+Currently, liveness analysis revolves around checking if the value the reference
+points to belongs to the same lexical scope as the reference, and, if so, that
+the value has a deleter in that scope, which indicates the scope properly owns
+the value. If no such deleter exists, it means the reference outlives the value
+it points to, and is invalid.
+
+### Type Dependencies
+
+The final key piece of information the memory system manages are the *type
+dependencies* of the deletion functions for linear values.
+
+Since Carp supports generic programming and polymorphic functions, it's possible
+that some deleter is needed in a polymorphic context. In particular, generic
+functions that "take ownership" of generic values need to be able to find the
+correct deletion routines for the value. For example, in the generic function:
+
+```clojure
+(sig my-generic-force-delete (Fn [a] Unit))
+
+(defn my-generic-force-delete [a]
+  ())
+```
+
+This `my-generic-force-delete` function takes ownership of whatever argument it
+receives and does nothing. Since it takes ownership, however, the value passed
+to `a`, if it's linear, needs to be deleted at the end of the function scope.
+
+Since the function is generic, the memory management system can't know for
+certain what value is being passed. In some cases it might be a linear value, in
+some cases it might not be. Sometimes it might be a `String`, sometimes an
+`Int`, or sometimes an `Array`. Each of these types has a different `delete` 
+implementation.
+
+Rather than having the memory management system figure out what function to use,
+the system instead just keeps track of the types of all the values for the forms
+it analyzes. Later, the component already dedicated to resolving generic
+functions handles finding the right deletion routine for the values passed to
+the generic function. In order to accomplish this, it uses the type information
+captured by the memory system as it analyzes each form.
+
+### Memory State
+
+As we've explored, the memory management system needs to keep track of three key
+pieces of information as it analyzes the forms in your program:
+
+1. The deleters assigned to each AST node to track ownership of linear values
+   and delete them at the right time.
+2. The Lifetimes assigned to each reference to check reference validity.
+3. The types of each form it analyzes to resolve generic deletion functions.
+
+Each of these units of information is bundled into a single data structure,
+called the *memory state* or `MemState` of your program.
+
+As the memory management system analyzes each of the AST nodes in your program
+source, it updates the memory state accordingly. Deleters are added and removed
+from the state at different points as ownership transfers of linear values
+occur. When the system finishes analyzing a node, it update's the node's `Info`
+object, attaching the deleters associated with the current memory state. At any
+point, if the memory management system encounters a problem with the way memory
+is being transferred across your program's AST nodes, it reports an error. 
 
 A simple piece of code:
 
