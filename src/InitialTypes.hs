@@ -1,6 +1,7 @@
 module InitialTypes where
 
 import Control.Monad.State
+import Data.Either (fromRight)
 import Env as E
 import Info
 import qualified Map
@@ -202,7 +203,7 @@ initialTypes typeEnv rootEnv root = evalState (visit rootEnv root) 0
             let funcTy = Just (FuncTy argTypes returnType StaticLifetimeTy)
                 typedNameSymbol = nameSymbol {xobjTy = funcTy}
                 -- TODO! After the introduction of 'LookupRecursive' this env shouldn't be needed anymore? (but it is for some reason...)
-                Right envWithSelf = E.insertX funcScopeEnv (SymPath [] name) typedNameSymbol
+                envWithSelf = fromRight funcScopeEnv (E.insertX funcScopeEnv (SymPath [] name) typedNameSymbol)
             visitedBody <- visit envWithSelf body
             visitedArgs <- mapM (visit envWithSelf) argList
             pure $ do
@@ -220,7 +221,7 @@ initialTypes typeEnv rootEnv root = evalState (visit rootEnv root) 0
             lt <- genVarTy
             let funcTy = Just (FuncTy argTypes returnType lt)
                 typedNameSymbol = XObj (Sym path LookupRecursive) si funcTy
-                Right envWithSelf = E.insertX funcScopeEnv path typedNameSymbol
+                envWithSelf = fromRight funcScopeEnv (E.insertX funcScopeEnv path typedNameSymbol)
             visitedBody <- visit envWithSelf body
             visitedArgs <- mapM (visit envWithSelf) argList
             pure $ do
@@ -401,8 +402,10 @@ initialTypes typeEnv rootEnv root = evalState (visit rootEnv root) 0
                 | otherwise -> genVarTy
             pure $ do
               okValue <- visitedValue
-              let Just valueTy = xobjTy okValue
-              pure (XObj (Lst [refExpr, okValue]) i (Just (RefTy valueTy lt)))
+              let valueTy = case xobjTy okValue of
+                    Just vt -> (Just (RefTy vt lt))
+                    Nothing -> Nothing
+              pure (XObj (Lst [refExpr, okValue]) i valueTy)
         -- Deref (error!)
         [XObj Deref _ _, _] ->
           pure (Left (CantUseDerefOutsideFunctionApplication xobj))

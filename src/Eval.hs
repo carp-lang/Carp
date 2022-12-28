@@ -279,7 +279,7 @@ eval ctx xobj@(XObj o info ty) preference resolver =
         Left err -> pure (ctx, Left err)
         Right newCtx -> do
           (finalCtx, evaledBody) <- eval newCtx body (PreferLocal (map (\(name, _) -> (SymPath [] name)) binds)) ResolveLocal
-          let Just e = contextInternalEnv finalCtx
+          let e = fromMaybe E.empty $ contextInternalEnv finalCtx
               parentEnv = envParent e
           pure
             ( replaceInternalEnvMaybe finalCtx parentEnv,
@@ -301,7 +301,7 @@ eval ctx xobj@(XObj o info ty) preference resolver =
               --   (let [f (fn [x] (if (= x 1) x (f (dec x))))] (f 10))
               let origin = (contextInternalEnv ctx')
                   recFix = (E.recursive origin (Just "let-rec-env") 0)
-                  Right envWithSelf = if isFn x then E.insertX recFix (SymPath [] n) x else Right recFix
+                  envWithSelf = fromRight recFix $ if isFn x then E.insertX recFix (SymPath [] n) x else Right recFix
                   ctx'' = replaceInternalEnv ctx' envWithSelf
               (newCtx, res) <- eval ctx'' x preference resolver
               case res of
@@ -350,18 +350,21 @@ eval ctx xobj@(XObj o info ty) preference resolver =
     evaluateCommand (AppPat (CommandPat (UnaryCommandFunction unary) _ _) [x]) = do
       (c, evaledArgs) <- foldlM successiveEval (ctx, Right []) [x]
       case evaledArgs of
-        Right args -> let [x'] = take 1 args in unary c x'
+        Right [x'] -> unary c x'
         Left err -> pure (ctx, Left err)
+        _ -> error "eval: failed to evaluate command arguments"
     evaluateCommand (AppPat (CommandPat (BinaryCommandFunction binary) _ _) [x, y]) = do
       (c, evaledArgs) <- foldlM successiveEval (ctx, Right []) [x, y]
       case evaledArgs of
-        Right args -> let [x', y'] = take 2 args in binary c x' y'
+        Right [x', y'] -> binary c x' y'
         Left err -> pure (ctx, Left err)
+        _ -> error "eval: failed to evaluate command arguments"
     evaluateCommand (AppPat (CommandPat (TernaryCommandFunction ternary) _ _) [x, y, z]) = do
       (c, evaledArgs) <- foldlM successiveEval (ctx, Right []) [x, y, z]
       case evaledArgs of
-        Right args' -> let [x', y', z'] = take 3 args' in ternary c x' y' z'
+        Right [x', y', z'] -> ternary c x' y' z'
         Left err -> pure (ctx, Left err)
+        _ -> error "eval: failed to evaluate command arguments"
     evaluateCommand (AppPat (CommandPat (VariadicCommandFunction variadic) _ _) args) = do
       (c, evaledArgs) <- foldlM successiveEval (ctx, Right []) args
       case evaledArgs of
@@ -629,12 +632,12 @@ catcher ctx exception =
 
 specialCommandWith :: Context -> XObj -> SymPath -> [XObj] -> IO (Context, Either EvalError XObj)
 specialCommandWith ctx _ path forms = do
-  let Just env = contextInternalEnv ctx <|> maybeId (innermostModuleEnv ctx) <|> Just (contextGlobalEnv ctx)
+  let env = fromMaybe (contextGlobalEnv ctx) $ contextInternalEnv ctx <|> maybeId (innermostModuleEnv ctx) <|> Just (contextGlobalEnv ctx)
       useThese = envUseModules env
       env' = env {envUseModules = Set.insert path useThese}
       ctx' = replaceGlobalEnv ctx env'
   ctxAfter <- liftIO $ foldM folder ctx' forms
-  let Just envAfter = contextInternalEnv ctxAfter <|> maybeId (innermostModuleEnv ctxAfter) <|> Just (contextGlobalEnv ctxAfter)
+  let envAfter = fromMaybe (contextGlobalEnv ctxAfter) (contextInternalEnv ctxAfter <|> maybeId (innermostModuleEnv ctxAfter) <|> Just (contextGlobalEnv ctxAfter))
       -- undo ALL use:s made inside the 'with'.
       ctxAfter' = replaceGlobalEnv ctx (envAfter {envUseModules = useThese})
   pure (ctxAfter', dynamicNil)

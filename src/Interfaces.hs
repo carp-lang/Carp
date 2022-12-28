@@ -151,7 +151,9 @@ retroactivelyRegisterInInterface ctx interface =
   where
     env = contextGlobalEnv ctx
     impls = concat (rights (fmap ((flip Env.findImplementations) (getPath (binderXObj interface))) (env : (Env.lookupChildren env))))
-    (resultCtx, err) = foldl' (\(Right context, _) binder -> registerInInterface context binder interface) (Right ctx, Nothing) impls
+    (resultCtx, err) = foldl' go (Right ctx, Nothing) impls
+    go (Right context, _) binder = registerInInterface context binder interface
+    go e _ = e
 
 -- | Checks whether an interface is implemented for a certain type signature,
 -- | e.g. Is "delete" implemented for `(Fn [String] ())` ?

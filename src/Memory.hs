@@ -3,6 +3,7 @@
 module Memory (manageMemory) where
 
 import Control.Monad.State
+import Data.Maybe (fromMaybe)
 import Forms
 import Info
 import Managed
@@ -93,7 +94,9 @@ manageMemory typeEnv globalEnv root =
         whenRight (sequence results) $ do
           -- We know that we want to add a deleter for the static array here
           let var = varOfXObj xobj
-              Just (RefTy t@(StructTy (ConcreteNameTy (SymPath [] "StaticArray")) [_]) _) = xobjTy xobj
+              t = case xobjTy xobj of
+                Just (RefTy (StructTy (ConcreteNameTy (SymPath [] "StaticArray")) [vs]) _) -> (StructTy (ConcreteNameTy (SymPath [] "StaticArray")) [vs])
+                _ -> error "memory: can't visit static array of non static array type"
               deleter = case nameOfPolymorphicFunction typeEnv globalEnv (FuncTy [t] UnitTy StaticLifetimeTy) "delete" of
                 Just pathOfDeleteFunc ->
                   ProperDeleter pathOfDeleteFunc (getDropFunc typeEnv globalEnv (xobjInfo xobj) t) var
@@ -487,7 +490,7 @@ manage typeEnv globalEnv xobj =
       Just deleter -> do
         MemState deleters deps lifetimes <- get
         let newDeleters = Set.insert deleter deleters
-            Just t = xobjTy xobj
+            t = fromMaybe (error "memory: can't manage xobj without type") $ xobjTy xobj
             newDeps = Set.insert t deps
         put (MemState newDeleters newDeps lifetimes)
       Nothing -> pure ()
@@ -495,7 +498,7 @@ manage typeEnv globalEnv xobj =
 -- | Remove `xobj` from the set of alive variables, in need of deletion at end of scope.
 unmanage :: TypeEnv -> Env -> XObj -> State MemState (Either TypeError ())
 unmanage typeEnv globalEnv xobj =
-  let Just t = xobjTy xobj
+  let t = fromMaybe (error "memory: can't unmange xobj without type") $ xobjTy xobj
    in if isManaged typeEnv globalEnv t && not (isGlobalFunc xobj)
         then do
           MemState deleters deps lifetimes <- get
@@ -528,19 +531,20 @@ transferOwnership typeEnv globalEnv from to =
 -- see issue #597
 exclusiveTransferOwnership :: TypeEnv -> Env -> XObj -> XObj -> State MemState (Either TypeError ())
 exclusiveTransferOwnership tenv genv from to =
-  do result <- unmanage tenv genv from
-     whenRight result $ do
-       MemState pre deps lts <- get
-       put (MemState Set.empty deps lts) -- add just this new deleter to the set
-       manage tenv genv to
-       MemState post postDeps postLts <- get
-       put (MemState (uniqueDeleter post pre) postDeps postLts) -- replace any duplicates and union with the prior set
-       pure (Right ())
+  do
+    result <- unmanage tenv genv from
+    whenRight result $ do
+      MemState pre deps lts <- get
+      put (MemState Set.empty deps lts) -- add just this new deleter to the set
+      manage tenv genv to
+      MemState post postDeps postLts <- get
+      put (MemState (uniqueDeleter post pre) postDeps postLts) -- replace any duplicates and union with the prior set
+      pure (Right ())
 
 -- | Control that an `xobj` is OK to reference
 canBeReferenced :: TypeEnv -> Env -> XObj -> State MemState (Either TypeError ())
 canBeReferenced typeEnv globalEnv xobj =
-  let Just t = xobjTy xobj
+  let t = fromMaybe (error "memory: xobj without type") $ xobjTy xobj
       isGlobalVariable = case xobj of
         XObj (Sym _ (LookupGlobal _ _)) _ _ -> True
         _ -> False
@@ -590,9 +594,11 @@ refTargetIsAlive xobj =
                   [] ->
                     --trace ("Can't use reference " ++ pretty xobj ++ " (with lifetime '" ++ lt ++ "', depending on " ++ show deleterName ++ ") at " ++ prettyInfoFromXObj xobj ++ ", it's not alive here:\n" ++ show xobj ++ "\nMappings: " ++ prettyLifetimeMappings lifetimeMappings ++ "\nAlive: " ++ show deleters ++ "\n") $
                     --pure (Right xobj)
-                    pure (case xobjObj xobj of
-                           (Lst (LetPat _ _ body)) -> (Left (UsingDeadReference body deleterName))
-                           _ -> (Left (UsingDeadReference xobj deleterName)))
+                    pure
+                      ( case xobjObj xobj of
+                          (Lst (LetPat _ _ body)) -> (Left (UsingDeadReference body deleterName))
+                          _ -> (Left (UsingDeadReference xobj deleterName))
+                      )
                   _ ->
                     --trace ("CAN use reference " ++ pretty xobj ++ " (with lifetime '" ++ lt ++ "', depending on " ++ show deleterName ++ ") at " ++ prettyInfoFromXObj xobj ++ ", it's not alive here:\n" ++ show xobj ++ "\nMappings: " ++ prettyLifetimeMappings lifetimeMappings ++ "\nAlive: " ++ show deleters ++ "\n") $
                     pure (Right xobj)

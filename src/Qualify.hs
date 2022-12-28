@@ -23,11 +23,11 @@ import Data.Either (fromRight)
 import qualified Env as E
 import Info
 import qualified Map
+import qualified Meta
 import Obj
 import qualified Set
 import SymPath
 import Util
-import qualified Meta
 
 --------------------------------------------------------------------------------
 -- Errors
@@ -205,11 +205,14 @@ qualifyFunctionDefinition typeEnv globalEnv env x@(XObj (Lst [defn@(XObj (Defn _
     envWithSelf <- fixLeft (E.insertX recursionEnv (SymPath [] functionName) sym)
     -- Copy the use modules from the local env to ensure they are available from the function env.
     functionEnv <- fixLeft (pure ((E.nested (Just envWithSelf) (Just (functionName ++ "-function-env")) 0) {envUseModules = (envUseModules env)}))
-    envWithArgs <- fixLeft (foldM (\e arg@(XObj (Sym path _) _ _) -> E.insertX e path arg) functionEnv argsArr)
+    envWithArgs <- fixLeft (foldM go functionEnv argsArr)
     qualifiedBody <- liftM unQualified (setFullyQualifiedSymbols typeEnv globalEnv envWithArgs body)
     pure (Qualified (XObj (Lst [defn, sym, args, qualifiedBody]) i t))
   where
     fixLeft = replaceLeft (FailedToQualifyDeclarationName x)
+    go :: Env -> XObj -> Either E.EnvironmentError Env
+    go e arg@(XObj (Sym path _) _ _) = E.insertX e path arg
+    go e _ = pure e
 qualifyFunctionDefinition _ _ _ xobj = Left $ FailedToQualifyDeclarationName xobj
 
 -- | Qualify the symbols in a lambda body.
@@ -217,10 +220,14 @@ qualifyLambda :: Qualifier
 qualifyLambda typeEnv globalEnv env x@(XObj (Lst [fn@(XObj (Fn _ _) _ _), args@(XObj (Arr argsArr) _ _), body]) i t) =
   let lvl = envFunctionNestingLevel env
       functionEnv = Env Map.empty (Just env) Nothing Set.empty InternalEnv (lvl + 1)
-   in (replaceLeft (FailedToQualifySymbols x) (foldM (\e arg@(XObj (Sym path _) _ _) -> E.insertX e path arg) functionEnv argsArr))
+   in (replaceLeft (FailedToQualifySymbols x) (foldM go functionEnv argsArr))
         >>= \envWithArgs ->
           liftM unQualified (setFullyQualifiedSymbols typeEnv globalEnv envWithArgs body)
             >>= \qualifiedBody -> pure (Qualified (XObj (Lst [fn, args, qualifiedBody]) i t))
+  where
+    go :: Env -> XObj -> Either E.EnvironmentError Env
+    go e arg@(XObj (Sym path _) _ _) = E.insertX e path arg
+    go e _ = pure e
 qualifyLambda _ _ _ xobj = Left $ FailedToQualifySymbols xobj
 
 -- | Qualify the symbols in a The form's body.
@@ -246,7 +253,7 @@ qualifyLet typeEnv globalEnv env x@(XObj (Lst [letExpr@(XObj Let _ _), bind@(XOb
   | not (all isSym (evenIndices bindings)) = Right $ Qualified $ XObj (Lst [letExpr, bind, body]) i t -- Leave it untouched for the compiler to find the error.
   | otherwise =
     do
-      let Just ii = i
+      let ii = infoOrUnknown i
           lvl = envFunctionNestingLevel env
           innerEnv = Env Map.empty (Just env) (Just ("let-env-" ++ show (infoIdentifier ii))) Set.empty InternalEnv lvl
       (innerEnv', qualifiedBindings) <- foldM qualifyBinding (innerEnv, []) (pairwise bindings)
@@ -264,7 +271,7 @@ qualifyLet typeEnv globalEnv env x@(XObj (Lst [letExpr@(XObj Let _ _), bind@(XOb
         -- However, we also need to ensure captured variables are still marked
         -- as such, which is based on env nesting level, and we need to ensure
         -- the recursive reference isn't accidentally captured.
-        let Just origin = E.parent e
+        let origin = E.parentOrEmpty e
         recursionEnv <- fixLeft (pure (E.recursive (Just e) (Just ("let-recurse-env")) 0))
         envWithSelf <- fixLeft (E.insertX recursionEnv path s)
         qualified <- liftM unQualified (setFullyQualifiedSymbols typeEnv globalEnv (E.setParent e (E.setParent origin envWithSelf)) o)
@@ -291,7 +298,7 @@ qualifyMatch typeEnv globalEnv env (XObj (Lst (matchExpr@(XObj (Match _) _ _) : 
       qualifiedCases <- pure . map (map unQualified) =<< mapM qualifyCases (pairwise casesXObjs)
       pure (Qualified (XObj (Lst (matchExpr : qualifiedExpr : concat qualifiedCases)) i t))
   where
-    Just ii = i
+    ii = infoOrUnknown i
     lvl = envFunctionNestingLevel env
     -- Create an inner environment for each case.
     innerEnv :: Env
@@ -378,18 +385,19 @@ qualifySym typeEnv globalEnv localEnv xobj@(XObj (Sym path@(SymPath _ name) _) i
       nakedInit modenv
     resolve origin found (Binder meta xobj') =
       let cname = (Meta.getString (Meta.getCompilerKey Meta.CNAME) meta)
-          modality = if (null cname)
-                       then (LookupGlobal (if isExternalFunction xobj' then ExternalCode else CarpLand) (definitionMode xobj'))
-                       else (LookupGlobalOverride cname)
+          modality =
+            if (null cname)
+              then (LookupGlobal (if isExternalFunction xobj' then ExternalCode else CarpLand) (definitionMode xobj'))
+              else (LookupGlobalOverride cname)
        in if (isTypeDef xobj')
-          then
-            ( (replaceLeft (FailedToFindSymbol xobj') (fmap (globalEnv,) (E.searchValue globalEnv path)))
-                >>= \(origin', (e', binder)) -> resolve (E.prj origin') (E.prj e') binder
-            )
-          else case envMode (E.prj found) of
-            RecursionEnv -> pure (XObj (Sym (getPath xobj') LookupRecursive) i t)
-            InternalEnv -> pure (XObj (Sym (getPath xobj') (LookupLocal (captureOrNot found origin))) i t)
-            ExternalEnv -> pure (XObj (Sym (getPath xobj') modality) i t)
+            then
+              ( (replaceLeft (FailedToFindSymbol xobj') (fmap (globalEnv,) (E.searchValue globalEnv path)))
+                  >>= \(origin', (e', binder)) -> resolve (E.prj origin') (E.prj e') binder
+              )
+            else case envMode (E.prj found) of
+              RecursionEnv -> pure (XObj (Sym (getPath xobj') LookupRecursive) i t)
+              InternalEnv -> pure (XObj (Sym (getPath xobj') (LookupLocal (captureOrNot found origin))) i t)
+              ExternalEnv -> pure (XObj (Sym (getPath xobj') modality) i t)
     resolveMulti :: (Show e, E.Environment e) => SymPath -> [(e, Binder)] -> Either QualificationError XObj
     resolveMulti _ [] =
       Left (FailedToFindSymbol xobj)

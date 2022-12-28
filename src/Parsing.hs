@@ -292,22 +292,26 @@ escaped = do
     'v' -> pure "\v"
     'x' -> do
       hex <- Parsec.many1 (Parsec.oneOf "0123456789abcdefABCDEF")
-      let [(p, "")] = readHex hex
-      return [chr p]
+      case readHex hex of
+        [(p, "")] -> pure [chr p]
+        _ -> pure []
     'u' -> do
       hex <- Parsec.count 4 (Parsec.oneOf "0123456789abcdefABCDEF")
-      let [(p, "")] = readHex hex
-      return [chr p]
+      case readHex hex of
+        [(p, "")] -> pure [chr p]
+        _ -> pure []
     'U' -> do
       hex <- Parsec.count 8 (Parsec.oneOf "0123456789abcdefABCDEF")
-      let [(p, "")] = readHex hex
-      return [chr p]
+      case readHex hex of
+        [(p, "")] -> pure [chr p]
+        _ -> pure []
     _ ->
       if elem c "01234567"
         then do
           hex <- Parsec.many1 (Parsec.oneOf "01234567")
-          let [(p, "")] = readHex (c : hex)
-          return [chr p]
+          case readHex (c : hex) of
+            [(p, "")] -> pure [chr p]
+            _ -> pure []
         else pure ('\\' : [c])
 
 escapedQuoteChar :: Parsec.Parsec String ParseState Char
@@ -357,8 +361,9 @@ escapedHexChar = do
   _ <- Parsec.char 'u'
   hex <- Parsec.count 4 (Parsec.oneOf "0123456789abcdefABCDEF")
   incColumn 5
-  let [(parsed, "")] = readHex hex
-  pure (toEnum parsed)
+  case readHex hex of
+    [(parsed, "")] -> pure (toEnum parsed)
+    _ -> pure '\0'
 
 aChar :: Parsec.Parsec String ParseState XObj
 aChar = do

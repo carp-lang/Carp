@@ -126,9 +126,12 @@ envWithFunctionArgs :: Env -> [XObj] -> Either EnvironmentError Env
 envWithFunctionArgs env arr =
   let functionEnv = Env Map.empty (Just env) Nothing Set.empty InternalEnv (envFunctionNestingLevel env)
    in foldM
-        (\e arg@(XObj (Sym path _) _ _) -> insertX e path arg)
+        go
         functionEnv
         arr
+  where
+    go e arg@(XObj (Sym path _) _ _) = insertX e path arg
+    go e _ = pure e
 
 -- | Concretely type a function definition.
 --
@@ -255,7 +258,7 @@ mkLambda visited allowAmbig _ tenv env root@(ListPat (FnPat fn arr@(ArrPat args)
       -- Its name will contain the name of the (normal, non-lambda) function it's contained within,
       -- plus the identifier of the particular s-expression that defines the lambda.
       SymPath spath name = (last visited)
-      Just funcTy = xobjTy root
+      funcTy = fromMaybe (error "concretize: can't concretize a lambda without type") $ xobjTy root
       lambdaPath = SymPath spath ("_Lambda_" ++ lambdaToCName name (envFunctionNestingLevel env) ++ "_" ++ show (maybe 0 infoIdentifier (xobjInfo root)) ++ "_env")
       lambdaNameSymbol = XObj (Sym lambdaPath Symbol) (Just dummyInfo) Nothing
       -- Anonymous functions bound to a let name might call themselves. These recursive instances will have already been qualified as LookupRecursive symbols.
@@ -286,8 +289,11 @@ mkLambda visited allowAmbig _ tenv env root@(ListPat (FnPat fn arr@(ArrPat args)
       -- (if it captures at least one variable)
       structMemberPairs =
         concatMap
-          ( \(XObj (Sym path _) _ (Just symTy)) ->
-              [XObj (Sym path Symbol) Nothing Nothing, reify symTy]
+          ( \x ->
+              case x of
+                (XObj (Sym path _) _ (Just symTy)) ->
+                  [XObj (Sym path Symbol) Nothing Nothing, reify symTy]
+                _ -> error "concretize: struct member pair is a non symbol"
           )
           capturedVars
       environmentStructTy = StructTy (ConcreteNameTy tyPath) []
@@ -365,7 +371,7 @@ visitSymbol visited allowAmbig tenv env xobj@(SymPat path mode) =
     Right (foundEnv, binder)
       | envIsExternal foundEnv ->
         let theXObj = binderXObj binder
-            Just theType = xobjTy theXObj
+            theType = fromMaybe (error "concretize: can't concretize a symbol without a type") $ xobjTy theXObj
             typeOfVisited = fromMaybe (error ("Missing type on " ++ show xobj ++ " at " ++ prettyInfoFromXObj xobj ++ " when looking up path " ++ show path)) (xobjTy xobj)
          in if --(trace $ "CHECKING " ++ getName xobj ++ " : " ++ show theType ++ " with visited type " ++ show typeOfVisited ++ " and visited definitions: " ++ show visitedDefinitions) $
             (isTypeGeneric theType && not (isTypeGeneric typeOfVisited))
@@ -389,7 +395,7 @@ visitMultiSym visited allowAmbig tenv env xobj@(MultiSymPat name paths) =
     [x] -> go x
     _ -> pure (Right xobj)
   where
-    Just actualType = xobjTy xobj
+    actualType = fromMaybe (error "concretize: can't concretize a multisym without a type") $ xobjTy xobj
     tys = map (typeFromPath env) paths
     modes = map (modeFromPath env) paths
     tysToPathsDict = zip tys paths
@@ -417,19 +423,19 @@ visitInterfaceSym :: [SymPath] -> Bool -> TypeEnv -> Env -> XObj -> State [XObj]
 visitInterfaceSym visited allowAmbig tenv env xobj@(InterfaceSymPat name) =
   either (pure . const (Left (CannotConcretize xobj))) go (getTypeBinder tenv name)
   where
-    Just actualType = (xobjTy xobj)
+    actualType = fromMaybe (error "concretize: can't concretize an interface without type") $ (xobjTy xobj)
     go :: Binder -> State [XObj] (Either TypeError XObj)
     go (Binder _ (ListPat (InterfacePat _ paths))) =
       let tys = map (typeFromPath env) paths
           modes = map (modeFromPath env) paths
           tysModesPathsDict = zip3 tys modes paths
        in case filter (\(t, _, p) -> matchingSignature actualType (t, p)) tysModesPathsDict of
-            [] -> pure $ if allowAmbig then Right xobj else Left (NoMatchingSignature xobj name actualType (map (\(t, _, p) -> (t,p)) tysModesPathsDict))
+            [] -> pure $ if allowAmbig then Right xobj else Left (NoMatchingSignature xobj name actualType (map (\(t, _, p) -> (t, p)) tysModesPathsDict))
             [x] -> updateSym x
-            xs -> case filter (\(t,_,_) -> typeEqIgnoreLifetimes actualType t) xs of
+            xs -> case filter (\(t, _, _) -> typeEqIgnoreLifetimes actualType t) xs of
               [] -> pure (Right xobj) -- No exact match of types
               [y] -> updateSym y
-              ps -> pure (Left (SeveralExactMatches xobj name actualType (map (\(t, _, p) -> (t,p)) ps)))
+              ps -> pure (Left (SeveralExactMatches xobj name actualType (map (\(t, _, p) -> (t, p)) ps)))
     go _ = pure (Left (CannotConcretize xobj))
     -- TODO: Should we also check for allowAmbig here?
     updateSym (_, mode, path) = if isTypeGeneric actualType then pure (Right xobj) else replace mode path
@@ -577,7 +583,7 @@ renameGenericTypeSymbolsOnSum varpairs x@(XObj (Lst (caseNm : [a@(XObj (Arr arr)
 
     mapp = Map.fromList varpairs
     replacer mem@(XObj (Sym (SymPath [] name) _) _ _) =
-      let Just perhapsTyVar = xobjToTy mem
+      let perhapsTyVar = fromMaybe (error "concretize: can't replace generics on sum without type") $ xobjToTy mem
        in if isFullyGenericType perhapsTyVar
             then case Map.lookup (VarTy name) mapp of
               Just new -> reify new
@@ -592,7 +598,7 @@ renameGenericTypeSymbolsOnProduct vars members =
   concatMap (\(var, (v, t)) -> [v, rename var t]) (zip vars (pairwise members))
   where
     rename var mem =
-      let Just perhapsTyVar = xobjToTy mem
+      let perhapsTyVar = fromMaybe (error "concretize: can't replace generics on product without type") $ xobjToTy mem
        in if isFullyGenericType perhapsTyVar
             then reify var
             else mem
@@ -606,8 +612,12 @@ instantiateGenericStructType typeEnv env originalStructTy@(StructTy _ _) generic
   where
     fake1 = XObj (Sym (SymPath [] "a") Symbol) Nothing Nothing
     fake2 = XObj (Sym (SymPath [] "b") Symbol) Nothing Nothing
-    XObj (Arr memberXObjs) _ _ = head membersXObjs
-    rename@(StructTy _ renamedOrig) = evalState (renameVarTys originalStructTy) 0
+    memberXObjs = case head membersXObjs of
+      XObj (Arr xs) _ _ -> xs
+      _ -> error "can't instantiate non array member objects"
+    (rename, renamedOrig) = case evalState (renameVarTys originalStructTy) 0 of
+      (StructTy n ro) -> ((StructTy n ro), ro)
+      _ -> error "concretize: can't instantiate a non struct type"
     solution = solve [Constraint originalStructTy genericStructTy fake1 fake2 fake1 OrdMultiSym]
     go mappings = do
       mappings' <- replaceLeft (FailedToInstantiateGenericType originalStructTy) (solve [Constraint rename genericStructTy fake1 fake2 fake1 OrdMultiSym])
@@ -643,7 +653,9 @@ instantiateGenericSumtype :: TypeEnv -> Env -> Ty -> Ty -> [XObj] -> Either Type
 instantiateGenericSumtype typeEnv env originalStructTy@(StructTy _ originalTyVars) genericStructTy cases =
   let fake1 = XObj (Sym (SymPath [] "a") Symbol) Nothing Nothing
       fake2 = XObj (Sym (SymPath [] "b") Symbol) Nothing Nothing
-      rename@(StructTy _ renamedOrig) = evalState (renameVarTys originalStructTy) 0
+      (rename, renamedOrig) = case evalState (renameVarTys originalStructTy) 0 of
+        (StructTy n ro) -> ((StructTy n ro), ro)
+        _ -> error "concretize: can't instantiate non struct type"
       nameFixedCases = map (renameGenericTypeSymbolsOnSum (zip originalTyVars renamedOrig)) cases
       fixLeft l = replaceLeft (FailedToInstantiateGenericType originalStructTy) l
    in do
@@ -692,7 +704,7 @@ replaceGenericTypeSymbolsOnMembers mappings memberXObjs =
 
 replaceGenericTypeSymbols :: Map.Map String Ty -> XObj -> XObj
 replaceGenericTypeSymbols mappings xobj@(XObj (Sym (SymPath _ name) _) _ _) =
-  let Just perhapsTyVar = xobjToTy xobj
+  let perhapsTyVar = fromMaybe (error "concretize: can't replace generics on xobj with no type") $ xobjToTy xobj
    in if isFullyGenericType perhapsTyVar
         then maybe xobj reify (Map.lookup name mappings)
         else xobj
@@ -758,7 +770,7 @@ modeFromPath env p =
 concretizeDefinition :: Bool -> TypeEnv -> Env -> [SymPath] -> XObj -> Ty -> Either TypeError (XObj, [XObj])
 concretizeDefinition allowAmbiguity typeEnv globalEnv visitedDefinitions definition concreteType =
   let SymPath pathStrings name = getPath definition
-      Just polyType = xobjTy definition
+      polyType = fromMaybe (error "concretize: definition without a type") $ xobjTy definition
       suffix = polymorphicSuffix polyType concreteType
       newPath = SymPath pathStrings (name ++ suffix)
    in case definition of

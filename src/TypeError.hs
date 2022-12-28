@@ -525,10 +525,12 @@ beautifyTy mappings = f
     bmappings = beautification mappings
     beautification :: TypeMappings -> Map.Map String String
     beautification m =
-      Map.fromList $ zip (map (\(VarTy name) -> name) tys) beautList
+      Map.fromList $ zip (map go tys) beautList
       where
         tys = nub $ concat $ typeVariablesInOrderOfAppearance <$> tys'
         tys' = snd <$> Map.assocs m
+        go (VarTy name) = name
+        go _ = "" -- called on a non var type. Emit nothing.
     beautList = [c : s | s <- "" : beautList, c <- ['a' .. 'z']]
 
 typeVariablesInOrderOfAppearance :: Ty -> [Ty]

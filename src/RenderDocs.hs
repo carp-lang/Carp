@@ -7,6 +7,7 @@ import Control.Monad (when)
 import qualified Data.List as List
 import Data.Maybe (fromMaybe)
 import Data.Text as Text
+import qualified Env as E
 import qualified Map
 import qualified Meta
 import Obj
@@ -27,10 +28,14 @@ beautifyType t =
       mappings =
         Map.fromList
           ( List.zip
-              (List.map (\(VarTy name) -> name) tys)
+              (List.map go tys)
               (List.map (VarTy . (: [])) ['a' ..])
           )
    in replaceTyVars mappings t
+  where
+    go :: Ty -> String
+    go (VarTy name) = name
+    go _ = "" -- called on a non var type.
 
 saveDocsForEnvs :: Project -> [(SymPath, Binder)] -> IO ()
 saveDocsForEnvs ctx pathsAndEnvBinders =
@@ -63,7 +68,11 @@ saveDocsForEnvs ctx pathsAndEnvBinders =
                   )
               )
        in envs
-            ++ getDependenciesForEnvs (Prelude.map (\(n, Binder _ (XObj (Mod env _) _ _)) -> (n, env)) envs)
+            ++ getDependenciesForEnvs (Prelude.map go envs)
+      where
+        go :: (SymPath, Binder) -> (SymPath, Env)
+        go (n, Binder _ (XObj (Mod env _) _ _)) = (n, env)
+        go _ = ((SymPath [] ""), E.empty)
 
 -- | This function expects a binder that contains an environment, anything else is a runtime error.
 getEnvAndMetaFromBinder :: Binder -> (Env, MetaData)

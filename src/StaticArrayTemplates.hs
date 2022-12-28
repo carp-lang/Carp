@@ -1,3 +1,5 @@
+{-# LANGUAGE LambdaCase #-}
+
 module StaticArrayTemplates where
 
 import qualified ArrayTemplates
@@ -31,8 +33,9 @@ templateUnsafeNth =
                 "}"
               ]
         )
-        ( \(FuncTy [RefTy _ _, _] _ _) ->
-            []
+        ( \case
+            (FuncTy [RefTy _ _, _] _ _) -> []
+            _ -> error "static array templates: nth called on non array"
         )
 
 templateLength :: (String, Binder)
@@ -47,8 +50,10 @@ templateLength = defineTypeParameterizedTemplate templateCreator path t docs
           t
           (const (toTemplate "int $NAME (Array *a)"))
           (const (toTemplate "$DECL { return (*a).len; }"))
-          ( \(FuncTy [RefTy arrayType _] _ _) ->
-              depsForDeleteFunc typeEnv env arrayType
+          ( \case
+              (FuncTy [RefTy arrayType _] _ _) ->
+                depsForDeleteFunc typeEnv env arrayType
+              _ -> error "static array templates: length called on non array"
           )
 
 templateDeleteArray :: (String, Binder)
@@ -62,13 +67,17 @@ templateDeleteArray = defineTypeParameterizedTemplate templateCreator path t doc
         Template
           t
           (const (toTemplate "void $NAME (Array a)"))
-          ( \(FuncTy [arrayType] UnitTy _) ->
-              [TokDecl, TokC "{\n"]
-                ++ deleteTy typeEnv env arrayType
-                ++ [TokC "}\n"]
+          ( \case
+              (FuncTy [arrayType] UnitTy _) ->
+                [TokDecl, TokC "{\n"]
+                  ++ deleteTy typeEnv env arrayType
+                  ++ [TokC "}\n"]
+              _ -> error "static array templates: delete called on non array"
           )
-          ( \(FuncTy [StructTy _ [insideType]] UnitTy _) ->
-              depsForDeleteFunc typeEnv env insideType
+          ( \case
+              (FuncTy [StructTy _ [insideType]] UnitTy _) ->
+                depsForDeleteFunc typeEnv env insideType
+              _ -> error "static array templates: delete called on non array"
           )
 
 deleteTy :: TypeEnv -> Env -> Ty -> [Token]
@@ -90,22 +99,26 @@ templateAsetBang = defineTypeParameterizedTemplate templateCreator path t docs
         Template
           t
           (const (toTemplate "void $NAME (Array *aRef, int n, $t newValue)"))
-          ( \(FuncTy [_, _, insideTy] _ _) ->
-              let deleter = ArrayTemplates.insideArrayDeletion typeEnv env insideTy
-               in ( toTemplate $
-                      unlines
-                        [ "$DECL {",
-                          "    Array a = *aRef;",
-                          "    assert(n >= 0);",
-                          "    assert(n < a.len);",
-                          deleter "n",
-                          "    (($t*)a.data)[n] = newValue;",
-                          "}"
-                        ]
-                  )
+          ( \case
+              (FuncTy [_, _, insideTy] _ _) ->
+                let deleter = ArrayTemplates.insideArrayDeletion typeEnv env insideTy
+                 in ( toTemplate $
+                        unlines
+                          [ "$DECL {",
+                            "    Array a = *aRef;",
+                            "    assert(n >= 0);",
+                            "    assert(n < a.len);",
+                            deleter "n",
+                            "    (($t*)a.data)[n] = newValue;",
+                            "}"
+                          ]
+                    )
+              _ -> error "static array templates: aset bang called on non array"
           )
-          ( \(FuncTy [RefTy arrayType _, _, _] _ _) ->
-              depsForDeleteFunc typeEnv env arrayType
+          ( \case
+              (FuncTy [RefTy arrayType _, _, _] _ _) ->
+                depsForDeleteFunc typeEnv env arrayType
+              _ -> error "static array templates: aset bang called on non array"
           )
 
 templateAsetUninitializedBang :: (String, Binder)
@@ -118,23 +131,27 @@ templateAsetUninitializedBang = defineTypeParameterizedTemplate templateCreator 
       \_ _ ->
         Template
           t
-          ( \(FuncTy [_, _, valueType] _ _) ->
-              case valueType of
-                UnitTy -> toTemplate "void $NAME (Array *aRef, int n)"
-                _ -> toTemplate "void $NAME (Array *aRef, int n, $t newValue)"
+          ( \case
+              (FuncTy [_, _, valueType] _ _) ->
+                case valueType of
+                  UnitTy -> toTemplate "void $NAME (Array *aRef, int n)"
+                  _ -> toTemplate "void $NAME (Array *aRef, int n, $t newValue)"
+              _ -> error "static array templates: aset called on non array"
           )
-          ( \(FuncTy [_, _, valueType] _ _) ->
-              case valueType of
-                UnitTy -> ArrayTemplates.unitSetterTemplate
-                _ ->
-                  multilineTemplate
-                    [ "$DECL {",
-                      "    Array a = *aRef;",
-                      "    assert(n >= 0);",
-                      "    assert(n < a.len);",
-                      "    (($t*)a.data)[n] = newValue;",
-                      "}"
-                    ]
+          ( \case
+              (FuncTy [_, _, valueType] _ _) ->
+                case valueType of
+                  UnitTy -> ArrayTemplates.unitSetterTemplate
+                  _ ->
+                    multilineTemplate
+                      [ "$DECL {",
+                        "    Array a = *aRef;",
+                        "    assert(n >= 0);",
+                        "    assert(n < a.len);",
+                        "    (($t*)a.data)[n] = newValue;",
+                        "}"
+                      ]
+              _ -> error "static array templates: aset called on non array"
           )
           (const [])
 
@@ -146,13 +163,17 @@ templateStrArray = defineTypeParameterizedTemplate templateCreator path t docs
         Template
           t
           (const (toTemplate "String $NAME (Array* a)"))
-          ( \(FuncTy [RefTy arrayType _] StringTy _) ->
-              [TokDecl, TokC " {\n"]
-                ++ ArrayTemplates.strTy typeEnv env arrayType
-                ++ [TokC "}\n"]
+          ( \case
+              (FuncTy [RefTy arrayType _] StringTy _) ->
+                [TokDecl, TokC " {\n"]
+                  ++ ArrayTemplates.strTy typeEnv env arrayType
+                  ++ [TokC "}\n"]
+              _ -> error "static array templates: str called on non array"
           )
-          ( \(FuncTy [RefTy (StructTy _ [insideType]) _] StringTy _) ->
-              depsForPrnFunc typeEnv env insideType
+          ( \case
+              (FuncTy [RefTy (StructTy _ [insideType]) _] StringTy _) ->
+                depsForPrnFunc typeEnv env insideType
+              _ -> error "static array templates: str called on non array"
           )
     path = SymPath ["StaticArray"] "str"
     t = FuncTy [RefTy (StructTy concreteArray [VarTy "a"]) (VarTy "q")] StringTy StaticLifetimeTy

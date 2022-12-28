@@ -69,9 +69,8 @@ concretizeTypesInToken mappings cName decl token =
 
 -- | The code needed to correctly call a lambda from C.
 templateCodeForCallingLambda :: String -> Ty -> [String] -> String
-templateCodeForCallingLambda functionName t args =
-  let FuncTy argTys retTy lt = t
-      castToFnWithEnv = tyToCast (FuncTy (lambdaEnvTy : argTys) retTy lt)
+templateCodeForCallingLambda functionName t@(FuncTy argTys retTy lt) args =
+  let castToFnWithEnv = tyToCast (FuncTy (lambdaEnvTy : argTys) retTy lt)
       castToFn = tyToCast t
    in functionName ++ ".env ? "
         ++ "(("
@@ -92,12 +91,13 @@ templateCodeForCallingLambda functionName t args =
         ++ ".callback)("
         ++ joinWithComma args
         ++ ")"
+templateCodeForCallingLambda _ _ _ = "" -- called w/ non function type, emit nothing.
 
 -- | Must cast a lambda:s .callback member to the correct type to be able to call it.
 tyToCast :: Ty -> String
-tyToCast t =
-  let FuncTy argTys retTy _ = t
-   in "§(Fn [" ++ joinWithSpace (map show argTys) ++ "] " ++ show retTy ++ ")" -- Note! The '§' means that the emitted type will be "raw" and not converted to 'Lambda'.
+tyToCast (FuncTy argTys retTy _) =
+  "§(Fn [" ++ joinWithSpace (map show argTys) ++ "] " ++ show retTy ++ ")" -- Note! The '§' means that the emitted type will be "raw" and not converted to 'Lambda'.
+tyToCast _ = "" -- called w/ non function type. Emit nothing.
 
 ----------------------------------------------------------------------------------------------------------
 -- ACTUAL TEMPLATES
