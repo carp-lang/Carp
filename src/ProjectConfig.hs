@@ -46,7 +46,7 @@ projectGetPreproc proj =
 -- | Get the project's C compiler flags.
 projectGetCFlags :: ProjectGetter
 projectGetCFlags proj =
-  let fs = projectPreproc proj
+  let fs = projectCFlags proj
    in wrapList (map wrapString fs)
 
 -- | Set the project's C compiler flags
