@@ -7,6 +7,8 @@
 
 ;; Only define these if they're not already defined (allows the user to pre-define them before including SDL.carp)
 ;; Tip: Set them in your profile.carp which is located at ```C:/Users/USERNAME/AppData/Roaming/carp/profile.carp``` on Windows.
+;; If you do, please use `defdynamic`, since `defdynamic-once` will not be
+;; defined when your profile is loaded.
 (defdynamic-once sdl-windows-header-path "C:\\REDACTED\vcpkg\installed\x86-windows\include\SDL2\\")
 (defdynamic-once sdl-windows-library-path "C:\\REDACTED\vcpkg\installed\x86-windows\lib\\")
 
