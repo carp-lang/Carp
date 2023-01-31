@@ -95,10 +95,10 @@ integers [`imod`](#imod).")
 ;; The following functions are not put into a module for now:
 
 (defndynamic add-cflag [flag]
-  (eval (list 'Project.config "cflag" flag)))
+  (eval (list 'Project.config "cflag" (cons flag (Project.get-config "cflag")))))
 
 (defndynamic add-lib [lib]
-  (eval (list 'Project.config "libflag" lib)))
+  (eval (list 'Project.config "libflag" (cons lib (Project.get-config "libflag")))))
 
 (defndynamic pkg-config [pkg flags]
   (Dynamic.String.concat (Dynamic.append
