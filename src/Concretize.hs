@@ -921,7 +921,7 @@ concreteDeleteTakePtr typeEnv env members =
 memberDeletionGeneral :: String -> TypeEnv -> Env -> (String, Ty) -> String
 memberDeletionGeneral separator typeEnv env (memberName, memberType) =
   case findFunctionForMember typeEnv env "delete" (typesDeleterFunctionType memberType) (memberName, memberType) of
-    FunctionFound functionFullName -> "    " ++ functionFullName ++ "(p" ++ separator ++ memberName ++ ");"
+    FunctionFound functionFullName -> "    " ++ functionFullName ++ "(p" ++ separator ++ mangle memberName ++ ");"
     FunctionNotFound msg -> error msg
     FunctionIgnored -> "    /* Ignore non-managed member '" ++ memberName ++ "' : " ++ show memberType ++ " */"
 
