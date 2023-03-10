@@ -13,10 +13,10 @@ other higher order concepts.")
       result))
 
   (doc iterate-until "Like `iterate`, but f is applied repeatedly until the predicate `pred` is true.")
-  (sig iterate-until (Fn [(Ref (Fn [b] b c) d), (Ref (Fn [b] Bool c) e), b] b))
+  (sig iterate-until (Fn [(Ref (Fn [b] b c) d), (Ref (Fn [(Ref b f)] Bool c) e), b] b))
   (defn iterate-until [f pred start]
     (let-do [result start]
-      (while (not (~pred result))
+      (while (not (~pred &result))
         (set! result (~f result)))
       result))
 
