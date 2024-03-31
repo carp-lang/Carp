@@ -139,7 +139,7 @@ char String_char_MINUS_at(const String *s, int i) {
 String String_format(const String *str, const String *s) {
     int size = snprintf(NULL, 0, *str, *s) + 1;
     String buffer = CARP_MALLOC(size);
-    sprintf(buffer, *str, *s);
+    snprintf(buffer, size, *str, *s);
     return buffer;
 }
 
@@ -230,7 +230,7 @@ String Bool_str(bool b) {
 String Bool_format(const String *str, bool b) {
     int size = snprintf(NULL, 0, *str, b) + 1;
     String buffer = CARP_MALLOC(size);
-    sprintf(buffer, *str, b);
+    snprintf(buffer, size, *str, b);
     return buffer;
 }
 
@@ -258,21 +258,21 @@ String Char_prn(Char c) {
 String Char_format(const String *str, char b) {
     int size = snprintf(NULL, 0, *str, b) + 1;
     String buffer = CARP_MALLOC(size);
-    sprintf(buffer, *str, b);
+    snprintf(buffer, size, *str, b);
     return buffer;
 }
 
 String Double_str(double x) {
     int size = snprintf(NULL, 0, "%g", x) + 1;
     String buffer = CARP_MALLOC(size);
-    sprintf(buffer, "%g", x);
+    snprintf(buffer, size, "%g", x);
     return buffer;
 }
 
 String Double_format(const String *s, double x) {
     int size = snprintf(NULL, 0, *s, x) + 1;
     String buffer = CARP_MALLOC(size);
-    sprintf(buffer, *s, x);
+    snprintf(buffer, size, *s, x);
     return buffer;
 }
 
@@ -285,14 +285,14 @@ bool Double_from_MINUS_string_MINUS_internal(const String *s, double *target) {
 String Float_str(float x) {
     int size = snprintf(NULL, 0, "%gf", x) + 1;
     String buffer = CARP_MALLOC(size);
-    sprintf(buffer, "%gf", x);
+    snprintf(buffer, size, "%gf", x);
     return buffer;
 }
 
 String Float_format(const String *str, float x) {
     int size = snprintf(NULL, 0, *str, x) + 1;
     String buffer = CARP_MALLOC(size);
-    sprintf(buffer, *str, x);
+    snprintf(buffer, size, *str, x);
     return buffer;
 }
 
@@ -305,14 +305,14 @@ bool Float_from_MINUS_string_MINUS_internal(const String *s, float *target) {
 String Int_str(int x) {
     int size = snprintf(NULL, 0, "%d", x) + 1;
     String buffer = CARP_MALLOC(size);
-    sprintf(buffer, "%d", x);
+    snprintf(buffer, size, "%d", x);
     return buffer;
 }
 
 String Int_format(const String *str, int x) {
     int size = snprintf(NULL, 0, *str, x) + 1;
     String buffer = CARP_MALLOC(size);
-    sprintf(buffer, *str, x);
+    snprintf(buffer, size, *str, x);
     return buffer;
 }
 
@@ -325,14 +325,14 @@ bool Int_from_MINUS_string_MINUS_internal(const String *s, int *target) {
 String Long_str(Long x) {
     int size = snprintf(NULL, 0, "%" PRIi64, x) + 1;
     String buffer = CARP_MALLOC(size);
-    sprintf(buffer, "%" PRIi64, x);
+    snprintf(buffer, size, "%" PRIi64, x);
     return buffer;
 }
 
 String Long_format(const String *str, Long x) {
     int size = snprintf(NULL, 0, *str, x) + 1;
     String buffer = CARP_MALLOC(size);
-    sprintf(buffer, *str, x);
+    snprintf(buffer, size, *str, x);
     return buffer;
 }
 
@@ -345,14 +345,14 @@ bool Long_from_MINUS_string_MINUS_internal(const String *s, Long *target) {
 String Byte_str(uint8_t x) {
     int size = snprintf(NULL, 0, "%ub", x) + 1;
     String buffer = CARP_MALLOC(size);
-    sprintf(buffer, "%ub", x);
+    snprintf(buffer, size, "%ub", x);
     return buffer;
 }
 
 String Byte_format(const String *str, uint8_t x) {
     int size = snprintf(NULL, 0, *str, x) + 1;
     String buffer = CARP_MALLOC(size);
-    sprintf(buffer, *str, x);
+    snprintf(buffer, size, *str, x);
     return buffer;
 }
 
@@ -386,6 +386,6 @@ int String_index_MINUS_of(const String *s, char c) {
 String Pointer_strp(void *in) {
     int size = snprintf(NULL, 0, "%p", in) + 1;
     String buffer = CARP_MALLOC(size);
-    sprintf(buffer, "%p", in);
+    snprintf(buffer, size, "%p", in);
     return buffer;
 }

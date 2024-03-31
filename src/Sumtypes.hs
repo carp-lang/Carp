@@ -422,11 +422,11 @@ tokensForStr typeEnv env generic concrete fields =
       let (name, tys, correctedTagName) = namesFromCase theCase concrete
        in unlines
             [ "  if(p->_tag == " ++ correctedTagName ++ ") {",
-              "    sprintf(bufferPtr, \"(%s \", \"" ++ name ++ "\");",
+              "    snprintf(bufferPtr, size - (bufferPtr - buffer), \"(%s \", \"" ++ name ++ "\");",
               "    bufferPtr += strlen(\"" ++ name ++ "\") + 2;\n",
               joinLines $ memberPrn typeEnv env <$> unionMembers name tys,
               "    bufferPtr--;",
-              "    sprintf(bufferPtr, \")\");",
+              "    snprintf(bufferPtr, size - (bufferPtr - buffer), \")\");",
               "  }"
             ]
     calculateStructStrSize :: [TC.TypeField] -> String
