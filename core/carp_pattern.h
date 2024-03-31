@@ -280,7 +280,7 @@ init:                     /* using goto's to optimize tail recursion */
                         if (s) {
                             p += 4;
                             goto init; /* return match(ms, s, p + 4); */
-                        }              /* else fail (s == NULL) */
+                        } /* else fail (s == NULL) */
                         break;
                     }
                     case 'f': { /* frontier? */
@@ -341,7 +341,7 @@ init:                     /* using goto's to optimize tail recursion */
                 break;
             }
             default:
-            dflt : { /* Pattern class plus optional suffix */
+            dflt: { /* Pattern class plus optional suffix */
                 String ep = Pattern_internal_classend(
                     ms, p); /* points to optional suffix */
                 /* does not match at least once? */
@@ -574,7 +574,7 @@ String Pattern_internal_add_char(String a, Char b) {
 
     int len = strlen(a) + 2;
     String buffer = CARP_MALLOC(len);
-    snprintf(buffer, len-1, "%s%c", a, b);
+    snprintf(buffer, len - 1, "%s%c", a, b);
     CARP_FREE(a);
     return buffer;
 }
@@ -645,7 +645,7 @@ String Pattern_substitute(Pattern *p, String *s, String *t, int ns) {
 
     int l = strlen(res) + strlen(str) + 1;
     String buffer = CARP_MALLOC(l);
-    snprintf(buffer, l-1, "%s%s", res, str);
+    snprintf(buffer, l - 1, "%s%s", res, str);
     CARP_FREE(res);
     return buffer;
 }
@@ -671,7 +671,7 @@ String Pattern_str(Pattern *p) {
 String Pattern_prn(Pattern *p) {
     int n = strlen(*p) + 4;
     String buffer = CARP_MALLOC(n);
-    snprintf(buffer, n-1, "#\"%s\"", *p);
+    snprintf(buffer, n - 1, "#\"%s\"", *p);
     return buffer;
 }
 

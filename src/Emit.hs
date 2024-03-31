@@ -12,6 +12,7 @@ module Emit
   )
 where
 
+import Control.Monad (unless, when, zipWithM_)
 import Control.Monad.State
 import Data.Char (ord)
 import Data.Functor ((<&>))

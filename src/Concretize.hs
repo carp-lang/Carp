@@ -26,6 +26,7 @@ where
 import AssignTypes
 import Constraints
 import Control.Applicative
+import Control.Monad (foldM, unless)
 import Control.Monad.State
 import Data.Either (fromRight)
 import Data.List (foldl')
