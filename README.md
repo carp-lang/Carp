@@ -2,6 +2,8 @@
 
 <img src="resources/logo/carp_logo_300_c.png" alt="Logo" align="right"/>
 
+We now have an official Discord server (![invite](https://discord.gg/yyjnBcMqYM)) &endash; future discussions about the language will most likely happen there, come join!
+
 [![Linux CI](https://github.com/carp-lang/Carp/workflows/Linux%20CI/badge.svg)](https://github.com/carp-lang/Carp/actions?query=workflow%3A%22Linux+CI%22)
 [![MacOS CI](https://github.com/carp-lang/Carp/workflows/MacOS%20CI/badge.svg)](https://github.com/carp-lang/Carp/actions?query=workflow%3A"MacOS+CI")
 [![Windows CI](https://github.com/carp-lang/Carp/workflows/Windows%20CI/badge.svg)](https://github.com/carp-lang/Carp/actions?query=workflow%3A"Windows+CI")
