@@ -5,6 +5,7 @@
 module Obj where
 
 import Control.Applicative
+import Control.Monad (zipWithM)
 import Control.Monad.State
 import Data.Char
 import Data.Hashable

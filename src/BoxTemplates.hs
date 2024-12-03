@@ -194,7 +194,7 @@ prn =
                           [ "$DECL {",
                             "  if(!box){",
                             "    String buffer = CARP_MALLOC(4);",
-                            "    sprintf(buffer, \"Nil\");",
+                            "    snprintf(buffer, 4, \"Nil\");",
                             "    return buffer;",
                             "  }",
                             innerStr tenv env boxT,
@@ -231,7 +231,7 @@ str =
                           [ "$DECL {",
                             "  if(!box){",
                             "    String buffer = CARP_MALLOC(4);",
-                            "    sprintf(buffer, \"Nil\");",
+                            "    snprintf(buffer, 4, \"Nil\");",
                             "    return buffer;",
                             "  }",
                             innerStr tenv env boxT,
@@ -257,7 +257,7 @@ innerStr tenv env (StructTy _ [t]) =
         [ "  char* temp = " ++ functionFullName ++ "(*box);",
           "  int size = snprintf(NULL, 0, \"(Box %s)\", temp);",
           "  String buffer = CARP_MALLOC(size);",
-          "  sprintf(buffer, \"(Box %s)\", temp);",
+          "  snprintf(buffer, size, \"(Box %s)\", temp);",
           "  if(temp) {",
           "    CARP_FREE(temp);",
           "    temp = NULL;",
@@ -266,7 +266,7 @@ innerStr tenv env (StructTy _ [t]) =
     FunctionNotFound _ ->
       unlines
         [ "  String buffer = CARP_MALLOC(14);",
-          "  sprintf(buffer, \"(Box unknown)\");"
+          "  snprintf(buffer, 14, \"(Box unknown)\");"
         ]
     FunctionIgnored -> "    /* Ignore type inside Box: '" ++ show t ++ "' ??? */\n"
 innerStr _ _ _ = ""

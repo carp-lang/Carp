@@ -2,7 +2,7 @@ module GenerateConstraints (genConstraints) where
 
 import Constraints
 import Control.Arrow hiding (arr)
-import Control.Monad.State
+import Control.Monad (join)
 import Data.List as List
 import Data.Maybe (catMaybes, fromMaybe, mapMaybe)
 import Info

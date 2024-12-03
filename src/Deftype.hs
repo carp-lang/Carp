@@ -509,11 +509,11 @@ strGenerator = TG.mkTemplateGenerator genT decl body deps
               "  String buffer = CARP_MALLOC(size);",
               "  String bufferPtr = buffer;",
               "",
-              "  sprintf(bufferPtr, \"(%s \", \"" ++ typeName ++ "\");",
+              "  snprintf(bufferPtr, size - (bufferPtr - buffer), \"(%s \", \"" ++ typeName ++ "\");",
               "  bufferPtr += strlen(\"" ++ typeName ++ "\") + 2;\n",
               joinLines (map (memberPrn typeEnv env) members),
               "  bufferPtr--;",
-              "  sprintf(bufferPtr, \")\");",
+              "  snprintf(bufferPtr, size - (bufferPtr - buffer), \")\");",
               "  return buffer;",
               "}"
             ]
