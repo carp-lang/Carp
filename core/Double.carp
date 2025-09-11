@@ -21,6 +21,8 @@
   (register from-float (Fn [Float] Double))
   (register to-long (Fn [Double] Long))
   (register from-long (Fn [Long] Double))
+  (register to-uint64 (Fn [Double] Uint64))
+  (register from-uint64 (Fn [Uint64] Double))
   (register to-bytes (Fn [Double] Long))
   (register copy (Fn [(Ref Double)] Double))
 
