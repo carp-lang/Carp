@@ -15,7 +15,7 @@ void System_sleep_MINUS_micros(int t) {
     // TODO!
 }
 
-double System_nanotime() {
+uint64_t System_nanotime() {
     return 0;
 }
 #else
@@ -27,10 +27,10 @@ void System_sleep_MINUS_micros(int t) {
     usleep(t);
 }
 
-double System_nanotime() {
+uint64_t System_nanotime() {
     struct timespec tv;
     clock_gettime(CLOCK_REALTIME, &tv);
-    return 1000000000 * tv.tv_sec + tv.tv_nsec;
+    return (uint64_t)1000000000 * (uint64_t)tv.tv_sec + (uint64_t)tv.tv_nsec;
 }
 #endif
 
