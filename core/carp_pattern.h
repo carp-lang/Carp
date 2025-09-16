@@ -568,13 +568,13 @@ Array Pattern_match_MINUS_all_MINUS_groups(Pattern *p, String *s) {
 String Pattern_internal_add_char(String a, Char b) {
     if (!a) {
         String buffer = CARP_MALLOC(2);
-        snprintf(buffer, 1, "%c", b);
+        snprintf(buffer, 2, "%c", b);
         return buffer;
     }
 
     int len = strlen(a) + 2;
     String buffer = CARP_MALLOC(len);
-    snprintf(buffer, len-1, "%s%c", a, b);
+    snprintf(buffer, len, "%s%c", a, b);
     CARP_FREE(a);
     return buffer;
 }
@@ -645,7 +645,7 @@ String Pattern_substitute(Pattern *p, String *s, String *t, int ns) {
 
     int l = strlen(res) + strlen(str) + 1;
     String buffer = CARP_MALLOC(l);
-    snprintf(buffer, l-1, "%s%s", res, str);
+    snprintf(buffer, l, "%s%s", res, str);
     CARP_FREE(res);
     return buffer;
 }
@@ -671,7 +671,7 @@ String Pattern_str(Pattern *p) {
 String Pattern_prn(Pattern *p) {
     int n = strlen(*p) + 4;
     String buffer = CARP_MALLOC(n);
-    snprintf(buffer, n-1, "#\"%s\"", *p);
+    snprintf(buffer, n, "#\"%s\"", *p);
     return buffer;
 }
 
