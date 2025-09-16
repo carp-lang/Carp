@@ -28,15 +28,13 @@ typedef void *c_code;
 #define CHK_INDEX(i, n)
 #else
 
-#define CHK_INDEX_FORMAT_STRING ":%u: bad index: %zd < %zd\n"
-
 #define CHK_INDEX(i, n)                                                    \
     do {                                                                   \
         size_t __si = (size_t)i;                                           \
         size_t __ni = (size_t)n;                                           \
         if (!(__si < __ni)) {                                              \
-            printf(__FILE__ CHK_INDEX_FORMAT_STRING, __LINE__, (ssize_t)i, \
-                   (ssize_t)n);                                            \
+            printf(__FILE__ ":%u: bad index: %zu < %zu\n", __LINE__, __ni, \
+            __si);                                                         \
             abort();                                                       \
         }                                                                  \
     } while (0)
