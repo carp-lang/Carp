@@ -8,7 +8,7 @@
 
   (doc seed "seed resets the seed of the random number generator.")
   (defn seed []
-    (set! s (Double.from-long (System.nanotime))))
+    (set! s (Double.from-uint64 (System.nanotime))))
 
   (doc seed-from "seed-from resets the seed of the random number generator to `new-seed`.")
   (defn seed-from [new-seed]

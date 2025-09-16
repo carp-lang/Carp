@@ -60,6 +60,14 @@ double Double_from_MINUS_long(Long x) {
     return (double)x;
 }
 
+uint64_t Double_to_MINUS_uint64(double x) {
+    return (uint64_t)x;
+}
+
+double Double_from_MINUS_uint64(uint64_t x) {
+    return (double)x;
+}
+
 double Double_abs(double x) {
     return x > 0.0 ? x : -x;
 }
