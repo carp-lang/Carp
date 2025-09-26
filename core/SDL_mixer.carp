@@ -1,6 +1,8 @@
 (system-include "SDL2/SDL_mixer.h")
 (add-pkg "SDL2_mixer")
-(Project.config "cflag" "-Wno-incompatible-pointer-types-discards-qualifiers")
+(Project.config "cflag"
+  (cons "-Wno-incompatible-pointer-types-discards-qualifiers"
+        (Project.get-config "cflag")))
 
 (register-type Mix_Chunk)
 (register-type Mix_Music)
