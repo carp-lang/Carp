@@ -280,7 +280,7 @@ init:                     /* using goto's to optimize tail recursion */
                         if (s) {
                             p += 4;
                             goto init; /* return match(ms, s, p + 4); */
-                        }              /* else fail (s == NULL) */
+                        } /* else fail (s == NULL) */
                         break;
                     }
                     case 'f': { /* frontier? */
@@ -341,7 +341,7 @@ init:                     /* using goto's to optimize tail recursion */
                 break;
             }
             default:
-            dflt : { /* Pattern class plus optional suffix */
+            dflt: { /* Pattern class plus optional suffix */
                 String ep = Pattern_internal_classend(
                     ms, p); /* points to optional suffix */
                 /* does not match at least once? */

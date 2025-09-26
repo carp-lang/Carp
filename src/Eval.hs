@@ -7,6 +7,7 @@ import Commands
 import Context
 import Control.Applicative
 import Control.Exception
+import Control.Monad  (foldM, when)
 import Control.Monad.State
 import Data.Either (fromRight)
 import Data.Foldable (foldlM, foldrM)
