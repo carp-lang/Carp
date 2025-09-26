@@ -10,6 +10,7 @@ module Info
     freshVar,
     machineReadableInfo,
     makeTypeVariableNameFromInfo,
+    deleterVar,
     setDeletersOnInfo,
     addDeletersToInfo,
     uniqueDeleter,

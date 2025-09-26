@@ -63,6 +63,7 @@ data TypeError
   | FailedToAddLambdaStructToTyEnv SymPath XObj
   | FailedToInstantiateGenericType Ty
   | InvalidStructField XObj
+  | FunctionLeaksCapture [String] XObj
 
 instance Show TypeError where
   show (SymbolMissingType xobj env) =
@@ -325,6 +326,9 @@ instance Show TypeError where
       ++ " to the type environment."
   show (FailedToInstantiateGenericType ty) =
     "I couldn't instantiate the generic type " ++ show ty
+  show (FunctionLeaksCapture leaks xobj) = 
+    "The function "  ++ pretty xobj ++ " gives away the captured variables: " 
+    ++ joinWithComma leaks ++ ". Functions must keep ownership of variables captured from another environment."
 
 machineReadableErrorStrings :: FilePathPrintLength -> TypeError -> [String]
 machineReadableErrorStrings fppl err =
@@ -443,6 +447,7 @@ machineReadableErrorStrings fppl err =
           ++ pretty xobj
           ++ " to the type environment."
       ]
+    e@(FunctionLeaksCapture _ xobj) -> [machineReadableInfoFromXObj fppl xobj ++ show e] 
     _ ->
       [show err]
 

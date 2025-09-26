@@ -114,6 +114,7 @@ manageMemory typeEnv globalEnv root =
       case lst of
         [defn@(XObj (Defn maybeCaptures) _ _), nameSymbol@(XObj (Sym _ _) _ _), args@(XObj (Arr argList) _ _), body] ->
           let captures = maybe [] Set.toList maybeCaptures
+              captureDeleters = Set.fromList (map (FakeDeleter . getName) captures)
            in do
                 mapM_ (manage typeEnv globalEnv) argList
                 -- Add the captured variables (if any, only happens in lifted lambdas) as fake deleters
@@ -132,10 +133,11 @@ manageMemory typeEnv globalEnv root =
                 mapM_ (addToLifetimesMappingsIfRef False) captures -- For captured variables inside of lifted lambdas
                 visitedBody <- visit body
                 result <- unmanage typeEnv globalEnv body
+                capturesRetained <- assertOwnershipRetained captureDeleters xobj
                 whenRightReturn result $
-                  do
-                    okBody <- visitedBody
-                    Right (XObj (Lst [defn, nameSymbol, args, okBody]) i t)
+                  do capturesRetained -- if any captures are given away in the body, it's an error
+                     okBody <- visitedBody
+                     Right (XObj (Lst [defn, nameSymbol, args, okBody]) i t)
 
         -- Fn / λ (Lambda)
         [fn@(XObj (Fn _ captures) _ _), args@(XObj (Arr _) _ _), body] ->
@@ -515,6 +517,19 @@ unmanage typeEnv globalEnv xobj =
                     pure (Right ())
             tooMany -> error ("Too many variables with the same name in set: " ++ show tooMany)
         else pure (Right ())
+
+-- | Assert that the current memory state retains ownership over a set of nodes.
+--
+-- If the provided set of deleters is not present in the memory state at the
+-- point at which this is called, the state has given up ownership of one or
+-- more of the values in the set.
+assertOwnershipRetained :: Set.Set Deleter -> XObj -> State MemState (Either TypeError ())
+assertOwnershipRetained deleters xobj =
+  do MemState deleters' _ _ <- get
+     if (deleters `Set.isSubsetOf` deleters')
+       then pure (Right ())
+       else let leaks = map deleterVar (Set.toList (deleters Set.\\ deleters'))
+             in pure (Left (FunctionLeaksCapture leaks xobj))
 
 -- | A combination of `manage` and `unmanage`.
 transferOwnership :: TypeEnv -> Env -> XObj -> XObj -> State MemState (Either TypeError ())

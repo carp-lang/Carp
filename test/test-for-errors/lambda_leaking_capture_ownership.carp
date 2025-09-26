@@ -1,0 +1,7 @@
+(Project.config "file-path-print-length" "short")
+
+;; see [issue #1040](https://github.com/carp-lang/Carp/issues/1040)
+(defn lambda-leak
+  (let [string @""
+        leaks (fn [] s)]) ;; disallow this
+  ())
