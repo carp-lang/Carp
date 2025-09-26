@@ -394,6 +394,7 @@ eval ctx xobj@(XObj o info ty) preference resolver =
     evaluateApp :: Evaluator
     evaluateApp (AppPat f' args) =
       case f' of
+        (ListPat []) -> pure (evalError ctx (format (GenericMalformed xobj)) (xobjInfo xobj))
         l@(ListPat _) -> go l ResolveLocal
         sym@(SymPat _ _) -> go sym resolver
         _ -> pure (evalError ctx (format (GenericMalformed xobj)) (xobjInfo xobj))
