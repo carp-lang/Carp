@@ -95,7 +95,7 @@ canBeUsedAsMemberType tname typeVarRestriction typeEnv globalEnv typeVariables t
     checkStruct (ConcreteNameTy (SymPath [] "Array")) [innerType] =
       canBeUsedAsMemberType tname typeVarRestriction typeEnv globalEnv typeVariables innerType
     checkStruct (ConcreteNameTy path@(SymPath _ name)) vars =
-      case E.getTypeBinder typeEnv name <> E.findTypeBinder globalEnv path of
+      case E.getBinder typeEnv name <> E.findTypeBinder globalEnv path of
         Right (Binder _ (XObj (Lst (XObj (ExternalType _) _ _ : _)) _ _)) ->
           pure ()
         Right (Binder _ (XObj (Lst (XObj (Deftype t) _ _ : _)) _ _)) ->

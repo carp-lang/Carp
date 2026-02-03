@@ -697,7 +697,7 @@ commandSaveDocsEx ctx modulePaths filePaths = do
        in (SymPath [] moduleName, Binder emptyMeta (XObj (Mod fauxGlobalModuleWithBindings fauxTypeEnv) Nothing Nothing))
     getEnvironmentBinderForDocumentation :: Env -> SymPath -> Either String Binder
     getEnvironmentBinderForDocumentation env path =
-      case E.searchValueBinder env path of
+      case E.searchBinder env path of
         Right foundBinder@(Binder _ (XObj (Mod _ _) _ _)) ->
           Right foundBinder
         Right (Binder _ x) ->
@@ -745,7 +745,7 @@ commandSexpressionInternal ctx xobj bol =
         mdl@(XObj (Mod e _) _ _) ->
           if bol
             then getMod
-            else case E.getTypeBinder tyEnv (fromMaybe "" (envModuleName e)) of
+            else case E.getBinder tyEnv (fromMaybe "" (envModuleName e)) of
               Right (Binder _ (XObj (Lst forms) i t)) ->
                 pure (ctx, Right (XObj (Lst (map toSymbols forms)) i t))
               Right (Binder _ xobj') ->

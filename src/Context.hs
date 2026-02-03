@@ -308,7 +308,7 @@ lookupBinderInTypeEnv ctx path =
       fullPath@(SymPath qualification name) = contextualize path ctx
       theType =
         ( case qualification of
-            [] -> E.getTypeBinder typeEnv name
+            [] -> E.getBinder typeEnv name
             _ -> E.searchTypeBinder global fullPath
         )
    in replaceLeft (NotFoundType fullPath) theType
@@ -322,7 +322,7 @@ lookupBinderInGlobalEnv :: Contextual a => Context -> a -> Either ContextError B
 lookupBinderInGlobalEnv ctx path =
   let global = contextGlobalEnv ctx
       fullPath = contextualize path ctx
-   in replaceLeft (NotFoundGlobal fullPath) (E.searchValueBinder global fullPath)
+   in replaceLeft (NotFoundGlobal fullPath) (E.searchBinder global fullPath)
 
 -- | Lookup a binder in a context's internal environment.
 lookupBinderInInternalEnv :: Contextual a => Context -> a -> Either ContextError Binder
@@ -331,7 +331,7 @@ lookupBinderInInternalEnv ctx path =
       fullPath = contextualize path ctx
    in maybe
         (Left (NotFoundInternal fullPath))
-        (\e -> replaceLeft (NotFoundInternal fullPath) (E.searchValueBinder e fullPath))
+        (\e -> replaceLeft (NotFoundInternal fullPath) (E.searchBinder e fullPath))
         internal
 
 -- | Lookup a binder in a context's context environment.
@@ -341,6 +341,6 @@ lookupBinderInInternalEnv ctx path =
 -- performed.
 lookupBinderInContextEnv :: Context -> SymPath -> Either ContextError Binder
 lookupBinderInContextEnv ctx path =
-  let ctxEnv = (E.contextEnv ctx)
+  let ctxEnv = (E.contextEnv ctx :: Env)
       fullPath = contextualize path ctx
-   in replaceLeft (NotFoundContext fullPath) (E.searchValueBinder ctxEnv fullPath)
+   in replaceLeft (NotFoundContext fullPath) (E.searchBinder ctxEnv fullPath)

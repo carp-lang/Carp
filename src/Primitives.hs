@@ -15,7 +15,7 @@ import Data.List (foldl')
 import Data.Maybe (fromJust, fromMaybe)
 import Deftype
 import Emit
-import Env (addUsePath, contextEnv, insert, lookupBinderEverywhere, lookupEverywhere, lookupMeta, searchValueBinder)
+import Env (addUsePath, contextEnv, insert, lookupBinderEverywhere, lookupEverywhere, lookupMeta, searchBinder)
 import EvalError
 import Infer
 import Info
@@ -722,13 +722,13 @@ primitiveUse xobj ctx (XObj (Sym path _) _ _) =
       global = (contextGlobalEnv ctx)
       -- Look up the module to see if we can actually use it.
       -- The reference might be contextual, if so, append the current context path strings.
-      path' = case (searchValueBinder global path) of
+      path' = case (searchBinder global path) of
         Right _ -> path
         _ -> contextualized
    in pure
         ( case modulePath of
             (SymPath [] "") -> updateGlobalUsePaths global path'
-            _ -> case searchValueBinder global modulePath of
+            _ -> case searchBinder global modulePath of
               Left err -> (evalError ctx (show err) (xobjInfo xobj))
               Right binder ->
                 updateModuleUsePaths global modulePath binder path'

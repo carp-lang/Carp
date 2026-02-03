@@ -15,18 +15,15 @@ module Env
     binders,
     ------------------------
     -- lookups
-    getType,
-    getTypeBinder,
+    getBinder,
+    find',
+    findBinder,
+    search,
+    searchBinder,
     findType,
     findTypeBinder,
     searchType,
     searchTypeBinder,
-    getValue,
-    getValueBinder,
-    findValue,
-    findValueBinder,
-    searchValue,
-    searchValueBinder,
     -------------------------
     -- Environment getters
     getInnerEnv,
@@ -261,40 +258,14 @@ searchBinder :: Environment e => e -> SymPath -> Either EnvironmentError Binder
 searchBinder e path = fmap snd (search e path)
 
 --------------------------------------------------------------------------------
--- Specialized retrievals
+-- Type-specialized retrievals
 --
--- These functions are all equivalent to the generic retrieval functions
--- defined above but they enforce further restrictions at type level. Thus,
--- they can be used to help enforce constraints at call sites.
---
--- For example, suppose we want to search for a binder that may name a type
-
--- * or* module, preferring types. One could cast to enforce a type search
-
--- starting from the global env:
---
---   search typeEnv path
---   <> search (TypeEnv global) path
---   <> search global path
---
---   But:
---
---   searchType typeEnv path
---   searchType global path
---   <> searchValue global path
---
---   Is arguably much clearer.
+-- These functions cast an environment to type-mode search (TypeEnv).
+-- They are needed when searching a value environment (Env) for type bindings,
+-- since the modality of the search affects which sub-environments are traversed.
 
 --------------------------------------------------------------------------------
 -- Type retrievals
-
--- | Get a type from a type environment.
-getType :: TypeEnv -> String -> Either EnvironmentError (TypeEnv, Binder)
-getType = get
-
--- | Get a type binder from a type environment.
-getTypeBinder :: TypeEnv -> String -> Either EnvironmentError Binder
-getTypeBinder = getBinder
 
 -- | Unidirectional binder retrieval specialized to types.
 --
@@ -321,30 +292,6 @@ searchType e path = search (inj (prj e)) path
 
 searchTypeBinder :: Environment e => e -> SymPath -> Either EnvironmentError Binder
 searchTypeBinder e path = fmap snd (searchType e path)
-
---------------------------------------------------------------------------------
--- Value retrievals
-
--- | Get a value from a value environment.
-getValue :: Env -> String -> Either EnvironmentError (Env, Binder)
-getValue = get
-
-getValueBinder :: Env -> String -> Either EnvironmentError Binder
-getValueBinder = getBinder
-
--- | Unidirectional binder retrieval specialized to values.
-findValue :: Env -> SymPath -> Either EnvironmentError (Env, Binder)
-findValue = find'
-
-findValueBinder :: Env -> SymPath -> Either EnvironmentError Binder
-findValueBinder = findBinder
-
--- | Multidirectional binder retrieval specialized to values.
-searchValue :: Env -> SymPath -> Either EnvironmentError (Env, Binder)
-searchValue = search
-
-searchValueBinder :: Env -> SymPath -> Either EnvironmentError Binder
-searchValueBinder = searchBinder
 
 --------------------------------------------------------------------------------
 -- Environment mutation

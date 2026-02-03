@@ -352,12 +352,12 @@ qualifySym :: Qualifier
 qualifySym typeEnv globalEnv localEnv xobj@(XObj (Sym path@(SymPath _ name) _) i t) =
   ( ( ( replaceLeft
           (FailedToFindSymbol xobj)
-          -- TODO: Why do we need getValue here? We should be able to restrict this
-          -- search only to direct children of the type environment, but this causes
+          -- TODO: Why do we need search here? We should be able to restrict this
+          -- lookup to direct children of the type environment, but this causes
           -- errors.
           ( fmap (\(e, b) -> ((E.prj typeEnv), (E.prj e, b))) (E.searchType typeEnv path)
-              <> fmap (localEnv,) (E.searchValue localEnv path)
-              <> fmap (globalEnv,) (E.searchValue globalEnv path)
+              <> fmap (localEnv,) (E.search localEnv path)
+              <> fmap (globalEnv,) (E.search globalEnv path)
           )
       )
         >>= \(origin, (e, binder)) ->
@@ -373,7 +373,7 @@ qualifySym typeEnv globalEnv localEnv xobj@(XObj (Sym path@(SymPath _ name) _) i
     resolve :: Env -> Env -> Binder -> Either QualificationError XObj
     resolve _ _ (Binder _ (XObj (Lst (XObj (Interface _ _) _ _ : _)) _ _)) =
       -- Before we return an interface, double check that it isn't shadowed by a local let-binding.
-      case (E.searchValue localEnv path) of
+      case (E.search localEnv path) of
         Right (e, Binder _ _) ->
           case envMode e of
             InternalEnv -> pure (XObj (Sym (getPath xobj) (LookupLocal (captureOrNot e localEnv))) i t)
@@ -391,7 +391,7 @@ qualifySym typeEnv globalEnv localEnv xobj@(XObj (Sym path@(SymPath _ name) _) i
               else (LookupGlobalOverride cname)
        in if (isTypeDef xobj')
             then
-              ( (replaceLeft (FailedToFindSymbol xobj') (fmap (globalEnv,) (E.searchValue globalEnv path)))
+              ( (replaceLeft (FailedToFindSymbol xobj') (fmap (globalEnv,) (E.search globalEnv path)))
                   >>= \(origin', (e', binder)) -> resolve (E.prj origin') (E.prj e') binder
               )
             else case envMode (E.prj found) of

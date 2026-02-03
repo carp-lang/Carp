@@ -31,7 +31,7 @@ import Data.Either (fromRight)
 import Data.List (foldl')
 import Data.Maybe (fromMaybe)
 import Debug.Trace
-import Env (EnvironmentError, empty, envIsExternal, findTypeBinder, getTypeBinder, insert, insertX, searchValue)
+import Env (EnvironmentError, empty, envIsExternal, findTypeBinder, getBinder, insert, insertX, search)
 import Forms
 import Info
 import InitialTypes
@@ -367,7 +367,7 @@ visitFn _ _ _ _ _ x = pure (Left (CannotConcretize x))
 -- | Concretely type a unique symbol.
 visitSymbol :: [SymPath] -> Bool -> TypeEnv -> Env -> XObj -> State [XObj] (Either TypeError XObj)
 visitSymbol visited allowAmbig tenv env xobj@(SymPat path mode) =
-  case searchValue env path of
+  case search env path of
     Right (foundEnv, binder)
       | envIsExternal foundEnv ->
         let theXObj = binderXObj binder
@@ -421,7 +421,7 @@ visitMultiSym _ _ _ _ x = pure (Left (CannotConcretize x))
 -- | Concretely type an interface symbol.
 visitInterfaceSym :: [SymPath] -> Bool -> TypeEnv -> Env -> XObj -> State [XObj] (Either TypeError XObj)
 visitInterfaceSym visited allowAmbig tenv env xobj@(InterfaceSymPat name) =
-  either (pure . const (Left (CannotConcretize xobj))) go (getTypeBinder tenv name)
+  either (pure . const (Left (CannotConcretize xobj))) go (getBinder tenv name)
   where
     actualType = fromMaybe (error "concretize: can't concretize an interface without type") $ (xobjTy xobj)
     go :: Binder -> State [XObj] (Either TypeError XObj)
@@ -552,7 +552,7 @@ concretizeType typeEnv env arrayTy@(StructTy (ConcreteNameTy (SymPath [] "Static
       deps <- mapM (concretizeType typeEnv env) varTys
       Right (defineStaticArrayTypeAlias arrayTy : concat deps)
 concretizeType typeEnv env genericStructTy@(StructTy (ConcreteNameTy path@(SymPath _ name)) _) =
-  case (getTypeBinder typeEnv name) <> (findTypeBinder env path) of
+  case (getBinder typeEnv name) <> (findTypeBinder env path) of
     Right (Binder _ x) -> go x
     _ -> Right []
   where
@@ -731,7 +731,7 @@ replaceGenericTypeSymbolsOnCase _ unknownCase = unknownCase -- TODO: error out?
 -- | Get the type of a symbol at a given path.
 typeFromPath :: Env -> SymPath -> Ty
 typeFromPath env p =
-  case searchValue env p of
+  case search env p of
     Right (e, Binder _ found)
       | envIsExternal e -> forceTy found
       | otherwise -> error "Local bindings shouldn't be ambiguous."
@@ -743,7 +743,7 @@ typeFromPath env p =
 -- | parts of doesNotBelongToAnInterface.
 modeFromPath :: Env -> SymPath -> SymbolMode
 modeFromPath env p =
-  case searchValue env p of
+  case search env p of
     Right (_, Binder _ (XObj (Lst (XObj (External (Just overrideWithName)) _ _ : _)) _ _)) ->
       LookupGlobalOverride overrideWithName
     Right (_, Binder _ (XObj (Lst (XObj (ExternalType (Just overrideWithName)) _ _ : _)) _ _)) ->
