@@ -178,21 +178,17 @@ binderForStrOrPrn candidate strOrPrn =
   where
     strGenerator :: TG.TemplateGenerator TC.TypeCandidate
     strGenerator = TG.mkTemplateGenerator genT decl body deps
-
     genT :: TG.TypeGenerator TC.TypeCandidate
     genT GeneratorArg {value} =
       FuncTy [RefTy (TC.toType value) (VarTy "q")] StringTy StaticLifetimeTy
-
     decl :: TG.TokenGenerator TC.TypeCandidate
     decl GeneratorArg {instanceT = (FuncTy [RefTy ty _] _ _)} =
       toTemplate $ "String $NAME(" ++ tyToCLambdaFix ty ++ " *p)"
     decl _ = toTemplate "/* template error! */"
-
     body :: TG.TokenGenerator TC.TypeCandidate
     body GeneratorArg {tenv, env, originalT, instanceT = (FuncTy [RefTy ty _] _ _), value} =
       tokensForStr tenv env originalT ty (TC.getFields value)
     body _ = toTemplate "/* template error! */"
-
     deps :: TG.DepenGenerator TC.TypeCandidate
     deps GeneratorArg {tenv, env, originalT, instanceT = (FuncTy [RefTy ty _] _ _), value} =
       depsForStr tenv env originalT ty (TC.getFields value)
@@ -212,18 +208,14 @@ binderForDelete candidate =
   where
     generator :: TG.TemplateGenerator TC.TypeCandidate
     generator = TG.mkTemplateGenerator genT decl body deps
-
     genT :: TG.TypeGenerator TC.TypeCandidate
     genT _ = (FuncTy [VarTy "p"] UnitTy StaticLifetimeTy)
-
     decl :: TG.TokenGenerator TC.TypeCandidate
     decl _ = toTemplate "void $NAME($p p)"
-
     body :: TG.TokenGenerator TC.TypeCandidate
     body GeneratorArg {tenv, env, originalT, instanceT = (FuncTy [ty] _ _), value} =
       tokensForDeleteBody tenv env originalT ty (TC.getFields value)
     body _ = toTemplate "/* template error! */"
-
     deps :: TG.DepenGenerator TC.TypeCandidate
     deps GeneratorArg {tenv, env, originalT, instanceT = (FuncTy [ty] _ _), value} =
       depsForDelete tenv env originalT ty (TC.getFields value)
@@ -243,18 +235,14 @@ binderForCopy candidate =
   where
     generator :: TG.TemplateGenerator TC.TypeCandidate
     generator = TG.mkTemplateGenerator genT decl body deps
-
     genT :: TG.TypeGenerator TC.TypeCandidate
     genT _ = FuncTy [RefTy (VarTy "p") (VarTy "q")] (VarTy "p") StaticLifetimeTy
-
     decl :: TG.TokenGenerator TC.TypeCandidate
     decl _ = toTemplate "$p $NAME($p* pRef)"
-
     body :: TG.TokenGenerator TC.TypeCandidate
     body GeneratorArg {tenv, env, originalT, instanceT = (FuncTy [RefTy ty _] _ _), value} =
       tokensForSumtypeCopy tenv env originalT ty (TC.getFields value)
     body _ = toTemplate "/* template error! */"
-
     deps :: TG.DepenGenerator TC.TypeCandidate
     deps GeneratorArg {tenv, env, originalT, instanceT = (FuncTy [RefTy ty _] _ _), value} =
       depsForCopy tenv env originalT ty (TC.getFields value)
@@ -298,7 +286,6 @@ tokensForCaseInit alloc orig concrete (TC.SumField fieldname tys) =
     allocate :: AllocationMode -> String
     allocate StackAlloc = "  $p instance;"
     allocate HeapAlloc = "  $p instance = CARP_MALLOC(sizeof(" ++ show concrete ++ "));"
-
     assign :: AllocationMode -> String -> String -> String
     assign alloc' name member =
       "    instance" ++ (accessor alloc') ++ "u." ++ name ++ "." ++ member ++ " = " ++ member ++ ";"
@@ -422,16 +409,14 @@ tokensForStr typeEnv env generic concrete fields =
       let (name, tys, correctedTagName) = namesFromCase theCase concrete
        in unlines
             [ "  if(p->_tag == " ++ correctedTagName ++ ") {",
-              "    sprintf(bufferPtr, \"(%s \", \"" ++ name ++ "\");",
-              "    bufferPtr += strlen(\"" ++ name ++ "\") + 2;\n",
+              "    bufferPtr += snprintf(bufferPtr, size - (bufferPtr - buffer), \"(%s \", \"" ++ name ++ "\");",
               joinLines $ memberPrn typeEnv env <$> unionMembers name tys,
               "    bufferPtr--;",
-              "    sprintf(bufferPtr, \")\");",
+              "    snprintf(bufferPtr, size - (bufferPtr - buffer), \")\");",
               "  }"
             ]
     calculateStructStrSize :: [TC.TypeField] -> String
     calculateStructStrSize cases = "  int size = 1;\n" ++ concatMap strSizeCase cases
-
     strSizeCase :: TC.TypeField -> String
     strSizeCase theCase =
       let (name, tys, correctedTagName) = namesFromCase theCase concrete

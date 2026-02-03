@@ -220,13 +220,14 @@ eval ctx xobj@(XObj o info ty) preference =
                 pure (ctx, (Left (HasStaticCall xobj info)))
             [] -> pure (ctx, dynamicNil)
             _ -> pure (throwErr (UnknownForm xobj) ctx (xobjInfo xobj))
+    -- Check if an XObj is a static form that requires compilation.
+    -- Only check for BARE static objects, not lists containing static objects.
     checkStatic' (XObj Def _ _) = Left (HasStaticCall xobj info)
     checkStatic' (XObj (Defn _) _ _) = Left (HasStaticCall xobj info)
     checkStatic' (XObj (Interface _ _) _ _) = Left (HasStaticCall xobj info)
     checkStatic' (XObj (Instantiate _) _ _) = Left (HasStaticCall xobj info)
     checkStatic' (XObj (Deftemplate _) _ _) = Left (HasStaticCall xobj info)
     checkStatic' (XObj (External _) _ _) = Left (HasStaticCall xobj info)
-    checkStatic' (XObj (Match _) _ _) = Left (HasStaticCall xobj info)
     checkStatic' (XObj Ref _ _) = Left (HasStaticCall xobj info)
     checkStatic' x' = Right x'
     successiveEval (ctx', acc) x =
@@ -390,10 +391,17 @@ eval ctx xobj@(XObj o info ty) preference =
           do
             (newCtx, f) <- eval ctx x preference
             case f of
-              Right fun -> do
-                (newCtx', res) <- eval (pushFrame newCtx xobj) (XObj (Lst (fun : args)) (xobjInfo x) (xobjTy x)) preference
-                pure (popFrame newCtx', res)
+              Right fun
+                -- If the resolved function is a static definition (Defn, External, etc.),
+                -- signal that this needs compilation rather than dynamic evaluation.
+                | isStaticDefinition fun -> pure (newCtx, Left (HasStaticCall xobj info))
+                | otherwise -> do
+                  (newCtx', res) <- eval (pushFrame newCtx xobj) (XObj (Lst (fun : args)) (xobjInfo x) (xobjTy x)) preference
+                  pure (popFrame newCtx', res)
               x' -> pure (newCtx, x')
+        -- Check if an XObj is a static definition that needs compilation
+        isStaticDefinition (XObj (Lst (XObj headObj _ _ : _)) _ _) = isResolvableStaticObj headObj
+        isStaticDefinition _ = False
     evaluateApp _ = pure (evalError ctx (format (GenericMalformed xobj)) (xobjInfo xobj))
     evaluateSideEffects :: Evaluator
     evaluateSideEffects forms = do
@@ -534,9 +542,7 @@ executeCommand ctx@(Context env _ _ _ _ _ _ _) xobj =
         executeCommand newCtx (withBuildAndRun (XObj (Lst []) (Just dummyInfo) Nothing))
       Left (HasStaticCall _ _) ->
         callFromRepl newCtx xobj
-      Right res
-        | isStaticResult res -> callFromRepl newCtx xobj
-        | otherwise -> pure (res, newCtx)
+      Right res -> pure (res, newCtx)
   where
     callFromRepl newCtx xobj' = do
       (nc, r) <- annotateWithinContext newCtx xobj'
@@ -565,8 +571,6 @@ executeCommand ctx@(Context env _ _ _ _ _ _ _) xobj =
         )
         (Just dummyInfo)
         Nothing
-    isStaticResult (XObj (Lst ((XObj obj _ _) : _)) _ _) = isResolvableStaticObj obj
-    isStaticResult _ = False
     xobjIsSexp (XObj (Lst (XObj (Sym (SymPath [] "s-expr") Symbol) _ _ : _)) _ _) = True
     xobjIsSexp _ = False
 
@@ -829,10 +833,10 @@ loadInternal ctx xobj path i fileToLoad reloadMode = do
     isFrozen _ = False
     invalidPath ctx' path' =
       throwErr (LoadFileNotFound path') ctx' (xobjInfo xobj)
-    invalidPathWith ctx' path' stderr cleanup cleanupPath = do
+    invalidPathWith ctx' path' stderrOutput cleanup cleanupPath = do
       _ <- liftIO $ when cleanup (removeDirectoryRecursive cleanupPath)
       pure $
-        throwErr (LoadGitFailure path' stderr) ctx' (xobjInfo xobj)
+        throwErr (LoadGitFailure path' stderrOutput) ctx' (xobjInfo xobj)
     replaceC _ _ [] = []
     replaceC c s (a : b) = if a == c then s ++ replaceC c s b else a : replaceC c s b
     cantLoadSelf ctx' path' =
