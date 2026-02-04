@@ -1,5 +1,4 @@
 (Project.no-echo)
-(Debug.sanitize-addresses)
 
 (def s "I'm a global string...")
 

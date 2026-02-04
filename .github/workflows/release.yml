@@ -34,7 +34,7 @@ jobs:
         uses: actions/checkout@v2
 
       - if: matrix.os == 'MacOS'
-        uses: actions/setup-haskell@v1
+        uses: haskell-actions/setup@v2
 
       - if: matrix.os == 'Windows'
         name: Install Scoop
