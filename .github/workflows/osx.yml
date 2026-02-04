@@ -30,6 +30,9 @@ jobs:
                        sdl2_ttf
 
       - uses: haskell-actions/setup@v2
+        with:
+          enable-stack: true
+          stack-version: 'latest'
 
       - name: Build
         run: stack build

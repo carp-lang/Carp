@@ -35,6 +35,9 @@ jobs:
 
       - if: matrix.os == 'MacOS'
         uses: haskell-actions/setup@v2
+        with:
+          enable-stack: true
+          stack-version: 'latest'
 
       - if: matrix.os == 'Windows'
         name: Install Scoop
