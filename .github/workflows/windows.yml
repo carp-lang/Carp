@@ -29,14 +29,14 @@ jobs:
           scoop install llvm
           echo "C:\Users\runneradmin\scoop\apps\llvm\current\bin" | Out-File -FilePath $env:GITHUB_PATH -Encoding utf8 -Append
 
-      - uses: actions/cache@v1
+      - uses: actions/cache@v4
         name: Cache stack dependencies
         with:
           path: C:\Users\runneradmin\AppData\Local\Programs\stack
           key: ${{ runner.os }}-stack-deps-${{ github.sha }}
           restore-keys: ${{ runner.os }}-stack-deps
 
-      - uses: actions/cache@v1
+      - uses: actions/cache@v4
         name: Cache stack build
         with:
           path: C:\Users\runneradmin\AppData\Roaming\stack

@@ -57,7 +57,7 @@ jobs:
         run: scoop install llvm --global
 
       - if: matrix.os == 'Windows'
-        uses: actions/cache@v1
+        uses: actions/cache@v4
         name: Cache stack dependencies
         with:
           path: C:\\Users\\runneradmin\\AppData\\Local\\Programs\\stack
@@ -65,7 +65,7 @@ jobs:
           restore-keys: ${{ runner.os }}-stack-deps
 
       - if: matrix.os == 'Windows'
-        uses: actions/cache@v1
+        uses: actions/cache@v4
         name: Cache stack build
         with:
           path: C:\\Users\\runneradmin\\AppData\\Roaming\\stack\
