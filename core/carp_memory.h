@@ -3,8 +3,8 @@
 Long malloc_balance_counter = 0;
 bool log_memory_balance = false;
 
-void *logged_malloc(size_t size) {
-    void *ptr = malloc(size);
+void* logged_malloc(size_t size) {
+    void* ptr = malloc(size);
     if (log_memory_balance) {
         printf("MALLOC: %p (%zu bytes)\n", ptr, size);
     }
@@ -12,7 +12,7 @@ void *logged_malloc(size_t size) {
     return ptr;
 }
 
-void logged_free(void *ptr) {
+void logged_free(void* ptr) {
     if (log_memory_balance) {
         printf("FREE: %p\n", ptr);
     }

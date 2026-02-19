@@ -1,19 +1,19 @@
-void IO_println(String *s) {
+void IO_println(String* s) {
     puts(*s);
 }
-void IO_print(String *s) {
+void IO_print(String* s) {
     printf("%s", *s);
 }
 
-void IO_errorln(String *s) {
+void IO_errorln(String* s) {
     fprintf(stderr, "%s\n", *s);
 }
-void IO_error(String *s) {
+void IO_error(String* s) {
     fprintf(stderr, "%s", *s);
 }
 
 String IO_get_MINUS_line() {
-    char *b = NULL;
+    char* b = NULL;
     size_t cap = 64;
     size_t sofar = 0;
     while (1) {
@@ -27,10 +27,10 @@ String IO_get_MINUS_line() {
     return b;
 }
 
-String IO_unsafe_MINUS_read_MINUS_file(const String *filename) {
+String IO_unsafe_MINUS_read_MINUS_file(const String* filename) {
     String buffer = 0;
     Long length;
-    FILE *f = fopen(*filename, "rb");
+    FILE* f = fopen(*filename, "rb");
 
     if (f) {
         fseek(f, 0, SEEK_END);

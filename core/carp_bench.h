@@ -27,7 +27,7 @@ LARGE_INTEGER getFILETIMEoffset() {
     return (t);
 }
 
-int clock_gettime(int X, struct timeval *tv) {
+int clock_gettime(int X, struct timeval* tv) {
     LARGE_INTEGER t;
     FILETIME f;
     double microseconds;

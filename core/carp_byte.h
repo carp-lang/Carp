@@ -47,7 +47,7 @@ uint8_t Byte_bit_MINUS_not(uint8_t x) {
     return ~x;
 }
 
-uint8_t Byte_copy(const uint8_t *x) {
+uint8_t Byte_copy(const uint8_t* x) {
     return *x;
 }
 

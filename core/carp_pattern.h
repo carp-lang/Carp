@@ -36,7 +36,7 @@ typedef struct PatternMatchState {
 } PatternMatchState;
 
 /* recursive function */
-String Pattern_internal_match(PatternMatchState *ms, String s, String p);
+String Pattern_internal_match(PatternMatchState* ms, String s, String p);
 
 /* maximum recursion depth for 'match' */
 #if !defined(MAXCCALLS)
@@ -46,7 +46,7 @@ String Pattern_internal_match(PatternMatchState *ms, String s, String p);
 #define C_ESC '\\'
 #define SPECIALS "^$*+?.([\\-"
 
-int carp_regerror(const char *fmt, ...) {
+int carp_regerror(const char* fmt, ...) {
     va_list ap;
     va_start(ap, fmt);
     vprintf(fmt, ap);
@@ -54,7 +54,7 @@ int carp_regerror(const char *fmt, ...) {
     return -1;
 }
 
-int Pattern_internal_check_capture(PatternMatchState *ms, int l) {
+int Pattern_internal_check_capture(PatternMatchState* ms, int l) {
     l -= '1';
     if (l < 0 || l >= ms->level || ms->capture[l].len == CAP_UNFINISHED) {
         return carp_regerror("invalid capture index %c%d", C_ESC, l + 1);
@@ -62,7 +62,7 @@ int Pattern_internal_check_capture(PatternMatchState *ms, int l) {
     return l;
 }
 
-int Pattern_internal_capture_to_close(PatternMatchState *ms) {
+int Pattern_internal_capture_to_close(PatternMatchState* ms) {
     int level = ms->level;
     for (level--; level >= 0; level--) {
         if (ms->capture[level].len == CAP_UNFINISHED) return level;
@@ -70,7 +70,7 @@ int Pattern_internal_capture_to_close(PatternMatchState *ms) {
     return carp_regerror("invalid Pattern capture");
 }
 
-String Pattern_internal_classend(PatternMatchState *ms, String p) {
+String Pattern_internal_classend(PatternMatchState* ms, String p) {
     switch (*p++) {
         case C_ESC: {
             if (p == ms->p_end)
@@ -150,7 +150,7 @@ int Pattern_internal_matchbracketclass(int c, String p, String ec) {
     return !sig;
 }
 
-int Pattern_internal_singlematch(PatternMatchState *ms, String s, String p,
+int Pattern_internal_singlematch(PatternMatchState* ms, String s, String p,
                                  String ep) {
     if (s >= ms->src_end) {
         return 0;
@@ -169,7 +169,7 @@ int Pattern_internal_singlematch(PatternMatchState *ms, String s, String p,
     }
 }
 
-String Pattern_internal_matchbalance(PatternMatchState *ms, String s,
+String Pattern_internal_matchbalance(PatternMatchState* ms, String s,
                                      String p) {
     if (p >= ms->p_end - 1)
         carp_regerror("malformed Pattern (missing arguments to '%cb')", C_ESC);
@@ -190,7 +190,7 @@ String Pattern_internal_matchbalance(PatternMatchState *ms, String s,
     return NULL; /* String ends out of balance */
 }
 
-String Pattern_internal_max_expand(PatternMatchState *ms, String s, String p,
+String Pattern_internal_max_expand(PatternMatchState* ms, String s, String p,
                                    String ep) {
     ptrdiff_t i = 0; /* counts maximum expand for item */
     while (Pattern_internal_singlematch(ms, s + i, p, ep)) i++;
@@ -203,7 +203,7 @@ String Pattern_internal_max_expand(PatternMatchState *ms, String s, String p,
     return NULL;
 }
 
-String Pattern_internal_min_expand(PatternMatchState *ms, String s, String p,
+String Pattern_internal_min_expand(PatternMatchState* ms, String s, String p,
                                    String ep) {
     for (;;) {
         String res = Pattern_internal_match(ms, s, ep + 1);
@@ -216,7 +216,7 @@ String Pattern_internal_min_expand(PatternMatchState *ms, String s, String p,
     }
 }
 
-String Pattern_internal_start_capture(PatternMatchState *ms, String s, String p,
+String Pattern_internal_start_capture(PatternMatchState* ms, String s, String p,
                                       int what) {
     String res;
     int level = ms->level;
@@ -229,7 +229,7 @@ String Pattern_internal_start_capture(PatternMatchState *ms, String s, String p,
     return res;
 }
 
-String Pattern_internal_end_capture(PatternMatchState *ms, String s, String p) {
+String Pattern_internal_end_capture(PatternMatchState* ms, String s, String p) {
     int l = Pattern_internal_capture_to_close(ms);
     String res;
     ms->capture[l].len = s - ms->capture[l].init; /* close capture */
@@ -239,7 +239,7 @@ String Pattern_internal_end_capture(PatternMatchState *ms, String s, String p) {
     return res;
 }
 
-String Pattern_internal_match_capture(PatternMatchState *ms, String s, int l) {
+String Pattern_internal_match_capture(PatternMatchState* ms, String s, int l) {
     size_t len;
     l = Pattern_internal_check_capture(ms, l);
     len = ms->capture[l].len;
@@ -250,7 +250,7 @@ String Pattern_internal_match_capture(PatternMatchState *ms, String s, int l) {
     return NULL;
 }
 
-String Pattern_internal_match(PatternMatchState *ms, String s, String p) {
+String Pattern_internal_match(PatternMatchState* ms, String s, String p) {
     if (ms->matchdepth-- == 0) carp_regerror("Pattern too complex");
 init:                     /* using goto's to optimize tail recursion */
     if (p != ms->p_end) { /* end of Pattern? */
@@ -280,7 +280,7 @@ init:                     /* using goto's to optimize tail recursion */
                         if (s) {
                             p += 4;
                             goto init; /* return match(ms, s, p + 4); */
-                        }              /* else fail (s == NULL) */
+                        } /* else fail (s == NULL) */
                         break;
                     }
                     case 'f': { /* frontier? */
@@ -341,7 +341,7 @@ init:                     /* using goto's to optimize tail recursion */
                 break;
             }
             default:
-            dflt : { /* Pattern class plus optional suffix */
+            dflt: { /* Pattern class plus optional suffix */
                 String ep = Pattern_internal_classend(
                     ms, p); /* points to optional suffix */
                 /* does not match at least once? */
@@ -398,11 +398,11 @@ String String_copy_len(String s, int len) {
 }
 
 Array Array_push_String(Array a, String s, int i, int len) {
-    ((String *)a.data)[i] = String_copy_len(s, len);
+    ((String*)a.data)[i] = String_copy_len(s, len);
     return a;
 }
 
-Array Pattern_internal_push_onecapture(PatternMatchState *ms, int i, String s,
+Array Pattern_internal_push_onecapture(PatternMatchState* ms, int i, String s,
                                        String e, Array captures) {
     if (i >= ms->level) {
         if (!i)
@@ -421,7 +421,7 @@ Array Pattern_internal_push_onecapture(PatternMatchState *ms, int i, String s,
     return captures;
 }
 
-Array Pattern_internal_push_captures(PatternMatchState *ms, String s,
+Array Pattern_internal_push_captures(PatternMatchState* ms, String s,
                                      String e) {
     int i;
     int nlevels = (ms->level == 0 && s) ? 1 : ms->level;
@@ -434,7 +434,7 @@ Array Pattern_internal_push_captures(PatternMatchState *ms, String s,
     return res;
 }
 
-void Pattern_internal_prepstate(PatternMatchState *ms, String s, size_t ls,
+void Pattern_internal_prepstate(PatternMatchState* ms, String s, size_t ls,
                                 String p, size_t lp) {
     ms->matchdepth = MAXCCALLS;
     ms->src_init = s;
@@ -442,12 +442,12 @@ void Pattern_internal_prepstate(PatternMatchState *ms, String s, size_t ls,
     ms->p_end = p + lp;
 }
 
-void Pattern_internal_reprepstate(PatternMatchState *ms) {
+void Pattern_internal_reprepstate(PatternMatchState* ms) {
     ms->level = 0;
     assert(ms->matchdepth == MAXCCALLS);
 }
 
-Array Pattern_match_MINUS_groups(Pattern *p, String *s) {
+Array Pattern_match_MINUS_groups(Pattern* p, String* s) {
     String str = *s;
     Pattern pat = *p;
     int lstr = strlen(str);
@@ -479,7 +479,7 @@ typedef struct PatternMatchResult {
     int end;
 } PatternMatchResult;
 
-PatternMatchResult Pattern_match_MINUS_from(Pattern *p, String *s,
+PatternMatchResult Pattern_match_MINUS_from(Pattern* p, String* s,
                                             int startpos) {
     PatternMatchResult result = {.start = -1, .end = -1};
     String str = *s + startpos;
@@ -519,7 +519,7 @@ typedef struct PatternGMatchRes {
     Array data;
 } PatternGMatchRes;
 
-PatternGMatchRes Pattern_internal_gmatch_aux(PatternGMatchState *gm) {
+PatternGMatchRes Pattern_internal_gmatch_aux(PatternGMatchState* gm) {
     String src;
     Array a;
     for (src = gm->src; src <= gm->ms.src_end; src++) {
@@ -539,11 +539,11 @@ PatternGMatchRes Pattern_internal_gmatch_aux(PatternGMatchState *gm) {
 Array Array_push_back(Array res, Array tmp) {
     res.len++;
     res.data = CARP_REALLOC(res.data, res.len * sizeof(Array));
-    ((Array *)res.data)[res.len - 1] = tmp;
+    ((Array*)res.data)[res.len - 1] = tmp;
     return res;
 }
 
-Array Pattern_match_MINUS_all_MINUS_groups(Pattern *p, String *s) {
+Array Pattern_match_MINUS_all_MINUS_groups(Pattern* p, String* s) {
     String str = *s;
     Pattern pat = *p;
     int lstr = strlen(str);
@@ -579,7 +579,7 @@ String Pattern_internal_add_char(String a, Char b) {
     return buffer;
 }
 
-String Pattern_internal_add_value(PatternMatchState *ms, String res, String src,
+String Pattern_internal_add_value(PatternMatchState* ms, String res, String src,
                                   String e, String tr) {
     size_t l, i;
     l = strlen(tr);
@@ -601,7 +601,7 @@ String Pattern_internal_add_value(PatternMatchState *ms, String res, String src,
                 Pattern_internal_push_onecapture(ms, tr[i] - '1', src, e, a);
                 res = String_append(
                     &res,
-                    &((String *)
+                    &((String*)
                           a.data)[0]); /* add capture to accumulated result */
             }
         }
@@ -609,7 +609,7 @@ String Pattern_internal_add_value(PatternMatchState *ms, String res, String src,
     return res;
 }
 
-String Pattern_substitute(Pattern *p, String *s, String *t, int ns) {
+String Pattern_substitute(Pattern* p, String* s, String* t, int ns) {
     String str = *s;
     Pattern pat = *p;
     String tr = *t;
@@ -650,7 +650,7 @@ String Pattern_substitute(Pattern *p, String *s, String *t, int ns) {
     return buffer;
 }
 
-Pattern Pattern_copy(Pattern *p) {
+Pattern Pattern_copy(Pattern* p) {
     size_t len = strlen(*p) + 1;
     Pattern ptr = CARP_MALLOC(len);
     return (Pattern)memcpy(ptr, *p, len);
@@ -660,21 +660,21 @@ void Pattern_delete(Pattern p) {
     CARP_FREE(p);
 }
 
-Pattern Pattern_init(String *p) {
+Pattern Pattern_init(String* p) {
     return Pattern_copy(p);
 }
 
-String Pattern_str(Pattern *p) {
+String Pattern_str(Pattern* p) {
     return Pattern_copy(p);
 }
 
-String Pattern_prn(Pattern *p) {
+String Pattern_prn(Pattern* p) {
     int n = strlen(*p) + 4;
     String buffer = CARP_MALLOC(n);
     snprintf(buffer, n, "#\"%s\"", *p);
     return buffer;
 }
 
-bool Pattern__EQ_(Pattern *a, Pattern *b) {
+bool Pattern__EQ_(Pattern* a, Pattern* b) {
     return strcmp(*a, *b) == 0;
 }

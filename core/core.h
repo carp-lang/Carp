@@ -17,12 +17,12 @@ typedef intptr_t ssize_t;
 #include <inttypes.h>
 #include <locale.h>
 
-typedef char *String;
-typedef char *Pattern;
+typedef char* String;
+typedef char* Pattern;
 typedef int64_t Long;
 typedef uint32_t Char;
 typedef char CChar;
-typedef void *c_code;
+typedef void* c_code;
 
 #if defined NDEBUG
 #define CHK_INDEX(i, n)
@@ -34,7 +34,7 @@ typedef void *c_code;
         size_t __ni = (size_t)n;                                           \
         if (!(__si < __ni)) {                                              \
             printf(__FILE__ ":%u: bad index: %zu < %zu\n", __LINE__, __ni, \
-            __si);                                                         \
+                   __si);                                                  \
             abort();                                                       \
         }                                                                  \
     } while (0)
@@ -50,15 +50,15 @@ typedef void *c_code;
 typedef struct {
     size_t len;
     size_t capacity;
-    void *data;
+    void* data;
 } Array;
 
 // Lambdas
 typedef struct {
-    void *callback;
-    void *env;
-    void *delete;
-    void *copy;
+    void* callback;
+    void* env;
+    void* delete;
+    void* copy;
 } Lambda;
 
-typedef void *LambdaEnv;
+typedef void* LambdaEnv;

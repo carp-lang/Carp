@@ -1,4 +1,4 @@
-void System_free(void *p) {
+void System_free(void* p) {
     CARP_FREE(p);
 }
 
@@ -34,7 +34,7 @@ uint64_t System_nanotime() {
 }
 #endif
 
-int System_system(const String *command) {
+int System_system(const String* command) {
     return system(*command);
 }
 

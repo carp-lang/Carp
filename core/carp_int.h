@@ -54,7 +54,7 @@ int Int_bit_MINUS_not(int x) {
     return ~x;
 }
 
-int Int_copy(const int *x) {
+int Int_copy(const int* x) {
     return *x;
 }
 

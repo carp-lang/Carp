@@ -26,11 +26,11 @@ Char Char_from_MINUS_byte(uint8_t i) {
     return (Char)i;
 }
 
-Char Char_copy(const Char *c) {
+Char Char_copy(const Char* c) {
     return *c;
 }
 
-String PtrChar_str(const char *c) {
+String PtrChar_str(const char* c) {
     size_t len = strlen(c) + 1;
     String ptr = CARP_MALLOC(len);
     return (String)memcpy(ptr, c, len);

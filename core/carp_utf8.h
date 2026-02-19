@@ -1,4 +1,4 @@
-static size_t utf8len(const char *s) {
+static size_t utf8len(const char* s) {
     size_t l = 0;
     for (size_t i = 0; s[i]; i++) l += (s[i] & 0xC0) != 0x80;
     return l;
@@ -18,13 +18,13 @@ static size_t wutf8clen(uint32_t c) {
     return 0;
 }
 
-static size_t wutf8len(uint32_t *s, size_t sz) {
+static size_t wutf8len(uint32_t* s, size_t sz) {
     size_t r = 0;
     for (size_t i = 0; i < sz; i++) r += wutf8clen(s[i]);
     return r;
 }
 
-static size_t utf8encode(char *s, uint32_t c) {
+static size_t utf8encode(char* s, uint32_t c) {
     if (c < 0x80) {
         *s = c;
         return 1;
@@ -51,7 +51,7 @@ static size_t utf8encode(char *s, uint32_t c) {
 // Adapted from: http://bjoern.hoehrmann.de/utf-8/decoder/dfa/
 #define UTF8_ACCEPT 0
 #define UTF8_REJECT 12
-static uint32_t inline utf8decode(uint32_t *state, uint32_t *codep,
+static uint32_t inline utf8decode(uint32_t* state, uint32_t* codep,
                                   uint32_t byte) {
     static const uint8_t utf8d[] = {
         // clang-format off
