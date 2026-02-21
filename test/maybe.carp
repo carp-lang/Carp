@@ -117,5 +117,52 @@
                   )
                 "Matching on nested Maybes."
                 )
-
+  (assert-equal test
+                2
+                (from (map (Just 1) &Int.inc) 0)
+                "map works on Just")
+  (assert-equal test
+                0
+                (from (map (the (Maybe Int) (Nothing)) &Int.inc) 0)
+                "map works on Nothing")
+  (assert-equal test
+                &(Just 2)
+                &(and-then (Just 1) &(fn [x] (Just (Int.inc x))))
+                "and-then works on Just")
+  (assert-equal test
+                &(the (Maybe Int) (Nothing))
+                &(and-then (Just 1) &(fn [x] (the (Maybe Int) (Nothing))))
+                "and-then returns Nothing when f returns Nothing")
+  (assert-equal test
+                &(the (Maybe Int) (Nothing))
+                &(and-then (the (Maybe Int) (Nothing)) &(fn [x] (Just (Int.inc x))))
+                "and-then works on Nothing")
+  (assert-equal test
+                &(Just 1)
+                &(or-else (Just 1) &(fn [] (Just 0)))
+                "or-else returns Just unchanged")
+  (assert-equal test
+                &(Just 0)
+                &(or-else (the (Maybe Int) (Nothing)) &(fn [] (Just 0)))
+                "or-else calls f on Nothing")
+  (assert-equal test
+                1
+                (unwrap-or-else (Just 1) &(fn [] 0))
+                "unwrap-or-else works on Just")
+  (assert-equal test
+                0
+                (unwrap-or-else (the (Maybe Int) (Nothing)) &(fn [] 0))
+                "unwrap-or-else works on Nothing")
+  (assert-equal test
+                &(Just 4)
+                &(filter (Just 4) &(fn [x] (Int.even? @x)))
+                "filter keeps Just when predicate passes")
+  (assert-equal test
+                &(the (Maybe Int) (Nothing))
+                &(filter (Just 3) &(fn [x] (Int.even? @x)))
+                "filter returns Nothing when predicate fails")
+  (assert-equal test
+                &(the (Maybe Int) (Nothing))
+                &(filter (the (Maybe Int) (Nothing)) &(fn [x] (Int.even? @x)))
+                "filter works on Nothing")
 )
