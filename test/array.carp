@@ -351,4 +351,28 @@
                     [@"a" @"ab" @"abc"]
                     (Array.endo-scan &String.append [@"a" @"b" @"c"])
                     "endo-scan works on managed type")
+  (assert-ref-equal test
+                    [1 2 3]
+                    (take-while &(fn [x] (< @x 4)) &[1 2 3 4 5])
+                    "take-while works as expected I")
+  (assert-ref-equal test
+                    (the (Array Int) [])
+                    (take-while &(fn [x] (< @x 0)) &[1 2 3])
+                    "take-while returns empty when no elements match")
+  (assert-ref-equal test
+                    [1 2 3]
+                    (take-while &(fn [x] (< @x 10)) &[1 2 3])
+                    "take-while returns full array when all elements match")
+  (assert-ref-equal test
+                    [4 5]
+                    (drop-while &(fn [x] (< @x 4)) &[1 2 3 4 5])
+                    "drop-while works as expected I")
+  (assert-ref-equal test
+                    [1 2 3]
+                    (drop-while &(fn [x] (< @x 0)) &[1 2 3])
+                    "drop-while returns full array when no elements match")
+  (assert-ref-equal test
+                    (the (Array Int) [])
+                    (drop-while &(fn [x] (< @x 10)) &[1 2 3])
+                    "drop-while returns empty when all elements match")
 )
