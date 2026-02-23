@@ -64,7 +64,7 @@ instance Show ToCError where
     "I can’t visit " ++ show (xobjObj xobj) ++ " at " ++ prettyInfoFromXObj xobj
       ++ "."
   show (CannotEmitUnit xobj) =
-    "I can't emit code for the unit type `()` at" ++ prettyInfoFromXObj xobj
+    "I can't emit code for the unit type `()` at " ++ prettyInfoFromXObj xobj
       ++ "."
   show (CannotEmitExternal xobj) =
     "I can’t emit code for the external function/variable `"
