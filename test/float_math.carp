@@ -119,6 +119,18 @@
                 "from-string works as expected II"
   )
   (assert-equal test
+                1.0f
+                (sign 5.0f)
+                "sign returns 1.0f for positive")
+  (assert-equal test
+                -1.0f
+                (sign -5.0f)
+                "sign returns -1.0f for negative")
+  (assert-equal test
+                0.0f
+                (sign 0.0f)
+                "sign returns 0.0f for zero")
+  (assert-equal test
                 0.0f
                 (Float.lerp 0.0f 10.0f 0.0f)
                 "lerp returns a at t=0.0f")

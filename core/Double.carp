@@ -127,6 +127,10 @@
   (implements tan Double.tan)
   (implements tanh Double.tanh)
 
+  (doc sign "Returns `-1.0` if `x` is negative, `0.0` if zero, or `1.0` if positive.")
+  (defn sign [x]
+    (if (> x 0.0) 1.0 (if (< x 0.0) -1.0 0.0)))
+
   (doc approx "checks whether `x` and `y` are approximately equal.
 
 The margin of error is `0.00001`.")
