@@ -84,7 +84,9 @@
   (implements tan Double.tan)
   (implements tanh Double.tanh)
 
-  (doc sign "Returns `-1.0` if `x` is negative, `0.0` if zero, or `1.0` if positive.")
+  (doc sign "Returns `-1.0` if `x` is negative, `0.0` if zero, or `1.0` if positive.
+
+Note: returns `0.0` for NaN inputs.")
   (defn sign [x]
     (if (> x 0.0) 1.0 (if (< x 0.0) -1.0 0.0)))
 
