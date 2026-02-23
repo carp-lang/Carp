@@ -113,4 +113,16 @@
                 &(Double.from-string "abcd")
                 "from-string works as expected II"
   )
+  (assert-equal test
+                0.0
+                (Double.lerp 0.0 10.0 0.0)
+                "lerp returns a at t=0.0")
+  (assert-equal test
+                10.0
+                (Double.lerp 0.0 10.0 1.0)
+                "lerp returns b at t=1.0")
+  (assert-equal test
+                5.0
+                (Double.lerp 0.0 10.0 0.5)
+                "lerp returns midpoint at t=0.5")
 )
