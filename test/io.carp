@@ -23,6 +23,18 @@
   (let [ data "Icke\n\tdette\n\tkieke mal,\nOochen, Flesch und Beene." ]  ; include \n in test data!
     (assert-equal test
                   data
-                  &(write-then-read data "io_carp_testdata.txt")  
+                  &(write-then-read data "io_carp_testdata.txt")
                   "write-file then read-file"  ))
+  (let [ file-name "io_carp_append_testdata.txt"
+         first     "hello"
+         second    " world" ]
+    (do
+      (ignore (IO.write-file first file-name))
+      (ignore (IO.append-file second file-name))
+      (let-do [ result (IO.read-file file-name) ]
+        (IO.Raw.unlink! file-name)
+        (assert-equal test
+                      "hello world"
+                      &(Result.unsafe-from-success result)
+                      "append-file appends to existing file"))))
 )
