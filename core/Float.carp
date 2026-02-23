@@ -41,6 +41,10 @@ suffixed with `f`.")
         min
         val)))
 
+  (doc sign "Returns `-1.0f` if `x` is negative, `0.0f` if zero, or `1.0f` if positive.")
+  (defn sign [x]
+    (if (> x 0.0f) 1.0f (if (< x 0.0f) -1.0f 0.0f)))
+
   (doc approx "checks whether `x` and `y` are approximately equal.
 
 The margin of error is 0.00001.")

@@ -67,4 +67,16 @@
                 0
                 (positive-mod 0 7)
                 "positive-mod works on zero")
+  (assert-equal test
+                1
+                (sign 5)
+                "sign returns 1 for positive")
+  (assert-equal test
+                -1
+                (sign -5)
+                "sign returns -1 for negative")
+  (assert-equal test
+                0
+                (sign 0)
+                "sign returns 0 for zero")
 )

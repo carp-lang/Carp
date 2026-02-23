@@ -118,4 +118,16 @@
                 &(Float.from-string "abcd")
                 "from-string works as expected II"
   )
+  (assert-equal test
+                1.0f
+                (sign 5.0f)
+                "sign returns 1.0f for positive")
+  (assert-equal test
+                -1.0f
+                (sign -5.0f)
+                "sign returns -1.0f for negative")
+  (assert-equal test
+                0.0f
+                (sign 0.0f)
+                "sign returns 0.0f for zero")
 )

@@ -113,4 +113,16 @@
                 &(Double.from-string "abcd")
                 "from-string works as expected II"
   )
+  (assert-equal test
+                1.0
+                (sign 5.0)
+                "sign returns 1.0 for positive")
+  (assert-equal test
+                -1.0
+                (sign -5.0)
+                "sign returns -1.0 for negative")
+  (assert-equal test
+                0.0
+                (sign 0.0)
+                "sign returns 0.0 for zero")
 )
