@@ -57,7 +57,9 @@ suffixed with `f`.")
         min
         val)))
 
-  (doc sign "Returns `-1.0f` if `x` is negative, `0.0f` if zero, or `1.0f` if positive.")
+  (doc sign "Returns `-1.0f` if `x` is negative, `0.0f` if zero, or `1.0f` if positive.
+
+Note: returns `0.0f` for NaN inputs.")
   (defn sign [x]
     (if (> x 0.0f) 1.0f (if (< x 0.0f) -1.0f 0.0f)))
 
