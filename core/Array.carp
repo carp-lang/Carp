@@ -506,6 +506,58 @@ Example:
       (while (and (< i (length a)) (~f (unsafe-nth a i)))
         (set! i (Int.inc i)))
       (slice a i (length a))))
+
+  (doc flat-map
+    "maps over an array `a` using a function `f` that returns an array,
+then concatenates all results into a single flat array.
+
+Example:
+```
+(Array.flat-map &(fn [x] [@x @x]) &[1 2 3])
+; => [1 1 2 2 3 3]
+```")
+  (defn flat-map [f a]
+    (concat &(copy-map f a)))
+
+  (doc windows
+    "returns an array of all contiguous subarrays of length `n` from array `xs`.
+
+If `n` is greater than the length of `xs`, an empty array is returned.
+
+Example:
+```
+(Array.windows &[1 2 3 4 5] 2)
+; => [[1 2] [2 3] [3 4] [4 5]]
+(Array.windows &[1 2 3 4 5] 3)
+; => [[1 2 3] [2 3 4] [3 4 5]]
+```")
+  (defn windows [xs n]
+    (let-do [result []
+             len (Array.length xs)]
+      (when (> n 0)
+        (for [i 0 (- len (- n 1))]
+          (set! result (Array.push-back result (Array.slice xs i (+ i n))))))
+      result))
+
+  (doc intersperse
+    "creates a new array with the separator `sep` placed between each element of `xs`.
+
+Example:
+```
+(Array.intersperse &[1 2 3] 0)
+; => [1 0 2 0 3]
+```")
+  (defn intersperse [xs sep]
+    (let-do [result []
+             len (Array.length xs)]
+      (when (> len 0)
+        (do
+          (set! result (Array.push-back result @(Array.unsafe-nth xs 0)))
+          (for [i 1 len]
+            (do
+              (set! result (Array.push-back result @&sep))
+              (set! result (Array.push-back result @(Array.unsafe-nth xs i)))))))
+      result))
 )
 
 (defmacro doall [f xs]

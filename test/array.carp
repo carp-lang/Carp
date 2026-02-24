@@ -352,6 +352,7 @@
                     (Array.endo-scan &String.append [@"a" @"b" @"c"])
                     "endo-scan works on managed type")
   (assert-ref-equal test
+  (assert-ref-equal test
                     [1 2 3]
                     (take-while &(fn [x] (< @x 4)) &[1 2 3 4 5])
                     "take-while works as expected I")
@@ -375,4 +376,36 @@
                     (the (Array Int) [])
                     (drop-while &(fn [x] (< @x 10)) &[1 2 3])
                     "drop-while returns empty when all elements match")
+  (assert-ref-equal test
+                    [1 1 2 2 3 3]
+                    (Array.flat-map &(fn [x] [@x @x]) &[1 2 3])
+                    "flat-map duplicates elements")
+  (assert-ref-equal test
+                    []
+                    (the (Array Int) (Array.flat-map &(fn [x] [@x @x]) &[]))
+                    "flat-map on empty array")
+  (assert-ref-equal test
+                    [[1 2] [2 3] [3 4] [4 5]]
+                    (Array.windows &[1 2 3 4 5] 2)
+                    "windows size 2")
+  (assert-ref-equal test
+                    [[1 2 3] [2 3 4] [3 4 5]]
+                    (Array.windows &[1 2 3 4 5] 3)
+                    "windows size 3")
+  (assert-ref-equal test
+                    []
+                    (the (Array (Array Int)) (Array.windows &[1 2] 5))
+                    "windows larger than array returns empty")
+  (assert-ref-equal test
+                    [1 0 2 0 3]
+                    (Array.intersperse &[1 2 3] 0)
+                    "intersperse between elements")
+  (assert-ref-equal test
+                    [42]
+                    (Array.intersperse &[42] 0)
+                    "intersperse single element")
+  (assert-ref-equal test
+                    []
+                    (the (Array Int) (Array.intersperse &[] 0))
+                    "intersperse empty array")
 )
