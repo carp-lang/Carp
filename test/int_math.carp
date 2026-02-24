@@ -67,4 +67,44 @@
                 0
                 (positive-mod 0 7)
                 "positive-mod works on zero")
+  (assert-equal test
+                8
+                (pow 2 3)
+                "pow works as expected")
+  (assert-equal test
+                1
+                (pow 5 0)
+                "pow returns 1 for exponent 0")
+  (assert-equal test
+                0
+                (pow 0 5)
+                "pow returns 0 for base 0")
+  (assert-equal test
+                5
+                (clamp 0 10 5)
+                "clamp returns value when in range")
+  (assert-equal test
+                0
+                (clamp 0 10 -3)
+                "clamp returns min when below range")
+  (assert-equal test
+                10
+                (clamp 0 10 99)
+                "clamp returns max when above range")
+  (assert-ref-equal test
+                    (Maybe.Just 42)
+                    (Int.from-string "42")
+                    "from-string parses a valid integer")
+  (assert-nothing test
+                  &(Int.from-string "abc")
+                  "from-string returns Nothing for invalid input")
+  (assert-true test
+               (Int.> MAX 0)
+               "MAX is positive")
+  (assert-true test
+               (Int.< MIN 0)
+               "MIN is negative")
+  (assert-true test
+               (Int.> MAX MIN)
+               "MAX is greater than MIN")
 )
