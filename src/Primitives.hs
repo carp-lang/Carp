@@ -628,13 +628,21 @@ deftype ctx x@(XObj (Sym (SymPath [] name) _) _ _) constructor =
     case e of
       Left err -> pure (evalError ctx (show err) (xobjInfo x))
       Right t ->
-        autoDerive
-          ctxWithType
-          t
-          [ lookupBinderInTypeEnv ctxWithType (markQualified (SymPath [] "delete")),
-            lookupBinderInTypeEnv ctxWithType (markQualified (SymPath [] "str")),
-            lookupBinderInTypeEnv ctxWithType (markQualified (SymPath [] "copy"))
-          ]
+        let (SymPath mods tyname) = getStructPath t
+            blitPath = SymPath (mods ++ [tyname]) "blit"
+            blitIface = lookupBinderInTypeEnv ctxWithType (markQualified (SymPath [] "blit"))
+            blitMaybe = case searchValueBinder (contextGlobalEnv ctxWithType) blitPath of
+              Right _ -> [blitIface]
+              Left _ -> []
+         in autoDerive
+              ctxWithType
+              t
+              ( [ lookupBinderInTypeEnv ctxWithType (markQualified (SymPath [] "delete")),
+                  lookupBinderInTypeEnv ctxWithType (markQualified (SymPath [] "str")),
+                  lookupBinderInTypeEnv ctxWithType (markQualified (SymPath [] "copy"))
+                ]
+                  ++ blitMaybe
+              )
 deftype ctx x@(XObj (Lst ((XObj (Sym (SymPath [] name) _) _ _) : tyvars)) _ _) constructor =
   do
     (ctxWithType, e) <-
@@ -646,13 +654,21 @@ deftype ctx x@(XObj (Lst ((XObj (Sym (SymPath [] name) _) _ _) : tyvars)) _ _) c
     case e of
       Left err -> pure (evalError ctx (show err) (xobjInfo x))
       Right t ->
-        autoDerive
-          ctxWithType
-          t
-          [ lookupBinderInTypeEnv ctxWithType (markQualified (SymPath [] "delete")),
-            lookupBinderInTypeEnv ctxWithType (markQualified (SymPath [] "str")),
-            lookupBinderInTypeEnv ctxWithType (markQualified (SymPath [] "copy"))
-          ]
+        let (SymPath mods tyname) = getStructPath t
+            blitPath = SymPath (mods ++ [tyname]) "blit"
+            blitIface = lookupBinderInTypeEnv ctxWithType (markQualified (SymPath [] "blit"))
+            blitMaybe = case searchValueBinder (contextGlobalEnv ctxWithType) blitPath of
+              Right _ -> [blitIface]
+              Left _ -> []
+         in autoDerive
+              ctxWithType
+              t
+              ( [ lookupBinderInTypeEnv ctxWithType (markQualified (SymPath [] "delete")),
+                  lookupBinderInTypeEnv ctxWithType (markQualified (SymPath [] "str")),
+                  lookupBinderInTypeEnv ctxWithType (markQualified (SymPath [] "copy"))
+                ]
+                  ++ blitMaybe
+              )
 deftype ctx name _ = pure $ toEvalError ctx name (InvalidTypeName name)
 
 checkVariables :: [XObj] -> Maybe [Ty]
@@ -698,6 +714,7 @@ autoDerive c ty interfaces =
       getSig "str" = FuncTy [RefTy ty (VarTy "q")] StringTy StaticLifetimeTy
       getSig "prn" = FuncTy [RefTy ty (VarTy "q")] StringTy StaticLifetimeTy
       getSig "copy" = FuncTy [RefTy ty (VarTy "q")] ty StaticLifetimeTy
+      getSig "blit" = FuncTy [ty] ty StaticLifetimeTy
       getSig _ = VarTy "z"
       registration interface =
         let name = getSimpleName (binderXObj interface)

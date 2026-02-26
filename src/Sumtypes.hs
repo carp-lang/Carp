@@ -82,7 +82,12 @@ generateBinders candidate =
     okDelete <- binderForDelete candidate
     (okCopy, okCopyDeps) <- binderForCopy candidate
     okMemberDeps <- memberDeps (TC.getTypeEnv candidate) (TC.getValueEnv candidate) (TC.getFields candidate)
-    let binders = okIniters ++ [okStr, okPrn, okDelete, okCopy, okTag]
+    let allFieldTypes = concatMap TC.fieldTypes (TC.getFields candidate)
+        tenv = TC.getTypeEnv candidate
+        venv = TC.getValueEnv candidate
+        sumtypeIsBlittable = not (isTypeGeneric (TC.toType candidate)) && all (not . isManaged tenv venv) allFieldTypes
+    blitBinders <- if sumtypeIsBlittable then fmap (: []) (binderForBlit candidate) else Right []
+    let binders = okIniters ++ [okStr, okPrn, okDelete, okCopy, okTag] ++ blitBinders
         deps = okMemberDeps ++ okCopyDeps ++ okStrDeps
     pure (binders, deps)
 
@@ -258,6 +263,32 @@ binderForCopy candidate =
     deps :: TG.DepenGenerator TC.TypeCandidate
     deps GeneratorArg {tenv, env, originalT, instanceT = (FuncTy [RefTy ty _] _ _), value} =
       depsForCopy tenv env originalT ty (TC.getFields value)
+    deps _ = []
+
+-- | Helper function to create the binder for the 'blit' template.
+-- Generates an identity function; only called for sum types where all field types are non-managed.
+binderForBlit :: BinderGen
+binderForBlit candidate =
+  let t = TC.toType candidate
+      doc = "blits a `" ++ TC.getName candidate ++ "` (freely memcopyable identity)."
+      binderT = FuncTy [t] t StaticLifetimeTy
+      binderP = SymPath (TC.getFullPath candidate) "blit"
+   in Right $
+        instanceBinder binderP binderT (TG.generateConcreteTypeTemplate candidate generator) doc
+  where
+    generator :: TG.TemplateGenerator TC.TypeCandidate
+    generator = TG.mkTemplateGenerator genT decl body deps
+
+    genT :: TG.TypeGenerator TC.TypeCandidate
+    genT _ = FuncTy [VarTy "p"] (VarTy "p") StaticLifetimeTy
+
+    decl :: TG.TokenGenerator TC.TypeCandidate
+    decl _ = toTemplate "$p $NAME($p p)"
+
+    body :: TG.TokenGenerator TC.TypeCandidate
+    body _ = toTemplate "$DECL { return p; }"
+
+    deps :: TG.DepenGenerator TC.TypeCandidate
     deps _ = []
 
 -------------------------------------------------------------------------------

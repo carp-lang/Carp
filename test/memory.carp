@@ -20,9 +20,6 @@
 
 (deftype BlitEnum Copy Move)
 (defmodule BlitEnum
-  (defn blit [x] (the BlitEnum x))
-  (implements blit blit)
-
   (defn prn [x]
     (match x
       (BlitEnum.Copy) @"copy semantics"
