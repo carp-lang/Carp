@@ -395,6 +395,7 @@ eval ctx xobj@(XObj o info ty) preference =
                 -- If the resolved function is a static definition (Defn, External, etc.),
                 -- signal that this needs compilation rather than dynamic evaluation.
                 | isStaticDefinition fun -> pure (newCtx, Left (HasStaticCall xobj info))
+                | fun == x -> pure (throwErr (UnknownForm xobj) newCtx (xobjInfo xobj))
                 | otherwise -> do
                   (newCtx', res) <- eval (pushFrame newCtx xobj) (XObj (Lst (fun : args)) (xobjInfo x) (xobjTy x)) preference
                   pure (popFrame newCtx', res)
