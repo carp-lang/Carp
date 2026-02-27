@@ -481,10 +481,12 @@ findChildren :: Environment e => e -> [e]
 findChildren e =
   foldl' getEnv [] (binders e)
   where
-    getEnv acc binder =
-      case (nextEnv (modality e) binder) of
-        Left _ -> acc
-        Right e' -> ((inj e') : acc)
+    mode = modality e
+    getEnv acc (Binder _ (XObj (Mod env typeEnv) _ _)) =
+      case mode of
+        Values -> inj env : acc
+        Types -> inj (getTypeEnv typeEnv) : acc
+    getEnv acc _ = acc
 
 -- | Find all the environments contained in the modules initial environment,
 -- plus any module environments contained in *those* modules.
