@@ -1,0 +1,279 @@
+; wgpu-pyramid.carp -- Spinning Rainbow Pyramid Demo
+;
+; A spinning, bouncing rainbow pyramid rendered with WGPU.
+; Demonstrates the geometry pipeline (indexed drawing) with per-vertex
+; colors and a WGSL shader that computes the full MVP transform from
+; uniforms (time + aspect ratio).
+;
+; Build:  cd /home/sqrew/Desktop/Carp-fork && carp -b examples/wgpu-pyramid.carp
+; Run:    ./out/Carp
+
+(load "/home/sqrew/Desktop/Carp-fork/core/GLFW.carp")
+(load "/home/sqrew/Desktop/Carp-fork/core/WGPURender.carp")
+(add-lib "-lX11") ; needed for XSetWindowBackground in wgpu_render_helpers.h on Linux
+
+; ---------------------------------------------------------------------------
+; WGSL shader -- computes full MVP on the GPU from time + aspect uniforms.
+;
+; Model transform: rotate Y (spin) -> rotate X (tilt) -> translate Z=-3, Y=bounce
+; Projection: perspective, 60 degree FOV
+; Per-vertex colors are passed through to the fragment shader.
+; ---------------------------------------------------------------------------
+
+(def pyramid-wgsl
+  "struct Uniforms {
+    time: f32,
+    aspect: f32,
+    _pad0: f32,
+    _pad1: f32,
+}
+
+@group(0) @binding(0) var<uniform> u: Uniforms;
+
+struct VertexInput {
+    @location(0) position: vec3<f32>,
+    @location(1) color: vec3<f32>,
+}
+
+struct VertexOutput {
+    @builtin(position) clip_position: vec4<f32>,
+    @location(0) color: vec3<f32>,
+}
+
+fn mat4_mul(a: mat4x4<f32>, b: mat4x4<f32>) -> mat4x4<f32> {
+    return mat4x4<f32>(
+        a * b[0], a * b[1], a * b[2], a * b[3]
+    );
+}
+
+fn perspective(fovy: f32, aspect: f32, near: f32, far: f32) -> mat4x4<f32> {
+    let f = 1.0 / tan(fovy * 0.5);
+    return mat4x4<f32>(
+        vec4<f32>(f / aspect, 0.0, 0.0, 0.0),
+        vec4<f32>(0.0, f, 0.0, 0.0),
+        vec4<f32>(0.0, 0.0, far / (near - far), -1.0),
+        vec4<f32>(0.0, 0.0, far * near / (near - far), 0.0)
+    );
+}
+
+fn rotate_y(angle: f32) -> mat4x4<f32> {
+    let c = cos(angle);
+    let s = sin(angle);
+    return mat4x4<f32>(
+        vec4<f32>(c, 0.0, s, 0.0),
+        vec4<f32>(0.0, 1.0, 0.0, 0.0),
+        vec4<f32>(-s, 0.0, c, 0.0),
+        vec4<f32>(0.0, 0.0, 0.0, 1.0)
+    );
+}
+
+fn rotate_x(angle: f32) -> mat4x4<f32> {
+    let c = cos(angle);
+    let s = sin(angle);
+    return mat4x4<f32>(
+        vec4<f32>(1.0, 0.0, 0.0, 0.0),
+        vec4<f32>(0.0, c, -s, 0.0),
+        vec4<f32>(0.0, s, c, 0.0),
+        vec4<f32>(0.0, 0.0, 0.0, 1.0)
+    );
+}
+
+@vertex
+fn vs_main(in: VertexInput) -> VertexOutput {
+    let t = u.time;
+    let bounce = sin(t * 2.0) * 0.3;
+
+    // Model: rotate Y (spin) -> rotate X (slight forward tilt) -> translate
+    let translate = mat4x4<f32>(
+        vec4<f32>(1.0, 0.0, 0.0, 0.0),
+        vec4<f32>(0.0, 1.0, 0.0, 0.0),
+        vec4<f32>(0.0, 0.0, 1.0, 0.0),
+        vec4<f32>(0.0, bounce, -3.0, 1.0)
+    );
+
+    let model = mat4_mul(translate, mat4_mul(rotate_x(0.3), rotate_y(t)));
+    let proj = perspective(radians(60.0), u.aspect, 0.1, 100.0);
+    let mvp = mat4_mul(proj, model);
+
+    var out: VertexOutput;
+    out.clip_position = mvp * vec4<f32>(in.position, 1.0);
+    out.color = in.color;
+    return out;
+}
+
+@fragment
+fn fs_main(in: VertexOutput) -> @location(0) vec4<f32> {
+    return vec4<f32>(in.color, 1.0);
+}
+")
+
+; ---------------------------------------------------------------------------
+; Pyramid geometry -- 5 vertices, 4 triangular faces (no base).
+;
+; Vertex layout: interleaved position (float32x3) + color (float32x3)
+; Stride = 24 bytes per vertex. 5 vertices = 30 floats total.
+; ---------------------------------------------------------------------------
+
+; Each line: px py pz  r g b
+(def pyramid-vertices
+  [; apex -- yellow
+    0.0f  1.0f  0.0f    1.0f 1.0f 0.0f
+   ; front-left -- red
+   -1.0f -1.0f  1.0f    1.0f 0.0f 0.0f
+   ; front-right -- green
+    1.0f -1.0f  1.0f    0.0f 1.0f 0.0f
+   ; back-right -- blue
+    1.0f -1.0f -1.0f    0.0f 0.5f 1.0f
+   ; back-left -- purple
+   -1.0f -1.0f -1.0f    0.8f 0.0f 1.0f])
+
+; 4 triangular faces, 12 indices total (CCW winding from outside)
+(def pyramid-indices [0 1 2  0 2 3  0 3 4  0 4 1])
+
+; ---------------------------------------------------------------------------
+; Window dimensions
+; ---------------------------------------------------------------------------
+
+; WGPURender.create-surface takes (Ptr ()) to avoid importing GLFW in the render module.
+; This cast is safe -- the C helper receives the pointer as GLFWwindow* internally.
+(deftemplate glfw-window->voidptr (Fn [(Ptr GLFWwindow)] (Ptr ()))
+  "void* $NAME(GLFWwindow* w)"
+  "$DECL { return (void*)w; }")
+
+(def win-width 800)
+(def win-height 600)
+
+; ---------------------------------------------------------------------------
+; Main -- setup GLFW + WGPU, create resources, render loop, cleanup.
+; ---------------------------------------------------------------------------
+
+(defn main []
+  ; --- WGPU context (instance + adapter + device) ---
+  (match (WGPU.create-context)
+    (Result.Error e) (do (println* "GPU init failed: " &e) -1)
+    (Result.Success ctx)
+
+  ; --- GLFW window (no OpenGL context -- WGPU provides its own) ---
+  (let-do [_glfw-init (GLFW.init)
+           _glfw-hint (GLFW.window-hint GLFW.CLIENT_API GLFW.NO_API)
+           win (GLFW.create-window win-width win-height
+                 (String.cstr "WGPU Pyramid") NULL NULL)]
+
+    (if (null? win)
+      (do (println* "Failed to create GLFW window")
+          (WGPU.free-context ctx) -1)
+
+    ; --- Surface from GLFW window ---
+    (match (WGPURender.create-surface ctx (glfw-window->voidptr win) win-width win-height)
+      (Result.Error e) (do (println* "Surface failed: " &e)
+                           (GLFW.destroy-window win) (GLFW.terminate)
+                           (WGPU.free-context ctx) -1)
+      (Result.Success surf)
+
+    ; --- Vertex buffer (interleaved pos+color) ---
+    (match (WGPURender.create-vertex-buffer ctx &pyramid-vertices)
+      (Result.Error e) (do (println* "Vertex buffer failed: " &e)
+                           (WGPURender.free-surface surf)
+                           (GLFW.destroy-window win) (GLFW.terminate)
+                           (WGPU.free-context ctx) -1)
+      (Result.Success vb)
+
+    ; --- Index buffer ---
+    (match (WGPURender.create-index-buffer ctx &pyramid-indices)
+      (Result.Error e) (do (println* "Index buffer failed: " &e)
+                           (WGPURender.free-vertex-buffer vb)
+                           (WGPURender.free-surface surf)
+                           (GLFW.destroy-window win) (GLFW.terminate)
+                           (WGPU.free-context ctx) -1)
+      (Result.Success ib)
+
+    ; --- Uniform buffer (16 bytes: time, aspect, pad, pad) ---
+    (match (WGPURender.create-uniform-buffer ctx 16)
+      (Result.Error e) (do (println* "Uniform buffer failed: " &e)
+                           (WGPURender.free-index-buffer ib)
+                           (WGPURender.free-vertex-buffer vb)
+                           (WGPURender.free-surface surf)
+                           (GLFW.destroy-window win) (GLFW.terminate)
+                           (WGPU.free-context ctx) -1)
+      (Result.Success ub)
+
+    ; --- Geometry pipeline (pos+color vertex layout, depth test, uniform binding) ---
+    ; Use the surface's actual format — the GPU may prefer Bgra8UnormSrgb over Bgra8Unorm.
+    (match (WGPURender.create-geom-pipeline ctx pyramid-wgsl "vs_main" "fs_main"
+             &(WGPURender.surface-format surf))
+      (Result.Error e) (do (println* "Pipeline failed: " &e)
+                           (WGPURender.free-uniform-buffer ub)
+                           (WGPURender.free-index-buffer ib)
+                           (WGPURender.free-vertex-buffer vb)
+                           (WGPURender.free-surface surf)
+                           (GLFW.destroy-window win) (GLFW.terminate)
+                           (WGPU.free-context ctx) -1)
+      (Result.Success pipe)
+
+    ; --- Uniform bind group ---
+    (match (WGPURender.create-uniform-bind-group ctx pipe ub)
+      (Result.Error e) (do (println* "Bind group failed: " &e)
+                           (WGPURender.free-geom-pipeline pipe)
+                           (WGPURender.free-uniform-buffer ub)
+                           (WGPURender.free-index-buffer ib)
+                           (WGPURender.free-vertex-buffer vb)
+                           (WGPURender.free-surface surf)
+                           (GLFW.destroy-window win) (GLFW.terminate)
+                           (WGPU.free-context ctx) -1)
+      (Result.Success bg)
+
+    ; --- Depth texture ---
+    (match (WGPURender.create-depth-texture ctx win-width win-height)
+      (Result.Error e) (do (println* "Depth texture failed: " &e)
+                           (WGPURender.free-bind-group bg)
+                           (WGPURender.free-geom-pipeline pipe)
+                           (WGPURender.free-uniform-buffer ub)
+                           (WGPURender.free-index-buffer ib)
+                           (WGPURender.free-vertex-buffer vb)
+                           (WGPURender.free-surface surf)
+                           (GLFW.destroy-window win) (GLFW.terminate)
+                           (WGPU.free-context ctx) -1)
+      (Result.Success depth)
+
+    ; --- All resources created. Enter render loop. ---
+    (do
+      (println* "Spinning pyramid is live. Close window to exit.")
+
+      (while (= (GLFW.window-should-close win) GLFW.FALSE)
+        (let-do [; Compute time and aspect ratio for uniforms
+                 time   (Double.to-float (GLFW.get-time))
+                 aspect (Double.to-float (Double./ (Double.from-int win-width)
+                                                    (Double.from-int win-height)))
+                 uniforms [time aspect 0.0f 0.0f]]
+
+          ; Upload uniforms to GPU
+          (WGPURender.update-uniform-buffer ctx ub &uniforms)
+
+          ; Begin frame (acquire swapchain texture + command encoder)
+          (match (WGPURender.begin-frame surf ctx)
+            (Result.Error _e) () ; Skip frame on surface lost
+            (Result.Success frame)
+              (do
+                ; Run indexed geometry pass -- render to swapchain (Nothing)
+                (WGPURender.run-geom-pass-indexed frame pipe bg vb ib depth
+                  (Maybe.Nothing))
+
+                ; Submit and present
+                (WGPURender.end-frame frame surf ctx)
+                (WGPURender.free-frame frame)))
+
+          ; Process window events
+          (GLFW.poll-events)))
+
+      ; --- Cleanup (reverse order of creation) ---
+      (WGPURender.free-depth-texture depth)
+      (WGPURender.free-bind-group bg)
+      (WGPURender.free-geom-pipeline pipe)
+      (WGPURender.free-uniform-buffer ub)
+      (WGPURender.free-index-buffer ib)
+      (WGPURender.free-vertex-buffer vb)
+      (WGPURender.free-surface surf)
+      (GLFW.destroy-window win)
+      (GLFW.terminate)
+      (WGPU.free-context ctx)
+      0))))))))))))

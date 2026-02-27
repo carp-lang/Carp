@@ -1,0 +1,453 @@
+; WGPURender -- GPU rendering bindings for Carp
+;
+; Provides WebGPU rendering via wgpu-native (Vulkan / Metal / DX12).
+; Extends the compute bindings in WGPU.carp with surface presentation,
+; render pipelines, render textures, and frame management.
+;
+; All creation functions return (Result T String).  On failure the string
+; is a human-readable error from the GPU driver.  Callers should match on
+; the result and propagate errors rather than unwrapping blindly.
+;
+; The rendering model is:
+;   1. Create a surface from a native window handle
+;   2. Create render pipeline(s) from WGSL containing vertex + fragment shaders
+;   3. Each frame: begin-frame -> run-pass (one or more) -> end-frame
+;   4. Fullscreen triangle: no vertex buffers needed -- generate coords from vertex index
+;
+; Typical usage:
+;
+;   (match (WGPURender.create-surface ctx window-handle display-ptr 800 600)
+;     (Result.Error e) (println* "Surface failed: " &e)
+;     (Result.Success surf)
+;       (match (WGPURender.create-pipeline ctx my-wgsl "vs_main" "fs_main" "bgra8unorm")
+;         (Result.Error e) (println* "Pipeline failed: " &e)
+;         (Result.Success pipe)
+;           (do
+;             ; ... render loop ...
+;             (WGPURender.free-pipeline pipe)
+;             (WGPURender.free-surface surf))))
+
+(load "WGPU.carp")
+(relative-include "wgpu_render_helpers.h")
+
+; Opaque wrapper types for rendering -- registered at top level.
+; These are heap-allocated structs, passed as (Ptr T).
+(register-type WGPURenderSurface)
+(register-type WGPURenderTexture)
+(register-type WGPURenderPipelineWrapper)
+(register-type WGPUFrameState)
+(register-type WGPUSampler)
+(register-type WGPUVertexBufferWrapper)
+(register-type WGPUUniformBufferWrapper)
+(register-type WGPUDepthTexture)
+(register-type WGPUGeomPipelineWrapper)
+(register-type WGPUIndexBufferWrapper)
+
+(defmodule WGPUSampler
+  (deftemplate copy (Fn [(Ref WGPUSampler)] WGPUSampler)
+    "WGPUSampler $NAME(WGPUSampler* s)"
+    "$DECL { return *s; }")
+  (implements copy WGPUSampler.copy)
+
+  (deftemplate str (Fn [(Ref WGPUSampler)] String)
+    "String $NAME(WGPUSampler* s)"
+    "$DECL { (void)s; return strdup(\"WGPUSampler\"); }")
+  (implements str WGPUSampler.str)
+
+  (deftemplate prn (Fn [WGPUSampler] String)
+    "String $NAME(WGPUSampler s)"
+    "$DECL { (void)s; return strdup(\"WGPUSampler\"); }")
+  (implements prn WGPUSampler.prn))
+
+; -- copy/str/prn for new opaque wrapper types (heap-allocated, passed as Ptr T) --
+
+(defmodule WGPUVertexBufferWrapper
+  (deftemplate copy (Fn [(Ref WGPUVertexBufferWrapper)] WGPUVertexBufferWrapper)
+    "WGPUVertexBufferWrapper $NAME(WGPUVertexBufferWrapper* v)"
+    "$DECL { return *v; }")
+  (implements copy WGPUVertexBufferWrapper.copy)
+
+  (deftemplate str (Fn [(Ref WGPUVertexBufferWrapper)] String)
+    "String $NAME(WGPUVertexBufferWrapper* v)"
+    "$DECL { (void)v; return strdup(\"WGPUVertexBufferWrapper\"); }")
+  (implements str WGPUVertexBufferWrapper.str)
+
+  (deftemplate prn (Fn [WGPUVertexBufferWrapper] String)
+    "String $NAME(WGPUVertexBufferWrapper v)"
+    "$DECL { (void)v; return strdup(\"WGPUVertexBufferWrapper\"); }")
+  (implements prn WGPUVertexBufferWrapper.prn))
+
+(defmodule WGPUUniformBufferWrapper
+  (deftemplate copy (Fn [(Ref WGPUUniformBufferWrapper)] WGPUUniformBufferWrapper)
+    "WGPUUniformBufferWrapper $NAME(WGPUUniformBufferWrapper* u)"
+    "$DECL { return *u; }")
+  (implements copy WGPUUniformBufferWrapper.copy)
+
+  (deftemplate str (Fn [(Ref WGPUUniformBufferWrapper)] String)
+    "String $NAME(WGPUUniformBufferWrapper* u)"
+    "$DECL { (void)u; return strdup(\"WGPUUniformBufferWrapper\"); }")
+  (implements str WGPUUniformBufferWrapper.str)
+
+  (deftemplate prn (Fn [WGPUUniformBufferWrapper] String)
+    "String $NAME(WGPUUniformBufferWrapper u)"
+    "$DECL { (void)u; return strdup(\"WGPUUniformBufferWrapper\"); }")
+  (implements prn WGPUUniformBufferWrapper.prn))
+
+(defmodule WGPUDepthTexture
+  (deftemplate copy (Fn [(Ref WGPUDepthTexture)] WGPUDepthTexture)
+    "WGPUDepthTexture $NAME(WGPUDepthTexture* d)"
+    "$DECL { return *d; }")
+  (implements copy WGPUDepthTexture.copy)
+
+  (deftemplate str (Fn [(Ref WGPUDepthTexture)] String)
+    "String $NAME(WGPUDepthTexture* d)"
+    "$DECL { (void)d; return strdup(\"WGPUDepthTexture\"); }")
+  (implements str WGPUDepthTexture.str)
+
+  (deftemplate prn (Fn [WGPUDepthTexture] String)
+    "String $NAME(WGPUDepthTexture d)"
+    "$DECL { (void)d; return strdup(\"WGPUDepthTexture\"); }")
+  (implements prn WGPUDepthTexture.prn))
+
+(defmodule WGPUGeomPipelineWrapper
+  (deftemplate copy (Fn [(Ref WGPUGeomPipelineWrapper)] WGPUGeomPipelineWrapper)
+    "WGPUGeomPipelineWrapper $NAME(WGPUGeomPipelineWrapper* p)"
+    "$DECL { return *p; }")
+  (implements copy WGPUGeomPipelineWrapper.copy)
+
+  (deftemplate str (Fn [(Ref WGPUGeomPipelineWrapper)] String)
+    "String $NAME(WGPUGeomPipelineWrapper* p)"
+    "$DECL { (void)p; return strdup(\"WGPUGeomPipelineWrapper\"); }")
+  (implements str WGPUGeomPipelineWrapper.str)
+
+  (deftemplate prn (Fn [WGPUGeomPipelineWrapper] String)
+    "String $NAME(WGPUGeomPipelineWrapper p)"
+    "$DECL { (void)p; return strdup(\"WGPUGeomPipelineWrapper\"); }")
+  (implements prn WGPUGeomPipelineWrapper.prn))
+
+(defmodule WGPUIndexBufferWrapper
+  (deftemplate copy (Fn [(Ref WGPUIndexBufferWrapper)] WGPUIndexBufferWrapper)
+    "WGPUIndexBufferWrapper $NAME(WGPUIndexBufferWrapper* i)"
+    "$DECL { return *i; }")
+  (implements copy WGPUIndexBufferWrapper.copy)
+
+  (deftemplate str (Fn [(Ref WGPUIndexBufferWrapper)] String)
+    "String $NAME(WGPUIndexBufferWrapper* i)"
+    "$DECL { (void)i; return strdup(\"WGPUIndexBufferWrapper\"); }")
+  (implements str WGPUIndexBufferWrapper.str)
+
+  (deftemplate prn (Fn [WGPUIndexBufferWrapper] String)
+    "String $NAME(WGPUIndexBufferWrapper i)"
+    "$DECL { (void)i; return strdup(\"WGPUIndexBufferWrapper\"); }")
+  (implements prn WGPUIndexBufferWrapper.prn))
+
+(defmodule WGPURender
+
+  ; -- Raw C registrations ------------------------------------------
+
+  ; Null checks
+  (register surface-null?-     (Fn [(Ptr WGPURenderSurface)] Bool)          "wgpu_render_surface_is_null")
+  (register texture-null?-     (Fn [(Ptr WGPURenderTexture)] Bool)          "wgpu_render_texture_is_null")
+  (register pipeline-null?-    (Fn [(Ptr WGPURenderPipelineWrapper)] Bool)  "wgpu_render_pipeline_is_null")
+  (register frame-null?-       (Fn [(Ptr WGPUFrameState)] Bool)             "wgpu_frame_is_null")
+  (register sampler-null?-     (Fn [WGPUSampler] Bool)                      "wgpu_sampler_is_null")
+  (register bindgroup-null?-   (Fn [WGPUBindGroup] Bool)                    "wgpu_bindgroup_is_null")
+
+  ; Surface
+  (register create-surface-    (Fn [(Ptr WGPUContext) (Ptr ()) Int Int]
+                                    (Ptr WGPURenderSurface))                "wgpu_create_surface_from_glfw")
+  (register free-surface       (Fn [(Ptr WGPURenderSurface)] ())            "wgpu_surface_free")
+  (register surface-format-str-(Fn [(Ptr WGPURenderSurface)] (Ptr CChar))  "wgpu_surface_format_str")
+  (register resize-surface     (Fn [(Ptr WGPURenderSurface) (Ptr WGPUContext) Int Int] ())
+                                                                            "wgpu_surface_resize")
+
+  ; Render texture
+  (register create-render-texture- (Fn [(Ptr WGPUContext) Int Int (Ptr CChar)]
+                                        (Ptr WGPURenderTexture))            "wgpu_create_render_texture_str")
+  (register free-render-texture    (Fn [(Ptr WGPURenderTexture)] ())        "wgpu_render_texture_free")
+
+  ; Sampler
+  (register create-sampler-    (Fn [(Ptr WGPUContext)] WGPUSampler)         "wgpu_create_sampler")
+
+  ; Render pipeline
+  (register create-pipeline-   (Fn [(Ptr WGPUContext) (Ptr CChar) (Ptr CChar) (Ptr CChar) (Ptr CChar)]
+                                    (Ptr WGPURenderPipelineWrapper))        "wgpu_create_render_pipeline_str")
+  (register free-pipeline      (Fn [(Ptr WGPURenderPipelineWrapper)] ())    "wgpu_render_pipeline_free")
+
+  ; Texture bind group
+  (register create-texture-bind-group- (Fn [(Ptr WGPUContext) (Ptr WGPURenderPipelineWrapper)
+                                             (Ptr WGPURenderTexture) WGPUSampler] WGPUBindGroup)
+                                                                            "wgpu_create_texture_bind_group")
+
+  ; Frame management
+  (register begin-frame-       (Fn [(Ptr WGPURenderSurface) (Ptr WGPUContext)]
+                                    (Ptr WGPUFrameState))                   "wgpu_begin_frame")
+  (register run-pass-          (Fn [(Ptr WGPUFrameState) (Ptr WGPURenderPipelineWrapper)
+                                     WGPUBindGroup (Ptr WGPURenderTexture)] ())
+                                                                            "wgpu_run_pass")
+  (register end-frame          (Fn [(Ptr WGPUFrameState) (Ptr WGPURenderSurface)
+                                     (Ptr WGPUContext)] ())                 "wgpu_end_frame")
+  (register free-frame         (Fn [(Ptr WGPUFrameState)] ())               "wgpu_frame_free")
+
+  ; Free sampler (raw wgpu release)
+  (register free-sampler       (Fn [WGPUSampler] ())                        "wgpuSamplerRelease")
+  ; Free bind group (raw wgpu release, same as compute)
+  (register free-bind-group    (Fn [WGPUBindGroup] ())                      "wgpuBindGroupRelease")
+
+  ; -- Internal helpers ---------------------------------------------
+
+  (defn- get-error []
+    (let [raw (WGPU.last-error-)]
+      (String.from-cstr raw)))
+
+  ; NULL pointer for optional arguments.
+  (deftemplate null-render-texture (Fn [] (Ptr WGPURenderTexture))
+    "WGPURenderTexture* $NAME()"
+    "$DECL { return NULL; }")
+
+  ; -- Public API ---------------------------------------------------
+
+  (doc create-surface "Creates a rendering surface from a GLFW window.
+`window` is the (Ptr GLFWwindow) returned by GLFW.create-window.
+Requires GLFW_CLIENT_API / GLFW_NO_API hint before window creation.
+`width` and `height` set the initial swapchain size.
+Returns (Success surface) or (Error message).
+Call (WGPURender.free-surface surface) when done.")
+  (defn create-surface [ctx window width height]
+    (let [surf (create-surface- ctx window width height)]
+      (if (surface-null?- surf)
+        (Result.Error (get-error))
+        (Result.Success surf))))
+
+  (doc surface-format "Returns the texture format string of the surface (e.g. \"bgra8unorm-srgb\").
+Use this when creating pipelines that render into the surface, to ensure format compatibility.")
+  (defn surface-format [surf]
+    (String.from-cstr (surface-format-str- surf)))
+
+  (doc create-render-texture "Creates an offscreen render texture.
+`format` is a texture format string: \"bgra8unorm\", \"rgba8unorm\", or \"rgba16float\".
+Returns (Success render-texture) or (Error message).
+Call (WGPURender.free-render-texture rt) when done.")
+  (defn create-render-texture [ctx width height format]
+    (let [rt (create-render-texture- ctx width height (String.cstr format))]
+      (if (texture-null?- rt)
+        (Result.Error (get-error))
+        (Result.Success rt))))
+
+  (doc create-sampler "Creates a linear-clamp sampler suitable for post-processing.
+Returns (Success sampler) or (Error message).")
+  (defn create-sampler [ctx]
+    (let [s (create-sampler- ctx)]
+      (if (sampler-null?- s)
+        (Result.Error (get-error))
+        (Result.Success s))))
+
+  (doc create-pipeline "Creates a render pipeline from WGSL source.
+The source must contain both vertex and fragment shaders.
+`vs-entry` and `fs-entry` are the entry point names.
+`format` is the target texture format string.
+Returns (Success pipeline) or (Error message).
+Call (WGPURender.free-pipeline pipe) when done.")
+  (defn create-pipeline [ctx wgsl vs-entry fs-entry format]
+    (let [p (create-pipeline- ctx
+                              (String.cstr wgsl)
+                              (String.cstr vs-entry)
+                              (String.cstr fs-entry)
+                              (String.cstr format))]
+      (if (pipeline-null?- p)
+        (Result.Error (get-error))
+        (Result.Success p))))
+
+  (doc create-texture-bind-group "Creates a bind group with a texture view at binding 0
+and a sampler at binding 1, using the pipeline's auto-derived layout.
+Returns (Success bind-group) or (Error message).")
+  (defn create-texture-bind-group [ctx pipeline texture sampler]
+    (let [bg (create-texture-bind-group- ctx pipeline texture sampler)]
+      (if (bindgroup-null?- bg)
+        (Result.Error (get-error))
+        (Result.Success bg))))
+
+  (doc begin-frame "Acquires the next swapchain texture and creates a command encoder.
+Returns (Success frame) on success, (Error message) if the surface is lost.
+Call (WGPURender.end-frame frame surface ctx) to submit and present,
+then (WGPURender.free-frame frame) to release resources.")
+  (defn begin-frame [surface ctx]
+    (let [f (begin-frame- surface ctx)]
+      (if (frame-null?- f)
+        (Result.Error (get-error))
+        (Result.Success f))))
+
+  (doc run-pass "Encodes a fullscreen render pass.
+Renders into `target` if provided (Just rt), or into the swapchain texture
+if (Nothing) is passed. Uses a fullscreen triangle (3 vertices, no vertex buffer).
+Clear color is black.")
+  (defn run-pass [frame pipeline bind-group target]
+    (match target
+      (Maybe.Just rt) (run-pass- frame pipeline bind-group rt)
+      (Maybe.Nothing)  (run-pass- frame pipeline bind-group (null-render-texture))))
+
+  ; ================================================================
+  ; Vertex buffer, uniform buffer, depth texture, geometry pipeline
+  ; Index buffer, indexed drawing
+  ; ================================================================
+
+  ; -- Null checks for new types -----------------------------------
+
+  (register vertex-buffer-null?-   (Fn [(Ptr WGPUVertexBufferWrapper)] Bool)  "wgpu_vertex_buffer_is_null")
+  (register uniform-buffer-null?-  (Fn [(Ptr WGPUUniformBufferWrapper)] Bool) "wgpu_uniform_buffer_is_null")
+  (register depth-texture-null?-   (Fn [(Ptr WGPUDepthTexture)] Bool)         "wgpu_depth_texture_is_null")
+  (register geom-pipeline-null?-   (Fn [(Ptr WGPUGeomPipelineWrapper)] Bool)  "wgpu_geom_pipeline_is_null")
+  (register index-buffer-null?-    (Fn [(Ptr WGPUIndexBufferWrapper)] Bool)   "wgpu_index_buffer_is_null")
+
+  ; -- Vertex buffer -----------------------------------------------
+
+  (register create-vertex-buffer-  (Fn [(Ptr WGPUContext) (Ptr Float) Uint64]
+                                        (Ptr WGPUVertexBufferWrapper))         "wgpu_create_vertex_buffer")
+  (register free-vertex-buffer     (Fn [(Ptr WGPUVertexBufferWrapper)] ())     "wgpu_vertex_buffer_free")
+
+  ; -- Uniform buffer ----------------------------------------------
+
+  (register create-uniform-buffer- (Fn [(Ptr WGPUContext) Uint64]
+                                        (Ptr WGPUUniformBufferWrapper))        "wgpu_create_uniform_buffer")
+  (register update-uniform-buffer- (Fn [(Ptr WGPUContext) (Ptr WGPUUniformBufferWrapper)
+                                         (Ptr Float) Uint64] ())              "wgpu_update_uniform_buffer")
+  (register free-uniform-buffer    (Fn [(Ptr WGPUUniformBufferWrapper)] ())    "wgpu_uniform_buffer_free")
+
+  ; -- Depth texture -----------------------------------------------
+
+  (register create-depth-texture-  (Fn [(Ptr WGPUContext) Int Int]
+                                        (Ptr WGPUDepthTexture))                "wgpu_create_depth_texture")
+  (register free-depth-texture     (Fn [(Ptr WGPUDepthTexture)] ())            "wgpu_depth_texture_free")
+
+  ; -- Geometry pipeline -------------------------------------------
+
+  (register create-geom-pipeline-  (Fn [(Ptr WGPUContext) (Ptr CChar) (Ptr CChar) (Ptr CChar) (Ptr CChar)]
+                                        (Ptr WGPUGeomPipelineWrapper))         "wgpu_create_geom_pipeline_str")
+  (register free-geom-pipeline     (Fn [(Ptr WGPUGeomPipelineWrapper)] ())     "wgpu_geom_pipeline_free")
+
+  ; -- Uniform bind group ------------------------------------------
+
+  (register create-uniform-bind-group- (Fn [(Ptr WGPUContext) (Ptr WGPUGeomPipelineWrapper)
+                                              (Ptr WGPUUniformBufferWrapper)] WGPUBindGroup)
+                                                                               "wgpu_create_uniform_bind_group")
+
+  ; -- Geometry pass (non-indexed) ---------------------------------
+
+  (register run-geom-pass-         (Fn [(Ptr WGPUFrameState) (Ptr WGPUGeomPipelineWrapper)
+                                         WGPUBindGroup (Ptr WGPUVertexBufferWrapper)
+                                         (Ptr WGPUDepthTexture) Int (Ptr WGPURenderTexture)] ())
+                                                                               "wgpu_run_geom_pass")
+
+  ; -- Index buffer ------------------------------------------------
+
+  (register create-index-buffer-   (Fn [(Ptr WGPUContext) (Ptr Uint32) Int]
+                                        (Ptr WGPUIndexBufferWrapper))          "wgpu_create_index_buffer")
+  (register free-index-buffer      (Fn [(Ptr WGPUIndexBufferWrapper)] ())      "wgpu_index_buffer_free")
+
+  ; -- Geometry pass (indexed) -------------------------------------
+
+  (register run-geom-pass-indexed- (Fn [(Ptr WGPUFrameState) (Ptr WGPUGeomPipelineWrapper)
+                                          WGPUBindGroup (Ptr WGPUVertexBufferWrapper)
+                                          (Ptr WGPUIndexBufferWrapper) (Ptr WGPUDepthTexture)
+                                          (Ptr WGPURenderTexture)] ())
+                                                                               "wgpu_run_geom_pass_indexed")
+
+  ; -- Templates for array data access -----------------------------
+
+  (deftemplate array->uint32ptr (Fn [(Ref (Array Int))] (Ptr Uint32))
+    "uint32_t* $NAME(Array__int* arr)"
+    "$DECL { return (uint32_t*)arr->data; }")
+
+  ; -- Public API (new) --------------------------------------------
+
+  (doc create-vertex-buffer "Creates a GPU vertex buffer from an (Array Float).
+The array should contain interleaved vertex data (e.g. position + color).
+Returns (Success vertex-buffer) or (Error message).
+Call (WGPURender.free-vertex-buffer vb) when done.")
+  (defn create-vertex-buffer [ctx data]
+    (let [vb (create-vertex-buffer- ctx
+                                    (WGPU.array->ptr data)
+                                    (Uint64.from-long (Long.from-int (* (Array.length data) 4))))]
+      (if (vertex-buffer-null?- vb)
+        (Result.Error (get-error))
+        (Result.Success vb))))
+
+  (doc create-uniform-buffer "Creates a GPU uniform buffer of `size` bytes (initially zeroed).
+Returns (Success uniform-buffer) or (Error message).
+Call (WGPURender.free-uniform-buffer ub) when done.")
+  (defn create-uniform-buffer [ctx size]
+    (let [ub (create-uniform-buffer- ctx (Uint64.from-long (Long.from-int size)))]
+      (if (uniform-buffer-null?- ub)
+        (Result.Error (get-error))
+        (Result.Success ub))))
+
+  (doc update-uniform-buffer "Uploads an (Array Float) into an existing uniform buffer.
+Writes min(array-byte-size, buffer-size) bytes.")
+  (defn update-uniform-buffer [ctx ub data]
+    (update-uniform-buffer- ctx ub
+                            (WGPU.array->ptr data)
+                            (Uint64.from-long (Long.from-int (* (Array.length data) 4)))))
+
+  (doc create-depth-texture "Creates a depth texture (Depth24Plus format).
+Returns (Success depth-texture) or (Error message).
+Call (WGPURender.free-depth-texture dt) when done.")
+  (defn create-depth-texture [ctx width height]
+    (let [dt (create-depth-texture- ctx width height)]
+      (if (depth-texture-null?- dt)
+        (Result.Error (get-error))
+        (Result.Success dt))))
+
+  (doc create-geom-pipeline "Creates a geometry render pipeline with vertex input.
+Vertex layout: attribute 0 = position (float32x3), attribute 1 = color (float32x3),
+stride 24 bytes. Includes depth testing (Less) and one uniform buffer binding.
+`format` is the target texture format string.
+Returns (Success geom-pipeline) or (Error message).
+Call (WGPURender.free-geom-pipeline pipe) when done.")
+  (defn create-geom-pipeline [ctx wgsl vs-entry fs-entry format]
+    (let [p (create-geom-pipeline- ctx
+                                   (String.cstr wgsl)
+                                   (String.cstr vs-entry)
+                                   (String.cstr fs-entry)
+                                   (String.cstr format))]
+      (if (geom-pipeline-null?- p)
+        (Result.Error (get-error))
+        (Result.Success p))))
+
+  (doc create-uniform-bind-group "Creates a bind group binding a uniform buffer at binding 0
+using the geometry pipeline's bind group layout.
+Returns (Success bind-group) or (Error message).")
+  (defn create-uniform-bind-group [ctx geom-pipeline uniform-buffer]
+    (let [bg (create-uniform-bind-group- ctx geom-pipeline uniform-buffer)]
+      (if (bindgroup-null?- bg)
+        (Result.Error (get-error))
+        (Result.Success bg))))
+
+  (doc run-geom-pass "Encodes a geometry render pass with vertex buffer and depth testing.
+Renders into `target` if (Just rt), or into the swapchain texture if (Nothing).
+Clear color is black, depth clear value is 1.0.")
+  (defn run-geom-pass [frame pipeline bind-group vertex-buffer depth vertex-count target]
+    (match target
+      (Maybe.Just rt) (run-geom-pass- frame pipeline bind-group vertex-buffer depth vertex-count rt)
+      (Maybe.Nothing)  (run-geom-pass- frame pipeline bind-group vertex-buffer depth vertex-count (null-render-texture))))
+
+  (doc create-index-buffer "Creates a GPU index buffer from an (Array Int).
+Each element is treated as a uint32 index.
+Returns (Success index-buffer) or (Error message).
+Call (WGPURender.free-index-buffer ib) when done.")
+  (defn create-index-buffer [ctx data]
+    (let [ib (create-index-buffer- ctx
+                                   (array->uint32ptr data)
+                                   (Array.length data))]
+      (if (index-buffer-null?- ib)
+        (Result.Error (get-error))
+        (Result.Success ib))))
+
+  (doc run-geom-pass-indexed "Encodes an indexed geometry render pass.
+Same as run-geom-pass but uses an index buffer for indexed drawing.
+Renders into `target` if (Just rt), or into the swapchain texture if (Nothing).")
+  (defn run-geom-pass-indexed [frame pipeline bind-group vertex-buffer index-buffer depth target]
+    (match target
+      (Maybe.Just rt) (run-geom-pass-indexed- frame pipeline bind-group vertex-buffer index-buffer depth rt)
+      (Maybe.Nothing)  (run-geom-pass-indexed- frame pipeline bind-group vertex-buffer index-buffer depth (null-render-texture))))
+
+)

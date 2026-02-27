@@ -1,6 +1,8 @@
 #ifndef WGPU_HELPERS_H
 #define WGPU_HELPERS_H
 
+#pragma clang diagnostic ignored "-Wunused-function"
+
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
