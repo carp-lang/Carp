@@ -200,11 +200,15 @@ walk' mode' e (SymPath (p : ps) name) =
       Just b -> Right b
     go (SymPath ps name) binder
   where
+    fromMod :: Mode -> Binder -> Either EnvironmentError Env
+    fromMod Values (Binder _ (XObj (Mod env _) _ _)) = Right env
+    fromMod Types (Binder _ (XObj (Mod _ typeEnv) _ _)) = Right (getTypeEnv typeEnv)
+    fromMod _ _ = Left NoEnvInNonModule
     go :: SymPath -> Binder -> Either EnvironmentError Env
-    go (SymPath [] _) binder = nextEnv mode' binder
+    go (SymPath [] _) binder = fromMod mode' binder
     go path binder =
       do
-        env <- nextEnv Values binder
+        env <- fromMod Values binder
         walk' mode' env path
 
 walkMaybe :: Mode -> Env -> [String] -> Maybe Env
