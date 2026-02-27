@@ -193,18 +193,19 @@ updateEnv _ _ _ = Left NoEnvInNonModule
 -- | Walk down an environment chain.
 walk' :: Mode -> Env -> SymPath -> Either EnvironmentError Env
 walk' _ e (SymPath [] _) = pure e
-walk' mode' e (SymPath path _) =
+walk' mode' e (SymPath (p : ps) name) =
   do
-    binder <- descend e path
-    nextEnv mode' binder
+    binder <- case Map.lookup p (envBindings e) of
+      Nothing -> Left (BindingNotFound p e)
+      Just b -> Right b
+    go (SymPath ps name) binder
   where
-    descend :: Env -> [String] -> Either EnvironmentError Binder
-    descend _ [] = error "impossible: walk' called with empty path"
-    descend !env [name] = snd <$> get env name
-    descend !env (name : rest) = do
-      (_, binder) <- get env name
-      next <- nextEnv Values binder
-      descend next rest
+    go :: SymPath -> Binder -> Either EnvironmentError Env
+    go (SymPath [] _) binder = nextEnv mode' binder
+    go path binder =
+      do
+        env <- nextEnv Values binder
+        walk' mode' env path
 
 walkMaybe :: Mode -> Env -> [String] -> Maybe Env
 walkMaybe _ env [] = Just env
@@ -254,11 +255,13 @@ getBinder e name = fmap snd (get e name)
 --
 -- Returns an error if not found.
 find' :: Environment e => e -> SymPath -> Either EnvironmentError (e, Binder)
-find' e path =
-  case walkAndGet e path of
-    (Right e', Right b) -> Right (e', b)
-    (Left err, _) -> Left err
-    (_, Left err) -> Left err
+find' e path@(SymPath _ name) =
+  do
+    target <- walk' (modality e) (prj e) path
+    binder <- case Map.lookup name (envBindings target) of
+      Nothing -> Left (BindingNotFound name target)
+      Just b -> Right b
+    pure (inj target, binder)
 
 -- | Same as `find` but only returns a binder.
 findBinder :: Environment e => e -> SymPath -> Either EnvironmentError Binder
@@ -279,13 +282,15 @@ findBinderMaybe e (SymPath path name) =
 --
 -- Returns an error if not found.
 search :: Environment e => e -> SymPath -> Either EnvironmentError (e, Binder)
-search e path =
-  case walkAndGet e path of
-    (Right e', Right b) -> Right (e', b)
-    (Right e', Left err) -> (checkParent e' err)
-    (Left err, Left _) -> (checkParent e err) <> Left err
-    -- impossible case. Included to keep `walk` honest.
-    (Left _, Right _) -> error "impossible"
+search e path@(SymPath _ name) =
+  case walk' (modality e) (prj e) path of
+    Right target ->
+      case Map.lookup name (envBindings target) of
+        Just binder -> Right (inj target, binder)
+        Nothing ->
+          let err = BindingNotFound name target
+           in checkParent (inj target) err
+    Left err -> (checkParent e err) <> Left err
   where
     checkParent env err = maybe (Left err) (`search` path) (parent env)
 
