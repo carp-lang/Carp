@@ -1,0 +1,73 @@
+; wgpu-compute.carp -- GPU Array Add (Compute Hello World)
+;
+; A headless (no window) demo. Creates a WGPU context, uploads two arrays
+; of floats to the GPU, runs a compute shader that adds them element-wise
+; into a third buffer, reads back and prints the results.
+;
+; Uses GpuArray for ergonomic buffer management (same pattern as bullet-heaven).
+;
+; Build:  cd /home/sqrew/Desktop/Carp-fork && carp -b examples/wgpu-compute.carp
+; Run:    ./out/Carp
+
+(load "/home/sqrew/Desktop/Carp-fork/core/GpuArray.carp")
+
+; ---------------------------------------------------------------------------
+; WGSL shader -- three storage buffers: A (read), B (read), C (read_write).
+; Each thread adds one element: C[i] = A[i] + B[i].
+; ---------------------------------------------------------------------------
+
+(def add-shader
+  "@group(0) @binding(0) var<storage, read>       a: array<f32>;
+@group(0) @binding(1) var<storage, read>       b: array<f32>;
+@group(0) @binding(2) var<storage, read_write> c: array<f32>;
+
+@compute @workgroup_size(64)
+fn main(@builtin(global_invocation_id) id: vec3<u32>) {
+    let i = id.x;
+    if (i >= arrayLength(&a)) { return; }
+    c[i] = a[i] + b[i];
+}")
+
+(defn main []
+  (let-do [_ (println* "GPU compute: element-wise array addition")]
+  (match (WGPU.create-context)
+    (Result.Error e) (do (println* "GPU init failed: " &e) -1)
+    (Result.Success ctx)
+  (match (WGPU.create-pipeline ctx add-shader "main")
+    (Result.Error e) (do (println* "Pipeline failed: " &e)
+                         (WGPU.free-context ctx) -1)
+    (Result.Success pipe)
+  (let-do [input-a [1.0f 2.0f 3.0f 4.0f 5.0f]
+           input-b [10.0f 20.0f 30.0f 40.0f 50.0f]
+           _a      (println* "Input A: " &input-a)
+           _b      (println* "Input B: " &input-b)]
+    (match (GpuArray.from-floats ctx &input-a)
+      (Result.Error e) (do (println* "Buffer A failed: " &e)
+                           (WGPU.free-pipeline pipe)
+                           (WGPU.free-context ctx) -1)
+      (Result.Success ga-a)
+    (match (GpuArray.from-floats ctx &input-b)
+      (Result.Error e) (do (println* "Buffer B failed: " &e)
+                           (GpuArray.free &ga-a)
+                           (WGPU.free-pipeline pipe)
+                           (WGPU.free-context ctx) -1)
+      (Result.Success ga-b)
+    (match (GpuArray.create ctx 5)
+      (Result.Error e) (do (println* "Buffer C failed: " &e)
+                           (GpuArray.free &ga-b)
+                           (GpuArray.free &ga-a)
+                           (WGPU.free-pipeline pipe)
+                           (WGPU.free-context ctx) -1)
+      (Result.Success ga-c)
+    (do
+      (WGPU.dispatch-with ctx pipe ga-a ga-b ga-c)
+      (let-do [result (GpuArray.download &ga-c)
+               _r     (println* "Result:  " &result)]
+        ())
+      (println* "GPU compute: OK")
+      (GpuArray.free &ga-c)
+      (GpuArray.free &ga-b)
+      (GpuArray.free &ga-a)
+      (WGPU.free-pipeline pipe)
+      (WGPU.free-context ctx)
+      0)))))))))

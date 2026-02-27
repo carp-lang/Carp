@@ -1,0 +1,340 @@
+; wgpu-mandelbrot.carp -- Interactive Mandelbrot Set (Compute + Render)
+;
+; A windowed demo. GLFW window 800x600. A compute shader calculates the
+; Mandelbrot set into a storage buffer (one f32 per pixel, normalized
+; iteration count). A fullscreen fragment shader reads from that buffer
+; and maps iteration values to vivid colors.
+;
+; Controls: W/S = zoom in/out, arrow keys = pan, ESC = quit.
+;
+; Build:  cd /home/sqrew/Desktop/Carp-fork && carp -b examples/wgpu-mandelbrot.carp
+; Run:    ./out/Carp
+
+(load "/home/sqrew/Desktop/Carp-fork/core/GLFW.carp")
+(load "/home/sqrew/Desktop/Carp-fork/core/WGPURender.carp")
+(add-lib "-lX11")
+
+; ---------------------------------------------------------------------------
+; WGSL compute shader -- Mandelbrot iteration per pixel.
+;
+; Binding 0: output pixel buffer (read_write, one f32 per pixel)
+; Binding 1: parameters buffer (read, storage): center_x, center_y, zoom,
+;            max_iter, width, height
+;
+; 1D dispatch: global_invocation_id.x is the flat pixel index.
+; Pixel coordinates: x = idx % width, y = idx / width
+; ---------------------------------------------------------------------------
+
+(def mandelbrot-compute-wgsl
+  "@group(0) @binding(0) var<storage, read_write> pixels: array<f32>;
+@group(0) @binding(1) var<storage, read>       params: array<f32>;
+
+@compute @workgroup_size(64)
+fn main(@builtin(global_invocation_id) id: vec3<u32>) {
+    let idx = id.x;
+    let w = u32(params[4]);
+    let h = u32(params[5]);
+    let total = w * h;
+    if (idx >= total) { return; }
+
+    let px = idx % w;
+    let py = idx / w;
+
+    let center_x = params[0];
+    let center_y = params[1];
+    let zoom     = params[2];
+    let max_iter = i32(params[3]);
+
+    // Map pixel to complex plane
+    let scale = 3.0 / (f32(w) * zoom);
+    let cx = center_x + (f32(px) - f32(w) * 0.5) * scale;
+    let cy = center_y + (f32(py) - f32(h) * 0.5) * scale;
+
+    var zx = 0.0;
+    var zy = 0.0;
+    var i = 0;
+    for (var iter = 0; iter < max_iter; iter = iter + 1) {
+        let zx2 = zx * zx;
+        let zy2 = zy * zy;
+        if (zx2 + zy2 > 4.0) { break; }
+        zy = 2.0 * zx * zy + cy;
+        zx = zx2 - zy2 + cx;
+        i = i + 1;
+    }
+
+    // Normalize: 0 = escaped instantly, 1 = never escaped
+    if (i >= max_iter) {
+        pixels[idx] = 0.0; // Inside the set -> black
+    } else {
+        // Smooth coloring with log
+        let zn = sqrt(zx * zx + zy * zy);
+        let smooth_i = f32(i) + 1.0 - log2(log2(zn + 1.0));
+        pixels[idx] = smooth_i / f32(max_iter);
+    }
+}
+")
+
+; ---------------------------------------------------------------------------
+; WGSL render shader -- fullscreen triangle, reads from pixel storage buffer.
+;
+; Binding 0: pixel storage buffer (read, one f32 per pixel)
+; Binding 1: uniform buffer: width, height (as f32)
+; ---------------------------------------------------------------------------
+
+(def mandelbrot-render-wgsl
+  "struct RenderUniforms {
+    width: f32,
+    height: f32,
+    _pad0: f32,
+    _pad1: f32,
+}
+
+@group(0) @binding(0) var<storage, read> pixels: array<f32>;
+@group(0) @binding(1) var<uniform> ru: RenderUniforms;
+
+struct VertexOutput {
+    @builtin(position) position: vec4<f32>,
+    @location(0) uv: vec2<f32>,
+}
+
+@vertex
+fn vs_main(@builtin(vertex_index) vi: u32) -> VertexOutput {
+    var pos: array<vec2<f32>, 3> = array<vec2<f32>, 3>(
+        vec2<f32>(-1.0, -1.0),
+        vec2<f32>( 3.0, -1.0),
+        vec2<f32>(-1.0,  3.0),
+    );
+    var out: VertexOutput;
+    let p = pos[vi];
+    out.position = vec4<f32>(p, 0.0, 1.0);
+    out.uv = (p + 1.0) * 0.5;
+    return out;
+}
+
+fn hsv2rgb(h: f32, s: f32, v: f32) -> vec3<f32> {
+    let c = v * s;
+    let hp = h * 6.0;
+    let x = c * (1.0 - abs(hp % 2.0 - 1.0));
+    let m = v - c;
+    var rgb: vec3<f32>;
+    if (hp < 1.0) { rgb = vec3<f32>(c, x, 0.0); }
+    else if (hp < 2.0) { rgb = vec3<f32>(x, c, 0.0); }
+    else if (hp < 3.0) { rgb = vec3<f32>(0.0, c, x); }
+    else if (hp < 4.0) { rgb = vec3<f32>(0.0, x, c); }
+    else if (hp < 5.0) { rgb = vec3<f32>(x, 0.0, c); }
+    else { rgb = vec3<f32>(c, 0.0, x); }
+    return rgb + vec3<f32>(m, m, m);
+}
+
+@fragment
+fn fs_main(in: VertexOutput) -> @location(0) vec4<f32> {
+    let w = u32(ru.width);
+    let h = u32(ru.height);
+    // Flip Y: UV origin is top-left, but we want pixel(0,0) at top-left
+    let px = u32(in.uv.x * f32(w));
+    let py = u32((1.0 - in.uv.y) * f32(h));
+    let idx = clamp(py, 0u, h - 1u) * w + clamp(px, 0u, w - 1u);
+    let val = pixels[idx];
+
+    // Black for points inside the set
+    if (val <= 0.0) {
+        return vec4<f32>(0.0, 0.0, 0.0, 1.0);
+    }
+
+    // Vivid HSV color mapping
+    let hue = fract(val * 5.0 + 0.6);
+    let sat = 0.9;
+    let brightness = clamp(val * 3.0, 0.0, 1.0);
+    let color = hsv2rgb(hue, sat, brightness);
+    return vec4<f32>(color, 1.0);
+}
+")
+
+; ---------------------------------------------------------------------------
+; GLFWwindow* -> void* cast
+; ---------------------------------------------------------------------------
+
+(deftemplate glfw-window->voidptr (Fn [(Ptr GLFWwindow)] (Ptr ()))
+  "void* $NAME(GLFWwindow* w)"
+  "$DECL { return (void*)w; }")
+
+(def win-width 800)
+(def win-height 600)
+(def total-pixels 480000) ; 800 * 600
+
+; ---------------------------------------------------------------------------
+; Main
+; ---------------------------------------------------------------------------
+
+(defn main []
+  (match (WGPU.create-context)
+    (Result.Error e) (do (println* "GPU init failed: " &e) -1)
+    (Result.Success ctx)
+
+  (let-do [_glfw-init (GLFW.init)
+           _glfw-hint (GLFW.window-hint GLFW.CLIENT_API GLFW.NO_API)
+           win (GLFW.create-window win-width win-height
+                 (String.cstr "WGPU Mandelbrot") NULL NULL)]
+
+    (if (null? win)
+      (do (println* "Failed to create GLFW window")
+          (WGPU.free-context ctx) -1)
+
+    (match (WGPURender.create-surface ctx (glfw-window->voidptr win) win-width win-height)
+      (Result.Error e) (do (println* "Surface failed: " &e)
+                           (GLFW.destroy-window win) (GLFW.terminate)
+                           (WGPU.free-context ctx) -1)
+      (Result.Success surf)
+
+    ; --- Pixel storage buffer (one f32 per pixel, shared between compute and render) ---
+    (match (WGPU.create-buffer ctx total-pixels)
+      (Result.Error e) (do (println* "Pixel buffer failed: " &e)
+                           (WGPURender.free-surface surf)
+                           (GLFW.destroy-window win) (GLFW.terminate)
+                           (WGPU.free-context ctx) -1)
+      (Result.Success pixel-buf)
+
+    ; --- Compute params buffer (6 floats: center_x, center_y, zoom, max_iter, width, height) ---
+    ; Pad to 8 floats (32 bytes) for alignment
+    (match (WGPU.create-buffer ctx 8)
+      (Result.Error e) (do (println* "Params buffer failed: " &e)
+                           (WGPU.free-buffer pixel-buf)
+                           (WGPURender.free-surface surf)
+                           (GLFW.destroy-window win) (GLFW.terminate)
+                           (WGPU.free-context ctx) -1)
+      (Result.Success params-buf)
+
+    ; --- Compute pipeline ---
+    (match (WGPU.create-pipeline ctx mandelbrot-compute-wgsl "main")
+      (Result.Error e) (do (println* "Compute pipeline failed: " &e)
+                           (WGPU.free-buffer params-buf)
+                           (WGPU.free-buffer pixel-buf)
+                           (WGPURender.free-surface surf)
+                           (GLFW.destroy-window win) (GLFW.terminate)
+                           (WGPU.free-context ctx) -1)
+      (Result.Success compute-pipe)
+
+    ; --- Compute bind group (pixel_buf at 0, params_buf at 1) ---
+    (let [compute-bufs [pixel-buf params-buf]]
+    (match (WGPU.create-bind-group ctx compute-pipe &compute-bufs)
+      (Result.Error e) (do (println* "Compute bind group failed: " &e)
+                           (WGPU.free-pipeline compute-pipe)
+                           (WGPU.free-buffer params-buf)
+                           (WGPU.free-buffer pixel-buf)
+                           (WGPURender.free-surface surf)
+                           (GLFW.destroy-window win) (GLFW.terminate)
+                           (WGPU.free-context ctx) -1)
+      (Result.Success compute-bg)
+
+    ; --- Render uniform buffer (16 bytes: width, height, pad, pad) ---
+    (match (WGPURender.create-uniform-buffer ctx 16)
+      (Result.Error e) (do (println* "Render uniform failed: " &e)
+                           (WGPU.free-bind-group compute-bg)
+                           (WGPU.free-pipeline compute-pipe)
+                           (WGPU.free-buffer params-buf)
+                           (WGPU.free-buffer pixel-buf)
+                           (WGPURender.free-surface surf)
+                           (GLFW.destroy-window win) (GLFW.terminate)
+                           (WGPU.free-context ctx) -1)
+      (Result.Success render-ub)
+
+    (let [render-uniforms [(Double.to-float (Double.from-int win-width))
+                           (Double.to-float (Double.from-int win-height))
+                           0.0f 0.0f]
+          _upload (WGPURender.update-uniform-buffer ctx render-ub &render-uniforms)]
+
+    ; --- Render pipeline (fullscreen, no vertex buffers) ---
+    (match (WGPURender.create-pipeline ctx mandelbrot-render-wgsl "vs_main" "fs_main"
+             &(WGPURender.surface-format surf))
+      (Result.Error e) (do (println* "Render pipeline failed: " &e)
+                           (WGPURender.free-uniform-buffer render-ub)
+                           (WGPU.free-bind-group compute-bg)
+                           (WGPU.free-pipeline compute-pipe)
+                           (WGPU.free-buffer params-buf)
+                           (WGPU.free-buffer pixel-buf)
+                           (WGPURender.free-surface surf)
+                           (GLFW.destroy-window win) (GLFW.terminate)
+                           (WGPU.free-context ctx) -1)
+      (Result.Success render-pipe)
+
+    ; --- Render bind group (storage at 0, uniform at 1) ---
+    (match (WGPURender.create-render-storage-uniform-bind-group ctx render-pipe pixel-buf render-ub)
+      (Result.Error e) (do (println* "Render bind group failed: " &e)
+                           (WGPURender.free-pipeline render-pipe)
+                           (WGPURender.free-uniform-buffer render-ub)
+                           (WGPU.free-bind-group compute-bg)
+                           (WGPU.free-pipeline compute-pipe)
+                           (WGPU.free-buffer params-buf)
+                           (WGPU.free-buffer pixel-buf)
+                           (WGPURender.free-surface surf)
+                           (GLFW.destroy-window win) (GLFW.terminate)
+                           (WGPU.free-context ctx) -1)
+      (Result.Success render-bg)
+
+    ; --- All resources created. Enter main loop. ---
+    (let-do [center-x -0.5f
+             center-y  0.0f
+             zoom      1.0f
+             max-iter  200.0f
+             workgroups (WGPU.workgroups-for total-pixels)]
+
+      (println* "Mandelbrot explorer is live.")
+      (println* "  W/S = zoom in/out, arrows = pan, ESC = quit")
+
+      (while (= (GLFW.window-should-close win) GLFW.FALSE)
+        (do
+          ; --- Handle keyboard input ---
+          (let-do [pan-speed (/ 0.02f zoom)
+                   zoom-speed 1.05f]
+            ; Zoom
+            (when (= (GLFW.get-key win GLFW.Keycode.W) GLFW.PRESS)
+              (set! zoom (* zoom zoom-speed)))
+            (when (= (GLFW.get-key win GLFW.Keycode.S) GLFW.PRESS)
+              (set! zoom (/ zoom zoom-speed)))
+            ; Pan
+            (when (= (GLFW.get-key win GLFW.Keycode.LEFT) GLFW.PRESS)
+              (set! center-x (- center-x pan-speed)))
+            (when (= (GLFW.get-key win GLFW.Keycode.RIGHT) GLFW.PRESS)
+              (set! center-x (+ center-x pan-speed)))
+            (when (= (GLFW.get-key win GLFW.Keycode.UP) GLFW.PRESS)
+              (set! center-y (- center-y pan-speed)))
+            (when (= (GLFW.get-key win GLFW.Keycode.DOWN) GLFW.PRESS)
+              (set! center-y (+ center-y pan-speed)))
+            ; Escape
+            (when (= (GLFW.get-key win GLFW.Keycode.ESCAPE) GLFW.PRESS)
+              (GLFW.set-window-should-close win GLFW.TRUE)))
+
+          ; --- Upload compute params ---
+          (let [params [center-x center-y zoom max-iter
+                        (Double.to-float (Double.from-int win-width))
+                        (Double.to-float (Double.from-int win-height))
+                        0.0f 0.0f]]
+            (WGPU.write-floats ctx params-buf &params))
+
+          ; --- Dispatch compute ---
+          (WGPU.dispatch ctx compute-pipe compute-bg workgroups)
+
+          ; --- Render frame ---
+          (match (WGPURender.begin-frame surf ctx)
+            (Result.Error _e) ()
+            (Result.Success frame)
+              (do
+                (WGPURender.run-pass frame render-pipe render-bg (Maybe.Nothing))
+                (WGPURender.end-frame frame surf ctx)
+                (WGPURender.free-frame frame)))
+
+          (GLFW.poll-events)))
+
+      ; --- Cleanup (reverse order) ---
+      (WGPURender.free-bind-group render-bg)
+      (WGPURender.free-pipeline render-pipe)
+      (WGPURender.free-uniform-buffer render-ub)
+      (WGPU.free-bind-group compute-bg)
+      (WGPU.free-pipeline compute-pipe)
+      (WGPU.free-buffer params-buf)
+      (WGPU.free-buffer pixel-buf)
+      (WGPURender.free-surface surf)
+      (GLFW.destroy-window win)
+      (GLFW.terminate)
+      (WGPU.free-context ctx)
+      0)))))))))))))))

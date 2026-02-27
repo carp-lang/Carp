@@ -331,6 +331,18 @@ Clear color is black.")
                                               (Ptr WGPUUniformBufferWrapper)] WGPUBindGroup)
                                                                                "wgpu_create_uniform_bind_group")
 
+  ; -- Render uniform bind group (fullscreen pipeline) ---------------
+
+  (register create-render-uniform-bind-group-
+    (Fn [(Ptr WGPUContext) (Ptr WGPURenderPipelineWrapper) (Ptr WGPUUniformBufferWrapper)] WGPUBindGroup)
+    "wgpu_create_render_uniform_bind_group")
+
+  ; -- Render storage + uniform bind group (fullscreen pipeline) -----
+
+  (register create-render-storage-uniform-bind-group-
+    (Fn [(Ptr WGPUContext) (Ptr WGPURenderPipelineWrapper) WGPUBuffer (Ptr WGPUUniformBufferWrapper)] WGPUBindGroup)
+    "wgpu_create_render_storage_uniform_bind_group")
+
   ; -- Geometry pass (non-indexed) ---------------------------------
 
   (register run-geom-pass-         (Fn [(Ptr WGPUFrameState) (Ptr WGPUGeomPipelineWrapper)
@@ -449,5 +461,23 @@ Renders into `target` if (Just rt), or into the swapchain texture if (Nothing)."
     (match target
       (Maybe.Just rt) (run-geom-pass-indexed- frame pipeline bind-group vertex-buffer index-buffer depth rt)
       (Maybe.Nothing)  (run-geom-pass-indexed- frame pipeline bind-group vertex-buffer index-buffer depth (null-render-texture))))
+
+  (doc create-render-uniform-bind-group "Creates a bind group binding a uniform buffer at binding 0
+using the fullscreen render pipeline's auto-derived layout.
+Returns (Success bind-group) or (Error message).")
+  (defn create-render-uniform-bind-group [ctx pipeline uniform-buffer]
+    (let [bg (create-render-uniform-bind-group- ctx pipeline uniform-buffer)]
+      (if (bindgroup-null?- bg)
+        (Result.Error (get-error))
+        (Result.Success bg))))
+
+  (doc create-render-storage-uniform-bind-group "Creates a bind group with a storage buffer at binding 0
+and a uniform buffer at binding 1, using the fullscreen render pipeline's auto-derived layout.
+Returns (Success bind-group) or (Error message).")
+  (defn create-render-storage-uniform-bind-group [ctx pipeline storage-buf uniform-buffer]
+    (let [bg (create-render-storage-uniform-bind-group- ctx pipeline storage-buf uniform-buffer)]
+      (if (bindgroup-null?- bg)
+        (Result.Error (get-error))
+        (Result.Success bg))))
 
 )

@@ -1,4 +1,4 @@
-(load "wgpu.carp")
+(load "WGPU.carp")
 
 ; GpuArray — a GPU-resident buffer of floats.
 ;

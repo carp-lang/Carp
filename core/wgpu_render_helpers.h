@@ -1307,4 +1307,93 @@ static void wgpu_run_geom_pass_indexed(WGPUFrameState* frame,
     wgpuRenderPassEncoderRelease(pass);
 }
 
+/* ------------------------------------------------------------------ */
+/* Bind group: uniform buffer for fullscreen render pipeline           */
+/* ------------------------------------------------------------------ */
+
+static WGPUBindGroup wgpu_create_render_uniform_bind_group(
+    WGPUContext* ctx,
+    WGPURenderPipelineWrapper* pipe,
+    WGPUUniformBufferWrapper* ub)
+{
+    if (!ctx || !pipe || !ub) {
+        wgpu_set_error("wgpu_create_render_uniform_bind_group: null argument");
+        return NULL;
+    }
+
+    WGPUBindGroupLayout layout = wgpuRenderPipelineGetBindGroupLayout(pipe->pipeline, 0);
+    if (!layout) {
+        wgpu_set_error("wgpu_create_render_uniform_bind_group: failed to get bind group layout");
+        return NULL;
+    }
+
+    WGPUBindGroupEntry entry = {
+        .binding = 0,
+        .buffer  = ub->buffer,
+        .offset  = 0,
+        .size    = ub->size,
+    };
+    WGPUBindGroupDescriptor desc = {
+        .layout     = layout,
+        .entryCount = 1,
+        .entries    = &entry,
+    };
+
+    WGPUBindGroup bg = wgpuDeviceCreateBindGroup(ctx->device, &desc);
+    wgpuBindGroupLayoutRelease(layout);
+    if (!bg) {
+        wgpu_set_error("wgpu_create_render_uniform_bind_group: bind group creation failed");
+    }
+    return bg;
+}
+
+/* ------------------------------------------------------------------ */
+/* Bind group: storage buffer + uniform buffer for fullscreen pipeline  */
+/* ------------------------------------------------------------------ */
+
+static WGPUBindGroup wgpu_create_render_storage_uniform_bind_group(
+    WGPUContext* ctx,
+    WGPURenderPipelineWrapper* pipe,
+    WGPUBuffer storage_buf,
+    WGPUUniformBufferWrapper* ub)
+{
+    if (!ctx || !pipe || !ub) {
+        wgpu_set_error("wgpu_create_render_storage_uniform_bind_group: null argument");
+        return NULL;
+    }
+
+    WGPUBindGroupLayout layout = wgpuRenderPipelineGetBindGroupLayout(pipe->pipeline, 0);
+    if (!layout) {
+        wgpu_set_error("wgpu_create_render_storage_uniform_bind_group: failed to get bind group layout");
+        return NULL;
+    }
+
+    WGPUBindGroupEntry entries[2] = {
+        {
+            .binding = 0,
+            .buffer  = storage_buf,
+            .offset  = 0,
+            .size    = WGPU_WHOLE_SIZE,
+        },
+        {
+            .binding = 1,
+            .buffer  = ub->buffer,
+            .offset  = 0,
+            .size    = ub->size,
+        },
+    };
+    WGPUBindGroupDescriptor desc = {
+        .layout     = layout,
+        .entryCount = 2,
+        .entries    = entries,
+    };
+
+    WGPUBindGroup bg = wgpuDeviceCreateBindGroup(ctx->device, &desc);
+    wgpuBindGroupLayoutRelease(layout);
+    if (!bg) {
+        wgpu_set_error("wgpu_create_render_storage_uniform_bind_group: bind group creation failed");
+    }
+    return bg;
+}
+
 #endif /* WGPU_RENDER_HELPERS_H */
