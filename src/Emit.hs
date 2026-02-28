@@ -847,12 +847,25 @@ templateToDeclaration template path actualTy =
       term = if "#define" `isPrefixOf` stokens then "\n" else ";\n"
    in stokens ++ term
 
-memberToDecl :: Int -> (XObj, XObj) -> State EmitterState ()
-memberToDecl indent (memberName, memberType) =
+memberToDecl :: Int -> Ty -> (XObj, XObj) -> State EmitterState ()
+memberToDecl indent selfTy (memberName, memberType) =
   case xobjToTy memberType of
     -- Handle function pointers as members specially to allow members that are functions referring to the struct itself.
-    Just t -> appendToSrc (addIndent indent ++ tyToCLambdaFix t ++ " " ++ mangle (getName memberName) ++ ";\n")
+    Just t -> appendToSrc (addIndent indent ++ memberTypeToC selfTy t ++ " " ++ mangle (getName memberName) ++ ";\n")
     Nothing -> error ("Invalid memberType: " ++ show memberType)
+
+memberTypeToC :: Ty -> Ty -> String
+memberTypeToC selfTy t =
+  case t of
+    PointerTy inner
+      | isSelfStruct selfTy inner ->
+        "struct " ++ tyToC inner ++ "*"
+    _ ->
+      tyToCLambdaFix t
+  where
+    isSelfStruct (StructTy (ConcreteNameTy selfPath) selfVars) (StructTy (ConcreteNameTy innerPath) innerVars) =
+      selfPath == innerPath && selfVars == innerVars
+    isSelfStruct _ _ = False
 
 defStructToDeclaration :: Ty -> SymPath -> [XObj] -> String
 defStructToDeclaration structTy@(StructTy _ _) _ rest =
@@ -860,13 +873,13 @@ defStructToDeclaration structTy@(StructTy _ _) _ rest =
       typedefCaseToMemberDecl :: XObj -> State EmitterState [()]
       -- ANSI C doesn't allow empty structs, insert a dummy member to keep the compiler happy.
       typedefCaseToMemberDecl (XObj (Arr []) _ _) = sequence $ pure $ appendToSrc (addIndent indent ++ "char __dummy;\n")
-      typedefCaseToMemberDecl (XObj (Arr members) _ _) = mapM (memberToDecl indent) (remove (isUnit . fromJust . xobjToTy . snd) (pairwise members))
+      typedefCaseToMemberDecl (XObj (Arr members) _ _) = mapM (memberToDecl indent structTy) (remove (isUnit . fromJust . xobjToTy . snd) (pairwise members))
       typedefCaseToMemberDecl _ = error "Invalid case in typedef."
       -- Note: the names of types are not namespaced
       visit = do
-        appendToSrc "typedef struct {\n"
+        appendToSrc ("struct " ++ tyToC structTy ++ " {\n")
         mapM_ typedefCaseToMemberDecl rest
-        appendToSrc ("} " ++ tyToC structTy ++ ";\n")
+        appendToSrc ("};\n")
    in if isTypeGeneric structTy
         then "" -- ("// " ++ show structTy ++ "\n")
         else renderEmitterState (execState visit emptyEmitterState)
@@ -876,13 +889,13 @@ defSumtypeToDeclaration :: Ty -> [XObj] -> String
 defSumtypeToDeclaration sumTy@(StructTy _ _) rest =
   let indent = indentAmount
       visit = do
-        appendToSrc "typedef struct {\n"
+        appendToSrc ("struct " ++ tyToC sumTy ++ " {\n")
         appendToSrc (addIndent indent ++ "union {\n")
         mapM_ (emitSumtypeCase indent) rest
         appendToSrc (addIndent indent ++ "char __dummy;\n")
         appendToSrc (addIndent indent ++ "} u;\n")
         appendToSrc (addIndent indent ++ "char _tag;\n")
-        appendToSrc ("} " ++ tyToC sumTy ++ ";\n")
+        appendToSrc ("};\n")
         --appendToSrc ("// " ++ show typeVariables ++ "\n")
         mapM_ emitSumtypeCaseTagDefinition (zip [0 ..] rest)
       emitSumtypeCase :: Int -> XObj -> State EmitterState ()
@@ -892,7 +905,7 @@ defSumtypeToDeclaration sumTy@(StructTy _ _) rest =
         do
           appendToSrc (addIndent ind ++ "struct {\n")
           let members = zip anonMemberSymbols (remove (isUnit . fromJust . xobjToTy) memberTys)
-          mapM_ (memberToDecl (ind + indentAmount)) members
+          mapM_ (memberToDecl (ind + indentAmount) sumTy) members
           appendToSrc (addIndent ind ++ "} " ++ caseName ++ ";\n")
       emitSumtypeCase ind (XObj (Sym (SymPath [] caseName) _) _ _) =
         appendToSrc (addIndent ind ++ "// " ++ caseName ++ "\n")
@@ -1052,6 +1065,7 @@ typeEnvToDeclarations typeEnv global =
       bindersWithScore = (addEnvToScore typeEnv)
       mods = (findModules global)
       allScoredBinders = sortOn fst (foldl go bindersWithScore mods)
+      forwardDecls = forwardDeclarations (map snd allScoredBinders)
    in do
         okDecls <-
           mapM
@@ -1061,11 +1075,41 @@ typeEnvToDeclarations typeEnv global =
                   (binderToDeclaration typeEnv binder)
             )
             allScoredBinders
-        pure (concat okDecls)
+        pure (forwardDecls ++ concat okDecls)
   where
     addEnvToScore tyE = (sortDeclarationBinders tyE global (map snd (Map.toList (binders tyE))))
     go sorted (XObj (Mod e t) _ _) = sorted ++ (foldl go (addEnvToScore t) (findModules e))
     go xs _ = xs
+
+forwardDeclarations :: [Binder] -> String
+forwardDeclarations binders' =
+  let decls =
+        Set.toList $
+          Set.fromList $
+            foldr
+              ( \binder acc ->
+                  case forwardDeclFromBinder binder of
+                    Just decl -> decl : acc
+                    Nothing -> acc
+              )
+              []
+              binders'
+   in if null decls then "" else concat decls ++ "\n"
+
+forwardDeclFromBinder :: Binder -> Maybe String
+forwardDeclFromBinder (Binder _ (XObj (Lst xobjs) _ _)) =
+  case xobjs of
+    XObj (Deftype t) _ _ : _ -> forward t
+    XObj (DefSumtype t) _ _ : _ -> forward t
+    _ -> Nothing
+  where
+    forward t =
+      case t of
+        StructTy {}
+          | not (isTypeGeneric t) ->
+            Just ("typedef struct " ++ tyToC t ++ " " ++ tyToC t ++ ";\n")
+        _ -> Nothing
+forwardDeclFromBinder _ = Nothing
 
 envToDeclarations :: TypeEnv -> Env -> Either ToCError String
 envToDeclarations typeEnv env =

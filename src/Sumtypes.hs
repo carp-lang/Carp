@@ -8,9 +8,10 @@ where
 
 import Concretize
 import Context
+import Data.Either (fromRight)
 import Data.Maybe
 import Deftype
-import Env (addListOfBindings, new)
+import Env (addListOfBindings, insert, new)
 import Info
 import Managed
 import Obj
@@ -57,9 +58,13 @@ moduleForSumtype :: Maybe Env -> TypeEnv -> Env -> [String] -> String -> [Ty] ->
 moduleForSumtype innerEnv typeEnv env pathStrings typeName typeVariables rest i existingEnv =
   let moduleValueEnv = fromMaybe (new innerEnv (Just typeName)) (fmap fst existingEnv)
       moduleTypeEnv = fromMaybe (new (Just typeEnv) (Just typeName)) (fmap snd existingEnv)
+      selfTy = StructTy (ConcreteNameTy (SymPath pathStrings typeName)) typeVariables
+      moduleValueEnvForCandidate = addListOfBindings moduleValueEnv (typeModuleStubBindings selfTy (pathStrings ++ [typeName]))
+      stubModuleXObj = XObj (Mod moduleValueEnvForCandidate moduleTypeEnv) i (Just ModuleTy)
+      envForCandidate = fromRight env (insert env (SymPath pathStrings typeName) (toBinder stubModuleXObj))
    in do
         -- validate the definition
-        candidate <- TC.mkSumtypeCandidate typeName typeVariables typeEnv env rest pathStrings
+        candidate <- TC.mkSumtypeCandidate typeName typeVariables typeEnv envForCandidate rest pathStrings
         validateType candidate
         -- produce standard function bindings
         (binders, deps) <- generateBinders candidate

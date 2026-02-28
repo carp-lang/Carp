@@ -50,6 +50,7 @@ data TypeError
   | CannotMatch XObj
   | InvalidSumtypeCase XObj
   | InvalidMemberType Ty XObj
+  | RecursiveTypeByValue String Ty XObj
   | InvalidMemberTypeWhenConcretizing Ty XObj TypeError
   | NotAmongRegisteredTypes Ty XObj
   | UnevenMembers [XObj]
@@ -288,6 +289,14 @@ instance Show TypeError where
     "I can’t use the type `" ++ show t ++ "` as a member type at "
       ++ prettyInfoFromXObj xobj
       ++ ".\n\nIs it defined and captured in the head of the type definition?"
+  show (RecursiveTypeByValue typeName t xobj) =
+    "The type `"
+      ++ typeName
+      ++ "` is recursive by value in member type `"
+      ++ show t
+      ++ "` at "
+      ++ prettyInfoFromXObj xobj
+      ++ ".\n\nRecursive types must be behind `Ptr` or `Box`."
   show (InvalidMemberTypeWhenConcretizing t xobj err) =
     "I can’t use the concrete type `" ++ show t ++ "` at " ++ prettyInfoFromXObj xobj ++ ": " ++ show err
   show (NotAmongRegisteredTypes t xobj) =
@@ -422,6 +431,14 @@ machineReadableErrorStrings fppl err =
       [machineReadableInfoFromXObj fppl xobj ++ " Failed to convert '" ++ pretty xobj ++ "' to a sumtype case."]
     (InvalidMemberType t xobj) ->
       [machineReadableInfoFromXObj fppl xobj ++ " Can't use '" ++ show t ++ "' as a type for a member variable."]
+    (RecursiveTypeByValue typeName t xobj) ->
+      [ machineReadableInfoFromXObj fppl xobj
+          ++ " Recursive type `"
+          ++ typeName
+          ++ "` appears by value in member type `"
+          ++ show t
+          ++ "`. Use `Ptr` or `Box`."
+      ]
     (NotAmongRegisteredTypes t xobj) ->
       [machineReadableInfoFromXObj fppl xobj ++ " The type '" ++ show t ++ "' isn't defined."]
     (UnevenMembers xobjs) ->

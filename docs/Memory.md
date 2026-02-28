@@ -56,6 +56,22 @@ that requires fine-grained control over its memory deallocation, it might be
 better to define both the type and its deallocation routines in C, and register
 them in Carp.
 
+## Recursive Types
+
+Recursive types are supported when the recursion goes through indirection
+(`Box` or `Ptr`). Direct recursion is rejected because the compiler must be able
+to determine a concrete size for every type.
+
+```clojure
+(deftype (List a)
+  (Nil)
+  (Cons [a (Box (List a))]))
+```
+
+`Box` is linear and managed by the memory system, so ownership rules apply to
+recursive structures. `Ptr` is unmanaged and is intended for advanced use cases
+where you explicitly handle lifetime and deallocation.
+
 The same conditions hold for [registered types][3] as well. If you register an
 external type defined in C, Carp won't manage it unless you provide an
 implementation of `delete` for the corresponding Carp type. See the [C interop

@@ -18,6 +18,7 @@ validateType :: TC.TypeCandidate -> Either TypeError ()
 validateType candidate =
   do
     checkDuplicateMembers candidate
+    checkRecursiveMembers candidate
     checkMembers candidate
     checkKindConsistency candidate
 
@@ -41,6 +42,38 @@ checkMembers candidate =
       env = TC.getValueEnv candidate
       tys = concat (map TC.fieldTypes (TC.getFields candidate))
    in mapM_ (canBeUsedAsMemberType (TC.getName candidate) (TC.getRestriction candidate) tenv env (TC.getVariables candidate)) tys
+
+-- | Disallow by-value recursion in type members. Recursion is only allowed
+-- | through indirection (Ref, Ptr, or Box).
+checkRecursiveMembers :: TC.TypeCandidate -> Either TypeError ()
+checkRecursiveMembers candidate =
+  let selfTy = TC.toType candidate
+      tys = concat (map TC.fieldTypes (TC.getFields candidate))
+   in mapM_ (rejectByValueRecursion selfTy) tys
+
+rejectByValueRecursion :: Ty -> Ty -> Either TypeError ()
+rejectByValueRecursion selfTy ty =
+  if containsSelfByValue selfTy ty
+    then Left (RecursiveTypeByValue (getStructName selfTy) ty (R.reify ty))
+    else Right ()
+
+containsSelfByValue :: Ty -> Ty -> Bool
+containsSelfByValue selfTy = go
+  where
+    go t =
+      case t of
+        RefTy _ _ -> False
+        PointerTy _ -> False
+        FuncTy {} -> False
+        StructTy (ConcreteNameTy (SymPath [] "Box")) [_] -> False
+        StructTy _ vars ->
+          isSelfStruct selfTy t || any go vars
+        _ -> False
+
+isSelfStruct :: Ty -> Ty -> Bool
+isSelfStruct (StructTy (ConcreteNameTy (SymPath selfPath selfName)) selfVars) (StructTy (ConcreteNameTy (SymPath path name)) vars) =
+  name == selfName && (path == selfPath || null path) && selfVars == vars
+isSelfStruct _ _ = False
 
 -- | Returns an error if the type variables in the body of the type and variables in the head of the type are of incompatible kinds.
 checkKindConsistency :: TC.TypeCandidate -> Either TypeError ()
@@ -93,6 +126,8 @@ canBeUsedAsMemberType tname typeVarRestriction typeEnv globalEnv typeVariables t
   where
     checkStruct :: Ty -> [Ty] -> Either TypeError ()
     checkStruct (ConcreteNameTy (SymPath [] "Array")) [innerType] =
+      canBeUsedAsMemberType tname typeVarRestriction typeEnv globalEnv typeVariables innerType
+    checkStruct (ConcreteNameTy (SymPath [] "Box")) [innerType] =
       canBeUsedAsMemberType tname typeVarRestriction typeEnv globalEnv typeVariables innerType
     checkStruct (ConcreteNameTy path@(SymPath _ name)) vars =
       case E.getBinder typeEnv name <> E.findTypeBinder globalEnv path of

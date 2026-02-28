@@ -38,6 +38,7 @@ import InitialTypes
 import Managed
 import qualified Map
 import Memory (manageMemory)
+import qualified Meta
 import Obj
 import Polymorphism
 import Reify
@@ -625,7 +626,10 @@ instantiateGenericStructType typeEnv env originalStructTy@(StructTy _ _) generic
           validMembers = replaceGenericTypeSymbolsOnMembers mappings' nameFixedMembers
           concretelyTypedMembers = replaceGenericTypeSymbolsOnMembers mappings memberXObjs
           sname = getStructName originalStructTy
-      candidate <- TC.mkStructCandidate sname renamedOrig typeEnv env validMembers (getPathFromStructName sname)
+      let concreteVars = case genericStructTy of
+            StructTy _ vs -> vs
+            _ -> renamedOrig
+      candidate <- TC.mkStructCandidate sname concreteVars typeEnv env validMembers (getPathFromStructName sname)
       validateType (TC.setRestriction candidate TC.AllowAny)
       deps <- mapM (depsForStructMemberPair typeEnv env) (pairwise concretelyTypedMembers)
       let xobj =
@@ -663,7 +667,10 @@ instantiateGenericSumtype typeEnv env originalStructTy@(StructTy _ originalTyVar
         let concretelyTypedCases = map (replaceGenericTypeSymbolsOnCase mappings) nameFixedCases
             sname = (getStructName originalStructTy)
         deps <- mapM (depsForCase typeEnv env) concretelyTypedCases
-        candidate <- TC.mkSumtypeCandidate sname renamedOrig typeEnv env concretelyTypedCases (getPathFromStructName sname)
+        let concreteVars = case genericStructTy of
+              StructTy _ vs -> vs
+              _ -> renamedOrig
+        candidate <- TC.mkSumtypeCandidate sname concreteVars typeEnv env concretelyTypedCases (getPathFromStructName sname)
         validateType (TC.setRestriction candidate TC.AllowAny)
         pure
           ( XObj
@@ -834,10 +841,12 @@ depsOfPolymorphicFunction typeEnv env visitedDefinitions functionName functionTy
     -- TODO: this code was added to solve a bug (presumably) but it seems OK to comment it out?!
     -- [(_, (Binder xobj@(XObj (Lst (XObj (Instantiate template) _ _ : _)) _ _)))] ->
     --   []
-    [(_, Binder _ single)] ->
-      case concretizeDefinition False typeEnv env visitedDefinitions single functionType of
-        Left err -> error (show err)
-        Right (ok, deps) -> ok : deps
+    [(_, Binder meta single)] ->
+      if Meta.member "stub" meta
+        then []
+        else case concretizeDefinition False typeEnv env visitedDefinitions single functionType of
+          Left err -> error (show err)
+          Right (ok, deps) -> ok : deps
     tooMany ->
       (trace $ "Too many '" ++ functionName ++ "' functions found with type " ++ show functionType ++ ", can't figure out dependencies:\n  " ++ joinWith "\n  " (map ((" - " ++) . show . snd) tooMany))
         []

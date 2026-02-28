@@ -239,6 +239,27 @@ Note that this code would not take ownership over `might-be-a-string`. Also, the
 
 **Note:** A sumtype cannot have more than 128 inhabitants, also known as constructors. If that reads to you like a byte limitation, you’re on the right track. While this is a limitation, it has not proved to be a problem as of yet.
 
+### Recursive Types
+Carp supports recursive types when the recursion goes through indirection, i.e. `Box` or `Ptr`. Direct recursion is rejected because the compiler must be able to compute a concrete, finite size for each type.
+
+Examples (allowed):
+```clojure
+;; A linked list using a sumtype
+(deftype (List a)
+  (Nil)
+  (Cons [a (Box (List a))]))
+
+;; A recursive struct
+(deftype Node [value Int next (Box Node)])
+```
+
+Direct recursion (not allowed):
+```clojure
+(deftype Bad [self Bad])
+```
+
+`Box` is a managed, linear pointer type, so ownership rules apply. `Ptr` is unmanaged and is for advanced use cases where you handle lifetime and deallocation yourself.
+
 ### Modules and Name Lookup
 Functions and variables can be stored in modules which are named and can be nested. To use a symbol inside a module
 you need to qualify it with the module name, like this: `Float.cos`.

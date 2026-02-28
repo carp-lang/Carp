@@ -1,0 +1,1 @@
+(JObject [(Pair @"ok" (Box (JBool true))) (Pair @"nums" (Box (JArray [(Box (JNumber 1)) (Box (JNumber 2.5)) (Box (JNull))])))])

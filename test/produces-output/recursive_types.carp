@@ -1,0 +1,7 @@
+(Project.no-echo)
+(Project.config "print-ast" true)
+
+(deftype List [value Int
+               next (Ptr List)])
+
+(defn main [] 0)
