@@ -7,8 +7,8 @@
 ; Build:  cd /home/sqrew/Desktop/Carp-fork && carp -b examples/wgpu-gradient.carp
 ; Run:    ./out/Carp
 
-(load "/home/sqrew/Desktop/Carp-fork/core/GLFW.carp")
-(load "/home/sqrew/Desktop/Carp-fork/core/WGPURender.carp")
+(load "GLFW.carp")
+(load "WGPURender.carp")
 (add-lib "-lX11")
 
 ; ---------------------------------------------------------------------------

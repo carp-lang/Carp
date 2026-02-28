@@ -9,7 +9,7 @@
 ; Build:  cd /home/sqrew/Desktop/Carp-fork && carp -b examples/wgpu-compute.carp
 ; Run:    ./out/Carp
 
-(load "/home/sqrew/Desktop/Carp-fork/core/GpuArray.carp")
+(load "GpuArray.carp")
 
 ; ---------------------------------------------------------------------------
 ; WGSL shader -- three storage buffers: A (read), B (read), C (read_write).

@@ -8,8 +8,8 @@
 ; Build:  cd /home/sqrew/Desktop/Carp-fork && carp -b examples/wgpu-pyramid.carp
 ; Run:    ./out/Carp
 
-(load "/home/sqrew/Desktop/Carp-fork/core/GLFW.carp")
-(load "/home/sqrew/Desktop/Carp-fork/core/WGPURender.carp")
+(load "GLFW.carp")
+(load "WGPURender.carp")
 (add-lib "-lX11") ; needed for XSetWindowBackground in wgpu_render_helpers.h on Linux
 
 ; ---------------------------------------------------------------------------
