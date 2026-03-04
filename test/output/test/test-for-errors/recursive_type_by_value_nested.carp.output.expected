@@ -1,0 +1,1 @@
+recursive_type_by_value_nested.carp:3:10  Recursive type `Bad` appears by value in member type `(Maybe Bad)`. Use `Ptr` or `Box`.
