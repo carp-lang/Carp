@@ -1,0 +1,19 @@
+(deftype IntList [head Int tail (Maybe (Box IntList))])
+
+(defn tail [lst]
+  (match-ref (IntList.tail lst)
+    (Maybe.Just b) (Box.peek b)
+    _ (unreachable "empty list")))
+
+(defn main []
+  (let [is (IntList.init 3
+              (Maybe.Just
+                (Box.init
+                  (IntList.init 2
+                    (Maybe.Just
+                      (Box.init
+                        (IntList.init 1 (Maybe.Nothing))))))))]
+    (do (IO.println &(str (IntList.head &is)))
+        (IO.println &(str (IntList.head (tail &is))))
+        (IO.println &(str (IntList.head (tail (tail &is))))))
+    0))
