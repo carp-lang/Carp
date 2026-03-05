@@ -1,0 +1,3 @@
+dynamic-arity.carp:4:1 f expected 1 arguments but received 3.
+
+The arguments 2, 3 are not needed.

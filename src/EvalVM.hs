@@ -24,6 +24,7 @@ import EvalIR (EvalIR (..), lowerExpr, raiseExpr)
 import EvalSlotLowering (findUnresolvedLocalRefs, slotifyCallableLocals)
 import EvalTypes
 import Expand
+import Forms (checkAppArity)
 import Infer (annotate)
 import Info (FilePathPrintLength (FullPath), Info (..), dummyInfo)
 import qualified Map
@@ -850,20 +851,43 @@ execIRCallBC appCtx preference fun args argCodes info ty =
         XObj (Defn _) _ _ -> Just (specialCommandDefineVM appCtx (callXObjBC fun args info ty))
         _ -> Nothing
 
+checkCallableArity ::
+  Context ->
+  XObj ->
+  [EvalIR] ->
+  [XObj] ->
+  Maybe Info ->
+  Maybe (Context, Either EvalError XObj)
+checkCallableArity appCtx funExpr args params info =
+  case checkAppArity funExpr params (map raiseExpr args) of
+    Right () -> Nothing
+    Left err -> Just (evalError appCtx (show err) info)
+
+paramsFromSpec :: [String] -> Maybe String -> [XObj]
+paramsFromSpec proper rest =
+  let sym n = XObj (Sym (SymPath [] n) Symbol) Nothing Nothing
+      properParams = map sym proper
+   in case rest of
+        Nothing -> properParams
+        Just restName -> properParams ++ [sym ":rest", sym restName]
+
 dispatchCallableBC :: Context -> LookupPreference -> EvalIR -> [EvalIR] -> [EvalCode] -> Maybe Info -> Maybe Ty -> XObj -> IO (Context, Either EvalError XObj)
 dispatchCallableBC appCtx preference fun args argCodes info ty funXObj =
   if isStaticDefinitionBC funXObj
     then pure (appCtx, Left (HasStaticCall (callXObjBC fun args info ty) info))
     else dispatchByClass (classifyCallableBC funXObj)
   where
+    funExpr = raiseExpr fun
     dispatchByClass callableClass =
       case callableClass of
         ResolvedSymbol spath ->
           resolveAndDispatch spath
         CompiledClosure mode capturedCtx cid proper rest ->
-          dispatchCompiledClosure mode capturedCtx cid proper rest
+          case checkCallableArity appCtx funExpr args (paramsFromSpec proper rest) info of
+            Just err -> pure err
+            Nothing -> dispatchCompiledClosure mode capturedCtx cid proper rest
         InlineFn params body ->
-          runInlineFnCallBC appCtx preference params body args argCodes
+          runInlineFnCallBC appCtx preference funExpr params body args argCodes info
         MacroDefForm ->
           dispatchMacroDef
         DynamicDefForm ->
@@ -943,18 +967,21 @@ classifyCallableBC xobj =
       PrimitiveForm prim
     _ -> UnknownCallable
 
-runInlineFnCallBC :: Context -> LookupPreference -> [XObj] -> XObj -> [EvalIR] -> [EvalCode] -> IO (Context, Either EvalError XObj)
-runInlineFnCallBC appCtx preference params body _argsToCall argCodes =
+runInlineFnCallBC :: Context -> LookupPreference -> XObj -> [XObj] -> XObj -> [EvalIR] -> [EvalCode] -> Maybe Info -> IO (Context, Either EvalError XObj)
+runInlineFnCallBC appCtx preference funExpr params body argsToCall argCodes info =
   case parseParamSpec params of
     Left err -> pure (appCtx, Left err)
     Right (proper, rest) -> do
-      let compileMode = compileModeForPreference preference
-      (ctxAfterCompile, compiled) <- compileCallableCodeForMode appCtx compileMode proper rest body
-      case compiled of
-        Left cerr -> pure (ctxAfterCompile, Left cerr)
-        Right code -> do
-          cid <- registerVMClosureCode code
-          runCompiledClosureCallBC ctxAfterCompile preference ctxAfterCompile cid proper rest argCodes
+      case checkCallableArity appCtx funExpr argsToCall params info of
+        Just err -> pure err
+        Nothing -> do
+          let compileMode = compileModeForPreference preference
+          (ctxAfterCompile, compiled) <- compileCallableCodeForMode appCtx compileMode proper rest body
+          case compiled of
+            Left cerr -> pure (ctxAfterCompile, Left cerr)
+            Right code -> do
+              cid <- registerVMClosureCode code
+              runCompiledClosureCallBC ctxAfterCompile preference ctxAfterCompile cid proper rest argCodes
 
 runCompiledClosureCallBC :: Context -> LookupPreference -> Context -> Int -> [String] -> Maybe String -> [EvalCode] -> IO (Context, Either EvalError XObj)
 runCompiledClosureCallBC appCtx preference capturedCtx cid proper restName argCodes = do
