@@ -2,13 +2,16 @@ module Validate where
 
 import Control.Monad (foldM)
 import Data.List (nubBy, (\\))
+import Data.Maybe (mapMaybe)
 import qualified Env as E
 import Obj
 import qualified Reify as R
+import qualified Set
 import qualified TypeCandidate as TC
 import TypeError
 import TypePredicates
 import Types
+import Util (pairwise)
 
 --------------------------------------------------------------------------------
 -- Public
@@ -48,27 +51,62 @@ checkMembers candidate =
 checkRecursiveMembers :: TC.TypeCandidate -> Either TypeError ()
 checkRecursiveMembers candidate =
   let selfTy = TC.toType candidate
+      tenv = TC.getTypeEnv candidate
+      env = TC.getValueEnv candidate
       tys = concat (map TC.fieldTypes (TC.getFields candidate))
-   in mapM_ (rejectByValueRecursion selfTy) tys
+   in mapM_ (rejectByValueRecursion tenv env selfTy) tys
 
-rejectByValueRecursion :: Ty -> Ty -> Either TypeError ()
-rejectByValueRecursion selfTy ty =
-  if containsSelfByValue selfTy ty
+rejectByValueRecursion :: TypeEnv -> Env -> Ty -> Ty -> Either TypeError ()
+rejectByValueRecursion tenv env selfTy ty =
+  if containsSelfByValue tenv env selfTy ty
     then Left (RecursiveTypeByValue (getStructName selfTy) ty (R.reify ty))
     else Right ()
 
-containsSelfByValue :: Ty -> Ty -> Bool
-containsSelfByValue selfTy = go
+containsSelfByValue :: TypeEnv -> Env -> Ty -> Ty -> Bool
+containsSelfByValue tenv env selfTy = go Set.empty
   where
-    go t =
+    go visited t =
       case t of
         RefTy _ _ -> False
         PointerTy _ -> False
         FuncTy {} -> False
         StructTy (ConcreteNameTy (SymPath [] "Box")) [_] -> False
+        StructTy (ConcreteNameTy _) vars ->
+          isSelfStruct selfTy t
+            || if Set.member t visited
+              then False
+              else
+                let visited' = Set.insert t visited
+                 in any (go visited') vars || any (go visited') (memberTypesFromType tenv env t)
         StructTy _ vars ->
-          isSelfStruct selfTy t || any go vars
+          isSelfStruct selfTy t || any (go visited) vars
         _ -> False
+
+memberTypesFromType :: TypeEnv -> Env -> Ty -> [Ty]
+memberTypesFromType tenv env structTy@(StructTy (ConcreteNameTy spath) _) =
+  case lookupTypeBinder tenv env spath of
+    Just (Binder _ (XObj (Lst (XObj (Deftype defTy) _ _ : _ : rest)) _ _)) ->
+      let mappings = unifySignatures defTy structTy
+       in map (replaceTyVars mappings) (memberTypesFromDef rest)
+    Just (Binder _ (XObj (Lst (XObj (DefSumtype defTy) _ _ : _ : rest)) _ _)) ->
+      let mappings = unifySignatures defTy structTy
+       in map (replaceTyVars mappings) (memberTypesFromDef rest)
+    _ -> []
+memberTypesFromType _ _ _ = []
+
+memberTypesFromDef :: [XObj] -> [Ty]
+memberTypesFromDef = concatMap expandCase
+  where
+    expandCase (XObj (Arr arr) _ _) = mapMaybe (xobjToTy . snd) (pairwise arr)
+    expandCase (XObj (Lst [_, XObj (Arr sumtypeCaseTys) _ _]) _ _) = mapMaybe xobjToTy sumtypeCaseTys
+    expandCase (XObj (Sym _ _) _ _) = []
+    expandCase _ = []
+
+lookupTypeBinder :: TypeEnv -> Env -> SymPath -> Maybe Binder
+lookupTypeBinder tenv env (SymPath path name) =
+  case path of
+    [] -> either (const Nothing) Just (E.getBinder tenv name)
+    _ -> either (const Nothing) Just (E.searchTypeBinder env (SymPath path name))
 
 isSelfStruct :: Ty -> Ty -> Bool
 isSelfStruct (StructTy (ConcreteNameTy (SymPath selfPath selfName)) selfVars) (StructTy (ConcreteNameTy (SymPath path name)) vars) =
