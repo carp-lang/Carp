@@ -70,7 +70,7 @@ containsSelfByValue tenv env selfTy = go Set.empty
         RefTy _ _ -> False
         PointerTy _ -> False
         FuncTy {} -> False
-        StructTy (ConcreteNameTy (SymPath [] "Box")) [_] -> False
+        StructTy boxName [_] | isBoxName boxName -> False
         StructTy (ConcreteNameTy _) vars ->
           isSelfStruct selfTy t
             || if Set.member t visited
@@ -107,6 +107,10 @@ lookupTypeBinder tenv env (SymPath path name) =
   case path of
     [] -> either (const Nothing) Just (E.getBinder tenv name)
     _ -> either (const Nothing) Just (E.searchTypeBinder env (SymPath path name))
+
+isBoxName :: Ty -> Bool
+isBoxName (ConcreteNameTy (SymPath _ "Box")) = True
+isBoxName _ = False
 
 isSelfStruct :: Ty -> Ty -> Bool
 isSelfStruct (StructTy (ConcreteNameTy (SymPath selfPath selfName)) selfVars) (StructTy (ConcreteNameTy (SymPath path name)) vars) =
@@ -165,8 +169,9 @@ canBeUsedAsMemberType tname typeVarRestriction typeEnv globalEnv typeVariables t
     checkStruct :: Ty -> [Ty] -> Either TypeError ()
     checkStruct (ConcreteNameTy (SymPath [] "Array")) [innerType] =
       canBeUsedAsMemberType tname typeVarRestriction typeEnv globalEnv typeVariables innerType
-    checkStruct (ConcreteNameTy (SymPath [] "Box")) [innerType] =
-      canBeUsedAsMemberType tname typeVarRestriction typeEnv globalEnv typeVariables innerType
+    checkStruct boxName [innerType]
+      | isBoxName boxName =
+        canBeUsedAsMemberType tname typeVarRestriction typeEnv globalEnv typeVariables innerType
     checkStruct (ConcreteNameTy path@(SymPath _ name)) vars =
       case E.getBinder typeEnv name <> E.findTypeBinder globalEnv path of
         Right (Binder _ (XObj (Lst (XObj (ExternalType _) _ _ : _)) _ _)) ->

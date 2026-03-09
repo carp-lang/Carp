@@ -10,7 +10,7 @@ import Control.Exception
 import Control.Monad.State
 import Data.Bits ((.&.))
 import Data.Either (fromRight)
-import Data.List (isSuffixOf)
+import Data.List (foldl', isSuffixOf)
 import Data.List.Split (splitOn)
 import Data.Maybe (fromJust, fromMaybe, isJust)
 import Deftype (typeModuleStubBindings)

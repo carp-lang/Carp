@@ -64,7 +64,7 @@ depthOfType typeEnv visited selfName theType =
     else visitType theType + 1
   where
     visitType :: Ty -> Int
-    visitType (StructTy (ConcreteNameTy (SymPath [] "Box")) [_]) = 1
+    visitType (StructTy boxName [_]) | isBoxName boxName = 1
     visitType t@(StructTy _ varTys) = depthOfStructType t varTys
     visitType (FuncTy argTys retTy ltTy) =
       -- trace ("Depth of args of " ++ show argTys ++ ": " ++ show (map (visitType . Just) argTys))
@@ -128,6 +128,10 @@ depthOfType typeEnv visited selfName theType =
           case fmap (depthOfType typeEnv visited (getStructName struct)) varTys of
             [] -> 1
             xs -> maximum xs + 1
+
+isBoxName :: Ty -> Bool
+isBoxName (ConcreteNameTy (SymPath _ "Box")) = True
+isBoxName _ = False
 
 -- | Scoring of value bindings ('def' and 'defn')
 -- | The score is used for sorting the bindings before emitting them.
