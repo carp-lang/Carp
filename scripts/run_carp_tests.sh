@@ -30,6 +30,8 @@ echo "Build and run some tests that print (check their output)"
 ./test/execute.sh ./test/produces-output/maybe_custom_member_decl_only.carp
 ./test/execute.sh ./test/produces-output/setting_variables.carp
 ./test/execute.sh ./test/produces-output/set_ref_valid.carp
+./test/execute.sh ./test/produces-output/forward_references.carp
+./test/execute.sh ./test/produces-output/explicit_lifetimes.carp
 ./test/execute.sh ./test/produces-output/repl.carp
 
 echo "Actual tests (using the test suite)"

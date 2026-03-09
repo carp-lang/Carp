@@ -87,15 +87,19 @@ executeStringAtLine line doCatch printResult ctx input fileName =
               pure ctx
       Right xobjs -> do
         ctxWithStubs <- predeclareTypesInForms ctx xobjs
-        (res, ctx') <-
-          foldM
-            interactiveFolder
-            (XObj (Lst []) (Just dummyInfo) (Just UnitTy), ctxWithStubs)
-            xobjs
-        when
-          (printResult && xobjTy res /= Just UnitTy)
-          (putStrLnWithColor Yellow ("=> " ++ prettyDynamic res))
-        pure ctx'
+        let staticMap = Map.fromList [(n, x) | x <- xobjs, Just n <- [staticBindingName x]]
+        if null (Map.keys staticMap)
+          then do
+            (res, ctx') <-
+              foldM
+                interactiveFolder
+                (XObj (Lst []) (Just dummyInfo) (Just UnitTy), ctxWithStubs)
+                xobjs
+            when
+              (printResult && xobjTy res /= Just UnitTy)
+              (putStrLnWithColor Yellow ("=> " ++ prettyDynamic res))
+            pure ctx'
+          else processFormsWithForwardRefs ctxWithStubs staticMap xobjs
     interactiveFolder (_, context) =
       executeCommand context
     treatErr ctx' e xobj = do
@@ -212,6 +216,57 @@ catcher ctx exception =
         Install _ -> exitWith (ExitFailure rc)
         BuildAndRun -> exitWith (ExitFailure rc)
         Check -> exitSuccess
+
+-- | Get the name of a top-level static binding (defn/def), if it is one.
+staticBindingName :: XObj -> Maybe String
+staticBindingName (XObj (Lst (XObj (Sym (SymPath _ "defn") _) _ _ : XObj (Sym (SymPath [] name) _) _ _ : _)) _ _) = Just name
+staticBindingName (XObj (Lst (XObj (Sym (SymPath _ "def") _) _ _ : XObj (Sym (SymPath [] name) _) _ _ : _)) _ _) = Just name
+staticBindingName _ = Nothing
+
+-- | Process forms in source order, resolving forward references between static bindings.
+-- Predeclares MetaStub binders (see Meta.stub) so mutual references resolve during
+-- type inference, then processes each form after ensuring its dependencies are defined.
+processFormsWithForwardRefs :: Context -> Map.Map String XObj -> [XObj] -> IO Context
+processFormsWithForwardRefs ctx staticMap xobjs = do
+  (ctx', _) <- foldM step (predeclare ctx xobjs, Set.empty) xobjs
+  pure ctx'
+  where
+    predeclare c [] = c
+    predeclare c (x : xs) = case staticBindingName x of
+      Just name
+        | Left _ <- lookupBinderInGlobalEnv c qpath ->
+          predeclare (fromRight c (insertInGlobalEnv c qpath (Meta.stub (SymPath [] name)))) xs
+        where
+          qpath = qualifyPath c (SymPath [] name)
+      _ -> predeclare c xs
+    step (c, done) form = case staticBindingName form of
+      Just name | Set.member name done -> pure (c, done)
+      Just name -> do
+        (c', done') <- ensureDeps c (Set.insert name done) form
+        (_, c'') <- executeCommand c' form
+        pure (c'', Set.insert name done')
+      _ -> do
+        (_, c') <- executeCommand c form
+        pure (c', done)
+    ensureDeps c handled form =
+      let deps =
+            [ n | n <- Set.toList (symRefs form), Map.member n staticMap, Set.notMember n handled
+            ]
+       in foldM
+            ( \(c', h) n -> case Map.lookup n staticMap of
+                Nothing -> pure (c', h)
+                Just dep -> do
+                  let h' = Set.insert n h
+                  (c'', h'') <- ensureDeps c' h' dep
+                  (_, c''') <- executeCommand c'' dep
+                  pure (c''', h'')
+            )
+            (c, handled)
+            deps
+    symRefs (XObj (Sym (SymPath _ name) _) _ _) = Set.fromList [name]
+    symRefs (XObj (Lst cs) _ _) = foldl (\s c -> Set.union s (symRefs c)) Set.empty cs
+    symRefs (XObj (Arr cs) _ _) = foldl (\s c -> Set.union s (symRefs c)) Set.empty cs
+    symRefs _ = Set.empty
 
 specialCommandWith :: Context -> XObj -> SymPath -> [XObj] -> IO (Context, Either EvalError XObj)
 specialCommandWith ctx _ path forms = do

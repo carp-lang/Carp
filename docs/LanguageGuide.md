@@ -69,6 +69,24 @@ foo ; symbol
 (defmodule <name> <definition1> <definition2> ...) ;; The main way to organize your program into smaller parts
 ```
 
+Top-level `defn` and `def` forms can reference each other regardless of
+definition order within a file. This means you can call a function before it is
+defined, and mutually recursive functions work without any special declaration:
+
+```clojure
+(defn main [] (IO.println &(Int.str (add-one 41))))
+(defn add-one [x] (+ x 1))
+
+;; Mutual recursion
+(defn is-even [n] (if (= n 0) true (is-odd (- n 1))))
+(defn is-odd [n] (if (= n 0) false (is-even (- n 1))))
+```
+
+Note that order independence only applies to `defn` and `def` forms within a
+single file. Other forms like `defmodule`, `use`, `sig`, and macros are still
+processed in source order. Files loaded via `(load ...)` are also processed in
+the order they are loaded.
+
 ### Conditional statements with `cond`
 The `cond` statement executes a block of code if a specified condition is true. If the condition is false, another block of code can be executed.
 
