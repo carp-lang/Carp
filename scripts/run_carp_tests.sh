@@ -18,7 +18,7 @@ echo "Build and run some examples"
 ./test/execute.sh ./examples/generic_structs.carp
 ./test/execute.sh ./examples/maps.carp
 ./test/execute.sh ./examples/sumtypes.carp
-./test/execute.sh ./examples/json.carp
+./test/execute.sh ./examples/json_parser.carp
 
 echo "Build and run some tests that print (check their output)"
 ./test/execute.sh ./test/produces-output/basics.carp
