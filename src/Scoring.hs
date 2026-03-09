@@ -33,7 +33,7 @@ scoreTypeBinder typeEnv env b@(Binder _ (XObj (Lst (XObj x _ _ : XObj (Sym _ _) 
     depthOfStruct _ = error "depthofstruct"
 scoreTypeBinder _ _ b@(Binder _ (XObj (Mod _ _) _ _)) =
   (1000, b)
-scoreTypeBinder _ _ x = error ("Can't score: " ++ show x)
+scoreTypeBinder _ _ b = (500, b)
 
 depthOfDeftype :: TypeEnv -> Set.Set Ty -> XObj -> [Ty] -> Int
 depthOfDeftype typeEnv visited (XObj (Lst (_ : XObj (Sym (SymPath path selfName) _) _ _ : rest)) _ _) varTys =

@@ -2,7 +2,6 @@ module Expand (expandAll, expand, ExpansionMode (..), replaceSourceInfoOnXObj) w
 
 import Context
 import Control.Monad.State (State, evalState, get, put)
-import Data.Either (fromRight)
 import Data.Foldable (foldlM)
 import Env
 import EvalError
@@ -12,6 +11,18 @@ import Qualify
 import TypeError
 import Types
 import Util
+
+isMacroCallable :: XObj -> Bool
+isMacroCallable (XObj (Lst (XObj Macro _ _ : _)) _ _) = True
+isMacroCallable (XObj (Closure inner _) _ outerTy) =
+  outerTy == Just MacroTy || xobjTy inner == Just MacroTy
+isMacroCallable _ = False
+
+isDynamicCallable :: XObj -> Bool
+isDynamicCallable (XObj (Lst (XObj Dynamic _ _ : _)) _ _) = True
+isDynamicCallable (XObj (Closure inner _) _ outerTy) =
+  outerTy == Just DynamicTy || xobjTy inner == Just DynamicTy
+isDynamicCallable _ = False
 
 -- | Used for calling back to the 'eval' function in Eval.hs
 type DynamicEvaluator = Context -> XObj -> IO (Context, Either EvalError XObj)
@@ -84,15 +95,17 @@ expand mode eval ctx xobj =
       pure (ctx, Right xobj)
     expandListMacroOnly [XObj (Sym (SymPath [] "quote") _) _ _, _] _ _ =
       pure (ctx, Right xobj)
-    expandListMacroOnly [XObj (Lst (XObj Macro _ _ : _)) _ _] _ _ =
-      eval ctx xobj
+    expandListMacroOnly [callable] _ _
+      | isMacroCallable callable =
+        eval ctx xobj
     expandListMacroOnly (x@(XObj (Sym _ _) _ _) : args) i' t' = do
       (_, f) <- eval ctx x
       case f of
-        Right m@(XObj (Lst (XObj Macro _ _ : _)) _ _) ->
-          eval ctx (XObj (Lst (m : args)) i' t')
+        Right m
+          | isMacroCallable m ->
+            eval ctx (XObj (Lst (x : args)) i' t')
         _ -> do
-          (newCtx, expanded) <- foldlM successiveExpand (ctx, Right []) args
+          (newCtx, expanded) <- expandMany ctx args
           pure
             ( newCtx,
               do
@@ -100,7 +113,7 @@ expand mode eval ctx xobj =
                 Right (XObj (Lst (x : ok)) i' t')
             )
     expandListMacroOnly objs i' t' = do
-      (newCtx, expanded) <- foldlM successiveExpand (ctx, Right []) objs
+      (newCtx, expanded) <- expandMany ctx objs
       pure
         ( newCtx,
           do
@@ -172,7 +185,7 @@ expand mode eval ctx xobj =
     expandListFull (letExpr@(XObj Let _ _) : XObj (Arr bindings) bindi bindt : body : _) i' t' =
       if even (length bindings)
         then do
-          (ctx', bind) <- foldlM successiveExpandLR (ctx, Right []) (pairwise bindings)
+          (ctx', bind) <- expandPairs ctx (pairwise bindings)
           (newCtx, expandedBody) <- expand mode eval ctx' body
           pure
             ( newCtx,
@@ -197,7 +210,7 @@ expand mode eval ctx xobj =
       | even (length rest) =
         do
           (ctx', expandedExpr) <- expand mode eval ctx expr
-          (newCtx, expandedPairs) <- foldlM successiveExpandLRMatch (ctx', Right []) (pairwise rest)
+          (newCtx, expandedPairs) <- expandMatchPairs ctx' (pairwise rest)
           pure
             ( newCtx,
               do
@@ -214,7 +227,7 @@ expand mode eval ctx xobj =
           )
     expandListFull (doExpr@(XObj Do _ _) : expressions) i' t' =
       do
-        (newCtx, expandedExpressions) <- foldlM successiveExpand (ctx, Right []) expressions
+        (newCtx, expandedExpressions) <- expandMany ctx expressions
         pure
           ( newCtx,
             do
@@ -271,34 +284,41 @@ expand mode eval ctx xobj =
       if isSpecialSym f
         then do
           (ctx', s) <- eval ctx f
-          let sym = fromRight (error "expand: failed to expand special symbol") $ s
-          expand mode eval ctx' (XObj (Lst (sym : args)) (xobjInfo xobj) (xobjTy xobj))
+          case s of
+            Right sym -> expand mode eval ctx' (XObj (Lst (sym : args)) (xobjInfo xobj) (xobjTy xobj))
+            Left err -> pure (ctx', Left err)
         else do
           (_, expandedF) <- expand mode eval ctx f
-          (ctx'', expandedArgs) <- foldlM successiveExpand (ctx, Right []) args
+          (ctx'', expandedArgs) <- expandMany ctx args
           case expandedF of
             Right (XObj (Lst [XObj Dynamic _ _, _, XObj (Arr _) _ _, _]) _ _) ->
               eval ctx'' xobj
             Right (XObj (Lst [XObj Macro _ _, _, XObj (Arr _) _ _, _]) _ _) ->
               eval ctx'' xobj
+            Right funX
+              | isDynamicCallable funX ->
+                eval ctx'' xobj
+            Right funX
+              | isMacroCallable funX ->
+                eval ctx'' xobj
             Right (XObj (Lst [XObj (Command (NullaryCommandFunction nullary)) _ _, _, _]) _ _) ->
               nullary ctx''
             Right (XObj (Lst [XObj (Command (UnaryCommandFunction unary)) _ _, _, _]) _ _) ->
               case expandedArgs of
                 Right [x] -> unary ctx'' x
-                _ -> error "expanding args"
+                _ -> pure (evalError ctx'' "Failed to expand unary command arguments." (xobjInfo xobj))
             Right (XObj (Lst [XObj (Command (BinaryCommandFunction binary)) _ _, _, _]) _ _) ->
               case expandedArgs of
                 Right [x, y] -> binary ctx'' x y
-                _ -> error "expanding args"
+                _ -> pure (evalError ctx'' "Failed to expand binary command arguments." (xobjInfo xobj))
             Right (XObj (Lst [XObj (Command (TernaryCommandFunction ternary)) _ _, _, _]) _ _) ->
               case expandedArgs of
                 Right [x, y, z] -> ternary ctx'' x y z
-                _ -> error "expanding args"
+                _ -> pure (evalError ctx'' "Failed to expand ternary command arguments." (xobjInfo xobj))
             Right (XObj (Lst [XObj (Command (VariadicCommandFunction variadic)) _ _, _, _]) _ _) ->
               case expandedArgs of
                 Right ea -> variadic ctx'' ea
-                _ -> error "expanding args"
+                _ -> pure (evalError ctx'' "Failed to expand variadic command arguments." (xobjInfo xobj))
             Right _ ->
               pure
                 ( ctx'',
@@ -311,7 +331,7 @@ expand mode eval ctx xobj =
     expandArray :: XObj -> IO (Context, Either EvalError XObj)
     expandArray (XObj (Arr xobjs) i t) =
       do
-        (newCtx, evaledXObjs) <- foldlM successiveExpand (ctx, Right []) xobjs
+        (newCtx, evaledXObjs) <- expandMany ctx xobjs
         pure
           ( newCtx,
             do
@@ -322,7 +342,7 @@ expand mode eval ctx xobj =
     expandStaticArray :: XObj -> IO (Context, Either EvalError XObj)
     expandStaticArray (XObj (StaticArr xobjs) i t) =
       do
-        (newCtx, evaledXObjs) <- foldlM successiveExpand (ctx, Right []) xobjs
+        (newCtx, evaledXObjs) <- expandMany ctx xobjs
         pure
           ( newCtx,
             do
@@ -361,13 +381,25 @@ expand mode eval ctx xobj =
             matchDef (XObj (Lst [XObj DefDynamic _ _, _, value]) _ _) = matchDef value
             matchDef x = x
     expandSymbol _ = pure (evalError ctx "Can't expand non-symbol in expandSymbol." Nothing)
+    expandMany :: Context -> [XObj] -> IO (Context, Either EvalError [XObj])
+    expandMany startCtx xs = do
+      (newCtx, expanded) <- foldlM successiveExpand (startCtx, Right []) xs
+      pure (newCtx, fmap reverse expanded)
+    expandPairs :: Context -> [(XObj, XObj)] -> IO (Context, Either EvalError [[XObj]])
+    expandPairs startCtx pairs = do
+      (newCtx, expanded) <- foldlM successiveExpandLR (startCtx, Right []) pairs
+      pure (newCtx, fmap reverse expanded)
+    expandMatchPairs :: Context -> [(XObj, XObj)] -> IO (Context, Either EvalError [[XObj]])
+    expandMatchPairs startCtx pairs = do
+      (newCtx, expanded) <- foldlM successiveExpandLRMatch (startCtx, Right []) pairs
+      pure (newCtx, fmap reverse expanded)
     successiveExpand (ctx', acc) e =
       case acc of
         Left _ -> pure (ctx', acc)
         Right lst -> do
           (newCtx, expanded) <- expand mode eval ctx' e
           pure $ case expanded of
-            Right err -> (newCtx, Right (lst ++ [err]))
+            Right err -> (newCtx, Right (err : lst))
             Left err -> (newCtx, Left err)
     successiveExpandLR (ctx', acc) (l, r) =
       case acc of
@@ -375,7 +407,7 @@ expand mode eval ctx xobj =
         Right lst -> do
           (newCtx, expandedR) <- expand mode eval ctx' r
           case expandedR of
-            Right v -> pure (newCtx, Right (lst ++ [[l, v]]))
+            Right v -> pure (newCtx, Right ([l, v] : lst))
             Left err -> pure (newCtx, Left err)
     successiveExpandLRMatch a (l, r) =
       case traverseExpandLiteral l of

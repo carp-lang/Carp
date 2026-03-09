@@ -1,6 +1,8 @@
 # Dynamic Semantics
 
-This document will help us rewrite Carp's dynamic evaluator (defined in Eval.hs) to make it behave in a more principled and non-surprising way.
+This document describes historical goals for rewriting Carp's dynamic evaluator.
+
+The evaluator has since moved to a VM-backed architecture. For the current implementation, see [Dynamic Evaluator VM](EvaluatorVM.md).
 
 ## Goals of the rewrite
 * Fix the various bugs related to dynamic evaluation that has been found (see "Relevant issues" below).

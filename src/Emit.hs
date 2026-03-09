@@ -105,13 +105,13 @@ instance Show ToCError where
 
 data ToCMode = Functions | Globals | All deriving (Show)
 
-newtype EmitterState = EmitterState {emitterSrc :: String}
+newtype EmitterState = EmitterState {emitterSrc :: String -> String}
 
 appendToSrc :: String -> State EmitterState ()
-appendToSrc moreSrc = modify (\s -> s {emitterSrc = emitterSrc s ++ moreSrc})
+appendToSrc moreSrc = modify (\s -> s {emitterSrc = emitterSrc s . (moreSrc ++)})
 
 toC :: ToCMode -> Binder -> String
-toC toCMode (Binder meta root) = emitterSrc (execState (visit startingIndent root) (EmitterState ""))
+toC toCMode (Binder meta root) = emitterSrc (execState (visit startingIndent root) (EmitterState id)) ""
   where
     startingIndent = case toCMode of
       Functions -> 0
@@ -138,7 +138,8 @@ toC toCMode (Binder meta root) = emitterSrc (execState (visit startingIndent roo
               '\n' -> "'\\n'"
               '\\' -> "'\\\\'"
               x -> show (ord x) ++ "/*" ++ show x ++ "*/" -- ['U', '\'', x, '\'']
-            Closure elt _ -> visit indent elt
+            Closure _ _ -> pure ""
+            VMClosure _ _ _ _ -> pure ""
             Sym _ _ -> visitSymbol indent xobj
             Mod _ _ -> error (show (CannotEmitModKeyword xobj))
             External _ -> error (show (CannotEmitExternal xobj))
@@ -486,13 +487,11 @@ toC toCMode (Binder meta root) = emitterSrc (execState (visit startingIndent roo
             visitWhileExpression ind =
               do
                 s <- get
-                let (exprRetVar, exprResultState) = runState (visit ind expr) (EmitterState "")
-                    exprSrc = emitterSrc exprResultState
+                let (exprRetVar, exprResultState) = runState (visit ind expr) (EmitterState id)
+                    exprSrc = emitterSrc exprResultState ""
                 modify
                   ( \x ->
-                      x
-                        { emitterSrc = emitterSrc s ++ exprSrc
-                        }
+                      x {emitterSrc = emitterSrc s . (exprSrc ++)}
                   )
                 pure exprRetVar
         -- Do
@@ -860,7 +859,7 @@ defStructToDeclaration structTy@(StructTy _ _) _ rest =
         appendToSrc ("} " ++ tyToC structTy ++ ";\n")
    in if isTypeGeneric structTy
         then "" -- ("// " ++ show structTy ++ "\n")
-        else emitterSrc (execState visit (EmitterState ""))
+        else emitterSrc (execState visit (EmitterState id)) ""
 defStructToDeclaration _ _ _ = error "defstructtodeclaration"
 
 defSumtypeToDeclaration :: Ty -> [XObj] -> String
@@ -896,7 +895,7 @@ defSumtypeToDeclaration sumTy@(StructTy _ _) rest =
       emitSumtypeCaseTagDefinition _ = error "emitsumtypecasetagdefinition"
    in if isTypeGeneric sumTy
         then ""
-        else emitterSrc (execState visit (EmitterState ""))
+        else emitterSrc (execState visit (EmitterState id)) ""
 defSumtypeToDeclaration _ _ = error "defsumtypetodeclaration"
 
 defaliasToDeclaration :: Ty -> SymPath -> String
@@ -959,6 +958,7 @@ toDeclaration (Binder meta xobj@(XObj (Lst xobjs) _ ty)) =
       ""
     _ -> error ("Internal compiler error: Can't emit other kinds of definitions: " ++ show xobj)
 toDeclaration (Binder _ (XObj (Sym (SymPath [] "dummy") Symbol) Nothing (Just IntTy))) = ""
+toDeclaration (Binder _ (XObj (Closure _ _) _ _)) = ""
 toDeclaration _ = error "Missing case."
 
 paramListToC :: [XObj] -> String

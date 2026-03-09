@@ -738,6 +738,23 @@ commandSexpressionInternal :: Context -> XObj -> Bool -> IO (Context, Either Eva
 commandSexpressionInternal ctx xobj bol =
   let tyEnv = contextTypeEnv ctx
    in case xobj of
+        (XObj (Closure (XObj (VMClosure _ mpath proper rest) _ cty) _) i t) ->
+          let args =
+                XObj
+                  ( Arr
+                      ( map (\n -> XObj (Sym (SymPath [] n) Symbol) Nothing Nothing) proper
+                          ++ maybe [] (\r -> [XObj (Sym (SymPath [] ":rest") Symbol) Nothing Nothing, XObj (Sym (SymPath [] r) Symbol) Nothing Nothing]) rest
+                      )
+                  )
+                  i
+                  t
+              name = maybe (XObj (Sym (SymPath [] "<anonymous>") Symbol) i t) (\p -> XObj (Sym p Symbol) i t) mpath
+              headSym =
+                case cty of
+                  Just MacroTy -> XObj (Sym (SymPath [] "defmacro") Symbol) i t
+                  Just DynamicTy -> XObj (Sym (SymPath [] "defdynamic") Symbol) i t
+                  _ -> XObj (Sym (SymPath [] "fn") Symbol) i t
+           in pure (ctx, Right (XObj (Lst [headSym, name, args, XObj (Lst []) i t]) i t))
         (XObj (Lst [inter@(XObj (Interface ty _) _ _), path]) i t) ->
           pure (ctx, Right (XObj (Lst [toSymbols inter, path, reify ty]) i t))
         (XObj (Lst forms) i t) ->
@@ -832,6 +849,7 @@ commandType ctx (XObj x _ _) =
     typeOf (Bol _) = "bool"
     typeOf (Dict _) = "map"
     typeOf (Closure _ _) = "closure"
+    typeOf (VMClosure _ _ _ _) = "vm-closure"
     typeOf (Defn _) = "defn"
     typeOf Def = "def"
     typeOf (Fn _ _) = "fn"

@@ -140,6 +140,7 @@ data Obj
   | StaticArr [XObj]
   | Dict (Map.Map XObj XObj)
   | Closure XObj ClosureContext
+  | VMClosure Int (Maybe SymPath) [String] (Maybe String)
   | Defn (Maybe (Set.Set XObj)) -- if this is a lifted lambda it needs the set of captured variables
   | Def
   | Fn (Maybe SymPath) (Set.Set XObj) -- the name of the lifted function, the set of variables this lambda captures, and a dynamic environment
@@ -337,7 +338,14 @@ data XObj = XObj
     xobjInfo :: Maybe Info,
     xobjTy :: Maybe Ty
   }
-  deriving (Show, Eq, Ord)
+  deriving (Show)
+
+-- Equality/ordering intentionally ignore source-info metadata.
+instance Eq XObj where
+  a == b = xobjObj a == xobjObj b && xobjTy a == xobjTy b
+
+instance Ord XObj where
+  compare a b = compare (xobjObj a, xobjTy a) (xobjObj b, xobjTy b)
 
 setObj :: XObj -> Obj -> XObj
 setObj x o = x {xobjObj = o}
@@ -362,6 +370,9 @@ getBinderDescription (XObj (Lst (XObj MetaStub _ _ : XObj (Sym _ _) _ _ : _)) _ 
 getBinderDescription (XObj (Lst (XObj (Deftype _) _ _ : XObj (Sym _ _) _ _ : _)) _ _) = "deftype"
 getBinderDescription (XObj (Lst (XObj (DefSumtype _) _ _ : XObj (Sym _ _) _ _ : _)) _ _) = "deftype"
 getBinderDescription (XObj (Lst (XObj (Interface _ _) _ _ : XObj (Sym _ _) _ _ : _)) _ _) = "interface"
+getBinderDescription (XObj (Closure (XObj (VMClosure _ _ _ _) _ (Just MacroTy)) _) _ _) = "macro"
+getBinderDescription (XObj (Closure (XObj (VMClosure _ _ _ _) _ (Just DynamicTy)) _) _ _) = "dynamic"
+getBinderDescription (XObj (Closure _ _) _ _) = "closure"
 getBinderDescription (XObj (Mod _ _) _ _) = "module"
 getBinderDescription b = error ("Unhandled binder: " ++ show b)
 
@@ -408,6 +419,8 @@ getPath (XObj (Lst (XObj (Mod _ _) _ _ : XObj (Sym path _) _ _ : _)) _ _) = path
 getPath (XObj (Lst (XObj (Interface _ _) _ _ : XObj (Sym path _) _ _ : _)) _ _) = path
 getPath (XObj (Lst (XObj (Command _) _ _ : XObj (Sym path _) _ _ : _)) _ _) = path
 getPath (XObj (Lst (XObj (Primitive _) _ _ : XObj (Sym path _) _ _ : _)) _ _) = path
+getPath (XObj (Closure (XObj (VMClosure _ (Just path) _ _) _ _) _) _ _) = path
+getPath (XObj (VMClosure _ (Just path) _ _) _ _) = path
 getPath (XObj (Sym path _) _ _) = path
 getPath x = SymPath [] (pretty x)
 
@@ -464,6 +477,12 @@ pretty = visit 0
         Def -> "def"
         Fn _ captures -> "fn" ++ " <" ++ prettyCaptures captures ++ ">"
         Closure elt _ -> "closure<" ++ pretty elt ++ ">"
+        VMClosure _ mname proper rest ->
+          "vm-closure<"
+            ++ maybe "" (\n -> show n ++ " ") mname
+            ++ unwords proper
+            ++ maybe "" (\r -> " :rest " ++ r) rest
+            ++ ">"
         If -> "if"
         Match MatchValue -> "match"
         Match MatchRef -> "match-ref"
@@ -530,6 +549,7 @@ prettyUpTo lim xobj =
         Def -> ""
         Fn _ _ -> ">"
         Closure _ _ -> ">"
+        VMClosure _ _ _ _ -> ">"
         If -> ""
         Match _ -> ""
         While -> ""
@@ -997,6 +1017,7 @@ data Context = Context
     contextInternalEnv :: Maybe Env,
     contextTypeEnv :: TypeEnv,
     contextPath :: [String],
+    contextBindingEpoch :: !Int,
     contextProj :: Project,
     contextLastInput :: String,
     contextExecMode :: ExecutionMode,
@@ -1019,7 +1040,11 @@ instance Hashable Context where
       `hashWithSalt` contextTypeEnv
 
 popModulePath :: Context -> Context
-popModulePath ctx = ctx {contextPath = init (contextPath ctx)}
+popModulePath ctx =
+  ctx
+    { contextPath = init (contextPath ctx),
+      contextBindingEpoch = contextBindingEpoch ctx + 1
+    }
 
 pushFrame :: Context -> XObj -> Context
 pushFrame ctx x = ctx {contextHistory = x : contextHistory ctx}
@@ -1053,7 +1078,9 @@ varOfXObj xobj =
     XObj (Sym path _) _ _ -> pathToC path
     _ -> case xobjInfo xobj of
       Just i -> freshVar i
-      Nothing -> error ("Missing info on " ++ show xobj)
+      Nothing -> "_anon_" ++ sanitize (show (hash (show xobj ++ show (xobjTy xobj) ++ pretty xobj)))
+  where
+    sanitize = map (\c -> if c == '-' then 'N' else c)
 
 -- | Given a form, what definition mode will it generate?
 definitionMode :: XObj -> DefinitionMode
@@ -1140,7 +1167,8 @@ instance Semigroup Context where
      in c
           { contextGlobalEnv = global' <> global,
             contextInternalEnv = internal <> internal',
-            contextTypeEnv = TypeEnv (typeEnv' <> typeEnv)
+            contextTypeEnv = TypeEnv (typeEnv' <> typeEnv),
+            contextBindingEpoch = max (contextBindingEpoch c) (contextBindingEpoch c') + 1
           }
 
 toLocalDef :: String -> XObj -> XObj

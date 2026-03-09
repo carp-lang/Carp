@@ -112,6 +112,9 @@ instance Contextual QualifiedPath where
 --------------------------------------------------------------------------------
 -- Environment Replacement Functions
 
+bumpBindingEpoch :: Context -> Context
+bumpBindingEpoch ctx = ctx {contextBindingEpoch = contextBindingEpoch ctx + 1}
+
 -- | Replace a context's internal environment with a new environment.
 --
 -- The previous environment is completely replaced and will not be recoverable.
@@ -131,14 +134,14 @@ replaceInternalEnvMaybe ctx env =
 -- The previous environment is completely replaced and will not be recoverable.
 replaceGlobalEnv :: Context -> Env -> Context
 replaceGlobalEnv ctx env =
-  ctx {contextGlobalEnv = env}
+  bumpBindingEpoch ctx {contextGlobalEnv = env}
 
 -- | Replace a context's type environment with a new environment.
 --
 -- The previous environment is completely replaced and will not be recoverable.
 replaceTypeEnv :: Context -> TypeEnv -> Context
 replaceTypeEnv ctx env =
-  ctx {contextTypeEnv = env}
+  bumpBindingEpoch ctx {contextTypeEnv = env}
 
 -- | Replace a context's history with a new history.
 --
@@ -159,7 +162,7 @@ replaceProject ctx proj =
 -- The previous path is completely replaced and will not be recoverable.
 replacePath :: Context -> [String] -> Context
 replacePath ctx paths =
-  ctx {contextPath = paths}
+  bumpBindingEpoch ctx {contextPath = paths}
 
 -- | replaceInternalEnv with arguments flipped.
 replaceInternalEnv' :: Env -> Context -> Context
@@ -194,7 +197,7 @@ insertInGlobalEnv ctx qpath binder =
   replaceLeft
     (FailedToInsertInGlobalEnv (unqualify qpath) binder)
     ( E.insert (contextGlobalEnv ctx) (unqualify qpath) binder
-        >>= \e -> pure $! (ctx {contextGlobalEnv = e})
+        >>= \e -> pure $! (replaceGlobalEnv ctx e)
     )
 
 -- | Adds a binder to a context's type environment at a qualified path.
@@ -245,7 +248,7 @@ insertInInternalEnv ctx path@(SymPath [] _) binder =
     insert' e =
       replaceLeft
         (FailedToInsertInInternalEnv path binder)
-        (E.insert e path binder >>= \e' -> pure (ctx {contextInternalEnv = pure e'}))
+        (E.insert e path binder >>= \e' -> pure (replaceInternalEnv ctx e'))
 insertInInternalEnv _ path _ = Left (AttemptedToInsertQualifiedInternalBinder path)
 
 -- | insertInGlobalEnv with arguments flipped.

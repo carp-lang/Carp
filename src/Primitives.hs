@@ -170,7 +170,7 @@ primitiveImplements _ ctx x _ =
 -- N.B. Symbols come into this function FULLY QUALIFIED!
 -- see Eval.hs annotateWithinContext
 define :: Bool -> Context -> Qualified -> IO Context
-define hidden ctx qualifiedXObj =
+define hidden ctx qualifiedXObj = do
   pure (if hidden then (Meta.hide freshBinder) else freshBinder)
     >>= \newBinder ->
       if isTypeDef annXObj
@@ -446,7 +446,7 @@ primitiveMembers _ ctx x = argumentErr ctx "members" "a symbol" "first" x
 -- "meta stub" for the binder with the meta information.
 primitiveMetaSet :: TernaryPrimitiveCallback
 primitiveMetaSet _ ctx target@(XObj (Sym path@(SymPath _ _) _) _ _) (XObj (Str key) _ _) value =
-  pure $ either (const create) (,dynamicNil) (lookupGlobal <> lookupType)
+  pure (either (const create) (,dynamicNil) (lookupGlobal <> lookupType))
   where
     qpath = qualifyPath ctx path
     lookupGlobal :: Either ContextError Context

@@ -26,6 +26,7 @@ module Forms
     pattern CommandPat,
     pattern PrimitivePat,
     pattern AppPat,
+    checkAppArity,
     pattern WithPat,
     pattern DoPat,
     pattern WhilePat,
@@ -363,11 +364,12 @@ checkAppArity xobj params args =
   let la = length args
       withRest = any ((":rest" ==) . getName) params
       lp = length params - (if withRest then 2 else 0)
+      errorParams = if withRest then take lp params else params
    in if lp == la || (withRest && la >= lp)
         then Right ()
         else
           if la < lp
-            then Left (InsufficientArguments xobj lp la params)
+            then Left (InsufficientArguments xobj lp la errorParams)
             else Left (TooManyArguments xobj lp la args)
 
 --------------------------------------------------------------------------------

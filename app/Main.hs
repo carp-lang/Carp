@@ -121,6 +121,7 @@ main = do
           Nothing
           (TypeEnv startingTypeEnv)
           []
+          0
           project
           ""
           execMode

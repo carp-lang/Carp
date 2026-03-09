@@ -1,3 +1,4 @@
+{-# LANGUAGE BangPatterns #-}
 {-# LANGUAGE TupleSections #-}
 
 module Env
@@ -18,6 +19,7 @@ module Env
     getBinder,
     find',
     findBinder,
+    findBinderMaybe,
     search,
     searchBinder,
     findType,
@@ -44,6 +46,7 @@ module Env
     findPoly,
     findAllByMeta,
     findChildren,
+    findImportedEnvs,
     findImplementations,
     findAllGlobalVariables,
     findModules,
@@ -56,6 +59,7 @@ module Env
     lookupInUsed,
     lookupEverywhere,
     lookupBinderEverywhere,
+    lookupBinderInParentChain,
     progenitor,
     replaceInPlace,
   )
@@ -63,7 +67,7 @@ where
 
 import Data.Either (fromRight, rights)
 import Data.List (foldl', unfoldr)
-import Data.Maybe (fromMaybe)
+import Data.Maybe (fromMaybe, mapMaybe)
 import qualified Map
 import qualified Meta
 import Obj
@@ -189,24 +193,47 @@ updateEnv _ _ _ = Left NoEnvInNonModule
 -- | Walk down an environment chain.
 walk' :: Mode -> Env -> SymPath -> Either EnvironmentError Env
 walk' _ e (SymPath [] _) = pure e
-walk' mode' e (SymPath (p : ps) name) =
+walk' mode' e (SymPath path _) =
   do
-    (_, binder) <- get e p
-    go (SymPath ps name) binder
+    binder <- descend e path
+    nextEnv mode' binder
   where
-    go :: SymPath -> Binder -> Either EnvironmentError Env
-    go (SymPath [] _) binder = nextEnv mode' binder
-    go path binder =
-      do
-        env <- nextEnv Values binder
-        walk' mode' env path
+    descend :: Env -> [String] -> Either EnvironmentError Binder
+    descend _ [] = error "impossible: walk' called with empty path"
+    descend !env [name] = snd <$> get env name
+    descend !env (name : rest) = do
+      (_, binder) <- get env name
+      next <- nextEnv Values binder
+      descend next rest
+
+walkMaybe :: Mode -> Env -> [String] -> Maybe Env
+walkMaybe _ env [] = Just env
+walkMaybe mode' env [name] =
+  Map.lookup name (envBindings env) >>= eitherToMaybe . nextEnv mode'
+walkMaybe mode' env (name : rest) =
+  Map.lookup name (envBindings env)
+    >>= eitherToMaybe . nextEnv Values
+    >>= \next -> walkMaybe mode' next rest
+
+eitherToMaybe :: Either a b -> Maybe b
+eitherToMaybe (Right x) = Just x
+eitherToMaybe _ = Nothing
 
 -- | Generic *unidirectional* retrieval of binders (does not check parents).
 walkAndGet :: Environment e => e -> SymPath -> (Either EnvironmentError e, Either EnvironmentError Binder)
 walkAndGet e path@(SymPath _ name) =
   let target = walk' (modality e) (prj e) path
-      binder = target >>= \t -> get t name
-   in (fmap inj target, fmap snd binder)
+      binder = target >>= getBinderFromEnv name
+   in (fmap inj target, binder)
+  where
+    getBinderFromEnv :: String -> Env -> Either EnvironmentError Binder
+    getBinderFromEnv needle env =
+      case Map.lookup needle (envBindings env) of
+        Nothing -> Left $ BindingNotFound needle env
+        Just b -> Right b
+{-# INLINE walkAndGet #-}
+{-# SPECIALIZE walkAndGet :: Env -> SymPath -> (Either EnvironmentError Env, Either EnvironmentError Binder) #-}
+{-# SPECIALIZE walkAndGet :: TypeEnv -> SymPath -> (Either EnvironmentError TypeEnv, Either EnvironmentError Binder) #-}
 
 -- | Direct lookup for a binder in environment `e`.
 -- The environment returned in the output will be the same as that given as input.
@@ -237,6 +264,15 @@ find' e path =
 findBinder :: Environment e => e -> SymPath -> Either EnvironmentError Binder
 findBinder e path = fmap snd (find' e path)
 
+-- | Like `findBinder`, but avoids error construction on misses.
+findBinderMaybe :: Environment e => e -> SymPath -> Maybe Binder
+findBinderMaybe e (SymPath path name) =
+  walkMaybe (modality e) (prj e) path >>= \target ->
+    Map.lookup name (envBindings target)
+{-# INLINE findBinderMaybe #-}
+{-# SPECIALIZE findBinderMaybe :: Env -> SymPath -> Maybe Binder #-}
+{-# SPECIALIZE findBinderMaybe :: TypeEnv -> SymPath -> Maybe Binder #-}
+
 -- | Generic *multidirectional* retrieval of binders.
 -- Searches the children and parents of `e` (or the parent of a sub-environment
 -- found in `e` and given by `path`).
@@ -255,7 +291,16 @@ search e path =
 
 -- | Same as `search` but only returns a binder.
 searchBinder :: Environment e => e -> SymPath -> Either EnvironmentError Binder
-searchBinder e path = fmap snd (search e path)
+searchBinder e path =
+  case walkAndGet e path of
+    (_, Right b) -> Right b
+    (Right e', Left err) -> checkParent e' err
+    (Left err, Left _) -> checkParent e err
+  where
+    checkParent env err = maybe (Left err) (`searchBinder` path) (parent env)
+{-# INLINE searchBinder #-}
+{-# SPECIALIZE searchBinder :: Env -> SymPath -> Either EnvironmentError Binder #-}
+{-# SPECIALIZE searchBinder :: TypeEnv -> SymPath -> Either EnvironmentError Binder #-}
 
 --------------------------------------------------------------------------------
 -- Type-specialized retrievals
@@ -445,27 +490,28 @@ findChildren e =
 -- plus any module environments contained in *those* modules.
 lookupChildren :: Environment e => e -> [e]
 lookupChildren e =
-  foldl' go [] (findChildren e)
+  go [] (findChildren e)
   where
-    go acc e' = case findChildren e' of
-      [] -> (e' : acc)
-      xs -> (foldl' go [] xs ++ acc)
+    go acc [] = acc
+    go acc (e' : rest) =
+      case findChildren e' of
+        [] -> go (e' : acc) rest
+        xs -> go acc (xs ++ rest)
 
 -- | Find all the environments designated by the use paths in an environment.
 findImportedEnvs :: Environment e => e -> [e]
 findImportedEnvs e =
   let eMode = modality e
-      usePaths = Set.toList (envUseModules (prj e))
-      getter path =
-        walk' eMode (prj e) path
-          >>= \e' ->
-            get e' (getName' path)
-              >>= nextEnv eMode . snd
-              >>= pure . inj
-      used = fmap getter usePaths
-   in (rights used)
+      root = prj e
+      usePaths = Set.toList (envUseModules root)
+      getter (SymPath path name) =
+        walkMaybe eMode root path
+          >>= \target ->
+            Map.lookup name (envBindings target)
+              >>= eitherToMaybe . nextEnv eMode
+   in map inj (mapMaybe getter usePaths)
   where
-    getName' (SymPath _ name) = name
+    _getName' (SymPath _ name) = name
 
 -- | Given an environment, get its topmost parent up the environment chain.
 --
@@ -483,9 +529,10 @@ allImportedEnvs e global =
     go e' = parent e' >>= \p -> pure (p, p)
     og acc e' = (envUseModules e') <> acc
     get' path =
-      findBinder global path
-        >>= nextEnv (modality e)
-        >>= pure . inj
+      maybe
+        (Left (BindingNotFound (show path) global))
+        (either (const (Left (BindingNotFound (show path) global))) (Right . inj) . nextEnv (modality e))
+        (findBinderMaybe global path)
 
 -- | Find all binders the implement a given interface, designated by its path.
 findImplementations :: Environment e => e -> SymPath -> Either EnvironmentError [Binder]
@@ -510,15 +557,15 @@ findImplementations e interface =
 -- parent, should it exist).
 lookupExhuastive :: Environment e => (e -> [e]) -> e -> String -> [(e, Binder)]
 lookupExhuastive f e name =
-  let envs = [e] ++ (f e)
-   in (go (parent e) envs)
+  reverse (go [] (e : f e) (parent e))
   where
-    go _ [] = []
-    go Nothing xs = foldl' accum [] xs
-    go (Just p) xs = go (parent p) (xs ++ [p] ++ (f p))
-    accum acc e' = case getBinder e' name of
-      Right b -> ((e', b) : acc)
-      _ -> acc
+    go acc [] Nothing = acc
+    go acc [] (Just p) = go acc (p : f p) (parent p)
+    go acc (e' : rest) parentEnv =
+      let acc' = case getBinder e' name of
+            Right b -> (e', b) : acc
+            _ -> acc
+       in go acc' rest parentEnv
 
 lookupBinderExhuastive :: Environment e => (e -> [e]) -> e -> String -> [Binder]
 lookupBinderExhuastive f e name = fmap snd (lookupExhuastive f e name)
@@ -543,6 +590,14 @@ lookupInUsed e global spath =
 lookupBinderEverywhere :: Environment e => e -> String -> [Binder]
 lookupBinderEverywhere = lookupBinderExhuastive lookupChildren
 
+lookupBinderInParentChain :: Maybe Env -> String -> Maybe Binder
+lookupBinderInParentChain Nothing _ = Nothing
+lookupBinderInParentChain (Just e) name =
+  case Map.lookup name (envBindings e) of
+    Just b -> Just b
+    Nothing -> lookupBinderInParentChain (envParent e) name
+{-# INLINE lookupBinderInParentChain #-}
+
 lookupContextually :: Environment e => e -> SymPath -> Either EnvironmentError [(e, Binder)]
 lookupContextually e (SymPath [] name) =
   case lookupInImports e name of
@@ -557,7 +612,7 @@ lookupContextually e path@(SymPath (p : ps) name) =
         >>= \e' ->
           search (inj e') (SymPath ps name)
             >>= pure . (: [])
-    lookupInUsedAndParent = case rights (fmap ((flip search) path) (findImportedEnvs e)) of
+    lookupInUsedAndParent = case mapMaybe (eitherToMaybe . (`search` path)) (findImportedEnvs e) of
       [] -> Left (BindingNotFound name (prj e))
       xs ->
         case parent e of
