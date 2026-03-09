@@ -1,0 +1,9 @@
+(Project.config "file-path-print-length" "short")
+
+; set! with ref outliving source through doubly nested scope.
+(defn main []
+  (let-do [x ""]
+    (let [a [@"one"]]
+      (let [b (Array.unsafe-nth &a 0)]
+        (set! x b)))
+    (println* x)))

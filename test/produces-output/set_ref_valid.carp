@@ -1,0 +1,36 @@
+(Project.no-echo)
+
+; Regression: valid set! where ref does not outlive source.
+(defn set-ref-same-scope []
+  (let-do [a [@"hello" @"world"]
+           x (Array.unsafe-nth &a 0)]
+    (set! x (Array.unsafe-nth &a 1))
+    (IO.println x)))
+
+; Regression: set! ref to point at a different local in the same scope.
+(defn set-ref-different-local []
+  (let-do [s1 @"first"
+           s2 @"second"
+           r &s1]
+    (set! r &s2)
+    (IO.println r)))
+
+; Regression: ref to owned param in lambda body (Map.carp pattern).
+; The lambda takes an owned param b, refs it with &b, and uses the ref
+; while b is still alive. This must not be a false positive.
+(defn lambda-ref-to-owned-param []
+  (let [f (fn [b] (let [n (Array.unsafe-nth &b 0)] @n))]
+    (IO.println &(f [@"from-lambda"]))))
+
+; Regression: set! with ref to function parameter (valid because
+; the parameter outlives the function body).
+(defn set-ref-to-param [a]
+  (let-do [x ""]
+    (set! x (Array.unsafe-nth a 0))
+    (IO.println x)))
+
+(defn-do main []
+  (set-ref-same-scope)
+  (set-ref-different-local)
+  (lambda-ref-to-owned-param)
+  (set-ref-to-param &[@"param-ref"]))

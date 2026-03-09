@@ -1,0 +1,10 @@
+(Project.config "file-path-print-length" "short")
+
+; set! inside do block where ref outlives its source array.
+(defn main []
+  (let-do [x ""]
+    (let [a [@"temporary"]]
+      (do
+        (set! x (Array.unsafe-nth &a 0))
+        ()))
+    (println* x)))
