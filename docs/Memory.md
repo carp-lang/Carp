@@ -531,17 +531,20 @@ lifetimes, and every reference has *exactly one* lifetime assigned to it:
 - A unique type variable that identifies the lifetime.
 - A lifetime mode, that indicates if the linear value tied to the reference has
   a lexical scope that extends beyond the reference's lexical scope or if it's
-  limited to the reference's lexical scope.
+  limited to the reference's lexical scope. When the lifetime is inside a
+  function, it tracks a *set* of source variables that the reference may depend
+  on.
 
-In general, a reference is valid only when the value it points to has either an
-equivalent or greater lexical scope. This property is encoded in its lifetime.
+In general, a reference is valid only when *all* of the values it may point to
+have either an equivalent or greater lexical scope. This property is encoded in
+its lifetime.
 
 Let's look at some examples to help illustrate this:
 
 ```clojure
 (def an-array [1 2 3])
 
-(defn valid-ref [] 
+(defn valid-ref []
   (let [array-ref &an-arry]) ())
 ```
 
@@ -561,7 +564,7 @@ Contrarily, the following reference is not valid:
 Here, the reference has a greater lexical scope than the linear value it points
 to. The anonymous linear value `[1 2 3]` will be deleted at the end of the
 function scope, but the reference will be returned from the function, so its
-lifetime is potentially greater than that of the value it points to. 
+lifetime is potentially greater than that of the value it points to.
 
 The memory management system performs two key checks around ref usage:
 
@@ -573,11 +576,49 @@ Both of these are implemented as separate checks, but they may be viewed as
 specializations of a general operation that checks if every reference form in
 your program is "alive" at the point of use.
 
-Currently, liveness analysis revolves around checking if the value the reference
-points to belongs to the same lexical scope as the reference, and, if so, that
-the value has a deleter in that scope, which indicates the scope properly owns
-the value. If no such deleter exists, it means the reference outlives the value
-it points to, and is invalid.
+Currently, liveness analysis revolves around checking if *all* of the source
+variables a reference depends on are still alive — that is, each source has a
+deleter in scope, indicating the scope properly owns the value. If any source
+variable's deleter is missing, the reference outlives that value and is invalid.
+
+#### Mutation and Lifetime Invalidation
+
+The `set!` special form can rebind a reference variable to point at a different
+value. When this happens, the lifetime mapping for the reference must be updated
+to reflect the new source. The memory management system handles this by
+*clearing* the old lifetime mapping before visiting the new value. This allows
+the mapping to be rebuilt from the new value's reference sources, rather than
+retaining stale information from the initial binding.
+
+This is important for catching use-after-free bugs involving `set!`. Consider:
+
+```clojure
+(defn dangling []
+  (let-do [x ""]
+    (let [a [@"hello" @"world"]]
+      (set! x (Array.unsafe-nth &a 1)))
+    (println* x)))  ;; error! x depends on a, which is dead here
+```
+
+In this example, `x` is initially bound to a string literal reference. Inside
+the inner `let`, `set!` rebinds `x` to a reference that depends on the array
+`a`. When the inner `let` ends, `a` is deleted. At the `println*` call, `x`
+still refers to memory owned by `a`, which is no longer alive. The memory
+management system detects this and reports an error.
+
+Conversely, rebinding a reference to another value in the same or wider scope
+is fine:
+
+```clojure
+(defn valid-set []
+  (let-do [a [@"hello" @"world"]
+           x (Array.unsafe-nth &a 0)]
+    (set! x (Array.unsafe-nth &a 1))  ;; ok: x still depends on a
+    (println* x)))
+```
+
+Here, both the initial binding and the `set!` target depend on `a`, which
+outlives `x`, so the reference remains valid.
 
 ### Type Dependencies
 
