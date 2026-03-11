@@ -6,9 +6,12 @@ programs and functions.")
 
   (doc sanitize-addresses "instructs the compiler to sanitize addresses.
 
-This might not work on all compilers, but reasonably new versions of GCC and Clang are supported.")
+This might not work on all compilers, but reasonably new versions of GCC and Clang are supported.
+On Windows, this is disabled by default due to runtime library issues.")
   (defndynamic sanitize-addresses []
-    (add-cflag "-fsanitize=address -Wno-macro-redefined"))
+    (if windows-target?
+      (macro-log "Warning: AddressSanitizer is disabled on Windows (runtime library not available)")
+      (add-cflag "-fsanitize=address -Wno-macro-redefined")))
 
   (doc check-allocations "will check the allocations made by the program
 immediately, raising a `SIGABRT` if it fails.")

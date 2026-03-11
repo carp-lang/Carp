@@ -156,7 +156,6 @@ templatesForSingleMember candidate field@(TC.StructField _ t) =
         mutator mutatorSig,
         updater updaterSig
       ]
-
     getter :: Ty -> ((String, Binder), [XObj])
     getter sig =
       let doc = "gets the `" ++ (TC.fieldName field) ++ "` property of a `" ++ (TC.getName candidate) ++ "`."
@@ -164,7 +163,6 @@ templatesForSingleMember candidate field@(TC.StructField _ t) =
           binderP = SymPath (TC.getFullPath candidate) (TC.fieldName field)
           temp = TG.generateConcreteFieldTemplate candidate field getterGenerator
        in instanceBinderWithDeps binderP binderT temp doc
-
     setter :: Ty -> ((String, Binder), [XObj])
     setter sig =
       let doc = "sets the `" ++ (TC.fieldName field) ++ "` property of a `" ++ (TC.getName candidate) ++ "`."
@@ -175,7 +173,6 @@ templatesForSingleMember candidate field@(TC.StructField _ t) =
        in if isTypeGeneric t
             then (defineTypeParameterizedTemplate generic binderP binderT doc, [])
             else instanceBinderWithDeps binderP binderT concrete doc
-
     mutator :: Ty -> ((String, Binder), [XObj])
     mutator sig =
       let doc = "sets the `" ++ (TC.fieldName field) ++ "` property of a `" ++ (TC.getName candidate) ++ "` in place."
@@ -186,7 +183,6 @@ templatesForSingleMember candidate field@(TC.StructField _ t) =
        in if isTypeGeneric t
             then (defineTypeParameterizedTemplate generic binderP binderT doc, [])
             else instanceBinderWithDeps binderP binderT concrete doc
-
     updater :: Ty -> ((String, Binder), [XObj])
     updater sig =
       let doc = "updates the `" ++ memberName ++ "` property of a `" ++ show p ++ "` using a function `f`."
@@ -253,11 +249,9 @@ getterGenerator = TG.mkTemplateGenerator tgen decl body deps
   where
     tgen :: TG.TypeGenerator TC.TypeField
     tgen _ = (FuncTy [RefTy (VarTy "p") (VarTy "q")] (VarTy "t") StaticLifetimeTy)
-
     decl :: TG.TokenGenerator TC.TypeField
     decl TG.GeneratorArg {instanceT = UnitTy} = toTemplate "void $NAME($(Ref p) p)"
     decl _ = toTemplate "$t $NAME($(Ref p) p)"
-
     body :: TG.TokenGenerator TC.TypeField
     body TG.GeneratorArg {value = (TC.StructField _ UnitTy)} = toTemplate "$DECL { return; }\n"
     body TG.GeneratorArg {instanceT = (FuncTy _ (RefTy UnitTy _) _)} = toTemplate " $DECL { void* ptr = NULL; return ptr; }\n"
@@ -268,7 +262,6 @@ getterGenerator = TG.mkTemplateGenerator tgen decl body deps
               else ""
        in toTemplate ("$DECL { return " ++ fixForVoidStarMembers ++ "(&(p->" ++ (mangle name) ++ ")); }\n")
     body TG.GeneratorArg {} = toTemplate "/* template error! */"
-
     deps :: TG.DepenGenerator TC.TypeField
     deps = const []
 
@@ -278,11 +271,9 @@ setterGenerator = TG.mkTemplateGenerator tgen decl body deps
   where
     tgen :: TG.TypeGenerator TC.TypeField
     tgen _ = (FuncTy [VarTy "p", VarTy "t"] (VarTy "p") StaticLifetimeTy)
-
     decl :: TG.TokenGenerator TC.TypeField
     decl GeneratorArg {instanceT = (FuncTy [_, UnitTy] _ _)} = toTemplate "$p $NAME($p p)"
     decl _ = toTemplate "$p $NAME($p p, $t newValue)"
-
     body :: TG.TokenGenerator TC.TypeField
     body GeneratorArg {instanceT = (FuncTy [_, UnitTy] _ _)} = toTemplate "$DECL { return p; }\n"
     body GeneratorArg {tenv, env, instanceT = (FuncTy [_, ty] _ _), value = (TC.StructField name _)} =
@@ -294,7 +285,6 @@ setterGenerator = TG.mkTemplateGenerator tgen decl body deps
           "}\n"
         ]
     body _ = toTemplate "/* template error! */"
-
     deps :: TG.DepenGenerator TC.TypeField
     deps GeneratorArg {tenv, env, TG.instanceT = (FuncTy [_, ty] _ _)}
       | isManaged tenv env ty = depsOfPolymorphicFunction tenv env [] "delete" (typesDeleterFunctionType ty)
@@ -308,11 +298,9 @@ mutatorGenerator = TG.mkTemplateGenerator tgen decl body deps
   where
     tgen :: TG.TypeGenerator TC.TypeField
     tgen _ = (FuncTy [RefTy (VarTy "p") (VarTy "q"), VarTy "t"] UnitTy StaticLifetimeTy)
-
     decl :: TG.TokenGenerator TC.TypeField
     decl GeneratorArg {instanceT = (FuncTy [_, UnitTy] _ _)} = toTemplate "void $NAME($p* pRef)"
     decl _ = toTemplate "void $NAME($p* pRef, $t newValue)"
-
     body :: TG.TokenGenerator TC.TypeField
     -- Execution of the action passed as an argument is handled in Emit.hs.
     body GeneratorArg {instanceT = (FuncTy [_, UnitTy] _ _)} = toTemplate "$DECL { return; }\n"
@@ -324,7 +312,6 @@ mutatorGenerator = TG.mkTemplateGenerator tgen decl body deps
           "}\n"
         ]
     body _ = toTemplate "/* template error! */"
-
     deps :: TG.DepenGenerator TC.TypeField
     deps GeneratorArg {tenv, env, instanceT = (FuncTy [_, ty] _ _)} =
       if isManaged tenv env ty
@@ -340,7 +327,6 @@ updateGenerator = TG.mkTemplateGenerator tgen decl body deps
     tgen GeneratorArg {value = (TC.StructField _ UnitTy)} =
       (FuncTy [VarTy "p", RefTy (FuncTy [] UnitTy (VarTy "fq")) (VarTy "q")] (VarTy "p") StaticLifetimeTy)
     tgen _ = (FuncTy [VarTy "p", RefTy (FuncTy [VarTy "t"] (VarTy "t") (VarTy "fq")) (VarTy "q")] (VarTy "p") StaticLifetimeTy)
-
     decl :: TG.TokenGenerator TC.TypeField
     decl _ = toTemplate "$p $NAME($p p, Lambda *updater)" -- Lambda used to be (Fn [t] t)
     body :: TG.TokenGenerator TC.TypeField
@@ -354,7 +340,6 @@ updateGenerator = TG.mkTemplateGenerator tgen decl body deps
           "}\n"
         ]
     body _ = toTemplate "/* template error! */"
-
     deps :: TG.DepenGenerator TC.TypeField
     deps GeneratorArg {instanceT = (FuncTy [_, RefTy t@(FuncTy fArgTys fRetTy _) _] _ _)} =
       if isTypeGeneric fRetTy
@@ -369,7 +354,6 @@ initGenerator alloc = TG.mkTemplateGenerator genT decl body deps
     genT :: TG.TypeGenerator TC.TypeCandidate
     genT GeneratorArg {value} =
       (FuncTy (concatMap TC.fieldTypes (TC.getFields value)) (VarTy "p") StaticLifetimeTy)
-
     decl :: TG.TokenGenerator TC.TypeCandidate
     decl GeneratorArg {originalT, instanceT = (FuncTy _ concreteT _), value} =
       let mappings = unifySignatures originalT concreteT
@@ -377,21 +361,18 @@ initGenerator alloc = TG.mkTemplateGenerator genT decl body deps
           cFields = remove isUnitT (remove isDummy concreteFields)
        in toTemplate ("$p $NAME(" ++ joinWithComma (map fieldArg cFields) ++ ")")
     decl _ = toTemplate "/* template error! */"
-
     body :: TG.TokenGenerator TC.TypeCandidate
     body GeneratorArg {originalT, instanceT = (FuncTy _ concreteT _), value} =
       let mappings = unifySignatures originalT concreteT
           concreteFields = replaceGenericTypeSymbolsOnFields mappings (TC.getFields value)
        in tokensForInit alloc (show originalT) (remove isUnitT concreteFields)
     body _ = toTemplate "/* template error! */"
-
     deps :: TG.DepenGenerator TC.TypeCandidate
     deps GeneratorArg {tenv, env, instanceT = (FuncTy _ concreteT _)} =
       case concretizeType tenv env concreteT of
         Left _ -> []
         Right ok -> ok
     deps _ = []
-
     tokensForInit :: AllocationMode -> String -> [TC.TypeField] -> [Token]
     -- if this is truly a memberless struct, init it to 0;
     -- This can happen in cases where *all* members of the struct are of type Unit.
@@ -419,11 +400,9 @@ initGenerator alloc = TG.mkTemplateGenerator genT decl body deps
           "    return instance;",
           "}"
         ]
-
     assignments :: [TC.TypeField] -> String
     assignments [] = ""
     assignments fields = joinLines $ fmap (memberAssignment alloc) fields
-
     isDummy field = TC.fieldName field == "__dummy"
     isUnitT (TC.StructField _ UnitTy) = True
     isUnitT _ = False
@@ -473,19 +452,16 @@ strGenerator = TG.mkTemplateGenerator genT decl body deps
     genT :: TG.TypeGenerator TC.TypeCandidate
     genT GeneratorArg {originalT} =
       FuncTy [RefTy originalT (VarTy "q")] StringTy StaticLifetimeTy
-
     decl :: TG.TokenGenerator TC.TypeCandidate
     decl GeneratorArg {instanceT = (FuncTy [RefTy structT _] _ _)} =
       toTemplate $ "String $NAME(" ++ tyToCLambdaFix structT ++ " *p)"
     decl _ = toTemplate "/* template error! */"
-
     body :: TG.TokenGenerator TC.TypeCandidate
     body GeneratorArg {tenv, env, originalT, instanceT = (FuncTy [RefTy structT _] _ _), value} =
       let mappings = unifySignatures originalT structT
           concreteFields = replaceGenericTypeSymbolsOnFields mappings (TC.getFields value)
        in tokensForStr tenv env (getStructName structT) concreteFields structT
     body _ = toTemplate "/* template error! */"
-
     deps :: TG.DepenGenerator TC.TypeCandidate
     deps arg@GeneratorArg {tenv, env, originalT, instanceT = (FuncTy [RefTy structT _] _ _), value} =
       let mappings = unifySignatures originalT structT
@@ -495,7 +471,6 @@ strGenerator = TG.mkTemplateGenerator genT decl body deps
             (remove isFullyGenericType (concatMap TC.fieldTypes concreteFields))
             ++ [defineFunctionTypeAlias (instanceT arg) | not (isTypeGeneric structT)]
     deps _ = []
-
     tokensForStr :: TypeEnv -> Env -> String -> [TC.TypeField] -> Ty -> [Token]
     tokensForStr typeEnv env typeName fields concreteStructTy =
       let members = remove ((== "__dummy") . fst) (map fieldToTuple fields)
@@ -509,11 +484,10 @@ strGenerator = TG.mkTemplateGenerator genT decl body deps
               "  String buffer = CARP_MALLOC(size);",
               "  String bufferPtr = buffer;",
               "",
-              "  sprintf(bufferPtr, \"(%s \", \"" ++ typeName ++ "\");",
-              "  bufferPtr += strlen(\"" ++ typeName ++ "\") + 2;\n",
+              "  bufferPtr += snprintf(bufferPtr, size - (bufferPtr - buffer), \"(%s \", \"" ++ typeName ++ "\");",
               joinLines (map (memberPrn typeEnv env) members),
               "  bufferPtr--;",
-              "  sprintf(bufferPtr, \")\");",
+              "  snprintf(bufferPtr, size - (bufferPtr - buffer), \")\");",
               "  return buffer;",
               "}"
             ]
@@ -528,10 +502,8 @@ deleteGenerator = TG.mkTemplateGenerator genT decl body deps
   where
     genT :: TG.TypeGenerator TC.TypeCandidate
     genT _ = FuncTy [VarTy "p"] UnitTy StaticLifetimeTy
-
     decl :: TG.TokenGenerator TC.TypeCandidate
     decl _ = toTemplate "void $NAME($p p)"
-
     body :: TG.TokenGenerator TC.TypeCandidate
     body GeneratorArg {tenv, env, originalT, instanceT = (FuncTy [structT] _ _), value} =
       let mappings = unifySignatures originalT structT
@@ -543,7 +515,6 @@ deleteGenerator = TG.mkTemplateGenerator genT decl body deps
               "}"
             ]
     body _ = toTemplate "/* template error! */"
-
     deps :: TG.DepenGenerator TC.TypeCandidate
     deps GeneratorArg {tenv, env, originalT, instanceT = (FuncTy [structT] _ _), value}
       | isTypeGeneric structT = []
@@ -561,10 +532,8 @@ copyGenerator = TG.mkTemplateGenerator genT decl body deps
   where
     genT :: TG.TypeGenerator TC.TypeCandidate
     genT _ = FuncTy [RefTy (VarTy "p") (VarTy "q")] (VarTy "p") StaticLifetimeTy
-
     decl :: TG.TokenGenerator TC.TypeCandidate
     decl _ = toTemplate "$p $NAME($p* pRef)"
-
     body :: TG.TokenGenerator TC.TypeCandidate
     body GeneratorArg {tenv, env, originalT, instanceT = (FuncTy [RefTy structT _] _ _), value} =
       let mappings = unifySignatures originalT structT
@@ -572,7 +541,6 @@ copyGenerator = TG.mkTemplateGenerator genT decl body deps
           members = map fieldToTuple concreteFields
        in tokensForCopy tenv env members
     body _ = toTemplate "/* template error! */"
-
     deps :: TG.DepenGenerator TC.TypeCandidate
     deps GeneratorArg {tenv, env, originalT, instanceT = (FuncTy [RefTy structT _] _ _), value}
       | isTypeGeneric structT = []

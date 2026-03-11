@@ -1,0 +1,4 @@
+(Project.config "file-path-print-length" "short")
+
+(defndynamic f [x] (+ x x))
+(f 1 2 3)

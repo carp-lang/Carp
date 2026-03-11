@@ -68,7 +68,7 @@ instance Show InterfaceError where
 -- | Get the first path of an interface implementation that matches a given type signature
 getFirstMatchingImplementation :: Context -> [SymPath] -> Ty -> Maybe SymPath
 getFirstMatchingImplementation ctx paths ty =
-  case filter predicate (rights (map (global `Env.searchValueBinder`) paths)) of
+  case filter predicate (rights (map (global `Env.searchBinder`) paths)) of
     [] -> Nothing
     (x : _) -> Just ((getPath . binderXObj) x)
   where
@@ -159,9 +159,9 @@ retroactivelyRegisterInInterface ctx interface =
 -- | e.g. Is "delete" implemented for `(Fn [String] ())` ?
 interfaceImplementedForTy :: TypeEnv -> Env -> String -> Ty -> Bool
 interfaceImplementedForTy typeEnv globalEnv interfaceName matchingTy =
-  case Env.getTypeBinder typeEnv interfaceName of
+  case Env.getBinder typeEnv interfaceName of
     Right (Binder _ (XObj (Lst (XObj (Interface _ paths) _ _ : _)) _ _)) ->
-      let lookupType' path = forceTy . binderXObj <$> (Env.searchValueBinder globalEnv path)
+      let lookupType' path = forceTy . binderXObj <$> (Env.searchBinder globalEnv path)
           matches = filter (areUnifiable matchingTy) (rights (map lookupType' paths))
        in not . null $ matches
     _ -> False

@@ -30,7 +30,22 @@ data Info = Info
     infoDelete :: Set.Set Deleter,
     infoIdentifier :: Int
   }
-  deriving (Show, Eq, Ord)
+  deriving (Show)
+
+-- Equality/ordering intentionally ignore `infoDelete`.
+-- Deleter sets are mutable compiler metadata and expensive to compare.
+instance Eq Info where
+  a == b =
+    infoLine a == infoLine b
+      && infoColumn a == infoColumn b
+      && infoFile a == infoFile b
+      && infoIdentifier a == infoIdentifier b
+
+instance Ord Info where
+  compare a b =
+    compare
+      (infoLine a, infoColumn a, infoFile a, infoIdentifier a)
+      (infoLine b, infoColumn b, infoFile b, infoIdentifier b)
 
 -- TODO: The name 'deleter' for these things are really confusing!
 

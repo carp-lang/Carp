@@ -118,4 +118,39 @@
                 &(Float.from-string "abcd")
                 "from-string works as expected II"
   )
+  (assert-op test
+             0.0f
+             (tan 0.0f)
+             "tan works as expected"
+             Float.approx)
+  (assert-equal test
+                2
+                (round 1.7f)
+                "round rounds up as expected")
+  (assert-equal test
+                1
+                (round 1.2f)
+                "round rounds down as expected")
+  (assert-equal test
+                5.0f
+                (clamp 0.0f 10.0f 5.0f)
+                "clamp returns value when in range")
+  (assert-equal test
+                0.0f
+                (clamp 0.0f 10.0f -3.0f)
+                "clamp returns min when below range")
+  (assert-equal test
+                10.0f
+                (clamp 0.0f 10.0f 99.0f)
+                "clamp returns max when above range")
+  (let-do [exp 0
+           frac (frexp 8.0f &exp)]
+    (assert-true test
+                 (and (Float.approx frac 0.5f) (= exp 4))
+                 "frexp returns correct fraction and exponent"))
+  (let-do [int-part 0.0f
+           frac (modf 3.7f &int-part)]
+    (assert-true test
+                 (and (Float.approx frac 0.7f) (Float.approx int-part 3.0f))
+                 "modf returns correct fractional and integer parts"))
 )

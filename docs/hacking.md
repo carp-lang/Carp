@@ -74,7 +74,10 @@ the `Context`.
 
 The following sources are important for evaluation:
 
-- `Eval.hs` -- this is the entry point for the evaluator.
+- `Eval.hs` -- public entry point for the evaluator.
+- `EvalIR.hs` -- evaluator IR and lowering from `XObj`.
+- `EvalVM.hs` -- evaluator VM compile-and-run path (`runEvalIRVM`).
+- `EvalCode.hs` / `EvalVMCore.hs` -- evaluator bytecode and low-level VM runtime.
 - `Obj.hs` -- Defines `Context` which carries compiler state across
   evaluation passes in the form of `Env`s, defines `Env` which holds `Binders`
 from names to `XObjs`.
@@ -101,7 +104,8 @@ conductor of our compilation symphony and orchestrates all the other parts of
 the compiler.
 
 > Note: For a more in depth look at the dynamic evaluator, see [the section on
-> inner workings in the Macro guide](Macros.md#inner-workings)
+> inner workings in the Macro guide](Macros.md#inner-workings) and
+> [Dynamic Evaluator VM](EvaluatorVM.md).
 
 ### Type System
 

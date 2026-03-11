@@ -113,4 +113,16 @@
                 &(Double.from-string "abcd")
                 "from-string works as expected II"
   )
+  (assert-equal test
+                2.0
+                (clamp 0.0 2.0 5.0)
+                "clamp returns max when val exceeds max")
+  (assert-equal test
+                0.0
+                (clamp 0.0 2.0 -1.0)
+                "clamp returns min when val is below min")
+  (assert-equal test
+                1.0
+                (clamp 0.0 2.0 1.0)
+                "clamp returns val when within bounds")
 )

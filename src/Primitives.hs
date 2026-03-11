@@ -15,7 +15,7 @@ import Data.List (foldl')
 import Data.Maybe (fromJust, fromMaybe)
 import Deftype
 import Emit
-import Env (addUsePath, contextEnv, insert, lookupBinderEverywhere, lookupEverywhere, lookupMeta, searchValueBinder)
+import Env (addUsePath, contextEnv, insert, lookupBinderEverywhere, lookupEverywhere, lookupMeta, searchBinder)
 import EvalError
 import Infer
 import Info
@@ -170,7 +170,7 @@ primitiveImplements _ ctx x _ =
 -- N.B. Symbols come into this function FULLY QUALIFIED!
 -- see Eval.hs annotateWithinContext
 define :: Bool -> Context -> Qualified -> IO Context
-define hidden ctx qualifiedXObj =
+define hidden ctx qualifiedXObj = do
   pure (if hidden then (Meta.hide freshBinder) else freshBinder)
     >>= \newBinder ->
       if isTypeDef annXObj
@@ -446,7 +446,7 @@ primitiveMembers _ ctx x = argumentErr ctx "members" "a symbol" "first" x
 -- "meta stub" for the binder with the meta information.
 primitiveMetaSet :: TernaryPrimitiveCallback
 primitiveMetaSet _ ctx target@(XObj (Sym path@(SymPath _ _) _) _ _) (XObj (Str key) _ _) value =
-  pure $ either (const create) (,dynamicNil) (lookupGlobal <> lookupType)
+  pure (either (const create) (,dynamicNil) (lookupGlobal <> lookupType))
   where
     qpath = qualifyPath ctx path
     lookupGlobal :: Either ContextError Context
@@ -722,13 +722,13 @@ primitiveUse xobj ctx (XObj (Sym path _) _ _) =
       global = (contextGlobalEnv ctx)
       -- Look up the module to see if we can actually use it.
       -- The reference might be contextual, if so, append the current context path strings.
-      path' = case (searchValueBinder global path) of
+      path' = case (searchBinder global path) of
         Right _ -> path
         _ -> contextualized
    in pure
         ( case modulePath of
             (SymPath [] "") -> updateGlobalUsePaths global path'
-            _ -> case searchValueBinder global modulePath of
+            _ -> case searchBinder global modulePath of
               Left err -> (evalError ctx (show err) (xobjInfo xobj))
               Right binder ->
                 updateModuleUsePaths global modulePath binder path'

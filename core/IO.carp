@@ -313,6 +313,22 @@
             (Result.Success true)
             (Result.Error (fmt "only %d of %d bytes were written" bytes-written bytes2write)))))))
 
+  (doc append-file
+    "Appends a String to a text [FILE](#file), creating it if it does not exist."
+    ""
+    "Returns a (Result Bool String) indicating success or failure.")
+  (defn append-file [content file-name]
+    (let [  fOut?        (open-file file-name "ab")
+            bytes2write  (String.length content) ]
+      (if (Result.error? &fOut?)
+        (Result.Error (fmt "error='%s' opening file='%s'" &(Result.unsafe-from-error fOut?) file-name))
+        (let-do [  fOut           (Result.unsafe-from-success fOut?)
+                   bytes-written  (IO.Raw.fwrite content 1 bytes2write fOut) ]
+          (IO.Raw.fclose! fOut)
+          (if (Int.= bytes-written bytes2write)
+            (Result.Success true)
+            (Result.Error (fmt "only %d of %d bytes were written" bytes-written bytes2write)))))))
+
   (private getenv-)
   (hidden getenv-)
   (doc getenv- "gets the value of an environment variable (thin wrapper for the C standard library)")

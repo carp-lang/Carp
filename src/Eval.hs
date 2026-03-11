@@ -8,16 +8,18 @@ import Context
 import Control.Applicative
 import Control.Exception
 import Control.Monad.State
+import Data.Bits ((.&.))
 import Data.Either (fromRight)
-import Data.Foldable (foldlM, foldrM)
-import Data.List (foldl', isSuffixOf)
-import Data.List.Split (splitOn, splitWhen)
+import Data.List (isSuffixOf)
+import Data.List.Split (splitOn)
 import Data.Maybe (fromJust, fromMaybe, isJust)
 import Emit
 import qualified Env as E
 import EvalError
+import EvalIR (EvalIR (..), lowerExpr)
+import EvalTypes (LookupPreference (..))
+import EvalVM (runEvalIRVM)
 import Expand
-import Forms
 import Infer
 import Info
 import qualified Map
@@ -37,473 +39,24 @@ import Types
 import Util
 import Prelude hiding (exp, mod)
 
--- TODO: Formalize "lookup order preference" a bit better and move into
--- the Context module.
-data LookupPreference
-  = PreferDynamic
-  | PreferGlobal
-  | PreferLocal [SymPath]
-  deriving (Show)
-
-data Resolver
-  = ResolveGlobal
-  | ResolveLocal
-
-type Evaluator = [XObj] -> IO (Context, Either EvalError XObj)
-
 -- Prefer dynamic bindings
-evalDynamic :: Resolver -> Context -> XObj -> IO (Context, Either EvalError XObj)
-evalDynamic resolver ctx xobj = eval ctx xobj PreferDynamic resolver
+evalDynamic :: Context -> XObj -> IO (Context, Either EvalError XObj)
+evalDynamic ctx xobj = evalIR ctx (lowerExpr ctx xobj) PreferDynamic
 
 -- Prefer global bindings
-evalStatic :: Resolver -> Context -> XObj -> IO (Context, Either EvalError XObj)
-evalStatic resolver ctx xobj = eval ctx xobj PreferGlobal resolver
+evalStatic :: Context -> XObj -> IO (Context, Either EvalError XObj)
+evalStatic ctx xobj = evalIR ctx (lowerExpr ctx xobj) PreferGlobal
 
--- | Dynamic (REPL) evaluation of XObj:s (s-expressions)
--- Note: You might find a bunch of code of the following form both here and in
--- macroExpand:
---
--- pure (ctx, do res <- <something>
---               Right <something else with res>)
---
--- This might a little weird to you, and rightfully so. Through the nested do
--- we ensure that an evaluation is forced where it needs to be, since we depend
--- on the state here; eval is inherently stateful (because it carries around
--- the compiler’s context, which might change after each macro expansion), and
--- it gets real weird with laziness. (Note to the note: this code is mostly a
--- remnant of us using StateT, and might not be necessary anymore since we
--- switched to more explicit state-passing.)
-eval :: Context -> XObj -> LookupPreference -> Resolver -> IO (Context, Either EvalError XObj)
-eval ctx xobj@(XObj o info ty) preference resolver =
-  case o of
-    Lst body -> eval' body
-    Sym spath@(SymPath p n) _ ->
-      pure $
-        case resolver of
-          ResolveGlobal -> unwrapLookup ((tryAllLookups preference) >>= checkStatic)
-          ResolveLocal -> unwrapLookup (tryAllLookups preference)
-      where
-        checkStatic v@(_, Right (XObj (Lst ((XObj obj _ _) : _)) _ _)) =
-          if isResolvableStaticObj obj
-            then pure (ctx, Left (HasStaticCall xobj info))
-            else pure v
-        checkStatic v = pure v
-        -- all else failed, error.
-        unwrapLookup =
-          fromMaybe
-            (throwErr (SymbolNotFound spath) ctx info)
-        -- Try all lookups performs lookups for symbols based on a given
-        -- lookup preference.
-        tryAllLookups :: LookupPreference -> Maybe (Context, Either EvalError XObj)
-        tryAllLookups PreferDynamic = (getDynamic) <|> fullLookup
-        tryAllLookups PreferGlobal = (getGlobal spath) <|> fullLookup
-        tryAllLookups (PreferLocal shadows) = (if spath `elem` shadows then (getLocal n) else (getDynamic)) <|> fullLookup
-        fullLookup = (tryDynamicLookup <|> (if null p then tryInternalLookup spath <|> tryLookup spath else tryLookup spath))
-        getDynamic :: Maybe (Context, Either EvalError XObj)
-        getDynamic =
-          do
-            (Binder _ found) <- maybeId (E.findValueBinder (contextGlobalEnv ctx) (SymPath ("Dynamic" : p) n))
-            pure (ctx, Right (resolveDef found))
-        getGlobal :: SymPath -> Maybe (Context, Either EvalError XObj)
-        getGlobal path =
-          do
-            (Binder meta found) <- maybeId (E.findValueBinder (contextGlobalEnv ctx) path)
-            checkPrivate meta found
-        tryDynamicLookup :: Maybe (Context, Either EvalError XObj)
-        tryDynamicLookup =
-          do
-            (Binder meta found) <- maybeId (E.searchValueBinder (contextGlobalEnv ctx) (SymPath ("Dynamic" : p) n))
-            checkPrivate meta found
-        getLocal :: String -> Maybe (Context, Either EvalError XObj)
-        getLocal name =
-          do
-            internal <- contextInternalEnv ctx
-            (Binder _ found) <- maybeId (E.getValueBinder internal name)
-            pure (ctx, Right (resolveDef found))
-        -- TODO: Deprecate this function?
-        -- The behavior here is a bit nefarious since it relies on cached
-        -- environment parents (it calls `search` on the "internal" binder).
-        -- But for now, it seems to be needed for some cases.
-        tryInternalLookup :: SymPath -> Maybe (Context, Either EvalError XObj)
-        tryInternalLookup path =
-          --trace ("Looking for internally " ++ show path) -- ++ show (fmap (fmap E.binders . E.parent) (contextInternalEnv ctx)))
-          ( contextInternalEnv ctx
-              >>= \e ->
-                maybeId (E.searchValueBinder e path)
-                  >>= \(Binder meta found) -> checkPrivate meta found
-          )
-        tryLookup :: SymPath -> Maybe (Context, Either EvalError XObj)
-        tryLookup path =
-          ( maybeId (E.searchValueBinder (contextGlobalEnv ctx) path)
-              >>= \(Binder meta found) -> checkPrivate meta found
-          )
-            <|> ( (maybeId (E.searchValueBinder (contextGlobalEnv ctx) (SymPath ((contextPath ctx) ++ p) n)))
-                    >>= \(Binder meta found) -> checkPrivate meta found
-                )
-            <|> ( maybeId (lookupBinderInTypeEnv ctx path)
-                    >>= \(Binder _ found) -> pure (ctx, Right (resolveDef found))
-                )
-            <|> ( foldl
-                    (<|>)
-                    Nothing
-                    ( map
-                        ( \(SymPath p' n') ->
-                            maybeId (E.searchValueBinder (contextGlobalEnv ctx) (SymPath (p' ++ (n' : p)) n))
-                              >>= \(Binder meta found) -> checkPrivate meta found
-                        )
-                        (Set.toList (envUseModules (contextGlobalEnv ctx)))
-                    )
-                )
-        checkPrivate meta found =
-          pure $
-            if metaIsTrue meta "private"
-              then throwErr (PrivateBinding (getPath found)) ctx info
-              else (ctx, Right (resolveDef found))
-    Arr objs -> do
-      (newCtx, evaled) <- foldlM successiveEval (ctx, Right []) objs
-      pure
-        ( newCtx,
-          do
-            ok <- evaled
-            Right (XObj (Arr ok) info ty)
-        )
-    StaticArr objs -> do
-      (newCtx, evaled) <- foldlM successiveEval (ctx, Right []) objs
-      pure
-        ( newCtx,
-          do
-            ok <- evaled
-            Right (XObj (StaticArr ok) info ty)
-        )
-    _ -> do
-      (nctx, res) <- annotateWithinContext ctx xobj
-      pure $ case res of
-        Left e -> (nctx, Left e)
-        Right (val, _) -> (nctx, Right val)
-  where
-    resolveDef (XObj (Lst [XObj DefDynamic _ _, _, value]) _ _) = value
-    resolveDef (XObj (Lst [XObj LocalDef _ _, _, value]) _ _) = value
-    resolveDef x = x
-    eval' form =
-      case validate form of
-        Left e -> pure (evalError ctx (format e) (xobjInfo xobj))
-        Right form' ->
-          case form' of
-            (IfPat _ _ _ _) -> evaluateIf form'
-            (DefnPat _ _ _ _) -> specialCommandDefine ctx xobj
-            (DefPat _ _ _) -> specialCommandDefine ctx xobj
-            (ThePat _ _ _) -> evaluateThe form'
-            (LetPat _ _ _) -> evaluateLet form'
-            (FnPat _ _ _) -> evaluateFn form'
-            (AppPat (ClosurePat _ _ _) _) -> evaluateClosure form'
-            (AppPat (DynamicFnPat _ _ _) _) -> evaluateDynamicFn form'
-            (AppPat (MacroPat _ _ _) _) -> evaluateMacro form'
-            (AppPat (CommandPat _ _ _) _) -> evaluateCommand form'
-            (AppPat (PrimitivePat _ _ _) _) -> evaluatePrimitive form'
-            (WithPat _ sym@(SymPat path _) forms) -> specialCommandWith ctx sym path forms
-            (DoPat _ forms) -> evaluateSideEffects forms
-            (WhilePat _ cond body) -> specialCommandWhile ctx cond body
-            (SetPat _ iden value) -> specialCommandSet ctx (iden : [value])
-            -- This next match is a bit redundant looking at first glance, but
-            -- it is necessary to prevent hangs on input such as: `((def foo 2)
-            -- 4)`. Ideally, we could perform only *one* static check (the one
-            -- we do in eval). But the timing is wrong.
-            -- The `def` in the example above initially comes into the
-            -- evaluator as a *Sym*, **not** as a `Def` xobj.  So, we need to
-            -- discriminate on the result of evaluating the symbol to eagerly
-            -- break the evaluation loop, otherwise we will proceed to evaluate
-            -- the def form, yielding Unit, and attempt to reevaluate unit
-            -- indefinitely on subsequent eval loops.
-            -- Importantly, the loop *is only broken on literal nested lists*.
-            -- That is, passing a *symbol* that, e.g. resolves to a defn list, won't
-            -- break our normal loop.
-            (AppPat self@(ListPat (x@(SymPat _ _) : _)) args) ->
-              do
-                (_, evald) <- eval ctx x preference ResolveGlobal
-                case evald of
-                  Left err -> pure (evalError ctx (show err) (xobjInfo xobj))
-                  Right x' -> case checkStatic' x' of
-                    Right _ -> evaluateApp (self : args)
-                    Left er -> pure (ctx, Left er)
-            (AppPat (ListPat _) _) -> evaluateApp form'
-            (AppPat (SymPat _ _) _) -> evaluateApp form'
-            (AppPat (XObj other _ _) _)
-              | isResolvableStaticObj other ->
-                pure (ctx, (Left (HasStaticCall xobj info)))
-            [] -> pure (ctx, dynamicNil)
-            _ -> pure (throwErr (UnknownForm xobj) ctx (xobjInfo xobj))
-    checkStatic' (XObj Def _ _) = Left (HasStaticCall xobj info)
-    checkStatic' (XObj (Defn _) _ _) = Left (HasStaticCall xobj info)
-    checkStatic' (XObj (Interface _ _) _ _) = Left (HasStaticCall xobj info)
-    checkStatic' (XObj (Instantiate _) _ _) = Left (HasStaticCall xobj info)
-    checkStatic' (XObj (Deftemplate _) _ _) = Left (HasStaticCall xobj info)
-    checkStatic' (XObj (External _) _ _) = Left (HasStaticCall xobj info)
-    checkStatic' (XObj (Match _) _ _) = Left (HasStaticCall xobj info)
-    checkStatic' (XObj Ref _ _) = Left (HasStaticCall xobj info)
-    checkStatic' x' = Right x'
-    successiveEval (ctx', acc) x =
-      case acc of
-        Left _ -> pure (ctx', acc)
-        Right l -> do
-          (newCtx, evald) <- eval ctx' x preference resolver
-          pure $ case evald of
-            Right res -> (newCtx, Right (l ++ [res]))
-            Left err -> (newCtx, Left err)
-    evaluateIf :: Evaluator
-    evaluateIf (IfPat _ cond true false) = do
-      (newCtx, evd) <- eval ctx cond preference ResolveLocal
-      case evd of
-        Right cond' ->
-          case xobjObj cond' of
-            Bol b -> eval newCtx (if b then true else false) preference ResolveLocal
-            _ ->
-              pure (throwErr (IfContainsNonBool cond) ctx (xobjInfo cond))
-        Left e -> pure (newCtx, Left e)
-    evaluateIf _ = pure (evalError ctx (format (GenericMalformed xobj)) (xobjInfo xobj))
-    evaluateThe :: Evaluator
-    evaluateThe (ThePat the t value) = do
-      (newCtx, evaledValue) <- expandAll (evalDynamic ResolveLocal) ctx value -- TODO: Why expand all here?
-      pure
-        ( newCtx,
-          do
-            okValue <- evaledValue
-            Right (XObj (Lst [the, t, okValue]) info ty)
-        )
-    evaluateThe _ = pure (evalError ctx (format (GenericMalformed xobj)) (xobjInfo xobj))
-    evaluateLet :: Evaluator
-    evaluateLet (LetPat _ (ArrPat bindings) body) = do
-      let binds = unwrapVar (pairwise bindings) []
-          ni = Env Map.empty (contextInternalEnv ctx) Nothing Set.empty InternalEnv 0
-      eitherCtx <- foldrM successiveEval' (Right (replaceInternalEnv ctx ni)) binds
-      case eitherCtx of
-        Left err -> pure (ctx, Left err)
-        Right newCtx -> do
-          (finalCtx, evaledBody) <- eval newCtx body (PreferLocal (map (\(name, _) -> (SymPath [] name)) binds)) ResolveLocal
-          let e = fromMaybe E.empty $ contextInternalEnv finalCtx
-              parentEnv = envParent e
-          pure
-            ( replaceInternalEnvMaybe finalCtx parentEnv,
-              do
-                okBody <- evaledBody
-                Right okBody
-            )
-      where
-        unwrapVar [] acc = acc
-        unwrapVar ((XObj (Sym (SymPath [] x) _) _ _, y) : xs) acc = unwrapVar xs ((x, y) : acc)
-        unwrapVar _ _ = error "unwrapvar"
-        successiveEval' (n, x) =
-          \case
-            err@(Left _) -> pure err
-            Right ctx' -> do
-              -- Bind a reference to the let bind in a recursive
-              -- environment. This permits recursion in anonymous functions
-              -- in let binds such as:
-              --   (let [f (fn [x] (if (= x 1) x (f (dec x))))] (f 10))
-              let origin = (contextInternalEnv ctx')
-                  recFix = (E.recursive origin (Just "let-rec-env") 0)
-                  envWithSelf = fromRight recFix $ if isFn x then E.insertX recFix (SymPath [] n) x else Right recFix
-                  ctx'' = replaceInternalEnv ctx' envWithSelf
-              (newCtx, res) <- eval ctx'' x preference resolver
-              case res of
-                Right okX ->
-                  pure $ Right (fromRight (error "Failed to eval let binding!!") (bindLetDeclaration (newCtx {contextInternalEnv = origin}) n okX))
-                Left err -> pure $ Left err
-    evaluateLet _ = pure (evalError ctx (format (GenericMalformed xobj)) (xobjInfo xobj))
-    evaluateFn :: Evaluator
-    evaluateFn (FnPat self args body) = do
-      (newCtx, expanded) <- macroExpand ctx body
-      pure $
-        case expanded of
-          Right b ->
-            (newCtx, Right (XObj (Closure (XObj (Lst [self, args, b]) info ty) (CCtx newCtx)) info ty))
-          Left err -> (ctx, Left err)
-    evaluateFn _ = pure (evalError ctx (format (GenericMalformed xobj)) (xobjInfo xobj))
-    evaluateClosure :: Evaluator
-    evaluateClosure (AppPat (ClosurePat params body c) args) = do
-      (newCtx, evaledArgs) <- foldlM successiveEval (ctx, Right []) args
-      case evaledArgs of
-        Right okArgs -> do
-          let newGlobals = (contextGlobalEnv newCtx) <> (contextGlobalEnv c)
-              newTypes = TypeEnv $ (getTypeEnv (contextTypeEnv newCtx)) <> (getTypeEnv (contextTypeEnv c))
-              updater = replaceHistory' (contextHistory ctx) . replaceGlobalEnv' newGlobals . replaceTypeEnv' newTypes
-          (ctx', res) <- apply (updater c) body params okArgs
-          pure (replaceGlobalEnv newCtx (contextGlobalEnv ctx'), res)
-        Left err -> pure (newCtx, Left err)
-    evaluateClosure _ = pure (evalError ctx (format (GenericMalformed xobj)) (xobjInfo xobj))
-    evaluateDynamicFn :: Evaluator
-    evaluateDynamicFn (AppPat (DynamicFnPat _ params body) args) = do
-      (newCtx, evaledArgs) <- foldlM successiveEval (ctx, Right []) args
-      case evaledArgs of
-        Right okArgs -> apply newCtx body params okArgs
-        Left err -> pure (newCtx, Left err)
-    evaluateDynamicFn _ = pure (evalError ctx (format (GenericMalformed xobj)) (xobjInfo xobj))
-    evaluateMacro :: Evaluator
-    evaluateMacro (AppPat (MacroPat _ params body) args) = do
-      (ctx', res) <- apply ctx body params args
-      case res of
-        Right xobj' -> macroExpand ctx' xobj'
-        Left _ -> pure (ctx, res)
-    evaluateMacro _ = pure (evalError ctx (format (GenericMalformed xobj)) (xobjInfo xobj))
-    evaluateCommand :: Evaluator
-    evaluateCommand (AppPat (CommandPat (NullaryCommandFunction nullary) _ _) []) =
-      nullary ctx
-    evaluateCommand (AppPat (CommandPat (UnaryCommandFunction unary) _ _) [x]) = do
-      (c, evaledArgs) <- foldlM successiveEval (ctx, Right []) [x]
-      case evaledArgs of
-        Right [x'] -> unary c x'
-        Left err -> pure (ctx, Left err)
-        _ -> error "eval: failed to evaluate command arguments"
-    evaluateCommand (AppPat (CommandPat (BinaryCommandFunction binary) _ _) [x, y]) = do
-      (c, evaledArgs) <- foldlM successiveEval (ctx, Right []) [x, y]
-      case evaledArgs of
-        Right [x', y'] -> binary c x' y'
-        Left err -> pure (ctx, Left err)
-        _ -> error "eval: failed to evaluate command arguments"
-    evaluateCommand (AppPat (CommandPat (TernaryCommandFunction ternary) _ _) [x, y, z]) = do
-      (c, evaledArgs) <- foldlM successiveEval (ctx, Right []) [x, y, z]
-      case evaledArgs of
-        Right [x', y', z'] -> ternary c x' y' z'
-        Left err -> pure (ctx, Left err)
-        _ -> error "eval: failed to evaluate command arguments"
-    evaluateCommand (AppPat (CommandPat (VariadicCommandFunction variadic) _ _) args) = do
-      (c, evaledArgs) <- foldlM successiveEval (ctx, Right []) args
-      case evaledArgs of
-        Right args' -> variadic c args'
-        Left err -> pure (ctx, Left err)
-    -- Should be caught during validation
-    evaluateCommand (AppPat (CommandPat _ _ _) _) =
-      pure (evalError ctx (format (GenericMalformed xobj)) (xobjInfo xobj))
-    evaluateCommand _ = pure (evalError ctx (format (GenericMalformed xobj)) (xobjInfo xobj))
-    evaluatePrimitive :: Evaluator
-    evaluatePrimitive (AppPat p@(PrimitivePat (NullaryPrimitive nullary) _ _) []) =
-      nullary p ctx
-    evaluatePrimitive (AppPat p@(PrimitivePat (UnaryPrimitive unary) _ _) [x]) = do
-      unary p ctx x
-    evaluatePrimitive (AppPat p@(PrimitivePat (BinaryPrimitive binary) _ _) [x, y]) = do
-      binary p ctx x y
-    evaluatePrimitive (AppPat p@(PrimitivePat (TernaryPrimitive ternary) _ _) [x, y, z]) = do
-      ternary p ctx x y z
-    evaluatePrimitive (AppPat p@(PrimitivePat (QuaternaryPrimitive quaternary) _ _) [x, y, z, w]) = do
-      quaternary p ctx x y z w
-    evaluatePrimitive (AppPat p@(PrimitivePat (VariadicPrimitive variadic) _ _) args) = do
-      variadic p ctx args
-    -- Should be caught during validation
-    evaluatePrimitive (AppPat (PrimitivePat _ _ _) _) =
-      pure (evalError ctx (format (GenericMalformed xobj)) (xobjInfo xobj))
-    evaluatePrimitive _ = pure (evalError ctx (format (GenericMalformed xobj)) (xobjInfo xobj))
-    evaluateApp :: Evaluator
-    evaluateApp (AppPat f' args) =
-      case f' of
-        l@(ListPat _) -> go l ResolveLocal
-        sym@(SymPat _ _) -> go sym resolver
-        _ -> pure (evalError ctx (format (GenericMalformed xobj)) (xobjInfo xobj))
-      where
-        go x resolve =
-          do
-            (newCtx, f) <- eval ctx x preference resolve
-            case f of
-              Right fun -> do
-                (newCtx', res) <- eval (pushFrame newCtx xobj) (XObj (Lst (fun : args)) (xobjInfo x) (xobjTy x)) preference ResolveLocal
-                pure (popFrame newCtx', res)
-              x' -> pure (newCtx, x')
-    evaluateApp _ = pure (evalError ctx (format (GenericMalformed xobj)) (xobjInfo xobj))
-    evaluateSideEffects :: Evaluator
-    evaluateSideEffects forms = do
-      foldlM successiveEval' (ctx, dynamicNil) forms
-      where
-        successiveEval' (ctx', acc) x =
-          case acc of
-            err@(Left _) -> pure (ctx', err)
-            Right _ -> eval ctx' x preference resolver
+-- | IR entry point for evaluator execution.
+evalIR :: Context -> EvalIR -> LookupPreference -> IO (Context, Either EvalError XObj)
+evalIR = runEvalIRVM
+
+-- | Public evaluator entry now routes through IR by default.
+eval :: Context -> XObj -> LookupPreference -> IO (Context, Either EvalError XObj)
+eval ctx xobj preference = evalIR ctx (lowerExpr ctx xobj) preference
 
 macroExpand :: Context -> XObj -> IO (Context, Either EvalError XObj)
-macroExpand ctx xobj =
-  case xobj of
-    XObj (Arr objs) i t -> do
-      (newCtx, expanded) <- foldlM successiveExpand (ctx, Right []) objs
-      pure
-        ( newCtx,
-          do
-            ok <- expanded
-            Right (XObj (Arr ok) i t)
-        )
-    XObj (StaticArr objs) i t -> do
-      (newCtx, expanded) <- foldlM successiveExpand (ctx, Right []) objs
-      pure
-        ( newCtx,
-          do
-            ok <- expanded
-            Right (XObj (StaticArr ok) i t)
-        )
-    XObj (Lst (XObj (Sym (SymPath [] "defmodule") _) _ _ : _)) _ _ ->
-      pure (ctx, Right xobj)
-    XObj (Lst [XObj (Sym (SymPath [] "quote") _) _ _, _]) _ _ ->
-      pure (ctx, Right xobj)
-    XObj (Lst [XObj (Lst (XObj Macro _ _ : _)) _ _]) _ _ -> evalDynamic ResolveLocal ctx xobj
-    XObj (Lst (x@(XObj (Sym _ _) _ _) : args)) i t -> do
-      (_, f) <- evalDynamic ResolveLocal ctx x
-      case f of
-        Right m@(XObj (Lst (XObj Macro _ _ : _)) _ _) -> do
-          (newCtx', res) <- evalDynamic ResolveLocal ctx (XObj (Lst (m : args)) i t)
-          pure (newCtx', res)
-        _ -> do
-          (newCtx, expanded) <- foldlM successiveExpand (ctx, Right []) args
-          pure
-            ( newCtx,
-              do
-                ok <- expanded
-                Right (XObj (Lst (x : ok)) i t)
-            )
-    XObj (Lst objs) i t -> do
-      (newCtx, expanded) <- foldlM successiveExpand (ctx, Right []) objs
-      pure
-        ( newCtx,
-          do
-            ok <- expanded
-            Right (XObj (Lst ok) i t)
-        )
-    _ -> pure (ctx, Right xobj)
-  where
-    successiveExpand (ctx', acc) x =
-      case acc of
-        Left _ -> pure (ctx', acc)
-        Right l -> do
-          (newCtx, expanded) <- macroExpand ctx' x
-          pure $ case expanded of
-            Right res -> (newCtx, Right (l ++ [res]))
-            Left err -> (newCtx, Left err)
-
-apply :: Context -> XObj -> [XObj] -> [XObj] -> IO (Context, Either EvalError XObj)
-apply ctx@Context {contextInternalEnv = internal} body params args =
-  let allParams = map getName params
-   in case splitWhen (":rest" ==) allParams of
-        [a, b] -> callWith a b
-        [a] -> callWith a []
-        _ ->
-          pure (throwErr (MacroBadArgumentSplit allParams) ctx Nothing)
-  where
-    callWith proper rest = do
-      let n = length proper
-          insideEnv = Env Map.empty internal Nothing Set.empty InternalEnv 0
-          insideEnv' =
-            foldl'
-              (\e (p, x) -> fromRight (error "Couldn't add local def ") (E.insertX e (SymPath [] p) (toLocalDef p x)))
-              insideEnv
-              (zip proper (take n args))
-          insideEnv'' =
-            if null rest
-              then insideEnv'
-              else
-                fromRight
-                  (error "couldn't insert into inside env")
-                  ( E.insertX
-                      insideEnv'
-                      (SymPath [] (head rest))
-                      (XObj (Lst (drop n args)) Nothing Nothing)
-                  )
-          binds = if null rest then proper else proper ++ [(head rest)]
-      (c, r) <- (eval (replaceInternalEnv ctx insideEnv'') body (PreferLocal (map (\x -> (SymPath [] x)) binds)) ResolveLocal)
-      pure (c {contextInternalEnv = internal}, r)
+macroExpand ctx xobj = expand MacroExpandOnly evalDynamic ctx xobj
 
 -- | Parses a string and then converts the resulting forms to commands, which are evaluated in order.
 executeString :: Bool -> Bool -> Context -> String -> String -> IO Context
@@ -538,7 +91,7 @@ executeStringAtLine line doCatch printResult ctx input fileName =
             xobjs
         when
           (printResult && xobjTy res /= Just UnitTy)
-          (putStrLnWithColor Yellow ("=> " ++ pretty res))
+          (putStrLnWithColor Yellow ("=> " ++ prettyDynamic res))
         pure ctx'
     interactiveFolder (_, context) =
       executeCommand context
@@ -549,6 +102,33 @@ executeStringAtLine line doCatch printResult ctx input fileName =
         _ -> emitErrorWithLabel "PARSE ERROR" e
       throw CancelEvaluationException
 
+-- | Like 'pretty', but detects dynamic map bucket-lists and formats them as {k v ...}.
+prettyDynamic :: XObj -> String
+prettyDynamic = visit
+  where
+    visit xobj =
+      case xobjObj xobj of
+        Lst lst
+          | isDynMapBuckets lst ->
+            "{" ++ joinWithSpace (concatMap pairsFrom lst) ++ "}"
+        Lst lst -> "(" ++ joinWithSpace (map visit lst) ++ ")"
+        Arr arr -> "[" ++ joinWithSpace (map visit arr) ++ "]"
+        StaticArr arr -> "$[" ++ joinWithSpace (map visit arr) ++ "]"
+        _ -> pretty xobj
+    isDynMapBuckets lst =
+      let n = length lst
+       in n >= 16
+            && (n .&. (n - 1)) == 0
+            && all isBucket lst
+    isBucket (XObj (Lst pairs) _ _) = all isPair pairs
+    isBucket _ = False
+    isPair (XObj (Lst [_, _]) _ _) = True
+    isPair _ = False
+    pairsFrom (XObj (Lst pairs) _ _) = concatMap pairElems pairs
+    pairsFrom _ = []
+    pairElems (XObj (Lst [k, v]) _ _) = [visit k, visit v]
+    pairElems _ = []
+
 -- | Used by functions that has a series of forms to evaluate and need to fold over them (producing a new Context in the end)
 folder :: Context -> XObj -> IO Context
 folder context xobj = do
@@ -557,13 +137,13 @@ folder context xobj = do
 
 -- | Take a repl command and execute it.
 executeCommand :: Context -> XObj -> IO (XObj, Context)
-executeCommand ctx@(Context env _ _ _ _ _ _ _) xobj =
+executeCommand ctx@(Context env _ _ _ _ _ _ _ _) xobj =
   do
     when (isJust (envModuleName env)) $
       error ("Global env module name is " ++ fromJust (envModuleName env) ++ " (should be Nothing).")
     -- The s-expression command is a special case that prefers global/static bindings over dynamic bindings
     -- when given a naked binding (no path) as an argument; (s-expr inc)
-    (newCtx, result) <- if xobjIsSexp xobj then evalStatic ResolveGlobal ctx xobj else evalDynamic ResolveGlobal ctx xobj
+    (newCtx, result) <- if xobjIsSexp xobj then evalStatic ctx xobj else evalDynamic ctx xobj
     case result of
       Left e@EvalError {} -> do
         reportExecutionError newCtx (show e)
@@ -657,14 +237,14 @@ specialCommandDefine ctx xobj =
 
 specialCommandWhile :: Context -> XObj -> XObj -> IO (Context, Either EvalError XObj)
 specialCommandWhile ctx cond body = do
-  (newCtx, evd) <- evalDynamic ResolveLocal ctx cond
+  (newCtx, evd) <- evalDynamic ctx cond
   case evd of
     Right c ->
       case xobjObj c of
         Bol b ->
           if b
             then do
-              (newCtx', _) <- evalDynamic ResolveLocal newCtx body
+              (newCtx', _) <- evalDynamic newCtx body
               specialCommandWhile newCtx' cond body
             else pure (newCtx, dynamicNil)
         _ ->
@@ -676,7 +256,7 @@ getSigFromDefnOrDef ctx xobj =
   let pathStrings = contextPath ctx
       globalEnv = contextGlobalEnv ctx
       fppl = projectFilePathPrintLength (contextProj ctx)
-      path = getPath xobj
+      path = normalizePath (fromMaybe (getPath xobj) (pathFromDefLike xobj))
       fullPath = case path of
         (SymPath [] _) -> consPath pathStrings path
         (SymPath _ _) -> path
@@ -691,6 +271,21 @@ getSigFromDefnOrDef ctx xobj =
                in Right (Just (t, recreatedSigForm))
             Nothing -> Left (EvalError ("Can't use '" ++ pretty foundSignature ++ "' as a type signature") (contextHistory ctx) fppl (xobjInfo xobj))
         Nothing -> Right Nothing
+  where
+    pathFromDefLike :: XObj -> Maybe SymPath
+    pathFromDefLike (XObj (Lst (XObj (Defn _) _ _ : XObj (Sym p _) _ _ : _)) _ _) = Just p
+    pathFromDefLike (XObj (Lst (XObj Def _ _ : XObj (Sym p _) _ _ : _)) _ _) = Just p
+    pathFromDefLike (XObj (Lst (XObj (Sym (SymPath _ headName) _) _ _ : XObj (Sym p _) _ _ : _)) _ _)
+      | headName == "defn" || headName == "def" = Just p
+    pathFromDefLike _ = Nothing
+    normalizePath :: SymPath -> SymPath
+    normalizePath p@(SymPath mods name)
+      | null mods && '.' `elem` name =
+        case splitOn "." name of
+          [] -> p
+          [single] -> SymPath [] single
+          parts -> SymPath (init parts) (last parts)
+      | otherwise = p
 
 annotateWithinContext :: Context -> XObj -> IO (Context, Either EvalError (XObj, [XObj]))
 annotateWithinContext ctx xobj = do
@@ -701,7 +296,7 @@ annotateWithinContext ctx xobj = do
   case sig of
     Left err -> pure (ctx, Left err)
     Right okSig -> do
-      (_, expansionResult) <- expandAll (evalDynamic ResolveLocal) ctx xobj
+      (_, expansionResult) <- expandAll (evalDynamic) ctx xobj
       case expansionResult of
         Left err -> pure (ctx, Left err)
         Right expanded ->
@@ -718,14 +313,14 @@ annotateWithinContext ctx xobj = do
                     Right ok -> pure (ctx, Right ok)
 
 primitiveDefmodule :: VariadicPrimitiveCallback
-primitiveDefmodule xobj ctx@(Context env i tenv pathStrings _ _ _ _) (XObj (Sym (SymPath [] moduleName) _) si _ : innerExpressions) =
+primitiveDefmodule xobj ctx@(Context env i tenv pathStrings _ _ _ _ _) (XObj (Sym (SymPath [] moduleName) _) si _ : innerExpressions) =
   -- N.B. The `envParent` rewrite at the end of this line is important!
   -- lookups delve into parent envs by default, which is normally what we want, but in this case it leads to problems
   -- when submodules happen to share a name with an existing module or type at the global level.
-  either (const (defineNewModule emptyMeta)) updateExistingModule (E.searchValueBinder ((fromRight env (E.getInnerEnv env pathStrings)) {envParent = Nothing}) (SymPath [] moduleName))
+  either (const (defineNewModule emptyMeta)) updateExistingModule (E.searchBinder ((fromRight env (E.getInnerEnv env pathStrings)) {envParent = Nothing}) (SymPath [] moduleName))
     >>= defineModuleBindings
     >>= \(newCtx, result) ->
-      let updater c = (c {contextInternalEnv = (E.parent =<< contextInternalEnv c)})
+      let updater c = replaceInternalEnvMaybe c (E.parent =<< contextInternalEnv c)
        in case result of
             Left err -> pure (newCtx, Left err)
             Right _ -> pure (updater (popModulePath newCtx), dynamicNil)
@@ -767,7 +362,7 @@ primitiveDefmodule xobj ctx@(Context env i tenv pathStrings _ _ _ _) (XObj (Sym 
       macroExpand ctx' expressions
         >>= \(ctx'', res) -> case res of
           Left err -> pure (ctx'', Left err)
-          Right r -> evalDynamic ResolveLocal ctx'' r
+          Right r -> evalDynamic ctx'' r
 primitiveDefmodule _ ctx (x : _) =
   pure (throwErr (DefmoduleContainsNonSymbol x) ctx (xobjInfo x))
 primitiveDefmodule xobj ctx [] =
@@ -864,10 +459,10 @@ loadInternal ctx xobj path i fileToLoad reloadMode = do
     isFrozen _ = False
     invalidPath ctx' path' =
       throwErr (LoadFileNotFound path') ctx' (xobjInfo xobj)
-    invalidPathWith ctx' path' stderr cleanup cleanupPath = do
+    invalidPathWith ctx' path' stderrOutput cleanup cleanupPath = do
       _ <- liftIO $ when cleanup (removeDirectoryRecursive cleanupPath)
       pure $
-        throwErr (LoadGitFailure path' stderr) ctx' (xobjInfo xobj)
+        throwErr (LoadGitFailure path' stderrOutput) ctx' (xobjInfo xobj)
     replaceC _ _ [] = []
     replaceC c s (a : b) = if a == c then s ++ replaceC c s b else a : replaceC c s b
     cantLoadSelf ctx' path' =
@@ -977,7 +572,7 @@ commandExpand = macroExpand
 -- | i.e. (Int.+ 2 3) => "_0 = 2 + 3"
 commandC :: UnaryCommandCallback
 commandC ctx xobj = do
-  (newCtx, result) <- expandAll (evalDynamic ResolveLocal) ctx xobj
+  (newCtx, result) <- expandAll (evalDynamic) ctx xobj
   case result of
     Left err -> pure (newCtx, Left err)
     Right expanded -> do
@@ -995,7 +590,7 @@ commandC ctx xobj = do
 -- | This function will return the compiled AST.
 commandExpandCompiled :: UnaryCommandCallback
 commandExpandCompiled ctx xobj = do
-  (newCtx, result) <- expandAll (evalDynamic ResolveLocal) ctx xobj
+  (newCtx, result) <- expandAll (evalDynamic) ctx xobj
   case result of
     Left err -> pure (newCtx, Left err)
     Right expanded -> do
@@ -1057,7 +652,7 @@ buildMainFunction xobj =
 
 primitiveDefdynamic :: BinaryPrimitiveCallback
 primitiveDefdynamic _ ctx (XObj (Sym (SymPath [] name) _) _ _) value = do
-  (newCtx, result) <- evalDynamic ResolveLocal ctx value
+  (newCtx, result) <- evalDynamic ctx value
   case result of
     Left err -> pure (newCtx, Left err)
     Right evaledBody ->
@@ -1070,12 +665,12 @@ specialCommandSet ctx [orig@(XObj (Sym path@(SymPath _ _) _) _ _), val] =
   let lookupInternal =
         maybe (Left "") Right (contextInternalEnv ctx)
           >>= \e ->
-            unwrapErr (E.searchValueBinder e path)
+            unwrapErr (E.searchBinder e path)
               >>= \binder -> pure (binder, setInternal, e)
       lookupGlobal =
         Right (contextGlobalEnv ctx)
           >>= \e ->
-            unwrapErr (E.searchValueBinder e path)
+            unwrapErr (E.searchBinder e path)
               >>= \binder -> pure (binder, setGlobal, e)
    in either
         ((const (pure $ (throwErr (SetVarNotFound orig) ctx (xobjInfo orig)))))
@@ -1090,7 +685,7 @@ specialCommandSet ctx [orig@(XObj (Sym path@(SymPath _ _) _) _ _), val] =
         Just DynamicTy -> handleUnTyped
         Nothing -> handleUnTyped
         _ ->
-          evalDynamic ResolveLocal ctx val
+          evalDynamic ctx val
             >>= \(newCtx, result) ->
               case result of
                 Right evald -> typeCheckValueAgainstBinder newCtx evald binder >>= \(nctx, typedVal) -> setter nctx env typedVal binder
@@ -1098,7 +693,7 @@ specialCommandSet ctx [orig@(XObj (Sym path@(SymPath _ _) _) _ _), val] =
       where
         handleUnTyped :: IO (Context, Either EvalError XObj)
         handleUnTyped =
-          evalDynamic ResolveLocal ctx val
+          evalDynamic ctx val
             >>= \(newCtx, result) -> setter newCtx env result binder
     setGlobal :: Context -> Env -> Either EvalError XObj -> Binder -> IO (Context, Either EvalError XObj)
     setGlobal ctx' env value binder =
@@ -1153,7 +748,7 @@ setStaticOrDynamicVar path@(SymPath _ name) env binder value =
 primitiveEval :: UnaryPrimitiveCallback
 primitiveEval _ ctx val = do
   -- primitives don’t evaluate their arguments, so this needs to double-evaluate
-  (newCtx, arg) <- evalDynamic ResolveLocal ctx val
+  (newCtx, arg) <- evalDynamic ctx val
   case arg of
     Left err -> pure (newCtx, Left err)
     Right evald -> do
@@ -1161,18 +756,14 @@ primitiveEval _ ctx val = do
       case expanded of
         Left err -> pure (newCtx', Left err)
         Right ok -> do
-          (finalCtx, res) <- evalDynamic ResolveLocal newCtx' ok
+          (finalCtx, res) <- evalDynamic newCtx' ok
           pure $ case res of
             Left (HasStaticCall x i) -> throwErr (StaticCall x) ctx i
             _ -> (finalCtx, res)
 
 dynamicOrMacro :: Context -> Obj -> Ty -> String -> XObj -> XObj -> IO (Context, Either EvalError XObj)
-dynamicOrMacro ctx pat ty name params body = do
-  (ctx', exp) <- macroExpand ctx body
-  case exp of
-    Right expanded ->
-      dynamicOrMacroWith ctx' (\path -> [XObj pat Nothing Nothing, XObj (Sym path Symbol) Nothing Nothing, params, expanded]) ty name body
-    Left _ -> pure (ctx, exp)
+dynamicOrMacro ctx pat ty name params body =
+  dynamicOrMacroWith ctx (\path -> [XObj pat Nothing Nothing, XObj (Sym path Symbol) Nothing Nothing, params, body]) ty name body
 
 primitiveDefndynamic :: TernaryPrimitiveCallback
 primitiveDefndynamic _ ctx (XObj (Sym (SymPath [] name) _) _ _) params body =

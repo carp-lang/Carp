@@ -2,7 +2,7 @@ module InitialTypes where
 
 import Control.Monad.State
 import Data.Either (fromRight)
-import Env as E
+import qualified Env as E
 import Info
 import qualified Map
 import Obj
@@ -117,7 +117,7 @@ initialTypes typeEnv rootEnv root = evalState (visit rootEnv root) 0
       unknown -> pure (Left (InvalidObj unknown xobj))
     visitSymbol :: Env -> XObj -> SymPath -> State Integer (Either TypeError XObj)
     visitSymbol e xobj@(XObj (Sym name LookupRecursive) _ _) _ =
-      case E.searchValueBinder e name of
+      case E.searchBinder e name of
         -- If this recursive symbol is already typed in this environment, use that type.
         -- This is relevant for, e.g. recursive function calls.
         -- We need to use search here to check parents as our let-binding handling possibly puts recursive
@@ -133,12 +133,12 @@ initialTypes typeEnv rootEnv root = evalState (visit rootEnv root) 0
         SymPath _ name@('?' : _) -> pure (Right (xobj {xobjTy = Just (VarTy name)}))
         SymPath _ (':' : _) -> pure (Left (LeadingColon xobj))
         _ ->
-          case E.searchValue env symPath of
+          case E.search env symPath of
             Right (foundEnv, binder) ->
               case xobjTy (binderXObj binder) of
                 -- Don't rename internal symbols like parameters etc!
                 Just theType
-                  | envIsExternal foundEnv -> do
+                  | E.envIsExternal foundEnv -> do
                     renamed <- renameVarTys theType
                     pure (Right (xobj {xobjTy = Just renamed}))
                   | otherwise -> pure (Right (xobj {xobjTy = Just theType}))
@@ -153,7 +153,7 @@ initialTypes typeEnv rootEnv root = evalState (visit rootEnv root) 0
     visitInterfaceSym :: Env -> XObj -> State Integer (Either TypeError XObj)
     visitInterfaceSym _ xobj@(XObj (InterfaceSym name) _ _) =
       do
-        freshTy <- case getTypeBinder typeEnv name of
+        freshTy <- case E.getBinder typeEnv name of
           Right (Binder _ (XObj (Lst [XObj (Interface interfaceSignature _) _ _, _]) _ _)) -> renameVarTys interfaceSignature
           Right (Binder _ x) -> error ("A non-interface named '" ++ name ++ "' was found in the type environment: " ++ pretty x)
           Left _ -> genVarTy

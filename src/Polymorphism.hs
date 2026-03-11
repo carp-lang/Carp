@@ -53,16 +53,16 @@ allImplementations typeEnv env functionName functionType =
       --trace ("areUnifiable? " ++ show functionType ++ " == " ++ show t ++ " " ++ show (areUnifiable functionType t)) $
       areUnifiable functionType t
     predicate Nothing = error "allfunctionswithnameandsignature"
-    foundBindings = case getTypeBinder typeEnv functionName of
+    foundBindings = case getBinder typeEnv functionName of
       -- this function is an interface; lookup implementations
       Right (Binder _ (XObj (Lst (XObj (Interface _ paths) _ _ : _)) _ _)) ->
-        case rights $ map (\p -> searchValue env p) (paths ++ [(SymPath [] functionName)]) of
+        case rights $ map (\p -> search env p) (paths ++ [(SymPath [] functionName)]) of
           [] -> getPoly
           -- getPoly might return some functions we already found. Use set ops
           -- to remove duplicates.
           found -> (unionBy (\x y -> (snd x) == (snd y)) found getPoly)
       -- just a regular function; look for it
-      _ -> fromRight [] ((fmap (: []) (Env.getValue env functionName)) <> pure (lookupEverywhere env functionName))
+      _ -> fromRight [] ((fmap (: []) (find' env (SymPath [] functionName))) <> pure (lookupEverywhere env functionName))
     getPoly = case findPoly env functionName functionType of
       Right r -> [r]
       Left _ -> (lookupEverywhere env functionName)
