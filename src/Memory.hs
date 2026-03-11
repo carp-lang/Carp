@@ -23,7 +23,6 @@ data MemState = MemState
   { memStateDeleters :: Set.Set Deleter,
     memStateDeps :: Set.Set Ty,
     memStateLifetimes :: Map.Map String LifetimeMode,
-    memStateLocalRefSources :: Map.Map String [(String, XObj)],
     memStateParamDeleters :: Set.Set Deleter
   }
   deriving (Show)
@@ -32,6 +31,7 @@ data MemState = MemState
 data LifetimeMode
   = LifetimeInsideFunction (Set.Set String)
   | LifetimeOutsideFunction
+  | LifetimeMixed (Set.Set String) -- both external and internal sources
   deriving (Show)
 
 -- | Find out what deleters are needed and where in an XObj.
@@ -39,7 +39,7 @@ data LifetimeMode
 -- | the code emitter can access them and insert calls to destructors.
 manageMemory :: TypeEnv -> Env -> XObj -> Either TypeError (XObj, Set.Set Ty)
 manageMemory typeEnv globalEnv root =
-  let (finalObj, finalState) = runState (visit root) (MemState Set.empty Set.empty Map.empty Map.empty Set.empty)
+  let (finalObj, finalState) = runState (visit root) (MemState Set.empty Set.empty Map.empty Set.empty)
       deleteThese = memStateDeleters finalState
       deps = memStateDeps finalState
    in -- (trace ("Delete these: " ++ joinWithComma (map show (Set.toList deleteThese)))) $
@@ -50,18 +50,13 @@ manageMemory typeEnv globalEnv root =
            in -- This final check of lifetimes works on the lifetimes mappings after analyzing the function form, and
               --  after all the local variables in it have been deleted. This is needed for values that are created
               --  directly in body position, e.g. (defn f [] &[1 2 3])
-              case evalState (refTargetIsAlive ok) (MemState Set.empty Set.empty (memStateLifetimes finalState) Map.empty Set.empty) of
+              -- The final check uses param deleters so function params are
+              -- considered alive, and returnRefTargetIsAlive so only return-
+              -- type lifetimes are checked (not the function type's own
+              -- lifetime, which may have had internal temporaries merged in).
+              case evalState (returnRefTargetIsAlive ok) (MemState (memStateParamDeleters finalState) Set.empty (memStateLifetimes finalState) Set.empty) of
                 Left err -> Left err
-                Right _ ->
-                  -- Check local ref sources: when a lifetime variable was
-                  -- mapped to LifetimeOutsideFunction (from a function arg)
-                  -- but a (ref local) also uses that lifetime (via explicit
-                  -- sig annotation), the local must be alive. Function params
-                  -- are alive for the whole function, but let-bound locals
-                  -- are not.
-                  case checkLocalRefSources (xobjTy ok) (memStateParamDeleters finalState) (memStateLocalRefSources finalState) of
-                    Left err -> Left err
-                    Right _ -> Right (ok {xobjInfo = newInfo}, deps)
+                Right _ -> Right (ok {xobjInfo = newInfo}, deps)
   where
     visit :: XObj -> State MemState (Either TypeError XObj)
     visit xobj =
@@ -612,8 +607,58 @@ refTargetIsAlive xobj =
                       )
           Just LifetimeOutsideFunction ->
             pure (Right xobj)
+          Just (LifetimeMixed _) ->
+            -- During traversal, the external source guarantees safety
+            pure (Right xobj)
           Nothing ->
             pure (Right xobj)
+    isAlive :: Set.Set Deleter -> String -> Bool
+    isAlive deleters name =
+      any
+        ( \case
+            ProperDeleter {deleterVariable = dv} -> dv == name
+            FakeDeleter {deleterVariable = dv} -> dv == name
+            PrimDeleter {aliveVariable = dv} -> dv == name
+            RefDeleter {refVariable = dv} -> dv == name
+        )
+        (Set.toList deleters)
+
+-- | Like refTargetIsAlive, but only checks lifetime variables that appear in
+-- | the function's return type. Used at the final check after all locals are
+-- | dead, so that merged internal temporaries on the function type's own
+-- | closure lifetime don't cause false positives.
+returnRefTargetIsAlive :: XObj -> State MemState (Either TypeError XObj)
+returnRefTargetIsAlive xobj =
+  case xobjTy xobj of
+    Just (FuncTy _ retTy _) -> checkRetTy retTy
+    _ -> pure (Right xobj)
+  where
+    -- Extract the function body from defn forms for error reporting
+    fnBody = case xobjObj xobj of
+      Lst [XObj (Defn _) _ _, _, _, body] -> body
+      _ -> xobj
+    checkRetTy (RefTy _ (VarTy lt)) = performRetCheck lt
+    checkRetTy (FuncTy _ inner _) = checkRetTy inner
+    checkRetTy _ = pure (Right xobj)
+    performRetCheck :: String -> State MemState (Either TypeError XObj)
+    performRetCheck lt = do
+      m <- get
+      case Map.lookup lt (memStateLifetimes m) of
+        Just (LifetimeInsideFunction deleterNames) ->
+          checkInternalSources m deleterNames
+        Just (LifetimeMixed deleterNames) ->
+          checkInternalSources m deleterNames
+        _ -> pure (Right xobj)
+    checkInternalSources :: MemState -> Set.Set String -> State MemState (Either TypeError XObj)
+    checkInternalSources m deleterNames =
+      let deadVars = Set.filter (not . isAlive (memStateDeleters m)) deleterNames
+       in case Set.toList deadVars of
+            [] -> pure (Right xobj)
+            (deadName : _) ->
+              let reportOn = case xobjObj fnBody of
+                    Lst (LetPat _ _ body) -> body
+                    _ -> fnBody
+               in pure (Left (UsingDeadReference reportOn deadName))
     isAlive :: Set.Set Deleter -> String -> Bool
     isAlive deleters name =
       any
@@ -635,26 +680,20 @@ addToLifetimesMappingsIfRef internal xobj =
         m <- get
         let lifetimes = memStateLifetimes m
         case Map.lookup lt lifetimes of
-          Just _ ->
-            -- The lifetime is already mapped (e.g. from a function arg).
-            -- If this xobj is a (ref target) node creating a new internal
-            -- reference, record the target as an additional local ref source.
-            -- This catches the soundness hole where an explicit lifetime
-            -- annotation (sig) unifies an arg's lifetime with a local's,
-            -- hiding the dangling ref from the main lifetime check.
+          Just existing ->
+            -- Only merge when this is a ref creation, since those
+            -- introduce new ref sources that could be dangling.
+            -- Other xobjs (function call results, symbol lookups,
+            -- match-ref bindings) just propagate existing refs, so
+            -- first-mapping-wins is correct for them.
             case xobj of
-              XObj (Lst [XObj Ref _ _, target]) _ _ ->
-                let targetVar = varOfXObj target
-                    localRefs = memStateLocalRefSources m
-                    existing = fromMaybe [] (Map.lookup lt localRefs)
-                    localRefs' = Map.insert lt ((targetVar, xobj) : existing) localRefs
-                 in put $ m {memStateLocalRefSources = localRefs'}
+              XObj (Lst [XObj Ref _ _, _]) _ _ ->
+                let newMode = makeLifetimeMode
+                    merged = mergeLifetimeMode existing newMode
+                 in put $ m {memStateLifetimes = Map.insert lt merged lifetimes}
               _ -> pure ()
           Nothing ->
-            do
-              let lifetimes' = Map.insert lt makeLifetimeMode lifetimes
-              put $ m {memStateLifetimes = lifetimes'}
-              pure ()
+            put $ m {memStateLifetimes = Map.insert lt makeLifetimeMode lifetimes}
     Just _ ->
       --trace ("Won't add to mappings! " ++ pretty xobj ++ " : " ++ show notThisType ++ " at " ++ prettyInfoFromXObj xobj) $
       pure ()
@@ -672,6 +711,15 @@ addToLifetimesMappingsIfRef internal xobj =
                   _ -> varOfXObj xobj
               ]
         else LifetimeOutsideFunction
+    mergeLifetimeMode LifetimeOutsideFunction LifetimeOutsideFunction = LifetimeOutsideFunction
+    mergeLifetimeMode (LifetimeInsideFunction a) (LifetimeInsideFunction b) = LifetimeInsideFunction (Set.union a b)
+    mergeLifetimeMode (LifetimeInsideFunction a) LifetimeOutsideFunction = LifetimeMixed a
+    mergeLifetimeMode LifetimeOutsideFunction (LifetimeInsideFunction b) = LifetimeMixed b
+    mergeLifetimeMode (LifetimeMixed a) (LifetimeInsideFunction b) = LifetimeMixed (Set.union a b)
+    mergeLifetimeMode (LifetimeMixed a) LifetimeOutsideFunction = LifetimeMixed a
+    mergeLifetimeMode (LifetimeInsideFunction a) (LifetimeMixed b) = LifetimeMixed (Set.union a b)
+    mergeLifetimeMode LifetimeOutsideFunction (LifetimeMixed b) = LifetimeMixed b
+    mergeLifetimeMode (LifetimeMixed a) (LifetimeMixed b) = LifetimeMixed (Set.union a b)
 
 -- | Clear the lifetime mapping for a ref variable's lifetime variable.
 -- | Used before visiting a set! value so that addToLifetimesMappingsIfRef can
@@ -737,35 +785,6 @@ searchForInnerBreak _ e = e
 
 --------------------------------------------------------------------------------
 -- Helpers
-
--- | Check if any local ref sources are dangling. Only checks lifetime
--- | variables that appear in the function's return type, since those are the
--- | ones that could escape. A local ref source is dead if its target
--- | variable is not a function parameter.
-checkLocalRefSources :: Maybe Ty -> Set.Set Deleter -> Map.Map String [(String, XObj)] -> Either TypeError ()
-checkLocalRefSources maybeFnTy paramDeleters localRefSources =
-  let returnLifetimes = case maybeFnTy of
-        Just (FuncTy _ retTy _) -> collectLifetimeVars retTy
-        _ -> []
-      relevantEntries = concatMap (\lt -> fromMaybe [] (Map.lookup lt localRefSources)) returnLifetimes
-   in case filter (\(name, _) -> not (isAliveInParams name)) relevantEntries of
-        [] -> Right ()
-        ((deadName, refXObj) : _) -> Left (UsingDeadReference refXObj deadName)
-  where
-    collectLifetimeVars (RefTy _ (VarTy lt)) = [lt]
-    collectLifetimeVars (RefTy inner lt) = collectLifetimeVars inner ++ collectLifetimeVars lt
-    collectLifetimeVars (FuncTy args retTy lt) = concatMap collectLifetimeVars args ++ collectLifetimeVars retTy ++ collectLifetimeVars lt
-    collectLifetimeVars (StructTy _ tys) = concatMap collectLifetimeVars tys
-    collectLifetimeVars _ = []
-    isAliveInParams name =
-      any
-        ( \case
-            ProperDeleter {deleterVariable = dv} -> dv == name
-            FakeDeleter {deleterVariable = dv} -> dv == name
-            PrimDeleter {aliveVariable = dv} -> dv == name
-            RefDeleter {refVariable = dv} -> dv == name
-        )
-        (Set.toList paramDeleters)
 
 isSymbolThatCaptures :: XObj -> Bool
 isSymbolThatCaptures xobj =

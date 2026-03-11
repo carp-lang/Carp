@@ -1,0 +1,4 @@
+;; No code needed to build the project.
+;; (This is more of a test than an example.)
+
+(build)
