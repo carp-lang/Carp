@@ -112,6 +112,9 @@ instance Contextual QualifiedPath where
 --------------------------------------------------------------------------------
 -- Environment Replacement Functions
 
+bumpBindingEpoch :: Context -> Context
+bumpBindingEpoch ctx = ctx {contextBindingEpoch = contextBindingEpoch ctx + 1}
+
 -- | Replace a context's internal environment with a new environment.
 --
 -- The previous environment is completely replaced and will not be recoverable.
@@ -131,14 +134,14 @@ replaceInternalEnvMaybe ctx env =
 -- The previous environment is completely replaced and will not be recoverable.
 replaceGlobalEnv :: Context -> Env -> Context
 replaceGlobalEnv ctx env =
-  ctx {contextGlobalEnv = env}
+  bumpBindingEpoch ctx {contextGlobalEnv = env}
 
 -- | Replace a context's type environment with a new environment.
 --
 -- The previous environment is completely replaced and will not be recoverable.
 replaceTypeEnv :: Context -> TypeEnv -> Context
 replaceTypeEnv ctx env =
-  ctx {contextTypeEnv = env}
+  bumpBindingEpoch ctx {contextTypeEnv = env}
 
 -- | Replace a context's history with a new history.
 --
@@ -159,7 +162,7 @@ replaceProject ctx proj =
 -- The previous path is completely replaced and will not be recoverable.
 replacePath :: Context -> [String] -> Context
 replacePath ctx paths =
-  ctx {contextPath = paths}
+  bumpBindingEpoch ctx {contextPath = paths}
 
 -- | replaceInternalEnv with arguments flipped.
 replaceInternalEnv' :: Env -> Context -> Context
@@ -194,7 +197,7 @@ insertInGlobalEnv ctx qpath binder =
   replaceLeft
     (FailedToInsertInGlobalEnv (unqualify qpath) binder)
     ( E.insert (contextGlobalEnv ctx) (unqualify qpath) binder
-        >>= \e -> pure $! (ctx {contextGlobalEnv = e})
+        >>= \e -> pure $! (replaceGlobalEnv ctx e)
     )
 
 -- | Adds a binder to a context's type environment at a qualified path.
@@ -245,7 +248,7 @@ insertInInternalEnv ctx path@(SymPath [] _) binder =
     insert' e =
       replaceLeft
         (FailedToInsertInInternalEnv path binder)
-        (E.insert e path binder >>= \e' -> pure (ctx {contextInternalEnv = pure e'}))
+        (E.insert e path binder >>= \e' -> pure (replaceInternalEnv ctx e'))
 insertInInternalEnv _ path _ = Left (AttemptedToInsertQualifiedInternalBinder path)
 
 -- | insertInGlobalEnv with arguments flipped.
@@ -308,7 +311,7 @@ lookupBinderInTypeEnv ctx path =
       fullPath@(SymPath qualification name) = contextualize path ctx
       theType =
         ( case qualification of
-            [] -> E.getTypeBinder typeEnv name
+            [] -> E.getBinder typeEnv name
             _ -> E.searchTypeBinder global fullPath
         )
    in replaceLeft (NotFoundType fullPath) theType
@@ -322,7 +325,7 @@ lookupBinderInGlobalEnv :: Contextual a => Context -> a -> Either ContextError B
 lookupBinderInGlobalEnv ctx path =
   let global = contextGlobalEnv ctx
       fullPath = contextualize path ctx
-   in replaceLeft (NotFoundGlobal fullPath) (E.searchValueBinder global fullPath)
+   in replaceLeft (NotFoundGlobal fullPath) (E.searchBinder global fullPath)
 
 -- | Lookup a binder in a context's internal environment.
 lookupBinderInInternalEnv :: Contextual a => Context -> a -> Either ContextError Binder
@@ -331,7 +334,7 @@ lookupBinderInInternalEnv ctx path =
       fullPath = contextualize path ctx
    in maybe
         (Left (NotFoundInternal fullPath))
-        (\e -> replaceLeft (NotFoundInternal fullPath) (E.searchValueBinder e fullPath))
+        (\e -> replaceLeft (NotFoundInternal fullPath) (E.searchBinder e fullPath))
         internal
 
 -- | Lookup a binder in a context's context environment.
@@ -341,6 +344,6 @@ lookupBinderInInternalEnv ctx path =
 -- performed.
 lookupBinderInContextEnv :: Context -> SymPath -> Either ContextError Binder
 lookupBinderInContextEnv ctx path =
-  let ctxEnv = (E.contextEnv ctx)
+  let ctxEnv = (E.contextEnv ctx :: Env)
       fullPath = contextualize path ctx
-   in replaceLeft (NotFoundContext fullPath) (E.searchValueBinder ctxEnv fullPath)
+   in replaceLeft (NotFoundContext fullPath) (E.searchBinder ctxEnv fullPath)

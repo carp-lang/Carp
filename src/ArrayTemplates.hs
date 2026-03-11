@@ -665,11 +665,13 @@ strTy :: TypeEnv -> Env -> Ty -> [Token]
 strTy typeEnv env (StructTy _ [innerType]) =
   [ TokC "",
     TokC "  String temp = NULL;\n",
+    TokC "  int tempsize = 0;\n",
+    TokC "  (void)tempsize;\n",
     TokC $ calculateStrSize typeEnv env innerType,
     TokC "  String buffer = CARP_MALLOC(size);\n",
     TokC "  String bufferPtr = buffer;\n",
     TokC "\n",
-    TokC "  sprintf(buffer, \"[\");\n",
+    TokC "  snprintf(buffer, size, \"[\");\n",
     TokC "  bufferPtr += 1;\n",
     TokC "\n",
     TokC "  for(int i = 0; i < a->len; i++) {\n",
@@ -677,7 +679,7 @@ strTy typeEnv env (StructTy _ [innerType]) =
     TokC "  }\n",
     TokC "\n",
     TokC "  if(a->len > 0) { bufferPtr -= 1; }\n",
-    TokC "  sprintf(bufferPtr, \"]\");\n",
+    TokC "  snprintf(bufferPtr, size - (bufferPtr - buffer), \"]\");\n",
     TokC "  return buffer;\n"
   ]
 strTy _ _ _ = []
@@ -729,8 +731,8 @@ insideArrayStr typeEnv env t =
         FunctionFound functionFullName ->
           unlines
             [ "  temp = " ++ strcall functionFullName,
-              "    sprintf(bufferPtr, \"%s \", temp);",
-              "    bufferPtr += strlen(temp) + 1;",
+              "    tempsize = snprintf(bufferPtr, size - (bufferPtr - buffer), \"%s \", temp);",
+              "    bufferPtr += tempsize;",
               "    if(temp) {",
               "      CARP_FREE(temp);",
               "      temp = NULL;",

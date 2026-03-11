@@ -77,6 +77,10 @@
 (defmacro test-dynamic-use []
   (test-dynamic-use-))
 
+(if (= "aarch64" target-arch)
+  (Unsafe.C.asm addr "mov %w0, %w1\\n" "add %w0, %w0, #1\\n" : "=r" (dst) : "r" (src))
+  (Unsafe.C.asm addr "mov %1, %0\\n" "add $1, %0\\n" : "=r" (dst) : "r" (src)))
+
 (deftest test
   (assert-true test
                (test-let-do)
@@ -394,7 +398,6 @@
   (assert-equal test
                 2
                 (let-do [src 1 dst 0]
-                  (Unsafe.C.asm addr "mov %1, %0\\n" "add $1, %0\\n" : "=r" (dst) : "r" (src))
                   (addr)
                   dst)
                 "asm works")

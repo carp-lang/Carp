@@ -35,6 +35,7 @@ defaultProject =
             "-D_DEFAULT_SOURCE",
             "-Wall",
             "-Werror",
+            "-Wno-unknown-warning-option",
             "-Wno-unused-variable",
             "-Wno-unused-but-set-variable",
             "-Wno-self-assign"
@@ -120,6 +121,7 @@ main = do
           Nothing
           (TypeEnv startingTypeEnv)
           []
+          0
           project
           ""
           execMode

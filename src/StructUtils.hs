@@ -36,15 +36,15 @@ memberPrn typeEnv env (memberName, memberTy) =
             (FuncTy [UnitTy] _ _) ->
               unlines
                 [ "  temp = " ++ pathToC strFunctionPath ++ "();",
-                  "  sprintf(bufferPtr, \"%s \", temp);",
-                  "  bufferPtr += strlen(temp) + 1;",
+                  "  tempsize = snprintf(bufferPtr, size - (bufferPtr - buffer), \"%s \", temp);",
+                  "  bufferPtr += tempsize;",
                   "  if(temp) { CARP_FREE(temp); temp = NULL; }"
                 ]
             _ ->
               unlines
                 [ "  temp = " ++ pathToC strFunctionPath ++ "(" ++ prefix ++ "p->" ++ memberName ++ ");",
-                  "  sprintf(bufferPtr, \"%s \", temp);",
-                  "  bufferPtr += strlen(temp) + 1;",
+                  "  tempsize = snprintf(bufferPtr, size - (bufferPtr - buffer), \"%s \", temp);",
+                  "  bufferPtr += tempsize;",
                   "  if(temp) { CARP_FREE(temp); temp = NULL; }"
                 ]
         Nothing ->

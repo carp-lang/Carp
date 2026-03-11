@@ -210,12 +210,12 @@ manageMemory typeEnv globalEnv root =
                                 else variable -- don't add the new info = no deleter
                             LookupGlobal _ _ ->
                               variable {xobjInfo = setDeletersOnInfo varInfo deleters}
-                            _ -> error "managememory set! 1"
+                            _ -> error "memory: unexpected variable mode in set!"
                     case okMode of
-                      Symbol -> error "Should only be be a global/local lookup symbol."
+                      Symbol -> error "Should only be a global/local lookup symbol."
                       LookupLocal _ -> manage typeEnv globalEnv okCorrectVariable
                       LookupGlobal _ _ -> pure ()
-                      _ -> error "managememory set! 2"
+                      _ -> error "memory: unexpected ok mode in set!"
                     pure $ case okMode of
                       LookupLocal (Capture _) ->
                         Left (CannotSetVariableFromLambda variable setbangExpr)
@@ -498,7 +498,7 @@ manage typeEnv globalEnv xobj =
 -- | Remove `xobj` from the set of alive variables, in need of deletion at end of scope.
 unmanage :: TypeEnv -> Env -> XObj -> State MemState (Either TypeError ())
 unmanage typeEnv globalEnv xobj =
-  let t = fromMaybe (error "memory: can't unmange xobj without type") $ xobjTy xobj
+  let t = fromMaybe (error "memory: can't unmanage xobj without type") $ xobjTy xobj
    in if isManaged typeEnv globalEnv t && not (isGlobalFunc xobj)
         then do
           MemState deleters deps lifetimes <- get

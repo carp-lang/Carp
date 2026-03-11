@@ -29,7 +29,10 @@ jobs:
                        sdl2_mixer \
                        sdl2_ttf
 
-      - uses: actions/setup-haskell@v1
+      - uses: haskell-actions/setup@v2
+        with:
+          enable-stack: true
+          stack-version: 'latest'
 
       - name: Build
         run: stack build

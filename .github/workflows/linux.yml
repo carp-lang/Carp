@@ -8,12 +8,15 @@ on:
 
 jobs:
   build:
-    runs-on: ubuntu-18.04
+    runs-on: ubuntu-latest
 
     steps:
     - uses: actions/checkout@v2
 
-    - uses: actions/setup-haskell@v1
+    - uses: haskell-actions/setup@v2
+      with:
+        enable-stack: true
+        stack-version: 'latest'
 
     - name: Install SDL dependency (for SDL tests)
       run: |
@@ -23,7 +26,7 @@ jobs:
                                                     libsdl2-mixer-dev \
                                                     libsdl2-ttf-dev
 
-    - uses: actions/cache@v1
+    - uses: actions/cache@v4
       name: Cache ~/.stack
       with:
         path: ~/.stack

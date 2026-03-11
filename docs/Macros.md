@@ -111,15 +111,22 @@ function definitions, variables, or `let` bindings.
 Therefore, understanding the evaluator will give you a lot of insight into how
 Carp works generally.
 
-The most tried-and-true starting point for understanding the dynamic evaluator
-is `eval` in [`src/Eval.hs`](/src/Eval.hs).
+The practical starting points for understanding the current evaluator are:
+
+- `eval` in [`src/Eval.hs`](/src/Eval.hs) (public entry points),
+- lowering in [`src/EvalIR.hs`](/src/EvalIR.hs),
+- VM execution in [`src/EvalVM.hs`](/src/EvalVM.hs).
+
+For a compact architecture overview, see [Dynamic Evaluator VM](EvaluatorVM.md).
 
 ### Data Structures
 
-The type signature of `eval` is as follows:
+The key evaluator entry points are:
 
 ```haskell
-eval :: Context -> XObj -> IO (Context, Either EvalError XObj)
+evalDynamic :: Context -> XObj -> IO (Context, Either EvalError XObj)
+evalStatic  :: Context -> XObj -> IO (Context, Either EvalError XObj)
+eval        :: Context -> XObj -> LookupPreference -> IO (Context, Either EvalError XObj)
 ```
 
 Thus, to understand it, we’ll have to understand at least `Context`, `XObj`,
@@ -182,7 +189,7 @@ kinds of Carp constructs there are for the evaluator:
 
 Primitives are mostly defined in [`src/Primitives.hs`](/src/Primitives.hs),
 commands can be found in [`src/Commands.hs`](/src/Commands.hs), and special
-forms can be found directly inside `eval`.
+forms are handled by evaluator lowering/execution (`EvalIR` / `EvalVM`).
 
 They are wired up into the environment and given names in
 [`src/StartingEnv.hs`](/src/StartingEnv.hs).
@@ -204,8 +211,8 @@ implement a new special form to avoid frustration.
 
 #### A current list of special forms
 
-Since special forms are “magical”, they deserve an enumeration. Currently there
-are:
+Since special forms are “magical”, they deserve an enumeration. They are
+recognized during evaluator lowering/execution. Currently there are:
 
 - `if` for branching,
 - `defn` for defining functions,

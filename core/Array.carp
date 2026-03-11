@@ -475,6 +475,37 @@ Example:
           (Pair.init @(Pair.a &p) (Array.push-back @l @(Pair.b &p)))))
       (Pair.init acc [])
       a))
+
+  (doc take-while "Takes elements from the array `a` as long as the predicate `f` returns true.
+Returns a new array of all leading elements that satisfy the predicate.
+
+Example:
+```clojure
+(Array.take-while &(fn [x] (< @x 4)) &[1 2 3 4 5])
+; => [1 2 3]
+```")
+  (defn take-while [f a]
+    (let-do [result []
+             i 0]
+      (while (and (< i (length a)) (~f (unsafe-nth a i)))
+        (do
+          (set! result (push-back result @(unsafe-nth a i)))
+          (set! i (Int.inc i))))
+      result))
+
+  (doc drop-while "Drops elements from the array `a` as long as the predicate `f` returns true.
+Returns a new array starting from the first element that fails the predicate.
+
+Example:
+```clojure
+(Array.drop-while &(fn [x] (< @x 4)) &[1 2 3 4 5])
+; => [4 5]
+```")
+  (defn drop-while [f a]
+    (let-do [i 0]
+      (while (and (< i (length a)) (~f (unsafe-nth a i)))
+        (set! i (Int.inc i)))
+      (slice a i (length a))))
 )
 
 (defmacro doall [f xs]

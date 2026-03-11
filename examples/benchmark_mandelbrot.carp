@@ -1,7 +1,10 @@
 ;;; Taken from
 ;;; http://benchmarksgame.alioth.debian.org/u64q/program.php?test=mandelbrot&lang=gcc&id=2
 
-(add-cflag "-pipe -O3 -fomit-frame-pointer -march=native -mfpmath=sse -msse3")
+;; x86-specific optimizations
+(when (or (= target-arch "x86_64") (= target-arch "i386"))
+  (add-cflag "-mfpmath=sse -msse3"))
+(add-cflag "-pipe -O3 -fomit-frame-pointer -march=native")
 
 (use Double)
 (use Int)
