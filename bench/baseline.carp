@@ -1,0 +1,3 @@
+; Baseline: minimal program to measure startup overhead
+
+(defn main [] 0)

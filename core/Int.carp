@@ -2,17 +2,29 @@
 
 (doc Int "is the default integral data type.")
 (defmodule Int
+  (doc + "adds two integers.")
   (register + (λ [Int Int] Int))
+  (doc - "subtracts `b` from `a`.")
   (register - (λ [Int Int] Int))
+  (doc * "multiplies two integers.")
   (register * (λ [Int Int] Int))
+  (doc / "divides `a` by `b`.")
   (register / (λ [Int Int] Int))
+  (doc < "returns true if `a` is less than `b`.")
   (register < (λ [Int Int] Bool))
+  (doc > "returns true if `a` is greater than `b`.")
   (register > (λ [Int Int] Bool))
+  (doc = "returns true if `a` equals `b`.")
   (register = (λ [Int Int] Bool))
+  (doc copy "copies an Int.")
   (register copy (λ [&Int] Int))
+  (doc inc "increments an Int by 1.")
   (register inc (λ [Int] Int))
+  (doc dec "decrements an Int by 1.")
   (register dec (λ [Int] Int))
+  (doc neg "negates an Int.")
   (register neg (λ [Int] Int))
+  (doc mod "returns the remainder of dividing `a` by `b`.")
   (register mod (λ [Int Int] Int))
 
   (doc to-int "acts as the identity function to implement the interface.")
@@ -40,15 +52,23 @@
 )
 
 (defmodule Int
+  (doc MAX "the maximum value an Int can hold.")
   (register MAX Int "CARP_INT_MAX")
   (implements MAX MAX)
+  (doc MIN "the minimum value an Int can hold.")
   (register MIN Int "CARP_INT_MIN")
   (implements MIN MIN)
+  (doc bit-shift-left "shifts `a` left by `b` bits.")
   (register bit-shift-left (λ [Int Int] Int))
+  (doc bit-shift-right "shifts `a` right by `b` bits.")
   (register bit-shift-right (λ [Int Int] Int))
+  (doc bit-and "bitwise AND of `a` and `b`.")
   (register bit-and (λ [Int Int] Int))
+  (doc bit-or "bitwise OR of `a` and `b`.")
   (register bit-or (λ [Int Int] Int))
+  (doc bit-xor "bitwise XOR of `a` and `b`.")
   (register bit-xor (λ [Int Int] Int))
+  (doc bit-not "bitwise NOT of `a`.")
   (register bit-not (λ [Int] Int))
   (implements bit-shift-left Int.bit-shift-left)
   (implements bit-shift-right Int.bit-shift-right)
@@ -61,17 +81,22 @@
   (register abs (λ [Int] Int))
   (implements abs Int.abs)
 
+  (doc even? "returns true if `a` is even.")
   (defn even? [a] (= (mod a 2) 0))
+  (doc odd? "returns true if `a` is odd.")
   (defn odd? [a] (not (even? a)))
 
+  (doc zero "returns the zero value for Int (0), used to implement the `zero` interface.")
   (defn zero []
     0)
   (implements zero Int.zero)
 
+  (doc add-ref "adds two Int values passed as references.")
   (defn add-ref [x y]
     (Int.+ @x @y))
 
   ;; Move to generic math module?
+  (doc clamp "clamps `val` to the range [`min`, `max`].")
   (defn clamp [min, max, val]
     (if (> val max)
       max

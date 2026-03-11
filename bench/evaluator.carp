@@ -1,0 +1,120 @@
+; Evaluator benchmark — measures Haskell-side compiler work.
+;
+; Usage:
+;   ./bench/run-evaluator-bench.sh
+;
+; This exercises the evaluator, NOT the compiled C runtime.
+; Uses --generate-only to skip C compilation and linking.
+;
+; Target: ~5-10s above baseline (~1.5s startup) = ~6.5-11.5s total
+
+;; --- 1. Recursive dynamic evaluation ---
+;; Stresses: DynamicEval mode, apply, closure creation, successiveProcess
+
+(defndynamic sum-to [n]
+  (if (= n 0) 0 (+ n (sum-to (- n 1)))))
+
+(defndynamic fib-dyn [n]
+  (if (< n 2) n (+ (fib-dyn (- n 1)) (fib-dyn (- n 2)))))
+
+(defndynamic list-of [n]
+  (if (= n 0) '() (cons n (list-of (- n 1)))))
+
+(defndynamic dynamic-reverse [xs]
+  (if (= 0 (length xs)) '()
+    (cons-last (car xs) (dynamic-reverse (cdr xs)))))
+
+; Force evaluation at compile time
+(defdynamic eval-sum (sum-to 2000))
+(defdynamic eval-fib (fib-dyn 26))
+(defdynamic eval-list (list-of 500))
+(defdynamic eval-rev (dynamic-reverse eval-list))
+
+;; --- 2. Higher-order dynamic functions ---
+;; Stresses: closure allocation, apply, list traversal
+
+(defndynamic my-map [f xs]
+  (if (= 0 (length xs)) '()
+    (cons (f (car xs)) (my-map f (cdr xs)))))
+
+(defndynamic my-filter [pred xs]
+  (if (= 0 (length xs)) '()
+    (if (pred (car xs))
+      (cons (car xs) (my-filter pred (cdr xs)))
+      (my-filter pred (cdr xs)))))
+
+(defndynamic my-reduce [f init xs]
+  (if (= 0 (length xs)) init
+    (my-reduce f (f init (car xs)) (cdr xs))))
+
+(defdynamic eval-mapped (my-map (fn [x] (* x x)) eval-list))
+(defdynamic eval-filtered (my-filter (fn [x] (> x 250)) eval-list))
+(defdynamic eval-reduced (my-reduce + 0 eval-list))
+
+; Second pass: compose operations
+(defdynamic eval-mapped2 (my-map (fn [x] (+ x 1)) eval-mapped))
+(defdynamic eval-reduced2 (my-reduce + 0 eval-mapped))
+
+;; --- 3. Macro expansion ---
+;; Stresses: processAll fixpoint, ExpandMacros mode, PrepareCompile mode
+
+(defndynamic gen-nested-if [n body]
+  (if (= n 0) body
+    (list 'if true (gen-nested-if (- n 1) body) 0)))
+
+(defmacro nested-if [n body]
+  (gen-nested-if n body))
+
+(defndynamic gen-chain-let [n body]
+  (if (= n 0) body
+    (let [sym (Symbol.from (str "v" n))]
+      (list 'let (array sym n) (gen-chain-let (- n 1) body)))))
+
+(defmacro chain-let [n body]
+  (gen-chain-let n body))
+
+;; --- 4. Many static definitions ---
+;; Stresses: PrepareCompile, annotateWithinContext, type checking
+
+(defn bf1 [] (+ 1 1))
+(defn bf2 [] (+ 2 2))
+(defn bf3 [] (+ 3 3))
+(defn bf4 [] (+ 4 4))
+(defn bf5 [] (+ 5 5))
+(defn bf6 [] (+ 6 6))
+(defn bf7 [] (+ 7 7))
+(defn bf8 [] (+ 8 8))
+(defn bf9 [] (+ 9 9))
+(defn bf10 [] (+ 10 10))
+(defn bf11 [] (+ 11 11))
+(defn bf12 [] (+ 12 12))
+(defn bf13 [] (+ 13 13))
+(defn bf14 [] (+ 14 14))
+(defn bf15 [] (+ 15 15))
+(defn bf16 [] (+ 16 16))
+(defn bf17 [] (+ 17 17))
+(defn bf18 [] (+ 18 18))
+(defn bf19 [] (+ 19 19))
+(defn bf20 [] (+ 20 20))
+(defn bf21 [] (+ 21 21))
+(defn bf22 [] (+ 22 22))
+(defn bf23 [] (+ 23 23))
+(defn bf24 [] (+ 24 24))
+(defn bf25 [] (+ 25 25))
+(defn bf26 [] (+ 26 26))
+(defn bf27 [] (+ 27 27))
+(defn bf28 [] (+ 28 28))
+(defn bf29 [] (+ 29 29))
+(defn bf30 [] (+ 30 30))
+
+;; --- 5. Main uses everything, forcing full compilation pipeline ---
+
+(defn main []
+  (let [a (nested-if 15 42)
+        b (chain-let 15 99)]
+    (do
+      (IO.println &(str a))
+      (IO.println &(str b))
+      (IO.println &(str (bf1)))
+      (IO.println &(str (bf15)))
+      (IO.println &(str (bf30))))))

@@ -31,7 +31,7 @@ import Data.Either (fromRight)
 import Data.List (foldl')
 import Data.Maybe (fromMaybe)
 import Debug.Trace
-import Env (EnvironmentError, empty, envIsExternal, findTypeBinder, getTypeBinder, insert, insertX, searchValue)
+import Env (EnvironmentError, empty, envIsExternal, findTypeBinder, getBinder, insert, insertX, search)
 import Forms
 import Info
 import InitialTypes
@@ -367,7 +367,7 @@ visitFn _ _ _ _ _ x = pure (Left (CannotConcretize x))
 -- | Concretely type a unique symbol.
 visitSymbol :: [SymPath] -> Bool -> TypeEnv -> Env -> XObj -> State [XObj] (Either TypeError XObj)
 visitSymbol visited allowAmbig tenv env xobj@(SymPat path mode) =
-  case searchValue env path of
+  case search env path of
     Right (foundEnv, binder)
       | envIsExternal foundEnv ->
         let theXObj = binderXObj binder
@@ -421,7 +421,7 @@ visitMultiSym _ _ _ _ x = pure (Left (CannotConcretize x))
 -- | Concretely type an interface symbol.
 visitInterfaceSym :: [SymPath] -> Bool -> TypeEnv -> Env -> XObj -> State [XObj] (Either TypeError XObj)
 visitInterfaceSym visited allowAmbig tenv env xobj@(InterfaceSymPat name) =
-  either (pure . const (Left (CannotConcretize xobj))) go (getTypeBinder tenv name)
+  either (pure . const (Left (CannotConcretize xobj))) go (getBinder tenv name)
   where
     actualType = fromMaybe (error "concretize: can't concretize an interface without type") $ (xobjTy xobj)
     go :: Binder -> State [XObj] (Either TypeError XObj)
@@ -552,7 +552,7 @@ concretizeType typeEnv env arrayTy@(StructTy (ConcreteNameTy (SymPath [] "Static
       deps <- mapM (concretizeType typeEnv env) varTys
       Right (defineStaticArrayTypeAlias arrayTy : concat deps)
 concretizeType typeEnv env genericStructTy@(StructTy (ConcreteNameTy path@(SymPath _ name)) _) =
-  case (getTypeBinder typeEnv name) <> (findTypeBinder env path) of
+  case (getBinder typeEnv name) <> (findTypeBinder env path) of
     Right (Binder _ x) -> go x
     _ -> Right []
   where
@@ -731,7 +731,7 @@ replaceGenericTypeSymbolsOnCase _ unknownCase = unknownCase -- TODO: error out?
 -- | Get the type of a symbol at a given path.
 typeFromPath :: Env -> SymPath -> Ty
 typeFromPath env p =
-  case searchValue env p of
+  case search env p of
     Right (e, Binder _ found)
       | envIsExternal e -> forceTy found
       | otherwise -> error "Local bindings shouldn't be ambiguous."
@@ -743,7 +743,7 @@ typeFromPath env p =
 -- | parts of doesNotBelongToAnInterface.
 modeFromPath :: Env -> SymPath -> SymbolMode
 modeFromPath env p =
-  case searchValue env p of
+  case search env p of
     Right (_, Binder _ (XObj (Lst (XObj (External (Just overrideWithName)) _ _ : _)) _ _)) ->
       LookupGlobalOverride overrideWithName
     Right (_, Binder _ (XObj (Lst (XObj (ExternalType (Just overrideWithName)) _ _ : _)) _ _)) ->
@@ -785,7 +785,7 @@ concretizeDefinition allowAmbiguity typeEnv globalEnv visitedDefinitions definit
                     else do
                       (concrete, deps) <- concretizeXObj allowAmbiguity typeEnv globalEnv (newPath : visitedDefinitions) typed
                       (managed, memDepsTys) <- manageMemory typeEnv globalEnv concrete
-                      let memDeps = depsForDeleteFuncs typeEnv globalEnv memDepsTys
+                      let memDeps = depsForDeleteFuncsVisited typeEnv globalEnv (newPath : visitedDefinitions) memDepsTys
                       pure (managed, deps ++ memDeps)
                 Left e -> Left e
         XObj (Lst (XObj (Defn _) _ _ : _)) _ _ ->
@@ -798,7 +798,7 @@ concretizeDefinition allowAmbiguity typeEnv globalEnv visitedDefinitions definit
                     else do
                       (concrete, deps) <- concretizeXObj allowAmbiguity typeEnv globalEnv (newPath : visitedDefinitions) typed
                       (managed, memDepsTys) <- manageMemory typeEnv globalEnv concrete
-                      let memDeps = depsForDeleteFuncs typeEnv globalEnv memDepsTys
+                      let memDeps = depsForDeleteFuncsVisited typeEnv globalEnv (newPath : visitedDefinitions) memDepsTys
                       pure (managed, deps ++ memDeps)
                 Left e -> Left e
         XObj (Lst (XObj (Deftemplate (TemplateCreator templateCreator)) _ _ : _)) _ _ ->
@@ -845,13 +845,22 @@ depsOfPolymorphicFunction typeEnv env visitedDefinitions functionName functionTy
 -- | Helper for finding the 'delete' function for a type.
 depsForDeleteFunc :: TypeEnv -> Env -> Ty -> [XObj]
 depsForDeleteFunc typeEnv env t =
+  depsForDeleteFuncVisited typeEnv env [] t
+
+depsForDeleteFuncVisited :: TypeEnv -> Env -> [SymPath] -> Ty -> [XObj]
+depsForDeleteFuncVisited typeEnv env visitedDefinitions t =
   if isManaged typeEnv env t
-    then depsOfPolymorphicFunction typeEnv env [] "delete" (FuncTy [t] UnitTy StaticLifetimeTy)
+    then depsOfPolymorphicFunction typeEnv env visitedDefinitions "delete" (FuncTy [t] UnitTy StaticLifetimeTy)
     else []
 
 -- | Helper for finding the 'delete' functions for several types.
 depsForDeleteFuncs :: TypeEnv -> Env -> Set.Set Ty -> [XObj]
-depsForDeleteFuncs typeEnv env tys = concatMap (depsForDeleteFunc typeEnv env) (Set.toList tys)
+depsForDeleteFuncs typeEnv env tys =
+  depsForDeleteFuncsVisited typeEnv env [] tys
+
+depsForDeleteFuncsVisited :: TypeEnv -> Env -> [SymPath] -> Set.Set Ty -> [XObj]
+depsForDeleteFuncsVisited typeEnv env visitedDefinitions tys =
+  concatMap (depsForDeleteFuncVisited typeEnv env visitedDefinitions) (Set.toList tys)
 
 -- | Helper for finding the 'copy' function for a type.
 depsForCopyFunc :: TypeEnv -> Env -> Ty -> [XObj]

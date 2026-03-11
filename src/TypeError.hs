@@ -208,7 +208,7 @@ instance Show TypeError where
       ++ joinWith "\n    " (map (\(name, t) -> name ++ " : " ++ show t) holes)
       ++ "\n"
   show (NotAValidType xobj) =
-    pretty xobj ++ "is not a valid type at " ++ prettyInfoFromXObj xobj
+    pretty xobj ++ " is not a valid type at " ++ prettyInfoFromXObj xobj
   show (FunctionsCantReturnRefTy xobj t) =
     "Functions can’t return references. " ++ getName xobj ++ " : " ++ show t
       ++ " at "
@@ -253,7 +253,7 @@ instance Show TypeError where
     "There were too many annotation calls when annotating `" ++ pretty xobj
       ++ "` at "
       ++ prettyInfoFromXObj xobj
-      ++ ".\n\n I deduced it was an infinite loop."
+      ++ ".\n\nI deduced it was an infinite loop."
   show (NotAType xobj) =
     "I don’t understand the type '" ++ pretty xobj ++ "' at "
       ++ prettyInfoFromXObj xobj
@@ -281,7 +281,7 @@ instance Show TypeError where
       ++ prettyInfoFromXObj xobj
       ++ ".\n\nSumtype cases look like this: `(Foo [Int typevar])`"
   show (InvalidStructField xobj) =
-    "I can't use " ++ pretty xobj ++ "as a struct field at "
+    "I can't use " ++ pretty xobj ++ " as a struct field at "
       ++ prettyInfoFromXObj xobj
       ++ ".\n\nStruct fields look like this: x Int, e.g. (deftype Point [x Int y Int])"
   show (InvalidMemberType t xobj) =
@@ -318,7 +318,7 @@ instance Show TypeError where
   show (UninhabitedConstructor ty xobj got wanted) =
     "Can't use a struct or sumtype constructor without arguments as a member type at " ++ prettyInfoFromXObj xobj ++ ". The type constructor " ++ show ty ++ " expects " ++ show wanted ++ " arguments but got " ++ show got
   show (InconsistentKinds varName xobjs) =
-    " The type variable `" ++ varName ++ "` is used inconsistently: " ++ joinWithComma (map pretty (filter (doesTypeContainTyVarWithName varName . fromMaybe Universe . xobjToTy) xobjs)) ++ " Type variables must be applied to the same number of arguments."
+    "The type variable `" ++ varName ++ "` is used inconsistently: " ++ joinWithComma (map pretty (filter (doesTypeContainTyVarWithName varName . fromMaybe Universe . xobjToTy) xobjs)) ++ " Type variables must be applied to the same number of arguments."
   show (FailedToAddLambdaStructToTyEnv path xobj) =
     "Failed to add the lambda: " ++ show path ++ " represented by struct: "
       ++ pretty xobj

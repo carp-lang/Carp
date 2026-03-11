@@ -70,6 +70,40 @@ It is the inverse of [`just?`](#just?).")
      (Nothing)
      (Just @(Pointer.to-ref a))))
 
+  (doc map "takes a `Maybe` and applies a function `f` to it if it is a `Just`, and wraps the result back up. If it is `Nothing`, it is returned as is.")
+  (defn map [a f]
+    (match a
+      (Nothing) (Nothing)
+      (Just x) (Just (~f x))))
+
+  (doc and-then "takes a `Maybe` and applies a function `f` to it if it is a `Just`. The function must itself return a `Maybe`. If the value is `Nothing`, it is returned as is.
+
+It is similar to [`map`](#map), but the function `f` is expected to return a `Maybe` rather than a plain value, avoiding a nested `(Just (Just ...))`.")
+  (defn and-then [a f]
+    (match a
+      (Nothing) (Nothing)
+      (Just x) (~f x)))
+
+  (doc or-else "takes a `Maybe` and applies a function `f` to it if it is `Nothing`. If it is a `Just`, it is returned as is.
+
+It is the inverse of [`and-then`](#and-then).")
+  (defn or-else [a f]
+    (match a
+      (Nothing) (~f)
+      (Just x) (Just x)))
+
+  (doc unwrap-or-else "takes a `Maybe` and either unwraps it if it is a `Just`, or calls a function `f` to produce a default value.")
+  (defn unwrap-or-else [a f]
+    (match a
+      (Nothing) (~f)
+      (Just x) x))
+
+  (doc filter "takes a `Maybe` and a predicate `f`. If the value is a `Just` and the predicate returns true, the value is returned unchanged. Otherwise `Nothing` is returned.")
+  (defn filter [a f]
+    (match a
+      (Nothing) (Nothing)
+      (Just x) (if (~f &x) (Just x) (Nothing))))
+
   (doc zero "returns `Nothing`.")
   (defn zero [] (Nothing))
   (implements zero Maybe.zero)

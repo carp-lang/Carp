@@ -40,7 +40,7 @@ There are a bunch of handy shortcuts for doing common things at the REPL:
 
 While powerful, the REPL in Carp currently has some big limitations compared to most other Lisp:s. If you type in an expression and press enter one of the following things will happen:
 
-1. If you're calling a dynamic function (something defined with `defndynamic`, or a built in `command`) it will be executed right away. This works very much like a classic, dynamically typed Lisp interpreter. The dynamic functions are not available in compiled code! Their main usage is in macros and to programatically control your build settings.
+1. If you're calling a dynamic function (something defined with `defndynamic`, or a built in `command`) it will be executed right away by Carp's dynamic evaluator (implemented as an internal evaluator VM). The dynamic functions are not available in compiled code. Their main usage is in macros and to programatically control your build settings.
 
 2. If you're calling a function defined with `defn` it's a "normal" Carp function which will be compiled (via C) to an executable binary, which is then run in a child process to the REPL. This means that the function has no chance to modify anything else in your program, like global variables and the like.
 

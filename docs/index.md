@@ -13,7 +13,8 @@ Also there is documentation about:
 * [how to contribute](Contributing.md);
 * [support for implementig interfaces for datatypes based on their members](Derive.md); 
 * [custom resource deallocation](Drop.md); 
-* [where we are going with Carps dynamic evaluator](DynamicSemantics.md); 
+* [the dynamic evaluator VM architecture](EvaluatorVM.md);
+* [historical dynamic evaluator semantics notes](DynamicSemantics.md); 
 * [programming embedded devices](Embedded.md); 
 * [formatted output with (fmt) and (fstr)](Format_Strings.md); 
 * [hacking the compiler itself](hacking.md); 
