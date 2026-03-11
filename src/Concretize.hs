@@ -785,7 +785,7 @@ concretizeDefinition allowAmbiguity typeEnv globalEnv visitedDefinitions definit
                     else do
                       (concrete, deps) <- concretizeXObj allowAmbiguity typeEnv globalEnv (newPath : visitedDefinitions) typed
                       (managed, memDepsTys) <- manageMemory typeEnv globalEnv concrete
-                      let memDeps = depsForDeleteFuncs typeEnv globalEnv memDepsTys
+                      let memDeps = depsForDeleteFuncsVisited typeEnv globalEnv (newPath : visitedDefinitions) memDepsTys
                       pure (managed, deps ++ memDeps)
                 Left e -> Left e
         XObj (Lst (XObj (Defn _) _ _ : _)) _ _ ->
@@ -798,7 +798,7 @@ concretizeDefinition allowAmbiguity typeEnv globalEnv visitedDefinitions definit
                     else do
                       (concrete, deps) <- concretizeXObj allowAmbiguity typeEnv globalEnv (newPath : visitedDefinitions) typed
                       (managed, memDepsTys) <- manageMemory typeEnv globalEnv concrete
-                      let memDeps = depsForDeleteFuncs typeEnv globalEnv memDepsTys
+                      let memDeps = depsForDeleteFuncsVisited typeEnv globalEnv (newPath : visitedDefinitions) memDepsTys
                       pure (managed, deps ++ memDeps)
                 Left e -> Left e
         XObj (Lst (XObj (Deftemplate (TemplateCreator templateCreator)) _ _ : _)) _ _ ->
@@ -845,13 +845,22 @@ depsOfPolymorphicFunction typeEnv env visitedDefinitions functionName functionTy
 -- | Helper for finding the 'delete' function for a type.
 depsForDeleteFunc :: TypeEnv -> Env -> Ty -> [XObj]
 depsForDeleteFunc typeEnv env t =
+  depsForDeleteFuncVisited typeEnv env [] t
+
+depsForDeleteFuncVisited :: TypeEnv -> Env -> [SymPath] -> Ty -> [XObj]
+depsForDeleteFuncVisited typeEnv env visitedDefinitions t =
   if isManaged typeEnv env t
-    then depsOfPolymorphicFunction typeEnv env [] "delete" (FuncTy [t] UnitTy StaticLifetimeTy)
+    then depsOfPolymorphicFunction typeEnv env visitedDefinitions "delete" (FuncTy [t] UnitTy StaticLifetimeTy)
     else []
 
 -- | Helper for finding the 'delete' functions for several types.
 depsForDeleteFuncs :: TypeEnv -> Env -> Set.Set Ty -> [XObj]
-depsForDeleteFuncs typeEnv env tys = concatMap (depsForDeleteFunc typeEnv env) (Set.toList tys)
+depsForDeleteFuncs typeEnv env tys =
+  depsForDeleteFuncsVisited typeEnv env [] tys
+
+depsForDeleteFuncsVisited :: TypeEnv -> Env -> [SymPath] -> Set.Set Ty -> [XObj]
+depsForDeleteFuncsVisited typeEnv env visitedDefinitions tys =
+  concatMap (depsForDeleteFuncVisited typeEnv env visitedDefinitions) (Set.toList tys)
 
 -- | Helper for finding the 'copy' function for a type.
 depsForCopyFunc :: TypeEnv -> Env -> Ty -> [XObj]
