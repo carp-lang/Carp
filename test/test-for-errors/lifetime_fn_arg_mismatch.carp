@@ -1,0 +1,7 @@
+(Project.config "file-path-print-length" "short")
+
+; sig says fn takes Int but body passes String to it
+(sig apply-wrong (Fn [(Ref (Fn [Int] Int a) b) String] Int))
+(defn apply-wrong [f x] (~f x))
+
+(defn main [] (IO.println &(Int.str (apply-wrong &Int.inc @"oops"))))

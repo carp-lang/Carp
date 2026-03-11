@@ -1,0 +1,3 @@
+ Inferred Macro, can't unify with (Fn [(Ref String r6), (Ref String r7)] String).
+lifetime_arity_mismatch.carp:5:1 Inferred (Fn [(Ref String r6), (Ref String r7)] String), can't unify with (Fn [(Ref String a), (Ref String a), (Ref String a)] String).
+dummy-file:0:0 Unable to concretize '(meta-stub too-many)'.

@@ -22,7 +22,9 @@ import Prelude hiding (lookup)
 data MemState = MemState
   { memStateDeleters :: Set.Set Deleter,
     memStateDeps :: Set.Set Ty,
-    memStateLifetimes :: Map.Map String LifetimeMode
+    memStateLifetimes :: Map.Map String LifetimeMode,
+    memStateLocalRefSources :: Map.Map String [(String, XObj)],
+    memStateParamDeleters :: Set.Set Deleter
   }
   deriving (Show)
 
@@ -37,7 +39,7 @@ data LifetimeMode
 -- | the code emitter can access them and insert calls to destructors.
 manageMemory :: TypeEnv -> Env -> XObj -> Either TypeError (XObj, Set.Set Ty)
 manageMemory typeEnv globalEnv root =
-  let (finalObj, finalState) = runState (visit root) (MemState Set.empty Set.empty Map.empty)
+  let (finalObj, finalState) = runState (visit root) (MemState Set.empty Set.empty Map.empty Map.empty Set.empty)
       deleteThese = memStateDeleters finalState
       deps = memStateDeps finalState
    in -- (trace ("Delete these: " ++ joinWithComma (map show (Set.toList deleteThese)))) $
@@ -48,9 +50,18 @@ manageMemory typeEnv globalEnv root =
            in -- This final check of lifetimes works on the lifetimes mappings after analyzing the function form, and
               --  after all the local variables in it have been deleted. This is needed for values that are created
               --  directly in body position, e.g. (defn f [] &[1 2 3])
-              case evalState (refTargetIsAlive ok) (MemState Set.empty Set.empty (memStateLifetimes finalState)) of
+              case evalState (refTargetIsAlive ok) (MemState Set.empty Set.empty (memStateLifetimes finalState) Map.empty Set.empty) of
                 Left err -> Left err
-                Right _ -> Right (ok {xobjInfo = newInfo}, deps)
+                Right _ ->
+                  -- Check local ref sources: when a lifetime variable was
+                  -- mapped to LifetimeOutsideFunction (from a function arg)
+                  -- but a (ref local) also uses that lifetime (via explicit
+                  -- sig annotation), the local must be alive. Function params
+                  -- are alive for the whole function, but let-bound locals
+                  -- are not.
+                  case checkLocalRefSources (xobjTy ok) (memStateParamDeleters finalState) (memStateLocalRefSources finalState) of
+                    Left err -> Left err
+                    Right _ -> Right (ok {xobjInfo = newInfo}, deps)
   where
     visit :: XObj -> State MemState (Either TypeError XObj)
     visit xobj =
@@ -129,6 +140,10 @@ manageMemory typeEnv globalEnv root =
                   captures
                 mapM_ (addToLifetimesMappingsIfRef False) argList
                 mapM_ (addToLifetimesMappingsIfRef False) captures -- For captured variables inside of lifted lambdas
+                -- Record the param deleters so the final check can
+                -- distinguish function params from let-bound locals.
+                paramDels <- gets memStateDeleters
+                modify (\m -> m {memStateParamDeleters = paramDels})
                 visitedBody <- visit body
                 result <- unmanage typeEnv globalEnv body
                 whenRightReturn result $
@@ -620,7 +635,21 @@ addToLifetimesMappingsIfRef internal xobj =
         m <- get
         let lifetimes = memStateLifetimes m
         case Map.lookup lt lifetimes of
-          Just _ -> pure ()
+          Just _ ->
+            -- The lifetime is already mapped (e.g. from a function arg).
+            -- If this xobj is a (ref target) node creating a new internal
+            -- reference, record the target as an additional local ref source.
+            -- This catches the soundness hole where an explicit lifetime
+            -- annotation (sig) unifies an arg's lifetime with a local's,
+            -- hiding the dangling ref from the main lifetime check.
+            case xobj of
+              XObj (Lst [XObj Ref _ _, target]) _ _ ->
+                let targetVar = varOfXObj target
+                    localRefs = memStateLocalRefSources m
+                    existing = fromMaybe [] (Map.lookup lt localRefs)
+                    localRefs' = Map.insert lt ((targetVar, xobj) : existing) localRefs
+                 in put $ m {memStateLocalRefSources = localRefs'}
+              _ -> pure ()
           Nothing ->
             do
               let lifetimes' = Map.insert lt makeLifetimeMode lifetimes
@@ -708,6 +737,35 @@ searchForInnerBreak _ e = e
 
 --------------------------------------------------------------------------------
 -- Helpers
+
+-- | Check if any local ref sources are dangling. Only checks lifetime
+-- | variables that appear in the function's return type, since those are the
+-- | ones that could escape. A local ref source is dead if its target
+-- | variable is not a function parameter.
+checkLocalRefSources :: Maybe Ty -> Set.Set Deleter -> Map.Map String [(String, XObj)] -> Either TypeError ()
+checkLocalRefSources maybeFnTy paramDeleters localRefSources =
+  let returnLifetimes = case maybeFnTy of
+        Just (FuncTy _ retTy _) -> collectLifetimeVars retTy
+        _ -> []
+      relevantEntries = concatMap (\lt -> fromMaybe [] (Map.lookup lt localRefSources)) returnLifetimes
+   in case filter (\(name, _) -> not (isAliveInParams name)) relevantEntries of
+        [] -> Right ()
+        ((deadName, refXObj) : _) -> Left (UsingDeadReference refXObj deadName)
+  where
+    collectLifetimeVars (RefTy _ (VarTy lt)) = [lt]
+    collectLifetimeVars (RefTy inner lt) = collectLifetimeVars inner ++ collectLifetimeVars lt
+    collectLifetimeVars (FuncTy args retTy lt) = concatMap collectLifetimeVars args ++ collectLifetimeVars retTy ++ collectLifetimeVars lt
+    collectLifetimeVars (StructTy _ tys) = concatMap collectLifetimeVars tys
+    collectLifetimeVars _ = []
+    isAliveInParams name =
+      any
+        ( \case
+            ProperDeleter {deleterVariable = dv} -> dv == name
+            FakeDeleter {deleterVariable = dv} -> dv == name
+            PrimDeleter {aliveVariable = dv} -> dv == name
+            RefDeleter {refVariable = dv} -> dv == name
+        )
+        (Set.toList paramDeleters)
 
 isSymbolThatCaptures :: XObj -> Bool
 isSymbolThatCaptures xobj =
