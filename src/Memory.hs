@@ -574,22 +574,44 @@ canBeReferenced typeEnv globalEnv xobj =
             _ -> error $ "Too many variables with the same name in set (was looking for " ++ pretty xobj ++ " at " ++ prettyInfoFromXObj xobj ++ ")"
         else pure (Right ())
 
--- | Makes sure that whatever a reference is refering too, is still alive (i.e. in the set of live Deleters)
+-- | Collect all lifetime variables from a type by looking at lifetime
+-- | positions: the second arg of RefTy and third arg of FuncTy.
+-- | Recurses into all type arguments to find nested lifetimes.
+collectLifetimeVars :: Ty -> [String]
+collectLifetimeVars (RefTy inner (VarTy lt)) = lt : collectLifetimeVars inner
+collectLifetimeVars (RefTy inner lt) = collectLifetimeVars inner ++ collectLifetimeVars lt
+collectLifetimeVars (FuncTy _ ret (VarTy lt)) = lt : collectLifetimeVars ret
+collectLifetimeVars (FuncTy _ ret lt) = collectLifetimeVars ret ++ collectLifetimeVars lt
+collectLifetimeVars (StructTy _ tys) = concatMap collectLifetimeVars tys
+collectLifetimeVars (PointerTy inner) = collectLifetimeVars inner
+collectLifetimeVars _ = []
+
+isAlive :: Set.Set Deleter -> String -> Bool
+isAlive deleters name =
+  any
+    ( \case
+        ProperDeleter {deleterVariable = dv} -> dv == name
+        FakeDeleter {deleterVariable = dv} -> dv == name
+        PrimDeleter {aliveVariable = dv} -> dv == name
+        RefDeleter {refVariable = dv} -> dv == name
+    )
+    (Set.toList deleters)
+
+-- | Makes sure that whatever a reference is refering to is still alive
+-- | (i.e. in the set of live Deleters). Collects all lifetime variables
+-- | from the xobj's type and checks each one.
 refTargetIsAlive :: XObj -> State MemState (Either TypeError XObj)
 refTargetIsAlive xobj =
-  -- TODO: Replace this whole thing with a function that collects all lifetime variables in a type.
   case xobjTy xobj of
-    Just (RefTy _ (VarTy lt)) ->
-      performCheck lt
-    Just (FuncTy _ _ (VarTy lt)) ->
-      performCheck lt
-    -- HACK (not exhaustive):
-    Just (FuncTy _ (RefTy _ (VarTy lt)) _) ->
-      performCheck lt
-    _ ->
-      pure -- trace ("Won't check " ++ pretty xobj ++ " : " ++ show (ty xobj))
-        (Right xobj)
+    Just ty -> checkAll (collectLifetimeVars ty)
+    Nothing -> pure (Right xobj)
   where
+    checkAll [] = pure (Right xobj)
+    checkAll (lt : rest) = do
+      result <- performCheck lt
+      case result of
+        Left err -> pure (Left err)
+        Right _ -> checkAll rest
     performCheck :: String -> State MemState (Either TypeError XObj)
     performCheck lt =
       do
@@ -612,16 +634,6 @@ refTargetIsAlive xobj =
             pure (Right xobj)
           Nothing ->
             pure (Right xobj)
-    isAlive :: Set.Set Deleter -> String -> Bool
-    isAlive deleters name =
-      any
-        ( \case
-            ProperDeleter {deleterVariable = dv} -> dv == name
-            FakeDeleter {deleterVariable = dv} -> dv == name
-            PrimDeleter {aliveVariable = dv} -> dv == name
-            RefDeleter {refVariable = dv} -> dv == name
-        )
-        (Set.toList deleters)
 
 -- | Like refTargetIsAlive, but only checks lifetime variables that appear in
 -- | the function's return type. Used at the final check after all locals are
@@ -630,16 +642,19 @@ refTargetIsAlive xobj =
 returnRefTargetIsAlive :: XObj -> State MemState (Either TypeError XObj)
 returnRefTargetIsAlive xobj =
   case xobjTy xobj of
-    Just (FuncTy _ retTy _) -> checkRetTy retTy
+    Just (FuncTy _ retTy _) -> checkAll (collectLifetimeVars retTy)
     _ -> pure (Right xobj)
   where
     -- Extract the function body from defn forms for error reporting
     fnBody = case xobjObj xobj of
       Lst [XObj (Defn _) _ _, _, _, body] -> body
       _ -> xobj
-    checkRetTy (RefTy _ (VarTy lt)) = performRetCheck lt
-    checkRetTy (FuncTy _ inner _) = checkRetTy inner
-    checkRetTy _ = pure (Right xobj)
+    checkAll [] = pure (Right xobj)
+    checkAll (lt : rest) = do
+      result <- performRetCheck lt
+      case result of
+        Left err -> pure (Left err)
+        Right _ -> checkAll rest
     performRetCheck :: String -> State MemState (Either TypeError XObj)
     performRetCheck lt = do
       m <- get
@@ -659,16 +674,6 @@ returnRefTargetIsAlive xobj =
                     Lst (LetPat _ _ body) -> body
                     _ -> fnBody
                in pure (Left (UsingDeadReference reportOn deadName))
-    isAlive :: Set.Set Deleter -> String -> Bool
-    isAlive deleters name =
-      any
-        ( \case
-            ProperDeleter {deleterVariable = dv} -> dv == name
-            FakeDeleter {deleterVariable = dv} -> dv == name
-            PrimDeleter {aliveVariable = dv} -> dv == name
-            RefDeleter {refVariable = dv} -> dv == name
-        )
-        (Set.toList deleters)
 
 -- | Map from lifetime variables (of refs) to a `LifetimeMode`
 -- | (usually containing the name of the XObj that the lifetime is tied to).

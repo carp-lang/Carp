@@ -529,11 +529,17 @@ Carp's lifetimes are made up of two pieces of information. Only references have
 lifetimes, and every reference has *exactly one* lifetime assigned to it:
 
 - A unique type variable that identifies the lifetime.
-- A lifetime mode, that indicates if the linear value tied to the reference has
-  a lexical scope that extends beyond the reference's lexical scope or if it's
-  limited to the reference's lexical scope. When the lifetime is inside a
-  function, it tracks a *set* of source variables that the reference may depend
-  on.
+- A lifetime mode, which takes one of three forms:
+  - `LifetimeOutsideFunction`: the reference points to a value whose scope
+    extends beyond the current function (e.g. a function parameter or global).
+  - `LifetimeInsideFunction`: the reference depends on one or more local
+    variables, tracked as a set of source variable names.
+  - `LifetimeMixed`: the lifetime has both external and internal sources. This
+    arises when a reference creation (`&x`) shares a lifetime variable with a
+    function parameter (typically through an explicit lifetime annotation in a
+    `sig` form). During traversal, the external source guarantees safety. At
+    the final return check, the internal sources are verified to ensure no
+    dangling references escape the function.
 
 In general, a reference is valid only when *all* of the values it may point to
 have either an equivalent or greater lexical scope. This property is encoded in
@@ -576,10 +582,59 @@ Both of these are implemented as separate checks, but they may be viewed as
 specializations of a general operation that checks if every reference form in
 your program is "alive" at the point of use.
 
-Currently, liveness analysis revolves around checking if *all* of the source
-variables a reference depends on are still alive — that is, each source has a
-deleter in scope, indicating the scope properly owns the value. If any source
-variable's deleter is missing, the reference outlives that value and is invalid.
+Liveness analysis revolves around checking if *all* of the source variables a
+reference depends on are still alive -- that is, each source has a deleter in
+scope, indicating the scope properly owns the value. If any source variable's
+deleter is missing, the reference outlives that value and is invalid.
+
+The system collects lifetime variables exhaustively from all positions in a
+type: ref lifetimes, closure lifetimes, struct member lifetimes, and return type
+lifetimes. It does not recurse into function argument types, since those are the
+caller's responsibility.
+
+Two checks are performed:
+
+- **Traversal check** (`refTargetIsAlive`): runs as each form is visited.
+  `LifetimeInsideFunction` sources must be alive. `LifetimeOutsideFunction` and
+  `LifetimeMixed` are safe (the external source is alive in scope).
+- **Final check** (`returnRefTargetIsAlive`): runs after the function body has
+  been analyzed and all local variables have been deleted. Only checks lifetime
+  variables from the function's return type. Uses the set of function parameter
+  deleters (recorded at function entry) as the live set, so parameters are
+  considered alive but locals are not. Both `LifetimeInsideFunction` and
+  `LifetimeMixed` internal sources are checked.
+
+#### Explicit Lifetime Annotations
+
+Carp supports explicit lifetime variables in type signatures:
+
+```clojure
+(sig id (Fn [(Ref String a)] (Ref String a)))
+(defn id [x] x)
+```
+
+The lifetime variable `a` ties the return reference's lifetime to the argument's
+lifetime. The type checker enforces that the function body is consistent with
+this annotation.
+
+When a `sig` forces a local reference to share a lifetime variable with a
+parameter, the memory system detects the conflict. Only reference creations
+(`&x`) trigger a merge into the lifetime map; other forms (function call
+results, symbol lookups, match-ref bindings) use first-mapping-wins. This
+ensures that a genuinely new reference source is tracked without polluting the
+map with derived references that merely propagate an existing lifetime.
+
+For example, the following code is rejected:
+
+```clojure
+(sig f (Fn [(Ref String a)] (Ref String a)))
+(defn f [x] (let [local @"hi"] &local))
+```
+
+The parameter `x` maps lifetime `a` to `LifetimeOutsideFunction`. The reference
+creation `&local` merges `LifetimeInsideFunction {local}` into that mapping,
+producing `LifetimeMixed {local}`. At the final check, `local` is dead (its let
+scope has ended), so the system reports that the reference is not alive.
 
 #### Mutation and Lifetime Invalidation
 
