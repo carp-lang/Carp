@@ -23,7 +23,7 @@ Example:
 
   (doc nthcdr "takes the `n`th tail or `cdr` of the list `pair`.")
   (defndynamic nthcdr [n pair]
-    (cxr (list (+ n 1) 'd) pair))
+    (cxr (list n 'd) pair))
 
   (doc nthcar "takes the `n`th head or `car` of the list `pair`.")
   (defndynamic nthcar [n pair]
