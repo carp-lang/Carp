@@ -251,14 +251,23 @@ toC toCMode (Binder meta root) = renderEmitterState (execState (visit startingIn
                       _ -> error "emit: defn has no return type"
                     defnDecl = defnToDeclaration meta path argList retTy
                     isMain = name == "main"
+                    params = [(mangle n, forceTy p) | p@(XObj (Sym (SymPath _ n) _) _ _) <- argList, not (isUnit (forceTy p))]
+                    canTCO = not isMain && hasSelfTailCalls body && isSafeForTCO argList
                 appendToSrc (defnDecl ++ " {\n")
                 when isMain $
                   appendToSrc (addIndent innerIndent ++ "carp_init_globals(argc, argv);\n")
-                ret <- visit innerIndent body
-                delete innerIndent info
-                case retTy of
-                  UnitTy -> when isMain $ appendToSrc (addIndent innerIndent ++ "return 0;\n")
-                  _ -> appendToSrc (addIndent innerIndent ++ "return " ++ ret ++ ";\n")
+                if canTCO
+                  then do
+                    let tcoIndent = innerIndent + indentAmount
+                    appendToSrc (addIndent innerIndent ++ "while(1) {\n")
+                    visitTCO tcoIndent params retTy (infoDelete info) body
+                    appendToSrc (addIndent innerIndent ++ "}\n")
+                  else do
+                    ret <- visit innerIndent body
+                    delete innerIndent (infoDelete info)
+                    case retTy of
+                      UnitTy -> when isMain $ appendToSrc (addIndent innerIndent ++ "return 0;\n")
+                      _ -> appendToSrc (addIndent innerIndent ++ "return " ++ ret ++ ";\n")
                 appendToSrc "}\n\n"
                 pure ""
         -- Fn / λ
@@ -324,7 +333,7 @@ toC toCMode (Binder meta root) = renderEmitterState (execState (visit startingIn
                     fullname = if (null cname) then pathToC path else cname
                 ret <- visit innerIndent expr
                 when (ret /= "") $ appendToSrc (addIndent innerIndent ++ fullname ++ " = " ++ ret ++ ";\n")
-                delete innerIndent info
+                delete innerIndent (infoDelete info)
                 appendToSrc (addIndent indent ++ "}\n")
                 pure ""
         -- Let
@@ -348,7 +357,7 @@ toC toCMode (Binder meta root) = renderEmitterState (execState (visit startingIn
                 ret <- visit indent' body
                 when isNotVoid $
                   appendToSrc (addIndent indent' ++ letBodyRet ++ " = " ++ ret ++ ";\n")
-                delete indent' info
+                delete indent' (infoDelete info)
                 appendToSrc (addIndent indent ++ "}\n")
                 pure letBodyRet
         -- If
@@ -363,14 +372,12 @@ toC toCMode (Binder meta root) = renderEmitterState (execState (visit startingIn
                 exprVar <- visit indent expr
                 appendToSrc (addIndent indent ++ "if (" ++ exprVar ++ ") {\n")
                 trueVar <- visit indent' ifTrue
-                let ifTrueInfo = infoOrUnknown $ xobjInfo ifTrue
-                delete indent' ifTrueInfo
+                delete indent' (infoDelete (infoOrUnknown $ xobjInfo ifTrue))
                 when isNotVoid $
                   appendToSrc (addIndent indent' ++ ifRetVar ++ " = " ++ trueVar ++ ";\n")
                 appendToSrc (addIndent indent ++ "} else {\n")
                 falseVar <- visit indent' ifFalse
-                let ifFalseInfo = infoOrUnknown $ xobjInfo ifFalse
-                delete indent' ifFalseInfo
+                delete indent' (infoDelete (infoOrUnknown $ xobjInfo ifFalse))
                 when isNotVoid $
                   appendToSrc (addIndent indent' ++ ifRetVar ++ " = " ++ falseVar ++ ";\n")
                 appendToSrc (addIndent indent ++ "}\n")
@@ -460,8 +467,7 @@ toC toCMode (Binder meta root) = renderEmitterState (execState (visit startingIn
                 caseExprRetVal <- visit indent' caseExpr
                 when isNotVoid $
                   appendToSrc (addIndent indent' ++ retVar ++ " = " ++ caseExprRetVal ++ ";\n")
-                let caseLhsInfo' = infoOrUnknown caseLhsInfo
-                delete indent' caseLhsInfo'
+                delete indent' (infoDelete (infoOrUnknown caseLhsInfo))
                 appendToSrc (addIndent indent ++ "}\n")
            in do
                 exprVar <- visit indent expr
@@ -482,11 +488,11 @@ toC toCMode (Binder meta root) = renderEmitterState (execState (visit startingIn
            in do
                 exprRetVar <- visitWhileExpression indent
                 appendToSrc (addIndent indent ++ tyToCLambdaFix exprTy ++ " " ++ conditionVar ++ " = " ++ exprRetVar ++ ";\n")
-                delete indent exprInfo
+                delete indent (infoDelete exprInfo)
                 appendToSrc (addIndent indent ++ "while (" ++ conditionVar ++ ") {\n")
                 _ <- visit indent' body
                 exprRetVar' <- visitWhileExpression indent'
-                delete indent' info
+                delete indent' (infoDelete info)
                 appendToSrc (addIndent indent' ++ conditionVar ++ " = " ++ exprRetVar' ++ ";\n")
                 appendToSrc (addIndent indent ++ "}\n")
                 pure ""
@@ -530,7 +536,7 @@ toC toCMode (Binder meta root) = renderEmitterState (execState (visit startingIn
                     _ -> error (show (CannotSet variable))
                 varInfo = infoOrUnknown $ xobjInfo variable
             --appendToSrc (addIndent indent ++ "// " ++ show (length (infoDelete varInfo)) ++ " deleters for " ++ properVariableName ++ ":\n")
-            delete indent varInfo
+            delete indent (infoDelete varInfo)
             appendToSrc
               ( addIndent indent ++ properVariableName ++ " = " ++ valueVar ++ "; "
                   ++ " // "
@@ -624,7 +630,7 @@ toC toCMode (Binder meta root) = renderEmitterState (execState (visit startingIn
         -- Break
         [XObj Break minfo _] -> do
           case minfo of
-            Just i -> delete indent i
+            Just i -> delete indent (infoDelete i)
             Nothing -> return ()
           appendToSrc (addIndent indent ++ "break;\n")
           appendToSrc (addIndent indent ++ "// Unreachable:\n")
@@ -697,6 +703,65 @@ toC toCMode (Binder meta root) = renderEmitterState (execState (visit startingIn
     visitList _ xobj@(XObj (Lst _) Nothing Nothing) = error ("List is missing info and type! " ++ show xobj)
     visitList _ xobj@(XObj (Lst _) Nothing (Just _)) = error ("List is missing info! " ++ show xobj)
     visitList _ xobj = error ("Must visit list! " ++ show xobj)
+    -- TCO: detect self-recursive calls in tail position
+    hasSelfTailCalls :: XObj -> Bool
+    hasSelfTailCalls (XObj (Lst xs) _ _) = case xs of
+      XObj (Sym _ LookupRecursive) _ _ : _ -> True
+      [XObj If _ _, _, ifTrue, ifFalse] -> hasSelfTailCalls ifTrue || hasSelfTailCalls ifFalse
+      XObj Do _ _ : exprs@(_ : _) -> hasSelfTailCalls (last exprs)
+      [XObj Let _ _, XObj (Arr _) _ _, body'] -> hasSelfTailCalls body'
+      [XObj The _ _, _, value] -> hasSelfTailCalls value
+      _ -> False
+    hasSelfTailCalls _ = False
+    isSafeForTCO :: [XObj] -> Bool
+    isSafeForTCO = all (not . hasRef . forceTy)
+      where
+        hasRef (RefTy _ _) = True
+        hasRef (FuncTy ats rt _) = any hasRef ats || hasRef rt
+        hasRef (StructTy _ tys) = any hasRef tys
+        hasRef (PointerTy p) = hasRef p
+        hasRef _ = False
+    visitTCO :: Int -> [(String, Ty)] -> Ty -> Set.Set Deleter -> XObj -> State EmitterState ()
+    visitTCO indent' params retTy accDels xobj = case xobj of
+      XObj (Lst (func : args)) _ _ | isSelfCall func -> do
+        argVars <- mapM (visit indent') (remove (isUnit . forceTy) args)
+        mapM_ (visit indent') (filter (isUnit . forceTy) args)
+        zipWithM_ (\(p, t) v -> appendToSrc (addIndent indent' ++ tyToCLambdaFix t ++ " __tco_" ++ p ++ " = " ++ v ++ ";\n")) params argVars
+        delete indent' accDels
+        mapM_ (\(p, _) -> appendToSrc (addIndent indent' ++ p ++ " = __tco_" ++ p ++ ";\n")) params
+        appendToSrc (addIndent indent' ++ "continue;\n")
+      XObj (Lst [XObj If _ _, expr, ifTrue, ifFalse]) _ _ -> do
+        exprVar <- visit indent' expr
+        appendToSrc (addIndent indent' ++ "if (" ++ exprVar ++ ") {\n")
+        visitTCO (indent' + indentAmount) params retTy (accDels `Set.union` infoDelete (infoOrUnknown $ xobjInfo ifTrue)) ifTrue
+        appendToSrc (addIndent indent' ++ "} else {\n")
+        visitTCO (indent' + indentAmount) params retTy (accDels `Set.union` infoDelete (infoOrUnknown $ xobjInfo ifFalse)) ifFalse
+        appendToSrc (addIndent indent' ++ "}\n")
+      XObj (Lst (XObj Do _ _ : exprs@(_ : _))) _ _ -> do
+        mapM_ (visit indent') (init exprs)
+        visitTCO indent' params retTy accDels (last exprs)
+      XObj (Lst [XObj Let _ _, XObj (Arr bindings) _ _, body']) minfo _ -> do
+        let indent'' = indent' + indentAmount
+        appendToSrc (addIndent indent' ++ "/* let */ {\n")
+        let emitBinding (XObj (Sym (SymPath _ n) _) _ _) e = do
+              ret <- visit indent'' e
+              let bt = fromMaybe (error "emit: let binding has no type") $ xobjTy e
+              unless (isUnit bt) $ appendToSrc (addIndent indent'' ++ tyToCLambdaFix bt ++ " " ++ mangle n ++ " = " ++ ret ++ ";\n")
+            emitBinding _ _ = error "Invalid binding."
+        mapM_ (uncurry emitBinding) (pairwise bindings)
+        visitTCO indent'' params retTy (accDels `Set.union` maybe Set.empty infoDelete minfo) body'
+        appendToSrc (addIndent indent' ++ "}\n")
+      XObj (Lst [XObj The _ _, _, value]) _ _ ->
+        visitTCO indent' params retTy accDels value
+      _ -> do
+        ret <- visit indent' xobj
+        delete indent' accDels
+        case retTy of
+          UnitTy -> appendToSrc (addIndent indent' ++ "return;\n")
+          _ -> appendToSrc (addIndent indent' ++ "return " ++ ret ++ ";\n")
+      where
+        isSelfCall (XObj (Sym _ LookupRecursive) _ _) = True
+        isSelfCall _ = False
     createArgList :: Int -> Bool -> [XObj] -> State EmitterState String
     createArgList indent unwrapLambdas args =
       do
@@ -791,8 +856,8 @@ toC toCMode (Binder meta root) = renderEmitterState (execState (visit startingIn
         appendToSrc (addIndent indent ++ arrayDataVar ++ "[" ++ show index ++ "] = " ++ visited ++ ";\n")
         pure ()
 
-delete :: Int -> Info -> State EmitterState ()
-delete indent i = mapM_ deleterToC (infoDelete i)
+delete :: Int -> Set.Set Deleter -> State EmitterState ()
+delete indent dels = mapM_ deleterToC dels
   where
     deleterToC :: Deleter -> State EmitterState ()
     deleterToC FakeDeleter {} =

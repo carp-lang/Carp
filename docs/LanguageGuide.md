@@ -87,6 +87,23 @@ single file. Other forms like `defmodule`, `use`, `sig`, and macros are still
 processed in source order. Files loaded via `(load ...)` are also processed in
 the order they are loaded.
 
+Self-recursive functions in tail position are automatically optimized into
+loops, avoiding stack overflow on deep recursion. This works even when managed
+types (like `String`) are in scope:
+
+```clojure
+(defn sum-to [n acc]
+  (if (= n 0) acc (sum-to (- n 1) (+ acc n))))
+
+(defn repeat-str [n acc]
+  (if (= n 0)
+    acc
+    (let [piece @"x"]
+      (repeat-str (- n 1) (StringCopy.append &acc &piece)))))
+```
+
+Tail position is recognized through `if`, `do`, `let`, and `the` forms. The
+optimization is not applied when any parameter has a reference type.
 ### Conditional statements with `cond`
 The `cond` statement executes a block of code if a specified condition is true. If the condition is false, another block of code can be executed.
 
