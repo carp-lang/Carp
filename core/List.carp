@@ -13,17 +13,18 @@ Example:
     (cond
       (= (length x) 0) pair
       (= 0 (car x)) (cxr (cddr x) pair)
-      ((cond
-        (= 'a (cadr x)) car
-        (= 'd (cadr x)) cdr
-        (macro-error "`cxr` expects either `a` or `d` symbols, got " (cadr x)))
-       (if (= 1 (car x))
-         (cxr (cddr x) pair)
-         (cxr (cons (- (car x) 1) (cdr x)) pair)))))
+      (let [op-sym (cadr x)
+            op (cond
+                 (= 'a op-sym) car
+                 (= 'd op-sym) cdr
+                 (macro-error "`cxr` expects either `a` or `d` symbols, got " op-sym))]
+        (if (= 1 (car x))
+          (op (cxr (cddr x) pair))
+          (op (cxr (cons (- (car x) 1) (cdr x)) pair))))))
 
   (doc nthcdr "takes the `n`th tail or `cdr` of the list `pair`.")
   (defndynamic nthcdr [n pair]
-    (cxr (list (+ n 1) 'd) pair))
+    (cxr (list n 'd) pair))
 
   (doc nthcar "takes the `n`th head or `car` of the list `pair`.")
   (defndynamic nthcar [n pair]
