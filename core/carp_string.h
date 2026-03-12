@@ -383,6 +383,17 @@ int String_index_MINUS_of(const String* s, char c) {
     return String_index_MINUS_of_MINUS_from(s, c, -1);
 }
 
+int String_index_MINUS_of_MINUS_string(const String* s, const String* needle) {
+    /* Return byte index of first occurrence of substring `needle` in `s`.
+     * Returns -1 if not found.
+     */
+    char* result = strstr(*s, *needle);
+    if (result == NULL) {
+        return -1;
+    }
+    return (int)(result - *s);
+}
+
 String Pointer_strp(void* in) {
     int size = snprintf(NULL, 0, "%p", in) + 1;
     String buffer = CARP_MALLOC(size);

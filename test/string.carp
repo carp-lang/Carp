@@ -311,6 +311,34 @@
                 false
                 (contains? "abab" \c)
                 "contains? works correctly II")
+  (assert-equal test
+                2
+                (index-of-string "abcde" "cd")
+                "index-of-string works correctly I")
+  (assert-equal test
+                0
+                (index-of-string "abcde" "ab")
+                "index-of-string works correctly II")
+  (assert-equal test
+                -1
+                (index-of-string "abcde" "xyz")
+                "index-of-string works correctly III")
+  (assert-equal test
+                0
+                (index-of-string "abcde" "")
+                "index-of-string empty needle returns 0")
+  (assert-equal test
+                0
+                (index-of-string "abcabc" "abc")
+                "index-of-string finds first occurrence")
+  (assert-equal test
+                true
+                (contains-string? "hello world" "world")
+                "contains-string? works correctly I")
+  (assert-equal test
+                false
+                (contains-string? "hello world" "xyz")
+                "contains-string? works correctly II")
   (assert-ref-equal test
                     [104b 101b 108b 108b 111b]
                     (to-bytes "hello")
