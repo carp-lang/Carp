@@ -1,0 +1,176 @@
+; wgpu-gradient.carp -- Fullscreen Animated Gradient
+;
+; A windowed demo. GLFW window 800x600. Fullscreen triangle generated from
+; vertex index in WGSL (no vertex buffers). The fragment shader computes a
+; smooth animated plasma-like color gradient from UV coordinates + time.
+;
+; Build:  cd /home/sqrew/Desktop/Carp-fork && carp -b examples/wgpu-gradient.carp
+; Run:    ./out/Carp
+
+(load "GLFW.carp")
+(load "WGPURender.carp")
+(add-lib "-lX11")
+
+; ---------------------------------------------------------------------------
+; WGSL shader -- fullscreen triangle with animated plasma gradient.
+;
+; Vertex shader: generates a fullscreen triangle from vertex index.
+; Fragment shader: time-varying plasma effect using sine combinations.
+; ---------------------------------------------------------------------------
+
+(def gradient-wgsl
+  "struct Uniforms {
+    time: f32,
+    _pad0: f32,
+    _pad1: f32,
+    _pad2: f32,
+}
+
+@group(0) @binding(0) var<uniform> u: Uniforms;
+
+struct VertexOutput {
+    @builtin(position) position: vec4<f32>,
+    @location(0) uv: vec2<f32>,
+}
+
+@vertex
+fn vs_main(@builtin(vertex_index) vi: u32) -> VertexOutput {
+    // Fullscreen triangle covering [-1,1] clip space
+    var pos: array<vec2<f32>, 3> = array<vec2<f32>, 3>(
+        vec2<f32>(-1.0, -1.0),
+        vec2<f32>( 3.0, -1.0),
+        vec2<f32>(-1.0,  3.0),
+    );
+    var out: VertexOutput;
+    let p = pos[vi];
+    out.position = vec4<f32>(p, 0.0, 1.0);
+    out.uv = (p + 1.0) * 0.5;
+    return out;
+}
+
+fn hsv2rgb(h: f32, s: f32, v: f32) -> vec3<f32> {
+    let c = v * s;
+    let hp = h * 6.0;
+    let x = c * (1.0 - abs(hp % 2.0 - 1.0));
+    let m = v - c;
+    var rgb: vec3<f32>;
+    if (hp < 1.0) { rgb = vec3<f32>(c, x, 0.0); }
+    else if (hp < 2.0) { rgb = vec3<f32>(x, c, 0.0); }
+    else if (hp < 3.0) { rgb = vec3<f32>(0.0, c, x); }
+    else if (hp < 4.0) { rgb = vec3<f32>(0.0, x, c); }
+    else if (hp < 5.0) { rgb = vec3<f32>(x, 0.0, c); }
+    else { rgb = vec3<f32>(c, 0.0, x); }
+    return rgb + vec3<f32>(m, m, m);
+}
+
+@fragment
+fn fs_main(in: VertexOutput) -> @location(0) vec4<f32> {
+    let t = u.time;
+    let uv = in.uv;
+
+    // Plasma: combine multiple sine waves for organic movement
+    let v1 = sin(uv.x * 10.0 + t);
+    let v2 = sin(10.0 * (uv.x * sin(t * 0.5) + uv.y * cos(t * 0.3)) + t);
+    let cx = uv.x + 0.5 * sin(t * 0.3);
+    let cy = uv.y + 0.5 * cos(t * 0.5);
+    let v3 = sin(sqrt(100.0 * (cx * cx + cy * cy) + 1.0) + t);
+    let v = (v1 + v2 + v3) / 6.0 + 0.5;
+
+    let color = hsv2rgb(fract(v + t * 0.05), 0.85, 0.95);
+    return vec4<f32>(color, 1.0);
+}
+")
+
+; ---------------------------------------------------------------------------
+; GLFWwindow* -> void* cast (same as wgpu-pyramid.carp)
+; ---------------------------------------------------------------------------
+
+(deftemplate glfw-window->voidptr (Fn [(Ptr GLFWwindow)] (Ptr ()))
+  "void* $NAME(GLFWwindow* w)"
+  "$DECL { return (void*)w; }")
+
+(def win-width 800)
+(def win-height 600)
+
+; ---------------------------------------------------------------------------
+; Main
+; ---------------------------------------------------------------------------
+
+(defn main []
+  (match (WGPU.create-context)
+    (Result.Error e) (do (println* "GPU init failed: " &e) -1)
+    (Result.Success ctx)
+
+  (let-do [_glfw-init (GLFW.init)
+           _glfw-hint (GLFW.window-hint GLFW.CLIENT_API GLFW.NO_API)
+           win (GLFW.create-window win-width win-height
+                 (String.cstr "WGPU Gradient") NULL NULL)]
+
+    (if (null? win)
+      (do (println* "Failed to create GLFW window")
+          (WGPU.free-context ctx) -1)
+
+    (match (WGPURender.create-surface ctx (glfw-window->voidptr win) win-width win-height)
+      (Result.Error e) (do (println* "Surface failed: " &e)
+                           (GLFW.destroy-window win) (GLFW.terminate)
+                           (WGPU.free-context ctx) -1)
+      (Result.Success surf)
+
+    ; --- Uniform buffer (16 bytes: time + 3 padding floats) ---
+    (match (WGPURender.create-uniform-buffer ctx 16)
+      (Result.Error e) (do (println* "Uniform buffer failed: " &e)
+                           (WGPURender.free-surface surf)
+                           (GLFW.destroy-window win) (GLFW.terminate)
+                           (WGPU.free-context ctx) -1)
+      (Result.Success ub)
+
+    ; --- Render pipeline (fullscreen, no vertex buffers) ---
+    (match (WGPURender.create-pipeline ctx gradient-wgsl "vs_main" "fs_main"
+             &(WGPURender.surface-format surf))
+      (Result.Error e) (do (println* "Pipeline failed: " &e)
+                           (WGPURender.free-uniform-buffer ub)
+                           (WGPURender.free-surface surf)
+                           (GLFW.destroy-window win) (GLFW.terminate)
+                           (WGPU.free-context ctx) -1)
+      (Result.Success pipe)
+
+    ; --- Bind group (uniform buffer at binding 0) ---
+    (match (WGPURender.create-render-uniform-bind-group ctx pipe ub)
+      (Result.Error e) (do (println* "Bind group failed: " &e)
+                           (WGPURender.free-pipeline pipe)
+                           (WGPURender.free-uniform-buffer ub)
+                           (WGPURender.free-surface surf)
+                           (GLFW.destroy-window win) (GLFW.terminate)
+                           (WGPU.free-context ctx) -1)
+      (Result.Success bg)
+
+    (do
+      (println* "Animated gradient is live. Close window to exit.")
+
+      (while (= (GLFW.window-should-close win) GLFW.FALSE)
+        (let-do [time (Double.to-float (GLFW.get-time))
+                 uniforms [time 0.0f 0.0f 0.0f]]
+
+          ; Upload time uniform
+          (WGPURender.update-uniform-buffer ctx ub &uniforms)
+
+          ; Begin frame
+          (match (WGPURender.begin-frame surf ctx)
+            (Result.Error _e) () ; Skip frame on surface lost
+            (Result.Success frame)
+              (do
+                (WGPURender.run-pass frame pipe bg (Maybe.Nothing))
+                (WGPURender.end-frame frame surf ctx)
+                (WGPURender.free-frame frame)))
+
+          (GLFW.poll-events)))
+
+      ; --- Cleanup ---
+      (WGPURender.free-bind-group bg)
+      (WGPURender.free-pipeline pipe)
+      (WGPURender.free-uniform-buffer ub)
+      (WGPURender.free-surface surf)
+      (GLFW.destroy-window win)
+      (GLFW.terminate)
+      (WGPU.free-context ctx)
+      0)))))))))
