@@ -375,4 +375,32 @@
                     (the (Array Int) [])
                     (drop-while &(fn [x] (< @x 10)) &[1 2 3])
                     "drop-while returns empty when all elements match")
+  (assert-ref-equal test
+                    [2 3]
+                    (rest &[1 2 3])
+                    "rest works as expected")
+  (assert-ref-equal test
+                    (the (Array Int) [])
+                    (zero)
+                    "zero works as expected")
+  (assert-equal test
+                6
+                (sum-length &[[1] [2 3] [4 5 6]])
+                "sum-length works as expected")
+  (assert-ref-equal test
+                    [[1 2] [3 4] [5 6]]
+                    (partition &[1 2 3 4 5 6] 2)
+                    "partition into chunks of 2")
+  (assert-ref-equal test
+                    [[1 2 3] [4 5 6]]
+                    (partition &[1 2 3 4 5 6] 3)
+                    "partition into chunks of 3")
+  (assert-ref-equal test
+                    [2 4 6]
+                    (copy-filter &(fn [x] (Int.even? @x)) &[1 2 3 4 5 6])
+                    "copy-filter works as expected")
+  (assert-equal test
+                42
+                (unsafe-nth-value &[42 43] 0)
+                "unsafe-nth-value works as expected")
 )
