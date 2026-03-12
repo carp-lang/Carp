@@ -90,9 +90,60 @@
                 (floor 1.9f)
                 "floor works as expected")
   (assert-equal test
-                123.0f
-                123f
-                "float literals work as expected")
+                3.0f
+                (+ 1.0f 2.0f)
+                "+ works as expected")
+  (assert-equal test
+                -1.0f
+                (- 1.0f 2.0f)
+                "- works as expected")
+  (assert-equal test
+                2.0f
+                (* 1.0f 2.0f)
+                "* works as expected")
+  (assert-equal test
+                0.5f
+                (/ 1.0f 2.0f)
+                "/ works as expected")
+  (assert-equal test
+                1
+                (to-int 1.9f)
+                "to-int works as expected")
+  (assert-equal test
+                1.0f
+                (from-int 1)
+                "from-int works as expected")
+  (assert-equal test
+                1.0f
+                (copy &1.0f)
+                "copy works as expected")
+  (assert-true test
+               (approx 1.0f 1.000001f)
+               "approx works as expected")
+  (assert-equal test
+                0.0f
+                (zero)
+                "zero works as expected")
+  (assert-equal test
+                2.0f
+                (inc 1.0f)
+                "inc works as expected")
+  (assert-equal test
+                0.0f
+                (dec 1.0f)
+                "dec works as expected")
+  (assert-equal test
+                3.0f
+                (add-ref &1.0f &2.0f)
+                "add-ref works as expected")
+  (assert-op test
+             3.141592f
+             pi
+             "pi constant is correct"
+             Float.approx)
+  (assert-true test
+               (Float.> MAX 0.0f)
+               "MAX is positive")
   (assert-op test
              0.3f
              (mod 9.3f 3.0f)

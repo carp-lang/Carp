@@ -68,6 +68,50 @@
                 (positive-mod 0 7)
                 "positive-mod works on zero")
   (assert-equal test
+                5
+                (+ 2 3)
+                "+ works as expected")
+  (assert-equal test
+                -1
+                (- 2 3)
+                "- works as expected")
+  (assert-equal test
+                6
+                (* 2 3)
+                "* works as expected")
+  (assert-equal test
+                3
+                (inc 2)
+                "inc works as expected")
+  (assert-equal test
+                1
+                (dec 2)
+                "dec works as expected")
+  (assert-equal test
+                1
+                (mod 7 3)
+                "mod works as expected")
+  (assert-equal test
+                42
+                (to-int 42)
+                "to-int works as expected")
+  (assert-equal test
+                42
+                (from-int 42)
+                "from-int works as expected")
+  (assert-equal test
+                0
+                (zero)
+                "zero works as expected")
+  (assert-equal test
+                42
+                (copy &42)
+                "copy works as expected")
+  (assert-equal test
+                5
+                (add-ref &2 &3)
+                "add-ref works as expected")
+  (assert-equal test
                 8
                 (pow 2 3)
                 "pow works as expected")
