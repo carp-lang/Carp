@@ -3,6 +3,12 @@
 (load "Test.carp")
 (use Test)
 
+;; Simple enum — should auto-derive blit.
+(deftype Direction North South East West)
+
+;; Enum with primitive fields — should auto-derive blit.
+(deftype Axis (X [Float]) (Y [Float]) Origin)
+
 (deftype A (F [(Fn [] Int)]))
 (deftype (Nest a) (Nested [a]) (End []))
 
@@ -48,4 +54,12 @@
                   (match-ref &n
                              (Nest.Nested (Nest.Nested (Nest.Nested s))) s)
                   "match-ref works on deeply nested sumtype"))
+  ;; Auto-derived blit: simple enum
+  (let-do [d (Direction.North)
+           d2 (blit d)]
+    (assert-equal test "(North)" &(Direction.str &d2) "blit auto-derived for simple enum"))
+  ;; Auto-derived blit: enum with primitive fields
+  (let-do [a (Axis.X 3.0f)
+           a2 (blit a)]
+    (assert-equal test "(X 3f)" &(Axis.str &a2) "blit auto-derived for enum with primitive fields"))
 )
