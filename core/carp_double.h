@@ -151,3 +151,7 @@ double Double_floor(double x) {
 double Double_mod(double x, double y) {
     return fmod(x, y);
 }
+
+double Double_tan(double x) {
+    return tan(x);
+}
