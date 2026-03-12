@@ -16,5 +16,175 @@
                         (Dynamic.sort '("one" "two---" "three" "four")
                                       (fn [a b]
                                         (< (String.length a) (String.length b))))
-                        "Dynamic.sort sorts using predicate"))
+                        "Dynamic.sort sorts using predicate")
+
+  (assert-dynamic-equal test
+                        2
+                        (Dynamic.cxr '(1 a 1 d) '(1 2 3))
+                        "Dynamic.cxr works as expected I")
+
+  (assert-dynamic-equal test
+                        6
+                        (Dynamic.cxr '(1 a 1 d 1 a 4 d) '(1 2 3 4 (5 6 7)))
+                        "Dynamic.cxr works as expected II")
+
+  (assert-dynamic-equal test
+                        '(3)
+                        (Dynamic.nthcdr 1 '(1 2 3))
+                        "Dynamic.nthcdr works as expected")
+
+  (assert-dynamic-equal test
+                        2
+                        (Dynamic.nthcar 1 '(1 2 3))
+                        "Dynamic.nthcar works as expected")
+
+  (assert-dynamic-equal test
+                        [1 2 3]
+                        (Dynamic.collect-into '(1 2 3) array)
+                        "Dynamic.collect-into works as expected (list to array)")
+
+  (assert-true test
+               (Dynamic.empty? '())
+               "Dynamic.empty? works on empty list")
+
+  (assert-false test
+                (Dynamic.empty? '(1))
+                "Dynamic.empty? works on non-empty list")
+
+  (assert-dynamic-equal test
+                        6
+                        (Dynamic.reduce + 0 '(1 2 3))
+                        "Dynamic.reduce works as expected")
+
+  (assert-dynamic-equal test
+                        '(1 2 3 4 5)
+                        (Dynamic.unreduce (fn [x] (+ x 1)) 0 5 (list))
+                        "Dynamic.unreduce works as expected")
+
+  (assert-dynamic-equal test
+                        '(2 4)
+                        (Dynamic.filter (fn [x] (= 0 (mod x 2))) '(1 2 3 4 5))
+                        "Dynamic.filter works as expected")
+
+  (assert-dynamic-equal test
+                        '(3 2 1)
+                        (Dynamic.reverse '(1 2 3))
+                        "Dynamic.reverse works on lists")
+
+  (assert-dynamic-equal test
+                        [3 2 1]
+                        (Dynamic.reverse [1 2 3])
+                        "Dynamic.reverse works on arrays")
+
+  (assert-dynamic-equal test
+                        '()
+                        (Dynamic.empty '(1 2 3))
+                        "Dynamic.empty returns empty list")
+
+  (assert-dynamic-equal test
+                        []
+                        (Dynamic.empty [1 2 3])
+                        "Dynamic.empty returns empty array")
+
+  (assert-dynamic-equal test
+                        '(1 2)
+                        (Dynamic.take 2 '(1 2 3 4 5))
+                        "Dynamic.take works as expected")
+
+  (assert-dynamic-equal test
+                        3
+                        (eval (Dynamic.apply + '(1 2)))
+                        "Dynamic.apply works as expected (with eval)")
+
+  (assert-true test
+               (Dynamic.any? (fn [x] (= x 2)) '(1 2 3))
+               "Dynamic.any? returns true if match found")
+
+  (assert-false test
+                (Dynamic.any? (fn [x] (= x 4)) '(1 2 3))
+                "Dynamic.any? returns false if no match found")
+
+  (assert-true test
+               (Dynamic.all? (fn [x] (> x 0)) '(1 2 3))
+               "Dynamic.all? returns true if all match")
+
+  (assert-false test
+                (Dynamic.all? (fn [x] (> x 1)) '(1 2 3))
+                "Dynamic.all? returns false if any don't match")
+
+  (assert-dynamic-equal test
+                        '((Dynamic.+ 1 4) (Dynamic.+ 2 5))
+                        (Dynamic.zip + '(1 2) '(4 5))
+                        "Dynamic.zip works as expected")
+
+  (assert-dynamic-equal test
+                        '(2 3 4)
+                        (Dynamic.map (fn [x] (+ x 1)) '(1 2 3))
+                        "Dynamic.map works as expected")
+
+  (assert-dynamic-equal test
+                        '(1 2 3 4)
+                        (Dynamic.flatten '(1 2 (3 (4))))
+                        "Dynamic.flatten works as expected")
+
+  (assert-dynamic-equal test
+                        [5 3 1]
+                        (Dynamic.walk car reverse [[1 2] [3 4] [5 6]])
+                        "Dynamic.walk works as expected")
+
+  (assert-dynamic-equal test
+                        '(* 1 (/ 2 3))
+                        (Dynamic.postwalk (fn [x]
+                                            (cond
+                                              (= x '+) '*
+                                              (= x '-) '/
+                                              x))
+                                          '(+ 1 (- 2 3)))
+                        "Dynamic.postwalk works as expected")
+
+  (assert-dynamic-equal test
+                        '(+ 4 (- 8 12))
+                        (Dynamic.prewalk (fn [x] (if (number? x) (* x 4) x)) '(+ 1 (- 2 3)))
+                        "Dynamic.prewalk works as expected")
+
+  (assert-dynamic-equal test
+                        '(* 1 (/ 2 3))
+                        (Dynamic.walk-replace '((+ *) (- /)) '(+ 1 (- 2 3)))
+                        "Dynamic.walk-replace works as expected")
+
+  (assert-dynamic-equal test
+                        '((1 2) (3 4))
+                        (Dynamic.List.pairs '(1 2 3 4 5))
+                        "Dynamic.List.pairs works as expected")
+
+  (assert-dynamic-equal test
+                        2
+                        (Dynamic.List.nth '(1 2 3) 1)
+                        "Dynamic.List.nth works as expected")
+
+  (assert-dynamic-equal test
+                        '(1 3)
+                        (Dynamic.List.remove-nth '(1 2 3) 1)
+                        "Dynamic.List.remove-nth works as expected")
+
+  (assert-dynamic-equal test
+                        '(1 20 3)
+                        (Dynamic.List.update-nth '(1 2 3) 1 (fn [x] (* x 10)))
+                        "Dynamic.List.update-nth works as expected")
+
+  (assert-dynamic-equal test
+                        '(1 42 3)
+                        (Dynamic.List.set-nth '(1 2 3) 1 42)
+                        "Dynamic.List.set-nth works as expected")
+
+  (assert-dynamic-equal test
+                        2
+                        (Dynamic.List.find '(1 2 3) (fn [x] (= x 2)))
+                        "Dynamic.List.find works as expected")
+
+  (assert-dynamic-equal test
+                        1
+                        (Dynamic.List.find-index '(1 2 3) (fn [x] (= x 2)))
+                        "Dynamic.List.find-index works as expected")
+)
 
