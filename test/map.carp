@@ -3,6 +3,8 @@
 (load "Test.carp")
 (use Test)
 
+(def for-each-sum 0)
+
 (deftest test
   (assert-equal test
                 "2"
@@ -213,6 +215,23 @@
                 &{1 @"hi" 2 @"bye" 3 @"!"}
                 &(Map.merge {1 @"bye" 3 @"!"} &{2 @"bye" 1 @"hi"})
                 "merge works"
+  )
+  (assert-equal test
+                &{1 3 2 4}
+                &(let-do [m {1 2}]
+                  (Map.update-with-default! &m &1 &Int.inc 0)
+                  (Map.update-with-default! &m &2 &Int.inc 3)
+                  m)
+                "update-with-default! works"
+  )
+  (assert-equal test
+                12
+                (do
+                  (set! for-each-sum 0)
+                  (Map.for-each &(Map.from-array [(Pair.init-from-refs &1 &2) (Pair.init-from-refs &3 &4) (Pair.init-from-refs &5 &6)])
+                                &(fn [k v] (set! for-each-sum (+ for-each-sum @v))))
+                  for-each-sum)
+                "for-each works"
   )
   (assert-true test
                (let-do [s (Set.create)]
