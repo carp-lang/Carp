@@ -159,6 +159,11 @@ The margin of error is `0.00001`.")
   (defn add-ref [x y]
     (Double.+ @x @y))
   (implements add-ref Double.add-ref)
+
+  (doc lerp "Linearly interpolates between `a` and `b` by factor `t`.
+Returns `a` when `t` is `0.0` and `b` when `t` is `1.0`.")
+  (defn lerp [a b t]
+    (+ a (* (- b a) t)))
 )
 
 (defmodule DoubleRef

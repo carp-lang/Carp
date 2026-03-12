@@ -118,6 +118,18 @@
                 &(Float.from-string "abcd")
                 "from-string works as expected II"
   )
+  (assert-equal test
+                0.0f
+                (Float.lerp 0.0f 10.0f 0.0f)
+                "lerp returns a at t=0.0f")
+  (assert-equal test
+                10.0f
+                (Float.lerp 0.0f 10.0f 1.0f)
+                "lerp returns b at t=1.0f")
+  (assert-equal test
+                5.0f
+                (Float.lerp 0.0f 10.0f 0.5f)
+                "lerp returns midpoint at t=0.5f")
   (assert-op test
              0.0f
              (tan 0.0f)
