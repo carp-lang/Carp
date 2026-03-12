@@ -88,6 +88,104 @@
              (exp 1.0)
              "exp works as expected"
              Double.approx)
+  (assert-equal test
+                3.0
+                (+ 1.0 2.0)
+                "+ works as expected")
+  (assert-equal test
+                -1.0
+                (- 1.0 2.0)
+                "- works as expected")
+  (assert-equal test
+                2.0
+                (* 1.0 2.0)
+                "* works as expected")
+  (assert-equal test
+                0.5
+                (/ 1.0 2.0)
+                "/ works as expected")
+  (assert-equal test
+                1
+                (to-int 1.9)
+                "to-int works as expected")
+  (assert-equal test
+                1.0
+                (from-int 1)
+                "from-int works as expected")
+  (assert-equal test
+                1.0f
+                (to-float 1.0)
+                "to-float works as expected")
+  (assert-equal test
+                1.0
+                (from-float 1.0f)
+                "from-float works as expected")
+  (assert-equal test
+                1l
+                (to-long 1.0)
+                "to-long works as expected")
+  (assert-equal test
+                1.0
+                (from-long 1l)
+                "from-long works as expected")
+  (assert-equal test
+                (Uint64.from-long 1l)
+                (to-uint64 1.0)
+                "to-uint64 works as expected")
+  (assert-equal test
+                1.0
+                (from-uint64 (Uint64.from-long 1l))
+                "from-uint64 works as expected")
+  (assert-equal test
+                1.0
+                (copy &1.0)
+                "copy works as expected")
+  (assert-true test
+               (approx 1.0 1.0000000001)
+               "approx works as expected")
+  (assert-equal test
+                0.0
+                (zero)
+                "zero works as expected")
+  (assert-equal test
+                2.0
+                (inc 1.0)
+                "inc works as expected")
+  (assert-equal test
+                0.0
+                (dec 1.0)
+                "dec works as expected")
+  (assert-equal test
+                3.0
+                (add-ref &1.0 &2.0)
+                "add-ref works as expected")
+  (assert-op test
+             3.141592653589793
+             pi
+             "pi constant is correct"
+             Double.approx)
+  (assert-equal test
+                2.718281828459045
+                e
+                "e constant is correct")
+  (assert-true test
+               (Double.> MAX 0.0)
+               "MAX is positive")
+  (assert-op test
+             0.0
+             (tan 0.0)
+             "tan works as expected"
+             Double.approx)
+  (let-do [exp 0
+           frac (frexp 8.0 &exp)]
+    (assert-true test
+                 (and (Double.approx frac 0.5) (= exp 4))
+                 "frexp returns correct fraction and exponent"))
+  (let-do [int-part 0.0
+           frac (modf 3.7 &int-part)]
+    (assert-true test
+                 (and (Double.approx frac 0.7) (Double.approx int-part 3.0))
+                 "modf returns correct fractional and integer parts"))
   (assert-op test
              0.3
              (mod 9.3 3.0)
