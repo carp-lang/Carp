@@ -335,4 +335,41 @@
                 "@\"\\\"h\\\"i\\\"\""
                 &(prn "\"h\"i\"")
                 "prn works on quoted strings")
+  (assert-equal test
+                "hello"
+                &(from-cstr (cstr "hello"))
+                "cstr and from-cstr work as expected")
+  (assert-equal test
+                "hello"
+                &(str "hello")
+                "str identity works as expected")
+  (assert-equal test
+                "hello 42"
+                &(format "hello %d" 42)
+                "format works as expected")
+  (assert-equal test
+                "hello"
+                &(copy "hello")
+                "copy works as expected")
+  (assert-equal test
+                10
+                (sum-length &[@"hello" @"world"])
+                "sum-length works as expected")
+  (assert-true test
+               (allocated? &(allocate 5 \a))
+               "allocated? returns true for successful allocation")
+  (assert-true test
+               (Dynamic.String.empty? "")
+               "Dynamic.String.empty? returns true for empty string")
+  (assert-false test
+                (Dynamic.String.empty? "abc")
+                "Dynamic.String.empty? returns false for non-empty string")
+  (assert-equal test
+                3
+                (Dynamic.length (Dynamic.String.to-list "abc"))
+                "Dynamic.String.to-list works as expected (check length)")
+  (assert-equal test
+                3
+                (Dynamic.length (Dynamic.String.to-array "abc"))
+                "Dynamic.String.to-array works as expected (check length)")
 )
