@@ -104,6 +104,17 @@ types (like `String`) are in scope:
 
 Tail position is recognized through `if`, `do`, `let`, and `the` forms. The
 optimization is not applied when any parameter has a reference type.
+
+Groups of mutually recursive functions are also optimized when they share the
+same parameter types, parameter names, and return type:
+
+```clojure
+(defn is-even [n]
+  (if (= n 0) true (is-odd (- n 1))))
+
+(defn is-odd [n]
+  (if (= n 0) false (is-even (- n 1))))
+```
 ### Conditional statements with `cond`
 The `cond` statement executes a block of code if a specified condition is true. If the condition is false, another block of code can be executed.
 

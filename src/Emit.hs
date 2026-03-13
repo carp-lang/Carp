@@ -15,6 +15,7 @@ where
 import Control.Monad.State
 import Data.Char (ord)
 import Data.Functor ((<&>))
+import Data.Graph (SCC (..), stronglyConnComp)
 import Data.List (intercalate, isPrefixOf, sortOn)
 import Data.Maybe (fromJust, fromMaybe)
 import qualified Data.Text.Lazy as TL
@@ -118,8 +119,8 @@ renderEmitterState = TL.unpack . TB.toLazyText . emitterBuilder
 appendToSrc :: String -> State EmitterState ()
 appendToSrc moreSrc = modify (\s -> s {emitterBuilder = emitterBuilder s <> TB.fromString moreSrc})
 
-toC :: ToCMode -> Binder -> String
-toC toCMode (Binder meta root) = renderEmitterState (execState (visit startingIndent root) emptyEmitterState)
+toC :: ToCMode -> [(SymPath, Binder)] -> Binder -> String
+toC toCMode mutualGroup (Binder meta root) = renderEmitterState (execState (visit startingIndent root) emptyEmitterState)
   where
     startingIndent = case toCMode of
       Functions -> 0
@@ -243,6 +244,15 @@ toC toCMode (Binder meta root) = renderEmitterState (execState (visit startingIn
           case toCMode of
             Globals ->
               pure ""
+            _
+              | not (null mutualGroup),
+                pathToC path == pathToC (fst (head mutualGroup)) ->
+                -- First member of mutual group: emit merged dispatch + wrappers
+                emitMutualGroup indent mutualGroup
+            _
+              | not (null mutualGroup) ->
+                -- Non-first member of mutual group: skip (already emitted)
+                pure ""
             _ ->
               do
                 let innerIndent = indent + indentAmount
@@ -260,7 +270,7 @@ toC toCMode (Binder meta root) = renderEmitterState (execState (visit startingIn
                   then do
                     let tcoIndent = innerIndent + indentAmount
                     appendToSrc (addIndent innerIndent ++ "while(1) {\n")
-                    visitTCO tcoIndent params retTy (infoDelete info) body
+                    visitTCO tcoIndent params retTy (infoDelete info) Nothing body
                     appendToSrc (addIndent innerIndent ++ "}\n")
                   else do
                     ret <- visit innerIndent body
@@ -721,25 +731,33 @@ toC toCMode (Binder meta root) = renderEmitterState (execState (visit startingIn
         hasRef (StructTy _ tys) = any hasRef tys
         hasRef (PointerTy p) = hasRef p
         hasRef _ = False
-    visitTCO :: Int -> [(String, Ty)] -> Ty -> Set.Set Deleter -> XObj -> State EmitterState ()
-    visitTCO indent' params retTy accDels xobj = case xobj of
-      XObj (Lst (func : args)) _ _ | isSelfCall func -> do
+    visitTCO :: Int -> [(String, Ty)] -> Ty -> Set.Set Deleter -> Maybe (String, Map.Map String Int) -> XObj -> State EmitterState ()
+    visitTCO indent' params retTy accDels mutualInfo xobj = case xobj of
+      XObj (Lst (func : args)) _ _ | isTCOCall func -> do
         argVars <- mapM (visit indent') (remove (isUnit . forceTy) args)
         mapM_ (visit indent') (filter (isUnit . forceTy) args)
         zipWithM_ (\(p, t) v -> appendToSrc (addIndent indent' ++ tyToCLambdaFix t ++ " __tco_" ++ p ++ " = " ++ v ++ ";\n")) params argVars
         delete indent' accDels
         mapM_ (\(p, _) -> appendToSrc (addIndent indent' ++ p ++ " = __tco_" ++ p ++ ";\n")) params
+        case mutualInfo of
+          Just (tagVar, tagMap) | not (isSelfCall func) ->
+            case func of
+              XObj (Sym path _) _ _ -> case Map.lookup (pathToC path) tagMap of
+                Just tag -> appendToSrc (addIndent indent' ++ tagVar ++ " = " ++ show tag ++ ";\n")
+                _ -> pure ()
+              _ -> pure ()
+          _ -> pure ()
         appendToSrc (addIndent indent' ++ "continue;\n")
       XObj (Lst [XObj If _ _, expr, ifTrue, ifFalse]) _ _ -> do
         exprVar <- visit indent' expr
         appendToSrc (addIndent indent' ++ "if (" ++ exprVar ++ ") {\n")
-        visitTCO (indent' + indentAmount) params retTy (accDels `Set.union` infoDelete (infoOrUnknown $ xobjInfo ifTrue)) ifTrue
+        visitTCO (indent' + indentAmount) params retTy (accDels `Set.union` infoDelete (infoOrUnknown $ xobjInfo ifTrue)) mutualInfo ifTrue
         appendToSrc (addIndent indent' ++ "} else {\n")
-        visitTCO (indent' + indentAmount) params retTy (accDels `Set.union` infoDelete (infoOrUnknown $ xobjInfo ifFalse)) ifFalse
+        visitTCO (indent' + indentAmount) params retTy (accDels `Set.union` infoDelete (infoOrUnknown $ xobjInfo ifFalse)) mutualInfo ifFalse
         appendToSrc (addIndent indent' ++ "}\n")
       XObj (Lst (XObj Do _ _ : exprs@(_ : _))) _ _ -> do
         mapM_ (visit indent') (init exprs)
-        visitTCO indent' params retTy accDels (last exprs)
+        visitTCO indent' params retTy accDels mutualInfo (last exprs)
       XObj (Lst [XObj Let _ _, XObj (Arr bindings) _ _, body']) minfo _ -> do
         let indent'' = indent' + indentAmount
         appendToSrc (addIndent indent' ++ "/* let */ {\n")
@@ -749,10 +767,10 @@ toC toCMode (Binder meta root) = renderEmitterState (execState (visit startingIn
               unless (isUnit bt) $ appendToSrc (addIndent indent'' ++ tyToCLambdaFix bt ++ " " ++ mangle n ++ " = " ++ ret ++ ";\n")
             emitBinding _ _ = error "Invalid binding."
         mapM_ (uncurry emitBinding) (pairwise bindings)
-        visitTCO indent'' params retTy (accDels `Set.union` maybe Set.empty infoDelete minfo) body'
+        visitTCO indent'' params retTy (accDels `Set.union` maybe Set.empty infoDelete minfo) mutualInfo body'
         appendToSrc (addIndent indent' ++ "}\n")
       XObj (Lst [XObj The _ _, _, value]) _ _ ->
-        visitTCO indent' params retTy accDels value
+        visitTCO indent' params retTy accDels mutualInfo value
       _ -> do
         ret <- visit indent' xobj
         delete indent' accDels
@@ -762,6 +780,67 @@ toC toCMode (Binder meta root) = renderEmitterState (execState (visit startingIn
       where
         isSelfCall (XObj (Sym _ LookupRecursive) _ _) = True
         isSelfCall _ = False
+        isTCOCall (XObj (Sym _ LookupRecursive) _ _) = True
+        isTCOCall (XObj (Sym path (LookupGlobal CarpLand AFunction)) _ _) =
+          case mutualInfo of
+            Just (_, tagMap) -> Map.member (pathToC path) tagMap
+            Nothing -> False
+        isTCOCall _ = False
+    emitMutualGroup :: Int -> [(SymPath, Binder)] -> State EmitterState String
+    emitMutualGroup indent group =
+      let members = [(p, m, al, b, rt) | (p, Binder m (XObj (Lst [XObj (Defn _) _ _, _, XObj (Arr al) _ _, b]) _ (Just (FuncTy _ rt _)))) <- group]
+          (_, _, firstArgs, _, retTy) = head members
+          params = [(mangle n, forceTy p) | p@(XObj (Sym (SymPath _ n) _) _ _) <- firstArgs, not (isUnit (forceTy p))]
+          paramsC = joinWithComma [tyToCLambdaFix t ++ " " ++ n | (n, t) <- params]
+          tagMap = Map.fromList (zip (map (pathToC . fst5) members) [0 ..])
+          mergedName = "__mutual_" ++ intercalate "_" (map (pathToC . fst5) members)
+          retTyC = tyToCLambdaFix retTy
+          tagParam = if null paramsC then "int __tag" else "int __tag, " ++ paramsC
+          innerIndent = indent + indentAmount
+          switchIndent = innerIndent + indentAmount
+          caseIndent = switchIndent + indentAmount
+          bodyIndent = caseIndent + indentAmount
+          fst5 (a, _, _, _, _) = a
+       in do
+            -- Merged dispatch function
+            appendToSrc ("static " ++ retTyC ++ " " ++ mergedName ++ "(" ++ tagParam ++ ") {\n")
+            appendToSrc (addIndent innerIndent ++ "while(1) {\n")
+            appendToSrc (addIndent switchIndent ++ "switch(__tag) {\n")
+            zipWithM_
+              ( \tag (_, _, argList, body, rt) -> do
+                  let fnInfo = case binderXObj (snd (group !! tag)) of
+                        XObj _ (Just i) _ -> i
+                        _ -> Info 0 0 "" Set.empty (-1)
+                      memberParams = [(mangle n, forceTy p) | p@(XObj (Sym (SymPath _ n) _) _ _) <- argList, not (isUnit (forceTy p))]
+                  appendToSrc (addIndent caseIndent ++ "case " ++ show tag ++ ": {\n")
+                  -- Emit aliases when param names differ from canonical
+                  zipWithM_
+                    ( \(cn, ct) (mn, _) ->
+                        when (cn /= mn) $
+                          appendToSrc (addIndent bodyIndent ++ tyToCLambdaFix ct ++ " " ++ mn ++ " = " ++ cn ++ ";\n")
+                    )
+                    params
+                    memberParams
+                  visitTCO bodyIndent params rt (infoDelete fnInfo) (Just ("__tag", tagMap)) body
+                  appendToSrc (addIndent caseIndent ++ "}\n")
+              )
+              [(0 :: Int) ..]
+              members
+            appendToSrc (addIndent switchIndent ++ "}\n")
+            appendToSrc (addIndent innerIndent ++ "}\n")
+            appendToSrc "}\n\n"
+            -- Wrapper functions
+            mapM_
+              ( \(tag, (path, m, argList, _, _)) -> do
+                  let decl = defnToDeclaration m path argList retTy
+                      mParams = [mangle n | p@(XObj (Sym (SymPath _ n) _) _ _) <- argList, not (isUnit (forceTy p))]
+                      callArgs = if null mParams then show tag else show tag ++ ", " ++ joinWithComma mParams
+                  appendToSrc (decl ++ " {\n")
+                  appendToSrc (addIndent innerIndent ++ "return " ++ mergedName ++ "(" ++ callArgs ++ ");\n")
+                  appendToSrc "}\n\n"
+              )
+              (zip [(0 :: Int) ..] members)
+            pure ""
     createArgList :: Int -> Bool -> [XObj] -> State EmitterState String
     createArgList indent unwrapLambdas args =
       do
@@ -1085,7 +1164,7 @@ binderToC toCMode binder =
               then Right ""
               else do
                 checkForUnresolvedSymbols xobj
-                pure (toC toCMode binder)
+                pure (toC toCMode [] binder)
           Nothing -> Left (BinderIsMissingType binder)
 
 binderToDeclaration :: TypeEnv -> Binder -> Either ToCError String
@@ -1097,12 +1176,65 @@ binderToDeclaration typeEnv binder =
           Just t -> if isTypeGeneric t then Right "" else Right (toDeclaration binder ++ "")
           Nothing -> Left (BinderIsMissingType binder)
 
+-- | Find function paths called in tail position (excluding self-recursive LookupRecursive)
+tailCallTargets :: XObj -> [SymPath]
+tailCallTargets (XObj (Lst xs) _ _) = case xs of
+  XObj (Sym path (LookupGlobal CarpLand AFunction)) _ _ : _ -> [path]
+  [XObj If _ _, _, t, f] -> tailCallTargets t ++ tailCallTargets f
+  XObj Do _ _ : es@(_ : _) -> tailCallTargets (last es)
+  [XObj Let _ _, XObj (Arr _) _ _, b] -> tailCallTargets b
+  [XObj The _ _, _, v] -> tailCallTargets v
+  _ -> []
+tailCallTargets _ = []
+
+-- | Extract defn info from a binder: (path, argList, body, retTy)
+defnParts :: Binder -> Maybe (SymPath, [XObj], XObj, Ty)
+defnParts (Binder _ (XObj (Lst [XObj (Defn _) _ _, XObj (Sym path _) _ _, XObj (Arr args) _ _, body]) _ (Just (FuncTy _ rt _)))) =
+  Just (path, args, body, rt)
+defnParts _ = Nothing
+
+-- | Find groups of mutually recursive functions suitable for merged dispatch TCO.
+-- Requires: >1 member, same return type, same param types and names, no ref params.
+findMutualGroups :: Env -> [[(SymPath, Binder)]]
+findMutualGroups env =
+  let fnBinders = [(path, b) | (_, b) <- Map.toList (envBindings env), Just (path, _, _, _) <- [defnParts b]]
+      graph =
+        [ (pb, pathToC path, map pathToC (tailCallTargets body))
+          | pb@(path, b) <- fnBinders,
+            Just (_, _, body, _) <- [defnParts b]
+        ]
+      sccs = stronglyConnComp graph
+   in [members | CyclicSCC members <- sccs, isQualifying members]
+  where
+    isQualifying group =
+      let infos = [(args, rt) | (_, b) <- group, Just (_, args, _, rt) <- [defnParts b]]
+          retTys = map snd infos
+          paramTys = map (map forceTy . fst) infos
+       in length group > 1
+            && all (== head retTys) (tail retTys)
+            && all (== head paramTys) (tail paramTys)
+            && all (\(_, b) -> maybe False (\(_, a, _, _) -> all (not . hasRef . forceTy) a) (defnParts b)) group
+    hasRef (RefTy _ _) = True
+    hasRef (FuncTy ats rt _) = any hasRef ats || hasRef rt
+    hasRef (StructTy _ tys) = any hasRef tys
+    hasRef (PointerTy p) = hasRef p
+    hasRef _ = False
+
 envToC :: Env -> ToCMode -> Either ToCError String
 envToC env toCMode =
   let binders' = Map.toList (envBindings env)
+      mutualGroups = findMutualGroups env
+      mutualPaths = Set.fromList [pathToC path | group <- mutualGroups, (path, _) <- group]
+      isMutual (_, b) = case defnParts b of
+        Just (path, _, _, _) -> Set.member (pathToC path) mutualPaths
+        Nothing -> False
+      emitGroup group = do
+        mapM_ (checkForUnresolvedSymbols . binderXObj . snd) group
+        pure (toC toCMode group (snd (head group)))
    in do
-        okCodes <- mapM (binderToC toCMode . snd) binders'
-        pure (concat okCodes)
+        okCodes <- mapM (binderToC toCMode . snd) (filter (not . isMutual) binders')
+        mutualCodes <- mapM emitGroup mutualGroups
+        pure (concat mutualCodes ++ concat okCodes)
 
 globalsToC :: Env -> Either ToCError String
 globalsToC globalEnv =
