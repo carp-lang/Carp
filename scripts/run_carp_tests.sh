@@ -18,12 +18,14 @@ echo "Build and run some examples"
 ./test/execute.sh ./examples/generic_structs.carp
 ./test/execute.sh ./examples/maps.carp
 ./test/execute.sh ./examples/sumtypes.carp
+./test/execute.sh ./examples/json_parser.carp
 
 echo "Build and run some tests that print (check their output)"
 ./test/execute.sh ./test/produces-output/basics.carp
 ./test/execute.sh ./test/produces-output/function_members.carp
 ./test/execute.sh ./test/produces-output/globals.carp
 ./test/execute.sh ./test/produces-output/lambdas.carp
+./test/execute.sh ./test/produces-output/recursive_types.carp
 ./test/execute.sh ./test/produces-output/setting_variables.carp
 ./test/execute.sh ./test/produces-output/repl.carp
 

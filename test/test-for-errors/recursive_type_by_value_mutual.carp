@@ -1,0 +1,4 @@
+(Project.config "file-path-print-length" "short")
+
+(deftype A [b B])
+(deftype B [a A])

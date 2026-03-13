@@ -1,0 +1,14 @@
+(Project.no-echo)
+
+;; Mutual recursion between user-defined types.
+;; Recursion is valid because it goes through Box indirection.
+(deftype A [b (Maybe (Box B))])
+(deftype B [a (Maybe (Box A)) value Int])
+
+(defn main []
+  (let [a (A.init (Maybe.Just (Box.init (B.init (Maybe.Nothing) 7))))]
+    (do
+      (match-ref (A.b &a)
+        (Maybe.Just boxb) (IO.println &(str (B.value (Box.peek boxb))))
+        _ (unreachable "expected nested B"))
+      0)))

@@ -627,14 +627,7 @@ deftype ctx x@(XObj (Sym (SymPath [] name) _) _ _) constructor =
     (ctxWithType, e) <- makeType ctx name [] constructor
     case e of
       Left err -> pure (evalError ctx (show err) (xobjInfo x))
-      Right t ->
-        autoDerive
-          ctxWithType
-          t
-          [ lookupBinderInTypeEnv ctxWithType (markQualified (SymPath [] "delete")),
-            lookupBinderInTypeEnv ctxWithType (markQualified (SymPath [] "str")),
-            lookupBinderInTypeEnv ctxWithType (markQualified (SymPath [] "copy"))
-          ]
+      Right _ -> pure (ctxWithType, dynamicNil)
 deftype ctx x@(XObj (Lst ((XObj (Sym (SymPath [] name) _) _ _) : tyvars)) _ _) constructor =
   do
     (ctxWithType, e) <-
@@ -645,14 +638,7 @@ deftype ctx x@(XObj (Lst ((XObj (Sym (SymPath [] name) _) _ _) : tyvars)) _ _) c
         )
     case e of
       Left err -> pure (evalError ctx (show err) (xobjInfo x))
-      Right t ->
-        autoDerive
-          ctxWithType
-          t
-          [ lookupBinderInTypeEnv ctxWithType (markQualified (SymPath [] "delete")),
-            lookupBinderInTypeEnv ctxWithType (markQualified (SymPath [] "str")),
-            lookupBinderInTypeEnv ctxWithType (markQualified (SymPath [] "copy"))
-          ]
+      Right _ -> pure (ctxWithType, dynamicNil)
 deftype ctx name _ = pure $ toEvalError ctx name (InvalidTypeName name)
 
 checkVariables :: [XObj] -> Maybe [Ty]
@@ -663,15 +649,28 @@ makeType ctx name vars constructor =
   let qpath = (qualifyPath ctx (SymPath [] name))
       ty = StructTy (ConcreteNameTy (unqualify qpath)) vars
       (typeX, members, creator) = constructor ty
-   in case ( unwrapTypeErr ctx (creator ctx name vars members Nothing)
-               >>= \(_, modx, deps) ->
-                 pure (existingOr ctx qpath modx)
-                   >>= \mod' ->
-                     unwrapErr (insertType ctx qpath (toBinder typeX) mod')
-                       >>= \c -> pure (foldM (define True) c (map Qualified deps))
-           ) of
-        Left e -> pure (evalError ctx e (xobjInfo typeX))
-        Right result -> (result >>= \ctx' -> pure (ctx', pure ty))
+      ctxWithStub = fromRight ctx (insertTypeBinder ctx qpath (toBinder typeX))
+   in do
+        (ctxWithInterfaces, deriveRes) <-
+          autoDerive
+            ctxWithStub
+            ty
+            [ lookupBinderInTypeEnv ctxWithStub (markQualified (SymPath [] "delete")),
+              lookupBinderInTypeEnv ctxWithStub (markQualified (SymPath [] "str")),
+              lookupBinderInTypeEnv ctxWithStub (markQualified (SymPath [] "prn")),
+              lookupBinderInTypeEnv ctxWithStub (markQualified (SymPath [] "copy"))
+            ]
+        case deriveRes of
+          Left err -> pure (ctxWithInterfaces, Left err)
+          Right _ ->
+            case unwrapTypeErr ctxWithInterfaces (creator ctxWithInterfaces name vars members Nothing) of
+              Left e -> pure (evalError ctx e (xobjInfo typeX))
+              Right (_, modx, deps) ->
+                case unwrapErr (insertType ctxWithInterfaces qpath (toBinder typeX) (existingOr ctx qpath modx)) of
+                  Left e -> pure (evalError ctx e (xobjInfo typeX))
+                  Right c -> do
+                    c' <- foldM (define True) c (map Qualified deps)
+                    pure (c', Right ty)
   where
     existingOr :: Context -> QualifiedPath -> XObj -> Binder
     existingOr c q x@(XObj (Mod e _) _ _) =

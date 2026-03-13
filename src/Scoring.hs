@@ -4,6 +4,7 @@ import Data.Maybe (fromJust)
 import Env as E
 import Obj
 import qualified Set
+import TypePredicates
 import Types
 import TypesToC
 
@@ -63,6 +64,7 @@ depthOfType typeEnv visited selfName theType =
     else visitType theType + 1
   where
     visitType :: Ty -> Int
+    visitType (StructTy boxName [_]) | isBoxName boxName = 1
     visitType t@(StructTy _ varTys) = depthOfStructType t varTys
     visitType (FuncTy argTys retTy ltTy) =
       -- trace ("Depth of args of " ++ show argTys ++ ": " ++ show (map (visitType . Just) argTys))
@@ -99,24 +101,37 @@ depthOfType typeEnv visited selfName theType =
           _
             | tyToC struct == selfName -> 1
             | otherwise ->
-              case E.getBinder typeEnv s of
-                Right (Binder _ typedef) -> depthOfDeftype typeEnv (Set.insert theType visited) typedef varTys
-                Left _ ->
-                  --trace ("Unknown type: " ++ name) $
-                  -- Two problems here:
-                  --
-                  -- 1. generic types don't generate their definition in time
-                  -- so we get nothing for those. Instead, let's try the type
-                  -- vars.
-                  -- 2. If a type wasn't found type may also refer to a type defined in another
-                  -- module that's not yet been scored. To be safe, add 500
-                  500 + depthOfVarTys
+              case concreteBinder of
+                Just (Right (Binder _ typedef)) ->
+                  depthOfDeftype typeEnv (Set.insert theType visited) typedef varTys
+                _ ->
+                  case E.getBinder typeEnv s of
+                    Right (Binder _ typedef) ->
+                      depthOfDeftype typeEnv (Set.insert theType visited) typedef varTys
+                    Left _ ->
+                      --trace ("Unknown type: " ++ name) $
+                      -- Two problems here:
+                      --
+                      -- 1. generic types don't generate their definition in time
+                      -- so we get nothing for those. Instead, let's try the type
+                      -- vars.
+                      -- 2. If a type wasn't found type may also refer to a type defined in another
+                      -- module that's not yet been scored. To be safe, add 500
+                      500 + depthOfVarTys
       where
         s = getNameFromStructName (getStructName struct)
+        concreteBinder =
+          if (not (null varTys)) && (not (isTypeGeneric struct))
+            then Just (E.getBinder typeEnv (getNameFromStructName (tyToC struct)))
+            else Nothing
         depthOfVarTys =
           case fmap (depthOfType typeEnv visited (getStructName struct)) varTys of
             [] -> 1
             xs -> maximum xs + 1
+
+isBoxName :: Ty -> Bool
+isBoxName (ConcreteNameTy (SymPath _ "Box")) = True
+isBoxName _ = False
 
 -- | Scoring of value bindings ('def' and 'defn')
 -- | The score is used for sorting the bindings before emitting them.
