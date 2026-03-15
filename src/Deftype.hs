@@ -134,10 +134,15 @@ generateTypeBindings candidate =
     (okPrn, _) <- binderForStrOrPrn "prn" candidate
     (okDelete, deleteDeps) <- binderForDelete candidate
     (okCopy, copyDeps) <- binderForCopy candidate
+    okMemberDeps <- memberDeps (TC.getTypeEnv candidate) (TC.getValueEnv candidate) (TC.getFields candidate)
     pure
       ( (okInit : okStr : okPrn : okDelete : okCopy : okMembers),
-        (deleteDeps ++ membersDeps ++ copyDeps ++ strDeps)
+        (okMemberDeps ++ deleteDeps ++ membersDeps ++ copyDeps ++ strDeps)
       )
+
+-- | Gets concrete dependencies for product type fields.
+memberDeps :: TypeEnv -> Env -> [TC.TypeField] -> Either TypeError [XObj]
+memberDeps typeEnv env fields = fmap concat (mapM (concretizeType typeEnv env) (concatMap TC.fieldTypes fields))
 
 -- | Generate all the templates for ALL the member variables in a deftype declaration.
 templatesForMembers :: TC.TypeCandidate -> Either TypeError ([(String, Binder)], [XObj])

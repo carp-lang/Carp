@@ -42,6 +42,12 @@ for f in ./test/test-for-errors/*.carp; do
    ./test/check.sh $f
 done
 
+echo "Compile-only tests"
+for f in ./test/compile-only/*.carp; do
+    echo $f
+    ./scripts/carp.sh -b $f
+done
+
 echo "Make sure the benchmarks compile."
 for f in ./bench/*.carp; do
     echo $f
