@@ -4,6 +4,7 @@ module Deftype
   ( moduleForDeftype,
     moduleForDeftypeInContext,
     bindingsForRegisteredType,
+    typeModuleStubBindings,
     fieldArg,
     memberArg,
   )
@@ -11,10 +12,12 @@ where
 
 import Concretize
 import Context
+import Data.Either (fromRight)
 import Data.Maybe
-import Env (addListOfBindings, new)
+import Env (addListOfBindings, insert, new)
 import Info
 import Managed
+import qualified Meta
 import Obj
 import StructUtils
 import Template
@@ -59,6 +62,10 @@ moduleForDeftype :: Maybe Env -> TypeEnv -> Env -> [String] -> String -> [Ty] ->
 moduleForDeftype innerEnv typeEnv env pathStrings typeName typeVariables rest i existingEnv =
   let moduleValueEnv = fromMaybe (new innerEnv (Just typeName)) (fmap fst existingEnv)
       moduleTypeEnv = fromMaybe (new (Just typeEnv) (Just typeName)) (fmap snd existingEnv)
+      selfTy = StructTy (ConcreteNameTy (SymPath pathStrings typeName)) typeVariables
+      moduleValueEnvForCandidate = addListOfBindings moduleValueEnv (typeModuleStubBindings selfTy (pathStrings ++ [typeName]))
+      stubModuleXObj = XObj (Mod moduleValueEnvForCandidate moduleTypeEnv) i (Just ModuleTy)
+      envForCandidate = fromRight env (insert env (SymPath pathStrings typeName) (toBinder stubModuleXObj))
       initmembers = case rest of
         -- ANSI C does not allow empty structs. We add a dummy member here to account for this.
         -- Note that we *don't* add this member for external types--we leave those definitions up to the user.
@@ -70,7 +77,7 @@ moduleForDeftype innerEnv typeEnv env pathStrings typeName typeVariables rest i 
               [(XObj (Arr ms) _ _)] -> ms
               _ -> []
         -- Check that this is a valid type definition.
-        candidate <- TC.mkStructCandidate typeName typeVariables typeEnv env mems pathStrings
+        candidate <- TC.mkStructCandidate typeName typeVariables typeEnv envForCandidate mems pathStrings
         validateType candidate
         -- Generate standard function bindings for the type.
         (funcs, deps) <- generateTypeBindings candidate
@@ -78,6 +85,17 @@ moduleForDeftype innerEnv typeEnv env pathStrings typeName typeVariables rest i 
         let moduleEnvWithBindings = addListOfBindings moduleValueEnv funcs
             typeModuleXObj = XObj (Mod moduleEnvWithBindings moduleTypeEnv) i (Just ModuleTy)
         pure (typeName, typeModuleXObj, deps)
+
+typeModuleStubBindings :: Ty -> [String] -> [(String, Binder)]
+typeModuleStubBindings selfTy fullPath =
+  let stubMeta = Meta.set "stub" trueXObj emptyMeta
+      mk name sig = (name, Binder stubMeta (XObj (Sym (SymPath fullPath name) Symbol) Nothing (Just sig)))
+      refSig ret = FuncTy [RefTy selfTy (VarTy "q")] ret StaticLifetimeTy
+   in [ mk "delete" (FuncTy [selfTy] UnitTy StaticLifetimeTy),
+        mk "str" (refSig StringTy),
+        mk "prn" (refSig StringTy),
+        mk "copy" (FuncTy [RefTy selfTy (VarTy "q")] selfTy StaticLifetimeTy)
+      ]
 
 -- | Will generate getters/setters/updaters when registering EXTERNAL types.
 -- | i.e. (register-type VRUnicornData [hp Int, magic Float])
@@ -116,10 +134,15 @@ generateTypeBindings candidate =
     (okPrn, _) <- binderForStrOrPrn "prn" candidate
     (okDelete, deleteDeps) <- binderForDelete candidate
     (okCopy, copyDeps) <- binderForCopy candidate
+    okMemberDeps <- memberDeps (TC.getTypeEnv candidate) (TC.getValueEnv candidate) (TC.getFields candidate)
     pure
       ( (okInit : okStr : okPrn : okDelete : okCopy : okMembers),
-        (deleteDeps ++ membersDeps ++ copyDeps ++ strDeps)
+        (okMemberDeps ++ deleteDeps ++ membersDeps ++ copyDeps ++ strDeps)
       )
+
+-- | Gets concrete dependencies for product type fields.
+memberDeps :: TypeEnv -> Env -> [TC.TypeField] -> Either TypeError [XObj]
+memberDeps typeEnv env fields = fmap concat (mapM (concretizeType typeEnv env) (concatMap TC.fieldTypes fields))
 
 -- | Generate all the templates for ALL the member variables in a deftype declaration.
 templatesForMembers :: TC.TypeCandidate -> Either TypeError ([(String, Binder)], [XObj])

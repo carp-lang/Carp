@@ -1,0 +1,4 @@
+(Project.no-echo)
+
+(deftype Bar [v Int])
+(deftype Baz [x (Maybe Bar)])
