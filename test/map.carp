@@ -338,7 +338,7 @@
                 "difference works"
   )
   (assert-equal test
-                "{ @\"hi\" @\"bye\" }"
+                "{ @\"bye\" @\"hi\" }"
                 &(str &(Set.from-array &[@"hi" @"bye"]))
                 "stringification works"
   )
@@ -456,7 +456,7 @@
                 "reduce works"
   )
   (assert-equal test
-                "(Bag @\"hi\" @\"hi\" @\"bye\")"
+                "(Bag @\"bye\" @\"hi\" @\"hi\")"
                 &(str &(Bag.from-array &[@"hi" @"bye" @"hi"]))
                 "stringification works"
   )

@@ -2,15 +2,10 @@
 
 (defmodule String
   (defn hash [k]
-    (let-do [a 31415
-             b 27183
-             vh 0]
+    (let-do [h 5381]
       (for [x 0 (length k)]
-        (do
-          (set! vh (+ (* a vh) (Char.to-int (char-at k x))))
-          (set! a (* a b))
-          (set! x (Int.inc x))))
-      (Int.abs vh)))
+        (set! h (+ (* h 33) (Char.to-int (char-at k x)))))
+      (Int.abs h)))
    (implements hash String.hash)
 )
 
@@ -185,7 +180,7 @@
   "grows and shrinks based on load.")
 (defmodule Map
   (hidden dflt-len)
-  (def dflt-len 256)
+  (def dflt-len 16)
 
   (doc min-load "The load a map needs to reach in order to shrink.")
   (def min-load 20)
@@ -233,15 +228,17 @@
 
   (doc put "Put a value v into map m, using the key k.")
   (defn put [m k v]
-    (if (> (/ (* @(len &m) 100) @(n-buckets &m)) min-load)
+    (if (> (/ (* @(len &m) 100) @(n-buckets &m)) max-load)
       (put (grow m) k v)
       (let [idx (Int.positive-mod (hash k) @(n-buckets &m))
-            in? (contains? &m k)]
+            found (Bucket.find (Array.unsafe-nth (buckets &m) idx) k)]
         (update-len
           (update-buckets m &(fn [b]
                                (let [n (Array.unsafe-nth &b idx)]
-                                 (Array.aset b idx (Bucket.put @n k v)))))
-           &(if in? id Int.inc)))))
+                                 (if (<= 0 found)
+                                   (Array.aset b idx (Bucket.set-idx @n found v))
+                                   (Array.aset b idx (Bucket.push-back @n k v))))))
+          &(if (<= 0 found) id Int.inc)))))
 
   (doc put! "Put a value v into map m, using the key k, in place.")
   (defn put! [m k v]
@@ -308,7 +305,8 @@
 
   (doc remove "Remove the value under the key k from the map m.")
   (defn remove [m k]
-    (if (> (/ (* @(len &m) 100) @(n-buckets &m)) min-load)
+    (if (and (< (/ (* @(len &m) 100) @(n-buckets &m)) min-load)
+             (>= @(n-buckets &m) (* 2 dflt-len)))
       (remove (shrink m) k)
       (let [idx (Int.positive-mod (hash k) @(n-buckets &m))]
         (update-len
@@ -462,7 +460,7 @@
   "grows and shrinks based on load, similar to `Map`.")
 (defmodule Set
   (hidden dflt-len)
-  (def dflt-len 256)
+  (def dflt-len 16)
 
   (doc min-load "The load a set needs to reach in order to shrink.")
   (def min-load 20)
@@ -513,7 +511,7 @@
     (cond
       (contains? &s v)
         s
-      (> (/ (* @(len &s) 100) @(n-buckets &s)) min-load)
+      (> (/ (* @(len &s) 100) @(n-buckets &s)) max-load)
         (put (grow s) v)
       (let [idx (Int.positive-mod (hash v) @(n-buckets &s))
             ;; The lifetime system really doesn't like this function, had to put in a bunch of copying to make it compile:
@@ -544,7 +542,8 @@
     (cond
       (not (contains? &s v))
         s
-      (> (/ (* @(len &s) 100) @(n-buckets &s)) min-load)
+      (and (< (/ (* @(len &s) 100) @(n-buckets &s)) min-load)
+           (>= @(n-buckets &s) (* 2 dflt-len)))
         (remove (shrink s) v)
       (let [idx (Int.positive-mod (hash v) @(n-buckets &s))]
         (update-len
