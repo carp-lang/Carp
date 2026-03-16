@@ -92,7 +92,7 @@
   arguments of each constructor.
 - Otherwise it returns 0.")
   (defndynamic arity [binding]
-    (let [args (arguments binding)]
+    (let [args (Introspect.arguments binding)]
       (if (Introspect.sumtype? binding)
         (map length args)
         (length args))))
@@ -121,6 +121,8 @@
         (Introspect.primitive? binding) (caddr s)
         (Introspect.interface? binding) (car (cdaddr s))
         (Introspect.function? binding) (caddr s)
+        (Introspect.dynamic? binding) (caddr s)
+        (Introspect.macro? binding) (caddr s)
         (Introspect.struct? binding) (map car (List.pairs (caddr s)))
         (Introspect.sumtype? binding) (map (fn [arr]
         (cadr arr)) (cddr s))
@@ -140,8 +142,8 @@
     (let [s (s-expr binding)]
       (if (empty? s)
           false
-          (or (Dynamic.= (Symbol.from "defdynamic") (car s))
-              (Dynamic.= (Symbol.from "dynamic") (car s))))))
+          (or (Dynamic.= "defdynamic" (str (car s)))
+              (Dynamic.= "dynamic" (str (car s)))))))
 
   (doc interface?
     "Is this binding an interface?")
