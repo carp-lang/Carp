@@ -1,3 +1,5 @@
 (Project.no-echo)
 
 (deftype Aha [x (Maybe (Box Aha))])
+
+(defn main [] 0)

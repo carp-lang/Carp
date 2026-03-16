@@ -26,6 +26,8 @@ echo "Build and run some tests that print (check their output)"
 ./test/execute.sh ./test/produces-output/globals.carp
 ./test/execute.sh ./test/produces-output/lambdas.carp
 ./test/execute.sh ./test/produces-output/recursive_types.carp
+./test/execute.sh ./test/produces-output/recursive_type_decl_only.carp
+./test/execute.sh ./test/produces-output/maybe_custom_member_decl_only.carp
 ./test/execute.sh ./test/produces-output/setting_variables.carp
 ./test/execute.sh ./test/produces-output/repl.carp
 
@@ -40,12 +42,6 @@ echo "Test for correct error messages when doing "carp --check" on the source."
 for f in ./test/test-for-errors/*.carp; do
     echo $f
    ./test/check.sh $f
-done
-
-echo "Compile-only tests"
-for f in ./test/compile-only/*.carp; do
-    echo $f
-    ./scripts/carp.sh -b $f
 done
 
 echo "Make sure the benchmarks compile."
