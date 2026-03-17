@@ -22,10 +22,9 @@ module Env
     findBinderMaybe,
     search,
     searchBinder,
-    findType,
-    findTypeBinder,
     searchType,
     searchTypeBinder,
+    searchTypeDef,
     -------------------------
     -- Environment getters
     getInnerEnv,
@@ -321,23 +320,6 @@ searchBinder e path =
 --------------------------------------------------------------------------------
 -- Type retrievals
 
--- | Unidirectional binder retrieval specialized to types.
---
--- Restricts the final step of a search to binders in a module's *type* environment.
-findType :: Environment e => e -> SymPath -> Either EnvironmentError (TypeEnv, Binder)
-findType e path = go $ find' (inj (prj e)) path
-  where
-    -- Make sure the binder is actually a type.
-    go :: Either EnvironmentError (TypeEnv, Binder) -> Either EnvironmentError (TypeEnv, Binder)
-    go (Right (t, b)) =
-      if isType (binderXObj b)
-        then Right (t, b)
-        else Left (BindingNotFound (show path) (prj e))
-    go x = x
-
-findTypeBinder :: Environment e => e -> SymPath -> Either EnvironmentError Binder
-findTypeBinder e path = fmap snd (findType e path)
-
 -- | Multidirectional binder retrieval specialized to types.
 --
 -- Restricts the final step of a search to binders in a module's *type* environment.
@@ -346,6 +328,15 @@ searchType e path = search (inj (prj e)) path
 
 searchTypeBinder :: Environment e => e -> SymPath -> Either EnvironmentError Binder
 searchTypeBinder e path = fmap snd (searchType e path)
+
+-- | Like 'searchTypeBinder', but filters results to only include actual
+-- type definitions (deftype, defsumtype, defalias, external types).
+searchTypeDef :: Environment e => e -> SymPath -> Either EnvironmentError Binder
+searchTypeDef e path =
+  case searchTypeBinder e path of
+    Right b | isType (binderXObj b) -> Right b
+    Right _ -> Left (BindingNotFound (show path) (prj e))
+    Left err -> Left err
 
 --------------------------------------------------------------------------------
 -- Environment mutation

@@ -1,0 +1,21 @@
+(load "Test.carp")
+(use Test)
+
+; Regression test for https://github.com/carp-lang/Carp/issues/1508
+; deftype inside defmodule should generate correct C when the type is
+; captured in a closure.
+
+(defmodule Foo
+  (deftype (Bar a) [value a])
+
+  (defn wrap [x]
+    (let [b (Bar.init x)]
+      (fn [] @(Bar.value &b))))
+)
+
+(deftest test
+  (assert-equal test
+    42
+    (let [f (Foo.wrap 42)] (f))
+    "polymorphic type defined inside module can be captured in closure")
+)

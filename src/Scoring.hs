@@ -26,7 +26,7 @@ scoreTypeBinder typeEnv env b@(Binder _ (XObj (Lst (XObj x _ _ : XObj (Sym _ _) 
     _ -> (500, b)
   where
     depthOfStruct (StructTy (ConcreteNameTy path@(SymPath _ name)) varTys) =
-      case E.getBinder typeEnv name <> findTypeBinder env path of
+      case E.getBinder typeEnv name <> E.searchTypeDef (TypeEnv env) path of
         Right (Binder _ typedef) -> (depthOfDeftype typeEnv Set.empty typedef varTys + 1, b)
         -- TODO: This function should return (Either ScoringError (Int,
         -- Binder)) instead of calling error.

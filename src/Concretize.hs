@@ -31,7 +31,7 @@ import Data.Either (fromRight)
 import Data.List (foldl')
 import Data.Maybe (fromMaybe)
 import Debug.Trace
-import Env (EnvironmentError, empty, envIsExternal, findTypeBinder, getBinder, insert, insertX, search)
+import Env (EnvironmentError, empty, envIsExternal, getBinder, insert, insertX, search, searchTypeDef)
 import Forms
 import Info
 import InitialTypes
@@ -553,7 +553,7 @@ concretizeType typeEnv env arrayTy@(StructTy (ConcreteNameTy (SymPath [] "Static
       deps <- mapM (concretizeType typeEnv env) varTys
       Right (defineStaticArrayTypeAlias arrayTy : concat deps)
 concretizeType typeEnv env genericStructTy@(StructTy (ConcreteNameTy path@(SymPath _ name)) _) =
-  case (getBinder typeEnv name) <> (findTypeBinder env path) of
+  case (getBinder typeEnv name) <> (searchTypeDef (TypeEnv env) path) of
     Right (Binder _ x) -> go x
     _ -> Right []
   where
