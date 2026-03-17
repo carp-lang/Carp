@@ -6,6 +6,7 @@ import Control.Exception
 import Control.Monad (join, when)
 import Control.Monad.IO.Class (MonadIO, liftIO)
 import Data.Bits (finiteBitSize)
+import Data.Char (toLower)
 import Data.Functor ((<&>))
 import Data.Hashable (hash)
 import Data.List (elemIndex, foldl')
@@ -221,10 +222,12 @@ commandBuild ctx [XObj (Bol shutUp) _ _] = do
             generateOnly = projectGenerateOnly proj
             compile hasMain =
               do
+                let sharedFlag =
+                      if hasMain then "" else sharedLibraryFlag compiler
                 let cmd =
                       joinWithSpace $
                         [ compiler,
-                          if hasMain then "" else "-shared",
+                          sharedFlag,
                           "-o",
                           outExe,
                           "-I",
@@ -271,6 +274,17 @@ setProjectCanExecute value ctx =
   let proj = contextProj ctx
       proj' = proj {projectCanExecute = value}
    in ctx {contextProj = proj'}
+
+sharedLibraryFlag :: String -> String
+sharedLibraryFlag compiler
+  | platform == Windows && usesMsvcLinker compiler = "/LD"
+  | otherwise = "-shared"
+  where
+    usesMsvcLinker x =
+      map toLower (takeFileName (firstToken x)) `elem` ["cl", "cl.exe", "clang-cl", "clang-cl.exe"]
+    firstToken x = case words x of
+      [] -> ""
+      w : _ -> w
 
 -- | Command for printing all the bindings in the current environment.
 commandListBindings :: NullaryCommandCallback
