@@ -1,0 +1,2 @@
+lifetime_sig_dangling_ref.carp:5:33 The reference '(ref local)' isn't alive.
+dummy-file:0:0 Unable to concretize '(meta-stub f)'.

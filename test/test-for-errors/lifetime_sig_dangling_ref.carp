@@ -1,0 +1,7 @@
+(Project.config "file-path-print-length" "short")
+
+; sig says return shares lifetime with param, but body returns ref to local
+(sig f (Fn [(Ref String a)] (Ref String a)))
+(defn f [x] (let [local @"hi"] &local))
+
+(defn main [] (let [s @"hello"] (IO.println (f &s))))

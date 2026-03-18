@@ -529,19 +529,28 @@ Carp's lifetimes are made up of two pieces of information. Only references have
 lifetimes, and every reference has *exactly one* lifetime assigned to it:
 
 - A unique type variable that identifies the lifetime.
-- A lifetime mode, that indicates if the linear value tied to the reference has
-  a lexical scope that extends beyond the reference's lexical scope or if it's
-  limited to the reference's lexical scope.
+- A lifetime mode, which takes one of three forms:
+  - `LifetimeOutsideFunction`: the reference points to a value whose scope
+    extends beyond the current function (e.g. a function parameter or global).
+  - `LifetimeInsideFunction`: the reference depends on one or more local
+    variables, tracked as a set of source variable names.
+  - `LifetimeMixed`: the lifetime has both external and internal sources. This
+    arises when a reference creation (`&x`) shares a lifetime variable with a
+    function parameter (typically through an explicit lifetime annotation in a
+    `sig` form). During traversal, the external source guarantees safety. At
+    the final return check, the internal sources are verified to ensure no
+    dangling references escape the function.
 
-In general, a reference is valid only when the value it points to has either an
-equivalent or greater lexical scope. This property is encoded in its lifetime.
+In general, a reference is valid only when *all* of the values it may point to
+have either an equivalent or greater lexical scope. This property is encoded in
+its lifetime.
 
 Let's look at some examples to help illustrate this:
 
 ```clojure
 (def an-array [1 2 3])
 
-(defn valid-ref [] 
+(defn valid-ref []
   (let [array-ref &an-arry]) ())
 ```
 
@@ -561,7 +570,7 @@ Contrarily, the following reference is not valid:
 Here, the reference has a greater lexical scope than the linear value it points
 to. The anonymous linear value `[1 2 3]` will be deleted at the end of the
 function scope, but the reference will be returned from the function, so its
-lifetime is potentially greater than that of the value it points to. 
+lifetime is potentially greater than that of the value it points to.
 
 The memory management system performs two key checks around ref usage:
 
@@ -573,11 +582,98 @@ Both of these are implemented as separate checks, but they may be viewed as
 specializations of a general operation that checks if every reference form in
 your program is "alive" at the point of use.
 
-Currently, liveness analysis revolves around checking if the value the reference
-points to belongs to the same lexical scope as the reference, and, if so, that
-the value has a deleter in that scope, which indicates the scope properly owns
-the value. If no such deleter exists, it means the reference outlives the value
-it points to, and is invalid.
+Liveness analysis revolves around checking if *all* of the source variables a
+reference depends on are still alive -- that is, each source has a deleter in
+scope, indicating the scope properly owns the value. If any source variable's
+deleter is missing, the reference outlives that value and is invalid.
+
+The system collects lifetime variables exhaustively from all positions in a
+type: ref lifetimes, closure lifetimes, struct member lifetimes, and return type
+lifetimes. It does not recurse into function argument types, since those are the
+caller's responsibility.
+
+Two checks are performed:
+
+- **Traversal check** (`refTargetIsAlive`): runs as each form is visited.
+  `LifetimeInsideFunction` sources must be alive. `LifetimeOutsideFunction` and
+  `LifetimeMixed` are safe (the external source is alive in scope).
+- **Final check** (`returnRefTargetIsAlive`): runs after the function body has
+  been analyzed and all local variables have been deleted. Only checks lifetime
+  variables from the function's return type. Uses the set of function parameter
+  deleters (recorded at function entry) as the live set, so parameters are
+  considered alive but locals are not. Both `LifetimeInsideFunction` and
+  `LifetimeMixed` internal sources are checked.
+
+#### Explicit Lifetime Annotations
+
+Carp supports explicit lifetime variables in type signatures:
+
+```clojure
+(sig id (Fn [(Ref String a)] (Ref String a)))
+(defn id [x] x)
+```
+
+The lifetime variable `a` ties the return reference's lifetime to the argument's
+lifetime. The type checker enforces that the function body is consistent with
+this annotation.
+
+When a `sig` forces a local reference to share a lifetime variable with a
+parameter, the memory system detects the conflict. Only reference creations
+(`&x`) trigger a merge into the lifetime map; other forms (function call
+results, symbol lookups, match-ref bindings) use first-mapping-wins. This
+ensures that a genuinely new reference source is tracked without polluting the
+map with derived references that merely propagate an existing lifetime.
+
+For example, the following code is rejected:
+
+```clojure
+(sig f (Fn [(Ref String a)] (Ref String a)))
+(defn f [x] (let [local @"hi"] &local))
+```
+
+The parameter `x` maps lifetime `a` to `LifetimeOutsideFunction`. The reference
+creation `&local` merges `LifetimeInsideFunction {local}` into that mapping,
+producing `LifetimeMixed {local}`. At the final check, `local` is dead (its let
+scope has ended), so the system reports that the reference is not alive.
+
+#### Mutation and Lifetime Invalidation
+
+The `set!` special form can rebind a reference variable to point at a different
+value. When this happens, the lifetime mapping for the reference must be updated
+to reflect the new source. The memory management system handles this by
+*clearing* the old lifetime mapping before visiting the new value. This allows
+the mapping to be rebuilt from the new value's reference sources, rather than
+retaining stale information from the initial binding.
+
+This is important for catching use-after-free bugs involving `set!`. Consider:
+
+```clojure
+(defn dangling []
+  (let-do [x ""]
+    (let [a [@"hello" @"world"]]
+      (set! x (Array.unsafe-nth &a 1)))
+    (println* x)))  ;; error! x depends on a, which is dead here
+```
+
+In this example, `x` is initially bound to a string literal reference. Inside
+the inner `let`, `set!` rebinds `x` to a reference that depends on the array
+`a`. When the inner `let` ends, `a` is deleted. At the `println*` call, `x`
+still refers to memory owned by `a`, which is no longer alive. The memory
+management system detects this and reports an error.
+
+Conversely, rebinding a reference to another value in the same or wider scope
+is fine:
+
+```clojure
+(defn valid-set []
+  (let-do [a [@"hello" @"world"]
+           x (Array.unsafe-nth &a 0)]
+    (set! x (Array.unsafe-nth &a 1))  ;; ok: x still depends on a
+    (println* x)))
+```
+
+Here, both the initial binding and the `set!` target depend on `a`, which
+outlives `x`, so the reference remains valid.
 
 ### Type Dependencies
 

@@ -1,0 +1,10 @@
+(Project.config "file-path-print-length" "short")
+
+; Issue #1317: set! with a reference that outlives its source.
+; The reference stored in x depends on the array a, which goes out of scope
+; before x is used. This must be rejected.
+(defn main []
+  (let-do [x ""]
+    (let [a [@"hi"]]
+      (set! x (Array.unsafe-nth &a 0)))
+    (println* x)))

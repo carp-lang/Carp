@@ -1,0 +1,2 @@
+ Inferred Macro, can't unify with String.
+lifetime_inner_type_mismatch.carp:5:1 Inferred (Fn [(Ref Int a)] (Ref Int a)), can't unify with Int.

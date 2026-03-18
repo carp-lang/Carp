@@ -1,0 +1,11 @@
+(Project.config "file-path-print-length" "short")
+
+; Multiple set! operations: first valid, second makes ref outlive source.
+(defn main []
+  (let-do [s1 @"stays"
+           s2 @"stays-too"
+           x &s1]
+    (set! x &s2)
+    (let [a [@"dies"]]
+      (set! x (Array.unsafe-nth &a 0)))
+    (println* x)))

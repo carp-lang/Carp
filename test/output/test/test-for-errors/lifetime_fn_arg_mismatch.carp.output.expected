@@ -1,0 +1,3 @@
+ Inferred Macro, can't unify with Int.
+lifetime_fn_arg_mismatch.carp:5:1 Inferred (Fn [(Ref t6 tyvar-from-info-7_5_27), Int] Int), can't unify with String.
+dummy-file:0:0 Unable to concretize '(meta-stub apply-wrong)'.

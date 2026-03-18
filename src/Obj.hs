@@ -878,8 +878,8 @@ xobjToTy (XObj (Lst [XObj (Sym (SymPath _ "Fn") _) _ _, XObj (Arr argTys) _ _, r
   do
     okArgTys <- mapM xobjToTy argTys
     okRetTy <- xobjToTy retTy
-    _ <- xobjToTy lifetime
-    pure (FuncTy okArgTys okRetTy StaticLifetimeTy)
+    okLifetime <- xobjToTy lifetime
+    pure (FuncTy okArgTys okRetTy okLifetime)
 xobjToTy (XObj (Lst []) _ _) = Just UnitTy
 xobjToTy (XObj (Lst (x : xs)) _ _) =
   do
