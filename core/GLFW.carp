@@ -94,6 +94,8 @@ library.")
   (register FALSE Int "GLFW_FALSE")
   (register TRUE Int "GLFW_TRUE")
   (register STICKY_KEYS Int "GLFW_STICKY_KEYS")
+  (register CLIENT_API Int "GLFW_CLIENT_API")
+  (register NO_API Int "GLFW_NO_API")
 
   ;; Key and button actions
   (register RELEASE Int "GLFW_RELEASE")

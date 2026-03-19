@@ -1,0 +1,166 @@
+; WGPU — GPU compute bindings for Carp
+;
+; Provides WebGPU compute via wgpu-native (Vulkan / Metal / DX12).
+; The underlying wgpu-native API is asynchronous; this module exposes a
+; fully synchronous interface built on top of a thin C helper layer
+; (wgpu_helpers.h).
+;
+; All creation functions return (Result T String).  On failure the string
+; is a human-readable error from the GPU driver.  Callers should match on
+; the result and propagate errors rather than unwrapping blindly.
+;
+; Typical usage:
+;
+;   (match (WGPU.create-context)
+;     (Result.Error e) (println* "GPU unavailable: " &e)
+;     (Result.Success ctx)
+;       (match (WGPU.create-pipeline ctx my-wgsl "main")
+;         (Result.Error e) (println* "Shader error: " &e)
+;         (Result.Success pipe)
+;           (do
+;             ; ... allocate buffers, dispatch, read back ...
+;             (WGPU.free-pipeline pipe)
+;             (WGPU.free-context ctx))))
+;
+; For ergonomic multi-buffer dispatch see GpuArray in GpuArray.carp.
+
+(add-cflag "-I/usr/include/libwgpu-native")
+(add-lib "-lwgpu_native")
+(relative-include "wgpu_helpers.h")
+
+; Opaque wgpu handle types — registered at top level so they're
+; accessible as plain WGPUContext, WGPUBuffer etc. everywhere.
+; copy is trivial: these are C pointer typedefs, copying = copying the pointer.
+(register-type WGPUContext)
+(register-type WGPUComputePipeline)
+(register-type WGPUBuffer)
+(register-type WGPUBindGroup)
+
+(defmodule WGPUBuffer
+  (deftemplate copy (Fn [(Ref WGPUBuffer)] WGPUBuffer)
+    "WGPUBuffer $NAME(WGPUBuffer* b)"
+    "$DECL { return *b; }")
+  (implements copy WGPUBuffer.copy)
+
+  (deftemplate str (Fn [(Ref WGPUBuffer)] String)
+    "String $NAME(WGPUBuffer* b)"
+    "$DECL { return strdup(\"WGPUBuffer\"); }")
+  (implements str WGPUBuffer.str)
+
+  (deftemplate prn (Fn [WGPUBuffer] String)
+    "String $NAME(WGPUBuffer b)"
+    "$DECL { return strdup(\"WGPUBuffer\"); }")
+  (implements prn WGPUBuffer.prn))
+
+(defmodule WGPUComputePipeline
+  (deftemplate copy (Fn [(Ref WGPUComputePipeline)] WGPUComputePipeline)
+    "WGPUComputePipeline $NAME(WGPUComputePipeline* p)"
+    "$DECL { return *p; }")
+  (implements copy WGPUComputePipeline.copy))
+
+(defmodule WGPUBindGroup
+  (deftemplate copy (Fn [(Ref WGPUBindGroup)] WGPUBindGroup)
+    "WGPUBindGroup $NAME(WGPUBindGroup* bg)"
+    "$DECL { return *bg; }")
+  (implements copy WGPUBindGroup.copy))
+
+(defmodule WGPU
+
+  ; -- Raw C registrations ------------------------------------------
+
+  (register last-error-        (Fn [] (Ptr CChar))                                      "wgpu_last_error")
+  (register pipeline-null?-    (Fn [WGPUComputePipeline] Bool)                          "wgpu_pipeline_is_null")
+  (register buffer-null?-      (Fn [WGPUBuffer] Bool)                                   "wgpu_buffer_is_null")
+  (register bindgroup-null?-   (Fn [WGPUBindGroup] Bool)                                "wgpu_bindgroup_is_null")
+
+  (register context-create-    (Fn [] (Ptr WGPUContext))                                "wgpu_context_create")
+  (register context-free       (Fn [(Ptr WGPUContext)] ())                              "wgpu_context_free")
+  (register create-pipeline-   (Fn [(Ptr WGPUContext) (Ptr CChar) (Ptr CChar)]
+                                    WGPUComputePipeline)                                "wgpu_create_compute_pipeline")
+  (register create-buffer-     (Fn [(Ptr WGPUContext) Uint64] WGPUBuffer)               "wgpu_create_storage_buffer")
+  (register write-buffer-      (Fn [(Ptr WGPUContext) WGPUBuffer (Ptr Float) Uint64] ()) "wgpu_write_buffer")
+  (register create-bind-group- (Fn [(Ptr WGPUContext) WGPUComputePipeline
+                                     (Ptr WGPUBuffer) Int] WGPUBindGroup)               "wgpu_create_bind_group")
+  (register dispatch           (Fn [(Ptr WGPUContext) WGPUComputePipeline
+                                     WGPUBindGroup Int] ())                             "wgpu_dispatch_and_wait")
+  (register read-buffer-       (Fn [(Ptr WGPUContext) WGPUBuffer (Ptr Float) Uint64] ()) "wgpu_read_buffer")
+
+  (register free-buffer        (Fn [WGPUBuffer] ())           "wgpuBufferRelease")
+  (register free-bind-group    (Fn [WGPUBindGroup] ())        "wgpuBindGroupRelease")
+  (register free-pipeline      (Fn [WGPUComputePipeline] ())  "wgpuComputePipelineRelease")
+
+  ; -- Internal helpers ---------------------------------------------
+
+  (defn- get-error []
+    (String.from-cstr (last-error-)))
+
+  (deftemplate array->ptr (Fn [(Ref (Array Float))] (Ptr Float))
+    "float* $NAME(Array__float* arr)"
+    "$DECL { return arr->data; }")
+
+  (deftemplate buffer-array->ptr (Fn [(Ref (Array WGPUBuffer))] (Ptr WGPUBuffer))
+    "WGPUBuffer* $NAME(Array__WGPUBuffer* arr)"
+    "$DECL { return arr->data; }")
+
+  (defn- bytes-for [n]
+    (Uint64.from-long (Long.from-int (* n 4))))
+
+  ; -- Public API ---------------------------------------------------
+
+  (doc create-context "Creates a wgpu instance, adapter, and device synchronously.
+Returns (Success ctx) on success or (Error message) on failure.
+Call (WGPU.free-context ctx) when done.")
+  (defn create-context []
+    (let [ctx (context-create-)]
+      (if (null? ctx)
+        (Result.Error (get-error))
+        (Result.Success ctx))))
+
+  (doc free-context "Releases all GPU resources held by a context.")
+  (defn free-context [ctx]
+    (context-free ctx))
+
+  (doc create-pipeline "Creates a compute pipeline from a WGSL source string.
+`entry` is the shader entry point name (usually \"main\").
+Returns (Success pipeline) or (Error message).")
+  (defn create-pipeline [ctx wgsl entry]
+    (let [p (create-pipeline- ctx (String.cstr wgsl) (String.cstr entry))]
+      (if (pipeline-null?- p)
+        (Result.Error (get-error))
+        (Result.Success p))))
+
+  (doc create-buffer "Creates a GPU-resident storage buffer sized for `n` floats.
+Returns (Success buffer) or (Error message).")
+  (defn create-buffer [ctx n]
+    (let [b (create-buffer- ctx (bytes-for n))]
+      (if (buffer-null?- b)
+        (Result.Error (get-error))
+        (Result.Success b))))
+
+  (doc create-bind-group "Binds an array of buffers to a pipeline.
+Each buffer maps to @binding(0), @binding(1), etc. in order. Max 8.
+Returns (Success bind-group) or (Error message).")
+  (defn create-bind-group [ctx pipeline bufs]
+    (let [bg (create-bind-group- ctx pipeline
+                                 (buffer-array->ptr bufs)
+                                 (Array.length bufs))]
+      (if (bindgroup-null?- bg)
+        (Result.Error (get-error))
+        (Result.Success bg))))
+
+  (doc write-floats "Uploads a (Array Float) into a GPU buffer.")
+  (defn write-floats [ctx buf arr]
+    (write-buffer- ctx buf (array->ptr arr) (bytes-for (Array.length arr))))
+
+  (doc read-floats "Reads `n` floats back from a GPU buffer. Blocks until done.")
+  (defn read-floats [ctx buf n]
+    (let-do [zero 0.0f
+             out  (Array.replicate n &zero)]
+      (read-buffer- ctx buf (array->ptr &out) (bytes-for n))
+      out))
+
+  (doc workgroups-for "Calculates dispatch workgroup count for n elements at workgroup size 64.")
+  (defn workgroups-for [n]
+    (/ (+ n 63) 64))
+
+)
