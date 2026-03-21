@@ -1,3 +1,6 @@
+#include <sys/stat.h>
+#include <dirent.h>
+
 void IO_println(String* s) {
     puts(*s);
 }
@@ -52,4 +55,43 @@ String IO_unsafe_MINUS_read_MINUS_file(const String* filename) {
     }
 
     return buffer;
+}
+
+bool IO_file_MINUS_exists_QMARK_(const String* path) {
+    struct stat st;
+    if (stat(*path, &st) == 0) {
+        return S_ISREG(st.st_mode);
+    }
+    return false;
+}
+
+bool IO_dir_MINUS_exists_QMARK_(const String* path) {
+    struct stat st;
+    if (stat(*path, &st) == 0) {
+        return S_ISDIR(st.st_mode);
+    }
+    return false;
+}
+
+Array IO_Raw_list_MINUS_dir(const String* path) {
+    DIR *d;
+    struct dirent *dir;
+    d = opendir(*path);
+    Array result = {0, 0, NULL};
+    if (d) {
+        while ((dir = readdir(d)) != NULL) {
+            if (strcmp(dir->d_name, ".") == 0 || strcmp(dir->d_name, "..") == 0) {
+                continue;
+            }
+            String name = CARP_MALLOC(strlen(dir->d_name) + 1);
+            strcpy(name, dir->d_name);
+            result.len++;
+            result.data = CARP_REALLOC(result.data, sizeof(String) * result.len);
+            ((String*)result.data)[result.len - 1] = name;
+        }
+        closedir(d);
+    } else {
+        result.len = -1;
+    }
+    return result;
 }
