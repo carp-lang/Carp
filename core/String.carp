@@ -11,33 +11,57 @@
 (doc String "is the string data type for representing text.")
 (defmodule String
 
+  (doc = "Checks whether two strings are equal.")
   (register =          (Fn [&String &String] Bool))
+  (doc > "Checks whether the first string is lexicographically greater than the second.")
   (register >          (Fn [&String &String] Bool))
+  (doc < "Checks whether the first string is lexicographically less than the second.")
   (register <          (Fn [&String &String] Bool))
+  (doc append "Append the second string to the first.")
   (register append     (Fn [&String &String] String))
+  (doc delete "Deletes a string.")
   (register delete     (Fn [String] ()))
+  (doc copy "Copies a string.")
   (register copy       (Fn [&String] String))
+  (doc length "Returns the length of a string.")
   (register length     (Fn [&String] Int))
+  (doc cstr "Returns the C string representation of a string.")
   (register cstr       (Fn [&String] (Ptr CChar)))
+  (doc from-cstr "Creates a string from a C string.")
   (register from-cstr  (Fn [(Ptr CChar)] String))
+  (doc str "Converts a string to a string (identity).")
   (register str        (Fn [&String] String))
+  (doc prn "Converts a string to a string for printing.")
   (register prn        (Fn [&String] String))
+  (doc index-of "Returns the index of the first occurrence of `c` in `s`, or -1 if not found.")
   (register index-of   (Fn [&String Char] Int))
+  (doc index-of-from "Returns the index of the first occurrence of `c` in `s` starting from `from`, or -1 if not found.")
   (register index-of-from (Fn [&String Char Int] Int))
+  (doc index-of-string "Returns the index of the first occurrence of `needle` in `s`, or -1 if not found.")
   (register index-of-string (Fn [&String &String] Int))
+  (doc char-at "Returns the character at the specified index.")
   (register char-at    (Fn [&String Int] Char))
+  (doc chars "Returns an array of characters in a string.")
   (register chars      (Fn [&String] (Array Char)))
+  (doc from-chars "Creates a string from an array of characters.")
   (register from-chars (Fn [&(Array Char)] String))
+  (doc tail "Returns the tail of a string (all characters except the first).")
   (register tail (λ [(Ref String)] String))
+  (doc format "Formats a string.")
   (register format (Fn [&String &String] String))
   (implements format String.format)
+  (doc string-set! "Sets the character at the specified index.")
   (register string-set! (Fn [&String Int Char] ()))
+  (doc string-set-at! "Sets the string at the specified index.")
   (register string-set-at! (Fn [&String Int &String] ()))
+  (doc allocate "Allocates a string of the specified length with the specified character.")
   (register allocate (Fn [Int Char] String))
   (doc allocated? "checks if a String returned by String.allocate is not NULL. This is a safeguard against out-of-memory conditions.")
   (defn allocated? [s]
     (not (null? (cstr s))) )
+  (doc from-bytes "Creates a string from an array of bytes.")
   (register from-bytes (Fn [&(Array Byte)] String))
+  (doc to-bytes "Returns an array of bytes from a string.")
   (register to-bytes (Fn [&String] (Array Byte)))
 
   (implements < String.<)
@@ -192,45 +216,56 @@
 )
 
 (defmodule StringCopy
+  (doc str "Identity function for owned strings.")
   (defn str [s] (the String s))
 
+  (doc = "Checks whether two owned strings are equal.")
   (defn = [a b]
     (String.= &a &b))
   (implements = StringCopy.=)
 
+  (doc < "Checks whether the first owned string is lexicographically less than the second.")
   (defn < [a b]
     (String.< &a &b))
   (implements < StringCopy.<)
 
+  (doc > "Checks whether the first owned string is lexicographically greater than the second.")
   (defn > [a b]
     (String.> &a &b))
   (implements > StringCopy.>)
 
+  (doc prn "Converts an owned string to a string for printing.")
   (defn prn [s]
     (prn &(the String s)))
   (implements prn StringCopy.prn)
 
+  (doc str "Converts an owned string to a string (identity).")
   (defn str [s]
     (str &(the String s)))
   (implements str StringCopy.str)
 )
 
 (defmodule Bool
+  (doc str "Converts a boolean to a string.")
   (register str (Fn [Bool] String))
   (implements str Bool.str)
+  (doc format "Formats a boolean.")
   (register format (Fn [&String Bool] String))
   (implements format Bool.format)
 )
 
 (defmodule Int
+  (doc str "Converts an integer to a string.")
   (register str (Fn [Int] String))
   (implements str Int.str)
+  (doc format "Formats an integer.")
   (register format (Fn [&String Int] String))
   (implements format Int.format)
   (private from-string-internal)
   (hidden from-string-internal)
   (register from-string-internal (λ [&String &Int] Bool))
 
+  (doc from-string "Tries to parse an integer from a string.")
   (defn from-string [s]
     (let [res 0]
       (if (from-string-internal s &res)
@@ -240,14 +275,17 @@
 )
 
 (defmodule Byte
+  (doc str "Converts a byte to a string.")
   (register str (Fn [Byte] String))
   (implements str Byte.str)
+  (doc format "Formats a byte.")
   (register format (Fn [&String Byte] String))
   (implements format Byte.format)
   (private from-string-internal)
   (hidden from-string-internal)
   (register from-string-internal (λ [&String &Byte] Bool))
 
+  (doc from-string "Tries to parse a byte from a string.")
   (defn from-string [s]
     (let [res 0b]
       (if (from-string-internal s &res)
@@ -257,14 +295,17 @@
 )
 
 (defmodule Float
+  (doc str "Converts a float to a string.")
   (register str (Fn [Float] String))
   (implements str Float.str)
+  (doc format "Formats a float.")
   (register format (Fn [&String Float] String))
   (implements format Float.format)
   (private from-string-internal)
   (hidden from-string-internal)
   (register from-string-internal (λ [&String &Float] Bool))
 
+  (doc from-string "Tries to parse a float from a string.")
   (defn from-string [s]
     (let [res 0.0f]
       (if (from-string-internal s &res)
@@ -274,14 +315,17 @@
 )
 
 (defmodule Long
+  (doc str "Converts a long to a string.")
   (register str (Fn [Long] String))
   (implements str Long.str)
+  (doc format "Formats a long.")
   (register format (Fn [&String Long] String))
   (implements format Long.format)
   (private from-string-internal)
   (hidden from-string-internal)
   (register from-string-internal (λ [&String &Long] Bool))
 
+  (doc from-string "Tries to parse a long from a string.")
   (defn from-string [s]
     (let [res 0l]
       (if (from-string-internal s &res)
@@ -291,14 +335,17 @@
 )
 
 (defmodule Double
+  (doc str "Converts a double to a string.")
   (register str (Fn [Double] String))
   (implements str Double.str)
+  (doc format "Formats a double.")
   (register format (Fn [&String Double] String))
   (implements format Double.format)
   (private from-string-internal)
   (hidden from-string-internal)
   (register from-string-internal (λ [&String &Double] Bool))
 
+  (doc from-string "Tries to parse a double from a string.")
   (defn from-string [s]
     (let [res 0.0]
       (if (from-string-internal s &res)
@@ -308,10 +355,13 @@
 )
 
 (defmodule Char
+  (doc str "Converts a character to a string.")
   (register str (Fn [Char] String))
   (implements str Char.str)
+  (doc prn "Converts a character to a string for printing.")
   (register prn (Fn [Char] String))
   (implements prn Char.prn)
+  (doc format "Formats a character.")
   (register format (Fn [&String Char] String))
   (implements format Char.format)
 )
@@ -379,123 +429,158 @@
 (defmodule Array (defn prn [x] (Array.str x)) (implements prn Array.prn))
 
 (defmodule Int8
+  (doc str "Converts an Int8 to a string.")
   (register str (λ [Int8] String))
   (implements str Int8.str)
+  (doc prn "Converts an Int8 to a string for printing.")
   (defn prn [a] (Int8.str a))
   (implements prn Int8.prn)
 )
 
 (defmodule Int8Extra
+  (doc str "Converts an Int8 reference to a string.")
   (defn str [a] (Int8.str @a))
   (implements str Int8Extra.str)
+  (doc prn "Converts an Int8 reference to a string for printing.")
   (defn prn [a] (Int8.prn @a))
   (implements prn Int8Extra.prn)
 )
 
 (defmodule Int16
+  (doc str "Converts an Int16 to a string.")
   (register str (λ [Int16] String))
   (implements str Int16.str)
+  (doc prn "Converts an Int16 to a string for printing.")
   (defn prn [a] (Int16.str a))
   (implements prn Int16.prn)
 )
 
 (defmodule Int16Extra
+  (doc prn "Converts an Int16 reference to a string for printing.")
   (defn prn [a] (Int16.prn @a))
   (implements prn Int16Extra.prn)
+  (doc str "Converts an Int16 reference to a string.")
   (defn str [a] (Int16.str @a))
   (implements str Int16Extra.str)
 )
 
 (defmodule Int32
+  (doc str "Converts an Int32 to a string.")
   (register str (λ [Int32] String))
   (implements str Int32.str)
+  (doc prn "Converts an Int32 to a string for printing.")
   (defn prn [a] (Int32.str a))
   (implements prn Int32.prn)
 )
 
 (defmodule Int32Extra
+  (doc str "Converts an Int32 reference to a string.")
   (defn str [a] (Int32.str @a))
   (implements str Int32Extra.str)
+  (doc prn "Converts an Int32 reference to a string for printing.")
   (defn prn [a] (Int32.prn @a))
   (implements prn Int32Extra.prn)
 )
 
 (defmodule Int64
+  (doc str "Converts an Int64 to a string.")
   (register str (λ [Int64] String))
   (implements str Int64.str)
+  (doc prn "Converts an Int64 to a string for printing.")
   (defn prn [a] (Int64.str a))
   (implements prn Int64.prn)
 )
 
 (defmodule Int64Extra
+  (doc str "Converts an Int64 reference to a string.")
   (defn str [a] (Int64.str @a))
   (implements str Int64Extra.str)
+  (doc prn "Converts an Int64 reference to a string for printing.")
   (defn prn [a] (Int64.prn @a))
   (implements prn Int64Extra.prn)
 )
 
 (defmodule Uint8
+  (doc str "Converts a Uint8 to a string.")
   (register str (λ [Uint8] String))
   (implements str Uint8.str)
+  (doc prn "Converts a Uint8 to a string for printing.")
   (defn prn [a] (Uint8.str a))
   (implements prn Uint8.prn)
 )
 
 (defmodule Uint8Extra
+  (doc str "Converts a Uint8 reference to a string.")
   (defn str [a] (Uint8.str @a))
   (implements str Uint8Extra.str)
+  (doc prn "Converts a Uint8 reference to a string for printing.")
   (defn prn [a] (Uint8.prn @a))
   (implements prn Uint8Extra.prn)
 )
 
 (defmodule Uint16
+  (doc str "Converts a Uint16 to a string.")
   (register str (λ [Uint16] String))
   (implements str Uint16.str)
+  (doc prn "Converts a Uint16 to a string for printing.")
   (defn prn [a] (Uint16.str a))
   (implements prn Uint16.prn)
 )
 
 (defmodule Uint16Extra
+  (doc prn "Converts a Uint16 reference to a string for printing.")
   (defn prn [a] (Uint16.prn @a))
   (implements prn Uint16Extra.prn)
+  (doc str "Converts a Uint16 reference to a string.")
   (defn str [a] (Uint16.str @a))
   (implements str Uint16Extra.str)
 )
 
 (defmodule Uint32
+  (doc str "Converts a Uint32 to a string.")
   (register str (λ [Uint32] String))
   (implements str Uint32.str)
+  (doc prn "Converts a Uint32 to a string for printing.")
   (defn prn [a] (Uint32.str a))
   (implements prn Uint32.prn)
 )
 
 (defmodule Uint32Extra
+  (doc str "Converts a Uint32 reference to a string.")
   (defn str [a] (Uint32.str @a))
   (implements str Uint32Extra.str)
+  (doc prn "Converts a Uint32 reference to a string for printing.")
   (defn prn [a] (Uint32.prn @a))
   (implements prn Uint32Extra.prn)
 )
 
 (defmodule Uint64
+  (doc str "Converts a Uint64 to a string.")
   (register str (λ [Uint64] String))
   (implements str Uint64.str)
+  (doc prn "Converts a Uint64 to a string for printing.")
   (defn prn [a] (Uint64.str a))
   (implements prn Uint64.prn)
 )
 
 (defmodule Uint64Extra
+  (doc str "Converts a Uint64 reference to a string.")
   (defn str [a] (Uint64.str @a))
   (implements str Uint64Extra.str)
+  (doc prn "Converts a Uint64 reference to a string for printing.")
   (defn prn [a] (Uint64.prn @a))
   (implements prn Uint64Extra.prn)
 )
 
 (defmodule Pointer
+  (doc strp "Converts a pointer to a string representation of its address.")
   (register strp (Fn [(Ptr a)] String) "Pointer_strp")
 
+  (doc str "Converts a pointer to a string representation of its address.")
   (defn str [a] (Pointer.strp a))
   (implements str Pointer.str)
 
+  (doc prn "Converts a pointer to a string representation of its address for printing.")
   (defn prn [a] (Pointer.strp a))
   (implements prn Pointer.prn)
   )
@@ -526,4 +611,3 @@
       (cdr (String.split-on "" s)))
   )
 )
-
