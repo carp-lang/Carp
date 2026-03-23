@@ -81,9 +81,9 @@ bool String__LT_(const String* a, const String* b) {
 }
 
 String String_append(const String* a, const String* b) {
-    int la = strlen(*a);
-    int lb = strlen(*b);
-    int total = la + lb + 1;
+    size_t la = strlen(*a);
+    size_t lb = strlen(*b);
+    size_t total = la + lb + 1;
     String buffer = CARP_MALLOC(total);
     memcpy(buffer, *a, la);
     memcpy(buffer + la, *b, lb);
@@ -117,12 +117,12 @@ int count_occurrences(String s, char c) {
 }
 
 String String_prn(const String* s) {
-    int n = strlen(*s) + 4 + count_occurrences(*s, '"');
+    size_t n = strlen(*s) + 4 + count_occurrences(*s, '"');
     String buffer = CARP_MALLOC(n);
     buffer[0] = '@';
     buffer[1] = '"';
     String c = *s;
-    for (int i = 2; i < n - 2; i++) {
+    for (size_t i = 2; i < n - 2; i++) {
         if (*c == '"') buffer[i++] = '\\';
         buffer[i] = *c;
         c++;
