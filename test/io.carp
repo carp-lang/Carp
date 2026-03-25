@@ -9,7 +9,8 @@
         (IO.Raw.unlink! file-name)
         (if (Result.error? &read?)
           (Result.unsafe-from-error   read?)
-          (Result.unsafe-from-success read?)  )))))
+          (let [res (Result.unsafe-from-success read?)]
+            res))))))
 
 (deftest test
   (assert-nothing test
@@ -21,10 +22,11 @@
                "getenv works on existant variable"
   )
   (let [ data "Icke\n\tdette\n\tkieke mal,\nOochen, Flesch und Beene." ]  ; include \n in test data!
-    (assert-equal test
-                  data
-                  &(write-then-read data "io_carp_testdata.txt")
-                  "write-file then read-file"  ))
+    (let [res (write-then-read data "io_carp_testdata.txt")]
+      (assert-equal test
+                    data
+                    &res
+                    "write-file then read-file"  )))
   (let [ file-name "io_carp_append_testdata.txt"
          first     "hello"
          second    " world" ]
@@ -32,9 +34,82 @@
       (ignore (IO.write-file first file-name))
       (ignore (IO.append-file second file-name))
       (let-do [ result (IO.read-file file-name) ]
-        (IO.Raw.unlink! file-name)
-        (assert-equal test
-                      "hello world"
-                      &(Result.unsafe-from-success result)
-                      "append-file appends to existing file"))))
+        (do
+          (IO.Raw.unlink! file-name)
+          (let [s (Result.unsafe-from-success result)]
+            (assert-equal test
+                          "hello world"
+                          &s
+                          "append-file appends to existing file"))))))
+
+  (assert-true test (IO.file-exists? "core/IO.carp") "file-exists? works for existing file")
+  (assert-false test (IO.file-exists? "nonexistent_file_xyz.txt") "file-exists? returns false for non-existent file")
+  (assert-true test (IO.dir-exists? "core") "dir-exists? works for existing directory")
+  (assert-false test (IO.dir-exists? "nonexistent_dir_xyz") "dir-exists? returns false for non-existent directory")
+
+  (let [old-file "test_move_old.txt"
+        new-file "test_move_new.txt"]
+    (do
+      (ignore (IO.write-file "test move content" old-file))
+      (let [move-res (IO.move-file old-file new-file)]
+        (let-do [t1 (assert-true test (Result.success? &move-res) "move-file success")
+                 t2 (assert-true (ref t1) (IO.file-exists? new-file) "new file exists after move")
+                 t3 (assert-false (ref t2) (IO.file-exists? old-file) "old file does not exist after move")]
+          (do
+            (ignore (IO.remove-file new-file))
+            t3)))))
+
+  (let [src-file "test_copy_src.txt"
+        dest-file "test_copy_dest.txt"]
+    (do
+      (ignore (IO.write-file "test copy content" src-file))
+      (let [copy-res (IO.copy-file src-file dest-file)]
+        (let-do [t1 (assert-true test (Result.success? &copy-res) "copy-file success")
+                 t2 (assert-true (ref t1) (IO.file-exists? dest-file) "dest file exists after copy")
+                 t3 (assert-true (ref t2) (IO.file-exists? src-file) "src file still exists after copy")]
+          (do
+            (ignore (IO.remove-file src-file))
+            (ignore (IO.remove-file dest-file))
+            t3)))))
+
+  (let [dir-res (IO.list-dir "core")]
+    (do
+      (let [t1 (assert-true test (Result.success? &dir-res) "list-dir success")]
+        (if (Result.success? &dir-res)
+          (let [entries (Result.unsafe-from-success dir-res)]
+            (assert-true (ref t1) (Array.contains? &entries &@"IO.carp") "list-dir contains IO.carp"))
+          t1))))
+
+  (let [dir-path "test_dir_xyz"]
+    (do
+      (let [create-res (IO.create-dir dir-path)]
+        (let-do [t1 (assert-true test (Result.success? &create-res) "create-dir success")
+                 t2 (assert-true (ref t1) (IO.dir-exists? dir-path) "dir exists after create")]
+          (let [remove-res (IO.remove-dir dir-path)]
+            (let-do [t3 (assert-true (ref t2) (Result.success? &remove-res) "remove-dir success")
+                     t4 (assert-false (ref t3) (IO.dir-exists? dir-path) "dir gone after remove")]
+              t4))))))
+
+  (let [cwd-res (IO.get-cwd)]
+    (do
+      (let [t1 (assert-true test (Result.success? &cwd-res) "get-cwd success")]
+        (if (Result.success? &cwd-res)
+          (let [cwd (Result.unsafe-from-success cwd-res)]
+            (assert-true (ref t1) (Int.> (String.length &cwd) 0) "cwd not empty"))
+          t1))))
+
+  (let [old-cwd (Result.unsafe-from-success (IO.get-cwd))
+        new-dir "test_cwd_change"]
+    (do
+      (ignore (IO.create-dir new-dir))
+      (let [set-res (IO.set-cwd new-dir)]
+        (let-do [t1 (assert-true test (Result.success? &set-res) "set-cwd success")
+                 curr-cwd-res (IO.get-cwd)
+                 t2 (assert-true (ref t1) (Result.success? &curr-cwd-res) "get-cwd after set success")]
+          (let [curr-cwd (Result.unsafe-from-success curr-cwd-res)
+                t3 (assert-true (ref t2) (String.ends-with? &curr-cwd new-dir) "cwd changed")]
+            (do
+              (ignore (IO.set-cwd &old-cwd))
+              (ignore (IO.remove-dir new-dir))
+              t3))))))
 )

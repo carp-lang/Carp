@@ -1,5 +1,12 @@
 #include <sys/stat.h>
 #include <dirent.h>
+#ifdef _WIN32
+#include <direct.h>
+#define getcwd _getcwd
+#define chdir _chdir
+#else
+#include <unistd.h>
+#endif
 
 void IO_println(String* s) {
     puts(*s);
@@ -94,4 +101,35 @@ Array IO_Raw_list_MINUS_dir(const String* path) {
         result.len = -1;
     }
     return result;
+}
+
+int IO_mkdir(const String* path) {
+#ifdef _WIN32
+    return _mkdir(*path);
+#else
+    return mkdir(*path, 0777);
+#endif
+}
+
+int IO_rmdir(const String* path) {
+#ifdef _WIN32
+    return _rmdir(*path);
+#else
+    return rmdir(*path);
+#endif
+}
+
+String IO_Raw_get_MINUS_cwd() {
+    char* buffer = getcwd(NULL, 0);
+    if (buffer) {
+        String result = CARP_MALLOC(strlen(buffer) + 1);
+        strcpy(result, buffer);
+        free(buffer);
+        return result;
+    }
+    return NULL;
+}
+
+int IO_Raw_set_MINUS_cwd(const String* path) {
+    return chdir(*path);
 }

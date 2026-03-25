@@ -42,3 +42,29 @@
       (let [entries (Result.unsafe-from-success dir-res)]
         (assert-true (ref t1) (Array.contains? &entries &@"IO.carp") "list-dir contains IO.carp"))
       t1)))
+
+(deftest test-dir-ops
+  (let-do [dir-path "test_dir_xyz"
+           create-res (IO.create-dir dir-path)
+           t1 (assert-true test-dir-ops (Result.success? &create-res) "create-dir success")
+           t2 (assert-true (ref t1) (IO.dir-exists? dir-path) "dir exists after create")
+           remove-res (IO.remove-dir dir-path)
+           t3 (assert-true (ref t2) (Result.success? &remove-res) "remove-dir success")
+           t4 (assert-false (ref t3) (IO.dir-exists? dir-path) "dir gone after remove")]
+    t4))
+
+(deftest test-cwd
+  (let-do [cwd-res (IO.get-cwd)
+           t1 (assert-true test-cwd (Result.success? &cwd-res) "get-cwd success")
+           old-cwd (Result.unsafe-from-success cwd-res)
+           new-dir "test_cwd_change"
+           _1 (IO.create-dir new-dir)
+           set-res (IO.set-cwd new-dir)
+           t2 (assert-true (ref t1) (Result.success? &set-res) "set-cwd success")
+           curr-cwd-res (IO.get-cwd)
+           t3 (assert-true (ref t2) (Result.success? &curr-cwd-res) "get-cwd after set success")
+           curr-cwd (Result.unsafe-from-success curr-cwd-res)
+           t4 (assert-true (ref t3) (String.ends-with? &curr-cwd new-dir) "cwd changed")
+           _2 (IO.set-cwd &old-cwd)
+           _3 (IO.remove-dir new-dir)]
+    t4))

@@ -97,7 +97,7 @@
     (register fread- (Fn [a Int Int (Ptr FILE)] Int) "fread")
 
     (doc fread
-      "Reads a given numebr of bytes from a file into C-String."
+      "Reads a given number of bytes from a file into C-String."
       "Wraps `fread` from the C standard library."
       "Consider using [`read-file`](#read-file) or"
       "[`unsafe-read-file`](#unsafe-read-file) instead.")
@@ -115,7 +115,7 @@
 
     (doc fflush!
       "Flushes buffered data via [`fflush`](#fflush)"
-      ", but discards the result, making this function appropraite for use as"
+      ", but discards the result, making this function appropriate for use as"
       "a side effect in `do` forms.")
     (defn fflush! [file]
       (ignore (fflush file)))
@@ -227,6 +227,21 @@
       "Returns an array containing the names of the entries in the directory"
       "designated by `path`, skipping `.` and `..`.")
     (register list-dir (Fn [&String] (Array String)) "IO_Raw_list_MINUS_dir")
+
+    (doc mkdir
+      "Creates a directory at the given path."
+      "Returns an integer indicating success (0) or failure (-1)."
+      "Wraps `mkdir` from the C standard library.")
+    (register mkdir (Fn [&String] Int) "IO_mkdir")
+
+    (doc rmdir
+      "Removes a directory at the given path."
+      "Returns an integer indicating success (0) or failure (-1)."
+      "Wraps `rmdir` from the C standard library.")
+    (register rmdir (Fn [&String] Int) "IO_rmdir")
+
+    (register get-cwd (Fn [] (Ptr CChar)) "IO_Raw_get_MINUS_cwd")
+    (register set-cwd (Fn [&String] Int) "IO_Raw_set_MINUS_cwd")
   )
 
   (doc file-exists? "Checks if a file exists at the given path.")
@@ -234,6 +249,46 @@
 
   (doc dir-exists? "Checks if a directory exists at the given path.")
   (register dir-exists? (Fn [&String] Bool))
+
+  (doc get-cwd
+    "Returns the current working directory."
+    ""
+    "Returns a (Result String String) indicating success or failure.")
+  (defn get-cwd []
+    (let [res (IO.Raw.get-cwd)]
+      (if (null? res)
+        (Result.Error (fmt "Failed to get current working directory: %s" &(System.error-text)))
+        (let [s (String.from-cstr res)]
+          (do
+            (Pointer.free res)
+            (Result.Success s))))))
+
+  (doc set-cwd
+    "Sets the current working directory to `path`."
+    ""
+    "Returns a (Result Bool String) indicating success or failure.")
+  (defn set-cwd [path]
+    (if (Int.= (IO.Raw.set-cwd path) 0)
+      (Result.Success true)
+      (Result.Error (fmt "Failed to set current working directory to '%s': %s" path &(System.error-text)))))
+
+  (doc create-dir
+    "Creates a directory at the given path."
+    ""
+    "Returns a (Result Bool String) indicating success or failure.")
+  (defn create-dir [path]
+    (if (Int.= (IO.Raw.mkdir path) 0)
+      (Result.Success true)
+      (Result.Error (fmt "Failed to create directory '%s': %s" path &(System.error-text)))))
+
+  (doc remove-dir
+    "Removes a directory at the given path."
+    ""
+    "Returns a (Result Bool String) indicating success or failure.")
+  (defn remove-dir [path]
+    (if (Int.= (IO.Raw.rmdir path) 0)
+      (Result.Success true)
+      (Result.Error (fmt "Failed to remove directory '%s': %s" path &(System.error-text)))))
 
   (doc list-dir
     "Returns an array containing the names of the entries in the directory"
@@ -278,7 +333,7 @@
 
   (doc open-file
     "Opens a [FILE](#file) with the given name using a designated mode"
-    "(e.g. [r]ead, [w]rite, [a]ppend),  [rb] read binary...)."
+    "(e.g. [r]ead, [w]rite, [a]ppend),  [rb] read binary...."
     "See `fopen` from the C standard library for a description of valid mode parameters.")
   (defn open-file [filename mode]
     (let [ptr (IO.Raw.fopen filename mode)]
@@ -423,7 +478,7 @@
   `(IO.println %(build-str* forms)))
 
 (doc print*
-  "Prints any number of values to [`stdout`](#stdout), using thier"
+  "Prints any number of values to [`stdout`](#stdout), using their"
   "`str` implementations."
   ""
   "```"
