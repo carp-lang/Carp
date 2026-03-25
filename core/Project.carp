@@ -13,3 +13,13 @@
 Example usage: `(save-docs Int Float String)`")
 (defmacro save-docs [:rest modules]
   (eval (list 'save-docs-ex (list quote (collect-into modules array)) [])))
+
+(defmodule Project
+  (hidden append-flag)
+  (defndynamic append-flag [flag-set flag]
+    (Project.config flag-set (cons flag (Project.get-config flag-set))))
+
+  (defmacro append-cflag [flag] (Project.append-flag "cflag" flag))
+  (defmacro append-libflag [flag] (Project.append-flag "libflag" flag))
+  (defmacro append-pkgflag [flag] (Project.append-flag "pkgconfigflag" flag))
+)
