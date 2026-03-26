@@ -197,13 +197,19 @@
       "Returns true if the position indicator for the given [FILE](#file)"
       "is at the end of file [`EOF`](#eof)."
       "Wraps `feof` from the C standard library.")
-    (register feof (Fn [(Ptr FILE)] Bool) "feof")
+    (register feof (Fn [(Ptr FILE) ] Bool) "feof")
 
     (doc ferror
       "Returns true if an error indicator is set for the"
       "given [FILE](#file)."
       "Wraps `ferror` from the C standard library.")
     (register ferror (Fn [(Ptr FILE)] Bool) "ferror")
+
+    (doc fgets
+      "Reads a line from the given [FILE](#file) and stores it into the given"
+      "buffer. Returns the buffer on success, or `NULL` on failure."
+      "Wraps `fgets` from the C standard library.")
+    (register fgets (Fn [(Ptr CChar) Int (Ptr FILE)] (Ptr CChar)) "fgets")
   )
 
   (doc println
@@ -313,7 +319,33 @@
             (Result.Success true)
             (Result.Error (fmt "only %d of %d bytes were written" bytes-written bytes2write)))))))
 
+  (doc read-lines
+    "Returns an array containing the lines of the file at the given path."
+    ""
+    "Returns a (Result (Array String) String) indicating success or failure.")
+  (defn read-lines [path]
+    (match (open-file path "r")
+      (Result.Error e) (Result.Error e)
+      (Result.Success f)
+      (let-do [result []
+               line @""
+               buffer (String.allocate 4096 \0)]
+        (while (not (null? (IO.Raw.fgets (String.cstr &buffer) 4096 f)))
+          (let [s (String.from-cstr (String.cstr &buffer))]
+            (do
+              (set! line (String.append &line &s))
+              (when (String.ends-with? &line "\n")
+                (do
+                  (set! line (String.slice &line 0 (Int.dec (String.length &line)))) ; Strip newline
+                  (set! result (Array.push-back result @&line))
+                  (set! line @""))))))
+        (when (not (String.empty? &line))
+          (set! result (Array.push-back result @&line)))
+        (IO.Raw.fclose! f)
+        (Result.Success result))))
+
   (doc append-file
+
     "Appends a String to a text [FILE](#file), creating it if it does not exist."
     ""
     "Returns a (Result Bool String) indicating success or failure.")
