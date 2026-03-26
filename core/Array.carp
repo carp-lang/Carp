@@ -410,6 +410,43 @@ It will create a copy. If you want to avoid that, consider using [`endo-filter`]
             (break))))
       result))
 
+  (doc interleave "interleaves two arrays. The resulting array will be as long as twice the length of the shortest input array.")
+  (defn interleave [a b]
+    (let [len-a (length a)
+          len-b (length b)
+          min-len (if (< len-a len-b) len-a len-b)
+          res []]
+      (do
+        (for [i 0 min-len]
+          (do
+            (set! res (push-back res @(unsafe-nth a i)))
+            (set! res (push-back res @(unsafe-nth b i)))))
+        res)))
+
+  (doc dedup "removes consecutive duplicates from an array. (The elements must support `=`).")
+  (defn dedup [a]
+    (if (empty? a)
+      []
+      (let [res [@(unsafe-nth a 0)]]
+        (do
+          (for [i 1 (length a)]
+            (let [x (unsafe-nth a i)]
+              (if (not (= x (unsafe-last &res)))
+                (set! res (push-back res @x))
+                ())))
+          res))))
+
+  (doc unique "removes all duplicates from an array. (The elements must support `=`).")
+  (defn unique [a]
+    (let [res []]
+      (do
+        (for [i 0 (length a)]
+          (let [x (unsafe-nth a i)]
+            (if (not (contains? &res x))
+              (set! res (push-back res @x))
+              ())))
+        res)))
+
   (doc partition
     "Partitions an array `arr` into an array of arrays of length `n`
     sequentially filled with the `arr`'s original values.
