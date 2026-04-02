@@ -180,24 +180,4 @@ list of those characters.")
   (doc collapse-whitespace "collapses groups of whitespace into single spaces.")
   (defn collapse-whitespace [s]
     (Pattern.substitute #"\s+" s " " -1))
-
-  (doc split-by "splits a string by separators.")
-  (defn split-by [s separators]
-    (let-do [result []
-             start 0
-             idx (index-of-any-from s separators -1)]
-      (while (/= idx -1)
-        (do
-          (set! result (Array.push-back result (byte-slice s start idx)))
-          (set! start (Int.inc idx))
-          (set! idx (index-of-any-from s separators idx))))
-      (Array.push-back result (byte-slice s start (length s)))))
-
-  (doc words "splits a string into words.")
-  (defn words [s]
-    (Array.endo-filter &(fn [s] (not (empty? s))) (split-by s &[\tab \space \newline])))
-
-  (doc lines "splits a string into lines.")
-  (defn lines [s]
-    (split-by s &[\newline]))
 )
