@@ -362,25 +362,27 @@ uint8_t Byte_from_MINUS_string_MINUS_internal(const String* s, byte* target) {
     return *err == 0;
 }
 
-int String_index_MINUS_of_MINUS_from(const String* s, char c, int i) {
-    /* Return index of first occurrence of `c` in `s` AFTER index i
-     * Returns -1 if not found
-     */
-    ++i;  // skip first character as we want AFTER i
+int String_index_MINUS_of_MINUS_any_MINUS_from(const String* s,
+                                               const Array* chars, int i) {
+    const Char* cs = (const Char*)chars->data;
+    size_t nc = chars->len;
     size_t len = strlen(*s);
-    for (; i < len; ++i) {
-        if (c == (*s)[i]) {
-            return i;
+    for (++i; i < len; ++i) {
+        for (size_t j = 0; j < nc; j++) {
+            if ((unsigned char)(*s)[i] == cs[j]) return i;
         }
     }
     return -1;
 }
 
-int String_index_MINUS_of(const String* s, char c) {
-    /* Return index of first occurrence of `c` in `s`
-     * Returns -1 if not found
-     */
-    return String_index_MINUS_of_MINUS_from(s, c, -1);
+
+
+String String_byte_MINUS_slice(const String* s, int a, int b) {
+    int len = b - a;
+    String ptr = CARP_MALLOC(len + 1);
+    memcpy(ptr, *s + a, len);
+    ptr[len] = '\0';
+    return ptr;
 }
 
 int String_index_MINUS_of_MINUS_string(const String* s, const String* needle) {

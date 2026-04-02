@@ -183,19 +183,15 @@ list of those characters.")
 
   (doc split-by "splits a string by separators.")
   (defn split-by [s separators]
-    (let-do [pat (Pattern.from-chars separators)
-             idx (Pattern.find-all &pat s)
-             lidx (Array.length &idx)
-             result (Array.allocate (Int.inc lidx))]
-      (Array.aset-uninitialized! &result 0
-        (slice s 0 (if (> lidx 0) @(Array.unsafe-nth &idx 0) (length s))))
-      (for [i 0 (Int.dec (Array.length &idx))]
-        (Array.aset-uninitialized! &result (Int.inc i)
-          (slice s (Int.inc @(Array.unsafe-nth &idx i)) @(Array.unsafe-nth &idx (Int.inc i)))))
-      (when (> lidx 0)
-        (Array.aset-uninitialized! &result lidx
-          (suffix s (Int.inc @(Array.unsafe-nth &idx (Int.dec lidx))))))
-      result))
+    (let-do [result []
+             start 0
+             idx (index-of-any-from s separators -1)]
+      (while (/= idx -1)
+        (do
+          (set! result (Array.push-back result (byte-slice s start idx)))
+          (set! start (Int.inc idx))
+          (set! idx (index-of-any-from s separators idx))))
+      (Array.push-back result (byte-slice s start (length s)))))
 
   (doc words "splits a string into words.")
   (defn words [s]
