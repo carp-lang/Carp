@@ -375,8 +375,6 @@ int String_index_MINUS_of_MINUS_any_MINUS_from(const String* s,
     return -1;
 }
 
-
-
 String String_byte_MINUS_slice(const String* s, int a, int b) {
     int len = b - a;
     String ptr = CARP_MALLOC(len + 1);
