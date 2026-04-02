@@ -64,6 +64,7 @@ data TypeError
   | FailedToAddLambdaStructToTyEnv SymPath XObj
   | FailedToInstantiateGenericType Ty
   | InvalidStructField XObj
+  | GivingAwayCapturedValue XObj
 
 instance Show TypeError where
   show (SymbolMissingType xobj env) =
@@ -334,6 +335,9 @@ instance Show TypeError where
       ++ " to the type environment."
   show (FailedToInstantiateGenericType ty) =
     "I couldn't instantiate the generic type " ++ show ty
+  show (GivingAwayCapturedValue xobj) =
+    "Can't give away the captured value '" ++ pretty xobj ++ "' at " ++ prettyInfoFromXObj xobj
+      ++ ". Captured values can be borrowed with `&` or copied with `@&`, not moved."
 
 machineReadableErrorStrings :: FilePathPrintLength -> TypeError -> [String]
 machineReadableErrorStrings fppl err =
@@ -460,6 +464,8 @@ machineReadableErrorStrings fppl err =
           ++ pretty xobj
           ++ " to the type environment."
       ]
+    (GivingAwayCapturedValue xobj) ->
+      [machineReadableInfoFromXObj fppl xobj ++ " Can't give away captured value '" ++ pretty xobj ++ "'."]
     _ ->
       [show err]
 
