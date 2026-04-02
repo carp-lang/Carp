@@ -1,10 +1,13 @@
 #include <sys/stat.h>
-#include <dirent.h>
 #ifdef _WIN32
 #include <direct.h>
 #define getcwd _getcwd
 #define chdir _chdir
+#define stat _stat
+#define S_ISREG(m) (((m) & _S_IFMT) == _S_IFREG)
+#define S_ISDIR(m) (((m) & _S_IFMT) == _S_IFDIR)
 #else
+#include <dirent.h>
 #include <unistd.h>
 #endif
 
@@ -80,6 +83,31 @@ bool IO_dir_MINUS_exists_QMARK_(const String* path) {
     return false;
 }
 
+#ifdef _WIN32
+Array IO_Raw_list_MINUS_dir(const String* path) {
+    Array result = {0, 0, NULL};
+    WIN32_FIND_DATA fd;
+    char search_path[MAX_PATH];
+    snprintf(search_path, MAX_PATH, "%s\\*", *path);
+    HANDLE hFind = FindFirstFile(search_path, &fd);
+    if (hFind != INVALID_HANDLE_VALUE) {
+        do {
+            if (strcmp(fd.cFileName, ".") == 0 || strcmp(fd.cFileName, "..") == 0) {
+                continue;
+            }
+            String name = CARP_MALLOC(strlen(fd.cFileName) + 1);
+            strcpy(name, fd.cFileName);
+            result.len++;
+            result.data = CARP_REALLOC(result.data, sizeof(String) * result.len);
+            ((String*)result.data)[result.len - 1] = name;
+        } while (FindNextFile(hFind, &fd));
+        FindClose(hFind);
+    } else {
+        result.len = -1;
+    }
+    return result;
+}
+#else
 Array IO_Raw_list_MINUS_dir(const String* path) {
     DIR *d;
     struct dirent *dir;
@@ -102,6 +130,7 @@ Array IO_Raw_list_MINUS_dir(const String* path) {
     }
     return result;
 }
+#endif
 
 int IO_mkdir(const String* path) {
 #ifdef _WIN32
