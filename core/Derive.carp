@@ -20,7 +20,7 @@ Example:
 (make-deriver 'zero []
   (fn [t]
     (cons 'init
-      (map (fn [_] '(zero)) (eval `(members %t)))))
+      (map (fn [_] '(zero)) (members t))))
 ```")
   (defndynamic make-deriver [f args body]
     (set! Derive.derivers
@@ -42,7 +42,7 @@ for functions that you could pass into `update-<member>` style functions.")
           (fn [acc m]
             (list (Symbol.concat ['update- (car m)]) acc (list 'ref interface)))
           'o
-          (eval (list 'members t))))))
+          (members t)))))
 
   (hidden get-deriver)
   (defndynamic get-deriver [f derivers]
@@ -81,16 +81,16 @@ the generated function to avoid collisions.")
       (fn [acc m]
         (list 'and (list '= (list (car m) 'o1) (list (car m) 'o2)) acc))
       true
-      (eval (list 'members t)))))
+      (members t))))
 
 (make-deriver 'zero []
   (fn [t]
     (cons 'init
-      (map (fn [_] '(zero)) (eval (list 'members t))))))
+      (map (fn [_] '(zero)) (members t)))))
 
 (make-deriver 'str ['o]
   (fn [t]
-    (let [mems (eval (list 'members t))]
+    (let [mems (members t)]
       (cons 'fmt
         (cons
           (String.concat

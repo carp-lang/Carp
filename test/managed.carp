@@ -52,11 +52,11 @@
     ()))
 
 (eval ;; temporary workaround to force evaluation of top-level 'when'
- (when (not (managed? A))
+ (when (not (managed? 'A))
    (macro-error "Fail - A should be managed.")))
 
 (eval
- (when (managed? B)
+ (when (managed? 'B)
    (macro-error "Fail - B should not be managed.")))
 
 (deftest test

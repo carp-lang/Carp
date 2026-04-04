@@ -256,18 +256,18 @@ dynamicModule =
     path = ["Dynamic"]
     spath = SymPath path
     bindings =
-      Map.fromList $ nullaries ++ unaries ++ binaries ++ variadics ++ unaries' ++ binaries' ++ ternaries' ++ quaternaries' ++ variadics' ++ mods
+      Map.fromList $ nullaries ++ unaries ++ binaries ++ ternaries ++ variadics ++ unaries' ++ binaries' ++ ternaries' ++ quaternaries' ++ variadics' ++ mods
     nullaries =
       let f = addNullaryCommand . spath
        in [ f "quit" commandQuit "quits the program." "(quit)",
             f "cat" commandCat "spits out the generated C code." "(cat)",
             f "run" commandRunExe "runs the built executable." "(run)",
-            f "reload" commandReload "reloads all currently loaded files that weren’t marked as only loading once (see `load` and `load-once`)." "(reload)",
+            f "reload" commandReload "reloads all currently loaded files that weren't marked as only loading once (see `load` and `load-once`)." "(reload)",
             f "env" commandListBindings "lists all current bindings." "(env)",
             f "project" commandProject "prints the current project state." "(project)",
             f "host-arch" commandHostArch "prints the host architecture (as returned by the Haskell function `System.Info.arch`)." "(host-arch)",
             f "host-os" commandHostOS "prints the host operating system (as returned by the Haskell function `System.Info.os`)." "(host-os)",
-            f "host-bit-width" commandHostBitWidth "gets the bit width of the host platform." "(host-bit-width) ; => your host machine’s bit width, e.g. 32 or 64"
+            f "host-bit-width" commandHostBitWidth "gets the bit width of the host platform." "(host-bit-width) ; => your host machine's bit width, e.g. 32 or 64"
           ]
     unaries =
       let f = addUnaryCommand . spath
@@ -285,10 +285,16 @@ dynamicModule =
             f "system-include" commandAddSystemInclude "adds a system include, i.e. a C `#include` with angle brackets (`<>`)." "(system-include \"stdint.h\")",
             f "relative-include" commandAddRelativeInclude "adds a relative include, i.e. a C `include` with quotes. It also prepends the current directory." "(relative-include \"myheader.h\")",
             f "read-file" commandReadFile "reads a file into a string." "(read-file \"myfile.txt\")",
-            f "get-env" commandGetEnv "gets an environment variable. The result will be `()` if it isn’t set." "(read-file \"CARP_DIR\")",
+            f "get-env" commandGetEnv "gets an environment variable. The result will be `()` if it isn't set." "(read-file \"CARP_DIR\")",
             f "hash" commandHash "calculates the hash associated with a value." "(hash '('my 'value)) ; => 3175346968842793108",
             f "round" commandRound "rounds its numeric argument." "(round 2.4) ; => 2",
-            f "dynamic-type" commandType "Gets the dynamic type as a string." "(dynamic-type '()) ; => \"list\""
+            f "dynamic-type" commandType "Gets the dynamic type as a string." "(dynamic-type '()) ; => \"list\"",
+            f "info" primitiveInfo "prints all information associated with a symbol." "(info mysymbol)",
+            f "structured-info" primitiveStructuredInfo "gets all information associated with a symbol as a list of the form `(type|(), info|(), metadata)`." "(structured-info mysymbol)",
+            f "managed?" primitiveIsManaged "checks whether a type is managed by Carp by checking whether `delete` was implemented for it. For an explanation of memory management, you can reference [this document](https://carp-lang.github.io/carp-docs/Memory.html)." "(register-type Unmanaged \"void*\")\n(managed? Unmanaged) ; => false",
+            f "members" primitiveMembers "returns the members of a type as an array." "(members MyType)",
+            f "eval" primitiveEval "evaluates a list." "(eval mycode)",
+            f "defined?" primitiveDefined "checks whether a symbol is defined." "(defined? mysymbol)"
           ]
     binaries =
       let f = addBinaryCommand . spath
@@ -304,7 +310,8 @@ dynamicModule =
             f "*" commandMul "multiplies its two arguments." "(* 2 3) ; => 6",
             f "write-file" commandWriteFile "writes a string to a file." "(write-file \"myfile\" \"hello there!\")",
             f "set-env" commandSetEnv "sets an environment variable." "(set-env \"CARP_WAS_HERE\" \"true\")",
-            f "save-docs-ex" commandSaveDocsEx "takes two arrays, one with paths to modules (as symbols), and one with filenames (as strings). The filenames are used to emit global symbols in those files into a 'Global' module." "(save-docs-internal '(ModuleA ModuleB) '(\"globals.carp\"))"
+            f "save-docs-ex" commandSaveDocsEx "takes two arrays, one with paths to modules (as symbols), and one with filenames (as strings). The filenames are used to emit global symbols in those files into a 'Global' module." "(save-docs-internal '(ModuleA ModuleB) '(\"globals.carp\"))",
+            f "meta" primitiveMeta "gets the value under `\"mykey\"` in the meta map associated with a symbol. It returns `()` if the key isn't found." "(meta mysymbol \"mykey\")"
           ]
     variadics =
       let f = addVariadicCommand . spath
@@ -319,31 +326,27 @@ dynamicModule =
             f "load-once" commandLoadOnce "loads a file and prevents it from being reloaded (see `reload`)." "(load-once \"myfile.carp\")\n(load \"myrepo@version\" \"myfile\")",
             f "build" commandBuild "builds the current code to an executable. Optionally takes a boolean that, when true, silences the output." "(build)"
           ]
+    ternaries =
+      let f = addTernaryCommand . spath
+       in [ f "meta-set!" primitiveMetaSet "sets a new key and value pair on the meta map associated with a symbol." "(meta-set! mysymbol \"mykey\" \"myval\")"
+          ]
     unaries' =
       let f = makeUnaryPrim . spath
        in [ f "quote" (\_ ctx x -> pure (ctx, Right x)) "quotes any value." "(quote x) ; where x is an actual symbol",
-            f "info" primitiveInfo "prints all information associated with a symbol." "(info mysymbol)",
-            f "structured-info" primitiveStructuredInfo "gets all information associated with a symbol as a list of the form `(type|(), info|(), metadata)`." "(structured-info mysymbol)",
-            f "managed?" primitiveIsManaged "checks whether a type is managed by Carp by checking whether `delete` was implemented for it. For an explanation of memory management, you can reference [this document](https://carp-lang.github.io/carp-docs/Memory.html)." "(register-type Unmanaged \"void*\")\n(managed? Unmanaged) ; => false",
-            f "members" primitiveMembers "returns the members of a type as an array." "(members MyType)",
             f "use" primitiveUse "uses a module, i.e. imports the symbols inside that module into the current module." "(use MyModule)",
-            f "eval" primitiveEval "evaluates a list." "(eval mycode)",
-            f "defined?" primitiveDefined "checks whether a symbol is defined." "(defined? mysymbol)",
             f "type" primitiveType "prints the type of a symbol." "(type mysymbol)",
             f "kind" primitiveKind "prints the kind of a symbol." "(kind mysymbol)"
           ]
     binaries' =
       let f = makeBinaryPrim . spath
        in [ f "defdynamic" primitiveDefdynamic "defines a new dynamic value, i.e. a value available at compile time." "(defdynamic name value)",
-            f "meta" primitiveMeta "gets the value under `\"mykey\"` in the meta map associated with a symbol. It returns `()` if the key isn’t found." "(meta mysymbol \"mykey\")",
             f "definterface" primitiveDefinterface "defines a new interface (which could be a function or symbol)." "(definterface mysymbol MyType)",
             f "implements" primitiveImplements "designates a function as an implementation of an interface." "(implements zero Maybe.zero)"
           ]
     ternaries' =
       let f = makeTernaryPrim . spath
        in [ f "defmacro" primitiveDefmacro "defines a new macro." "(defmacro name [args :rest restargs] body)",
-            f "defndynamic" primitiveDefndynamic "defines a new dynamic function, i.e. a function available at compile time." "(defndynamic name [args] body)",
-            f "meta-set!" primitiveMetaSet "sets a new key and value pair on the meta map associated with a symbol." "(meta-set! mysymbol \"mykey\" \"myval\")"
+            f "defndynamic" primitiveDefndynamic "defines a new dynamic function, i.e. a function available at compile time." "(defndynamic name [args] body)"
           ]
     quaternaries' =
       let f = makeQuaternaryPrim . spath

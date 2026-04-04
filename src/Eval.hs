@@ -879,21 +879,16 @@ setStaticOrDynamicVar path@(SymPath _ name) env binder value =
     -- TODO: Return an either here to propagate error.
     _ -> env
 
-primitiveEval :: UnaryPrimitiveCallback
-primitiveEval _ ctx val = do
-  -- primitives don’t evaluate their arguments, so this needs to double-evaluate
-  (newCtx, arg) <- evalDynamic ctx val
-  case arg of
+primitiveEval :: UnaryCommandCallback
+primitiveEval ctx val = do
+  (newCtx, expanded) <- macroExpand ctx val
+  case expanded of
     Left err -> pure (newCtx, Left err)
-    Right evald -> do
-      (newCtx', expanded) <- macroExpand newCtx evald
-      case expanded of
-        Left err -> pure (newCtx', Left err)
-        Right ok -> do
-          (finalCtx, res) <- evalDynamic newCtx' ok
-          pure $ case res of
-            Left (HasStaticCall x i) -> throwErr (StaticCall x) ctx i
-            _ -> (finalCtx, res)
+    Right ok -> do
+      (finalCtx, res) <- evalDynamic newCtx ok
+      pure $ case res of
+        Left (HasStaticCall x i) -> throwErr (StaticCall x) ctx i
+        _ -> (finalCtx, res)
 
 dynamicOrMacro :: Context -> Obj -> Ty -> String -> XObj -> XObj -> IO (Context, Either EvalError XObj)
 dynamicOrMacro ctx pat ty name params body =

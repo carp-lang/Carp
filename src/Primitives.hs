@@ -286,8 +286,8 @@ notFound :: Context -> XObj -> SymPath -> IO (Context, Either EvalError XObj)
 notFound ctx x path = pure (toEvalError ctx x (SymbolNotFoundError path))
 
 -- | Get information about a binding.
-primitiveInfo :: UnaryPrimitiveCallback
-primitiveInfo _ ctx target@(XObj (Sym path@(SymPath _ name) _) _ _) =
+primitiveInfo :: UnaryCommandCallback
+primitiveInfo ctx target@(XObj (Sym path@(SymPath _ name) _) _ _) =
   case path of
     SymPath [] _ ->
       do
@@ -362,18 +362,18 @@ primitiveInfo _ ctx target@(XObj (Sym path@(SymPath _ name) _) _ _) =
     printDeprecated _ = return ()
     printMetaVal :: String -> (XObj -> String) -> XObj -> IO ()
     printMetaVal s f xobj = putStrLn ("  " ++ s ++ ": " ++ f xobj)
-primitiveInfo _ ctx notName =
+primitiveInfo ctx notName =
   argumentErr ctx "info" "a name" "first" notName
 
 -- | Get information about a binding.
-primitiveStructuredInfo :: UnaryPrimitiveCallback
-primitiveStructuredInfo (XObj _ i _) ctx (XObj (Sym path _) _ _) =
+primitiveStructuredInfo :: UnaryCommandCallback
+primitiveStructuredInfo ctx (XObj (Sym path _) _ _) =
   case lookupBinderInTypeEnv ctx path of
     Right bind -> return (ctx, Right $ workOnBinder bind)
     Left _ ->
       case lookupBinderInContextEnv ctx path of
         Right bind -> return (ctx, Right $ workOnBinder bind)
-        Left e -> return $ throwErr e ctx i
+        Left e -> return $ throwErr e ctx Nothing
   where
     workOnBinder :: Binder -> XObj
     workOnBinder (Binder metaData (XObj _ (Just (Info l c f _ _)) t)) =
@@ -404,7 +404,7 @@ primitiveStructuredInfo (XObj _ i _) ctx (XObj (Sym path _) _ _) =
       where
         genPair (s, x) = makeX (Lst [XObj (Str s) Nothing Nothing, x])
     makeX o = XObj o Nothing Nothing
-primitiveStructuredInfo _ ctx notName =
+primitiveStructuredInfo ctx notName =
   argumentErr ctx "structured-info" "a name" "first" notName
 
 dynamicOrMacroWith :: Context -> (SymPath -> [XObj]) -> Ty -> String -> XObj -> IO (Context, Either EvalError XObj)
@@ -419,8 +419,8 @@ dynamicOrMacroWith ctx producer ty name body = do
     )
 
 -- | Get the members of a type declaration.
-primitiveMembers :: UnaryPrimitiveCallback
-primitiveMembers _ ctx xobj@(XObj (Sym path _) _ _) =
+primitiveMembers :: UnaryCommandCallback
+primitiveMembers ctx xobj@(XObj (Sym path _) _ _) =
   case (lookupBinderInTypeEnv ctx path) of
     Left _ -> pure $ toEvalError ctx xobj (StructNotFound xobj)
     Right b -> go (binderXObj b)
@@ -438,14 +438,14 @@ primitiveMembers _ ctx xobj@(XObj (Sym path _) _ _) =
       Right [XObj (Lst [x, XObj (Arr []) Nothing Nothing]) Nothing Nothing]
     getMembersFromCase x =
       second (: []) (snd (toEvalError ctx x (PrimitiveError.InvalidSumtypeCase x)))
-primitiveMembers _ ctx x = argumentErr ctx "members" "a symbol" "first" x
+primitiveMembers ctx x = argumentErr ctx "members" "a symbol" "first" x
 
 -- | Set meta data for a Binder
 --
 -- Permits "forward-declaration": if the binder doesn't exist, it creates a
 -- "meta stub" for the binder with the meta information.
-primitiveMetaSet :: TernaryPrimitiveCallback
-primitiveMetaSet _ ctx target@(XObj (Sym path@(SymPath _ _) _) _ _) (XObj (Str key) _ _) value =
+primitiveMetaSet :: TernaryCommandCallback
+primitiveMetaSet ctx target@(XObj (Sym path@(SymPath _ _) _) _ _) (XObj (Str key) _ _) value =
   pure (either (const create) (,dynamicNil) (lookupGlobal <> lookupType))
   where
     qpath = qualifyPath ctx path
@@ -467,9 +467,9 @@ primitiveMetaSet _ ctx target@(XObj (Sym path@(SymPath _ _) _) _ _) (XObj (Str k
        in case (insertInGlobalEnv ctx qpath updated) of
             Left e -> toEvalError ctx target (MetaSetFailed target (show e))
             Right c -> (c, dynamicNil)
-primitiveMetaSet _ ctx (XObj (Sym (SymPath _ _) _) _ _) key _ =
+primitiveMetaSet ctx (XObj (Sym (SymPath _ _) _) _ _) key _ =
   argumentErr ctx "meta-set!" "a string" "second" key
-primitiveMetaSet _ ctx target _ _ =
+primitiveMetaSet ctx target _ _ =
   argumentErr ctx "meta-set!" "a symbol" "first" target
 
 primitiveDefinterface :: BinaryPrimitiveCallback
@@ -750,25 +750,25 @@ primitiveUse _ ctx x =
   argumentErr ctx "use" "a symbol" "first" x
 
 -- | Get meta data for a Binder
-primitiveMeta :: BinaryPrimitiveCallback
-primitiveMeta (XObj _ i _) ctx (XObj (Sym path _) _ _) (XObj (Str key) _ _) =
-  pure $ maybe errNotFound foundBinder lookup'
+primitiveMeta :: BinaryCommandCallback
+primitiveMeta ctx (XObj (Sym path _) _ _) (XObj (Str key) _ _) =
+  pure $ maybe errNotFound foundBinder lookedUp
   where
-    lookup' :: Maybe Binder
-    lookup' = either (const Nothing) Just (lookupBinderInGlobalEnv ctx path <> lookupBinderInTypeEnv ctx path)
+    lookedUp :: Maybe Binder
+    lookedUp = either (const Nothing) Just (lookupBinderInGlobalEnv ctx path <> lookupBinderInTypeEnv ctx path)
     foundBinder :: Binder -> (Context, Either EvalError XObj)
     foundBinder binder = (ctx, maybe dynamicNil Right (Meta.getBinderMetaValue key binder))
     errNotFound :: (Context, Either EvalError XObj)
-    errNotFound = evalError ctx ("`meta` failed, I can’t find `" ++ show path ++ "`") i
-primitiveMeta _ ctx (XObj (Sym _ _) _ _) key =
+    errNotFound = evalError ctx ("`meta` failed, I can’t find `" ++ show path ++ "`") Nothing
+primitiveMeta ctx (XObj (Sym _ _) _ _) key =
   argumentErr ctx "meta" "a string" "second" key
-primitiveMeta _ ctx path _ =
+primitiveMeta ctx path _ =
   argumentErr ctx "meta" "a symbol" "first" path
 
-primitiveDefined :: UnaryPrimitiveCallback
-primitiveDefined _ ctx (XObj (Sym path _) _ _) =
+primitiveDefined :: UnaryCommandCallback
+primitiveDefined ctx (XObj (Sym path _) _ _) =
   pure $ either (const (ctx, Right falseXObj)) (const (ctx, Right trueXObj)) (lookupBinderInContextEnv ctx path)
-primitiveDefined _ ctx arg =
+primitiveDefined ctx arg =
   argumentErr ctx "defined" "a symbol" "first" arg
 
 primitiveDeftemplate :: QuaternaryPrimitiveCallback
@@ -945,8 +945,8 @@ openBrowserHelper ctx url =
 -- | Checks if a type is managed. Note that it probably could be implemented in terms
 -- of `(implements? <sym>)` but to be 100% sure that we use the same lookup as the
 -- type system, I've done it this way -- at least for now.
-primitiveIsManaged :: UnaryPrimitiveCallback
-primitiveIsManaged _ ctx xobj@(XObj (Sym _ _) i _) =
+primitiveIsManaged :: UnaryCommandCallback
+primitiveIsManaged ctx xobj@(XObj (Sym _ _) i _) =
   let tenv = contextTypeEnv ctx
       genv = contextEnv ctx
    in case xobjToTy xobj of
@@ -955,4 +955,4 @@ primitiveIsManaged _ ctx xobj@(XObj (Sym _ _) i _) =
             then pure (ctx, Right trueXObj)
             else pure (ctx, Right falseXObj)
         Nothing -> pure (evalError ctx ("Can't take type of " ++ pretty xobj) i)
-primitiveIsManaged _ _ _ = error "primitiveismanaged"
+primitiveIsManaged _ _ = error "primitiveismanaged"

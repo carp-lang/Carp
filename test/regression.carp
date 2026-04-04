@@ -100,6 +100,12 @@
 (defn poly-nest-two [x] (Bar.Qux.init (Bar.Baz x)))
 (defn poly-nest-three [x] (PolyNest (Bar.Baz x)))
 
+;; primitives can be called when inlined in forms by macros (save-docs bug)
+(defmacro call-inlined-primitive []
+  (eval (list quote 42)))
+
+(defn call-inlined-primitive-test [] (call-inlined-primitive))
+
 ;; struct field names are mangled correctly (#1378)
 (deftype Mangled 
   [short Int  ;; c reserved word
@@ -172,4 +178,8 @@
     (Mangled.default-value &(Mangled.set-default-value (Mangled.init 0 @"foo")
     @"bar"))
     "struct field names are mangled correctly")
+  (assert-equal test
+    42
+    (call-inlined-primitive-test)
+    "test that primitives work when inlined in forms by macros")
 )

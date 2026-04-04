@@ -15,6 +15,8 @@ bindExpr :: Context -> XObj -> BoundExpr
 bindExpr ctx xobj@(XObj obj i t) =
   case obj of
     Sym spath mode -> BoundSymbol (classifySymbol ctx spath) mode i t
+    Lst (XObj (Primitive _) _ _ : _) -> BoundLiteral xobj
+    Lst (XObj (Command _) _ _ : _) -> BoundLiteral xobj
     Lst xs -> BoundList (map (bindExpr ctx) xs) i t
     Arr xs -> BoundArray (map (bindExpr ctx) xs) i t
     StaticArr xs -> BoundStaticArray (map (bindExpr ctx) xs) i t
