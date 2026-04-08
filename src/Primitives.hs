@@ -765,10 +765,10 @@ primitiveMeta ctx (XObj (Sym _ _) _ _) key =
 primitiveMeta ctx path _ =
   argumentErr ctx "meta" "a symbol" "first" path
 
-primitiveDefined :: UnaryCommandCallback
-primitiveDefined ctx (XObj (Sym path _) _ _) =
+primitiveDefined :: UnaryPrimitiveCallback
+primitiveDefined _ ctx (XObj (Sym path _) _ _) =
   pure $ either (const (ctx, Right falseXObj)) (const (ctx, Right trueXObj)) (lookupBinderInContextEnv ctx path)
-primitiveDefined ctx arg =
+primitiveDefined _ ctx arg =
   argumentErr ctx "defined" "a symbol" "first" arg
 
 primitiveDeftemplate :: QuaternaryPrimitiveCallback

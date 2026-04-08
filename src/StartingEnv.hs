@@ -293,8 +293,7 @@ dynamicModule =
             f "structured-info" primitiveStructuredInfo "gets all information associated with a symbol as a list of the form `(type|(), info|(), metadata)`." "(structured-info mysymbol)",
             f "managed?" primitiveIsManaged "checks whether a type is managed by Carp by checking whether `delete` was implemented for it. For an explanation of memory management, you can reference [this document](https://carp-lang.github.io/carp-docs/Memory.html)." "(register-type Unmanaged \"void*\")\n(managed? Unmanaged) ; => false",
             f "members" primitiveMembers "returns the members of a type as an array." "(members MyType)",
-            f "eval" primitiveEval "evaluates a list." "(eval mycode)",
-            f "defined?" primitiveDefined "checks whether a symbol is defined." "(defined? mysymbol)"
+            f "eval" primitiveEval "evaluates a list." "(eval mycode)"
           ]
     binaries =
       let f = addBinaryCommand . spath
@@ -335,7 +334,8 @@ dynamicModule =
        in [ f "quote" (\_ ctx x -> pure (ctx, Right x)) "quotes any value." "(quote x) ; where x is an actual symbol",
             f "use" primitiveUse "uses a module, i.e. imports the symbols inside that module into the current module." "(use MyModule)",
             f "type" primitiveType "prints the type of a symbol." "(type mysymbol)",
-            f "kind" primitiveKind "prints the kind of a symbol." "(kind mysymbol)"
+            f "kind" primitiveKind "prints the kind of a symbol." "(kind mysymbol)",
+            f "defined?" primitiveDefined "checks whether a symbol is defined." "(defined? mysymbol)"
           ]
     binaries' =
       let f = makeBinaryPrim . spath
