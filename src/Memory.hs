@@ -524,10 +524,13 @@ unmanage typeEnv globalEnv xobj =
                   then Left (UsingCapturedValue xobj)
                   else Left (UsingUnownedValue xobj)
             [one] ->
-              let newDeleters = Set.delete one (memStateDeleters m)
-               in do
-                    put $ m {memStateDeleters = newDeleters}
-                    pure (Right ())
+              if isSymbolThatCaptures xobj
+                then pure (Left (GivingAwayCapturedValue xobj))
+                else
+                  let newDeleters = Set.delete one (memStateDeleters m)
+                   in do
+                        put $ m {memStateDeleters = newDeleters}
+                        pure (Right ())
             tooMany -> error ("Too many variables with the same name in set: " ++ show tooMany)
         else pure (Right ())
 
