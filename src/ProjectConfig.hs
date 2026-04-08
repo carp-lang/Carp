@@ -308,6 +308,15 @@ projectSetCModules _ _ = Left "can't use non-string as c module"
 projectGetLoadStack :: ProjectGetter
 projectGetLoadStack proj = wrapArray (map wrapString (projectLoadStack proj))
 
+-- | Get the line-directives configuration option for the project.
+projectGetLineDirectives :: ProjectGetter
+projectGetLineDirectives proj = XObj (Bol (projectLineDirectives proj)) Nothing Nothing
+
+-- | Set the line-directives configuration option for the project.
+projectSetLineDirectives :: ProjectSetter
+projectSetLineDirectives proj (XObj (Bol b) _ _) = Right (proj {projectLineDirectives = b})
+projectSetLineDirectives _ _ = Left "can't use non-bool as line-directives option"
+
 -- | Mapping of compiler defined project keys to getter and setter functions.
 -- This helps ensure we automatically enable access of project configuration
 -- fields from Carp as they are added to the compiler.
@@ -344,5 +353,6 @@ projectKeyMap =
       ("paren-balance-hints", (Just projectGetBalanceHints, Just projectSetBalanceHints)),
       ("force-reload", (Just projectGetForceReload, Just projectSetForceReload)),
       ("cmod", (Just projectGetCModules, Just projectSetCModules)),
-      ("load-stack", (Just projectGetLoadStack, Nothing))
+      ("load-stack", (Just projectGetLoadStack, Nothing)),
+      ("line-directives", (Just projectGetLineDirectives, Just projectSetLineDirectives))
     ]

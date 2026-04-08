@@ -740,7 +740,7 @@ printC xobj =
     Left e ->
       strWithColor Red (show e ++ ", can't print resulting code.\n")
     Right _ ->
-      strWithColor Green (toC All [] (Binder emptyMeta xobj))
+      strWithColor Green (toC All False [] (Binder emptyMeta xobj))
 
 buildMainFunction :: XObj -> XObj
 buildMainFunction xobj =

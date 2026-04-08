@@ -1,0 +1,69 @@
+(load "Test.carp")
+
+(doc Coverage "provides code coverage support for Carp programs.
+
+There are two workflows:
+
+### Manual workflow (with `-x`)
+
+Use `enable` in your test file, then run gcov yourself afterwards:
+
+```
+(load \"Test.carp\")
+(load \"Coverage.carp\")
+(Coverage.enable)
+
+(deftest test
+  (assert-equal test 2 (+ 1 1) \"math\"))
+```
+
+Then: `carp -x test.carp && gcov -o out out/main.c`
+
+### Integrated workflow
+
+Use `Coverage.deftest` which handles build, run, and report:
+
+```
+(load \"Coverage.carp\")
+
+(Coverage.deftest test
+  (assert-equal test 2 (+ 1 1) \"math\"))
+```
+
+Then: `carp test.carp`
+
+Both workflows require gcov (ships with gcc/clang).")
+
+(defmodule Coverage
+  (doc enable "Enable code coverage instrumentation.
+Turns on #line directives and adds --coverage to C compiler flags.
+Call this before `(build)` or `deftest`.")
+  (defmacro enable []
+    (do
+      (Project.config "line-directives" true)
+      (Project.config "cflag" "--coverage")))
+
+  (doc report "Generate a coverage report by running gcov on the compiled output.
+Call this after `(build)` and `(run)` have completed.")
+  (defmacro report []
+    (let [dir (Project.get-config "output-directory")
+          gcov (if (= "darwin" (host-os))
+                 "xcrun llvm-cov gcov"
+                 "gcov")]
+      (shell (Dynamic.String.concat
+        [gcov " " dir "/*.gcda"]))))
+
+  (doc deftest "Define and run a test with coverage reporting.
+
+Equivalent to calling `Coverage.enable`, then `deftest`, then
+`(build)`, `(run)`, `Coverage.report`, and `(quit)`.
+
+Do not use with `carp -x`; just use `carp test.carp`.")
+  (defmacro deftest [name :rest forms]
+    (do
+      (Coverage.enable)
+      (eval (cons 'deftest (cons name forms)))
+      (build)
+      (run)
+      (Coverage.report)
+      (quit))))
