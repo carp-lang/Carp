@@ -33,10 +33,14 @@
   (register str        (Fn [&String] String))
   (doc prn "Converts a string to a string for printing.")
   (register prn        (Fn [&String] String))
+  (doc index-of-any-from "Returns the index of the first occurrence of any of `chars` in `s` after index `from`, or -1 if not found.")
+  (register index-of-any-from (Fn [&String &(Array Char) Int] Int))
   (doc index-of "Returns the index of the first occurrence of `c` in `s`, or -1 if not found.")
-  (register index-of   (Fn [&String Char] Int))
+  (defn index-of [s c]
+    (index-of-any-from s &[c] -1))
   (doc index-of-from "Returns the index of the first occurrence of `c` in `s` starting from `from`, or -1 if not found.")
-  (register index-of-from (Fn [&String Char Int] Int))
+  (defn index-of-from [s c i]
+    (index-of-any-from s &[c] i))
   (doc index-of-string "Returns the index of the first occurrence of `needle` in `s`, or -1 if not found.")
   (register index-of-string (Fn [&String &String] Int))
   (doc char-at "Returns the character at the specified index.")
@@ -111,6 +115,9 @@
   (defn empty? [s]
     (Int.= (length s) 0))
   (implements empty? String.empty?)
+
+  (doc byte-slice "Return part of a string, from byte index `a` to byte index `b`.")
+  (register byte-slice (Fn [&String Int Int] String))
 
   (doc slice "Return part of a string, beginning at index `a` and ending at index `b`.")
   (defn slice [s a b]
@@ -213,6 +220,26 @@
   (doc  ascii-to-upper "converts each character in this string to upper case using toupper() from standard C library. Note: this will only work for ASCII characters.")
   (defn ascii-to-upper [s]
     (String.from-bytes &(Array.endo-map &(fn [c] (Byte.toupper- c)) (String.to-bytes s))) )
+
+  (doc split-by "splits a string by separators.")
+  (defn split-by [s separators]
+    (let-do [result []
+             start 0
+             idx (index-of-any-from s separators -1)]
+      (while (/= idx -1)
+        (do
+          (set! result (Array.push-back result (byte-slice s start idx)))
+          (set! start (Int.inc idx))
+          (set! idx (index-of-any-from s separators idx))))
+      (Array.push-back result (byte-slice s start (length s)))))
+
+  (doc words "splits a string into words.")
+  (defn words [s]
+    (Array.endo-filter &(fn [s] (not (empty? s))) (split-by s &[\tab \space \newline])))
+
+  (doc lines "splits a string into lines.")
+  (defn lines [s]
+    (split-by s &[\newline]))
 )
 
 (defmodule StringCopy
