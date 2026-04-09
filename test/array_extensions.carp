@@ -1,0 +1,37 @@
+(load "Test.carp")
+(use Test)
+
+(deftest test-array-extensions
+  (let-do [a1 [1 2 3]
+           a2 [4 5 6]
+           a3 [1 2 3 4]
+           a4 [5 6]
+           t1 (assert-equal test-array-extensions
+                            &[1 4 2 5 3 6]
+                            &(Array.interleave &a1 &a2)
+                            "interleave works for equal length")
+           t2 (assert-equal (ref t1)
+                            &[1 5 2 6]
+                            &(Array.interleave &a3 &a4)
+                            "interleave works for different length (stops at shortest)")
+           
+           d1 [1 1 2 2 3 3 1 1]
+           t3 (assert-equal (ref t2)
+                            &[1 2 3 1]
+                            &(Array.dedup &d1)
+                            "dedup works for consecutive duplicates")
+           t4 (assert-equal (ref t3)
+                            &[]
+                            &(Array.dedup &(the (Array Int) []))
+                            "dedup works for empty array")
+           
+           u1 [1 2 3 2 1 4 3]
+           t5 (assert-equal (ref t4)
+                            &[1 2 3 4]
+                            &(Array.unique &u1)
+                            "unique works for all duplicates")
+           t6 (assert-equal (ref t5)
+                            &[]
+                            &(Array.unique &(the (Array Int) []))
+                            "unique works for empty array")]
+    t6))
