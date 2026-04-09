@@ -74,7 +74,8 @@ defaultProject =
       projectPkgConfigFlags = [],
       projectCModules = [],
       projectLoadStack = [],
-      projectPreproc = []
+      projectPreproc = [],
+      projectLineDirectives = False
     }
 
 -- | Starting point of the application.
@@ -92,6 +93,7 @@ main = do
       profile = not $ otherNoProfile otherOptions
       optimize = otherOptimize otherOptions
       generateOnly = otherGenerateOnly otherOptions
+      lineDirectives = otherLineDirectives otherOptions
       prompt = otherPrompt otherOptions
       carpDir = lookup "CARP_DIR" sysEnv
       ifCarpDirSet comp =
@@ -110,6 +112,7 @@ main = do
                 ++ projectCFlags p,
             projectCore = core,
             projectGenerateOnly = generateOnly,
+            projectLineDirectives = lineDirectives,
             projectCarpDir = fromMaybe (projectCarpDir p) carpDir,
             projectPrompt = fromMaybe (projectPrompt p) prompt
           }
@@ -184,7 +187,8 @@ data OtherOptions = OtherOptions
     otherLogMemory :: Bool,
     otherOptimize :: Bool,
     otherGenerateOnly :: Bool,
-    otherPrompt :: Maybe String
+    otherPrompt :: Maybe String,
+    otherLineDirectives :: Bool
   }
   deriving (Show)
 
@@ -197,6 +201,7 @@ parseOther =
     <*> switch (long "optimize" <> help "Optimized build")
     <*> switch (long "generate-only" <> help "Stop after generating the C code")
     <*> optional (strOption (long "prompt" <> help "Set REPL prompt"))
+    <*> switch (long "line-directives" <> help "Emit #line directives mapping C output to Carp source")
 
 parseExecMode :: Parser ExecutionMode
 parseExecMode =

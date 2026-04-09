@@ -286,6 +286,7 @@ dynamicModule =
             f "relative-include" commandAddRelativeInclude "adds a relative include, i.e. a C `include` with quotes. It also prepends the current directory." "(relative-include \"myheader.h\")",
             f "read-file" commandReadFile "reads a file into a string." "(read-file \"myfile.txt\")",
             f "get-env" commandGetEnv "gets an environment variable. The result will be `()` if it isn’t set." "(read-file \"CARP_DIR\")",
+            f "shell" commandShell "runs a shell command string." "(shell \"echo hello\")",
             f "hash" commandHash "calculates the hash associated with a value." "(hash '('my 'value)) ; => 3175346968842793108",
             f "round" commandRound "rounds its numeric argument." "(round 2.4) ; => 2",
             f "dynamic-type" commandType "Gets the dynamic type as a string." "(dynamic-type '()) ; => \"list\""

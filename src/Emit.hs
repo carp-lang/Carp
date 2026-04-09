@@ -119,13 +119,25 @@ renderEmitterState = TL.unpack . TB.toLazyText . emitterBuilder
 appendToSrc :: String -> State EmitterState ()
 appendToSrc moreSrc = modify (\s -> s {emitterBuilder = emitterBuilder s <> TB.fromString moreSrc})
 
-toC :: ToCMode -> [(SymPath, Binder)] -> Binder -> String
-toC toCMode mutualGroup (Binder meta root) = renderEmitterState (execState (visit startingIndent root) emptyEmitterState)
+toC :: ToCMode -> Bool -> [(SymPath, Binder)] -> Binder -> String
+toC toCMode emitLines mutualGroup (Binder meta root) = renderEmitterState (execState (visit startingIndent root) emptyEmitterState)
   where
     startingIndent = case toCMode of
       Functions -> 0
       Globals -> 4
       All -> 0
+    emitLineDir :: XObj -> State EmitterState ()
+    emitLineDir xobj = when emitLines $
+      case xobjInfo xobj of
+        Just i
+          | infoLine i > 0 && infoFile i /= "dummy-file" ->
+            appendToSrc ("#line " ++ show (infoLine i) ++ " \"" ++ infoFile i ++ "\"\n")
+        _ -> pure ()
+    emitLineDirInfo :: Info -> State EmitterState ()
+    emitLineDirInfo i =
+      when emitLines $
+        when (infoLine i > 0 && infoFile i /= "dummy-file") $
+          appendToSrc ("#line " ++ show (infoLine i) ++ " \"" ++ infoFile i ++ "\"\n")
     visit :: Int -> XObj -> State EmitterState String
     visit indent xobj =
       let dontVisit = error (show (DontVisitObj xobj))
@@ -263,6 +275,7 @@ toC toCMode mutualGroup (Binder meta root) = renderEmitterState (execState (visi
                     isMain = name == "main"
                     params = [(mangle n, forceTy p) | p@(XObj (Sym (SymPath _ n) _) _ _) <- argList, not (isUnit (forceTy p))]
                     canTCO = not isMain && hasSelfTailCalls body && isSafeForTCO argList
+                emitLineDirInfo info
                 appendToSrc (defnDecl ++ " {\n")
                 when isMain $
                   appendToSrc (addIndent innerIndent ++ "carp_init_globals(argc, argv);\n")
@@ -270,9 +283,11 @@ toC toCMode mutualGroup (Binder meta root) = renderEmitterState (execState (visi
                   then do
                     let tcoIndent = innerIndent + indentAmount
                     appendToSrc (addIndent innerIndent ++ "while(1) {\n")
+                    emitLineDir body
                     visitTCO tcoIndent params retTy (infoDelete info) Nothing body
                     appendToSrc (addIndent innerIndent ++ "}\n")
                   else do
+                    emitLineDir body
                     ret <- visit innerIndent body
                     delete innerIndent (infoDelete info)
                     case retTy of
@@ -364,6 +379,7 @@ toC toCMode mutualGroup (Binder meta root) = renderEmitterState (execState (visi
                           appendToSrc (addIndent indent' ++ tyToCLambdaFix bindingTy ++ " " ++ mangle symName ++ " = " ++ ret ++ ";\n")
                     letBindingToC _ _ = error "Invalid binding."
                 mapM_ (uncurry letBindingToC) (pairwise bindings)
+                emitLineDir body
                 ret <- visit indent' body
                 when isNotVoid $
                   appendToSrc (addIndent indent' ++ letBodyRet ++ " = " ++ ret ++ ";\n")
@@ -381,11 +397,13 @@ toC toCMode mutualGroup (Binder meta root) = renderEmitterState (execState (visi
                    in appendToSrc (addIndent indent ++ tyToCLambdaFix ifT ++ " " ++ ifRetVar ++ ";\n")
                 exprVar <- visit indent expr
                 appendToSrc (addIndent indent ++ "if (" ++ exprVar ++ ") {\n")
+                emitLineDir ifTrue
                 trueVar <- visit indent' ifTrue
                 delete indent' (infoDelete (infoOrUnknown $ xobjInfo ifTrue))
                 when isNotVoid $
                   appendToSrc (addIndent indent' ++ ifRetVar ++ " = " ++ trueVar ++ ";\n")
                 appendToSrc (addIndent indent ++ "} else {\n")
+                emitLineDir ifFalse
                 falseVar <- visit indent' ifFalse
                 delete indent' (infoDelete (infoOrUnknown $ xobjInfo ifFalse))
                 when isNotVoid $
@@ -474,6 +492,7 @@ toC toCMode mutualGroup (Binder meta root) = renderEmitterState (execState (visi
               emitCase _ _ x =
                 error ("Fell through: " ++ show x)
               emitCaseEnd caseLhsInfo caseExpr = do
+                emitLineDir caseExpr
                 caseExprRetVal <- visit indent' caseExpr
                 when isNotVoid $
                   appendToSrc (addIndent indent' ++ retVar ++ " = " ++ caseExprRetVal ++ ";\n")
@@ -500,6 +519,7 @@ toC toCMode mutualGroup (Binder meta root) = renderEmitterState (execState (visi
                 appendToSrc (addIndent indent ++ tyToCLambdaFix exprTy ++ " " ++ conditionVar ++ " = " ++ exprRetVar ++ ";\n")
                 delete indent (infoDelete exprInfo)
                 appendToSrc (addIndent indent ++ "while (" ++ conditionVar ++ ") {\n")
+                emitLineDir body
                 _ <- visit indent' body
                 exprRetVar' <- visitWhileExpression indent'
                 delete indent' (infoDelete info)
@@ -751,8 +771,10 @@ toC toCMode mutualGroup (Binder meta root) = renderEmitterState (execState (visi
       XObj (Lst [XObj If _ _, expr, ifTrue, ifFalse]) _ _ -> do
         exprVar <- visit indent' expr
         appendToSrc (addIndent indent' ++ "if (" ++ exprVar ++ ") {\n")
+        emitLineDir ifTrue
         visitTCO (indent' + indentAmount) params retTy (accDels `Set.union` infoDelete (infoOrUnknown $ xobjInfo ifTrue)) mutualInfo ifTrue
         appendToSrc (addIndent indent' ++ "} else {\n")
+        emitLineDir ifFalse
         visitTCO (indent' + indentAmount) params retTy (accDels `Set.union` infoDelete (infoOrUnknown $ xobjInfo ifFalse)) mutualInfo ifFalse
         appendToSrc (addIndent indent' ++ "}\n")
       XObj (Lst (XObj Do _ _ : exprs@(_ : _))) _ _ -> do
@@ -767,6 +789,7 @@ toC toCMode mutualGroup (Binder meta root) = renderEmitterState (execState (visi
               unless (isUnit bt) $ appendToSrc (addIndent indent'' ++ tyToCLambdaFix bt ++ " " ++ mangle n ++ " = " ++ ret ++ ";\n")
             emitBinding _ _ = error "Invalid binding."
         mapM_ (uncurry emitBinding) (pairwise bindings)
+        emitLineDir body'
         visitTCO indent'' params retTy (accDels `Set.union` maybe Set.empty infoDelete minfo) mutualInfo body'
         appendToSrc (addIndent indent' ++ "}\n")
       XObj (Lst [XObj The _ _, _, value]) _ _ ->
@@ -1150,21 +1173,21 @@ projectPreprocToC proj = intercalate "\n" preprocs ++ "\n\n"
   where
     preprocs = projectPreproc proj
 
-binderToC :: ToCMode -> Binder -> Either ToCError String
-binderToC toCMode binder =
+binderToC :: ToCMode -> Bool -> Binder -> Either ToCError String
+binderToC toCMode emitLines binder =
   let xobj = binderXObj binder
    in case xobj of
         XObj (External _) _ _ -> Right ""
         XObj (ExternalType _) _ _ -> Right ""
         XObj (Command _) _ _ -> Right ""
-        XObj (Mod env _) _ _ -> envToC env toCMode
+        XObj (Mod env _) _ _ -> envToC env toCMode emitLines
         _ -> case xobjTy xobj of
           Just t ->
             if isTypeGeneric t
               then Right ""
               else do
                 checkForUnresolvedSymbols xobj
-                pure (toC toCMode [] binder)
+                pure (toC toCMode emitLines [] binder)
           Nothing -> Left (BinderIsMissingType binder)
 
 binderToDeclaration :: TypeEnv -> Binder -> Either ToCError String
@@ -1220,8 +1243,8 @@ findMutualGroups env =
     hasRef (PointerTy p) = hasRef p
     hasRef _ = False
 
-envToC :: Env -> ToCMode -> Either ToCError String
-envToC env toCMode =
+envToC :: Env -> ToCMode -> Bool -> Either ToCError String
+envToC env toCMode emitLines =
   let binders' = Map.toList (envBindings env)
       mutualGroups = findMutualGroups env
       mutualPaths = Set.fromList [pathToC path | group <- mutualGroups, (path, _) <- group]
@@ -1230,14 +1253,14 @@ envToC env toCMode =
         Nothing -> False
       emitGroup group = do
         mapM_ (checkForUnresolvedSymbols . binderXObj . snd) group
-        pure (toC toCMode group (snd (head group)))
+        pure (toC toCMode emitLines group (snd (head group)))
    in do
-        okCodes <- mapM (binderToC toCMode . snd) (filter (not . isMutual) binders')
+        okCodes <- mapM (binderToC toCMode emitLines . snd) (filter (not . isMutual) binders')
         mutualCodes <- mapM emitGroup mutualGroups
         pure (concat mutualCodes ++ concat okCodes)
 
-globalsToC :: Env -> Either ToCError String
-globalsToC globalEnv =
+globalsToC :: Bool -> Env -> Either ToCError String
+globalsToC emitLines globalEnv =
   let allGlobalBinders = findAllGlobalVariables globalEnv
    in do
         okCodes <-
@@ -1245,7 +1268,7 @@ globalsToC globalEnv =
             ( \(score, binder) ->
                 fmap
                   (\s -> if s == "" then "" else ("\n    // Depth " ++ show score ++ "\n") ++ s)
-                  (binderToC Globals binder)
+                  (binderToC Globals emitLines binder)
             )
             (sortGlobalVariableBinders globalEnv allGlobalBinders)
         pure (concat okCodes)
