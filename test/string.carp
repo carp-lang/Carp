@@ -400,4 +400,49 @@
                 3
                 (Dynamic.length (Dynamic.String.to-array "abc"))
                 "Dynamic.String.to-array works as expected (check length)")
+
+  (assert-equal test
+                "bcde"
+                &(copy-map &(fn [c] (Char.from-int (Int.inc (Char.to-int @c)))) "abcd")
+                "copy-map works as expected")
+  (assert-equal test
+                "bd"
+                &(copy-filter &(fn [c] (or (= @c \b) (= @c \d))) "abcd")
+                "copy-filter works as expected")
+  (assert-true test
+               (any? &(fn [c] (= @c \c)) "abcd")
+               "any? works as expected I")
+  (assert-false test
+                (any? &(fn [c] (= @c \z)) "abcd")
+                "any? works as expected II")
+  (assert-true test
+               (all? &(fn [c] (not (= @c \z))) "abcd")
+               "all? works as expected I")
+  (assert-false test
+                (all? &(fn [c] (= @c \a)) "abcd")
+                "all? works as expected II")
+  (assert-equal test
+                4
+                (reduce &(fn [acc c] (Int.inc acc)) 0 "abcd")
+                "reduce works as expected (counting characters)")
+  (assert-equal test
+                "hEllo world"
+                &(replace "hello world" "e" "E")
+                "replace works as expected I")
+  (assert-equal test
+                "hi there hi"
+                &(replace "hello there hello" "hello" "hi")
+                "replace works as expected II")
+  (assert-equal test
+                "aaaaa"
+                &(replace "aba" "b" "aaa")
+                "replace works as expected III")
+  (assert-equal test
+                "xyz"
+                &(replace "xyz" "" "abc")
+                "replace with empty needle returns original string")
+  (assert-equal test
+                ""
+                &(replace "aaaaa" "a" "")
+                "replace with empty replacement works")
 )

@@ -191,6 +191,20 @@ String String_tail(const String* s) {
     return news;
 }
 
+bool String_starts_MINUS_with_QMARK_(const String* s, const String* sub) {
+    size_t ls = strlen(*s);
+    size_t lsub = strlen(*sub);
+    if (lsub > ls) return false;
+    return memcmp(*s, *sub, lsub) == 0;
+}
+
+bool String_ends_MINUS_with_QMARK_(const String* s, const String* sub) {
+    size_t ls = strlen(*s);
+    size_t lsub = strlen(*sub);
+    if (lsub > ls) return false;
+    return memcmp(*s + (ls - lsub), *sub, lsub) == 0;
+}
+
 String String_empty() {
     String s = CARP_MALLOC(1);
     s[0] = '\0';
