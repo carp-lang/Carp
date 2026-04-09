@@ -1,3 +1,16 @@
+#include <sys/stat.h>
+#ifdef _WIN32
+#include <direct.h>
+#define getcwd _getcwd
+#define chdir _chdir
+#define stat _stat
+#define S_ISREG(m) (((m) & _S_IFMT) == _S_IFREG)
+#define S_ISDIR(m) (((m) & _S_IFMT) == _S_IFDIR)
+#else
+#include <dirent.h>
+#include <unistd.h>
+#endif
+
 void IO_println(String* s) {
     puts(*s);
 }
@@ -52,4 +65,100 @@ String IO_unsafe_MINUS_read_MINUS_file(const String* filename) {
     }
 
     return buffer;
+}
+
+bool IO_file_MINUS_exists_QMARK_(const String* path) {
+    struct stat st;
+    if (stat(*path, &st) == 0) {
+        return S_ISREG(st.st_mode);
+    }
+    return false;
+}
+
+bool IO_dir_MINUS_exists_QMARK_(const String* path) {
+    struct stat st;
+    if (stat(*path, &st) == 0) {
+        return S_ISDIR(st.st_mode);
+    }
+    return false;
+}
+
+#ifdef _WIN32
+Array IO_Raw_list_MINUS_dir(const String* path) {
+    Array result = {0, 0, NULL};
+    WIN32_FIND_DATA fd;
+    char search_path[MAX_PATH];
+    snprintf(search_path, MAX_PATH, "%s\\*", *path);
+    HANDLE hFind = FindFirstFile(search_path, &fd);
+    if (hFind != INVALID_HANDLE_VALUE) {
+        do {
+            if (strcmp(fd.cFileName, ".") == 0 || strcmp(fd.cFileName, "..") == 0) {
+                continue;
+            }
+            String name = CARP_MALLOC(strlen(fd.cFileName) + 1);
+            strcpy(name, fd.cFileName);
+            result.len++;
+            result.data = CARP_REALLOC(result.data, sizeof(String) * result.len);
+            ((String*)result.data)[result.len - 1] = name;
+        } while (FindNextFile(hFind, &fd));
+        FindClose(hFind);
+    } else {
+        result.len = -1;
+    }
+    return result;
+}
+#else
+Array IO_Raw_list_MINUS_dir(const String* path) {
+    DIR *d;
+    struct dirent *dir;
+    d = opendir(*path);
+    Array result = {0, 0, NULL};
+    if (d) {
+        while ((dir = readdir(d)) != NULL) {
+            if (strcmp(dir->d_name, ".") == 0 || strcmp(dir->d_name, "..") == 0) {
+                continue;
+            }
+            String name = CARP_MALLOC(strlen(dir->d_name) + 1);
+            strcpy(name, dir->d_name);
+            result.len++;
+            result.data = CARP_REALLOC(result.data, sizeof(String) * result.len);
+            ((String*)result.data)[result.len - 1] = name;
+        }
+        closedir(d);
+    } else {
+        result.len = -1;
+    }
+    return result;
+}
+#endif
+
+int IO_mkdir(const String* path) {
+#ifdef _WIN32
+    return _mkdir(*path);
+#else
+    return mkdir(*path, 0777);
+#endif
+}
+
+int IO_rmdir(const String* path) {
+#ifdef _WIN32
+    return _rmdir(*path);
+#else
+    return rmdir(*path);
+#endif
+}
+
+String IO_Raw_get_MINUS_cwd() {
+    char* buffer = getcwd(NULL, 0);
+    if (buffer) {
+        String result = CARP_MALLOC(strlen(buffer) + 1);
+        strcpy(result, buffer);
+        free(buffer);
+        return result;
+    }
+    return NULL;
+}
+
+int IO_Raw_set_MINUS_cwd(const String* path) {
+    return chdir(*path);
 }
