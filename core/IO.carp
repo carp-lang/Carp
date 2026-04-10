@@ -204,6 +204,8 @@
       "given [FILE](#file)."
       "Wraps `ferror` from the C standard library.")
     (register ferror (Fn [(Ptr FILE)] Bool) "ferror")
+
+    (register read-lines (Fn [&String] (Array String)) "IO_Raw_read_MINUS_lines")
   )
 
   (doc println
@@ -313,7 +315,18 @@
             (Result.Success true)
             (Result.Error (fmt "only %d of %d bytes were written" bytes-written bytes2write)))))))
 
+  (doc read-lines
+    "Returns an array containing the lines of the file at the given path."
+    ""
+    "Returns a (Result (Array String) String) indicating success or failure.")
+  (defn read-lines [path]
+    (let [res (IO.Raw.read-lines path)]
+      (if (Int.= (Array.length &res) -1)
+        (Result.Error (fmt "Failed to read lines from file '%s': %s" path &(System.error-text)))
+        (Result.Success res))))
+
   (doc append-file
+
     "Appends a String to a text [FILE](#file), creating it if it does not exist."
     ""
     "Returns a (Result Bool String) indicating success or failure.")

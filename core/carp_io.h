@@ -53,3 +53,48 @@ String IO_unsafe_MINUS_read_MINUS_file(const String* filename) {
 
     return buffer;
 }
+
+Array IO_Raw_read_MINUS_lines(const String* filename) {
+    FILE* f = fopen(*filename, "r");
+    Array result = {0, 0, NULL};
+    if (f) {
+        char buffer[4096];
+        char* line = NULL;
+        size_t line_len = 0;
+        
+        while (fgets(buffer, sizeof(buffer), f)) {
+            size_t buf_len = strlen(buffer);
+            line = CARP_REALLOC(line, line_len + buf_len + 1);
+            strcpy(line + line_len, buffer);
+            line_len += buf_len;
+            
+            if (line[line_len - 1] == '\n') {
+                line[line_len - 1] = '\0'; // Strip newline
+                result.len++;
+                result.data = CARP_REALLOC(result.data, sizeof(String) * result.len);
+                String s = CARP_MALLOC(line_len);
+                strcpy(s, line);
+                ((String*)result.data)[result.len - 1] = s;
+                
+                // Reset for next line
+                line_len = 0;
+                line[0] = '\0';
+            }
+        }
+        
+        // Handle last line if it didn't end with a newline
+        if (line_len > 0) {
+            result.len++;
+            result.data = CARP_REALLOC(result.data, sizeof(String) * result.len);
+            String s = CARP_MALLOC(line_len + 1);
+            strcpy(s, line);
+            ((String*)result.data)[result.len - 1] = s;
+        }
+        
+        if (line) CARP_FREE(line);
+        fclose(f);
+    } else {
+        result.len = -1;
+    }
+    return result;
+}
