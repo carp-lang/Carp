@@ -18,8 +18,8 @@ import Emit
 import qualified Env as E
 import EvalError
 import EvalIR (EvalIR (..), lowerExpr)
-import EvalTypes (LookupPreference (..))
-import EvalVM (runEvalIRVM)
+import EvalTypes (EvalPhase (..), LookupPreference (..))
+import EvalVM (runEvalIRVMWithPhase)
 import Expand
 import Infer
 import Info
@@ -51,14 +51,20 @@ evalStatic ctx xobj = evalIR ctx (lowerExpr ctx xobj) PreferGlobal
 
 -- | IR entry point for evaluator execution.
 evalIR :: Context -> EvalIR -> LookupPreference -> IO (Context, Either EvalError XObj)
-evalIR = runEvalIRVM
+evalIR = evalIRWithPhase PhaseExecute
+
+evalIRWithPhase :: EvalPhase -> Context -> EvalIR -> LookupPreference -> IO (Context, Either EvalError XObj)
+evalIRWithPhase = runEvalIRVMWithPhase
 
 -- | Public evaluator entry now routes through IR by default.
 eval :: Context -> XObj -> LookupPreference -> IO (Context, Either EvalError XObj)
 eval ctx xobj preference = evalIR ctx (lowerExpr ctx xobj) preference
 
+evalExpand :: Context -> XObj -> IO (Context, Either EvalError XObj)
+evalExpand ctx xobj = evalIRWithPhase PhaseExpand ctx (lowerExpr ctx xobj) PreferDynamic
+
 macroExpand :: Context -> XObj -> IO (Context, Either EvalError XObj)
-macroExpand ctx xobj = expand MacroExpandOnly evalDynamic ctx xobj
+macroExpand ctx xobj = expand MacroExpandOnly evalExpand ctx xobj
 
 -- | Parses a string and then converts the resulting forms to commands, which are evaluated in order.
 executeString :: Bool -> Bool -> Context -> String -> String -> IO Context
@@ -354,7 +360,7 @@ annotateWithinContext ctx xobj = do
   case sig of
     Left err -> pure (ctx, Left err)
     Right okSig -> do
-      (_, expansionResult) <- expandAll (evalDynamic) ctx xobj
+      (_, expansionResult) <- expandAll evalExpand ctx xobj
       case expansionResult of
         Left err -> pure (ctx, Left err)
         Right expanded ->
@@ -706,7 +712,7 @@ commandExpand = macroExpand
 -- | i.e. (Int.+ 2 3) => "_0 = 2 + 3"
 commandC :: UnaryCommandCallback
 commandC ctx xobj = do
-  (newCtx, result) <- expandAll (evalDynamic) ctx xobj
+  (newCtx, result) <- expandAll evalExpand ctx xobj
   case result of
     Left err -> pure (newCtx, Left err)
     Right expanded -> do
@@ -724,7 +730,7 @@ commandC ctx xobj = do
 -- | This function will return the compiled AST.
 commandExpandCompiled :: UnaryCommandCallback
 commandExpandCompiled ctx xobj = do
-  (newCtx, result) <- expandAll (evalDynamic) ctx xobj
+  (newCtx, result) <- expandAll evalExpand ctx xobj
   case result of
     Left err -> pure (newCtx, Left err)
     Right expanded -> do

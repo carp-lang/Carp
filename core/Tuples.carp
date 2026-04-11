@@ -51,6 +51,26 @@
           (defn reverse [t]
             (init %@(map (fn [x] `(copy (%x t))) (reverse props))))))))
 
+  (private deftuple-derive-zero-)
+  (hidden deftuple-derive-zero-)
+  (defndynamic deftuple-derive-zero- [name props]
+    (list 'defmodule name
+      (list 'defn 'zero (array)
+        (cons 'init (map (fn [_] '(zero)) props)))
+      (list 'implements 'zero (Symbol.prefix name 'zero))))
+
+  (private deftuple-derive-eq-)
+  (hidden deftuple-derive-eq-)
+  (defndynamic deftuple-derive-eq- [name props]
+    (list 'defmodule name
+      (list 'defn '= (array 'o1 'o2)
+        (reduce
+          (fn [acc p]
+            (list 'and (list '= (list p 'o1) (list p 'o2)) acc))
+          true
+          props))
+      (list 'implements '= (Symbol.prefix name '=))))
+
   (doc deftuple "defines a tuple type.
 
 For example:
@@ -59,12 +79,11 @@ For example:
 (deftuple Pair a b)
 ```")
   (defmacro deftuple [name :rest props]
-    (do
-      (eval (deftuple-type- name props))
-      (eval `(derive %name zero))
-      (eval `(derive %name =))
-      (eval (deftuple-module- name props))
-    ))
+    (list 'do
+          (deftuple-type- name props)
+          (deftuple-derive-zero- name props)
+          (deftuple-derive-eq- name props)
+          (deftuple-module- name props)))
 )
 
 (doc Pair "is a 2-tuple, i.e. a datatype with two members.")
