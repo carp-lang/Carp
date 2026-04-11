@@ -70,7 +70,7 @@ WORKER='
         OUT="out/par/$$-$(basename "$1" .carp)"
         mkdir -p "$OUT"
         trap '\''rm -rf "$OUT"'\'' EXIT
-        ./scripts/carp.sh --eval-preload "(Project.config \"output-directory\" \"$OUT/\")" $2 "$1"
+        ./scripts/carp.sh --eval-preload "(Project.config \"output-directory\" \"$OUT\")" $2 "$1"
     else
         ./scripts/carp.sh $2 "$1"
     fi
