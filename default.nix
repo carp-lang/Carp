@@ -29,7 +29,7 @@ let
       wrapProgram $out/bin/carp-header-parse --set CARP_DIR $src --prefix PATH : ${clang}/bin
     '';
     postCheck = ''
-      env CARP=dist/build/carp/carp scripts/run_carp_tests.sh
+      env CARP=dist/build/carp/carp scripts/run_carp_tests.sh -j 4
     '';
     enableParallelBuilding = true;
     });
