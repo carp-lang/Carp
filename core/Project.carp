@@ -12,7 +12,7 @@
 
 Example usage: `(save-docs Int Float String)`")
 (defmacro save-docs [:rest modules]
-  (list 'save-docs-ex (collect-into modules array) []))
+  (list 'save-docs-ex (list 'quote (collect-into modules array)) []))
 
 (defmodule Project
   (hidden append-flag)
