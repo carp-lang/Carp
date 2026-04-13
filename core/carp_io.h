@@ -55,12 +55,11 @@ String IO_unsafe_MINUS_read_MINUS_file(const String* filename) {
 }
 
 /* Raw file descriptor operations. */
-#ifdef _WIN32
-#include <io.h>
-#include <sys/stat.h>
-#else
 #include <fcntl.h>
 #include <sys/stat.h>
+#ifdef _WIN32
+#include <io.h>
+#else
 #include <unistd.h>
 #endif
 
