@@ -42,7 +42,7 @@
       (Random.seed-from (Double.from-int (System.time)))
       (start-new-game!)
       (while guessing
-          (let [user-input (String.trim &(get-line))
+        (let [user-input (String.trim &(get-line))
               guessed-num (from-string &user-input)]
           (if (= &user-input "q\n")
             (exit!)
