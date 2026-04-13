@@ -53,3 +53,17 @@ String IO_unsafe_MINUS_read_MINUS_file(const String* filename) {
 
     return buffer;
 }
+
+/* Raw file descriptor operations for sendfile and similar use cases. */
+#include <fcntl.h>
+#include <sys/stat.h>
+
+int IO_Raw_open(String* path, int flags) {
+    return open(*path, flags);
+}
+
+Long IO_Raw_fstat_size(int fd) {
+    struct stat st;
+    if (fstat(fd, &st) == -1) return -1;
+    return (Long)st.st_size;
+}

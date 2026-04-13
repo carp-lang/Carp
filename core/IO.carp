@@ -153,6 +153,29 @@
     (defn unlink! [file-name]
       (ignore (unlink file-name)))
 
+    (doc open
+      "Opens a file at `path` with the given flags (e.g. `IO.Raw.O-RDONLY`)."
+      "Returns a raw file descriptor, or -1 on error."
+      "Wraps `open` from <fcntl.h>.")
+    (register open (Fn [&String Int] Int) "IO_Raw_open")
+
+    (doc close-fd
+      "Closes a raw file descriptor."
+      "Wraps `close` from <unistd.h>.")
+    (register close-fd (Fn [Int] Int) "close")
+
+    (doc fstat-size
+      "Returns the size in bytes of an open file descriptor, or -1 on error."
+      "Wraps `fstat` from <sys/stat.h>.")
+    (register fstat-size (Fn [Int] Long) "IO_Raw_fstat_size")
+
+    (doc fileno
+      "Returns the raw file descriptor underlying a FILE pointer."
+      "Wraps `fileno` from <stdio.h>.")
+    (register fileno (Fn [(Ptr FILE)] Int) "fileno")
+
+    (register O-RDONLY Int "O_RDONLY")
+
     (doc fseek
       "Sets the position indicator of a [FILE](#file) based on a given"
       "reference position and offset. The position indicator will be set to an"
