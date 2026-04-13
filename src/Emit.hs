@@ -1182,6 +1182,8 @@ binderToC toCMode emitLines binder =
         XObj (Command _) _ _ -> Right ""
         XObj (Mod env _) _ _ -> envToC env toCMode emitLines
         _ -> case xobjTy xobj of
+          Just MacroTy -> Right ""
+          Just DynamicTy -> Right ""
           Just t ->
             if isTypeGeneric t
               then Right ""

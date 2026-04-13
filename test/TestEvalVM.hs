@@ -17,7 +17,9 @@ testEvalVM =
     vmIfFalse,
     vmDoLastValue,
     vmArrayBuild,
-    vmUnsupportedCallTraps
+    vmUnsupportedCallTraps,
+    vmMacroExecutesExpandedCode,
+    vmExpandPhaseReturnsExpandedMacroForm
   ]
 
 vmLiteral :: Test
@@ -60,6 +62,26 @@ vmUnsupportedCallTraps =
       Left _ -> pure ()
       Right ok -> assertFailure ("unsupported call should trap, got: " ++ show ok)
 
+vmMacroExecutesExpandedCode :: Test
+vmMacroExecutesExpandedCode =
+  TestCase $ do
+    let expr = macroProgram
+    (_, result) <- runEvalIRVM testContext (lowerExpr testContext expr) PreferDynamic
+    assertEqual "execution phase should evaluate expanded macro code" (Right (int 3)) result
+
+vmExpandPhaseReturnsExpandedMacroForm :: Test
+vmExpandPhaseReturnsExpandedMacroForm =
+  TestCase $ do
+    let expr = macroProgram
+    (_, result) <- runEvalIRVMWithPhase PhaseExpand testContext (lowerExpr testContext expr) PreferDynamic
+    case result of
+      Right (XObj (Lst (XObj (Sym (SymPath [] "+") _) _ _ : _)) _ _) ->
+        pure ()
+      Right other ->
+        assertFailure ("expand phase should return expanded macro form, got: " ++ show other)
+      Left err ->
+        assertFailure ("expand phase should succeed, got error: " ++ show err)
+
 testContext :: Context
 testContext =
   Context
@@ -78,3 +100,25 @@ sym name = XObj (Sym (SymPath [] name) Symbol) Nothing Nothing
 
 int :: Int -> XObj
 int n = XObj (Num IntTy (Integral n)) Nothing (Just IntTy)
+
+macroProgram :: XObj
+macroProgram =
+  lst
+    [ sym "do",
+      lst
+        [ sym "defmacro",
+          sym "m",
+          arr [sym "x"],
+          lst [sym "list", quoteSym "+", sym "x", int 1]
+        ],
+      lst [sym "m", int 2]
+    ]
+
+quoteSym :: String -> XObj
+quoteSym name = lst [sym "quote", sym name]
+
+lst :: [XObj] -> XObj
+lst xs = XObj (Lst xs) Nothing Nothing
+
+arr :: [XObj] -> XObj
+arr xs = XObj (Arr xs) Nothing Nothing

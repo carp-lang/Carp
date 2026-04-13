@@ -181,11 +181,10 @@ Example:
         `(do %@(with-test-internal name forms))))))
 
 (defmacro deftest [name :rest forms]
-  (eval
-    `(defn main []
-      (let [%name &(Test.State.init 0 0)]
-        %(cons-last
-          `@(Test.State.failed %name)
-          (cons-last
-            `(Test.print-test-results %name)
-            `(do %@(with-test-internal name forms))))))))
+  `(defn main []
+    (let [%name &(Test.State.init 0 0)]
+      %(cons-last
+        `@(Test.State.failed %name)
+        (cons-last
+          `(Test.print-test-results %name)
+          `(do %@(with-test-internal name forms)))))))
