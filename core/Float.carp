@@ -143,6 +143,8 @@ The margin of error is 0.00001.")
   (implements sqrt Float.sqrt)
   (implements tan Float.tan)
   (implements tanh Float.tanh)
+  (implements sign Float.sign)
+  (implements pi Float.pi)
 
   (doc zero "returns `0.0f`.")
   (defn zero []

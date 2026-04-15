@@ -93,6 +93,7 @@ to non-refs.")
   (implements abs Long.abs)
   (implements zero Long.zero)
   (implements add-ref Long.add-ref)
+  (implements sign Long.sign)
 )
 
 (defmodule LongRef

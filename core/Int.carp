@@ -133,6 +133,7 @@
 
   (implements add-ref Int.add-ref)
   (implements pow Int.pow)
+  (implements sign Int.sign)
 )
 
 (defmodule IntRef
