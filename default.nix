@@ -16,6 +16,9 @@ let
       enableExecutableProfiling = profiling;
       enableSharedLibraries = false;
       enableSharedExecutables = false;
+      configureFlags = [
+        "--ghc-options=-optl-Wl,@"
+      ];
     });
   };
   drv = with pkgs; odrv.overrideAttrs (o: {
