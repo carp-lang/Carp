@@ -63,6 +63,11 @@ Note: returns `0.0f` for NaN inputs.")
   (defn sign [x]
     (if (> x 0.0f) 1.0f (if (< x 0.0f) -1.0f 0.0f)))
 
+  (doc positive? "returns true if `a` is positive.")
+  (defn positive? [a] (> a 0.0f))
+  (doc negative? "returns true if `a` is negative.")
+  (defn negative? [a] (< a 0.0f))
+
   (doc approx "checks whether `x` and `y` are approximately equal.
 
 The margin of error is 0.00001.")
