@@ -240,6 +240,43 @@
   (doc lines "splits a string into lines.")
   (defn lines [s]
     (split-by s &[\newline]))
+
+  (doc trim-left "Trims whitespace from the beginning of a string.")
+  (defn trim-left [s]
+    (let [cs (chars s)
+          len (Array.length &cs)
+          i 0]
+      (do
+        (while (and (< i len) (Char.whitespace? @(Array.unsafe-nth &cs i)))
+          (set! i (Int.inc i)))
+        (if (= i len)
+          @""
+          (from-chars &(Array.suffix &cs i))))))
+
+  (doc trim-right "Trims whitespace from the end of a string.")
+  (defn trim-right [s]
+    (let [cs (chars s)
+          len (Array.length &cs)
+          i (Int.dec len)]
+      (do
+        (while (and (>= i 0) (Char.whitespace? @(Array.unsafe-nth &cs i)))
+          (set! i (Int.dec i)))
+        (if (< i 0)
+          @""
+          (from-chars &(Array.prefix &cs (Int.inc i)))))))
+
+  (doc trim "Trims whitespace from the beginning and end of a string.")
+  (defn trim [s]
+    (trim-left &(trim-right s)))
+
+  (doc blank? "Checks whether the string is empty or contains only whitespace.")
+  (defn blank? [s]
+    (let [cs (chars s)]
+      (Array.all? &(fn [c] (Char.whitespace? @c)) &cs)))
+
+  (doc repeat-char "Returns a new string which is the character `c` repeated `n` times.")
+  (defn repeat-char [n c]
+    (from-chars &(Array.replicate n &c)))
 )
 
 (defmodule StringCopy

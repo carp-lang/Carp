@@ -400,4 +400,24 @@
                 3
                 (Dynamic.length (Dynamic.String.to-array "abc"))
                 "Dynamic.String.to-array works as expected (check length)")
+
+  (assert-equal test
+                "hello"
+                &(trim-left "   hello")
+                "trim-left works as expected")
+  (assert-equal test
+                "hello"
+                &(trim-right "hello   ")
+                "trim-right works as expected")
+  (assert-equal test
+                "hello"
+                &(trim "   hello   ")
+                "trim works as expected")
+  (assert-true test
+               (blank? "   \n\t ")
+               "blank? works as expected")
+  (assert-equal test
+                "aaaaa"
+                &(repeat-char 5 \a)
+                "repeat-char works as expected")
 )
