@@ -11,7 +11,7 @@ let
         cabal-install clang gdb
         ormolu hlint flamegraph ghc-prof-flamegraph
       ] ++ lib.optionals stdenv.isLinux [ linuxPackages.perf tinycc zig ];
-      # Remove pkg-configDepends entirely
+      pkg-configDepends = [ SDL2 SDL2_image SDL2_mixer SDL2_ttf glfw ];
       enableLibraryProfiling = profiling;
       enableExecutableProfiling = profiling;
       enableSharedLibraries = false;
@@ -20,17 +20,7 @@ let
   };
   drv = with pkgs; odrv.overrideAttrs (o: {
     inherit doCheck;
-    buildInputs = o.buildInputs ++ [
-      makeWrapper pkg-config
-      SDL2 SDL2_image SDL2_mixer SDL2_ttf glfw  # moved here
-    ];
-    # Deduplicate the flags Nix assembled
-    preBuild = ''
-    export NIX_CFLAGS_COMPILE=$(echo "$NIX_CFLAGS_COMPILE" \
-      | tr ' ' '\n' | awk '!seen[$0]++' | tr '\n' ' ')
-    export NIX_LDFLAGS=$(echo "$NIX_LDFLAGS" \
-      | tr ' ' '\n' | awk '!seen[$0]++' | tr '\n' ' ')
-    '';
+    buildInputs = o.buildInputs ++ [ makeWrapper pkgconfig ];
     postPatch = ''
       patchShebangs .
     '';
