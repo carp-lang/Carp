@@ -3,8 +3,6 @@
 , doCheck ? true
 }:
 let
-  __propagatePkgConfigDepends = false;
-  __onlyPropagateKnownPkgConfigModules = false;
   odrv = with pkgs; with haskellPackages; developPackage {
     root = ./.;
     name = "CarpHask";
@@ -13,7 +11,7 @@ let
         cabal-install clang gdb
         ormolu hlint flamegraph ghc-prof-flamegraph
       ] ++ lib.optionals stdenv.isLinux [ linuxPackages.perf tinycc zig ];
-      pkg-configDepends = [ SDL2 SDL2_image SDL2_mixer SDL2_ttf glfw ];
+      pkg-configDepends = [  ];
       enableLibraryProfiling = profiling;
       enableExecutableProfiling = profiling;
       enableSharedLibraries = false;
