@@ -3,7 +3,7 @@
 , doCheck ? true
 }:
 let
-  hardeningDisable = [ "all" ];
+  __propagatePkgConfigDepends = false;
   odrv = with pkgs; with haskellPackages; developPackage {
     root = ./.;
     name = "CarpHask";
