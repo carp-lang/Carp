@@ -3,6 +3,7 @@
 , doCheck ? true
 }:
 let
+  hardeningDisable = [ "all" ];
   odrv = with pkgs; with haskellPackages; developPackage {
     root = ./.;
     name = "CarpHask";
@@ -16,7 +17,6 @@ let
       enableExecutableProfiling = profiling;
       enableSharedLibraries = false;
       enableSharedExecutables = false;
-      hardeningDisable = [ "all" ];
     });
   };
   drv = with pkgs; odrv.overrideAttrs (o: {
