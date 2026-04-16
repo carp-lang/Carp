@@ -20,7 +20,7 @@ let
   };
   drv = with pkgs; odrv.overrideAttrs (o: {
     inherit doCheck;
-    buildInputs = o.buildInputs ++ [ makeWrapper pkgconfig ];
+    buildInputs = o.buildInputs ++ [ makeWrapper pkg-config ];
     postPatch = ''
       patchShebangs .
     '';
