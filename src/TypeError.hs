@@ -148,7 +148,7 @@ instance Show TypeError where
       ++ prettyInfoFromXObj xobj
       ++ ".\n\nI need exactly one body form. For multiple forms, try using `do`."
   show (UnificationFailed (Constraint a b aObj bObj ctx _) mappings _) =
-    "I can’t match the types `" ++ showTy a ++ "` and `" ++ showTy b ++ "`."
+    "Type mismatch: I can’t match the types `" ++ showTy a ++ "` and `" ++ showTy b ++ "`."
       ++ extra
       ++ showObj aObj
       ++ showObj bObj
@@ -212,16 +212,16 @@ instance Show TypeError where
   show (NotAValidType xobj) =
     pretty xobj ++ " is not a valid type at " ++ prettyInfoFromXObj xobj
   show (FunctionsCantReturnRefTy xobj t) =
-    "Functions can’t return references. " ++ getName xobj ++ " : " ++ show t
+    "Functions can’t return references. The function '" ++ getName xobj ++ "' has the type " ++ show t
       ++ " at "
       ++ prettyInfoFromXObj xobj
-      ++ "\n\nYou’ll have to copy the return value using `@`."
+      ++ ".\n\nYou’ll have to copy the return value using `@` or return an owned value."
   show (LetCantReturnRefTy xobj t) =
-    "`let` expressions can’t return references. " ++ pretty xobj ++ " : "
+    "`let` expressions can’t return references. The expression '" ++ pretty xobj ++ "' has the type "
       ++ show t
       ++ " at "
       ++ prettyInfoFromXObj xobj
-      ++ "\n\nYou’ll have to copy the return value using `@`."
+      ++ ".\n\nYou’ll have to copy the return value using `@` or return an owned value."
   show (GettingReferenceToUnownedValue xobj) =
     "You’re referencing a given-away value `" ++ pretty xobj ++ "` at "
       ++ prettyInfoFromXObj xobj --"' (expression " ++ freshVar i ++ ") at " ++
@@ -236,17 +236,22 @@ instance Show TypeError where
     "You’re using a value `" ++ pretty xobj
       ++ "` that was captured by a function at "
       ++ prettyInfoFromXObj xobj
-      ++ "."
+      ++ ".\n\nCaptured values can't be moved. You'll have to borrow it using `&` or copy it using `@`."
   show (ArraysCannotContainRefs xobj) =
     "Arrays can’t contain references: `" ++ pretty xobj ++ "` at "
       ++ prettyInfoFromXObj xobj
       ++ ".\n\nYou’ll have to make a copy using `@`."
-  show (MainCanOnlyReturnUnitOrInt _ t) =
-    "The main function can only return an `Int` or a unit type (`()`), but it got `"
+  show (MainCanOnlyReturnUnitOrInt xobj t) =
+    "The main function can only return an `Int` or a unit type `()`, but it got `"
       ++ show t
-      ++ "`."
-  show (MainCannotHaveArguments _ c) =
-    "The main function may not receive arguments, but it got " ++ show c ++ "."
+      ++ "` at "
+      ++ prettyInfoFromXObj xobj
+      ++ "."
+  show (MainCannotHaveArguments xobj c) =
+    "The main function may not receive arguments, but it got " ++ show c
+      ++ " at "
+      ++ prettyInfoFromXObj xobj
+      ++ "."
   show (CannotConcretize xobj) =
     "I’m unable to concretize the expression '" ++ pretty xobj ++ "' at "
       ++ prettyInfoFromXObj xobj
@@ -259,7 +264,7 @@ instance Show TypeError where
   show (NotAType xobj) =
     "I don’t understand the type '" ++ pretty xobj ++ "' at "
       ++ prettyInfoFromXObj xobj
-      ++ "\n\nIs it defined?"
+      ++ ".\n\nIs it defined? If it's an external type, make sure it's registered using `register-type`."
   show (CannotSet xobj) =
     "I can’t `set!` the expression `" ++ pretty xobj ++ "` at "
       ++ prettyInfoFromXObj xobj
@@ -303,7 +308,7 @@ instance Show TypeError where
   show (NotAmongRegisteredTypes t xobj) =
     "I can’t find a definition for the type `" ++ show t ++ "` at "
       ++ prettyInfoFromXObj xobj
-      ++ ".\n\nWas it registered?"
+      ++ ".\n\nIs it defined? If it's an external type, make sure it's registered using `register-type`."
   show (UnevenMembers xobjs) =
     "The number of members and types is uneven: `"
       ++ joinWithComma (map pretty xobjs)
@@ -320,11 +325,15 @@ instance Show TypeError where
       ++ prettyInfoFromXObj (head xobjs)
       ++ ". \n\n Binding names must be symbols."
   show (DuplicateBinding xobj) =
-    "I encountered a duplicate binding `" ++ pretty xobj ++ "` inside the `let` at " ++ prettyInfoFromXObj xobj ++ "."
+    "I encountered a duplicate binding `" ++ pretty xobj ++ "` inside the `let` at "
+      ++ prettyInfoFromXObj xobj
+      ++ ".\n\nEach name in a `let` must be unique."
   show (DefinitionsMustBeAtToplevel xobj) =
     "I encountered a definition that was not at top level: `" ++ pretty xobj ++ "`"
   show (UsingDeadReference xobj dependsOn) =
-    "The reference '" ++ pretty xobj ++ "' (depending on the variable '" ++ dependsOn ++ "') isn't alive at " ++ prettyInfoFromXObj xobj ++ "."
+    "The reference '" ++ pretty xobj ++ "' is no longer valid because the value it depends on (`" ++ dependsOn ++ "`) has been moved or deleted at "
+      ++ prettyInfoFromXObj xobj
+      ++ "."
   show (UninhabitedConstructor ty xobj got wanted) =
     "Can't use a struct or sumtype constructor without arguments as a member type at " ++ prettyInfoFromXObj xobj ++ ". The type constructor " ++ show ty ++ " expects " ++ show wanted ++ " arguments but got " ++ show got
   show (InconsistentKinds varName xobjs) =
