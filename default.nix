@@ -16,6 +16,7 @@ let
       enableExecutableProfiling = profiling;
       enableSharedLibraries = false;
       enableSharedExecutables = false;
+      hardeningDisable = [ "all" ];
     });
   };
   drv = with pkgs; odrv.overrideAttrs (o: {
