@@ -4,6 +4,7 @@
 }:
 let
   __propagatePkgConfigDepends = false;
+  __onlyPropagateKnownPkgConfigModules = false;
   odrv = with pkgs; with haskellPackages; developPackage {
     root = ./.;
     name = "CarpHask";
