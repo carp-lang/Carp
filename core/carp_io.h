@@ -97,4 +97,3 @@ int IO_Raw_fileno(void* fp) {
     return fileno((FILE*)fp);
 #endif
 }
-
