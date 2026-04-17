@@ -72,4 +72,5 @@
   (assert-equal test 1l (sign 5l) "sign works as expected I")
   (assert-equal test -1l (sign -5l) "sign works as expected II")
   (assert-equal test 0l (sign 0l) "sign works as expected III")
+  (assert-equal test 30l (add-ref &10l &20l) "add-ref works as expected")
 )

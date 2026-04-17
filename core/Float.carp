@@ -36,7 +36,6 @@ suffixed with `f`.")
   (doc > "returns true if `a` is greater than `b`.")
   (register > (Fn [Float Float] Bool))
 
-  (implements pi Float.pi)
   (implements + Float.+)
   (implements - Float.-)
   (implements * Float.*)
@@ -73,8 +72,6 @@ Note: returns `0.0f` for NaN inputs.")
 The margin of error is 0.00001.")
   (defn approx [x y]
     (Generics.approx x y))
-
-  (register copy (Fn [(Ref Float)] Float))
 
   (doc abs "returns the absolute value of `a`.")
   (register abs (Fn [Float] Float))
