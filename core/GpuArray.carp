@@ -1,0 +1,162 @@
+(load "WGPU.carp")
+
+; GpuArray — a GPU-resident buffer of floats.
+;
+; Wraps a WGPUBuffer together with its owning context and element count.
+; Callers decide what the floats mean; the type is layout-agnostic.
+;
+;   e.g. 4 floats per entity:  [x y vx vy  x y vx vy  ...]
+;        2 floats per particle: [x y  x y  ...]
+;
+; Ownership rules:
+;   - Treat as a unique resource.  Pass by reference; do not copy.
+;   - Copying a GpuArray copies the handle, not the GPU data.
+;   - Call (GpuArray.free &ga) exactly once when done.
+;
+; Typical round-trip:
+;
+;   (match (GpuArray.from-floats ctx &my-data)
+;     (Result.Error e) (println* "upload failed: " &e)
+;     (Result.Success ga)
+;       (do
+;         (WGPU.dispatch-with ctx pipe ga)       ; run compute shader
+;         (let [result (GpuArray.download &ga)]  ; read back
+;           (println* "result: " &result))
+;         (GpuArray.free &ga)))
+
+(deftype GpuArray [ctx (Ptr WGPUContext)
+                   buf WGPUBuffer
+                   len Int])
+
+(defmodule GpuArray
+
+  (doc create "Allocates a GPU buffer for `n` floats. Data is uninitialized.
+Returns (Success GpuArray) or (Error message).")
+  (defn create [ctx n]
+    (match (WGPU.create-buffer ctx n)
+      (Result.Error e) (Result.Error e)
+      (Result.Success buf) (Result.Success (GpuArray.init ctx buf n))))
+
+  (doc from-floats "Allocates a GPU buffer and immediately uploads `arr`.
+Returns (Success GpuArray) or (Error message).")
+  (defn from-floats [ctx arr]
+    (match (create ctx (Array.length arr))
+      (Result.Error e) (Result.Error e)
+      (Result.Success ga)
+        (do
+          (WGPU.write-floats @(GpuArray.ctx &ga) @(GpuArray.buf &ga) arr)
+          (Result.Success ga))))
+
+  (doc upload "Uploads a (Array Float) into this GpuArray. Length must match.")
+  (defn upload [ga arr]
+    (WGPU.write-floats @(GpuArray.ctx ga) @(GpuArray.buf ga) arr))
+
+  (doc download "Reads all floats back from the GPU. Blocks until done.")
+  (defn download [ga]
+    (WGPU.read-floats @(GpuArray.ctx ga) @(GpuArray.buf ga) @(GpuArray.len ga)))
+
+  (doc free "Releases the GPU buffer. Do not use the GpuArray after calling this.")
+  (defn free [ga]
+    (WGPU.free-buffer @(GpuArray.buf ga)))
+
+  (doc count "Number of floats in this GpuArray.")
+  (defn count [ga]
+    @(GpuArray.len ga))
+
+)
+
+; -- dispatch-N and dispatch-with ------------------------------------------
+;
+; High-level compute dispatch.  Bind-group creation and teardown are hidden;
+; the caller only sees GpuArrays going in and results readable afterward.
+;
+; dispatch-1 … dispatch-4 are concrete functions for each arity.
+; dispatch-with is a macro that selects the right one at compile time.
+;
+; Workgroup count is always derived from the first GpuArray (ceil(n / 64)).
+; All GpuArrays are borrowed — ownership stays with the caller.
+
+(defmodule WGPU
+
+  (defn- run-bg [ctx pipeline bufs n]
+    (match (create-bind-group ctx pipeline bufs)
+      (Result.Error _) ()
+      (Result.Success bg)
+        (do (dispatch ctx pipeline bg n)
+            (free-bind-group bg))))
+
+  ; dispatch-N functions take GpuArrays by reference — callers keep ownership.
+  (doc dispatch-1 "Dispatch a compute shader with 1 GpuArray.")
+  (defn dispatch-1 [ctx pipeline ga1]
+    (let-do [bufs [@(GpuArray.buf ga1)]
+             n    (workgroups-for (GpuArray.count ga1))]
+      (run-bg ctx pipeline &bufs n)))
+
+  (doc dispatch-2 "Dispatch a compute shader with 2 GpuArrays.")
+  (defn dispatch-2 [ctx pipeline ga1 ga2]
+    (let-do [bufs [@(GpuArray.buf ga1) @(GpuArray.buf ga2)]
+             n    (workgroups-for (GpuArray.count ga1))]
+      (run-bg ctx pipeline &bufs n)))
+
+  (doc dispatch-3 "Dispatch a compute shader with 3 GpuArrays.")
+  (defn dispatch-3 [ctx pipeline ga1 ga2 ga3]
+    (let-do [bufs [@(GpuArray.buf ga1) @(GpuArray.buf ga2) @(GpuArray.buf ga3)]
+             n    (workgroups-for (GpuArray.count ga1))]
+      (run-bg ctx pipeline &bufs n)))
+
+  (doc dispatch-4 "Dispatch a compute shader with 4 GpuArrays.")
+  (defn dispatch-4 [ctx pipeline ga1 ga2 ga3 ga4]
+    (let-do [bufs [@(GpuArray.buf ga1) @(GpuArray.buf ga2)
+                   @(GpuArray.buf ga3) @(GpuArray.buf ga4)]
+             n    (workgroups-for (GpuArray.count ga1))]
+      (run-bg ctx pipeline &bufs n)))
+
+  ; dispatch-with wraps each arg in (ref ...) so GpuArrays are borrowed not consumed.
+  (doc dispatch-with
+    "Dispatch a compute shader over 1–4 GpuArrays.
+Workgroup count is derived from the first array (ceil(n/64)).
+Bind groups are created, used, and freed internally.
+GpuArrays are borrowed — the caller retains ownership.
+
+  (WGPU.dispatch-with ctx pipe positions velocities dt)
+
+Expands to the appropriate dispatch-N call at compile time.
+Max 4 GpuArrays; beyond that, use WGPU.bind directly.")
+  (defmacro dispatch-with [ctx pipeline :rest gas]
+    (let [n (length gas)]
+      (cond
+        (= n 1) (list 'WGPU.dispatch-1 ctx pipeline
+                      (list 'ref (car gas)))
+        (= n 2) (list 'WGPU.dispatch-2 ctx pipeline
+                      (list 'ref (car gas)) (list 'ref (cadr gas)))
+        (= n 3) (list 'WGPU.dispatch-3 ctx pipeline
+                      (list 'ref (car gas)) (list 'ref (cadr gas)) (list 'ref (caddr gas)))
+        (= n 4) (list 'WGPU.dispatch-4 ctx pipeline
+                      (list 'ref (car gas)) (list 'ref (cadr gas))
+                      (list 'ref (caddr gas)) (list 'ref (cadddr gas)))
+        (list 'println* "dispatch-with: max 4 GpuArrays"))))
+)
+
+; Extract WGPUBuffer from a GpuArray ref — used internally for bind groups
+(defmodule WGPU
+  (deftemplate ga-array->buf-ptr (Fn [(Ref (Array GpuArray))] (Ptr WGPUBuffer))
+    "WGPUBuffer* $NAME(Array__GpuArray* arr)"
+    "$DECL {
+        static WGPUBuffer bufs[8];
+        int n = arr->len < 8 ? arr->len : 8;
+        GpuArray* data = (GpuArray*)arr->data;
+        for (int i = 0; i < n; i++) bufs[i] = data[i].buf;
+        return bufs;
+     }")
+
+  (doc bind "Creates a bind group from an array of GpuArrays.
+Each maps to @binding(0), @binding(1), etc. Max 8.
+Returns (Success bind-group) or (Error message).")
+  (defn bind [ctx pipeline gas]
+    (let [bg (create-bind-group- ctx pipeline
+                                 (ga-array->buf-ptr gas)
+                                 (Array.length gas))]
+      (if (bindgroup-null?- bg)
+        (Result.Error (get-error))
+        (Result.Success bg))))
+)
