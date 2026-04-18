@@ -435,4 +435,31 @@
                 42
                 (unsafe-nth-value &[42 43] 0)
                 "unsafe-nth-value works as expected")
+
+  (assert-equal test
+                &(Maybe.Just 2)
+                &(find-last &(fn [x] (= @x 2)) &[1 2 3 2 1])
+                "find-last works as expected")
+  (assert-equal test
+                &(Maybe.Just 3)
+                &(find-last-index &(fn [x] (= @x 2)) &[1 2 3 2 1])
+                "find-last-index works as expected")
+  (assert-equal test
+                &(Maybe.Nothing)
+                &(find-last &(fn [x] (= @x 5)) &[1 2 3 2 1])
+                "find-last returns Nothing when not found")
+
+  (let [arr &[1 2 3 4 5]
+        p (split-by-predicate &(fn [x] (Int.even? @x)) arr)]
+    (assert-ref-equal test
+                      [2 4]
+                      @(Pair.a &p)
+                      "split-by-predicate matching part is correct"))
+
+  (let [arr &[1 2 3 4 5]
+        p (split-by-predicate &(fn [x] (Int.even? @x)) arr)]
+    (assert-ref-equal test
+                      [1 3 5]
+                      @(Pair.b &p)
+                      "split-by-predicate non-matching part is correct"))
 )

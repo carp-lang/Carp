@@ -116,6 +116,30 @@ If it doesn’t find an index, `Nothing` will be returned.")
             (break))))
       ret))
 
+  (doc find-last "finds the last element in `a` that matches the function `f` and wraps it in a `Just`.
+
+If it doesn’t find an element, `Nothing` will be returned.")
+  (defn find-last [f a]
+    (let-do [res (Maybe.Nothing)]
+      (for [i (Int.dec (length a)) -1 -1]
+        (when (~f (unsafe-nth a i))
+          (do
+            (set! res (Maybe.Just @(unsafe-nth a i)))
+            (break))))
+      res))
+
+  (doc find-last-index "finds the index of the last element in `a` that matches the function `f` and wraps it in a `Just`.
+
+If it doesn’t find an index, `Nothing` will be returned.")
+  (defn find-last-index [f a]
+    (let-do [ret (Maybe.Nothing)]
+      (for [i (Int.dec (length a)) -1 -1]
+        (when (~f (unsafe-nth a i))
+          (do
+            (set! ret (Maybe.Just i))
+            (break))))
+      ret))
+
   (doc unsafe-first "takes the first element of an array.
 
 Generates a runtime error if the array is empty.")
@@ -595,6 +619,19 @@ Example:
               (set! result (Array.push-back result @&sep))
               (set! result (Array.push-back result @(Array.unsafe-nth xs i)))))))
       result))
+
+  (doc split-by-predicate
+    "splits an array `a` into two arrays: those that satisfy the predicate `f` and those that do not.
+Returns a `Pair` of arrays.")
+  (defn split-by-predicate [f a]
+    (let-do [matching []
+             not-matching []]
+      (for [i 0 (length a)]
+        (let [x (unsafe-nth a i)]
+          (if (~f x)
+            (set! matching (push-back matching @x))
+            (set! not-matching (push-back not-matching @x)))))
+      (Pair.init matching not-matching)))
 )
 
 (defmacro doall [f xs]
