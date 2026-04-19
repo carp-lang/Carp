@@ -187,6 +187,10 @@
                     (concat &[[1] [2 3] [4 5 6] [7 8]])
                     "concat works as expected")
   (assert-ref-equal test
+                    [1 2 3 4 5 6 7 8]
+                    (flatten &[[1] [2 3] [4 5 6] [7 8]])
+                    "flatten works as expected")
+  (assert-ref-equal test
                     [11 22 33]
                     (zip &add-ref &[1 2 3 4 5 6 7] &[10 20 30])
                     "zip works as expected")

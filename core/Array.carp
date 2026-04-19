@@ -363,6 +363,10 @@ The trailing elements of the longer array will be discarded.")
           (set! j (+ j len))))
       result))
 
+  (doc flatten "collapses a nested array of arrays into a single array. (Alias for [`concat`](#concat)).")
+  (defn flatten [xs]
+    (concat xs))
+
   (doc enumerated "creates a new array of `Pair`s where the first position is the index and the second position is the element from the original array `xs`.")
   (defn enumerated [xs]
     (let-do [arr (allocate (length xs))]
