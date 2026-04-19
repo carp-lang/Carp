@@ -86,6 +86,11 @@
   (doc odd? "returns true if `a` is odd.")
   (defn odd? [a] (not (even? a)))
 
+  (doc positive? "returns true if `a` is positive.")
+  (defn positive? [a] (> a 0))
+  (doc negative? "returns true if `a` is negative.")
+  (defn negative? [a] (< a 0))
+
   (doc zero "returns the zero value for Int (0), used to implement the `zero` interface.")
   (defn zero []
     0)
@@ -128,6 +133,7 @@
 
   (implements add-ref Int.add-ref)
   (implements pow Int.pow)
+  (implements sign Int.sign)
 )
 
 (defmodule IntRef

@@ -4,7 +4,6 @@
 (defmodule Double
   (doc pi "the mathematical constant π (3.141592653589793).")
   (def pi 3.141592653589793)
-  (implements pi Double.pi)
   (doc e "the mathematical constant e (2.718281828459045).")
   (def e 2.718281828459045)
   (doc MAX "the maximum value a Double can hold.")
@@ -126,12 +125,19 @@
   (implements sqrt Double.sqrt)
   (implements tan Double.tan)
   (implements tanh Double.tanh)
+  (implements sign Double.sign)
+  (implements pi Double.pi)
 
   (doc sign "Returns `-1.0` if `x` is negative, `0.0` if zero, or `1.0` if positive.
 
 Note: returns `0.0` for NaN inputs.")
   (defn sign [x]
     (if (> x 0.0) 1.0 (if (< x 0.0) -1.0 0.0)))
+
+  (doc positive? "returns true if `a` is positive.")
+  (defn positive? [a] (> a 0.0))
+  (doc negative? "returns true if `a` is negative.")
+  (defn negative? [a] (< a 0.0))
 
   (doc approx "checks whether `x` and `y` are approximately equal.
 
