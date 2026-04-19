@@ -462,4 +462,24 @@
                       [1 3 5]
                       @(Pair.b &p)
                       "split-by-predicate non-matching part is correct"))
+
+  (let [arr &[1 2 3 4 5]]
+    (assert-equal test
+                  &[1 2 3]
+                  &(take 3 arr)
+                  "take works as expected"))
+
+  (let [arr &[1 2 3 4 5]]
+    (assert-equal test
+                  &[4 5]
+                  &(drop 3 arr)
+                  "drop works as expected"))
+
+  (let [a &[1 2 3]
+        b &[10 20 30]
+        c &[100 200 300 400]]
+    (assert-equal test
+                  &[111 222 333]
+                  &(zip-n &(fn [x y z] (+ @x (+ @y @z))) a b c)
+                  "zip-n works as expected with 3 arrays"))
 )

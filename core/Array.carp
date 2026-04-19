@@ -230,6 +230,14 @@ If the array is empty, returns `Nothing`")
   (defn suffix [xs start-index]
     (slice xs start-index (length xs)))
 
+  (doc take "takes the first `n` elements from an array.")
+  (defn take [n xs]
+    (slice xs 0 n))
+
+  (doc drop "drops the first `n` elements from an array.")
+  (defn drop [n xs]
+    (slice xs n (length xs)))
+
   (doc rest "gets all but the first element from the array.")
   (defn rest [xs]
     (suffix xs 1))
@@ -632,7 +640,38 @@ Returns a `Pair` of arrays.")
             (set! matching (push-back matching @x))
             (set! not-matching (push-back not-matching @x)))))
       (Pair.init matching not-matching)))
+
+  (doc zip-n "takes a function `f` and any number of arrays, and zips them into a new array.
+The length of the resulting array is the length of the shortest input array.")
+  (defmacro zip-n [f :rest arrays]
+    (let [res (gensym-with 'res)
+          i (gensym-with 'i)
+          min-len (gensym-with 'min-len)
+          func (gensym-with 'func)]
+      `(let [%min-len %(min-all-list (map-length-list arrays))
+             %res (Array.allocate %min-len)
+             %func %f]
+         (do
+           (for [%i 0 %min-len]
+             (Array.aset-uninitialized! &%res %i
+               (~%func %@(map-nth-list arrays i))))
+           %res))))
 )
+
+(defndynamic map-length-list [arrs]
+  (if (empty? arrs)
+    '()
+    (cons `(Array.length %(car arrs)) (map-length-list (cdr arrs)))))
+
+(defndynamic min-all-list [xs]
+  (if (= (length xs) 1)
+    (car xs)
+    (list 'Int.min (car xs) (min-all-list (cdr xs)))))
+
+(defndynamic map-nth-list [arrs i]
+  (if (empty? arrs)
+    '()
+    (cons `(Array.unsafe-nth %(car arrs) %i) (map-nth-list (cdr arrs) i))))
 
 (defmacro doall [f xs]
   `(for [i 0 (Array.length &%xs)]
