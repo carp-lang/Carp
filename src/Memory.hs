@@ -23,7 +23,8 @@ data MemState = MemState
   { memStateDeleters :: Set.Set Deleter,
     memStateDeps :: Set.Set Ty,
     memStateLifetimes :: Map.Map String LifetimeMode,
-    memStateParamDeleters :: Set.Set Deleter
+    memStateParamDeleters :: Set.Set Deleter,
+    memStateNames :: Map.Map String String
   }
   deriving (Show)
 
@@ -39,7 +40,7 @@ data LifetimeMode
 -- | the code emitter can access them and insert calls to destructors.
 manageMemory :: TypeEnv -> Env -> XObj -> Either TypeError (XObj, Set.Set Ty)
 manageMemory typeEnv globalEnv root =
-  let (finalObj, finalState) = runState (visit root) (MemState Set.empty Set.empty Map.empty Set.empty)
+  let (finalObj, finalState) = runState (visit root) (MemState Set.empty Set.empty Map.empty Set.empty Map.empty)
       deleteThese = memStateDeleters finalState
       deps = memStateDeps finalState
    in -- (trace ("Delete these: " ++ joinWithComma (map show (Set.toList deleteThese)))) $
@@ -54,7 +55,7 @@ manageMemory typeEnv globalEnv root =
               -- considered alive, and returnRefTargetIsAlive so only return-
               -- type lifetimes are checked (not the function type's own
               -- lifetime, which may have had internal temporaries merged in).
-              case evalState (returnRefTargetIsAlive ok) (MemState (memStateParamDeleters finalState) Set.empty (memStateLifetimes finalState) Set.empty) of
+              case evalState (returnRefTargetIsAlive ok) (MemState (memStateParamDeleters finalState) Set.empty (memStateLifetimes finalState) Set.empty (memStateNames finalState)) of
                 Left err -> Left err
                 Right _ -> Right (ok {xobjInfo = newInfo}, deps)
   where
@@ -124,13 +125,14 @@ manageMemory typeEnv globalEnv root =
                 -- Add the captured variables (if any, only happens in lifted lambdas) as fake deleters
                 -- TODO: Use another kind of Deleter for this case since it's pretty special?
                 mapM_
-                  ( ( \cap ->
-                        modify
-                          ( \memState ->
-                              memState {memStateDeleters = Set.insert (FakeDeleter cap) (memStateDeleters memState)}
-                          )
-                    )
-                      . getName
+                  ( \cap ->
+                      modify
+                        ( \memState ->
+                            let var = varOfXObj cap
+                                name = getName cap
+                                newNames = Map.insert var name (memStateNames memState)
+                             in memState {memStateDeleters = Set.insert (FakeDeleter var) (memStateDeleters memState), memStateNames = newNames}
+                        )
                   )
                   captures
                 mapM_ (addToLifetimesMappingsIfRef False) argList
@@ -507,7 +509,8 @@ manage typeEnv globalEnv xobj =
         let newDeleters = Set.insert deleter (memStateDeleters m)
             t = fromMaybe (error "memory: can't manage xobj without type") $ xobjTy xobj
             newDeps = Set.insert t (memStateDeps m)
-        put $ m {memStateDeleters = newDeleters, memStateDeps = newDeps}
+            newNames = Map.insert (varOfXObj xobj) (getName xobj) (memStateNames m)
+        put $ m {memStateDeleters = newDeleters, memStateDeps = newDeps, memStateNames = newNames}
       Nothing -> pure ()
 
 -- | Remove `xobj` from the set of alive variables, in need of deletion at end of scope.
@@ -625,11 +628,12 @@ refTargetIsAlive xobj =
              in case Set.toList deadVars of
                   [] -> pure (Right xobj)
                   (deadName : _) ->
-                    pure
-                      ( case xobjObj xobj of
-                          (Lst (LetPat _ _ body)) -> Left (UsingDeadReference body deadName)
-                          _ -> Left (UsingDeadReference xobj deadName)
-                      )
+                    let original = Map.lookup deadName (memStateNames m)
+                     in pure
+                          ( case xobjObj xobj of
+                              (Lst (LetPat _ _ body)) -> Left (UsingDeadReference body deadName original)
+                              _ -> Left (UsingDeadReference xobj deadName original)
+                          )
           Just LifetimeOutsideFunction ->
             pure (Right xobj)
           Just (LifetimeMixed _) ->
@@ -673,10 +677,11 @@ returnRefTargetIsAlive xobj =
        in case Set.toList deadVars of
             [] -> pure (Right xobj)
             (deadName : _) ->
-              let reportOn = case xobjObj fnBody of
+              let original = Map.lookup deadName (memStateNames m)
+                  reportOn = case xobjObj fnBody of
                     Lst (LetPat _ _ body) -> body
                     _ -> fnBody
-               in pure (Left (UsingDeadReference reportOn deadName))
+               in pure (Left (UsingDeadReference reportOn deadName original))
 
 -- | Map from lifetime variables (of refs) to a `LifetimeMode`
 -- | (usually containing the name of the XObj that the lifetime is tied to).
