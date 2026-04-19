@@ -8,6 +8,7 @@ import Context
 import Control.Applicative
 import Control.Exception
 import Control.Monad.State
+import Control.Monad (foldM, when)
 import Data.Bits ((.&.))
 import Data.Either (fromRight)
 import Data.List (foldl', isSuffixOf)

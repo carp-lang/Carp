@@ -27,6 +27,7 @@ import AssignTypes
 import Constraints
 import Control.Applicative
 import Control.Monad.State
+import Control.Monad (foldM, unless)
 import Data.Either (fromRight)
 import Data.List (foldl')
 import Data.Maybe (fromMaybe)
