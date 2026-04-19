@@ -116,6 +116,30 @@ If it doesn’t find an index, `Nothing` will be returned.")
             (break))))
       ret))
 
+  (doc find-last "finds the last element in `a` that matches the function `f` and wraps it in a `Just`.
+
+If it doesn’t find an element, `Nothing` will be returned.")
+  (defn find-last [f a]
+    (let-do [res (Maybe.Nothing)]
+      (for [i (Int.dec (length a)) -1 -1]
+        (when (~f (unsafe-nth a i))
+          (do
+            (set! res (Maybe.Just @(unsafe-nth a i)))
+            (break))))
+      res))
+
+  (doc find-last-index "finds the index of the last element in `a` that matches the function `f` and wraps it in a `Just`.
+
+If it doesn’t find an index, `Nothing` will be returned.")
+  (defn find-last-index [f a]
+    (let-do [ret (Maybe.Nothing)]
+      (for [i (Int.dec (length a)) -1 -1]
+        (when (~f (unsafe-nth a i))
+          (do
+            (set! ret (Maybe.Just i))
+            (break))))
+      ret))
+
   (doc unsafe-first "takes the first element of an array.
 
 Generates a runtime error if the array is empty.")
@@ -205,6 +229,14 @@ If the array is empty, returns `Nothing`")
   (doc suffix "gets a suffix array from `start-index`.")
   (defn suffix [xs start-index]
     (slice xs start-index (length xs)))
+
+  (doc take "takes the first `n` elements from an array.")
+  (defn take [n xs]
+    (slice xs 0 n))
+
+  (doc drop "drops the first `n` elements from an array.")
+  (defn drop [n xs]
+    (slice xs n (length xs)))
 
   (doc rest "gets all but the first element from the array.")
   (defn rest [xs]
@@ -595,7 +627,51 @@ Example:
               (set! result (Array.push-back result @&sep))
               (set! result (Array.push-back result @(Array.unsafe-nth xs i)))))))
       result))
+
+  (doc split-by-predicate
+    "splits an array `a` into two arrays: those that satisfy the predicate `f` and those that do not.
+Returns a `Pair` of arrays.")
+  (defn split-by-predicate [f a]
+    (let-do [matching []
+             not-matching []]
+      (for [i 0 (length a)]
+        (let [x (unsafe-nth a i)]
+          (if (~f x)
+            (set! matching (push-back matching @x))
+            (set! not-matching (push-back not-matching @x)))))
+      (Pair.init matching not-matching)))
+
+  (doc zip-n "takes a function `f` and any number of arrays, and zips them into a new array.
+The length of the resulting array is the length of the shortest input array.")
+  (defmacro zip-n [f :rest arrays]
+    (let [res (gensym-with 'res)
+          i (gensym-with 'i)
+          min-len (gensym-with 'min-len)
+          func (gensym-with 'func)]
+      `(let [%min-len %(min-all-list (map-length-list arrays))
+             %res (Array.allocate %min-len)
+             %func %f]
+         (do
+           (for [%i 0 %min-len]
+             (Array.aset-uninitialized! &%res %i
+               (~%func %@(map-nth-list arrays i))))
+           %res))))
 )
+
+(defndynamic map-length-list [arrs]
+  (if (empty? arrs)
+    '()
+    (cons `(Array.length %(car arrs)) (map-length-list (cdr arrs)))))
+
+(defndynamic min-all-list [xs]
+  (if (= (length xs) 1)
+    (car xs)
+    (list 'Int.min (car xs) (min-all-list (cdr xs)))))
+
+(defndynamic map-nth-list [arrs i]
+  (if (empty? arrs)
+    '()
+    (cons `(Array.unsafe-nth %(car arrs) %i) (map-nth-list (cdr arrs) i))))
 
 (defmacro doall [f xs]
   `(for [i 0 (Array.length &%xs)]
