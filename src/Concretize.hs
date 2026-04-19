@@ -843,22 +843,45 @@ concretizeDefinition allowAmbiguity typeEnv globalEnv visitedDefinitions definit
 -- | Find all the dependencies of a polymorphic function with a name and a desired concrete type.
 depsOfPolymorphicFunction :: TypeEnv -> Env -> [SymPath] -> String -> Ty -> [XObj]
 depsOfPolymorphicFunction typeEnv env visitedDefinitions functionName functionType =
-  case allImplementations typeEnv env functionName functionType of
-    [] ->
-      (trace $ "[Warning] No '" ++ functionName ++ "' function found with type " ++ show functionType ++ ".")
-        []
-    -- TODO: this code was added to solve a bug (presumably) but it seems OK to comment it out?!
-    -- [(_, (Binder xobj@(XObj (Lst (XObj (Instantiate template) _ _ : _)) _ _)))] ->
-    --   []
-    [(_, Binder meta single)] ->
-      if Meta.member "stub" meta
-        then []
-        else case concretizeDefinition False typeEnv env visitedDefinitions single functionType of
+  let concretizeCandidate (Binder _ single) =
+        case concretizeDefinition False typeEnv env visitedDefinitions single functionType of
           Left err -> error (show err)
           Right (ok, deps) -> ok : deps
-    tooMany ->
-      (trace $ "Too many '" ++ functionName ++ "' functions found with type " ++ show functionType ++ ", can't figure out dependencies:\n  " ++ joinWith "\n  " (map ((" - " ++) . show . snd) tooMany))
-        []
+   in case allImplementations typeEnv env functionName functionType of
+        [] ->
+          (trace $ "[Warning] No '" ++ functionName ++ "' function found with type " ++ show functionType ++ ".")
+            []
+        -- TODO: this code was added to solve a bug (presumably) but it seems OK to comment it out?!
+        -- [(_, (Binder xobj@(XObj (Lst (XObj (Instantiate template) _ _ : _)) _ _)))] ->
+        --   []
+        [(_, Binder meta single)] ->
+          if Meta.member "stub" meta
+            then []
+            else concretizeCandidate (Binder meta single)
+        tooMany ->
+          let nonStub = filter (\(_, Binder meta _) -> not (Meta.member "stub" meta)) tooMany
+              typeVarCount (_, Binder _ single) =
+                case xobjTy single of
+                  Just t -> length (typeVariablesInOrderOfAppearance t)
+                  Nothing -> maxBound :: Int
+              mostSpecificNonStub =
+                case nonStub of
+                  [] -> []
+                  _ ->
+                    let minCount = minimum (map typeVarCount nonStub)
+                     in filter (\candidate -> typeVarCount candidate == minCount) nonStub
+              selected =
+                case mostSpecificNonStub of
+                  [x] -> Just x
+                  _ ->
+                    case nonStub of
+                      [x] -> Just x
+                      _ -> Nothing
+           in case selected of
+                Just (_, binder) -> concretizeCandidate binder
+                Nothing ->
+                  (trace $ "Too many '" ++ functionName ++ "' functions found with type " ++ show functionType ++ ", can't figure out dependencies:\n  " ++ joinWith "\n  " (map ((" - " ++) . show . snd) tooMany))
+                    []
 
 -- | Helper for finding the 'delete' function for a type.
 depsForDeleteFunc :: TypeEnv -> Env -> Ty -> [XObj]
