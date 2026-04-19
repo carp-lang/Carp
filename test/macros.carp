@@ -401,4 +401,50 @@
                   (addr)
                   dst)
                 "asm works")
+  (assert-equal test
+                10
+                (sum 1 2 3 4)
+                "sum macro works for Int")
+  (assert-equal test
+                10.0
+                (sum 1.0 2.0 3.0 4.0)
+                "sum macro works for Double")
+  (assert-equal test
+                24
+                (product 2 3 4)
+                "product macro works for Int")
+  (assert-equal test
+                24.0
+                (product 2.0 3.0 4.0)
+                "product macro works for Double")
+  (assert-equal test
+                3
+                (sub 10 5 2)
+                "sub macro works for Int (multiple args)")
+  (assert-equal test
+                -10
+                (sub 10)
+                "sub macro works for Int (single arg -> neg)")
+  (assert-equal test
+                2
+                (div 24 4 3)
+                "div macro works for Int")
+  (assert-equal test
+                2.0
+                (div 24.0 4.0 3.0)
+                "div macro works for Double")
+  (let-do [x 10]
+    (do
+      (inc! x)
+      (assert-equal test
+                    11
+                    x
+                    "inc! macro works")))
+  (let-do [x 10]
+    (do
+      (dec! x)
+      (assert-equal test
+                    9
+                    x
+                    "dec! macro works")))
 )
