@@ -140,6 +140,35 @@ Example:
  (defmacro ignore-do [:rest forms]
    (cons 'do (expand (apply ignore* forms))))
 
+(doc if-let "Conditional execution based on a `Maybe` value.
+If `expr` evaluates to `(Just x)`, the `then` branch is executed with `var` bound to `x`.
+Otherwise, the `else` branch is executed.")
+(defmacro if-let [bindings then else]
+  (let [var (car bindings)
+        expr (cadr bindings)]
+    `(match %expr
+       (Maybe.Just %var) %then
+       (Maybe.Nothing) %else)))
+
+(doc while-let "Looping execution based on a `Maybe` value.
+Repeatedly evaluates `expr`. As long as it returns `(Just x)`, the `body` is executed with `var` bound to `x`.")
+(defmacro while-let [bindings body]
+  (let [var (car bindings)
+        expr (cadr bindings)]
+    `(while true
+       (match %expr
+         (Maybe.Just %var) %body
+         (Maybe.Nothing) (break)))))
+
+(doc when-let "Conditional execution based on a `Maybe` value.
+If `expr` evaluates to `(Just x)`, the `body` is executed with `var` bound to `x`.")
+(defmacro when-let [bindings body]
+  (let [var (car bindings)
+        expr (cadr bindings)]
+    `(match %expr
+       (Maybe.Just %var) %body
+       (Maybe.Nothing) ())))
+
 (doc when "is an `if` without an else branch.")
 (defmacro when [condition form]
   (list 'if condition form (list)))

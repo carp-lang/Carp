@@ -12,4 +12,27 @@
   (assert-true test
     (and (= () (test-ignore-do)) (= &test-string "new-string"))
     "ignore-do performs side effects and ignores all results")
+
+  (assert-equal test
+                "found 10"
+                &(if-let [x (Maybe.Just 10)]
+                  (fmt "found %d" x)
+                  @"not found")
+                "if-let works with Just")
+
+  (let-do [counter 0
+           res []]
+    (while-let [x (if (< counter 3) (Maybe.Just counter) (the (Maybe Int) (Maybe.Nothing)))]
+      (do
+        (set! res (Array.push-back res x))
+        (set! counter (inc counter))))
+    (assert-equal test
+                  &[0 1 2]
+                  &res
+                  "while-let works as expected"))
+
+  (let-do [x 0]
+    (do
+      (when-let [v (Maybe.Just 10)] (set! x v))
+      (assert-equal test 10 x "when-let executes body with Just")))
 )
