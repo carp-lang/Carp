@@ -12,4 +12,27 @@
   (assert-true test
     (and (= () (test-ignore-do)) (= &test-string "new-string"))
     "ignore-do performs side effects and ignores all results")
+
+  (assert-equal test
+                "first"
+                &(cond-let
+                   [x (Maybe.Just @"first")] (copy &x)
+                   [x (Maybe.Just @"second")] @"wrong"
+                   @"else")
+                "cond-let picks first Just")
+
+  (assert-equal test
+                "second"
+                &(cond-let
+                   [x (the (Maybe String) (Maybe.Nothing))] @"wrong"
+                   [x (Maybe.Just @"second")] (copy &x)
+                   @"else")
+                "cond-let picks second Just")
+
+  (assert-equal test
+                20
+                (as-> 5 x
+                  (+ x 5)
+                  (* x 2))
+                "as-> threads correctly through operations")
 )

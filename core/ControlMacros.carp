@@ -60,6 +60,19 @@ Example:
 (defmacro --> [:rest forms]
   (thread-last-internal forms))
 
+(hidden as->-internal)
+(defndynamic as->-internal [name forms]
+  (if (= 0 (length forms))
+    name
+    `(let [%name %(car forms)]
+       %(as->-internal name (cdr forms)))))
+
+(doc as-> "Threading macro with an explicit name.
+Binds `value` to `name` and then threads it through each of the `forms`, re-binding the result to `name` at each step.")
+(defmacro as-> [value name :rest forms]
+  `(let [%name %value]
+     %(as->-internal name forms)))
+
 (hidden comp-internal)
 (defndynamic comp-internal [sym fns]
   (if (= (length fns) 0)
@@ -185,6 +198,26 @@ Example:
   (let [name (gensym)]
     (list 'let [name form]
       (case-internal name branches))))
+
+(hidden cond-let-internal)
+(defndynamic cond-let-internal [xs]
+  (if (= (length xs) 0)
+    (list)
+    (if (= (length xs) 1)
+      (car xs)
+      (let [binding (car xs)
+            var (car binding)
+            expr (cadr binding)]
+        `(match %expr
+           (Maybe.Just %var) %(cadr xs)
+           (Maybe.Nothing) %(cond-let-internal (cddr xs)))))))
+
+(doc cond-let "Multibranch conditional with Maybe bindings.
+Each branch is a `[var expr]` binding and a body.
+If `expr` evaluates to `(Just x)`, `body` is executed with `var` bound to `x`.
+The final argument is an optional else branch.")
+(defmacro cond-let [:rest xs]
+  (cond-let-internal xs))
 
 (defmodule Dynamic
   (doc flip
