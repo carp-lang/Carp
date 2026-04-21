@@ -8,6 +8,12 @@
              (set! test-string @"new-string") ;; ignored, but side-effect performed
              (- 4 4)))
 
+(defn inc-maybe [x] (Maybe.Just (inc x)))
+(defn const-nothing [_] (the (Maybe Int) (Maybe.Nothing)))
+
+(defn inc-success [x] (Result.Success (inc x)))
+(defn const-error [_] (the (Result Int Int) (Result.Error 0)))
+
 (deftest test
   (assert-true test
     (and (= () (test-ignore-do)) (= &test-string "new-string"))
@@ -35,4 +41,57 @@
                   (+ x 5)
                   (* x 2))
                 "as-> threads correctly through operations")
+
+  (assert-equal test
+                30
+                (as->> 5 x
+                  (+ 5)    ;; (+ 5 5) -> 10
+                  (* 3))   ;; (* 3 10) -> 30
+                "as->> threads correctly through operations (last)")
+
+  (assert-equal test
+                15
+                (cond-> 5
+                  true (+ 5)
+                  false (+ 100)
+                  true (+ 5))
+                "cond-> threads correctly through true conditions")
+
+  (assert-equal test
+                30
+                (cond->> 5
+                  true (+ 5)
+                  false (+ 100)
+                  true (* 3))
+                "cond->> threads correctly through true conditions")
+
+  (assert-equal test
+                &(Maybe.Just 11)
+                &(some-> (Maybe.Just 10) inc)
+                "some-> threads through Just (value return)")
+
+  (assert-equal test
+                &(the (Maybe Int) (Maybe.Nothing))
+                &(some-> (the (Maybe Int) (Maybe.Nothing)) inc)
+                "some-> threads through Nothing")
+
+  (assert-equal test
+                &(Maybe.Just 11)
+                &(maybe-and-then-> (Maybe.Just 10) inc-maybe)
+                "maybe-and-then-> threads through Just (maybe return)")
+
+  (assert-equal test
+                &(the (Maybe Int) (Maybe.Nothing))
+                &(maybe-and-then-> (Maybe.Just 10) const-nothing)
+                "maybe-and-then-> short-circuits on Nothing return")
+
+  (assert-equal test
+                &(the (Result Int Int) (Result.Success 11))
+                &(result-and-then-> (the (Result Int Int) (Result.Success 10)) inc-success)
+                "result-and-then-> threads through Success")
+
+  (assert-equal test
+                &(the (Result Int Int) (Result.Error 0))
+                &(result-and-then-> (the (Result Int Int) (Result.Success 10)) const-error)
+                "result-and-then-> short-circuits on Error return")
 )
