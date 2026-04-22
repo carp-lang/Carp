@@ -30,4 +30,21 @@
                     (recur (inc i) (+ acc i))
                     acc))
                 "loop/recur works as expected")
+
+  (assert-equal test
+                10
+                (loop [i 0]
+                  (let [target 10]
+                    (if (< i target)
+                      (recur (inc i))
+                      i)))
+                "loop/recur works inside let")
+
+  (assert-equal test
+                "found"
+                &(loop [x (Maybe.Just 1)]
+                  (match-ref &x
+                    (Maybe.Just val) (if (= @val 1) (recur (Maybe.Nothing)) @"not-found")
+                    (Maybe.Nothing) @"found"))
+                "loop/recur works inside match")
 )

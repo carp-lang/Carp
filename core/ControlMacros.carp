@@ -86,9 +86,9 @@ Example:
 (defmacro doto [thing :rest expressions]
   (let [s (gensym)]
     (list 'let [s thing]
-          (cons-last
-           s
-           (cons 'do (map (fn [expr] (cons (car expr) (cons s (cdr expr)))) expressions))))))
+          (cons 'do
+                (append (map (fn [expr] (cons (car expr) (cons s (cdr expr)))) expressions)
+                        (list s))))))
 
 (doc doto-ref
      "Evaluates `thing`, then calls all of the functions on it and"
@@ -104,11 +104,10 @@ Example:
 (defmacro doto-ref [thing :rest expressions]
   (let [s (gensym)]
     (list 'let [s thing]
-          (cons-last
-           s
-           (cons 'do
-                 (map (fn [expr] (cons (car expr) (cons (list 'ref s) (cdr expr))))
-                      expressions))))))
+          (cons 'do
+                 (append (map (fn [f] (list (car f) (list 'ref s) (cdr f)))
+                              expressions)
+                         (list (list 'ref s)))))))
 
 (doc until "Executes `body` until the condition `cnd` is true.")
 (defmacro until [cnd body]
@@ -133,9 +132,10 @@ Example:
 
 (doc do-while "A loop that executes its body at least once, and then continues as long as `condition` is true.")
 (defmacro do-while [condition :rest body]
-  `(do
-     %@body
-     (while %condition (do %@body))))
+  `(while true
+     (do
+       %@body
+       (if %condition () (break)))))
 
 (doc defn-do "is a `defn` with an implicit `do` body.")
 (defmacro defn-do [name arguments :rest body]
@@ -296,42 +296,64 @@ Example:
     '()
     (cons (f (car l1) (car l2)) (map2-internal f (cdr l1) (cdr l2)))))
 
-(hidden get-rebindings)
-(defndynamic get-rebindings [vars vals]
-  (let [temp-vars (map (fn [_] (gensym-with 'tmp)) vars)]
-    (list 'let (collect-into (interleave-internal temp-vars vals) array)
-          (cons 'do (map2-internal (fn [v tv] (list 'set! v tv)) vars temp-vars)))))
-
 (hidden interleave-internal)
 (defndynamic interleave-internal [a b]
   (if (empty? a)
     '()
     (cons (car a) (cons (car b) (interleave-internal (cdr a) (cdr b))))))
 
+(hidden map-match-clauses)
+(defndynamic map-match-clauses [vars clauses continue-flag res-var]
+  (if (empty? clauses)
+    '()
+    (let [pat (car clauses)
+          arm (cadr clauses)]
+      (cons pat
+            (cons (loop-walk vars arm continue-flag res-var true)
+                  (map-match-clauses vars (cddr clauses) continue-flag res-var))))))
+
 (hidden loop-walk)
-(defndynamic loop-walk [vars form continue-flag res-var]
+(defndynamic loop-walk [vars form continue-flag res-var is-tail]
   (if (list? form)
     (if (empty? form)
-      (list 'set! res-var '())
-      (cond
-        (= (car form) 'recur)
-          (let [new-vals (cdr form)
-                rebindings (get-rebindings vars new-vals)]
-            (cons 'do (cons-last (list 'set! continue-flag 'true) (list rebindings))))
-        (= (car form) 'if)
-          (list 'if (cadr form)
-                (loop-walk vars (caddr form) continue-flag res-var)
-                (loop-walk vars (cadddr form) continue-flag res-var))
-        (= (car form) 'do)
-          (cons 'do (loop-internal vars (cdr form) continue-flag res-var))
-        (list 'set! res-var form)))
-    (list 'set! res-var form)))
+      (if is-tail
+        (list 'do (list 'set! res-var form) (list 'set! continue-flag 'false))
+        form)
+      (let [op (car form)]
+        (cond
+          (= op 'recur)
+            (if is-tail
+              (let [new-vals (cdr form)
+                    temp-vars (map (fn [_] (gensym-with 'tmp)) vars)
+                    sets (map2-internal (fn [v tv] (list 'set! v tv)) vars temp-vars)]
+                (list 'let (collect-into (interleave-internal temp-vars new-vals) array)
+                      (cons 'do (append sets (list (list 'set! continue-flag 'true))))))
+              (macro-error "recur in non-tail position"))
+          (= op 'if)
+            (list 'if (cadr form)
+                  (loop-walk vars (caddr form) continue-flag res-var is-tail)
+                  (loop-walk vars (cadddr form) continue-flag res-var is-tail))
+          (= op 'let)
+            (let [bindings (cadr form)
+                  body (cddr form)]
+              (list 'let bindings (loop-sequence vars body continue-flag res-var is-tail)))
+          (= op 'do)
+            (loop-sequence vars (cdr form) continue-flag res-var is-tail)
+          (or (= op 'match) (= op 'match-ref))
+            (cons op (cons (cadr form) (map-match-clauses vars (cddr form) continue-flag res-var)))
+          (if is-tail
+            (list 'do (list 'set! res-var form) (list 'set! continue-flag 'false))
+            (map (fn [f] (loop-walk vars f continue-flag res-var false)) form)))))
+    (if is-tail
+      (list 'do (list 'set! res-var form) (list 'set! continue-flag 'false))
+      form)))
 
-(hidden loop-internal)
-(defndynamic loop-internal [vars body continue-flag res-var]
-  (if (empty? (cdr body))
-    (list (loop-walk vars (car body) continue-flag res-var))
-    (cons (car body) (loop-internal vars (cdr body) continue-flag res-var))))
+(hidden loop-sequence)
+(defndynamic loop-sequence [vars forms continue-flag res-var is-tail]
+  (if (empty? (cdr forms))
+    (loop-walk vars (car forms) continue-flag res-var is-tail)
+    (cons (loop-walk vars (car forms) continue-flag res-var false)
+          (loop-sequence vars (cdr forms) continue-flag res-var is-tail))))
 
 (doc loop "A Clojure-style loop/recur construct for efficient iterative recursion.
 Binds `vars` to initial values, then executes `body`. Inside the body, `(recur ...)` 
@@ -340,13 +362,12 @@ can be used to jump back to the start of the loop with new values.")
   (let [blist (collect-into bindings list)
         vars (get-vars blist)
         initials (get-initials blist)
-        interleaved (interleave-internal vars initials)
+        res-var (gensym-with 'res)
         continue-flag (gensym-with 'continue)
-        res-var (gensym-with 'res)]
-    `(let-do %(collect-into (cons continue-flag (cons 'true (cons res-var (cons (car initials) interleaved)))) array)
-       (do
-         (while %continue-flag
-           (do
-             (set! %continue-flag false)
-             %@(loop-internal vars body continue-flag res-var)))
-         %res-var))))
+        interleaved (interleave-internal vars initials)]
+    (list 'let-do (collect-into interleaved array)
+      (list 'let-do (array continue-flag true res-var (list 'zero))
+        (list 'do
+          (list 'while continue-flag
+            (loop-sequence vars body continue-flag res-var true))
+          res-var)))))
