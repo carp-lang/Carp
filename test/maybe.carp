@@ -165,4 +165,41 @@
                 &(the (Maybe Int) (Nothing))
                 &(filter (the (Maybe Int) (Nothing)) &(fn [x] (Int.even? @x)))
                 "filter works on Nothing")
+
+  (assert-equal test
+                &(Just 10)
+                &(flatten (Just (Just 10)))
+                "flatten works on Just Just")
+  (assert-equal test
+                &(the (Maybe Int) (Nothing))
+                &(flatten (the (Maybe (Maybe Int)) (Just (Nothing))))
+                "flatten works on Just Nothing")
+
+  (assert-equal test
+                10
+                (expect (Just 10) "should not fail")
+                "expect works on Just")
+
+  (let-do [x 0]
+    (do
+      (ignore (inspect (Just 10) &(fn [v] (set! x @v))))
+      (assert-equal test 10 x "inspect works on Just")))
+
+  (assert-equal test
+                20
+                (map-or (Just 10) 0 &(fn [v] (* v 2)))
+                "map-or works on Just")
+  (assert-equal test
+                0
+                (map-or (the (Maybe Int) (Nothing)) 0 &(fn [v] (* v 2)))
+                "map-or works on Nothing")
+
+  (assert-equal test
+                20
+                (map-or-else (Just 10) &(fn [] 0) &(fn [v] (* v 2)))
+                "map-or-else works on Just")
+  (assert-equal test
+                0
+                (map-or-else (the (Maybe Int) (Nothing)) &(fn [] 0) &(fn [v] (* v 2)))
+                "map-or-else works on Nothing")
 )
