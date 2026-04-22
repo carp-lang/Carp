@@ -47,4 +47,11 @@
                     (Maybe.Just val) (if (= @val 1) (recur (Maybe.Nothing)) @"not-found")
                     (Maybe.Nothing) @"found"))
                 "loop/recur works inside match")
+
+  (let-do [x 0]
+    (do
+      (doseq [i [1 2 3]
+              j [1 2 3]]
+        (set! x (+ x (* i j))))
+      (assert-equal test 36 x "doseq works with nested bindings")))
 )

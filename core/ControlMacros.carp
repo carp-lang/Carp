@@ -371,3 +371,31 @@ can be used to jump back to the start of the loop with new values.")
           (list 'while continue-flag
             (loop-sequence vars body continue-flag res-var true))
           res-var)))))
+
+(hidden doseq-internal)
+(defndynamic doseq-internal [bindings body]
+  (if (empty? bindings)
+    (cons 'do body)
+    (let [var (car bindings)
+          xs (cadr bindings)
+          rest (cddr bindings)
+          arr-sym (gensym-with 'arr)
+          idx-sym (gensym-with 'i)
+          len-sym (gensym-with 'len)]
+      (list 'let [arr-sym xs
+                  len-sym (list 'Array.length (list 'ref arr-sym))]
+        (list 'for [idx-sym 0 len-sym]
+          (list 'let [var (list 'copy (list 'Array.unsafe-nth (list 'ref arr-sym) idx-sym))]
+            (doseq-internal rest body)))))))
+
+(doc doseq "Iterates over one or more sequences for side effects.
+Supports multiple bindings for nested iteration.
+
+Example:
+```
+(doseq [x [1 2 3]
+        y [4 5]]
+  (println* x y))
+```")
+(defmacro doseq [bindings :rest body]
+  (doseq-internal (collect-into bindings list) body))
