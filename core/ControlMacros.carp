@@ -150,7 +150,7 @@ Example:
  (doc ignore-do 
  ("Wraps side-effecting `forms` in a `do`, " false)
  "ignoring all of their results."
- "In other words, executes `forms` only for their side effects.")
+ "In other words, executes \`forms\` only for their side effects.")
  (defmacro ignore-do [:rest forms]
    (cons 'do (expand (apply ignore* forms))))
 
@@ -158,7 +158,7 @@ Example:
 (defmacro when [condition form]
   (list 'if condition form (list)))
 
-(doc unless "is an `if` without a then branch.")
+(doc unless "is an \`if\` without a then branch.")
 (defmacro unless [condition form]
   (list 'if condition (list) form))
 
@@ -351,16 +351,6 @@ Example:
             (list 'if (cadr form)
                   (loop-walk vars (caddr form) continue-flag res-var is-tail)
                   (loop-walk vars (cadddr form) continue-flag res-var is-tail))
-          (= op 'when)
-            (list 'when (cadr form) (loop-walk vars (caddr form) continue-flag res-var is-tail))
-          (= op 'unless)
-            (list 'unless (cadr form) (loop-walk vars (caddr form) continue-flag res-var is-tail))
-          (= op 'cond)
-            (cons 'cond (map-cond-clauses vars (cdr form) continue-flag res-var))
-          (= op 'case)
-            (let [expr (cadr form)
-                  branches (cddr form)]
-              (cons 'case (cons expr (map-match-clauses vars branches continue-flag res-var))))
           (= op 'let)
             (let [bindings (cadr form)
                   body (cddr form)]
@@ -369,9 +359,12 @@ Example:
             (loop-sequence vars (cdr form) continue-flag res-var is-tail)
           (or (= op 'match) (= op 'match-ref))
             (cons op (cons (cadr form) (map-match-clauses vars (cddr form) continue-flag res-var)))
-          (if is-tail
-            (list 'do (list 'set! res-var form) (list 'set! continue-flag 'false))
-            (map (fn [f] (loop-walk vars f continue-flag res-var false)) form)))))
+          (let [expanded (expand form)]
+            (if (not (= expanded form))
+              (loop-walk vars expanded continue-flag res-var is-tail)
+              (if is-tail
+                (list 'do (list 'set! res-var form) (list 'set! continue-flag 'false))
+                (map (fn [f] (loop-walk vars f continue-flag res-var false)) form)))))))
     (if is-tail
       (list 'do (list 'set! res-var form) (list 'set! continue-flag 'false))
       form)))
@@ -397,7 +390,9 @@ can be used to jump back to the start of the loop with new values.")
       (list 'let-do (array continue-flag true res-var (list 'zero))
         (list 'do
           (list 'while continue-flag
-            (loop-sequence vars body continue-flag res-var true))
+            (list 'do
+              (list 'set! continue-flag false)
+              (loop-sequence vars body continue-flag res-var true)))
           res-var)))))
 
 (hidden doseq-internal)

@@ -14,6 +14,9 @@
   (ignore-do
     (set! test-string @"new-string")))
 
+(defmodule Pair
+  (defn zero [] (Pair.init (zero) (zero))))
+
 (deftest test
   (do
     (test-ignore-do-2)
@@ -28,6 +31,11 @@
         (set! sum (+ sum i)))
       (let-do [t (assert-equal test 1 eval-count "dotimes evaluates limit expression exactly once")]
         (assert-equal &t 10 sum "dotimes calculates correct sum"))))
+
+  (let-do [count 0]
+    (do
+      (dotimes [i 0] (set! count (inc count)))
+      (assert-equal test 0 count "dotimes [i 0] does nothing")))
 
   (let-do [x 0]
     (do
@@ -86,10 +94,33 @@
                     state))
                 "loop/recur works inside case")
 
+  (assert-equal test
+                37
+                (loop [a 1 b 2 c 3 d 4 e 5 f 6 g 7 h 8]
+                  (if (< a 2)
+                    (recur (inc a) b c d e f g h)
+                    (+ a (+ b (+ c (+ d (+ e (+ f (+ g h)))))))))
+                "loop/recur handles many bindings correctly")
+
+  (assert-equal test
+                5
+                (loop [i 0]
+                  (if (< i 5)
+                    (if true (recur (inc i)) 0)
+                    i))
+                "loop/recur works inside complex nesting (requires expansion)")
+
   (let-do [x 0]
     (do
       (doseq [i [1 2 3]
               j [1 2 3]]
         (set! x (+ x (* i j))))
       (assert-equal test 36 x "doseq works with nested bindings")))
+
+  (let-do [total 0]
+    (do
+      (doseq [x [1 2]
+              y [x x]]
+        (set! total (+ total y)))
+      (assert-equal test 6 total "doseq handles dependent bindings")))
 )
