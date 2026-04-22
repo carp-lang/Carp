@@ -12,4 +12,22 @@
   (assert-true test
     (and (= () (test-ignore-do)) (= &test-string "new-string"))
     "ignore-do performs side effects and ignores all results")
+
+  (let-do [x 0]
+    (do
+      (dotimes [i 5] (set! x (+ x i)))
+      (assert-equal test 10 x "dotimes works as expected")))
+
+  (let-do [x 0]
+    (do
+      (do-while false (set! x 100))
+      (assert-equal test 100 x "do-while executes body at least once")))
+
+  (assert-equal test
+                45
+                (loop [i 0 acc 0]
+                  (if (< i 10)
+                    (recur (inc i) (+ acc i))
+                    acc))
+                "loop/recur works as expected")
 )

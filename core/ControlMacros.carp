@@ -98,8 +98,8 @@ Example:
      ""
      "```"
      "(doto-ref @\"hi\""
-     "  (string-set! 0 \o)"
-     "  (string-set! 1 \y))"
+     "  (string-set! 0 \\o)"
+     "  (string-set! 1 \\y))"
      "```")
 (defmacro doto-ref [thing :rest expressions]
   (let [s (gensym)]
@@ -124,6 +124,18 @@ Example:
 (defmacro while-do [condition :rest forms]
   (list 'while condition
         (cons 'do forms)))
+
+(doc dotimes "Repeats a block of code `n` times, binding `i` to the current iteration index.")
+(defmacro dotimes [bindings :rest body]
+  (let [i (car bindings)
+        n (cadr bindings)]
+    `(for [%i 0 %n] (do %@body))))
+
+(doc do-while "A loop that executes its body at least once, and then continues as long as `condition` is true.")
+(defmacro do-while [condition :rest body]
+  `(do
+     %@body
+     (while %condition (do %@body))))
 
 (doc defn-do "is a `defn` with an implicit `do` body.")
 (defmacro defn-do [name arguments :rest body]
@@ -197,10 +209,6 @@ Example:
     (fn [x y]
       (f y x)))
 
-  ;; Higher-order functions can't currently accept primitives
-  ;; For now, wrapping primitives in a function allows us to pass them
-  ;; to HOFs like map.
-
   (doc compose
        "Returns the composition of two functions `f` and `g` for functions of any"
        "arity; concretely, returns a function accepting the correct number of"
@@ -223,14 +231,6 @@ Example:
        ";; => (+ 1 (+ 2 4))"
        "```")
   (defndynamic compose [f g]
-    ;; Recall that **unquoted** function names evaluate to their definitions in
-    ;; dynamic contexts, e.g. f = (dyanmic f [arg] body)
-    ;;
-    ;; Right now, this cannot handle anonymous functions because they cannot be passed to apply.
-    ;; and not anonymous functions.
-    ;; commands expand to (command <name>), fns expand to a non-list.
-    ;;
-    ;; TODO: Support passing anonymous functions.
     (if (not (or (list? f) (list? g)))
       (macro-error "compose can only compose named dynamic functions. To
                      compose anonymous functions, such as curried functions,
@@ -239,9 +239,6 @@ Example:
             g-name (cadr g)
             arguments (caddr g)]
         (list 'fn arguments
-              ;; Since we call an eval to apply g immediately, we wrap the args in an
-              ;; extra quote, otherwise, users would need to double quote any sequence of
-              ;; symbols such as '(p r a c)
               (list  f-name (list 'eval (list 'apply g-name (list 'quote arguments))))))))
 
   (doc curry
@@ -275,12 +272,81 @@ Example:
           all-args (caddr f)
           unfilled-args (- (length all-args) (length args))
           remaining (take unfilled-args all-args)
-          ;; Quote the arguments to retain expected behavior and avoid the need
-          ;; for double quotes in curried higher-orders, e.g. zip.
           quote-args (map quoted args)]
       (list 'fn remaining
-            ;; eval to execute the curried function.
-            ;; otherwise, this resolves to the form that will call the function, e.g. (add-three-vals 2 3 1)
             (list 'eval (list 'apply f-name (list 'quote (append quote-args (collect-into
                                                                              remaining list))))))))
-  )
+)
+
+(hidden get-vars)
+(defndynamic get-vars [bindings]
+  (if (empty? bindings)
+    '()
+    (cons (car bindings) (get-vars (cddr bindings)))))
+
+(hidden get-initials)
+(defndynamic get-initials [bindings]
+  (if (empty? bindings)
+    '()
+    (cons (cadr bindings) (get-initials (cddr bindings)))))
+
+(hidden map2-internal)
+(defndynamic map2-internal [f l1 l2]
+  (if (empty? l1)
+    '()
+    (cons (f (car l1) (car l2)) (map2-internal f (cdr l1) (cdr l2)))))
+
+(hidden get-rebindings)
+(defndynamic get-rebindings [vars vals]
+  (let [temp-vars (map (fn [_] (gensym-with 'tmp)) vars)]
+    (list 'let (collect-into (interleave-internal temp-vars vals) array)
+          (cons 'do (map2-internal (fn [v tv] (list 'set! v tv)) vars temp-vars)))))
+
+(hidden interleave-internal)
+(defndynamic interleave-internal [a b]
+  (if (empty? a)
+    '()
+    (cons (car a) (cons (car b) (interleave-internal (cdr a) (cdr b))))))
+
+(hidden loop-walk)
+(defndynamic loop-walk [vars form continue-flag res-var]
+  (if (list? form)
+    (if (empty? form)
+      (list 'set! res-var '())
+      (cond
+        (= (car form) 'recur)
+          (let [new-vals (cdr form)
+                rebindings (get-rebindings vars new-vals)]
+            (cons 'do (cons-last (list 'set! continue-flag 'true) (list rebindings))))
+        (= (car form) 'if)
+          (list 'if (cadr form)
+                (loop-walk vars (caddr form) continue-flag res-var)
+                (loop-walk vars (cadddr form) continue-flag res-var))
+        (= (car form) 'do)
+          (cons 'do (loop-internal vars (cdr form) continue-flag res-var))
+        (list 'set! res-var form)))
+    (list 'set! res-var form)))
+
+(hidden loop-internal)
+(defndynamic loop-internal [vars body continue-flag res-var]
+  (if (empty? (cdr body))
+    (list (loop-walk vars (car body) continue-flag res-var))
+    (cons (car body) (loop-internal vars (cdr body) continue-flag res-var))))
+
+(doc loop "A Clojure-style loop/recur construct for efficient iterative recursion.
+Binds `vars` to initial values, then executes `body`. Inside the body, `(recur ...)` 
+can be used to jump back to the start of the loop with new values.")
+(defmacro loop [bindings :rest body]
+  (let [blist (collect-into bindings list)
+        vars (get-vars blist)
+        initials (get-initials blist)
+        interleaved (interleave-internal vars initials)
+        continue-flag (gensym-with 'continue)
+        res-var (gensym-with 'res)]
+    `(let-do %(collect-into (cons continue-flag (cons 'true (cons res-var (cons (car initials) interleaved)))) array)
+       (do
+         (while %continue-flag
+           (do
+             (set! %continue-flag false)
+             %@(loop-internal vars body continue-flag res-var)))
+         %res-var))))
