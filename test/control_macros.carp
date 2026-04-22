@@ -1,22 +1,33 @@
 (load "Test.carp")
 (use Test)
 
-(def test-string @"")
-
 (defn test-ignore-do []
-  (ignore-do (+ 2 2) ;; ignored
-             (set! test-string @"new-string") ;; ignored, but side-effect performed
-             (- 4 4)))
+  (let [x 1]
+    (ignore-do
+      (set! x 2)
+      (+ x 1)
+      (set! x 3))))
+
+(def test-string @"string")
+
+(defn test-ignore-do-2 []
+  (ignore-do
+    (set! test-string @"new-string")))
 
 (deftest test
-  (assert-true test
-    (and (= () (test-ignore-do)) (= &test-string "new-string"))
-    "ignore-do performs side effects and ignores all results")
+  (do
+    (test-ignore-do-2)
+    (assert-true test
+      (and (= () (test-ignore-do)) (= &test-string "new-string"))
+      "ignore-do performs side effects and ignores all results"))
 
-  (let-do [x 0]
+  (let-do [eval-count 0
+           sum 0]
     (do
-      (dotimes [i 5] (set! x (+ x i)))
-      (assert-equal test 10 x "dotimes works as expected")))
+      (dotimes [i (let-do [dummy 0] (do (set! eval-count (inc eval-count)) 5))]
+        (set! sum (+ sum i)))
+      (let-do [t (assert-equal test 1 eval-count "dotimes evaluates limit expression exactly once")]
+        (assert-equal &t 10 sum "dotimes calculates correct sum"))))
 
   (let-do [x 0]
     (do
@@ -47,6 +58,33 @@
                     (Maybe.Just val) (if (= @val 1) (recur (Maybe.Nothing)) @"not-found")
                     (Maybe.Nothing) @"found"))
                 "loop/recur works inside match")
+
+  (assert-equal test
+                &(Pair.init 10 0)
+                &(loop [x 0 y 10]
+                  (if (< x 10)
+                    (recur (inc x) (dec y))
+                    (Pair.init x y)))
+                "loop/recur handles multiple interdependent bindings")
+
+  (assert-equal test
+                12
+                (loop [i 0 acc 0]
+                  (cond
+                    (> i 2) acc
+                    (= i 1) (recur (inc i) (+ acc 10))
+                    (recur (inc i) (+ acc i))))
+                "loop/recur works inside cond")
+
+  (assert-equal test
+                3
+                (loop [state 0]
+                  (case state
+                    0 (recur 1)
+                    1 (recur 2)
+                    2 (recur 3)
+                    state))
+                "loop/recur works inside case")
 
   (let-do [x 0]
     (do

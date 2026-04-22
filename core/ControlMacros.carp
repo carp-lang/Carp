@@ -127,8 +127,10 @@ Example:
 (doc dotimes "Repeats a block of code `n` times, binding `i` to the current iteration index.")
 (defmacro dotimes [bindings :rest body]
   (let [i (car bindings)
-        n (cadr bindings)]
-    `(for [%i 0 %n] (do %@body))))
+        n (cadr bindings)
+        n-sym (gensym-with 'n)]
+    `(let [%n-sym %n]
+       (for [%i 0 %n-sym] (do %@body)))))
 
 (doc do-while "A loop that executes its body at least once, and then continues as long as `condition` is true.")
 (defmacro do-while [condition :rest body]
@@ -143,7 +145,7 @@ Example:
 
 (doc forever-do "is a `forever` with an implicit `do` body.")
 (defmacro forever-do [:rest forms]
-  (list 'while true (cons 'do forms)))
+  `(while true (do %@forms)))
 
  (doc ignore-do 
  ("Wraps side-effecting `forms` in a `do`, " false)
@@ -306,11 +308,25 @@ Example:
 (defndynamic map-match-clauses [vars clauses continue-flag res-var]
   (if (empty? clauses)
     '()
-    (let [pat (car clauses)
-          arm (cadr clauses)]
-      (cons pat
-            (cons (loop-walk vars arm continue-flag res-var true)
-                  (map-match-clauses vars (cddr clauses) continue-flag res-var))))))
+    (if (= (length clauses) 1)
+      (list (loop-walk vars (car clauses) continue-flag res-var true))
+      (let [pat (car clauses)
+            arm (cadr clauses)]
+        (cons pat
+              (cons (loop-walk vars arm continue-flag res-var true)
+                    (map-match-clauses vars (cddr clauses) continue-flag res-var)))))))
+
+(hidden map-cond-clauses)
+(defndynamic map-cond-clauses [vars clauses continue-flag res-var]
+  (if (empty? clauses)
+    '()
+    (if (= (length clauses) 1)
+      (list (loop-walk vars (car clauses) continue-flag res-var true))
+      (let [test (car clauses)
+            arm (cadr clauses)]
+        (cons test
+              (cons (loop-walk vars arm continue-flag res-var true)
+                    (map-cond-clauses vars (cddr clauses) continue-flag res-var)))))))
 
 (hidden loop-walk)
 (defndynamic loop-walk [vars form continue-flag res-var is-tail]
@@ -333,6 +349,16 @@ Example:
             (list 'if (cadr form)
                   (loop-walk vars (caddr form) continue-flag res-var is-tail)
                   (loop-walk vars (cadddr form) continue-flag res-var is-tail))
+          (= op 'when)
+            (list 'when (cadr form) (loop-walk vars (caddr form) continue-flag res-var is-tail))
+          (= op 'unless)
+            (list 'unless (cadr form) (loop-walk vars (caddr form) continue-flag res-var is-tail))
+          (= op 'cond)
+            (cons 'cond (map-cond-clauses vars (cdr form) continue-flag res-var))
+          (= op 'case)
+            (let [expr (cadr form)
+                  branches (cddr form)]
+              (cons 'case (cons expr (map-match-clauses vars branches continue-flag res-var))))
           (= op 'let)
             (let [bindings (cadr form)
                   body (cddr form)]
@@ -379,14 +405,12 @@ can be used to jump back to the start of the loop with new values.")
     (let [var (car bindings)
           xs (cadr bindings)
           rest (cddr bindings)
-          arr-sym (gensym-with 'arr)
-          idx-sym (gensym-with 'i)
-          len-sym (gensym-with 'len)]
-      (list 'let [arr-sym xs
-                  len-sym (list 'Array.length (list 'ref arr-sym))]
-        (list 'for [idx-sym 0 len-sym]
-          (list 'let [var (list 'copy (list 'Array.unsafe-nth (list 'ref arr-sym) idx-sym))]
-            (doseq-internal rest body)))))))
+          arr (gensym-with 'arr)
+          vref (gensym-with 'vref)]
+      `(let [%arr %xs]
+         (foreach [%vref &%arr]
+           (let [%var @%vref]
+             %(doseq-internal rest body)))))))
 
 (doc doseq "Iterates over one or more sequences for side effects.
 Supports multiple bindings for nested iteration.
