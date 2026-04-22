@@ -339,11 +339,13 @@ Example:
         (cond
           (= op 'recur)
             (if is-tail
-              (let [new-vals (cdr form)
-                    temp-vars (map (fn [_] (gensym-with 'tmp)) vars)
-                    sets (map2-internal (fn [v tv] (list 'set! v tv)) vars temp-vars)]
-                (list 'let (collect-into (interleave-internal temp-vars new-vals) array)
-                      (cons 'do (append sets (list (list 'set! continue-flag 'true))))))
+              (let [new-vals (cdr form)]
+                (if (= (length new-vals) (length vars))
+                  (let [temp-vars (map (fn [_] (gensym-with 'tmp)) vars)
+                        sets (map2-internal (fn [v tv] (list 'set! v tv)) vars temp-vars)]
+                    (list 'let (collect-into (interleave-internal temp-vars new-vals) array)
+                          (cons 'do (append sets (list (list 'set! continue-flag 'true))))))
+                  (macro-error (str "recur expects " (length vars) " arguments, got " (length new-vals)))))
               (macro-error "recur in non-tail position"))
           (= op 'if)
             (list 'if (cadr form)
