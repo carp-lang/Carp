@@ -123,4 +123,10 @@
               y [x x]]
         (set! total (+ total y)))
       (assert-equal test 6 total "doseq handles dependent bindings")))
+
+  (let-do [sum 0]
+    (do
+      (doseq-ref [x [1 2 3]]
+        (set! sum (+ sum @x)))
+      (assert-equal test 6 sum "doseq-ref works correctly")))
 )

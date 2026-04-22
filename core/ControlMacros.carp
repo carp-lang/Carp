@@ -150,7 +150,7 @@ Example:
  (doc ignore-do 
  ("Wraps side-effecting `forms` in a `do`, " false)
  "ignoring all of their results."
- "In other words, executes \`forms\` only for their side effects.")
+ "In other words, executes `forms` only for their side effects.")
  (defmacro ignore-do [:rest forms]
    (cons 'do (expand (apply ignore* forms))))
 
@@ -158,7 +158,7 @@ Example:
 (defmacro when [condition form]
   (list 'if condition form (list)))
 
-(doc unless "is an \`if\` without a then branch.")
+(doc unless "is an `if` without a then branch.")
 (defmacro unless [condition form]
   (list 'if condition (list) form))
 
@@ -396,7 +396,7 @@ can be used to jump back to the start of the loop with new values.")
           res-var)))))
 
 (hidden doseq-internal)
-(defndynamic doseq-internal [bindings body]
+(defndynamic doseq-internal [bindings body use-refs]
   (if (empty? bindings)
     (cons 'do body)
     (let [var (car bindings)
@@ -406,11 +406,11 @@ can be used to jump back to the start of the loop with new values.")
           vref (gensym-with 'vref)]
       `(let [%arr %xs]
          (foreach [%vref &%arr]
-           (let [%var @%vref]
-             %(doseq-internal rest body)))))))
+           (let [%var %(if use-refs vref (list 'copy vref))]
+             %(doseq-internal rest body use-refs)))))))
 
 (doc doseq "Iterates over one or more sequences for side effects.
-Supports multiple bindings for nested iteration.
+Provides owned copies of the elements to the body. Supports multiple bindings for nested iteration.
 
 Example:
 ```
@@ -419,4 +419,9 @@ Example:
   (println* x y))
 ```")
 (defmacro doseq [bindings :rest body]
-  (doseq-internal (collect-into bindings list) body))
+  (doseq-internal (collect-into bindings list) body false))
+
+(doc doseq-ref "Iterates over one or more sequences for side effects.
+Provides references to the elements to the body (higher performance). Supports multiple bindings for nested iteration.")
+(defmacro doseq-ref [bindings :rest body]
+  (doseq-internal (collect-into bindings list) body true))
