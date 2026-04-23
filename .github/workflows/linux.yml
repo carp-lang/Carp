@@ -9,8 +9,6 @@ on:
 jobs:
   build:
     runs-on: ubuntu-latest
-    permissions:
-      contents: write
 
     steps:
     - uses: actions/checkout@v2
@@ -49,9 +47,9 @@ jobs:
 
     - name: Copy Docs to carp-docs Repository
       uses: cpina/github-action-push-to-another-repository@master
-      if: github.event_name == 'push' && github.ref == 'refs/heads/master'
+      if: github.ref == 'refs/heads/master'
       env:
-        API_TOKEN_GITHUB: ${{ secrets.GITHUB_TOKEN }}
+        API_TOKEN_GITHUB: ${{ secrets.PERSONAL_TOKEN }}
       with:
         source-directory: './docs'
         destination-github-username: 'carp-lang'
