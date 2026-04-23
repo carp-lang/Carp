@@ -1,15 +1,132 @@
 (load "Test.carp")
 (use Test)
 
-(def test-string @"")
-
 (defn test-ignore-do []
-  (ignore-do (+ 2 2) ;; ignored
-             (set! test-string @"new-string") ;; ignored, but side-effect performed
-             (- 4 4)))
+  (let [x 1]
+    (ignore-do
+      (set! x 2)
+      (+ x 1)
+      (set! x 3))))
+
+(def test-string @"string")
+
+(defn test-ignore-do-2 []
+  (ignore-do
+    (set! test-string @"new-string")))
+
+(defmodule Pair
+  (defn zero [] (Pair.init (zero) (zero))))
 
 (deftest test
-  (assert-true test
-    (and (= () (test-ignore-do)) (= &test-string "new-string"))
-    "ignore-do performs side effects and ignores all results")
+  (do
+    (test-ignore-do-2)
+    (assert-true test
+      (and (= () (test-ignore-do)) (= &test-string "new-string"))
+      "ignore-do performs side effects and ignores all results"))
+
+  (let-do [eval-count 0
+           sum 0]
+    (do
+      (dotimes [i (let-do [dummy 0] (do (set! eval-count (inc eval-count)) 5))]
+        (set! sum (+ sum i)))
+      (let-do [t (assert-equal test 1 eval-count "dotimes evaluates limit expression exactly once")]
+        (assert-equal &t 10 sum "dotimes calculates correct sum"))))
+
+  (let-do [count 0]
+    (do
+      (dotimes [i 0] (set! count (inc count)))
+      (assert-equal test 0 count "dotimes [i 0] does nothing")))
+
+  (let-do [x 0]
+    (do
+      (do-while false (set! x 100))
+      (assert-equal test 100 x "do-while executes body at least once")))
+
+  (assert-equal test
+                45
+                (loop [i 0 acc 0]
+                  (if (< i 10)
+                    (recur (inc i) (+ acc i))
+                    acc))
+                "loop/recur works as expected")
+
+  (assert-equal test
+                10
+                (loop [i 0]
+                  (let [target 10]
+                    (if (< i target)
+                      (recur (inc i))
+                      i)))
+                "loop/recur works inside let")
+
+  (assert-equal test
+                "found"
+                &(loop [x (Maybe.Just 1)]
+                  (match-ref &x
+                    (Maybe.Just val) (if (= @val 1) (recur (Maybe.Nothing)) @"not-found")
+                    (Maybe.Nothing) @"found"))
+                "loop/recur works inside match")
+
+  (assert-equal test
+                &(Pair.init 10 0)
+                &(loop [x 0 y 10]
+                  (if (< x 10)
+                    (recur (inc x) (dec y))
+                    (Pair.init x y)))
+                "loop/recur handles multiple interdependent bindings")
+
+  (assert-equal test
+                12
+                (loop [i 0 acc 0]
+                  (cond
+                    (> i 2) acc
+                    (= i 1) (recur (inc i) (+ acc 10))
+                    (recur (inc i) (+ acc i))))
+                "loop/recur works inside cond")
+
+  (assert-equal test
+                3
+                (loop [state 0]
+                  (case state
+                    0 (recur 1)
+                    1 (recur 2)
+                    2 (recur 3)
+                    state))
+                "loop/recur works inside case")
+
+  (assert-equal test
+                37
+                (loop [a 1 b 2 c 3 d 4 e 5 f 6 g 7 h 8]
+                  (if (< a 2)
+                    (recur (inc a) b c d e f g h)
+                    (+ a (+ b (+ c (+ d (+ e (+ f (+ g h)))))))))
+                "loop/recur handles many bindings correctly")
+
+  (assert-equal test
+                5
+                (loop [i 0]
+                  (if (< i 5)
+                    (if true (recur (inc i)) 0)
+                    i))
+                "loop/recur works inside complex nesting (requires expansion)")
+
+  (let-do [x 0]
+    (do
+      (doseq [i [1 2 3]
+              j [1 2 3]]
+        (set! x (+ x (* i j))))
+      (assert-equal test 36 x "doseq works with nested bindings")))
+
+  (let-do [total 0]
+    (do
+      (doseq [x [1 2]
+              y [x x]]
+        (set! total (+ total y)))
+      (assert-equal test 6 total "doseq handles dependent bindings")))
+
+  (let-do [sum 0]
+    (do
+      (doseq-ref [x [1 2 3]]
+        (set! sum (+ sum @x)))
+      (assert-equal test 6 sum "doseq-ref works correctly")))
 )
