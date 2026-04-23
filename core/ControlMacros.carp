@@ -60,6 +60,110 @@ Example:
 (defmacro --> [:rest forms]
   (thread-last-internal forms))
 
+(hidden as->-internal)
+(defndynamic as->-internal [name forms]
+  (if (= 0 (length forms))
+    name
+    `(let [%name %(car forms)]
+       %(as->-internal name (cdr forms)))))
+
+(doc as-> "Threading macro with an explicit name.
+Binds `value` to `name` and then threads it through each of the `forms`, re-binding the result to `name` at each step.")
+(defmacro as-> [value name :rest forms]
+  `(let [%name %value]
+     %(as->-internal name forms)))
+
+(hidden as->>-internal)
+(defndynamic as->>-internal [name forms]
+  (if (= 0 (length forms))
+    name
+    `(let [%name %(cons-last name (car forms))]
+       %(as->>-internal name (cdr forms)))))
+
+(doc as->> "Threading macro with an explicit name (last).
+Binds `value` to `name` and then threads it through each of the `forms` as the last argument, re-binding the result to `name` at each step.")
+(defmacro as->> [value name :rest forms]
+  `(let [%name %value]
+     %(as->>-internal name forms)))
+
+(hidden cond-first-internal)
+(defndynamic cond-first-internal [acc steps]
+  (if (= 0 (length steps))
+    acc
+    (let [test (car steps)
+          form (cadr steps)
+          new-acc `(if %test (-> %acc %form) %acc)]
+      (cond-first-internal new-acc (cddr steps)))))
+
+(doc cond-> "Conditional threading macro (first).
+Threads `val` through each `form` in `steps` only if the corresponding `test` is true.")
+(defmacro cond-> [val :rest steps]
+  (cond-first-internal val steps))
+
+(hidden cond-last-internal)
+(defndynamic cond-last-internal [acc steps]
+  (if (= 0 (length steps))
+    acc
+    (let [test (car steps)
+          form (cadr steps)
+          new-acc `(if %test (--> %acc %form) %acc)]
+      (cond-last-internal new-acc (cddr steps)))))
+
+(doc cond->> "Conditional threading macro (last).
+Threads `val` through each `form` in `steps` only if the corresponding `test` is true.")
+(defmacro cond->> [val :rest steps]
+  (cond-last-internal val steps))
+
+(doc some-> "Monadic threading macro (first).
+Threads the unwrapped value of `val` (a Maybe) through each `form` in `steps`.
+Wraps the final result in a `Maybe.Just`. If `val` is `Nothing`, returns `Nothing`.
+Each form in `steps` must return a value, not a Maybe.")
+(defmacro some-> [val :rest steps]
+  `(match %val
+     (Maybe.Just x) (Maybe.Just (-> x %@steps))
+     (Maybe.Nothing) (Maybe.Nothing)))
+
+(doc some->> "Monadic threading macro (last).
+Threads the unwrapped value of `val` (a Maybe) through each `form` in `steps`.
+Wraps the final result in a `Maybe.Just`. If `val` is `Nothing`, returns `Nothing`.
+Each form in `steps` must return a value, not a Maybe.")
+(defmacro some->> [val :rest steps]
+  `(match %val
+     (Maybe.Just x) (Maybe.Just (--> x %@steps))
+     (Maybe.Nothing) (Maybe.Nothing)))
+
+(hidden maybe-and-then-internal)
+(defndynamic maybe-and-then-internal [acc steps]
+  (if (empty? steps)
+    acc
+    (maybe-and-then-internal
+      `(match %acc
+         (Maybe.Just x) (-> x %(car steps))
+         (Maybe.Nothing) (Maybe.Nothing))
+      (cdr steps))))
+
+(doc maybe-and-then-> "Monadic threading macro for Maybe (first).
+Threads a `Maybe` value through each `form` in `steps`.
+Each form must return a `Maybe`. If any step evaluates to `Nothing`, the entire expression results in `Nothing`.")
+(defmacro maybe-and-then-> [val :rest steps]
+  (maybe-and-then-internal val steps))
+
+(hidden result-and-then-internal)
+(defndynamic result-and-then-internal [acc steps]
+  (if (empty? steps)
+    acc
+    (result-and-then-internal
+      `(match %acc
+         (Result.Success x) (-> x %(car steps))
+         (Result.Error e) (Result.Error e))
+      (cdr steps))))
+
+(doc result-and-then-> "Monadic threading macro for Result (first).
+Threads a `Result` value through each `form` in `steps`.
+Each form must return a `Result`. If any step evaluates to `Error`, the entire expression results in the error.")
+(defmacro result-and-then-> [val :rest steps]
+  (result-and-then-internal val steps))
+
 (hidden comp-internal)
 (defndynamic comp-internal [sym fns]
   (if (= (length fns) 0)
@@ -185,6 +289,26 @@ Example:
   (let [name (gensym)]
     (list 'let [name form]
       (case-internal name branches))))
+
+(hidden cond-let-internal)
+(defndynamic cond-let-internal [xs]
+  (if (= (length xs) 0)
+    (list)
+    (if (= (length xs) 1)
+      (car xs)
+      (let [binding (car xs)
+            var (car binding)
+            expr (cadr binding)]
+        `(match %expr
+           (Maybe.Just %var) %(cadr xs)
+           (Maybe.Nothing) %(cond-let-internal (cddr xs)))))))
+
+(doc cond-let "Multibranch conditional with Maybe bindings.
+Each branch is a `[var expr]` binding and a body.
+If `expr` evaluates to `(Just x)`, `body` is executed with `var` bound to `x`.
+The final argument is an optional else branch.")
+(defmacro cond-let [:rest xs]
+  (cond-let-internal xs))
 
 (defmodule Dynamic
   (doc flip
