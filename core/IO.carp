@@ -40,6 +40,17 @@
       "Wraps `fgetc` from the C standard library.")
     (register fgetc (Fn [(Ptr FILE)] Int) "fgetc")
 
+    (register O-RDONLY Int "O_RDONLY")
+    (register O-WRONLY Int "O_WRONLY")
+    (register O-RDWR Int "O_RDWR")
+    (register O-APPEND Int "O_APPEND")
+    (register O-CREAT Int "O_CREAT")
+
+    (register open (Fn [&String Int] Int) "IO_Raw_open")
+    (register close-fd (Fn [Int] Int) "IO_Raw_close_fd")
+    (register fstat-size (Fn [Int] Long) "IO_Raw_fstat_size")
+    (register fileno (Fn [(Ptr FILE)] Int) "IO_Raw_fileno")
+
     (doc fputc
       "Writes a character to a [FILE](#file)"
       "Wraps `fputc` from the C standard library.")
@@ -97,7 +108,7 @@
     (register fread- (Fn [a Int Int (Ptr FILE)] Int) "fread")
 
     (doc fread
-      "Reads a given numebr of bytes from a file into C-String."
+      "Reads a given number of bytes from a file into C-String."
       "Wraps `fread` from the C standard library."
       "Consider using [`read-file`](#read-file) or"
       "[`unsafe-read-file`](#unsafe-read-file) instead.")
@@ -115,7 +126,7 @@
 
     (doc fflush!
       "Flushes buffered data via [`fflush`](#fflush)"
-      ", but discards the result, making this function appropraite for use as"
+      ", but discards the result, making this function appropriate for use as"
       "a side effect in `do` forms.")
     (defn fflush! [file]
       (ignore (fflush file)))
@@ -152,24 +163,6 @@
       "`do` forms.")
     (defn unlink! [file-name]
       (ignore (unlink file-name)))
-
-    (doc open
-      "Opens a file at `path` with the given flags (e.g. `IO.Raw.O-RDONLY`)."
-      "Returns a raw file descriptor, or -1 on error.")
-    (register open (Fn [&String Int] Int) "IO_Raw_open")
-
-    (doc close-fd "Closes a raw file descriptor.")
-    (register close-fd (Fn [Int] Int) "IO_Raw_close_fd")
-
-    (doc fstat-size
-      "Returns the size in bytes of an open file descriptor, or -1 on error.")
-    (register fstat-size (Fn [Int] Long) "IO_Raw_fstat_size")
-
-    (doc fileno "Returns the raw file descriptor underlying a FILE pointer.")
-    (register fileno (Fn [(Ptr FILE)] Int) "IO_Raw_fileno")
-
-    (doc O-RDONLY "Read-only flag for [`open`](#open).")
-    (register O-RDONLY Int "O_RDONLY")
 
     (doc fseek
       "Sets the position indicator of a [FILE](#file) based on a given"
@@ -215,19 +208,13 @@
       "Returns true if the position indicator for the given [FILE](#file)"
       "is at the end of file [`EOF`](#eof)."
       "Wraps `feof` from the C standard library.")
-    (register feof (Fn [(Ptr FILE) ] Bool) "feof")
+    (register feof (Fn [(Ptr FILE)] Bool) "feof")
 
     (doc ferror
       "Returns true if an error indicator is set for the"
       "given [FILE](#file)."
       "Wraps `ferror` from the C standard library.")
     (register ferror (Fn [(Ptr FILE)] Bool) "ferror")
-
-    (doc fgets
-      "Reads a line from the given [FILE](#file) and stores it into the given"
-      "buffer. Returns the buffer on success, or `NULL` on failure."
-      "Wraps `fgets` from the C standard library.")
-    (register fgets (Fn [(Ptr CChar) Int (Ptr FILE)] (Ptr CChar)) "fgets")
   )
 
   (doc println
@@ -337,6 +324,26 @@
             (Result.Success true)
             (Result.Error (fmt "only %d of %d bytes were written" bytes-written bytes2write)))))))
 
+  (doc read-line
+    "Reads a single line from a [FILE](#file) pointer."
+    "Returns a (Result String String) containing the line (without the newline character) or an error.")
+  (defn read-line [f]
+    (let-do [line []
+             res (fgetc f)]
+      (do
+        (while (Result.success? &res)
+          (match-ref &res
+            (Result.Success c)
+              (if (= @c \newline)
+                (break)
+                (do
+                  (set! line (Array.push-back line (Byte.from-int (Char.to-int @c))))
+                  (set! res (fgetc f))))
+            (Result.Error _) (break)))
+        (if (and (Array.empty? &line) (Result.error? &res))
+          (Result.Error (Result.unsafe-from-error res))
+          (Result.Success (String.from-bytes &line))))))
+
   (doc read-lines
     "Returns an array containing the lines of the file at the given path."
     ""
@@ -346,24 +353,16 @@
       (Result.Error e) (Result.Error e)
       (Result.Success f)
       (let-do [result []
-               line @""
-               buffer (String.allocate 4096 \0)]
-        (while (not (null? (IO.Raw.fgets (String.cstr &buffer) 4096 f)))
-          (let [s (String.from-cstr (String.cstr &buffer))]
-            (do
-              (set! line (String.append &line &s))
-              (when (String.ends-with? &line "\n")
-                (do
-                  (set! line (String.slice &line 0 (Int.dec (String.length &line)))) ; Strip newline
-                  (set! result (Array.push-back result @&line))
-                  (set! line @""))))))
-        (when (not (String.empty? &line))
-          (set! result (Array.push-back result @&line)))
-        (IO.Raw.fclose! f)
-        (Result.Success result))))
+               done false]
+        (do
+          (while (not done)
+            (match (read-line f)
+              (Result.Success line) (set! result (Array.push-back result line))
+              (Result.Error _) (set! done true)))
+          (IO.Raw.fclose! f)
+          (Result.Success result)))))
 
   (doc append-file
-
     "Appends a String to a text [FILE](#file), creating it if it does not exist."
     ""
     "Returns a (Result Bool String) indicating success or failure.")
