@@ -4,6 +4,7 @@
 (defmodule Double
   (doc pi "the mathematical constant π (3.141592653589793).")
   (def pi 3.141592653589793)
+  (implements pi Double.pi)
   (doc e "the mathematical constant e (2.718281828459045).")
   (def e 2.718281828459045)
   (doc MAX "the maximum value a Double can hold.")
@@ -126,7 +127,6 @@
   (implements tan Double.tan)
   (implements tanh Double.tanh)
   (implements sign Double.sign)
-  (implements pi Double.pi)
 
   (doc sign "Returns `-1.0` if `x` is negative, `0.0` if zero, or `1.0` if positive.
 

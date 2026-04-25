@@ -5,6 +5,7 @@ suffixed with `f`.")
 (defmodule Float
   (doc pi "the mathematical constant π (3.1415926536f).")
   (def pi 3.1415926536f)
+  (implements pi Float.pi)
   (doc MAX "the maximum value a Float can hold.")
   (register MAX Float "CARP_FLT_MAX")
   (implements MAX MAX)
@@ -141,7 +142,6 @@ The margin of error is 0.00001.")
   (implements tan Float.tan)
   (implements tanh Float.tanh)
   (implements sign Float.sign)
-  (implements pi Float.pi)
 
   (doc zero "returns `0.0f`.")
   (defn zero []

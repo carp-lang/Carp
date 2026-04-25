@@ -73,5 +73,3 @@
 (definterface empty? (Fn [&a] Bool))
 
 (definterface sign (Fn [a] a))
-
-(definterface pi a)
