@@ -50,7 +50,7 @@
   (doc from-chars "Creates a string from an array of characters.")
   (register from-chars (Fn [&(Array Char)] String))
   (doc tail "Returns the tail of a string (all characters except the first).")
-  (register tail (λ [(Ref String)] String))
+  (register tail (Fn [&String] String))
   (doc format "Formats a string.")
   (register format (Fn [&String &String] String))
   (implements format String.format)
