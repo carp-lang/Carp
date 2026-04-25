@@ -50,7 +50,7 @@
   (doc from-chars "Creates a string from an array of characters.")
   (register from-chars (Fn [&(Array Char)] String))
   (doc tail "Returns the tail of a string (all characters except the first).")
-  (register tail (λ [(Ref String)] String))
+  (register tail (Fn [&String] String))
   (doc format "Formats a string.")
   (register format (Fn [&String &String] String))
   (implements format String.format)
@@ -133,15 +133,9 @@
     (from-chars &(Array.suffix &(chars s) b)))
 
   (doc starts-with? "Check if the string `s` begins with the string `sub`.")
-  (defn starts-with? [s sub]
-    (let [ls (length sub)]
-      (and (>= (length s) ls) (= sub &(prefix s ls)))))
-
+  (register starts-with? (Fn [&String &String] Bool))
   (doc ends-with? "Check if the string `s` ends with the string `sub`.")
-  (defn ends-with? [s sub]
-    (let [ls (length s)
-          lsub (length sub)]
-      (and (>= ls lsub) (= sub &(suffix s (- ls lsub))))))
+  (register ends-with? (Fn [&String &String] Bool))
 
   (doc zero "The empty string.")
   (defn zero [] @"")
@@ -240,6 +234,47 @@
   (doc lines "splits a string into lines.")
   (defn lines [s]
     (split-by s &[\newline]))
+
+  (doc copy-map "Maps a function over the characters of a string, returning a new string.")
+  (defn copy-map [f s]
+    (from-chars &(Array.copy-map f &(chars s))))
+
+  (doc copy-filter "Filters the characters of a string using a predicate, returning a new string.")
+  (defn copy-filter [f s]
+    (from-chars &(Array.copy-filter f &(chars s))))
+
+  (doc any? "Checks if any character in a string satisfies a predicate.")
+  (defn any? [f s]
+    (Array.any? f &(chars s)))
+
+  (doc all? "Checks if all characters in a string satisfy a predicate.")
+  (defn all? [f s]
+    (Array.all? f &(chars s)))
+
+  (doc reduce "Reduces a string using a function and an initial value.")
+  (defn reduce [f init s]
+    (Array.reduce f init &(chars s)))
+
+  (doc replace "Replaces all occurrences of a literal substring in a string with another string.")
+  (defn replace [s needle replacement]
+    (if (empty? needle)
+      @s
+      (let [parts []
+            start 0
+            len (length s)
+            nlen (length needle)]
+        (do
+          (while (< start len)
+            (let [idx (index-of-string &(suffix s start) needle)]
+              (if (= idx -1)
+                (do
+                  (Array.push-back! &parts (suffix s start))
+                  (set! start len))
+                (do
+                  (Array.push-back! &parts (slice s start (+ start idx)))
+                  (Array.push-back! &parts @replacement)
+                  (set! start (+ start (+ idx nlen)))))))
+          (concat &parts)))))
 )
 
 (defmodule StringCopy
@@ -573,7 +608,6 @@
 )
 
 (defmodule Uint32Extra
-  (doc str "Converts a Uint32 reference to a string.")
   (defn str [a] (Uint32.str @a))
   (implements str Uint32Extra.str)
   (doc prn "Converts a Uint32 reference to a string for printing.")
