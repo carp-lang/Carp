@@ -76,9 +76,9 @@
 
   (doc implements? "Does `function` implement `interface`?")
   (defmacro implements? [interface function]
-    (eval (list 'any?
-                (list 'fn (array 'x) (list '= 'x interface))
-                (list 'meta function "implements"))))
+    (list 'any?
+          (list 'fn (array 'x) (list '= 'x interface))
+          (list 'meta function "implements")))
 
   (doc arity
     "What's the arity of this binding?

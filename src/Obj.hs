@@ -6,6 +6,7 @@ module Obj where
 
 import Control.Applicative
 import Control.Monad.State
+import Control.Monad (zipWithM)
 import Data.Char
 import Data.Hashable
 import Data.List (intercalate)
@@ -218,6 +219,10 @@ isLiteral _ = False
 isBool :: XObj -> Bool
 isBool (XObj (Bol _) _ _) = True
 isBool _ = False
+
+isStr :: XObj -> Bool
+isStr (XObj (Str _) _ _) = True
+isStr _ = False
 
 isExternalFunction :: XObj -> Bool
 isExternalFunction (XObj (Lst (XObj (External _) _ _ : _)) _ _) = True

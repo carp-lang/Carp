@@ -1,9 +1,17 @@
 -- | Defines a frontend for manipulating Project level data.
 module ProjectConfig (projectKeyMap) where
 
+import Data.Either (rights)
 import Info
 import qualified Map
 import Obj
+    ( XObj(XObj),
+      Obj(Str, Lst, Bol),
+      unwrapStringXObj,
+      wrapString,
+      wrapList,
+      wrapArray,
+      isStr )
 import Project
 import Util
 
@@ -46,24 +54,15 @@ projectGetPreproc proj =
 -- | Get the project's C compiler flags.
 projectGetCFlags :: ProjectGetter
 projectGetCFlags proj =
-  let fs = projectPreproc proj
+  let fs = projectCFlags proj
    in wrapList (map wrapString fs)
 
 -- | Set the project's C compiler flags
---
--- NOTE: This retains existing behavior in which one can only add one flag at
--- a time and the flags are append only. A slightly more functional interface
--- would take a list of flags as arguments; e.g. to add *one* flag:
---
---   (Project.config "cflags" (cons "-my-flag" (Project.get-config "cflags")))
---
---   or to wipe the flags whole-cloth (e.g. for a different target)
---
---   (Project.config "cflags" ("-my" "-new" "-flags"))
---
---   likewise for flag removal etc.
 projectSetCFlags :: ProjectSetter
-projectSetCFlags proj (XObj (Str f) _ _) = Right (proj {projectCFlags = addIfNotPresent f (projectCFlags proj)})
+projectSetCFlags proj (XObj (Lst flags) _ _) =
+  if not $ all isStr flags
+    then Left "can't use a non-string as a C compiler flag"
+    else Right proj {projectCFlags = rights $ map unwrapStringXObj flags}
 projectSetCFlags _ _ = Left "can't use a non-string as a C compiler flag"
 
 -- | Get the project's C compiler library flags.
@@ -73,20 +72,11 @@ projectGetLibFlags proj =
    in wrapList (map wrapString ls)
 
 -- | Set the project's C compiler library flags
---
--- NOTE: This retains existing behavior in which one can only add one flag at
--- a time and the flags are append only. A slightly more functional interface
--- would take a list of flags as arguments; e.g. to add *one* flag:
---
---   (Project.config "libflags" (cons "-lmylib" (Project.get-config "libflags")))
---
---   or to wipe the flags whole-cloth (e.g. for a different target)
---
---   (Project.config "libflags" ("-lmy" "-lnew" "-llibflags"))
---
---   likewise for flag removal etc.
 projectSetLibFlags :: ProjectSetter
-projectSetLibFlags proj (XObj (Str flag) _ _) = Right (proj {projectLibFlags = addIfNotPresent flag (projectLibFlags proj)})
+projectSetLibFlags proj (XObj (Lst flags) _ _) =
+  if not $ all isStr flags
+    then Left "can't use a non-string as a C compiler library flag"
+    else Right proj {projectLibFlags = rights $ map unwrapStringXObj flags}
 projectSetLibFlags _ _ = Left "can't use non-string as library flag"
 
 -- | Get the pkg-config flags for the project.
@@ -96,21 +86,11 @@ projectGetPkgConfigFlags proj =
    in wrapArray (map wrapString fs)
 
 -- | Set the project's pkg-config flags
---
--- NOTE: This retains existing behavior in which one can only add one flag at
--- a time and the flags are append only. A slightly more functional interface
--- would take a list of flags as arguments; e.g. to add *one* flag:
---
---   (Project.config "pkgconfigflags" (cons "-lmylib" (Project.get-config
---   "pkgconfigflags")))
---
---   or to wipe the flags whole-cloth (e.g. for a different target)
---
---   (Project.config "pkgconfigflags" ("-lmy" "-lnew" "-llibflags"))
---
---   likewise for flag removal etc.
 projectSetPkgConfigFlags :: ProjectSetter
-projectSetPkgConfigFlags proj (XObj (Str flag) _ _) = Right (proj {projectPkgConfigFlags = addIfNotPresent flag (projectPkgConfigFlags proj)})
+projectSetPkgConfigFlags proj (XObj (Lst flags) _ _) =
+  if not $ all isStr flags
+    then Left "can't use a non-string as a C compiler library flag"
+    else Right proj {projectPkgConfigFlags = rights $ map unwrapStringXObj flags}
 projectSetPkgConfigFlags _ _ = Left "can't use non-string as pkg-config flag"
 
 projectGetEchoC :: ProjectGetter
@@ -308,6 +288,15 @@ projectSetCModules _ _ = Left "can't use non-string as c module"
 projectGetLoadStack :: ProjectGetter
 projectGetLoadStack proj = wrapArray (map wrapString (projectLoadStack proj))
 
+-- | Get the line-directives configuration option for the project.
+projectGetLineDirectives :: ProjectGetter
+projectGetLineDirectives proj = XObj (Bol (projectLineDirectives proj)) Nothing Nothing
+
+-- | Set the line-directives configuration option for the project.
+projectSetLineDirectives :: ProjectSetter
+projectSetLineDirectives proj (XObj (Bol b) _ _) = Right (proj {projectLineDirectives = b})
+projectSetLineDirectives _ _ = Left "can't use non-bool as line-directives option"
+
 -- | Mapping of compiler defined project keys to getter and setter functions.
 -- This helps ensure we automatically enable access of project configuration
 -- fields from Carp as they are added to the compiler.
@@ -344,5 +333,6 @@ projectKeyMap =
       ("paren-balance-hints", (Just projectGetBalanceHints, Just projectSetBalanceHints)),
       ("force-reload", (Just projectGetForceReload, Just projectSetForceReload)),
       ("cmod", (Just projectGetCModules, Just projectSetCModules)),
-      ("load-stack", (Just projectGetLoadStack, Nothing))
+      ("load-stack", (Just projectGetLoadStack, Nothing)),
+      ("line-directives", (Just projectGetLineDirectives, Just projectSetLineDirectives))
     ]

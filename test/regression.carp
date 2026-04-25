@@ -49,6 +49,23 @@
 
 (use-all Test Vector2 Foo)
 
+;; importing a module and its submodules should not duplicate root bindings (#1455)
+(defmodule DuplicateUseRoot
+  (defn unique-fn [x] x)
+  (defmodule ChildA
+    (defn a [] 0)
+    (defn from-a [x] (DuplicateUseRoot.unique-fn x)))
+  (defmodule ChildB
+    (defn b [] 0)
+    (defn from-b [x] (DuplicateUseRoot.unique-fn x))))
+
+(use DuplicateUseRoot)
+(use DuplicateUseRoot.ChildA)
+(use DuplicateUseRoot.ChildB)
+
+(defn duplicate-use-root-resolution []
+  (the Int (unique-fn 42)))
+
 (defn test-unreachable []
   (match (the (Maybe Int) (Maybe.Nothing))
     (Maybe.Nothing) true
@@ -157,6 +174,10 @@
                 2
                 @(Bar.Baz.it &(poly-nest-one 2))
                 "test that polymorphic types in modules are emitted")
+  (assert-equal test
+                42
+                (duplicate-use-root-resolution)
+                "test that using nested modules does not duplicate root symbol lookups")
   (assert-equal test
                 2
                 @(Bar.Baz.it (Bar.Qux.it &(poly-nest-two 2)))

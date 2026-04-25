@@ -11,7 +11,7 @@ let
         cabal-install clang gdb
         ormolu hlint flamegraph ghc-prof-flamegraph
       ] ++ lib.optionals stdenv.isLinux [ linuxPackages.perf tinycc zig ];
-      pkg-configDepends = [ SDL2 SDL2_image SDL2_mixer SDL2_ttf glfw ];
+      pkg-configDepends = [  ];
       enableLibraryProfiling = profiling;
       enableExecutableProfiling = profiling;
       enableSharedLibraries = false;
@@ -20,7 +20,7 @@ let
   };
   drv = with pkgs; odrv.overrideAttrs (o: {
     inherit doCheck;
-    buildInputs = o.buildInputs ++ [ makeWrapper pkgconfig ];
+    buildInputs = o.buildInputs ++ [ makeWrapper pkg-config ];
     postPatch = ''
       patchShebangs .
     '';
@@ -29,7 +29,7 @@ let
       wrapProgram $out/bin/carp-header-parse --set CARP_DIR $src --prefix PATH : ${clang}/bin
     '';
     postCheck = ''
-      env CARP=dist/build/carp/carp scripts/run_carp_tests.sh
+      env CARP=dist/build/carp/carp scripts/run_carp_tests.sh -j 4 --no_sdl
     '';
     enableParallelBuilding = true;
     });

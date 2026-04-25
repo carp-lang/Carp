@@ -38,6 +38,25 @@
                       &(Result.unsafe-from-success result)
                       "append-file appends to existing file"))))
 
+  ; IO.Raw.open / fstat-size / close-fd
+  (assert-true test
+    (let-do [fd (IO.Raw.open "test/io.carp" IO.Raw.O-RDONLY)
+             ok (> fd 0)
+             sz (IO.Raw.fstat-size fd)]
+      (ignore (IO.Raw.close-fd fd))
+      (and ok (> sz 0l)))
+    "IO.Raw.open, fstat-size, close-fd round-trip")
+  (assert-true test
+    (< (IO.Raw.open "/nonexistent/path" IO.Raw.O-RDONLY) 0)
+    "IO.Raw.open returns negative for missing file")
+  ; IO.Raw.fileno
+  (assert-true test
+    (let-do [fp (IO.Raw.fopen "test/io.carp" "r")
+             fd (IO.Raw.fileno fp)]
+      (IO.Raw.fclose! fp)
+      (> fd 0))
+    "IO.Raw.fileno returns positive fd for open FILE")
+
   (let [file-name "test_read_lines.txt"
         content "line 1\nline 2\nline 3"]
     (do

@@ -193,8 +193,9 @@ commandBuild ctx [XObj (Bol shutUp) _ _] = do
       src = do
         typeDecl <- typeEnvToDeclarations typeEnv env
         decl <- envToDeclarations typeEnv env
-        c <- envToC env Functions
-        initGlobals <- fmap (wrapInInitFunction (projectCore proj)) (globalsToC env)
+        let emitLines = projectLineDirectives proj
+        c <- envToC env Functions emitLines
+        initGlobals <- fmap (wrapInInitFunction (projectCore proj)) (globalsToC emitLines env)
         pure
           ( "//Types:\n" ++ typeDecl
               ++ "\n\n//Declarations:\n"
@@ -312,6 +313,18 @@ commandHostOS ctx =
 commandHostArch :: NullaryCommandCallback
 commandHostArch ctx =
   pure (ctx, Right (XObj (Str arch) (Just dummyInfo) (Just StringTy)))
+
+-- | Command for running an arbitrary shell command string.
+commandShell :: UnaryCommandCallback
+commandShell ctx (XObj (Str cmd) _ _) = liftIO $ do
+  exitCode <- try (callCommand cmd) :: IO (Either SomeException ())
+  case exitCode of
+    Right () -> pure (ctx, dynamicNil)
+    Left e -> do
+      putStrLnWithColor Red ("Shell command failed: " ++ show e)
+      pure (ctx, dynamicNil)
+commandShell ctx x =
+  pure (evalError ctx ("`shell` expected a string argument, but got `" ++ pretty x ++ "`.") (xobjInfo x))
 
 -- | Command for adding a header file include to the project.
 commandAddInclude :: (String -> Includer) -> UnaryCommandCallback

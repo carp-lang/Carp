@@ -58,12 +58,13 @@ data TypeError
   | InvalidLetBinding [XObj] (XObj, XObj)
   | DuplicateBinding XObj
   | DefinitionsMustBeAtToplevel XObj
-  | UsingDeadReference XObj String
+  | UsingDeadReference XObj String (Maybe String)
   | UninhabitedConstructor Ty XObj Int Int
   | InconsistentKinds String [XObj]
   | FailedToAddLambdaStructToTyEnv SymPath XObj
   | FailedToInstantiateGenericType Ty
   | InvalidStructField XObj
+  | GivingAwayCapturedValue XObj
 
 instance Show TypeError where
   show (SymbolMissingType xobj env) =
@@ -322,8 +323,8 @@ instance Show TypeError where
     "I encountered a duplicate binding `" ++ pretty xobj ++ "` inside the `let` at " ++ prettyInfoFromXObj xobj ++ "."
   show (DefinitionsMustBeAtToplevel xobj) =
     "I encountered a definition that was not at top level: `" ++ pretty xobj ++ "`"
-  show (UsingDeadReference xobj dependsOn) =
-    "The reference '" ++ pretty xobj ++ "' (depending on the variable '" ++ dependsOn ++ "') isn't alive at " ++ prettyInfoFromXObj xobj ++ "."
+  show (UsingDeadReference xobj dependsOn originalName) =
+    "The reference '" ++ pretty xobj ++ "' (depending on the variable '" ++ (fromMaybe dependsOn originalName) ++ "') isn't alive at " ++ prettyInfoFromXObj xobj ++ "."
   show (UninhabitedConstructor ty xobj got wanted) =
     "Can't use a struct or sumtype constructor without arguments as a member type at " ++ prettyInfoFromXObj xobj ++ ". The type constructor " ++ show ty ++ " expects " ++ show wanted ++ " arguments but got " ++ show got
   show (InconsistentKinds varName xobjs) =
@@ -334,6 +335,9 @@ instance Show TypeError where
       ++ " to the type environment."
   show (FailedToInstantiateGenericType ty) =
     "I couldn't instantiate the generic type " ++ show ty
+  show (GivingAwayCapturedValue xobj) =
+    "Can't give away the captured value '" ++ pretty xobj ++ "' at " ++ prettyInfoFromXObj xobj
+      ++ ". Captured values can be borrowed with `&` or copied with `@&`, not moved."
 
 machineReadableErrorStrings :: FilePathPrintLength -> TypeError -> [String]
 machineReadableErrorStrings fppl err =
@@ -449,7 +453,7 @@ machineReadableErrorStrings fppl err =
       [machineReadableInfoFromXObj fppl xobj ++ " Duplicate binding `" ++ pretty xobj ++ "` inside `let`."]
     (DefinitionsMustBeAtToplevel xobj) ->
       [machineReadableInfoFromXObj fppl xobj ++ " Definition not at top level: `" ++ pretty xobj ++ "`"]
-    (UsingDeadReference xobj _) ->
+    (UsingDeadReference xobj _ _) ->
       [machineReadableInfoFromXObj fppl xobj ++ " The reference '" ++ pretty xobj ++ "' isn't alive."]
     (UninhabitedConstructor ty xobj got wanted) ->
       [machineReadableInfoFromXObj fppl xobj ++ "Can't use a struct or sumtype constructor without arguments as a member type at " ++ prettyInfoFromXObj xobj ++ ". The type constructor " ++ show ty ++ " expects " ++ show wanted ++ " arguments but got " ++ show got]
@@ -460,6 +464,8 @@ machineReadableErrorStrings fppl err =
           ++ pretty xobj
           ++ " to the type environment."
       ]
+    (GivingAwayCapturedValue xobj) ->
+      [machineReadableInfoFromXObj fppl xobj ++ " Can't give away captured value '" ++ pretty xobj ++ "'."]
     _ ->
       [show err]
 

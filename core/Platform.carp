@@ -45,7 +45,7 @@
 (doc target-only "conditionally compile forms when b is true.")
 (defndynamic target-only [b forms]
   (when b
-    (eval (cons 'do forms))))
+    (cons 'do forms)))
 
 (doc mac-only "compile forms only on Mac.")
 (defmacro mac-only [:rest forms]

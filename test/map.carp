@@ -120,6 +120,20 @@
   )
   (assert-equal test
                 true
+                (let-do [m (Map.put (Map.create) "a" "b")]
+                  (Map.remove! &m "a")
+                  (Map.empty? &m))
+                "remove! works"
+  )
+  (assert-equal test
+                1
+                (let-do [m (Map.put (Map.put (Map.create) "a" "1") "b" "2")]
+                  (Map.remove! &m "a")
+                  (Map.length &m))
+                "remove! leaves other entries"
+  )
+  (assert-equal test
+                true
                 (Map.all? &(fn [k v] (or (Int.even? @k) @v)) &{1 true 2 false 4 false})
                 "Map.all? works I"
   )

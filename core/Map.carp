@@ -315,6 +315,14 @@
                                  (Array.aset b idx (Bucket.shrink @n k)))))
           &Int.dec))))
 
+  (doc remove! "Remove the value under the key k from the map m, in place.")
+  (defn remove! [m k]
+    (let [idx (Int.positive-mod (hash k) @(n-buckets m))
+          n (Array.unsafe-nth (buckets m) idx)]
+      (when (Bucket.contains? n k)
+        (do (Array.aset! (buckets m) idx (Bucket.shrink @n k))
+            (set-len! m (Int.dec @(len m)))))))
+
   (doc all? "Do all key-value pairs pass the given predicate (of two arguments)?")
   (defn all? [pred m]
     (let-do [ret true]

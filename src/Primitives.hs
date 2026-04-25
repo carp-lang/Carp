@@ -184,7 +184,7 @@ define hidden ctx qualifiedXObj = do
     defineInTypeEnv = pure . fromRight ctx . (insertTypeBinder ctx qpath)
     defineInGlobalEnv :: Binder -> IO Context
     defineInGlobalEnv newBinder =
-      when (projectEchoC (contextProj ctx) && canBeEmitted annXObj) (putStrLn (toC All (Binder emptyMeta annXObj)))
+      when (projectEchoC (contextProj ctx) && canBeEmitted annXObj) (putStrLn (toC All False [] (Binder emptyMeta annXObj)))
         >> case (lookupBinderInGlobalEnv ctx qpath) of
           Left _ -> pure (fromRight ctx (insertInGlobalEnv ctx qpath newBinder))
           Right oldBinder -> redefineExistingBinder oldBinder newBinder
