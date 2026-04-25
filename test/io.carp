@@ -37,6 +37,7 @@
                       "hello world"
                       &(Result.unsafe-from-success result)
                       "append-file appends to existing file"))))
+
   ; IO.Raw.open / fstat-size / close-fd
   (assert-true test
     (let-do [fd (IO.Raw.open "test/io.carp" IO.Raw.O-RDONLY)
@@ -55,4 +56,19 @@
       (IO.Raw.fclose! fp)
       (> fd 0))
     "IO.Raw.fileno returns positive fd for open FILE")
+
+  (let [file-name "test_read_lines.txt"
+        content "line 1\nline 2\nline 3"]
+    (do
+      (ignore (IO.write-file content file-name))
+      (let [lines-res (IO.read-lines file-name)]
+        (let-do [t1 (assert-true test (Result.success? &lines-res) "read-lines success")
+                 lines (Result.unsafe-from-success lines-res)
+                 t2 (assert-equal (ref t1) 3 (Array.length &lines) "read-lines correct number of lines")
+                 t3 (assert-equal (ref t2) &@"line 1" (Array.unsafe-nth &lines 0) "line 1 correct")
+                 t4 (assert-equal (ref t3) &@"line 2" (Array.unsafe-nth &lines 1) "line 2 correct")
+                 t5 (assert-equal (ref t4) &@"line 3" (Array.unsafe-nth &lines 2) "line 3 correct")]
+          (do
+            (ignore (IO.Raw.unlink! file-name))
+            t5)))))
 )
