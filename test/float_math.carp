@@ -228,4 +228,10 @@
     (assert-true test
                  (and (Float.approx frac 0.7f) (Float.approx int-part 3.0f))
                  "modf returns correct fractional and integer parts"))
+  (assert-true test (positive? 1.0f) "positive? works as expected I")
+  (assert-false test (positive? 0.0f) "positive? works as expected II")
+  (assert-false test (positive? -1.0f) "positive? works as expected III")
+  (assert-true test (negative? -1.0f) "negative? works as expected I")
+  (assert-false test (negative? 0.0f) "negative? works as expected II")
+  (assert-false test (negative? 1.0f) "negative? works as expected III")
 )
