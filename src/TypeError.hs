@@ -411,17 +411,17 @@ machineReadableErrorStrings fppl err =
     (NotAValidType xobj) ->
       [machineReadableInfoFromXObj fppl xobj ++ " Not a valid type: " ++ pretty xobj ++ "."]
     (NotAType xobj) ->
-      [machineReadableInfoFromXObj fppl xobj ++ " Can't understand the type '" ++ pretty xobj ++ "'."]
+      [machineReadableInfoFromXObj fppl xobj ++ " I don't understand the type '" ++ pretty xobj ++ "'. Is it defined? If it's an external type, make sure it's registered using 'register-type'."]
     (FunctionsCantReturnRefTy xobj t) ->
-      [machineReadableInfoFromXObj fppl xobj ++ " Functions can't return references. " ++ getName xobj ++ " : " ++ show t ++ "."]
+      [machineReadableInfoFromXObj fppl xobj ++ " Functions can't return references. The function '" ++ getName xobj ++ "' has the type " ++ show t ++ ". You’ll have to copy the return value using `@` or return an owned value."]
     (LetCantReturnRefTy xobj t) ->
-      [machineReadableInfoFromXObj fppl xobj ++ " Let-expressions can't return references. '" ++ pretty xobj ++ "' : " ++ show t ++ "."]
+      [machineReadableInfoFromXObj fppl xobj ++ " `let` expressions can't return references. The expression '" ++ pretty xobj ++ "' has the type " ++ show t ++ ". You’ll have to copy the return value using `@` or return an owned value."]
     (GettingReferenceToUnownedValue xobj) ->
       [machineReadableInfoFromXObj fppl xobj ++ " Referencing a given-away value '" ++ pretty xobj ++ "'."]
     (UsingUnownedValue xobj) ->
       [machineReadableInfoFromXObj fppl xobj ++ " Using a given-away value '" ++ pretty xobj ++ "'."]
     (UsingCapturedValue xobj) ->
-      [machineReadableInfoFromXObj fppl xobj ++ " Using a captured value '" ++ pretty xobj ++ "'."]
+      [machineReadableInfoFromXObj fppl xobj ++ " Using a captured value '" ++ pretty xobj ++ "'. Captured values can't be moved. You'll have to borrow it using `&` or copy it using `@`."]
     (ArraysCannotContainRefs xobj) ->
       [machineReadableInfoFromXObj fppl xobj ++ " Arrays can't contain references: '" ++ pretty xobj ++ "'."]
     (MainCanOnlyReturnUnitOrInt xobj t) ->
@@ -453,17 +453,18 @@ machineReadableErrorStrings fppl err =
           ++ "`. Use `Ptr` or `Box`."
       ]
     (NotAmongRegisteredTypes t xobj) ->
-      [machineReadableInfoFromXObj fppl xobj ++ " The type '" ++ show t ++ "' isn't defined."]
+      [machineReadableInfoFromXObj fppl xobj ++ " The type '" ++ show t ++ "' isn't defined. Is it defined? If it's an external type, make sure it's registered using 'register-type'."]
     (UnevenMembers xobjs) ->
       [machineReadableInfoFromXObj fppl (head xobjs) ++ " Uneven nr of members / types: " ++ joinWithComma (map pretty xobjs)]
     (InvalidLetBinding xobjs (sym, expr)) ->
       [machineReadableInfoFromXObj fppl (head xobjs) ++ "Invalid let binding `" ++ pretty sym ++ pretty expr ++ "` at " ++ joinWithComma (map pretty xobjs)]
     (DuplicateBinding xobj) ->
-      [machineReadableInfoFromXObj fppl xobj ++ " Duplicate binding `" ++ pretty xobj ++ "` inside `let`."]
+      [machineReadableInfoFromXObj fppl xobj ++ " Duplicate binding `" ++ pretty xobj ++ "` inside `let`. Each name in a `let` must be unique."]
     (DefinitionsMustBeAtToplevel xobj) ->
       [machineReadableInfoFromXObj fppl xobj ++ " Definition not at top level: `" ++ pretty xobj ++ "`"]
-    (UsingDeadReference xobj _) ->
-      [machineReadableInfoFromXObj fppl xobj ++ " The reference '" ++ pretty xobj ++ "' isn't alive."]
+    (UsingDeadReference xobj dependsOn) ->
+      [machineReadableInfoFromXObj fppl xobj ++ " The reference '" ++ pretty xobj ++ "' is no longer valid because the value it depends on (`" ++ dependsOn ++ "`) has been moved or deleted."]
+
     (UninhabitedConstructor ty xobj got wanted) ->
       [machineReadableInfoFromXObj fppl xobj ++ "Can't use a struct or sumtype constructor without arguments as a member type at " ++ prettyInfoFromXObj xobj ++ ". The type constructor " ++ show ty ++ " expects " ++ show wanted ++ " arguments but got " ++ show got]
     (InconsistentKinds varName xobjs) ->
