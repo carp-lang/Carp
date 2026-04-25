@@ -1,1 +1,1 @@
-return_ref_to_array_literal.carp:4:4 The reference '(ref [1 2 3])' isn't alive.
+return_ref_to_array_literal.carp:4:4 The reference '(ref [1 2 3])' is no longer valid.

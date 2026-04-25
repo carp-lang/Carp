@@ -58,7 +58,7 @@ data TypeError
   | InvalidLetBinding [XObj] (XObj, XObj)
   | DuplicateBinding XObj
   | DefinitionsMustBeAtToplevel XObj
-  | UsingDeadReference XObj String
+  | UsingDeadReference XObj String (Maybe String)
   | UninhabitedConstructor Ty XObj Int Int
   | InconsistentKinds String [XObj]
   | FailedToAddLambdaStructToTyEnv SymPath XObj
@@ -330,8 +330,8 @@ instance Show TypeError where
       ++ ".\n\nEach name in a `let` must be unique."
   show (DefinitionsMustBeAtToplevel xobj) =
     "I encountered a definition that was not at top level: `" ++ pretty xobj ++ "`"
-  show (UsingDeadReference xobj dependsOn) =
-    "The reference '" ++ pretty xobj ++ "' is no longer valid because the value it depends on (`" ++ dependsOn ++ "`) has been moved or deleted at "
+  show (UsingDeadReference xobj dependsOn originalName) =
+    "The reference '" ++ pretty xobj ++ "' is no longer valid because the value it depends on (`" ++ fromMaybe dependsOn originalName ++ "`) has been moved or deleted at "
       ++ prettyInfoFromXObj xobj
       ++ "."
   show (UninhabitedConstructor ty xobj got wanted) =
@@ -462,8 +462,8 @@ machineReadableErrorStrings fppl err =
       [machineReadableInfoFromXObj fppl xobj ++ " Duplicate binding `" ++ pretty xobj ++ "` inside `let`. Each name in a `let` must be unique."]
     (DefinitionsMustBeAtToplevel xobj) ->
       [machineReadableInfoFromXObj fppl xobj ++ " Definition not at top level: `" ++ pretty xobj ++ "`"]
-    (UsingDeadReference xobj dependsOn) ->
-      [machineReadableInfoFromXObj fppl xobj ++ " The reference '" ++ pretty xobj ++ "' is no longer valid because the value it depends on (`" ++ dependsOn ++ "`) has been moved or deleted."]
+    (UsingDeadReference xobj _ _) ->
+      [machineReadableInfoFromXObj fppl xobj ++ " The reference '" ++ pretty xobj ++ "' is no longer valid."]
 
     (UninhabitedConstructor ty xobj got wanted) ->
       [machineReadableInfoFromXObj fppl xobj ++ "Can't use a struct or sumtype constructor without arguments as a member type at " ++ prettyInfoFromXObj xobj ++ ". The type constructor " ++ show ty ++ " expects " ++ show wanted ++ " arguments but got " ++ show got]

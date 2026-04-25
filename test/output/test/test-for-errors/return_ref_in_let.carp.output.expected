@@ -1,1 +1,1 @@
-return_ref_in_let.carp:5:5 The reference 'xs' isn't alive.
+return_ref_in_let.carp:5:5 The reference 'xs' is no longer valid.

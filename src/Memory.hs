@@ -23,7 +23,8 @@ data MemState = MemState
   { memStateDeleters :: Set.Set Deleter,
     memStateDeps :: Set.Set Ty,
     memStateLifetimes :: Map.Map String LifetimeMode,
-    memStateParamDeleters :: Set.Set Deleter
+    memStateParamDeleters :: Set.Set Deleter,
+    memStateNames :: Map.Map String String
   }
   deriving (Show)
 
@@ -39,7 +40,7 @@ data LifetimeMode
 -- | the code emitter can access them and insert calls to destructors.
 manageMemory :: TypeEnv -> Env -> XObj -> Either TypeError (XObj, Set.Set Ty)
 manageMemory typeEnv globalEnv root =
-  let (finalObj, finalState) = runState (visit root) (MemState Set.empty Set.empty Map.empty Set.empty)
+  let (finalObj, finalState) = runState (visit root) (MemState Set.empty Set.empty Map.empty Set.empty Map.empty)
       deleteThese = memStateDeleters finalState
       deps = memStateDeps finalState
    in -- (trace ("Delete these: " ++ joinWithComma (map show (Set.toList deleteThese)))) $
@@ -54,7 +55,7 @@ manageMemory typeEnv globalEnv root =
               -- considered alive, and returnRefTargetIsAlive so only return-
               -- type lifetimes are checked (not the function type's own
               -- lifetime, which may have had internal temporaries merged in).
-              case evalState (returnRefTargetIsAlive ok) (MemState (memStateParamDeleters finalState) Set.empty (memStateLifetimes finalState) Set.empty) of
+              case evalState (returnRefTargetIsAlive ok) (MemState (memStateParamDeleters finalState) Set.empty (memStateLifetimes finalState) Set.empty (memStateNames finalState)) of
                 Left err -> Left err
                 Right _ -> Right (ok {xobjInfo = newInfo}, deps)
   where
@@ -465,6 +466,10 @@ manageMemory typeEnv globalEnv root =
       do
         visitedExpr <- visit expr
         addToLifetimesMappingsIfRef True expr
+        m <- get
+        let internalName = getName name
+            origName = getSimpleName name
+        put (m { memStateNames = Map.insert internalName origName (memStateNames m) })
         -- ensures this deleter is the only deleter associated with name for the duration of the let scope (shadowing).
         result <- exclusiveTransferOwnership typeEnv globalEnv expr name
         whenRightReturn result $ do
@@ -473,6 +478,10 @@ manageMemory typeEnv globalEnv root =
     visitArg :: XObj -> State MemState (Either TypeError XObj)
     visitArg xobj@(XObj _ _ (Just _)) =
       do
+        m <- get
+        let internalName = getName xobj
+            origName = getSimpleName xobj
+        put (m { memStateNames = Map.insert internalName origName (memStateNames m) })
         afterVisit <- visit xobj
         case afterVisit of
           Right okAfterVisit -> do
@@ -625,11 +634,12 @@ refTargetIsAlive xobj =
              in case Set.toList deadVars of
                   [] -> pure (Right xobj)
                   (deadName : _) ->
-                    pure
-                      ( case xobjObj xobj of
-                          (Lst (LetPat _ _ body)) -> Left (UsingDeadReference body deadName)
-                          _ -> Left (UsingDeadReference xobj deadName)
-                      )
+                    let originalName = Map.lookup deadName (memStateNames m)
+                     in pure
+                          ( case xobjObj xobj of
+                              (Lst (LetPat _ _ body)) -> Left (UsingDeadReference body deadName originalName)
+                              _ -> Left (UsingDeadReference xobj deadName originalName)
+                          )
           Just LifetimeOutsideFunction ->
             pure (Right xobj)
           Just (LifetimeMixed _) ->
@@ -676,7 +686,8 @@ returnRefTargetIsAlive xobj =
               let reportOn = case xobjObj fnBody of
                     Lst (LetPat _ _ body) -> body
                     _ -> fnBody
-               in pure (Left (UsingDeadReference reportOn deadName))
+                  originalName = Map.lookup deadName (memStateNames m)
+               in pure (Left (UsingDeadReference reportOn deadName originalName))
 
 -- | Map from lifetime variables (of refs) to a `LifetimeMode`
 -- | (usually containing the name of the XObj that the lifetime is tied to).
