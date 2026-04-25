@@ -225,30 +225,44 @@
 
     (doc list-dir
       "Returns an array containing the names of the entries in the directory"
-      "designated by `path`, skipping `.` and `..`.")
-    (register list-dir (Fn [&String] (Array String)) "IO_Raw_list_MINUS_dir")
+      "designated by `path`, skipping `.` and `..`."
+      "Returns 0 on success, -1 on failure.")
+    (register list-dir (Fn [&String (Ref (Array String))] Int) "IO_Raw_list_MINUS_dir")
 
     (doc mkdir
       "Creates a directory at the given path."
       "Returns an integer indicating success (0) or failure (-1)."
       "Wraps `mkdir` from the C standard library.")
-    (register mkdir (Fn [&String] Int) "IO_mkdir")
+    (register mkdir (Fn [&String] Int) "IO_Raw_mkdir")
 
     (doc rmdir
       "Removes a directory at the given path."
       "Returns an integer indicating success (0) or failure (-1)."
       "Wraps `rmdir` from the C standard library.")
-    (register rmdir (Fn [&String] Int) "IO_rmdir")
+    (register rmdir (Fn [&String] Int) "IO_Raw_rmdir")
 
-    (register get-cwd (Fn [] (Ptr CChar)) "IO_Raw_get_MINUS_cwd")
+    (doc get-cwd
+      "Returns the current working directory as an owned string.")
+    (register get-cwd (Fn [] String) "IO_Raw_get_MINUS_cwd")
+
+    (doc set-cwd
+      "Sets the current working directory to `path`.")
     (register set-cwd (Fn [&String] Int) "IO_Raw_set_MINUS_cwd")
+
+    (doc file-exists? "Checks if a file exists at the given path.")
+    (register file-exists? (Fn [&String] Bool) "IO_Raw_file_MINUS_exists_QMARK_")
+
+    (doc dir-exists? "Checks if a directory exists at the given path.")
+    (register dir-exists? (Fn [&String] Bool) "IO_Raw_dir_MINUS_exists_QMARK_")
   )
 
   (doc file-exists? "Checks if a file exists at the given path.")
-  (register file-exists? (Fn [&String] Bool))
+  (defn file-exists? [path]
+    (IO.Raw.file-exists? path))
 
   (doc dir-exists? "Checks if a directory exists at the given path.")
-  (register dir-exists? (Fn [&String] Bool))
+  (defn dir-exists? [path]
+    (IO.Raw.dir-exists? path))
 
   (doc get-cwd
     "Returns the current working directory."
@@ -256,12 +270,9 @@
     "Returns a (Result String String) indicating success or failure.")
   (defn get-cwd []
     (let [res (IO.Raw.get-cwd)]
-      (if (null? res)
+      (if (String.empty? &res)
         (Result.Error (fmt "Failed to get current working directory: %s" &(System.error-text)))
-        (let [s (String.from-cstr res)]
-          (do
-            (Pointer.free res)
-            (Result.Success s))))))
+        (Result.Success res))))
 
   (doc set-cwd
     "Sets the current working directory to `path`."
@@ -296,10 +307,11 @@
     ""
     "Returns a (Result (Array String) String) indicating success or failure.")
   (defn list-dir [path]
-    (let [res (IO.Raw.list-dir path)]
-      (if (Int.= (Array.length &res) -1)
-        (Result.Error (fmt "Failed to list directory '%s': %s" path &(System.error-text)))
-        (Result.Success res))))
+    (let-do [res []
+             status (IO.Raw.list-dir path &res)]
+      (if (Int.= status 0)
+        (Result.Success res)
+        (Result.Error (fmt "Failed to list directory '%s': %s" path &(System.error-text))))))
 
   (doc println
     "Prints a String ref to [`stdout`](#stdout), appends a newline.")
@@ -371,25 +383,25 @@
     "If a binary file is passed as input, the resulting string length is"
     "likely to be inaccurate.")
   (defn read-file [filename]
-    (let [  finput?  (open-file filename "rb") ]
+    (let [finput? (open-file filename "rb")]
       (if (Result.error? &finput?)
         (Result.Error (fmt "Failed to open file='%s', error='%s'" filename &(Result.unsafe-from-error finput?) ))
-        (let [  finput  (Result.unsafe-from-success finput?)
-                length  (do
-                            (IO.Raw.fseek! finput 0 IO.Raw.SEEK-END)
-                            (let-do [flength (IO.Raw.ftell finput)]
-                              (IO.Raw.rewind finput)
-                              flength ))
-                buffer  (String.allocate length \0 )  ]
+        (let [finput (Result.unsafe-from-success finput?)
+              length (let-do [pos (IO.Raw.fseek! finput 0 IO.Raw.SEEK-END)
+                              flen (IO.Raw.ftell finput)]
+                       (IO.Raw.rewind finput)
+                       flen)
+              buffer (String.allocate length \0)]
           (if (not (String.allocated? &buffer))
             (do
               (IO.Raw.fclose! finput)
-              (Result.Error (fmt "Failed to open buffer with size=%d from file='%s'" length filename)) )
-            (let [  bytes-read  (IO.Raw.fread &buffer 1 length finput)
-                    nop1        (IO.Raw.fclose! finput)  ]
-              (if (not (Int.= bytes-read length))
-                (Result.Error (fmt "Error: file='%s' has length=%d but bytes-read=%d" filename length bytes-read))
-                (Result.Success buffer)  )))))))
+              (Result.Error (fmt "Failed to open buffer with size=%d from file='%s'" length filename)))
+            (let [bytes-read (IO.Raw.fread &buffer 1 length finput)]
+              (do
+                (IO.Raw.fclose! finput)
+                (if (not (Int.= bytes-read length))
+                  (Result.Error (fmt "Error: file='%s' has length=%d but bytes-read=%d" filename length bytes-read))
+                  (Result.Success buffer)))))))))
 
   (doc write-file
     "Writes a String into a text [FILE](#file), overwriting it"
@@ -397,12 +409,12 @@
     ""
     "Returns a (Result Bool String) indicating success or failure.")
   (defn write-file [content file-name]
-    (let [  fOut?        (open-file file-name "wb") ; open as binary so line breaks don't multiply on Windows
-            bytes2write  (String.length content) ]
+    (let [fOut? (open-file file-name "wb") ; open as binary so line breaks don't multiply on Windows
+          bytes2write (String.length content)]
       (if (Result.error? &fOut?)
         (Result.Error (fmt "error='%s' opening file='%s'" &(Result.unsafe-from-error fOut?) file-name))
-        (let-do [  fOut           (Result.unsafe-from-success fOut?)
-                   bytes-written  (IO.Raw.fwrite content 1 bytes2write fOut) ]
+        (let-do [fOut (Result.unsafe-from-success fOut?)
+                 bytes-written (IO.Raw.fwrite content 1 bytes2write fOut)]
           (IO.Raw.fclose! fOut)
           (if (Int.= bytes-written bytes2write)
             (Result.Success true)
@@ -413,12 +425,12 @@
     ""
     "Returns a (Result Bool String) indicating success or failure.")
   (defn append-file [content file-name]
-    (let [  fOut?        (open-file file-name "ab")
-            bytes2write  (String.length content) ]
+    (let [fOut? (open-file file-name "ab")
+          bytes2write (String.length content)]
       (if (Result.error? &fOut?)
         (Result.Error (fmt "error='%s' opening file='%s'" &(Result.unsafe-from-error fOut?) file-name))
-        (let-do [  fOut           (Result.unsafe-from-success fOut?)
-                   bytes-written  (IO.Raw.fwrite content 1 bytes2write fOut) ]
+        (let-do [fOut (Result.unsafe-from-success fOut?)
+                 bytes-written (IO.Raw.fwrite content 1 bytes2write fOut)]
           (IO.Raw.fclose! fOut)
           (if (Int.= bytes-written bytes2write)
             (Result.Success true)
@@ -447,8 +459,32 @@
     ""
     "Returns a (Result Bool String) indicating success or failure.")
   (defn copy-file [src dest]
-    (Result.and-then (read-file src)
-                     &(fn [content] (write-file &content dest))))
+    (let [f-src? (open-file src "rb")
+          f-dest? (open-file dest "wb")]
+      (if (Result.error? &f-src?)
+        (Result.Error (fmt "Could not open source file '%s': %s" src &(Result.unsafe-from-error f-src?)))
+        (if (Result.error? &f-dest?)
+          (do
+            (ignore (IO.Raw.fclose (Result.unsafe-from-success f-src?)))
+            (Result.Error (fmt "Could not open destination file '%s': %s" dest &(Result.unsafe-from-error f-dest?))))
+          (let-do [f-src (Result.unsafe-from-success f-src?)
+                   f-dest (Result.unsafe-from-success f-dest?)
+                   buf-size 4096
+                   buffer (String.allocate buf-size \0)
+                   success true]
+            (while success
+              (let [bytes-read (IO.Raw.fread &buffer 1 buf-size f-src)]
+                (if (Int.> bytes-read 0)
+                  (let [bytes-written (IO.Raw.fwrite &buffer 1 bytes-read f-dest)]
+                    (if (Int.< bytes-written bytes-read)
+                      (set! success false)
+                      ()))
+                  (break))))
+            (IO.Raw.fclose! f-src)
+            (IO.Raw.fclose! f-dest)
+            (if success
+              (Result.Success true)
+              (Result.Error @"Failed to write all data to destination file.")))))))
 
   (private getenv-)
   (hidden getenv-)
