@@ -146,7 +146,7 @@ Example:
 
 (doc when-do "is a `when` with an implicit `do` body.")
 (defmacro when-do [condition :rest forms]
-  (list 'if condition (cons 'do forms) (list)))
+  (list 'when condition (cons 'do forms)))
 
 (doc unless "is an `if` without a then branch.")
 (defmacro unless [condition form]
