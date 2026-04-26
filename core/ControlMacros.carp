@@ -154,7 +154,7 @@ Example:
 
 (doc unless-do "is a `unless` with an implicit `do` body.")
 (defmacro unless-do [condition :rest forms]
-  (list 'if condition (list) (cons 'do forms)))
+  (list 'unless condition (cons 'do forms)))
 
 (hidden treat-case-handler)
 (defndynamic treat-case-handler [name handler]
