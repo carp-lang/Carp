@@ -104,6 +104,39 @@ It is the inverse of [`and-then`](#and-then).")
       (Nothing) (Nothing)
       (Just x) (if (~f &x) (Just x) (Nothing))))
 
+  (doc flatten "flattens a nested `Maybe` value.")
+  (defn flatten [a]
+    (match a
+      (Nothing) (Nothing)
+      (Just x) x))
+
+  (doc expect "unwraps a `Maybe` value, or aborts with `msg` if it is `Nothing`.")
+  ;; Note: This is a macro to avoid a circular dependency with the IO module.
+  (defmacro expect [a msg]
+    `(match %a
+       (Maybe.Just x) x
+       (Maybe.Nothing) (do (IO.errorln %msg) (System.abort) (bottom))))
+
+  (doc inspect "applies a side-effecting function `f` to the value inside `a` if it is a `Just`, and returns `a` unchanged.")
+  (defn inspect [a f]
+    (do
+      (match-ref &a
+        (Nothing) ()
+        (Just x) (~f x))
+      a))
+
+  (doc map-or "applies a function `f` to the value inside `a` if it is a `Just`, otherwise returns `dflt`.")
+  (defn map-or [a dflt f]
+    (match a
+      (Nothing) dflt
+      (Just x) (~f x)))
+
+  (doc map-or-else "applies a function `f` to the value inside `a` if it is a `Just`, otherwise returns the result of `dflt-f`.")
+  (defn map-or-else [a dflt-f f]
+    (match a
+      (Nothing) (~dflt-f)
+      (Just x) (~f x)))
+
   (doc zero "returns `Nothing`.")
   (defn zero [] (Nothing))
   (implements zero Maybe.zero)

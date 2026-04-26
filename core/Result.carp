@@ -99,6 +99,47 @@ It is the inverse of [`success?`](#success?).")
       (Error _) true
       (Success _) false))
 
+  (doc flatten "flattens a nested `Result` value.")
+  (defn flatten [a]
+    (match a
+      (Success x) x
+      (Error e) (Error e)))
+
+  (doc expect "unwraps a `Result` success value, or aborts with `msg` if it is an `Error`.")
+  ;; Note: This is a macro to avoid a circular dependency with the IO module.
+  (defmacro expect [a msg]
+    `(match %a
+       (Result.Success x) x
+       (Result.Error _) (do (IO.errorln %msg) (System.abort) (bottom))))
+
+  (doc inspect "applies a side-effecting function `f` to the value inside `a` if it is a `Success`, and returns `a` unchanged.")
+  (defn inspect [a f]
+    (do
+      (match-ref &a
+        (Success x) (~f x)
+        (Error _) ())
+      a))
+
+  (doc inspect-error "applies a side-effecting function `f` to the error inside `a` if it is an `Error`, and returns `a` unchanged.")
+  (defn inspect-error [a f]
+    (do
+      (match-ref &a
+        (Success _) ()
+        (Error e) (~f e))
+      a))
+
+  (doc map-or "applies a function `f` to the value inside `a` if it is a `Success`, otherwise returns `dflt`.")
+  (defn map-or [a dflt f]
+    (match a
+      (Success x) (~f x)
+      (Error _) dflt))
+
+  (doc map-or-else "applies a function `f` to the value inside `a` if it is a `Success`, otherwise returns the result of `dflt-f`.")
+  (defn map-or-else [a dflt-f f]
+    (match a
+      (Success x) (~f x)
+      (Error _) (~dflt-f)))
+
   (doc = "equality is defined as the equality of both the constructor and the contained value, i.e. `(Success 1)` and `(Success 1)` are the same, but `(Success 1)` and `(Success 2)` are not.")
   (defn = [a b]
     (match-ref a
