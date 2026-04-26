@@ -12,4 +12,109 @@
   (assert-true test
     (and (= () (test-ignore-do)) (= &test-string "new-string"))
     "ignore-do performs side effects and ignores all results")
+
+  (assert-equal test
+                10
+                (if-let [x (Maybe.Just 10)] x 0)
+                "if-let works on Just")
+  (assert-equal test
+                0
+                (if-let [x (Maybe.Nothing)] x 0)
+                "if-let works on Nothing")
+  (assert-equal test
+                30
+                (if-let [x (Maybe.Just 10)
+                         y (Maybe.Just 20)]
+                  (+ x y)
+                  0)
+                "if-let works on multiple Just")
+  (assert-equal test
+                0
+                (if-let [x (Maybe.Just 10)
+                         y (Maybe.Nothing)]
+                  (+ x y)
+                  0)
+                "if-let works on mixed Just/Nothing")
+
+  (assert-equal test
+                "found 10"
+                &(if-let [x (Maybe.Just 10)]
+                  (fmt "found %d" x)
+                  @"not found")
+                "if-let works with Just and fmt")
+
+  (assert-equal test
+                10
+                (let-do [y 0]
+                  (do (when-let [x (Maybe.Just 10)] (set! y x))
+                      y))
+                "when-let works on Just")
+
+  (assert-equal test
+                30
+                (let-do [y 0]
+                  (do (when-let [x (Maybe.Just 10)
+                                 z (Maybe.Just 20)]
+                        (set! y (+ x z)))
+                      y))
+                "when-let works on multiple Just")
+
+  (assert-equal test
+                6
+                (let-do [xs [1 2 3]
+                         sum 0]
+                  (do
+                    (while-let [x (Array.first &xs)]
+                      (do
+                        (set! sum (+ sum x))
+                        (set! xs (Array.rest &xs))))
+                    sum))
+                "while-let works on Maybe sequence")
+
+  (assert-equal test
+                3
+                (let-do [xs [1 2 3]
+                         ys [1 2 3]
+                         sum 0]
+                  (do
+                    (while-let [x (Array.first &xs)
+                                y (Array.first &ys)]
+                      (do
+                        (set! sum (+ sum 1))
+                        (set! xs (Array.rest &xs))
+                        (set! ys (Array.rest &ys))))
+                    sum))
+                "while-let works on multiple Maybe sequences")
+
+  (assert-equal test
+                10
+                (if-let-ok [x (the (Result Int Int) (Result.Success 10))] x 0)
+                "if-let-ok works on Success")
+  (assert-equal test
+                0
+                (if-let-ok [x (the (Result Int Int) (Result.Error 0))] x 0)
+                "if-let-ok works on Error")
+  (assert-equal test
+                30
+                (if-let-ok [x (the (Result Int Int) (Result.Success 10))
+                            y (the (Result Int Int) (Result.Success 20))]
+                  (+ x y)
+                  0)
+                "if-let-ok works on multiple Success")
+
+  (assert-equal test
+                10
+                (let-do [y 0]
+                  (do (when-let-ok [x (the (Result Int Int) (Result.Success 10))] (set! y x))
+                      y))
+                "when-let-ok works on Success")
+
+  (assert-equal test
+                1
+                (let-do [counter 0]
+                  (do
+                    (while-let-ok [x (if (= counter 0) (the (Result Int Int) (Result.Success 10)) (the (Result Int Int) (Result.Error 0)))]
+                      (set! counter (inc counter)))
+                    counter))
+                "while-let-ok works on Result")
 )
