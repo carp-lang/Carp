@@ -1,6 +1,8 @@
 (load "Test.carp")
 (use-all Maybe Test)
 
+(def test-inspect-val 0)
+
 (deftest test
   (assert-true test
                (nothing? &(the (Maybe Int) (Nothing)))
@@ -180,10 +182,9 @@
                 (expect (Just 10) "should not fail")
                 "expect works on Just")
 
-  (let-do [x 0]
-    (do
-      (ignore (inspect (Just 10) &(fn [v] (set! x @v))))
-      (assert-equal test 10 x "inspect works on Just")))
+  (do
+    (ignore (inspect (Just 10) &(fn [v] (set! test-inspect-val @v))))
+    (assert-equal test 10 test-inspect-val "inspect works on Just"))
 
   (assert-equal test
                 20

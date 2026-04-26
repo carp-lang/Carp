@@ -2,6 +2,8 @@
 
 (use-all Test Result)
 
+(def test-inspect-val 0)
+
 (deftest test
   (assert-true test
                (success? &(the (Result Int String) (Success 1)))
@@ -154,15 +156,13 @@
                 (expect (the (Result Int Int) (Success 10)) "should not fail")
                 "expect works with Success")
 
-  (let-do [x 0]
-    (do
-      (ignore (inspect (Success 10) &(fn [v] (set! x @v))))
-      (assert-equal test 10 x "inspect works with Success")))
+  (do
+    (ignore (inspect (the (Result Int Int) (Success 10)) &(fn [v] (set! test-inspect-val @v))))
+    (assert-equal test 10 test-inspect-val "inspect works with Success"))
 
-  (let-do [x 0]
-    (do
-      (ignore (inspect-error (the (Result Int Int) (Error 10)) &(fn [v] (set! x @v))))
-      (assert-equal test 10 x "inspect-error works with Error")))
+  (do
+    (ignore (inspect-error (the (Result Int Int) (Error 10)) &(fn [v] (set! test-inspect-val @v))))
+    (assert-equal test 10 test-inspect-val "inspect-error works with Error"))
 
   (assert-equal test
                 20
