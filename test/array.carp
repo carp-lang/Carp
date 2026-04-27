@@ -437,16 +437,16 @@
                 "unsafe-nth-value works as expected")
 
   (assert-equal test
-                &(Maybe.Just 2)
-                &(find-last &(fn [x] (= @x 2)) &[1 2 3 2 1])
+                &(Maybe.Just 4)
+                &(find-last &(fn [x] (Int.even? @x)) &[1 2 3 4 5])
                 "find-last works as expected")
   (assert-equal test
                 &(Maybe.Just 3)
-                &(find-last-index &(fn [x] (= @x 2)) &[1 2 3 2 1])
+                &(find-last-index &(fn [x] (Int.even? @x)) &[1 2 3 4 5])
                 "find-last-index works as expected")
   (assert-equal test
                 &(Maybe.Nothing)
-                &(find-last &(fn [x] (= @x 5)) &[1 2 3 2 1])
+                &(find-last &(fn [x] (> @x 10)) &[1 2 3 4 5])
                 "find-last returns Nothing when not found")
 
   (let [arr &[1 2 3 4 5]

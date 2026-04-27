@@ -637,8 +637,8 @@ Returns a `Pair` of arrays.")
       (for [i 0 (length a)]
         (let [x (unsafe-nth a i)]
           (if (~f x)
-            (set! matching (push-back matching @x))
-            (set! not-matching (push-back not-matching @x)))))
+            (push-back! &matching @x)
+            (push-back! &not-matching @x))))
       (Pair.init matching not-matching)))
 
   (doc zip-n "takes a function `f` and any number of arrays, and zips them into a new array.
