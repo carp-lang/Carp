@@ -235,46 +235,28 @@
   (defn lines [s]
     (split-by s &[\newline]))
 
-  (doc copy-map "Maps a function over the characters of a string, returning a new string.")
+  (doc copy-map "Maps a function over the UTF-8 characters (`chars`) of a string, returning a new string.")
   (defn copy-map [f s]
     (from-chars &(Array.copy-map f &(chars s))))
 
-  (doc copy-filter "Filters the characters of a string using a predicate, returning a new string.")
+  (doc copy-filter "Filters the UTF-8 characters (`chars`) of a string using a predicate, returning a new string.")
   (defn copy-filter [f s]
     (from-chars &(Array.copy-filter f &(chars s))))
 
-  (doc any? "Checks if any character in a string satisfies a predicate.")
+  (doc any? "Checks if any UTF-8 character (`chars`) in a string satisfies a predicate.")
   (defn any? [f s]
     (Array.any? f &(chars s)))
 
-  (doc all? "Checks if all characters in a string satisfy a predicate.")
+  (doc all? "Checks if all UTF-8 characters (`chars`) in a string satisfy a predicate.")
   (defn all? [f s]
     (Array.all? f &(chars s)))
 
-  (doc reduce "Reduces a string using a function and an initial value.")
+  (doc reduce "Reduces a string using its UTF-8 characters (`chars`), a function and an initial value.")
   (defn reduce [f init s]
     (Array.reduce f init &(chars s)))
 
   (doc replace "Replaces all occurrences of a literal substring in a string with another string.")
-  (defn replace [s needle replacement]
-    (if (empty? needle)
-      @s
-      (let [parts []
-            start 0
-            len (length s)
-            nlen (length needle)]
-        (do
-          (while (< start len)
-            (let [idx (index-of-string &(suffix s start) needle)]
-              (if (= idx -1)
-                (do
-                  (Array.push-back! &parts (suffix s start))
-                  (set! start len))
-                (do
-                  (Array.push-back! &parts (slice s start (+ start idx)))
-                  (Array.push-back! &parts @replacement)
-                  (set! start (+ start (+ idx nlen)))))))
-          (concat &parts)))))
+  (register replace (Fn [&String &String &String] String))
 )
 
 (defmodule StringCopy

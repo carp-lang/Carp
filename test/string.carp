@@ -445,4 +445,24 @@
                 ""
                 &(replace "aaaaa" "a" "")
                 "replace with empty replacement works")
+  (assert-equal test
+                "hello world"
+                &(replace "hello world" "universe" "planet")
+                "replace with non-existent needle returns copy")
+  (assert-equal test
+                "abc"
+                &(replace "xyz" "xyz" "abc")
+                "replace whole string works")
+  (assert-equal test
+                "bba"
+                &(replace "aaaaa" "aa" "b")
+                "replace multiple overlapping-style patterns works (non-overlapping)")
+  (assert-equal test
+                "!!!hello!!!"
+                &(replace "   hello   " "   " "!!!")
+                "replace at start and end works")
+  (assert-equal test
+                "hello 🪐 world"
+                &(replace "hello 🌏 world" "🌏" "🪐")
+                "replace works with multi-byte Unicode characters")
 )
