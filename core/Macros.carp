@@ -256,14 +256,6 @@ the filename and module name are the same.")
 (defmacro comment [:rest forms]
   ())
 
-(hidden build-vararg-right)
-(defndynamic build-vararg-right [func forms]
-  (if (= (length forms) 0)
-    (macro-error "vararg macro needs at least one argument")
-    (if (= (length forms) 1)
-      (car forms)
-      (list func (car forms) (build-vararg-right func (cdr forms))))))
-
 (hidden build-vararg-left-internal)
 (defndynamic build-vararg-left-internal [func acc forms]
   (if (empty? forms)
