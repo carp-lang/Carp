@@ -144,9 +144,17 @@ Example:
 (defmacro when [condition form]
   (list 'if condition form (list)))
 
+(doc when-do "is a `when` with an implicit `do` body.")
+(defmacro when-do [condition :rest forms]
+  (list 'when condition (cons 'do forms)))
+
 (doc unless "is an `if` without a then branch.")
 (defmacro unless [condition form]
   (list 'if condition (list) form))
+
+(doc unless-do "is a `unless` with an implicit `do` body.")
+(defmacro unless-do [condition :rest forms]
+  (list 'unless condition (cons 'do forms)))
 
 (hidden treat-case-handler)
 (defndynamic treat-case-handler [name handler]

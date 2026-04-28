@@ -247,4 +247,10 @@
                 1.0
                 (clamp 0.0 2.0 1.0)
                 "clamp returns val when within bounds")
+  (assert-true test (positive? 1.0) "positive? works as expected I")
+  (assert-false test (positive? 0.0) "positive? works as expected II")
+  (assert-false test (positive? -1.0) "positive? works as expected III")
+  (assert-true test (negative? -1.0) "negative? works as expected I")
+  (assert-false test (negative? 0.0) "negative? works as expected II")
+  (assert-false test (negative? 1.0) "negative? works as expected III")
 )

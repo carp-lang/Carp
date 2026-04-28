@@ -2,6 +2,8 @@
 
 (use-all Test Result)
 
+(def test-inspect-val 0)
+
 (deftest test
   (assert-true test
                (success? &(the (Result Int String) (Success 1)))
@@ -139,4 +141,44 @@
                   (Success (Success x)) x)
                 "matching on nested results"
   )
+
+  (assert-equal test
+                &(Result.Success 10)
+                &(flatten (Success (the (Result Int Int) (Success 10))))
+                "flatten works with Success Success")
+  (assert-equal test
+                &(the (Result Int Int) (Error 0))
+                &(flatten (the (Result (Result Int Int) Int) (Success (Error 0))))
+                "flatten works with Success Error")
+
+  (assert-equal test
+                10
+                (expect (the (Result Int Int) (Success 10)) "should not fail")
+                "expect works with Success")
+
+  (do
+    (ignore (inspect (the (Result Int Int) (Success 10)) &(fn [v] (set! test-inspect-val @v))))
+    (assert-equal test 10 test-inspect-val "inspect works with Success"))
+
+  (do
+    (ignore (inspect-error (the (Result Int Int) (Error 10)) &(fn [v] (set! test-inspect-val @v))))
+    (assert-equal test 10 test-inspect-val "inspect-error works with Error"))
+
+  (assert-equal test
+                20
+                (map-or (the (Result Int Int) (Success 10)) 0 &(fn [v] (* v 2)))
+                "map-or works with Success")
+  (assert-equal test
+                0
+                (map-or (the (Result Int Int) (Error 10)) 0 &(fn [v] (* v 2)))
+                "map-or works with Error")
+
+  (assert-equal test
+                20
+                (map-or-else (the (Result Int Int) (Success 10)) &(fn [] 0) &(fn [v] (* v 2)))
+                "map-or-else works with Success")
+  (assert-equal test
+                0
+                (map-or-else (the (Result Int Int) (Error 10)) &(fn [] 0) &(fn [v] (* v 2)))
+                "map-or-else works with Error")
 )

@@ -58,15 +58,42 @@ to non-refs.")
     (register safe-mul (λ [Long Long (Ref Long)] Bool))
   )
 
+  (doc abs "The absolute value (removes the negative sign) of a Long.")
   (register abs (λ [Long] Long))
 
+  (doc even? "returns true if `a` is even.")
   (defn even? [a] (= (mod a 2l) 0l))
+  (doc odd? "returns true if `a` is odd.")
   (defn odd? [a] (not (even? a)))
 
+  (doc positive? "returns true if `a` is positive.")
+  (defn positive? [a] (> a 0l))
+  (doc negative? "returns true if `a` is negative.")
+  (defn negative? [a] (< a 0l))
+
+  (doc zero "returns the zero value for Long (0l), used to implement the `zero` interface.")
   (defn zero [] 0l)
+
+  (doc add-ref "adds two Long values passed as references.")
+  (defn add-ref [x y]
+    (Long.+ @x @y))
+
+  (doc clamp "clamps `val` to the range [`min`, `max`].")
+  (defn clamp [min, max, val]
+    (if (> val max)
+      max
+      (if (< val min)
+        min
+        val)))
+
+  (doc sign "Returns `-1l` if `n` is negative, `0l` if zero, or `1l` if positive.")
+  (defn sign [n]
+    (if (> n 0l) 1l (if (< n 0l) -1l 0l)))
 
   (implements abs Long.abs)
   (implements zero Long.zero)
+  (implements add-ref Long.add-ref)
+  (implements sign Long.sign)
 )
 
 (defmodule LongRef
