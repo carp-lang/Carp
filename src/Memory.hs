@@ -685,8 +685,7 @@ returnRefTargetIsAlive xobj =
        in case Set.toList deadVars of
             [] -> pure (Right xobj)
             (deadName : _) ->
-              let original = Map.lookup deadName (memStateNames m)
-                  reportOn = case xobjObj fnBody of
+              let reportOn = case xobjObj fnBody of
                     Lst (LetPat _ _ body) -> body
                     _ -> fnBody
                   originalName = Map.lookup deadName (memStateNames m)
