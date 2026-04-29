@@ -36,6 +36,14 @@
                 "cond-let picks second Just")
 
   (assert-equal test
+                "else"
+                &(cond-let
+                   [x (the (Maybe String) (Maybe.Nothing))] @"wrong"
+                   [x (the (Maybe String) (Maybe.Nothing))] @"also-wrong"
+                   @"else")
+                "cond-let falls through to else when all Nothing")
+
+  (assert-equal test
                 20
                 (as-> 5 x
                   (+ x 5)
@@ -64,16 +72,6 @@
                   false (+ 100)
                   true (* 3))
                 "cond->> threads correctly through true conditions")
-
-  (assert-equal test
-                &(Maybe.Just 11)
-                &(some-> (Maybe.Just 10) inc)
-                "some-> threads through Just (value return)")
-
-  (assert-equal test
-                &(the (Maybe Int) (Maybe.Nothing))
-                &(some-> (the (Maybe Int) (Maybe.Nothing)) inc)
-                "some-> threads through Nothing")
 
   (assert-equal test
                 &(Maybe.Just 11)

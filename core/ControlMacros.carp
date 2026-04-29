@@ -98,7 +98,9 @@ Binds `value` to `name` and then threads it through each of the `forms` as the l
 (doc cond-> "Conditional threading macro (first).
 Threads `val` through each `form` in `steps` only if the corresponding `test` is true.")
 (defmacro cond-> [val :rest steps]
-  (cond-first-internal val steps))
+  (if (= (mod (length steps) 2) 0)
+    (cond-first-internal val steps)
+    (macro-error "cond-> requires an even number of forms (test form pairs)")))
 
 (hidden cond-last-internal)
 (defndynamic cond-last-internal [acc steps]
@@ -112,35 +114,20 @@ Threads `val` through each `form` in `steps` only if the corresponding `test` is
 (doc cond->> "Conditional threading macro (last).
 Threads `val` through each `form` in `steps` only if the corresponding `test` is true.")
 (defmacro cond->> [val :rest steps]
-  (cond-last-internal val steps))
-
-(doc some-> "Monadic threading macro (first).
-Threads the unwrapped value of `val` (a Maybe) through each `form` in `steps`.
-Wraps the final result in a `Maybe.Just`. If `val` is `Nothing`, returns `Nothing`.
-Each form in `steps` must return a value, not a Maybe.")
-(defmacro some-> [val :rest steps]
-  `(match %val
-     (Maybe.Just x) (Maybe.Just (-> x %@steps))
-     (Maybe.Nothing) (Maybe.Nothing)))
-
-(doc some->> "Monadic threading macro (last).
-Threads the unwrapped value of `val` (a Maybe) through each `form` in `steps`.
-Wraps the final result in a `Maybe.Just`. If `val` is `Nothing`, returns `Nothing`.
-Each form in `steps` must return a value, not a Maybe.")
-(defmacro some->> [val :rest steps]
-  `(match %val
-     (Maybe.Just x) (Maybe.Just (--> x %@steps))
-     (Maybe.Nothing) (Maybe.Nothing)))
+  (if (= (mod (length steps) 2) 0)
+    (cond-last-internal val steps)
+    (macro-error "cond->> requires an even number of forms (test form pairs)")))
 
 (hidden maybe-and-then-internal)
 (defndynamic maybe-and-then-internal [acc steps]
   (if (empty? steps)
     acc
-    (maybe-and-then-internal
-      `(match %acc
-         (Maybe.Just x) (-> x %(car steps))
-         (Maybe.Nothing) (Maybe.Nothing))
-      (cdr steps))))
+    (let [x (gensym-with 'x)]
+      (maybe-and-then-internal
+        `(match %acc
+           (Maybe.Just %x) (-> %x %(car steps))
+           (Maybe.Nothing) (Maybe.Nothing))
+        (cdr steps)))))
 
 (doc maybe-and-then-> "Monadic threading macro for Maybe (first).
 Threads a `Maybe` value through each `form` in `steps`.
@@ -152,11 +139,13 @@ Each form must return a `Maybe`. If any step evaluates to `Nothing`, the entire 
 (defndynamic result-and-then-internal [acc steps]
   (if (empty? steps)
     acc
-    (result-and-then-internal
-      `(match %acc
-         (Result.Success x) (-> x %(car steps))
-         (Result.Error e) (Result.Error e))
-      (cdr steps))))
+    (let [x (gensym-with 'x)
+          e (gensym-with 'e)]
+      (result-and-then-internal
+        `(match %acc
+           (Result.Success %x) (-> %x %(car steps))
+           (Result.Error %e) (Result.Error %e))
+        (cdr steps)))))
 
 (doc result-and-then-> "Monadic threading macro for Result (first).
 Threads a `Result` value through each `form` in `steps`.
@@ -293,7 +282,7 @@ Example:
 (hidden cond-let-internal)
 (defndynamic cond-let-internal [xs]
   (if (= (length xs) 0)
-    (list)
+    `(Maybe.Nothing)
     (if (= (length xs) 1)
       (car xs)
       (let [binding (car xs)
