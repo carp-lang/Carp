@@ -6,6 +6,7 @@ module Obj where
 
 import Control.Applicative
 import Control.Monad.State
+import Control.Monad (zipWithM)
 import Data.Char
 import Data.Hashable
 import Data.List (intercalate)

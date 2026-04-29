@@ -13,6 +13,7 @@ module Emit
 where
 
 import Control.Monad.State
+import Control.Monad (when, zipWithM_, unless)
 import Data.Char (ord)
 import Data.Functor ((<&>))
 import Data.Graph (SCC (..), stronglyConnComp)

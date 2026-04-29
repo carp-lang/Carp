@@ -125,13 +125,14 @@ manageMemory typeEnv globalEnv root =
                 -- Add the captured variables (if any, only happens in lifted lambdas) as fake deleters
                 -- TODO: Use another kind of Deleter for this case since it's pretty special?
                 mapM_
-                  ( ( \cap ->
-                        modify
-                          ( \memState ->
-                              memState {memStateDeleters = Set.insert (FakeDeleter cap) (memStateDeleters memState)}
-                          )
-                    )
-                      . getName
+                  ( \cap ->
+                      modify
+                        ( \memState ->
+                            let var = varOfXObj cap
+                                name = getName cap
+                                newNames = Map.insert var name (memStateNames memState)
+                             in memState {memStateDeleters = Set.insert (FakeDeleter var) (memStateDeleters memState), memStateNames = newNames}
+                        )
                   )
                   captures
                 mapM_ (addToLifetimesMappingsIfRef False) argList
@@ -516,7 +517,8 @@ manage typeEnv globalEnv xobj =
         let newDeleters = Set.insert deleter (memStateDeleters m)
             t = fromMaybe (error "memory: can't manage xobj without type") $ xobjTy xobj
             newDeps = Set.insert t (memStateDeps m)
-        put $ m {memStateDeleters = newDeleters, memStateDeps = newDeps}
+            newNames = Map.insert (varOfXObj xobj) (getName xobj) (memStateNames m)
+        put $ m {memStateDeleters = newDeleters, memStateDeps = newDeps, memStateNames = newNames}
       Nothing -> pure ()
 
 -- | Remove `xobj` from the set of alive variables, in need of deletion at end of scope.
@@ -683,7 +685,8 @@ returnRefTargetIsAlive xobj =
        in case Set.toList deadVars of
             [] -> pure (Right xobj)
             (deadName : _) ->
-              let reportOn = case xobjObj fnBody of
+              let original = Map.lookup deadName (memStateNames m)
+                  reportOn = case xobjObj fnBody of
                     Lst (LetPat _ _ body) -> body
                     _ -> fnBody
                   originalName = Map.lookup deadName (memStateNames m)
