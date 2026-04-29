@@ -16,11 +16,23 @@
   (assert-equal test
                 10
                 (if-let [x (Maybe.Just 10)] x 0)
-                "if-let works on Just")
+                "if-let works on Just I")
+  (assert-equal test
+                "found 10"
+                &(if-let [x (Maybe.Just 10)]
+                  (fmt "found %d" x)
+                  @"not found")
+                "if-let works on Just II")
   (assert-equal test
                 0
                 (if-let [x (Maybe.Nothing)] x 0)
-                "if-let works on Nothing")
+                "if-let works on Nothing I")
+  (assert-equal test
+                "not found"
+                &(if-let [x (the (Maybe Int) (Maybe.Nothing))]
+                  (fmt "found %d" x)
+                  @"not found")
+                "if-let works on Nothing II")
   (assert-equal test
                 30
                 (if-let [x (Maybe.Just 10)
@@ -117,4 +129,19 @@
                       (set! counter (inc counter)))
                     counter))
                 "while-let-ok works on Result")
-)
+
+  (let-do [counter 0
+           res []]
+    (while-let [x (if (< counter 3) (Maybe.Just counter) (the (Maybe Int) (Maybe.Nothing)))]
+      (do
+        (set! res (Array.push-back res x))
+        (set! counter (inc counter))))
+    (assert-equal test
+                  &[0 1 2]
+                  &res
+                  "while-let works as expected"))
+  )
+
+
+
+

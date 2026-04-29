@@ -125,10 +125,6 @@ Example:
   (list 'while condition
         (cons 'do forms)))
 
-;; Note: if-let/when-let/while-let are specialized for Maybe and Result types to ensure
-;; type safety. In Carp, a single match block cannot handle both Maybe.Just
-;; and Result.Success constructors simultaneously.
-
 (hidden if-let-internal)
 (defndynamic if-let-internal [bindings then else]
   (if (= (length bindings) 0)
