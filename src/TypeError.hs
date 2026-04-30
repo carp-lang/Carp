@@ -331,7 +331,7 @@ instance Show TypeError where
   show (DefinitionsMustBeAtToplevel xobj) =
     "I encountered a definition that was not at top level: `" ++ pretty xobj ++ "`"
   show (UsingDeadReference xobj dependsOn originalName) =
-    "The reference '" ++ pretty xobj ++ "' is no longer valid because the value it depends on (`" ++ fromMaybe dependsOn originalName ++ "`) has been moved or deleted at "
+    "The reference `" ++ pretty xobj ++ "` is no longer valid because the value it depends on (`" ++ fromMaybe dependsOn originalName ++ "`) has been moved or deleted at "
       ++ prettyInfoFromXObj xobj
       ++ "."
   show (UninhabitedConstructor ty xobj got wanted) =
