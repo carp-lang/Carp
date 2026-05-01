@@ -10,7 +10,7 @@ We now have an official Discord server ([invite](https://discord.gg/yyjnBcMqYM))
 
 <i>WARNING! This is a research project and a lot of information here might become outdated and misleading without any explanation. Don't use it for anything important just yet!</i>
 
-<i>[Version 0.5.5 of the language is out!](https://github.com/carp-lang/Carp/releases/)</i>
+<i>[Version 0.6.0 of the language is out!](https://github.com/carp-lang/Carp/releases/)</i>
 
 ## About
 

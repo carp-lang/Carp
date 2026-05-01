@@ -150,7 +150,7 @@ main = do
           >>= execStrs "Postload" postloads
           >>= \ctx -> case execMode of
             Repl -> do
-              putStrLn "Welcome to Carp 0.5.5"
+              putStrLn "Welcome to Carp 0.6.0"
               putStrLn "This is free software with ABSOLUTELY NO WARRANTY."
               putStrLn "Evaluate (help) for more information."
               snd <$> runRepl ctx
