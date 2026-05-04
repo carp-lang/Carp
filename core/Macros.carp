@@ -437,26 +437,26 @@ the filename and module name are the same.")
   )
 )
 
-(doc sum "Variadic addition. Expands to nested binary `+` calls. (sum) evaluates to 0.")
-(defmacro sum [:rest forms]
+(doc sum-variadic "Variadic addition. Expands to nested binary `+` calls. (sum-variadic) evaluates to 0.")
+(defmacro sum-variadic [:rest forms]
   (if (empty? forms)
     0
     (build-vararg-left '+ forms)))
 
-(doc product "Variadic multiplication. Expands to nested binary `*` calls. (product) evaluates to 1.")
-(defmacro product [:rest forms]
+(doc product-variadic "Variadic multiplication. Expands to nested binary `*` calls. (product-variadic) evaluates to 1.")
+(defmacro product-variadic [:rest forms]
   (if (empty? forms)
     1
     (build-vararg-left '* forms)))
 
-(doc sub "Variadic subtraction. Expands to nested binary `-` calls. (sub x) is equivalent to (neg x).")
-(defmacro sub [:rest forms]
+(doc sub-variadic "Variadic subtraction. Expands to nested binary `-` calls. (sub-variadic x) is equivalent to (neg x).")
+(defmacro sub-variadic [:rest forms]
   (if (= (length forms) 1)
     (list 'neg (car forms))
     (build-vararg-left '- forms)))
 
-(doc div "Variadic division. Expands to nested binary `/` calls.")
-(defmacro div [:rest forms]
+(doc div-variadic "Variadic division. Expands to nested binary `/` calls.")
+(defmacro div-variadic [:rest forms]
   (build-vararg-left '/ forms))
 
 (doc inc! "Increments a variable in-place.")
