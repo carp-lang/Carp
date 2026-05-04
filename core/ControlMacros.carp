@@ -137,7 +137,7 @@ Example:
                     (list 'Maybe.Nothing) else)]
       res)))
 
-(doc if-let "Conditional binding. If the expressions evaluate to Just, their values are bound to the names and the then-branch is executed. Otherwise, the else-branch is executed.
+(doc if-let "Conditional binding for Maybe. If each binding's expression evaluates to Just, its value is bound to the corresponding name and the 'then' branch is executed. If any expression evaluates to Nothing, the 'else' branch is executed.
 
 Example:
 ```
@@ -149,11 +149,11 @@ Example:
 (defmacro if-let [bindings then else]
   (if-let-internal bindings then else))
 
-(doc when-let "Conditional binding. If the expressions evaluate to Just, their values are bound to the names and the body is executed.")
+(doc when-let "Conditional binding for Maybe. If each binding's expression evaluates to Just, its value is bound to the corresponding name and the body is executed.")
 (defmacro when-let [bindings body]
   (if-let-internal bindings body ()))
 
-(doc while-let "Repeatedly evaluates the expressions and binds their values to the names if they are all Just, executing the body each time. The loop stops when any Nothing is encountered.")
+(doc while-let "Repeatedly evaluates the bindings and binds their values to the names if they are all Just, executing the body each time. The loop stops when any Nothing is encountered.")
 (defmacro while-let [bindings :rest body]
   (let [var (car bindings)
         expr (cadr bindings)
@@ -177,7 +177,7 @@ Example:
             (list 'Result.Success var) (if-let-ok-internal rest then else)
             (list 'Result.Error '_) else))))
 
-(doc if-let-ok "Conditional binding for Result. If the expressions evaluate to Success, their values are bound to the names and the then-branch is executed. Otherwise, the else-branch is executed.
+(doc if-let-ok "Conditional binding for Result. If each binding's expression evaluates to Success, its value is bound to the corresponding name and the 'then' branch is executed. If any expression evaluates to Error, the 'else' branch is executed.
 
 Example:
 ```
@@ -189,11 +189,11 @@ Example:
 (defmacro if-let-ok [bindings then else]
   (if-let-ok-internal bindings then else))
 
-(doc when-let-ok "Conditional binding for Result. If the expressions evaluate to Success, their values are bound to the names and the body is executed.")
+(doc when-let-ok "Conditional binding for Result. If each binding's expression evaluates to Success, its value is bound to the corresponding name and the body is executed.")
 (defmacro when-let-ok [bindings body]
   (if-let-ok-internal bindings body ()))
 
-(doc while-let-ok "Repeatedly evaluates the expressions and binds their values to the names if they are all Success, executing the body each time. The loop stops when any Error is encountered.")
+(doc while-let-ok "Repeatedly evaluates the bindings and binds their values to the names if they are all Success, executing the body each time. The loop stops when any Error is encountered.")
 (defmacro while-let-ok [bindings :rest body]
   (let [var (car bindings)
         expr (cadr bindings)
@@ -214,11 +214,11 @@ Example:
 (defmacro forever-do [:rest forms]
   (list 'while true (cons 'do forms)))
 
- (doc ignore-do 
- ("Wraps side-effecting `forms` in a `do`, " false)
- "ignoring all of their results."
- "In other words, executes `forms` only for their side effects.")
- (defmacro ignore-do [:rest forms]
+(doc ignore-do 
+     ("Wraps side-effecting `forms` in a `do`, " false)
+     "ignoring all of their results."
+     "In other words, executes `forms` only for their side effects.")
+(defmacro ignore-do [:rest forms]
    (cons 'do (expand (apply ignore* forms))))
 
 (doc when "is an `if` without an else branch.")
