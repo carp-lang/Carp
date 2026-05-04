@@ -217,6 +217,7 @@ other expressions, otherwise it returns the value of the last form in `xs`.
   (cond-internal xs))
 
 (doc refstr "stringifies `x` and takes the reference of that string.")
+
 (defmacro refstr [x]
   (list 'ref
         (list 'str x)))
