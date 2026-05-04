@@ -467,10 +467,6 @@ manageMemory typeEnv globalEnv root =
       do
         visitedExpr <- visit expr
         addToLifetimesMappingsIfRef True expr
-        m <- get
-        let internalName = pathToC (getPath name)
-            origName = getSimpleName name
-        put (m { memStateNames = Map.insert internalName origName (memStateNames m) })
         -- ensures this deleter is the only deleter associated with name for the duration of the let scope (shadowing).
         result <- exclusiveTransferOwnership typeEnv globalEnv expr name
         whenRightReturn result $ do
@@ -479,10 +475,6 @@ manageMemory typeEnv globalEnv root =
     visitArg :: XObj -> State MemState (Either TypeError XObj)
     visitArg xobj@(XObj _ _ (Just _)) =
       do
-        m <- get
-        let internalName = varOfXObj xobj
-            origName = getSimpleName xobj
-        put (m { memStateNames = Map.insert internalName origName (memStateNames m) })
         afterVisit <- visit xobj
         case afterVisit of
           Right okAfterVisit -> do
