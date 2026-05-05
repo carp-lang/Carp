@@ -20,6 +20,7 @@ import Context
 import Data.Either (fromRight, isRight, rights)
 import Data.List (delete, deleteBy, foldl')
 import qualified Env
+import qualified Map
 import qualified Meta
 import Obj
 import qualified Qualify
@@ -146,19 +147,22 @@ registerInInterface ctx implementation interface =
     _ -> (Right ctx, Nothing)
 
 -- | Verify that a type fully implements all members of a protocol.
-verifyProtocolImplementation :: Context -> Ty -> XObj -> Either [InterfaceError] Context
+verifyProtocolImplementation :: Context -> Ty -> XObj -> Either [InterfaceError] (Context, [SymPath])
 verifyProtocolImplementation ctx ty _protocol@(XObj (Lst [XObj (Protocol memberPaths _) _ _, _]) _ _) =
   let typeEnv = contextTypeEnv ctx
-      globalEnv = contextGlobalEnv ctx
-      checkMember errors mPath@(SymPath _ mName) =
-        if interfaceImplementedForTy typeEnv globalEnv mName ty
-          then errors
-          else (NonInterface mPath) : errors
-      allErrors = foldl' checkMember [] memberPaths
+      checkMember (errors, paths) mPath@(SymPath _ mName) =
+        case Env.getBinder typeEnv mName of
+          Right (Binder _ (XObj (Lst [XObj (Interface [sig] _) _ _, _]) _ _)) ->
+            let specializedSig = replaceTyVars (Map.fromList [("a", ty)]) sig
+             in case getFirstMatchingImplementation ctx [mPath] specializedSig of
+                  Just implPath -> (errors, implPath : paths)
+                  Nothing -> ((NonInterface mPath) : errors, paths)
+          _ -> ((NonInterface mPath) : errors, paths)
+      (allErrors, foundPaths) = foldl' checkMember ([], []) memberPaths
    in if null allErrors
-        then Right ctx
+        then Right (ctx, foundPaths)
         else Left allErrors
-verifyProtocolImplementation ctx _ _ = Right ctx -- Should not happen if called correctly
+verifyProtocolImplementation ctx _ _ = Right (ctx, []) -- Should not happen if called correctly
 
 -- | Enforce the orphan instance rule for protocols.
 checkOrphanRule :: Context -> SymPath -> Ty -> Either InterfaceError ()

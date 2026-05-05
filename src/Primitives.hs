@@ -120,36 +120,45 @@ primitiveColumn x@(XObj _ i _) ctx args =
     err = toEvalError ctx x (MissingInfo x)
 
 primitiveImplements :: VariadicPrimitiveCallback
-primitiveImplements _ ctx [interfaceXObj@(XObj (Sym interface@(SymPath _ _) _) _ _), (XObj (Sym path _) _ _)] =
-  -- Branch A: Legacy (implements interface implementation)
-  do
-    (maybeInterface, maybeImpl) <- pure (lookupInterface ctx interface, lookupBinderInGlobalEnv ctx qpath)
-    case (maybeInterface, maybeImpl) of
-      (_, Left _) -> updateMeta (Meta.stub (contextualize path ctx)) ctx
-      (Left _, Right implBinder) ->
-        warn >> updateMeta implBinder ctx
-      (Right interfaceBinder, Right implBinder) ->
-        -- N.B. The found binding will be fully qualified!
-        addToInterface interfaceBinder implBinder
+primitiveImplements xobj ctx args =
+  case args of
+    [arg1@(XObj (Sym path1 _) _ _), arg2@(XObj (Sym _path2 _) _ _)] ->
+      case lookupInterface ctx path1 of
+        Right interfaceBinder ->
+          -- Branch A: Legacy (implements interface implementation)
+          addToInterface interfaceBinder arg2
+        Left _ ->
+          -- Branch B: Protocol (implements type protocol)
+          protocolBranch arg1 [arg2]
+    (typeXObj : protocolXObjs) -> protocolBranch typeXObj protocolXObjs
+    _ -> pure $ toEvalError ctx xobj (ArgumentArityError xobj "2 or more" args)
   where
-    qpath = qualifyNull ctx path
-    warn :: IO ()
-    warn = emitWarning (show (NonExistentInterfaceWarning interfaceXObj))
-    addToInterface :: Binder -> Binder -> IO (Context, Either EvalError XObj)
-    addToInterface inter impl =
-      let (newCtx, maybeErr) = case registerInInterface ctx impl inter of
-            (Right nc, me) -> (nc, me)
-            _ -> error "primitives: failed to register in interface"
-       in maybe (updateMeta impl newCtx) (handleError newCtx impl) maybeErr
-    handleError :: Context -> Binder -> InterfaceError -> IO (Context, Either EvalError XObj)
-    handleError context impl e@(AlreadyImplemented _ oldImplPath _ _) =
-      emitWarning (show e) >> pure (removeInterfaceFromImplements oldImplPath interfaceXObj context) >>= updateMeta impl
-    handleError context _ e =
-      emitError (show e) >> pure (evalError context (show e) (xobjInfo interfaceXObj))
-    updateMeta :: Binder -> Context -> IO (Context, Either EvalError XObj)
-    updateMeta binder context =
+    addToInterface :: Binder -> XObj -> IO (Context, Either EvalError XObj)
+    addToInterface inter (XObj (Sym path _) _ _) =
+      do
+        let qpath = qualifyNull ctx path
+        maybeImpl <- pure (lookupBinderInGlobalEnv ctx qpath)
+        case maybeImpl of
+          Left _ -> updateMeta (Meta.stub (contextualize path ctx)) ctx qpath inter
+          Right implBinder ->
+            let (newCtx, maybeErr) = case registerInInterface ctx implBinder inter of
+                  (Right nc, me) -> (nc, me)
+                  _ -> error "primitives: failed to register in interface"
+             in maybe (updateMeta implBinder newCtx qpath inter) (handleError newCtx implBinder inter) maybeErr
+    addToInterface _ x = pure $ toEvalError ctx x (ArgumentTypeError "implements" "a symbol" "second" x)
+    handleError :: Context -> Binder -> Binder -> InterfaceError -> IO (Context, Either EvalError XObj)
+    handleError context impl inter e@(AlreadyImplemented _ oldImplPath _ _) =
+      emitWarning (show e) >> pure (removeInterfaceFromImplements oldImplPath (binderXObj inter) context) >>= \c ->
+        let implPath = getPath (binderXObj impl)
+            qimplPath = qualifyNull c implPath
+         in updateMeta impl c qimplPath inter
+    handleError context _ inter e =
+      emitError (show e) >> pure (evalError context (show e) (xobjInfo (binderXObj inter)))
+    updateMeta :: Binder -> Context -> QualifiedPath -> Binder -> IO (Context, Either EvalError XObj)
+    updateMeta binder context qpath inter =
       pure (fromRight (error "Couldn't insert updated meta!!") (fromJust updater), dynamicNil)
       where
+        interfaceXObj = binderXObj inter
         updater =
           ( ( Meta.getBinderMetaValue "implements" binder
                 <&> updateImplementations binder
@@ -164,12 +173,11 @@ primitiveImplements _ ctx [interfaceXObj@(XObj (Sym interface@(SymPath _ _) _) _
             else Meta.updateBinderMeta implBinder "implements" (XObj (Lst (interfaceXObj : impls)) inf ty)
         updateImplementations implBinder _ =
           Meta.updateBinderMeta implBinder "implements" (XObj (Lst [interfaceXObj]) (Just dummyInfo) (Just DynamicTy))
-primitiveImplements _ ctx (typeXObj : protocolXObjs) =
-  -- Branch B: Protocol (implements type protocol1 protocol2 ...)
-  case xobjToTy typeXObj of
-    Just t -> foldM (go t) (ctx, dynamicNil) protocolXObjs
-    Nothing -> pure $ evalError ctx ("Invalid type `" ++ pretty typeXObj ++ "` in implements") (xobjInfo typeXObj)
-  where
+    protocolBranch :: XObj -> [XObj] -> IO (Context, Either EvalError XObj)
+    protocolBranch typeXObj protocolXObjs =
+      case xobjToTy typeXObj of
+        Just t -> foldM (go t) (ctx, dynamicNil) protocolXObjs
+        Nothing -> pure $ evalError ctx ("Invalid type `" ++ pretty typeXObj ++ "` in implements") (xobjInfo typeXObj)
     go t (c, _) protocolXObj@(XObj (Sym protocolPath _) _ _) =
       case lookupInterface c protocolPath of
         Right protocolBinder ->
@@ -180,22 +188,33 @@ primitiveImplements _ ctx (typeXObj : protocolXObjs) =
                 Left errs -> do
                   mapM_ (emitError . show) errs
                   pure (evalError c (unlines (map show errs)) (xobjInfo protocolXObj))
-                Right ctx' ->
-                  -- Atomic registration of the instance
-                  case protocolBinder of
-                    Binder meta (XObj (Lst [XObj (Protocol ms is) info ty, sym]) i t') ->
-                      let updatedProtocol = XObj (Lst [XObj (Protocol ms (addIfNotPresent t is)) info ty, sym]) i t'
-                          updatedBinder = Binder meta updatedProtocol
-                          newCtx = fromRight (error "primitives: couldn't replace protocol binder") $ insertTypeBinder ctx' (markQualified protocolPath) updatedBinder
-                       in pure (newCtx, dynamicNil)
-                    _ -> error "primitives: protocol binder is not a protocol"
+                Right (ctx', implPaths) ->
+                  -- 1. Register each found implementation in its respective interface
+                  let registerWithInterface context implPath =
+                        case lookupBinderInGlobalEnv context (qualifyNull context implPath) of
+                          Right implBinder ->
+                            -- Find which member interface this belongs to
+                            let memberName = getName (binderXObj implBinder)
+                             in case lookupBinderInTypeEnv context (markQualified (SymPath [] memberName)) of
+                                  Right interBinder ->
+                                    let (nc, _) = registerInInterface context implBinder interBinder
+                                     in fromRight context nc
+                                  _ -> context
+                          _ -> context
+                      ctxWithInterfaces = foldl' registerWithInterface ctx' implPaths
+                      -- 2. Atomic registration of the instance in the protocol object
+                      newCtx = case protocolBinder of
+                        Binder meta (XObj (Lst [XObj (Protocol ms is) info ty, sym]) i t') ->
+                          let updatedProtocol = XObj (Lst [XObj (Protocol ms (addIfNotPresent t is)) info ty, sym]) i t'
+                              updatedBinder = Binder meta updatedProtocol
+                           in fromRight (error "primitives: couldn't replace protocol binder") $ insertTypeBinder ctxWithInterfaces (markQualified protocolPath) updatedBinder
+                        _ -> ctxWithInterfaces
+                   in pure (newCtx, dynamicNil)
         Left _ -> do
           let msg = "Protocol `" ++ show protocolPath ++ "` not found"
           emitError msg
           pure (evalError c msg (xobjInfo protocolXObj))
     go _ (c, _) p = pure (evalError c ("implements protocol must be a symbol, but got `" ++ pretty p ++ "`") (xobjInfo p))
-primitiveImplements xobj ctx args =
-  pure $ toEvalError ctx xobj (ArgumentArityError xobj "2 or more" args)
 
 -- N.B. Symbols come into this function FULLY QUALIFIED!
 -- see Eval.hs annotateWithinContext
