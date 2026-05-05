@@ -454,5 +454,5 @@ pattern MatchPat match value stanzas <- (match@(XObj (Match _) _ _) : value : st
 pattern InterfacePat :: [Ty] -> [SymPath] -> [XObj]
 pattern InterfacePat tys paths <- [XObj (Interface tys paths) _ _, _]
 
-pattern ProtocolPat :: [SymPath] -> [SymPath] -> [XObj]
+pattern ProtocolPat :: [SymPath] -> [Ty] -> [XObj]
 pattern ProtocolPat memberPaths instances <- [XObj (Protocol memberPaths instances) _ _, _]

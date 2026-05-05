@@ -147,7 +147,18 @@ registerInInterface ctx implementation interface =
 
 -- | Verify that a type fully implements all members of a protocol.
 verifyProtocolImplementation :: Context -> Ty -> XObj -> Either [InterfaceError] Context
-verifyProtocolImplementation ctx _ty _protocol = Right ctx -- Placeholder for Phase 2
+verifyProtocolImplementation ctx ty _protocol@(XObj (Lst [XObj (Protocol memberPaths _) _ _, _]) _ _) =
+  let typeEnv = contextTypeEnv ctx
+      globalEnv = contextGlobalEnv ctx
+      checkMember errors mPath@(SymPath _ mName) =
+        if interfaceImplementedForTy typeEnv globalEnv mName ty
+          then errors
+          else (NonInterface mPath) : errors
+      allErrors = foldl' checkMember [] memberPaths
+   in if null allErrors
+        then Right ctx
+        else Left allErrors
+verifyProtocolImplementation ctx _ _ = Right ctx -- Should not happen if called correctly
 
 -- | Enforce the orphan instance rule for protocols.
 checkOrphanRule :: Context -> SymPath -> Ty -> Either InterfaceError ()
@@ -176,6 +187,6 @@ interfaceImplementedForTy typeEnv globalEnv interfaceName matchingTy =
       let matches = filter (areUnifiable matchingTy) (rights (map lookupType' paths))
        in not . null $ matches
     Right (Binder _ (XObj (Lst (XObj (Protocol _ instances) _ _ : _)) _ _)) ->
-      let matches = filter (areUnifiable matchingTy) (rights (map lookupType' instances))
+      let matches = filter (areUnifiable matchingTy) instances
        in not . null $ matches
     _ -> False

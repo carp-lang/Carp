@@ -172,7 +172,7 @@ data Obj
   | Ref
   | Deref
   | Interface [Ty] [SymPath]
-  | Protocol [SymPath] [SymPath] -- member interfaces, paths to instances
+  | Protocol [SymPath] [Ty] -- member interfaces, implementing types
   | C String -- C literal
   deriving (Show, Eq, Generic)
 
@@ -1020,7 +1020,7 @@ defineInterface name tys paths info =
     (Just InterfaceTy)
 
 -- | Create a protocol definition.
-defineProtocol :: String -> [(String, Ty)] -> [SymPath] -> Maybe Info -> XObj
+defineProtocol :: String -> [(String, Ty)] -> [Ty] -> Maybe Info -> XObj
 defineProtocol name members instances info =
   let memberPaths = map (\(mName, _) -> SymPath [] mName) members
    in XObj

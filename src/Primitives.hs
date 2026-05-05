@@ -182,8 +182,13 @@ primitiveImplements _ ctx (typeXObj : protocolXObjs) =
                   pure (evalError c (unlines (map show errs)) (xobjInfo protocolXObj))
                 Right ctx' ->
                   -- Atomic registration of the instance
-                  -- For now we'll just return the updated context
-                  pure (ctx', dynamicNil)
+                  case protocolBinder of
+                    Binder meta (XObj (Lst [XObj (Protocol ms is) info ty, sym]) i t') ->
+                      let updatedProtocol = XObj (Lst [XObj (Protocol ms (addIfNotPresent t is)) info ty, sym]) i t'
+                          updatedBinder = Binder meta updatedProtocol
+                          newCtx = fromRight (error "primitives: couldn't replace protocol binder") $ insertTypeBinder ctx' (markQualified protocolPath) updatedBinder
+                       in pure (newCtx, dynamicNil)
+                    _ -> error "primitives: protocol binder is not a protocol"
         Left _ -> do
           let msg = "Protocol `" ++ show protocolPath ++ "` not found"
           emitError msg
@@ -510,11 +515,21 @@ primitiveDefinterface _ ctx [nameXObj@(XObj (Sym (SymPath [] name) _) _ _), _tyX
           then pure $ evalError ctx ("Name collision in protocol `" ++ name ++ "`: members must have unique names") mi
           else
             let protocol = defineProtocol name parsedMembers [] (xobjInfo nameXObj)
-                binder = toBinder protocol
-                ctx' = fromRight (error "primitives: couldn't insert type binder for protocol") $ insertTypeBinder ctx (markQualified (SymPath [] name)) binder
-                -- For protocols, we also need to register each member interface individually.
-                -- defineProtocol will handle the metadata linking.
-             in pure (ctx', dynamicNil)
+                protocolPath = markQualified (SymPath [] name)
+                protocolBinder = toBinder protocol
+                -- Link members to protocol in protocol's metadata
+                memberXObjs = map (\(n, _) -> XObj (Sym (SymPath [] n) Symbol) Nothing Nothing) parsedMembers
+                protocolBinderWithMeta = Meta.updateBinderMeta protocolBinder "members" (XObj (Lst memberXObjs) Nothing Nothing)
+                ctxWithProtocol = fromRight (error "primitives: couldn't insert type binder for protocol") $ insertTypeBinder ctx protocolPath protocolBinderWithMeta
+                -- Register each member as an individual interface linked back to the protocol
+                registerMember c (mName, mTy) =
+                  let interface = defineInterface mName [mTy] [] (xobjInfo nameXObj)
+                      interfaceBinder = toBinder interface
+                      interfaceBinderWithMeta = Meta.updateBinderMeta interfaceBinder "protocol" (XObj (Sym (SymPath [] name) Symbol) Nothing Nothing)
+                      c' = fromRight (error "primitives: couldn't insert type binder for member interface") $ insertTypeBinder c (markQualified (SymPath [] mName)) interfaceBinderWithMeta
+                   in fromRight (error "primitives: couldn't retroactively register in member interface") $ retroactivelyRegisterInInterface c' interfaceBinderWithMeta
+                finalCtx = foldl' registerMember ctxWithProtocol parsedMembers
+             in pure (finalCtx, dynamicNil)
   where
     parseMember (XObj (Lst [XObj (Sym (SymPath [] mName) _) _ _, mTyX]) _ _) =
       case xobjToTy mTyX of
