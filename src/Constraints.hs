@@ -282,4 +282,10 @@ resolveFully mappings varName = Right (Map.insert varName (fullResolve (VarTy va
     fullLookup visited funcTy@(FuncTy argTys retTy ltTy) =
       let newVisited = Set.insert funcTy visited
        in FuncTy (map (fullLookup newVisited) argTys) (fullLookup newVisited retTy) (fullLookup newVisited ltTy)
+    fullLookup visited refTy@(RefTy inner lt) =
+      let newVisited = Set.insert refTy visited
+       in RefTy (fullLookup newVisited inner) (fullLookup newVisited lt)
+    fullLookup visited protocolTy@(ProtocolTy name is) =
+      let newVisited = Set.insert protocolTy visited
+       in ProtocolTy name (map (fullLookup newVisited) is)
     fullLookup _ x = x

@@ -171,7 +171,8 @@ data Obj
   | The
   | Ref
   | Deref
-  | Interface Ty [SymPath]
+  | Interface [Ty] [SymPath]
+  | Protocol [SymPath] [SymPath] -- member interfaces, paths to instances
   | C String -- C literal
   deriving (Show, Eq, Generic)
 
@@ -375,6 +376,7 @@ getBinderDescription (XObj (Lst (XObj MetaStub _ _ : XObj (Sym _ _) _ _ : _)) _ 
 getBinderDescription (XObj (Lst (XObj (Deftype _) _ _ : XObj (Sym _ _) _ _ : _)) _ _) = "deftype"
 getBinderDescription (XObj (Lst (XObj (DefSumtype _) _ _ : XObj (Sym _ _) _ _ : _)) _ _) = "deftype"
 getBinderDescription (XObj (Lst (XObj (Interface _ _) _ _ : XObj (Sym _ _) _ _ : _)) _ _) = "interface"
+getBinderDescription (XObj (Lst (XObj (Protocol _ _) _ _ : XObj (Sym _ _) _ _ : _)) _ _) = "protocol"
 getBinderDescription (XObj (Closure (XObj (VMClosure _ _ _ _) _ (Just MacroTy)) _) _ _) = "macro"
 getBinderDescription (XObj (Closure (XObj (VMClosure _ _ _ _) _ (Just DynamicTy)) _) _ _) = "dynamic"
 getBinderDescription (XObj (Closure _ _) _ _) = "closure"
@@ -422,6 +424,7 @@ getPath (XObj (Lst (XObj MetaStub _ _ : XObj (Sym path _) _ _ : _)) _ _) = path
 getPath (XObj (Lst (XObj (Deftype _) _ _ : XObj (Sym path _) _ _ : _)) _ _) = path
 getPath (XObj (Lst (XObj (Mod _ _) _ _ : XObj (Sym path _) _ _ : _)) _ _) = path
 getPath (XObj (Lst (XObj (Interface _ _) _ _ : XObj (Sym path _) _ _ : _)) _ _) = path
+getPath (XObj (Lst (XObj (Protocol _ _) _ _ : XObj (Sym path _) _ _ : _)) _ _) = path
 getPath (XObj (Lst (XObj (Command _) _ _ : XObj (Sym path _) _ _ : _)) _ _) = path
 getPath (XObj (Lst (XObj (Primitive _) _ _ : XObj (Sym path _) _ _ : _)) _ _) = path
 getPath (XObj (Closure (XObj (VMClosure _ (Just path) _ _) _ _) _) _ _) = path
@@ -517,6 +520,7 @@ pretty = visit 0
         Deref -> "deref"
         Break -> "break"
         Interface _ _ -> "interface"
+        Protocol _ _ -> "protocol"
         With -> "with"
 
 prettyUpTo :: Int -> XObj -> String
@@ -583,6 +587,7 @@ prettyUpTo lim xobj =
         Deref -> ""
         Break -> ""
         Interface _ _ -> ""
+        Protocol _ _ -> ""
         With -> ""
 
 prettyCaptures :: Set.Set XObj -> String
@@ -696,12 +701,17 @@ showBinderIndented indent _ (name, Binder _ (XObj (Mod env tenv) _ _)) =
     ++ "\n"
     ++ replicate indent ' '
     ++ "}"
-showBinderIndented indent _ (name, Binder _ (XObj (Lst [XObj (Interface t paths) _ _, _]) _ _)) =
-  replicate indent ' ' ++ name ++ " : " ++ show t ++ " = {\n    "
+showBinderIndented indent _ (name, Binder _ (XObj (Lst [XObj (Interface ts paths) _ _, _]) _ _)) =
+  replicate indent ' ' ++ name ++ " : " ++ intercalate " | " (map show ts) ++ " = {\n    "
     ++ joinWith "\n    " (map show paths)
     ++ "\n"
     ++ replicate indent ' '
     ++ "}"
+showBinderIndented indent _ (name, Binder _ (XObj (Lst [XObj (Protocol memberPaths instances) _ _, _]) _ _)) =
+  replicate indent ' ' ++ "protocol " ++ name ++ " = {\n"
+    ++ replicate (indent + 2) ' ' ++ "members: " ++ joinWithComma (map show memberPaths) ++ "\n"
+    ++ replicate (indent + 2) ' ' ++ "instances: " ++ joinWithComma (map show instances) ++ "\n"
+    ++ replicate indent ' ' ++ "}"
 showBinderIndented indent showHidden (name, Binder meta xobj) =
   if not showHidden && metaIsTrue meta "hidden"
     then ""
@@ -998,16 +1008,29 @@ defineStaticArrayTypeAlias :: Ty -> XObj
 defineStaticArrayTypeAlias t = defineTypeAlias (tyToC t) (StructTy (ConcreteNameTy (SymPath [] "Array")) [])
 
 -- |
-defineInterface :: String -> Ty -> [SymPath] -> Maybe Info -> XObj
-defineInterface name t paths info =
+defineInterface :: String -> [Ty] -> [SymPath] -> Maybe Info -> XObj
+defineInterface name tys paths info =
   XObj
     ( Lst
-        [ XObj (Interface t paths) Nothing Nothing,
+        [ XObj (Interface tys paths) Nothing Nothing,
           XObj (Sym (SymPath [] name) Symbol) Nothing Nothing
         ]
     )
     info
     (Just InterfaceTy)
+
+-- | Create a protocol definition.
+defineProtocol :: String -> [(String, Ty)] -> [SymPath] -> Maybe Info -> XObj
+defineProtocol name members instances info =
+  let memberPaths = map (\(mName, _) -> SymPath [] mName) members
+   in XObj
+        ( Lst
+            [ XObj (Protocol memberPaths instances) info (Just (ProtocolTy (SymPath [] name) [])),
+              XObj (Sym (SymPath [] name) Symbol) Nothing Nothing
+            ]
+        )
+        info
+        (Just (ProtocolTy (SymPath [] name) []))
 
 -- | Unsafe way of getting the type from an XObj
 forceTy :: XObj -> Ty

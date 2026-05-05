@@ -8,6 +8,8 @@ module Interfaces
     retroactivelyRegisterInInterface,
     interfaceImplementedForTy,
     removeInterfaceFromImplements,
+    verifyProtocolImplementation,
+    checkOrphanRule,
     InterfaceError (..),
   )
 where
@@ -15,7 +17,7 @@ where
 import ColorText
 import Constraints
 import Context
-import Data.Either (fromRight, rights)
+import Data.Either (fromRight, isRight, rights)
 import Data.List (delete, deleteBy, foldl')
 import qualified Env
 import qualified Meta
@@ -97,22 +99,23 @@ removeInterfaceFromImplements oldImplPath interface ctx =
 registerInInterfaceIfNeeded :: Context -> Binder -> Binder -> Ty -> (Either ContextError Context, Maybe InterfaceError)
 registerInInterfaceIfNeeded ctx implementation interface definitionSignature =
   case interface of
-    Binder _ (XObj (Lst [inter@(XObj (Interface interfaceSignature paths) ii it), isym]) i t) ->
-      if checkKinds interfaceSignature definitionSignature
-        then case solve [Constraint interfaceSignature definitionSignature inter inter inter OrdInterfaceImpl] of
-          Left _ -> (Right ctx, Just (TypeMismatch implPath definitionSignature interfaceSignature))
-          Right _ -> case getFirstMatchingImplementation ctx paths definitionSignature of
-            Nothing -> (updatedCtx, Nothing)
-            Just x ->
-              if x == implPath
-                then (updatedCtx, Nothing)
-                else (implReplacedCtx x, Just (AlreadyImplemented ipath x implPath definitionSignature))
-        else (Right ctx, Just (KindMismatch implPath definitionSignature interfaceSignature))
+    Binder _ (XObj (Lst [inter@(XObj (Interface interfaceSignatures paths) ii it), isym]) i t) ->
+      let matches = filter (\sig -> checkKinds sig definitionSignature && isRight (solve [Constraint sig definitionSignature inter inter inter OrdInterfaceImpl])) interfaceSignatures
+       in case matches of
+            [] -> (Right ctx, Just (TypeMismatch implPath definitionSignature (head interfaceSignatures))) -- TODO: Better error for multi-member
+            [_matchingSig] ->
+              case getFirstMatchingImplementation ctx paths definitionSignature of
+                Nothing -> (updatedCtx, Nothing)
+                Just x ->
+                  if x == implPath
+                    then (updatedCtx, Nothing)
+                    else (implReplacedCtx x, Just (AlreadyImplemented ipath x implPath definitionSignature))
+            _ -> error "Ambiguous interface match in protocol" -- TODO: Proper error
       where
         qpath = (Qualify.markQualified (SymPath [] name))
-        updatedInterface = XObj (Lst [XObj (Interface interfaceSignature (addIfNotPresent implPath paths)) ii it, isym]) i t
+        updatedInterface = XObj (Lst [XObj (Interface interfaceSignatures (addIfNotPresent implPath paths)) ii it, isym]) i t
         updatedCtx = replaceTypeBinder ctx qpath (toBinder updatedInterface)
-        implReplacedInterface x = XObj (Lst [XObj (Interface interfaceSignature (addIfNotPresent implPath (delete x paths))) ii it, isym]) i t
+        implReplacedInterface x = XObj (Lst [XObj (Interface interfaceSignatures (addIfNotPresent implPath (delete x paths))) ii it, isym]) i t
         implReplacedCtx x = replaceTypeBinder ctx qpath (toBinder (implReplacedInterface x))
     _ ->
       (Right ctx, Just (NonInterface (getBinderPath interface)))
@@ -142,6 +145,14 @@ registerInInterface ctx implementation interface =
       registerInInterfaceIfNeeded ctx implementation interface t
     _ -> (Right ctx, Nothing)
 
+-- | Verify that a type fully implements all members of a protocol.
+verifyProtocolImplementation :: Context -> Ty -> XObj -> Either [InterfaceError] Context
+verifyProtocolImplementation ctx _ty _protocol = Right ctx -- Placeholder for Phase 2
+
+-- | Enforce the orphan instance rule for protocols.
+checkOrphanRule :: Context -> SymPath -> Ty -> Either InterfaceError ()
+checkOrphanRule _ctx _protocol _ty = Right () -- Placeholder for Phase 2
+
 -- | For forms that were declared as implementations of interfaces that didn't exist,
 -- retroactively register those forms with the interface once its defined.
 retroactivelyRegisterInInterface :: Context -> Binder -> Either ContextError Context
@@ -159,9 +170,12 @@ retroactivelyRegisterInInterface ctx interface =
 -- | e.g. Is "delete" implemented for `(Fn [String] ())` ?
 interfaceImplementedForTy :: TypeEnv -> Env -> String -> Ty -> Bool
 interfaceImplementedForTy typeEnv globalEnv interfaceName matchingTy =
-  case Env.getBinder typeEnv interfaceName of
+  let lookupType' path = forceTy . binderXObj <$> (Env.searchBinder globalEnv path)
+   in case Env.getBinder typeEnv interfaceName of
     Right (Binder _ (XObj (Lst (XObj (Interface _ paths) _ _ : _)) _ _)) ->
-      let lookupType' path = forceTy . binderXObj <$> (Env.searchBinder globalEnv path)
-          matches = filter (areUnifiable matchingTy) (rights (map lookupType' paths))
+      let matches = filter (areUnifiable matchingTy) (rights (map lookupType' paths))
+       in not . null $ matches
+    Right (Binder _ (XObj (Lst (XObj (Protocol _ instances) _ _ : _)) _ _)) ->
+      let matches = filter (areUnifiable matchingTy) (rights (map lookupType' instances))
        in not . null $ matches
     _ -> False

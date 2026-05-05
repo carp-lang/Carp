@@ -12,6 +12,7 @@ import Data.Bifunctor
 import Data.Either (fromRight, isRight, rights)
 import Data.Functor ((<&>))
 import Data.List (foldl')
+import qualified Data.List as L
 import Data.Maybe (fromJust, fromMaybe)
 import Deftype
 import Emit
@@ -118,8 +119,9 @@ primitiveColumn x@(XObj _ i _) ctx args =
   where
     err = toEvalError ctx x (MissingInfo x)
 
-primitiveImplements :: BinaryPrimitiveCallback
-primitiveImplements _ ctx x@(XObj (Sym interface@(SymPath _ _) _) _ _) (XObj (Sym path _) _ _) =
+primitiveImplements :: VariadicPrimitiveCallback
+primitiveImplements _ ctx [interfaceXObj@(XObj (Sym interface@(SymPath _ _) _) _ _), (XObj (Sym path _) _ _)] =
+  -- Branch A: Legacy (implements interface implementation)
   do
     (maybeInterface, maybeImpl) <- pure (lookupInterface ctx interface, lookupBinderInGlobalEnv ctx qpath)
     case (maybeInterface, maybeImpl) of
@@ -132,7 +134,7 @@ primitiveImplements _ ctx x@(XObj (Sym interface@(SymPath _ _) _) _ _) (XObj (Sy
   where
     qpath = qualifyNull ctx path
     warn :: IO ()
-    warn = emitWarning (show (NonExistentInterfaceWarning x))
+    warn = emitWarning (show (NonExistentInterfaceWarning interfaceXObj))
     addToInterface :: Binder -> Binder -> IO (Context, Either EvalError XObj)
     addToInterface inter impl =
       let (newCtx, maybeErr) = case registerInInterface ctx impl inter of
@@ -141,9 +143,9 @@ primitiveImplements _ ctx x@(XObj (Sym interface@(SymPath _ _) _) _ _) (XObj (Sy
        in maybe (updateMeta impl newCtx) (handleError newCtx impl) maybeErr
     handleError :: Context -> Binder -> InterfaceError -> IO (Context, Either EvalError XObj)
     handleError context impl e@(AlreadyImplemented _ oldImplPath _ _) =
-      emitWarning (show e) >> pure (removeInterfaceFromImplements oldImplPath x context) >>= updateMeta impl
+      emitWarning (show e) >> pure (removeInterfaceFromImplements oldImplPath interfaceXObj context) >>= updateMeta impl
     handleError context _ e =
-      emitError (show e) >> pure (evalError context (show e) (xobjInfo x))
+      emitError (show e) >> pure (evalError context (show e) (xobjInfo interfaceXObj))
     updateMeta :: Binder -> Context -> IO (Context, Either EvalError XObj)
     updateMeta binder context =
       pure (fromRight (error "Couldn't insert updated meta!!") (fromJust updater), dynamicNil)
@@ -157,15 +159,38 @@ primitiveImplements _ ctx x@(XObj (Sym interface@(SymPath _ _) _) _ _) (XObj (Sy
             >>= pure . (insertInGlobalEnv context qpath)
         updateImplementations :: Binder -> XObj -> Binder
         updateImplementations implBinder (XObj (Lst impls) inf ty) =
-          if x `elem` impls
+          if interfaceXObj `elem` impls
             then binder
-            else Meta.updateBinderMeta implBinder "implements" (XObj (Lst (x : impls)) inf ty)
+            else Meta.updateBinderMeta implBinder "implements" (XObj (Lst (interfaceXObj : impls)) inf ty)
         updateImplementations implBinder _ =
-          Meta.updateBinderMeta implBinder "implements" (XObj (Lst [x]) (Just dummyInfo) (Just DynamicTy))
-primitiveImplements x ctx (XObj (Sym _ _) _ _) y =
-  pure $ toEvalError ctx x (ArgumentTypeError "implements" "a symbol" "second" y)
-primitiveImplements _ ctx x _ =
-  pure $ toEvalError ctx x (ArgumentTypeError "implements" "a symbol" "first" x)
+          Meta.updateBinderMeta implBinder "implements" (XObj (Lst [interfaceXObj]) (Just dummyInfo) (Just DynamicTy))
+primitiveImplements _ ctx (typeXObj : protocolXObjs) =
+  -- Branch B: Protocol (implements type protocol1 protocol2 ...)
+  case xobjToTy typeXObj of
+    Just t -> foldM (go t) (ctx, dynamicNil) protocolXObjs
+    Nothing -> pure $ evalError ctx ("Invalid type `" ++ pretty typeXObj ++ "` in implements") (xobjInfo typeXObj)
+  where
+    go t (c, _) protocolXObj@(XObj (Sym protocolPath _) _ _) =
+      case lookupInterface c protocolPath of
+        Right protocolBinder ->
+          case checkOrphanRule c protocolPath t of
+            Left err -> emitError (show err) >> pure (evalError c (show err) (xobjInfo protocolXObj))
+            Right () ->
+              case verifyProtocolImplementation c t (binderXObj protocolBinder) of
+                Left errs -> do
+                  mapM_ (emitError . show) errs
+                  pure (evalError c (unlines (map show errs)) (xobjInfo protocolXObj))
+                Right ctx' ->
+                  -- Atomic registration of the instance
+                  -- For now we'll just return the updated context
+                  pure (ctx', dynamicNil)
+        Left _ -> do
+          let msg = "Protocol `" ++ show protocolPath ++ "` not found"
+          emitError msg
+          pure (evalError c msg (xobjInfo protocolXObj))
+    go _ (c, _) p = pure (evalError c ("implements protocol must be a symbol, but got `" ++ pretty p ++ "`") (xobjInfo p))
+primitiveImplements xobj ctx args =
+  pure $ toEvalError ctx xobj (ArgumentArityError xobj "2 or more" args)
 
 -- N.B. Symbols come into this function FULLY QUALIFIED!
 -- see Eval.hs annotateWithinContext
@@ -321,6 +346,8 @@ primitiveInfo _ ctx target@(XObj (Sym path@(SymPath _ name) _) _ _) =
                     case obj of
                       (Lst [XObj (Interface _ _) _ _, _]) ->
                         fmap (filter (implementsInterface binder)) impls
+                      (Lst [XObj (Protocol _ _) _ _, _]) ->
+                        fmap (filter (implementsInterface binder)) impls
                       _ -> impls
           )
             <> impls
@@ -472,38 +499,63 @@ primitiveMetaSet _ ctx (XObj (Sym (SymPath _ _) _) _ _) key _ =
 primitiveMetaSet _ ctx target _ _ =
   argumentErr ctx "meta-set!" "a symbol" "first" target
 
-primitiveDefinterface :: BinaryPrimitiveCallback
-primitiveDefinterface xobj ctx nameXObj@(XObj (Sym path@(SymPath [] name) _) _ _) ty =
-  pure $ maybe invalidType validType (xobjToTy ty)
+primitiveDefinterface :: VariadicPrimitiveCallback
+primitiveDefinterface _ ctx [nameXObj@(XObj (Sym (SymPath [] name) _) _ _), _tyXObj@(XObj (Arr members) mi _)] =
+  if null members
+    then pure $ evalError ctx "definterface protocol form requires at least one member" mi
+    else case mapM parseMember members of
+      Left err -> pure $ evalError ctx err mi
+      Right parsedMembers ->
+        if hasDuplicates (map fst parsedMembers)
+          then pure $ evalError ctx ("Name collision in protocol `" ++ name ++ "`: members must have unique names") mi
+          else
+            let protocol = defineProtocol name parsedMembers [] (xobjInfo nameXObj)
+                binder = toBinder protocol
+                ctx' = fromRight (error "primitives: couldn't insert type binder for protocol") $ insertTypeBinder ctx (markQualified (SymPath [] name)) binder
+                -- For protocols, we also need to register each member interface individually.
+                -- defineProtocol will handle the metadata linking.
+             in pure (ctx', dynamicNil)
   where
-    invalidType = evalError ctx ("Invalid type for interface `" ++ name ++ "`: " ++ pretty ty) (xobjInfo ty)
-    validType t = either (const defInterface) updateInterface (lookupBinderInTypeEnv ctx path)
+    parseMember (XObj (Lst [XObj (Sym (SymPath [] mName) _) _ _, mTyX]) _ _) =
+      case xobjToTy mTyX of
+        Just t -> Right (mName, t)
+        Nothing -> Left ("Invalid type signature for member `" ++ mName ++ "`")
+    parseMember m = Left ("definterface member must be a (name signature) pair, but got `" ++ pretty m ++ "`")
+    hasDuplicates xs = length xs /= length (L.nub xs)
+primitiveDefinterface _ ctx [nameXObj@(XObj (Sym (SymPath [] name) _) _ _), tyXObj] =
+  pure $ maybe invalidType (validType . (: [])) (xobjToTy tyXObj)
+  where
+    invalidType = evalError ctx ("Invalid type for interface `" ++ name ++ "`: " ++ pretty tyXObj) (xobjInfo tyXObj)
+    validType :: [Ty] -> (Context, Either EvalError XObj)
+    validType ts = either (const defInterface) updateInterface (lookupBinderInTypeEnv ctx (SymPath [] name))
       where
         defInterface =
-          let interface = defineInterface name t [] (xobjInfo nameXObj)
+          let interface = defineInterface name ts [] (xobjInfo nameXObj)
               binder = toBinder interface
               ctx' = fromRight (error "primitives: couldn't insert type binder for interface") $ insertTypeBinder ctx (markQualified (SymPath [] name)) binder
               newCtx = fromRight (error "primitives: couldn't retroactively register in interface") $ retroactivelyRegisterInInterface ctx' binder
            in (newCtx, dynamicNil)
         updateInterface binder = case binder of
-          Binder _ (XObj (Lst (XObj (Interface foundType _) _ _ : _)) _ _) ->
-            if foundType == t
+          Binder _ (XObj (Lst (XObj (Interface foundTypes _) _ _ : _)) _ _) ->
+            if foundTypes == ts
               then (ctx, dynamicNil)
               else
                 evalError
                   ctx
                   ( "Tried to change the type of interface `"
-                      ++ show path
+                      ++ name
                       ++ "` from `"
-                      ++ show foundType
+                      ++ L.intercalate " | " (map show foundTypes)
                       ++ "` to `"
-                      ++ show t
+                      ++ L.intercalate " | " (map show ts)
                       ++ "`"
                   )
-                  (xobjInfo xobj)
+                  (xobjInfo nameXObj)
           _ -> error "updateinterface"
-primitiveDefinterface _ ctx name _ =
+primitiveDefinterface _ ctx [name, _] =
   pure (evalError ctx ("`definterface` expects a name as first argument, but got `" ++ pretty name ++ "`") (xobjInfo name))
+primitiveDefinterface xobj ctx args =
+  pure $ toEvalError ctx xobj (ArgumentArityError xobj "2" args)
 
 registerInternal :: Context -> String -> XObj -> Maybe String -> IO (Context, Either EvalError XObj)
 registerInternal ctx name ty override =

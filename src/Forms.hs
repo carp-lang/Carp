@@ -35,6 +35,7 @@ module Forms
     pattern InterfaceSymPat,
     pattern MatchPat,
     pattern InterfacePat,
+    pattern ProtocolPat,
   )
 where
 
@@ -450,5 +451,8 @@ pattern MultiSymPat name candidates <- XObj (MultiSym name candidates) _ _
 pattern MatchPat :: XObj -> XObj -> [XObj] -> [XObj]
 pattern MatchPat match value stanzas <- (match@(XObj (Match _) _ _) : value : stanzas)
 
-pattern InterfacePat :: Ty -> [SymPath] -> [XObj]
-pattern InterfacePat ty paths <- [XObj (Interface ty paths) _ _, _]
+pattern InterfacePat :: [Ty] -> [SymPath] -> [XObj]
+pattern InterfacePat tys paths <- [XObj (Interface tys paths) _ _, _]
+
+pattern ProtocolPat :: [SymPath] -> [SymPath] -> [XObj]
+pattern ProtocolPat memberPaths instances <- [XObj (Protocol memberPaths instances) _ _, _]
