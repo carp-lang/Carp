@@ -12,8 +12,8 @@ module Emit
   )
 where
 
+import Control.Monad (unless, when, zipWithM_)
 import Control.Monad.State
-import Control.Monad (when, zipWithM_, unless)
 import Data.Char (ord)
 import Data.Functor ((<&>))
 import Data.Graph (SCC (..), stronglyConnComp)
@@ -278,6 +278,12 @@ toC toCMode emitLines mutualGroup (Binder meta root) = renderEmitterState (execS
                     canTCO = not isMain && hasSelfTailCalls body && isSafeForTCO argList
                 emitLineDirInfo info
                 appendToSrc (defnDecl ++ " {\n")
+                -- Lambdas: re-bind the typed `_env` pointer from the void* parameter
+                -- emitted by getParam, so the body's _env->field accesses still type-check.
+                case argList of
+                  XObj (Sym (SymPath _ "_env") _) _ (Just envTy@(PointerTy _)) : _ ->
+                    appendToSrc (addIndent innerIndent ++ tyToCLambdaFix envTy ++ " _env = _env_raw;\n")
+                  _ -> pure ()
                 when isMain $
                   appendToSrc (addIndent innerIndent ++ "carp_init_globals(argc, argv);\n")
                 if canTCO
@@ -1159,6 +1165,10 @@ paramListToC xobjs =
     else joinWithComma (map getParam (remove (isUnit . forceTy) xobjs))
   where
     getParam :: XObj -> String
+    -- Lambdas take their captured-env pointer as void* in the C signature so that
+    -- the call-site cast (which uses void* for env) matches the function's actual
+    -- type. The body re-binds `_env` to the typed pointer; see the Defn handler.
+    getParam (XObj (Sym (SymPath _ "_env") _) _ (Just (PointerTy _))) = "void *_env_raw"
     getParam (XObj (Sym (SymPath _ name) _) _ (Just t)) = tyToCLambdaFix t ++ " " ++ mangle name
     getParam invalid = error (show (InvalidParameter invalid))
 
