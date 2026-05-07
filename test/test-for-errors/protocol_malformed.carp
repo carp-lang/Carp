@@ -1,0 +1,4 @@
+(Project.config "file-path-print-length" "short")
+
+;; Members must be (name type) pairs
+(definterface Malformed [f (Fn [a] Int)]) ;; Missing parens around the pair

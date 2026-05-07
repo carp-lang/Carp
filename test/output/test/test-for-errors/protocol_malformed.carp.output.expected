@@ -1,0 +1,1 @@
+protocol_malformed.carp:4:25 definterface member must be a (name signature) pair, but got `f`

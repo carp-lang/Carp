@@ -1,0 +1,6 @@
+(Project.config "file-path-print-length" "short")
+
+(deftype T [])
+
+;; 'NotAProtocol' is not defined
+(implements T NotAProtocol)
