@@ -152,10 +152,11 @@ primitiveImplements xobj ctx args =
           Right implBinder ->
             case lookupInterface ctx interfacePath of
               Right inter ->
-                let (newCtx, maybeErr) = case registerInInterface ctx implBinder inter of
-                      (Right nc, me) -> (nc, me)
-                      _ -> error "primitives: failed to register in interface"
-                 in maybe (updateMeta implBinder newCtx qpath inter) (handleError newCtx implBinder inter) maybeErr
+                case registerInInterface ctx implBinder inter of
+                  (Right newCtx, maybeErr) ->
+                    maybe (updateMeta implBinder newCtx qpath inter) (handleError newCtx implBinder inter) maybeErr
+                  (Left err, _) ->
+                    pure (evalError ctx (show err) (xobjInfo (binderXObj inter)))
               Left _ -> updateMeta' implBinder ctx qpath interfacePath
     addToInterface' _ x = pure $ toEvalError ctx x (ArgumentTypeError "implements" "a symbol" "second" x)
     updateMeta' :: Binder -> Context -> QualifiedPath -> SymPath -> IO (Context, Either EvalError XObj)
@@ -217,13 +218,15 @@ primitiveImplements xobj ctx args =
                           _ -> context
                       ctxWithInterfaces = foldl' registerWithInterface ctx' implPaths
                       -- 2. Atomic registration of the instance in the protocol object
-                      newCtx = case protocolBinder of
+                      maybeNewCtx = case protocolBinder of
                         Binder meta (XObj (Lst [XObj (Protocol ms is) info ty, sym]) i t') ->
                           let updatedProtocol = XObj (Lst [XObj (Protocol ms (addIfNotPresent t is)) info ty, sym]) i t'
                               updatedBinder = Binder meta updatedProtocol
-                           in fromRight (error "primitives: couldn't replace protocol binder") $ insertTypeBinder ctxWithInterfaces (markQualified protocolPath) updatedBinder
-                        _ -> ctxWithInterfaces
-                   in pure (newCtx, dynamicNil)
+                           in first show $ insertTypeBinder ctxWithInterfaces (markQualified protocolPath) updatedBinder
+                        _ -> Right ctxWithInterfaces
+                   in case maybeNewCtx of
+                        Right nc -> pure (nc, dynamicNil)
+                        Left err -> pure (evalError ctxWithInterfaces err (xobjInfo protocolXObj))
         Left _ -> do
           let msg = "Protocol `" ++ show protocolPath ++ "` not found"
           emitError msg

@@ -32,6 +32,7 @@ data InterfaceError
   | TypeMismatch SymPath Ty Ty
   | NonInterface SymPath
   | AlreadyImplemented SymPath SymPath SymPath Ty
+  | AmbiguousInterfaceMatch SymPath Ty [Ty]
 
 instance Show InterfaceError where
   show (KindMismatch path definitionSignature interfaceSignature) =
@@ -67,6 +68,13 @@ instance Show InterfaceError where
       ++ "."
       ++ "\n"
       ++ "This may result in unexpected behavior."
+  show (AmbiguousInterfaceMatch path definitionSignature matches) =
+    labelStr
+      "INTERFACE ERROR"
+      ( show path ++ " : " ++ show definitionSignature
+          ++ " matches multiple signatures for the same interface: "
+          ++ joinWithComma (map show matches)
+      )
 
 -- | Get the first path of an interface implementation that matches a given type signature
 getFirstMatchingImplementation :: Context -> [SymPath] -> Ty -> Maybe SymPath
@@ -110,15 +118,19 @@ removeInterfaceFromImplements oldImplPath interface ctx =
   where
     matchPath xobj xobj' = getPath xobj == getPath xobj'
 
--- TODO: This is currently called once outside of this module--try to remove that call and make this internal.
 -- Checks whether a given form's type matches an interface, and if so, registers the form with the interface.
 registerInInterfaceIfNeeded :: Context -> Binder -> Binder -> Ty -> (Either ContextError Context, Maybe InterfaceError)
 registerInInterfaceIfNeeded ctx implementation interface definitionSignature =
   case interface of
-    Binder _ (XObj (Lst [inter@(XObj (Interface interfaceSignatures paths) ii it), isym]) i t) ->
+    Binder _ (XObj (Lst [inter@(XObj (Interface interfaceSignatures@(firstSig : _) paths) ii it), isym]) i t) ->
       let matches = filter (\sig -> checkKinds sig definitionSignature && isRight (solve [Constraint sig definitionSignature inter inter inter OrdInterfaceImpl])) interfaceSignatures
+          qpath = Qualify.markQualified (SymPath [] name)
+          updatedInterface = XObj (Lst [XObj (Interface interfaceSignatures (addIfNotPresent implPath paths)) ii it, isym]) i t
+          updatedCtx = replaceTypeBinder ctx qpath (toBinder updatedInterface)
+          implReplacedInterface x = XObj (Lst [XObj (Interface interfaceSignatures (addIfNotPresent implPath (delete x paths))) ii it, isym]) i t
+          implReplacedCtx x = replaceTypeBinder ctx qpath (toBinder (implReplacedInterface x))
        in case matches of
-            [] -> (Right ctx, Just (TypeMismatch implPath definitionSignature (head interfaceSignatures))) -- TODO: Better error for multi-member
+            [] -> (Right ctx, Just (TypeMismatch implPath definitionSignature firstSig))
             [_matchingSig] ->
               case getFirstMatchingImplementation ctx paths definitionSignature of
                 Nothing -> (updatedCtx, Nothing)
@@ -126,13 +138,7 @@ registerInInterfaceIfNeeded ctx implementation interface definitionSignature =
                   if x == implPath
                     then (updatedCtx, Nothing)
                     else (implReplacedCtx x, Just (AlreadyImplemented ipath x implPath definitionSignature))
-            _ -> error "Ambiguous interface match in protocol" -- TODO: Proper error
-      where
-        qpath = (Qualify.markQualified (SymPath [] name))
-        updatedInterface = XObj (Lst [XObj (Interface interfaceSignatures (addIfNotPresent implPath paths)) ii it, isym]) i t
-        updatedCtx = replaceTypeBinder ctx qpath (toBinder updatedInterface)
-        implReplacedInterface x = XObj (Lst [XObj (Interface interfaceSignatures (addIfNotPresent implPath (delete x paths))) ii it, isym]) i t
-        implReplacedCtx x = replaceTypeBinder ctx qpath (toBinder (implReplacedInterface x))
+            _ -> (Right ctx, Just (AmbiguousInterfaceMatch implPath definitionSignature matches))
     _ ->
       (Right ctx, Just (NonInterface (getBinderPath interface)))
   where

@@ -158,7 +158,8 @@ initialTypes typeEnv rootEnv root = evalState (visit rootEnv root) 0
     visitInterfaceSym _ xobj@(XObj (InterfaceSym name) _ _) =
       do
         freshTy <- case E.getBinder typeEnv name of
-          Right (Binder _ (XObj (Lst [XObj (Interface interfaceSignatures _) _ _, _]) _ _)) -> renameVarTys (head interfaceSignatures) -- TODO: rename all?
+          Right (Binder _ (XObj (Lst [XObj (Interface (sig : _) _) _ _, _]) _ _)) -> renameVarTys sig
+          Right (Binder _ (XObj (Lst [XObj (Interface [] _) _ _, _]) _ _)) -> genVarTy
           Right (Binder _ (XObj (Lst [XObj (Protocol _ _) _ _, _]) _ _)) -> genVarTy -- Phase 3: Protocol typing
           Right (Binder _ x) -> error ("A non-interface named '" ++ name ++ "' was found in the type environment: " ++ pretty x)
           Left _ -> genVarTy
