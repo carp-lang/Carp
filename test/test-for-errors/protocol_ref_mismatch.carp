@@ -1,0 +1,13 @@
+(Project.config "file-path-print-length" "short")
+
+(definterface RefProto
+  [(r (Fn [(Ref a)] Int))])
+
+(deftype R [])
+
+(defn r [x] 1) ;; wrong: not (Ref a)
+
+(implements r r)
+
+;; This should fail because r's signature doesn't match RefProto for R
+(implements R RefProto)

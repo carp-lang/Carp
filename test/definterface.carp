@@ -1,58 +1,127 @@
 (load "Test.carp")
 (use Test)
 
-;; 1. Legacy Single-Arity Interface
-(definterface simple-id (Fn [a] a))
-(defn simple-id [x] x)
-(implements simple-id simple-id)
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;; 1. Legacy Behavior (Must Remain Intact)
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-;; 2. Protocol with multiple members and varying arities
-(definterface MyEq
-  [(my-equal? (Fn [(Ref a) (Ref a)] Bool))
-   (my-not-equal? (Fn [(Ref a) (Ref a)] Bool))
-   (my-hash (Fn [(Ref a)] Int))])
+(definterface id (Fn [a] a))
+(defn id [x] x)
+(implements id id)
 
-(deftype Person [name String id Int])
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;; 2. Basic Protocol (Multi-Member Interface)
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defn my-equal? [a b] 
-  (and (Int.= @(Person.id a) @(Person.id b))
-       (String.= (Person.name a) (Person.name b))))
+(definterface Eq
+  [(eq (Fn [(Ref a) (Ref a)] Bool))
+   (neq (Fn [(Ref a) (Ref a)] Bool))])
 
-(defn my-not-equal? [a b] (not (my-equal? a b)))
+(deftype Person [id Int])
 
-(defn my-hash [p] @(Person.id p))
+(defn eq [a b]
+  (Int.= @(Person.id a) @(Person.id b)))
 
-;; Register implementations
-(implements my-equal? my-equal?)
-(implements my-not-equal? my-not-equal?)
-(implements my-hash my-hash)
+(defn neq [a b]
+  (not (eq a b)))
 
-;; Grouped implementation check
-(implements Person MyEq)
+;; Register members individually (legacy style still allowed)
+(implements eq eq)
+(implements neq neq)
 
-;; 3. Another Protocol
-(definterface Greeter
-  [(say-hi (Fn [(Ref a)] ()))
-   (say-bye (Fn [(Ref a)] ()))])
+;; Atomic protocol implementation
+(implements Person Eq)
 
-(defn say-hi [p] (println* "Hi " (Person.name p)))
-(defn say-bye [p] (println* "Bye " (Person.name p)))
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;; Sections 3, 4, 5, 10, 11 are moved to separate error tests
+;; in test/test-for-errors/protocol_*.carp
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(implements say-hi say-hi)
-(implements say-bye say-bye)
-(implements Person Greeter)
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;; 6. Type Parameter Handling
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(definterface Show
+  [(show (Fn [a] String))])
+
+(defn show [x] @"ok")
+(implements show show)
+
+(implements Person Show Eq)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;; 7. Isolation Between Types
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(definterface Only
+  [(get (Fn [a] Int))])
+
+(deftype A [])
+(deftype B [])
+
+(defn get [x] 7)
+(implements get get)
+
+(implements A Only)
+
+;; B should NOT implicitly implement Only
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;; 8. Late Definition (Order Independence)
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(deftype Late [])
+
+(defn late-fn [x] 5)
+
+(definterface LateProto
+  [(late-fn (Fn [a] Int))])
+
+(implements late-fn late-fn)
+(implements Late LateProto)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;; 9. Member Name Reuse Across Protocols (NO dispatch magic)
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(definterface P1 [(f (Fn [a] Int))])
+(definterface P2 [(f (Fn [a] Int))])
+
+(deftype X [])
+
+(defn f [x] 99)
+
+(implements f f)
+(implements X P1)
+(implements X P2)
+
+;; IMPORTANT:
+;; This should NOT introduce protocol-based dispatch.
+;; Behavior is whatever global resolution does.
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;; 12. Runtime Behavior Sanity Check
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (deftest test
-  (let [p1 (Person.init @"sqrew" 1)
-        p2 (Person.init @"sqrew" 1)
-        p3 (Person.init @"other" 2)
-        t1 (assert-equal test 10 (simple-id 10) "Legacy works")
-        t2 (assert-true (ref t1) (my-equal? &p1 &p2) "Arity 2 true")
-        t3 (assert-false (ref t2) (my-equal? &p1 &p3) "Arity 2 false")
-        t4 (assert-true (ref t3) (my-not-equal? &p1 &p3) "Arity 2 not-equal")
-        t5 (assert-equal (ref t4) 1 (my-hash &p1) "Arity 1 works")]
-    (do
-      (say-hi &p1)
-      (say-bye &p1)
-      (assert-true (ref t5) true "Greeter dispatch ok")))
-)
+  (let [p1 (Person.init 1)
+        p2 (Person.init 1)
+        p3 (Person.init 2)
+        x  (X.init)
+        a  (A.init)
+        l  (Late.init)
+
+        t1 (assert-equal test 10 (id 10) "legacy id")
+
+        t2 (assert-true (ref t1) (eq &p1 &p2) "eq true")
+        t3 (assert-false (ref t2) (eq &p1 &p3) "eq false")
+        t4 (assert-true (ref t3) (neq &p1 &p3) "neq works")
+
+        t5 (assert-equal (ref t4) &@"ok" &(show p1) "show works")
+
+        t6 (assert-equal (ref t5) 7 (get a) "isolation works")
+
+        t7 (assert-equal (ref t6) 5 (late-fn l) "late works")
+
+        t8 (assert-equal (ref t7) 99 (f x) "no protocol dispatch magic")]
+    t8))

@@ -54,7 +54,7 @@ instance Show InterfaceError where
   show (NonInterface path) =
     labelStr
       "INTERFACE ERROR"
-      (show path ++ "Cant' implement the non-interface `" ++ show path ++ "`")
+      (show path ++ ": Can't implement the non-interface `" ++ show path ++ "`")
   show (AlreadyImplemented interfacePath implementationPath replacementPath ty) =
     "An implementation of the interface " ++ show interfacePath
       ++ " with type "
@@ -77,6 +77,21 @@ getFirstMatchingImplementation ctx paths ty =
   where
     predicate = (== Just ty) . (xobjTy . binderXObj)
     global = contextGlobalEnv ctx
+
+-- | Get the first path of an interface implementation that satisfies a given type signature
+getFirstSatisfyingImplementation :: Context -> [SymPath] -> Ty -> Maybe SymPath
+getFirstSatisfyingImplementation ctx paths ty =
+  case filter predicate (rights (map (global `Env.searchBinder`) paths)) of
+    [] -> Nothing
+    (x : _) -> Just ((getPath . binderXObj) x)
+  where
+    global = contextGlobalEnv ctx
+    dummy = XObj (Lst []) Nothing Nothing
+    predicate binder =
+      case xobjTy (binderXObj binder) of
+        Just implTy -> isRight (solve [Constraint ty implTy dummy dummy dummy OrdInterfaceImpl])
+        Nothing -> False
+
 
 -- | Remove an interface from a binder's list of implemented interfaces
 removeInterfaceFromImplements :: SymPath -> XObj -> Context -> Context
@@ -150,14 +165,14 @@ registerInInterface ctx implementation interface =
 verifyProtocolImplementation :: Context -> Ty -> XObj -> Either [InterfaceError] (Context, [SymPath])
 verifyProtocolImplementation ctx ty _protocol@(XObj (Lst [XObj (Protocol memberPaths _) _ _, _]) _ _) =
   let typeEnv = contextTypeEnv ctx
-      checkMember (errors, paths) mPath@(SymPath _ mName) =
+      checkMember (errors, paths) (SymPath _ mName) =
         case Env.getBinder typeEnv mName of
-          Right (Binder _ (XObj (Lst [XObj (Interface [sig] _) _ _, _]) _ _)) ->
+          Right (Binder _ (XObj (Lst [XObj (Interface [sig] iPaths) _ _, _]) _ _)) ->
             let specializedSig = replaceTyVars (Map.fromList [("a", ty)]) sig
-             in case getFirstMatchingImplementation ctx [mPath] specializedSig of
+             in case getFirstSatisfyingImplementation ctx iPaths specializedSig of
                   Just implPath -> (errors, implPath : paths)
-                  Nothing -> ((NonInterface mPath) : errors, paths)
-          _ -> ((NonInterface mPath) : errors, paths)
+                  Nothing -> ((NonInterface (SymPath [] mName)) : errors, paths)
+          _ -> ((NonInterface (SymPath [] mName)) : errors, paths)
       (allErrors, foundPaths) = foldl' checkMember ([], []) memberPaths
    in if null allErrors
         then Right (ctx, foundPaths)
