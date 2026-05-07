@@ -3,17 +3,25 @@
 (load "Test.carp")
 (use Test)
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;; 1. Legacy Behavior
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(definterface id (Fn [a] a))
+(defn id [x] x)
+(implements id id)
+
 (definterface foo (Fn [a] Int))
 
 ;; A module implements an interface using implements.
 ;; Implementations don't need to share names with interfaces.
-(defmodule A
+(defmodule LegacyA
   (defn bar [x] x)
-  (implements foo A.bar))
+  (implements foo LegacyA.bar))
 
 ;; Implementations may be declared before definitions
 ;; like `doc`, the name is relative to the module environment
-(defmodule B
+(defmodule LegacyB
   (implements foo baz)
   (defn baz [y] (if y 5 0)))
 
@@ -38,40 +46,119 @@
 
 ;; issue #1414, make sure we don't overwrite the lookup mode of implementations
 (definterface FOO a)
-(defmodule Foo
+(defmodule FooModule
   (register FOO Int "CARP_INT_MAX")
   (implements FOO FOO)
 )
-(defmodule Bar
+(defmodule BarModule
   (defn bar []
     FOO)
 )
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;; 2. Basic Protocol (Multi-Member Interface)
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(definterface Eq
+  [(eq (Fn [(Ref a) (Ref a)] Bool))
+   (neq (Fn [(Ref a) (Ref a)] Bool))])
+
+(deftype Person [id Int])
+
+(defn eq [a b]
+  (Int.= @(Person.id a) @(Person.id b)))
+
+(defn neq [a b]
+  (not (eq a b)))
+
+;; Register members individually (legacy style still allowed)
+(implements eq eq)
+(implements neq neq)
+
+;; Atomic protocol implementation
+(implements Person Eq)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;; 3. Type Parameter Handling
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(definterface Show
+  [(show (Fn [a] String))])
+
+(defn show [x] @"ok")
+(implements show show)
+
+(implements Person Show Eq)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;; 4. Isolation Between Types
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(definterface Only
+  [(get (Fn [a] Int))])
+
+(deftype IsolationA [])
+(deftype IsolationB [])
+
+(defn get [x] 7)
+(implements get get)
+
+(implements IsolationA Only)
+
+;; IsolationB should NOT implicitly implement Only
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;; 5. Late Definition (Order Independence)
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(deftype Late [])
+
+(defn late-fn [x] 5)
+
+(definterface LateProto
+  [(late-fn (Fn [a] Int))])
+
+(implements late-fn late-fn)
+(implements Late LateProto)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;; 6. Member Name Reuse Across Protocols (NO dispatch magic)
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(definterface P1 [(f (Fn [a] Int))])
+(definterface P2 [(f (Fn [a] Int))])
+
+(deftype X [])
+
+(defn f [x] 99)
+
+(implements f f)
+(implements X P1)
+(implements X P2)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;; 7. Runtime Behavior Sanity Check
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (deftest test
-  (assert-equal test
-    &2
-    &(foo 2) ;; A.foo
-    "Implements works as expected.")
-  (assert-equal test
-    &5
-    &(foo true) ;; B.foo
-    "Implementations can be declared before definitions.")
-  (assert-equal test
-    "SKRYEEE"
-    &(monster "SKRYEEE")
-    "Interfaces can be implemented retroactively.")
-  (assert-equal test
-    "meow"
-    &(monster false)
-    "Implementations may be global, and an implementation with the same name may
-    be used as a default.")
-  (assert-equal test
-    "pikapikapika"
-    &(monster 3)
-    "Implementations may be overwritten, when multiple implementations of the same type
-     are provided.")
-  (assert-equal test
-    Int.MAX
-    (Bar.bar)
-    "regression for issue #1414")
-)
+  (let [p1 (Person.init 1)
+        p2 (Person.init 1)
+        p3 (Person.init 2)
+        x  (X.init)
+        isoA (IsolationA.init)
+        l  (Late.init)
+        t1 (assert-equal test 10 (id 10) "legacy id")
+        t2 (assert-equal (ref t1) &2 &(foo 2) "Implements works as expected.")
+        t3 (assert-equal (ref t2) &5 &(foo true) "Implementations can be declared before definitions.")
+        t4 (assert-equal (ref t3) "SKRYEEE" &(monster "SKRYEEE") "Interfaces can be implemented retroactively.")
+        t5 (assert-equal (ref t4) "meow" &(monster false) "Implementations may be used as a default.")
+        t6 (assert-equal (ref t5) "pikapikapika" &(monster 3) "Implementations may be overwritten.")
+        t7 (assert-equal (ref t6) Int.MAX (BarModule.bar) "regression for issue #1414")
+        t8 (assert-true (ref t7) (eq &p1 &p2) "eq true")
+        t9 (assert-false (ref t8) (eq &p1 &p3) "eq false")
+        t10 (assert-true (ref t9) (neq &p1 &p3) "neq works")
+        t11 (assert-equal (ref t10) &@"ok" &(show p1) "show works")
+        t12 (assert-equal (ref t11) 7 (get isoA) "isolation works")
+        t13 (assert-equal (ref t12) 5 (late-fn l) "late works")
+        t14 (assert-equal (ref t13) 99 (f x) "no protocol dispatch magic")]
+    t14))
