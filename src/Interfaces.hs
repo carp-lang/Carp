@@ -118,6 +118,7 @@ removeInterfaceFromImplements oldImplPath interface ctx =
   where
     matchPath xobj xobj' = getPath xobj == getPath xobj'
 
+-- TODO: This is currently called once outside of this module--try to remove that call and make this internal.
 -- Checks whether a given form's type matches an interface, and if so, registers the form with the interface.
 registerInInterfaceIfNeeded :: Context -> Binder -> Binder -> Ty -> (Either ContextError Context, Maybe InterfaceError)
 registerInInterfaceIfNeeded ctx implementation interface definitionSignature =

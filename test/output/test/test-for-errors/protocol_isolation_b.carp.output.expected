@@ -1,8 +1,2 @@
-getFirstSatisfyingImplementation for type: (Fn [IsolationA] Int) in paths: [get]
-  Checking impl: get with type: (Fn [IsolationA] Int) -> True
-Found match: get
-getFirstSatisfyingImplementation for type: (Fn [IsolationB] Int) in paths: [get]
-  Checking impl: get with type: (Fn [IsolationA] Int) -> False
-No matches found
 protocol_isolation_b.carp:16:24 [INTERFACE ERROR] get: Can't implement the non-interface `get`
 
