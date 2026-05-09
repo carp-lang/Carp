@@ -12,8 +12,8 @@ module Emit
   )
 where
 
+import Control.Monad (unless, when, zipWithM_)
 import Control.Monad.State
-import Control.Monad (when, zipWithM_, unless)
 import Data.Char (ord)
 import Data.Functor ((<&>))
 import Data.Graph (SCC (..), stronglyConnComp)
@@ -326,16 +326,27 @@ toC toCMode emitLines mutualGroup (Binder meta root) = renderEmitterState (execS
                   ( \xobj ->
                       case xobj of
                         (XObj (Sym path lookupMode) _ _) ->
-                          appendToSrc
-                            ( addIndent indent ++ lambdaEnvName ++ "->"
-                                ++ pathToC path
-                                ++ " = "
-                                ++ ( case lookupMode of
-                                       LookupLocal (Capture _) -> "_env->" ++ pathToC path
-                                       _ -> pathToC path
-                                   )
-                                ++ ";\n"
-                            )
+                          let dstField = lambdaEnvName ++ "->" ++ pathToC path
+                              srcExpr = case lookupMode of
+                                LookupLocal (Capture _) -> "_env->" ++ pathToC path
+                                _ -> pathToC path
+                           in do
+                                appendToSrc
+                                  (addIndent indent ++ dstField ++ " = " ++ srcExpr ++ ";\n")
+                                -- For captures sourced from an outer closure's env, the
+                                -- assignment above is a move (struct copy without a copy
+                                -- function call). Zero the source so the outer env's
+                                -- delete is a no-op for this field — otherwise both envs
+                                -- would try to free the same heap data on teardown.
+                                case lookupMode of
+                                  LookupLocal (Capture _) ->
+                                    appendToSrc
+                                      ( addIndent indent ++ "memset(&" ++ srcExpr
+                                          ++ ", 0, sizeof("
+                                          ++ srcExpr
+                                          ++ "));\n"
+                                      )
+                                  _ -> pure ()
                         _ -> appendToSrc ""
                   )
                   (remove (isUnit . forceTy) capturedVars)

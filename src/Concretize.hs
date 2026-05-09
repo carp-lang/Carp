@@ -26,8 +26,8 @@ where
 import AssignTypes
 import Constraints
 import Control.Applicative
-import Control.Monad.State
 import Control.Monad (foldM, unless)
+import Control.Monad.State
 import Data.Either (fromRight)
 import Data.List (foldl')
 import Data.Maybe (fromMaybe)
@@ -309,7 +309,19 @@ mkLambda visited allowAmbig _ tenv env root@(ListPat (FnPat fn arr@(ArrPat args)
           )
           (xobjInfo root)
           (Just TypeTy)
-      pairs = memberXObjsToPairs structMemberPairs
+      -- Build the (name, Ty) pairs directly from capturedVars rather than
+      -- routing through structMemberPairs. The reify/xobjToTy round-trip
+      -- mangles function-type lifetimes (StaticLifetimeTy → reified as the
+      -- Sym "<StaticLifetime>" → re-parsed as a phantom struct), which makes
+      -- isManaged wrongly return False for FuncTy fields and leaks captured
+      -- closure envs.
+      pairs =
+        map
+          ( \x -> case x of
+              (XObj (Sym (SymPath _ memberName) _) _ (Just memberTy)) -> (mangle memberName, memberTy)
+              _ -> error "concretize: struct member pair is a non symbol"
+          )
+          capturedVars
       deleteFnTy = typesDeleterFunctionType (PointerTy environmentStructTy)
       deleteFnTemplate = concreteDeleteTakePtr tenv env pairs
       (deleteFn, deleterDeps) = instantiateTemplate (SymPath [] (environmentTypeName ++ "_delete")) deleteFnTy deleteFnTemplate
