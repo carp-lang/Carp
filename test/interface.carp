@@ -65,8 +65,15 @@
 
 (deftype Person [id Int])
 
-(defn eq [a b]
+(defn person-eq [a b]
   (Int.= @(Person.id a) @(Person.id b)))
+
+(defn person-eq-val [a b]
+  (person-eq &a &b))
+(implements = person-eq-val)
+
+(defn eq [a b]
+  (person-eq a b))
 
 (defn neq [a b]
   (not (eq a b)))
@@ -136,8 +143,49 @@
 (implements X P1)
 (implements X P2)
 
+;; Implement Eq for Int as well so it can be used in Box
+(defmodule Int
+  (defn eq [a b] (Int.= @a @b))
+  (defn neq [a b] (Int./= @a @b))
+  (implements eq Int.eq)
+  (implements neq Int.neq)
+)
+(implements Int Eq)
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;; 7. Runtime Behavior Sanity Check
+;; 7. Generic Types
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(deftype (MyBox a) [inner a])
+
+(defn mybox-eq [a b]
+  (eq (MyBox.inner a) (MyBox.inner b)))
+(implements eq mybox-eq)
+
+(implements (MyBox a) Eq)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;; 8. Complex Signatures
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(definterface Container
+  [(put-many (Fn [a (Array Int)] a))
+   (get-maybe (Fn [(Ref a)] (Maybe Int)))])
+
+(deftype IntContainer [val Int])
+
+(defn put-many [c arr]
+  (IntContainer.set-val c (Int.+ @(IntContainer.val &c) (Array.sum &arr))))
+(implements put-many put-many)
+
+(defn get-maybe [c]
+  (Maybe.Just @(IntContainer.val c)))
+(implements get-maybe get-maybe)
+
+(implements IntContainer Container)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;; 9. Runtime Behavior Sanity Check
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (deftest test
@@ -147,6 +195,10 @@
         x  (X.init)
         isoA (IsolationA.init)
         l  (Late.init)
+        b1 (MyBox.init 10)
+        b2 (MyBox.init 10)
+        b3 (MyBox.init 20)
+        ic (IntContainer.init 42)
         t1 (assert-equal test 10 (id 10) "legacy id")
         t2 (assert-equal (ref t1) &2 &(foo 2) "Implements works as expected.")
         t3 (assert-equal (ref t2) &5 &(foo true) "Implementations can be declared before definitions.")
@@ -160,5 +212,10 @@
         t11 (assert-equal (ref t10) &@"ok" &(show p1) "show works")
         t12 (assert-equal (ref t11) 7 (get isoA) "isolation works")
         t13 (assert-equal (ref t12) 5 (late-fn l) "late works")
-        t14 (assert-equal (ref t13) 99 (f x) "no protocol dispatch magic")]
-    t14))
+        t14 (assert-equal (ref t13) 99 (f x) "no protocol dispatch magic")
+        t15 (assert-true (ref t14) (eq &b1 &b2) "generic box eq true")
+        t16 (assert-false (ref t15) (eq &b1 &b3) "generic box eq false")
+        t17 (assert-equal (ref t16) &(Maybe.Just 42) &(get-maybe &ic) "complex sig member 2 works")
+        ic2 (put-many ic [3 5])
+        t18 (assert-equal (ref t17) 50 @(IntContainer.val &ic2) "complex sig member 1 works")]
+    t18))
