@@ -27,6 +27,7 @@ module Types
     getPathFromStructName,
     getNameFromStructName,
     getStructPath,
+    getTyVars,
     promoteNumber,
   )
 where
@@ -371,6 +372,16 @@ getStructPath :: Ty -> SymPath
 getStructPath (StructTy (ConcreteNameTy spath) _) = spath
 getStructPath (StructTy (VarTy name) _) = (SymPath [] name)
 getStructPath _ = (SymPath [] "")
+
+-- | Extract all type variables from a type.
+getTyVars :: Ty -> [Ty]
+getTyVars (VarTy n) = [VarTy n]
+getTyVars (FuncTy argTys retTy lt) = concatMap getTyVars argTys ++ getTyVars retTy ++ getTyVars lt
+getTyVars (StructTy n tyArgs) = getTyVars n ++ concatMap getTyVars tyArgs
+getTyVars (PointerTy p) = getTyVars p
+getTyVars (RefTy r lt) = getTyVars r ++ getTyVars lt
+getTyVars (ProtocolTy _ is) = concatMap getTyVars is
+getTyVars _ = []
 
 -- N.B.: promoteNumber is only safe for numeric types!
 promoteNumber :: Ty -> Ty -> Ty

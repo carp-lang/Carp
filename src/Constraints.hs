@@ -49,6 +49,7 @@ data ConstraintOrder
   | OrdInterfaceSym
   | OrdInterfaceImpl
   | OrdSignatureAnnotation
+  | OrdProtocol
   deriving (Show, Ord, Eq)
 
 data Constraint = Constraint Ty Ty XObj XObj XObj ConstraintOrder deriving (Eq)
@@ -173,6 +174,11 @@ solveOne mappings constraint =
        in case solveOne mappings (Constraint v (RefTy b ltB) i1 i2 ctx ord) of
             Left err -> Left err
             Right ok -> foldM (\m (aa, bb) -> solveOne m (Constraint aa bb i1 i2 ctx ord)) ok (zip args [b, ltB])
+    -- Protocol types
+    Constraint (ProtocolTy n1 is1) (ProtocolTy n2 is2) _ _ _ _
+      | n1 == n2 && length is1 == length is2 ->
+          let (Constraint _ _ i1 i2 ctx ord) = constraint
+           in foldM (\m (a, b) -> solveOne m (Constraint a b i1 i2 ctx ord)) mappings (zip is1 is2)
     -- Else
     Constraint _ CTy _ _ _ _ -> Right mappings
     Constraint CTy _ _ _ _ _ -> Right mappings
@@ -237,7 +243,14 @@ checkConflictInternal mappings constraint name otherTy =
                 Right smappings -> solveOne smappings (mkConstraint OrdRef xobj1 xobj2 ctx lifetimeTy otherLifetimeTy)
             VarTy _ -> Right mappings
             _ -> Left (UnificationFailure constraint mappings)
+        Just (ProtocolTy protocolName protocolTyVars) ->
+          case otherTy of
+            ProtocolTy otherProtocolName otherTyVars
+              | protocolName == otherProtocolName -> foldM solveOne mappings (zipWith (mkConstraint OrdProtocol xobj1 xobj2 ctx) protocolTyVars otherTyVars)
+            VarTy _ -> Right mappings
+            _ -> Left (UnificationFailure constraint mappings)
         Just foundNonVar -> case otherTy of
+
           (VarTy v) -> case recursiveNameLookup mappings v of
             Just (VarTy _) -> Right mappings
             Just otherNonVar ->

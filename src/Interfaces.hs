@@ -20,6 +20,7 @@ import Context
 import Data.Either (fromRight, isRight, rights)
 import Data.List (delete, deleteBy, foldl')
 import qualified Env
+import qualified Map
 import qualified Meta
 import Obj
 import qualified Qualify
@@ -189,15 +190,19 @@ registerInInterface ctx implementation interface =
 
 -- | Verify that a type fully implements all members of a protocol.
 verifyProtocolImplementation :: Context -> Ty -> XObj -> Either [InterfaceError] (Context, [(SymPath, SymPath)])
-verifyProtocolImplementation ctx ty _protocol@(XObj (Lst [XObj (Protocol memberPaths _) _ _, _]) _ _) =
+verifyProtocolImplementation ctx ty protocol@(XObj (Lst [XObj (Protocol memberPaths _) _info (Just protocolTy), _sym]) _ _) =
   let typeEnv = contextTypeEnv ctx
+      -- Unify the target type 'ty' with the protocol's type variables.
+      -- This finds the mapping between the protocol's generic parameters and 'ty'.
+      dummy = XObj (Lst []) Nothing Nothing
+      mappings = case solve [Constraint protocolTy (ProtocolTy (getPath protocol) [ty]) dummy dummy dummy OrdInterfaceImpl] of
+        Right m -> m
+        Left _ -> Map.empty
       checkMember (errors, paths) mPath@(SymPath _ mName) =
         case Env.getBinder typeEnv mName of
           Right (Binder _ (XObj (Lst (XObj (Interface (sig : _) iPaths) _ _ : _)) _ _)) ->
-            let dummy = XObj (Lst []) Nothing Nothing
-                specializedSig = case solve [Constraint sig ty dummy dummy dummy OrdInterfaceImpl] of
-                  Right mappings -> replaceTyVars mappings sig
-                  Left _ -> sig -- If unification fails, specializedSig remains generic and getFirstSatisfyingImplementation will fail.
+            -- Specialize the member signature using the mappings derived from the protocol.
+            let specializedSig = replaceTyVars mappings sig
              in case getFirstSatisfyingImplementation ctx iPaths specializedSig of
                   Just implPath -> (errors, (mPath, implPath) : paths)
                   Nothing -> ((NonInterface (SymPath [] mName)) : errors, paths)
@@ -206,6 +211,11 @@ verifyProtocolImplementation ctx ty _protocol@(XObj (Lst [XObj (Protocol memberP
    in if null allErrors
         then Right (ctx, foundPaths)
         else Left allErrors
+verifyProtocolImplementation ctx ty protocol@(XObj (Lst [XObj (Protocol memberPaths _) info Nothing, sym]) i t) =
+  -- Fallback for older protocols without type information, assume 'a'
+  let protocolTy = ProtocolTy (getPath protocol) [VarTy "a"]
+      updatedProtocol = XObj (Lst [XObj (Protocol memberPaths []) info (Just protocolTy), sym]) i t
+   in verifyProtocolImplementation ctx ty updatedProtocol
 verifyProtocolImplementation _ _ protocol = Left [NonInterface (getPath protocol)]
 
 -- | Enforce the orphan instance rule for protocols.

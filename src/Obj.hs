@@ -9,7 +9,7 @@ import Control.Monad.State
 import Control.Monad (zipWithM)
 import Data.Char
 import Data.Hashable
-import Data.List (intercalate)
+import Data.List (intercalate, nub)
 import Data.Maybe (fromMaybe)
 import GHC.Generics (Generic)
 import Info
@@ -1023,14 +1023,18 @@ defineInterface name tys paths info =
 defineProtocol :: String -> [(String, Ty)] -> [Ty] -> Maybe Info -> XObj
 defineProtocol name members instances info =
   let memberPaths = map (\(mName, _) -> SymPath [] mName) members
+      -- Extract all type variables from the first member as the "protocol parameters"
+      tys = case members of
+        ((_, mTy) : _) -> nub (getTyVars mTy)
+        [] -> []
    in XObj
         ( Lst
-            [ XObj (Protocol memberPaths instances) info (Just (ProtocolTy (SymPath [] name) [])),
+            [ XObj (Protocol memberPaths instances) info (Just (ProtocolTy (SymPath [] name) tys)),
               XObj (Sym (SymPath [] name) Symbol) Nothing Nothing
             ]
         )
         info
-        (Just (ProtocolTy (SymPath [] name) []))
+        (Just (ProtocolTy (SymPath [] name) tys))
 
 -- | Unsafe way of getting the type from an XObj
 forceTy :: XObj -> Ty

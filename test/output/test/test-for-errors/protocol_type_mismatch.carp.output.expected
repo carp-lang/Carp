@@ -1,2 +1,2 @@
-protocol_type_mismatch.carp:13:20 add: Can't implement the non-interface `add`
+protocol_type_mismatch.carp:13:20 [INTERFACE ERROR] add: Can't implement the non-interface `add`
 
