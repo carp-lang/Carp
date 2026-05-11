@@ -20,7 +20,6 @@ import Context
 import Data.Either (fromRight, isRight, rights)
 import Data.List (delete, deleteBy, foldl')
 import qualified Env
-import qualified Map
 import qualified Meta
 import Obj
 import qualified Qualify
@@ -166,6 +165,26 @@ registerInInterface ctx implementation interface =
     -- And instantiated/auto-derived type functions! (e.g. Pair.a)
     XObj (Lst [XObj (Instantiate _) _ _, _]) _ (Just t) ->
       registerInInterfaceIfNeeded ctx implementation interface t
+    -- Protocol support: if implementation is a type and interface is a protocol
+    XObj (Lst (XObj (Deftype t) _ _ : _)) _ _ ->
+      case binderXObj interface of
+        XObj (Lst [XObj (Protocol _ _) _ _, _]) _ _ ->
+          case verifyProtocolImplementation ctx t (binderXObj interface) of
+            Right (ctx', memberImplPairs) ->
+              let registerWithInterface context (mPath, implPath) =
+                    case Env.getBinder (contextGlobalEnv context) (show implPath) of
+                      Right implBinder ->
+                        case Env.getBinder (contextTypeEnv context) (show mPath) of
+                          Right interBinder ->
+                            let (nc, _) = registerInInterface context implBinder interBinder
+                             in fromRight context nc
+                          _ -> context
+                      _ -> context
+                  finalCtx = foldl' registerWithInterface ctx' memberImplPairs
+               in (Right finalCtx, Nothing)
+            Left (err : _) -> (Right ctx, Just err)
+            Left [] -> (Right ctx, Nothing)
+        _ -> (Right ctx, Nothing)
     _ -> (Right ctx, Nothing)
 
 -- | Verify that a type fully implements all members of a protocol.
@@ -174,7 +193,7 @@ verifyProtocolImplementation ctx ty _protocol@(XObj (Lst [XObj (Protocol memberP
   let typeEnv = contextTypeEnv ctx
       checkMember (errors, paths) mPath@(SymPath _ mName) =
         case Env.getBinder typeEnv mName of
-          Right (Binder _ (XObj (Lst [XObj (Interface [sig] iPaths) _ _, _]) _ _)) ->
+          Right (Binder _ (XObj (Lst (XObj (Interface (sig : _) iPaths) _ _ : _)) _ _)) ->
             let dummy = XObj (Lst []) Nothing Nothing
                 specializedSig = case solve [Constraint sig ty dummy dummy dummy OrdInterfaceImpl] of
                   Right mappings -> replaceTyVars mappings sig
@@ -187,7 +206,7 @@ verifyProtocolImplementation ctx ty _protocol@(XObj (Lst [XObj (Protocol memberP
    in if null allErrors
         then Right (ctx, foundPaths)
         else Left allErrors
-verifyProtocolImplementation ctx _ _ = Right (ctx, []) -- Should not happen if called correctly
+verifyProtocolImplementation _ _ protocol = Left [NonInterface (getPath protocol)]
 
 -- | Enforce the orphan instance rule for protocols.
 -- TODO: Protocols should only be implemented in the same module as the type or the protocol.
@@ -202,7 +221,9 @@ retroactivelyRegisterInInterface ctx interface =
   maybe resultCtx (error . show) err
   where
     env = contextGlobalEnv ctx
-    impls = concat (rights (fmap ((flip Env.findImplementations) (getPath (binderXObj interface))) (env : (Env.lookupChildren env))))
+    tenv = contextTypeEnv ctx
+    searchEnv e = concat (rights (fmap ((flip Env.findImplementations) (getPath (binderXObj interface))) (e : (Env.lookupChildren e))))
+    impls = searchEnv env ++ searchEnv tenv
     (resultCtx, err) = foldl' go (Right ctx, Nothing) impls
     go (Right context, _) binder = registerInInterface context binder interface
     go e _ = e

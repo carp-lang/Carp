@@ -63,7 +63,7 @@ allImplementations typeEnv env functionName functionType =
           found -> (unionBy (\x y -> (snd x) == (snd y)) found getPoly)
       -- Fallback to normal multi-sym style lookup if possible,
       -- as protocol members are also registered as individual interfaces.
-      Right (Binder _ (XObj (Lst (XObj (Protocol _ instances) _ _ : _)) _ _)) ->
+      Right (Binder _ (XObj (Lst (XObj (Protocol _ _instances) _ _ : _)) _ _)) ->
         fromRight [] ((fmap (: []) (find' env (SymPath [] functionName))) <> pure (lookupEverywhere env functionName))
       -- just a regular function; look for it
       _ -> fromRight [] ((fmap (: []) (find' env (SymPath [] functionName))) <> pure (lookupEverywhere env functionName))

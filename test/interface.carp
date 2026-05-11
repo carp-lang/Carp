@@ -262,7 +262,24 @@
 (implements DiffNameType DiffName)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;; 13. Runtime Behavior Sanity Check
+;; 13. Retroactive Protocol Registration
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(deftype RetroType [])
+(sig retro-eq (Fn [(Ref RetroType) (Ref RetroType)] Bool))
+(defn retro-eq [a b] true)
+(implements = retro-eq)
+(implements RetroType RetroProtocol) ;; RetroProtocol doesn't exist yet
+
+(sig retro-fn (Fn [(Ref a)] (Ref a)))
+(defn retro-fn [x] x)
+(implements retro-fn retro-fn)
+
+(definterface RetroProtocol
+  [(retro-fn (Fn [(Ref a)] (Ref a)))])
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;; 14. Runtime Behavior Sanity Check
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (deftest test
@@ -280,6 +297,7 @@
         dt2 (DiffType2.init)
         dt3 (DiffType3.init)
         dnt (DiffNameType.init)
+        rt (RetroType.init)
         t1 (assert-equal test 10 (id 10) "legacy id")
         t2 (assert-equal (ref t1) &2 &(foo 2) "Implements works as expected.")
         t3 (assert-equal (ref t2) &5 &(foo true) "Implementations can be declared before definitions.")
@@ -303,5 +321,6 @@
         t20 (assert-equal (ref t19) &dt2 (diff2 &dt2) "different type variable name works (concrete impl)")
         t21 (assert-equal (ref t20) &dt3 (diff3 &dt3) "standard 'a' type variable works")
         t22 (assert-equal (ref t21) 42 (wrap 42) "single-member list form works")
-        t23 (assert-equal (ref t22) 100 (the-member 100) "protocol member with different impl name works")]
-    t23))
+        t23 (assert-equal (ref t22) 100 (the-member 100) "protocol member with different impl name works")
+        t24 (assert-equal (ref t23) &rt (retro-fn &rt) "retroactive protocol registration works")]
+    t24))

@@ -122,22 +122,41 @@ primitiveColumn x@(XObj _ i _) ctx args =
 primitiveImplements :: VariadicPrimitiveCallback
 primitiveImplements xobj ctx args =
   case args of
-    [arg1@(XObj (Sym path1 _) _ _), arg2@(XObj (Sym _path2 _) _ _)] ->
-      case lookupInterface ctx path1 of
-        Right interfaceBinder ->
-          if isInterface interfaceBinder
-            then addToInterface interfaceBinder arg2
-            else protocolBranch arg1 [arg2]
-        Left _ ->
-          -- If not found, check if it's a known type in the type environment
-          case lookupBinderInTypeEnv ctx (markQualified path1) of
-            Right _ -> protocolBranch arg1 [arg2]
-            Left _ -> addToInterface' path1 arg2
+    [arg1@(XObj (Sym _ _) _ _), arg2@(XObj (Sym _ _) _ _)] ->
+      handleArg1 arg1 arg2
     (typeXObj : protocolXObjs) -> protocolBranch typeXObj protocolXObjs
     _ -> pure $ toEvalError ctx xobj (ArgumentArityError xobj "2 or more" args)
   where
+    handleArg1 arg1@(XObj (Sym path1 _) _ _) arg2@(XObj (Sym _ _) _ _) =
+      case lookupInterface ctx path1 of
+        Right binder ->
+          if isInterface binder
+            then addToInterface binder arg2
+            else if isProtocol binder
+              then protocolBranch arg1 [arg2]
+              else handleTypeOrStub arg1 arg2
+        Left _ -> handleTypeOrStub arg1 arg2
+    handleArg1 _ _ = error "handleArg1: expected symbols"
+
+    handleTypeOrStub typeXObj@(XObj (Sym path1 _) _ _) protocolXObj@(XObj (Sym _path2 _) _ _) =
+      case lookupBinderInTypeEnv ctx (markQualified path1) of
+        Right _ ->
+          -- It's a known type, check if it's a known protocol
+          case lookupInterface ctx (SymPath [] (getName protocolXObj)) of
+            Right inter ->
+              if isProtocol inter
+                then protocolBranch typeXObj [protocolXObj]
+                else addToInterface' (SymPath [] (getName protocolXObj)) typeXObj
+            Left _ ->
+              -- Protocol doesn't exist yet, create a meta stub
+              addToInterface' (SymPath [] (getName protocolXObj)) typeXObj
+        Left _ -> addToInterface' path1 protocolXObj
+    handleTypeOrStub _ _ = error "handleTypeOrStub: expected symbols"
+
     isInterface (Binder _ (XObj (Lst (XObj (Interface _ _) _ _ : _)) _ _)) = True
     isInterface _ = False
+    isProtocol (Binder _ (XObj (Lst (XObj (Protocol _ _) _ _ : _)) _ _)) = True
+    isProtocol _ = False
     addToInterface :: Binder -> XObj -> IO (Context, Either EvalError XObj)
     addToInterface inter impl =
       let (SymPath _ name) = (getPath . binderXObj) inter
@@ -152,12 +171,18 @@ primitiveImplements xobj ctx args =
           Right implBinder ->
             case lookupInterface ctx interfacePath of
               Right inter ->
-                case registerInInterface ctx implBinder inter of
-                  (Right newCtx, maybeErr) ->
-                    maybe (updateMeta implBinder newCtx qpath inter) (handleError newCtx implBinder inter) maybeErr
-                  (Left err, _) ->
-                    pure (evalError ctx (show err) (xobjInfo (binderXObj inter)))
-              Left _ -> updateMeta' implBinder ctx qpath interfacePath
+                if isInterface inter || isProtocol inter
+                  then case registerInInterface ctx implBinder inter of
+                    (Right newCtx, maybeErr) ->
+                      maybe (updateMeta implBinder newCtx qpath inter) (handleError newCtx implBinder inter) maybeErr
+                    (Left err, _) ->
+                      pure (evalError ctx (show err) (xobjInfo (binderXObj inter)))
+                  else updateMeta' implBinder ctx qpath interfacePath
+              Left _ ->
+                -- If it's a type implementating a potential protocol, we should also allow meta stub
+                case lookupBinderInTypeEnv ctx (markQualified (SymPath [] (getName (binderXObj implBinder)))) of
+                  Right _ -> updateMeta' implBinder ctx qpath interfacePath
+                  Left _ -> updateMeta' implBinder ctx qpath interfacePath
     addToInterface' _ x = pure $ toEvalError ctx x (ArgumentTypeError "implements" "a symbol" "second" x)
     updateMeta' :: Binder -> Context -> QualifiedPath -> SymPath -> IO (Context, Either EvalError XObj)
     updateMeta' binder context qpath interfacePath =
@@ -187,8 +212,7 @@ primitiveImplements xobj ctx args =
           if interfaceXObj `elem` impls
             then implBinder
             else Meta.updateBinderMeta implBinder "implements" (XObj (Lst (interfaceXObj : impls)) inf ty)
-        updateImplementations implBinder _ =
-          Meta.updateBinderMeta implBinder "implements" (XObj (Lst [interfaceXObj]) (Just dummyInfo) (Just DynamicTy))
+        updateImplementations implBinder _ = implBinder
     protocolBranch :: XObj -> [XObj] -> IO (Context, Either EvalError XObj)
     protocolBranch typeXObj protocolXObjs =
       case xobjToTy typeXObj of
@@ -197,36 +221,41 @@ primitiveImplements xobj ctx args =
     go t (c, _) protocolXObj@(XObj (Sym protocolPath _) _ _) =
       case lookupInterface c protocolPath of
         Right protocolBinder ->
-          case checkOrphanRule c protocolPath t of
-            Left err -> pure (evalError c (show err) (xobjInfo protocolXObj))
-            Right () ->
-              case verifyProtocolImplementation c t (binderXObj protocolBinder) of
-                Left errs ->
-                  pure (evalError c (unlines (map show errs)) (xobjInfo protocolXObj))
-                Right (ctx', memberImplPairs) ->
-                  -- 1. Register each found implementation in its respective interface
-                  let registerWithInterface context (mPath, implPath) =
-                        case lookupBinderInGlobalEnv context (qualifyNull context implPath) of
-                          Right implBinder ->
-                            -- Find the member interface
-                            case lookupBinderInTypeEnv context (markQualified mPath) of
-                              Right interBinder ->
-                                let (nc, _) = registerInInterface context implBinder interBinder
-                                 in fromRight context nc
-                              _ -> context
-                          _ -> context
-                      ctxWithInterfaces = foldl' registerWithInterface ctx' memberImplPairs
-                      -- 2. Atomic registration of the instance in the protocol object
-                      implPaths = map snd memberImplPairs
-                      maybeNewCtx = case protocolBinder of
-                        Binder meta (XObj (Lst [XObj (Protocol ms is) info ty, sym]) i t') ->
-                          let updatedProtocol = XObj (Lst [XObj (Protocol ms (addIfNotPresent t is)) info ty, sym]) i t'
-                              updatedBinder = Binder meta updatedProtocol
-                           in first show $ insertTypeBinder ctxWithInterfaces (markQualified protocolPath) updatedBinder
-                        _ -> Right ctxWithInterfaces
-                   in case maybeNewCtx of
-                        Right nc -> pure (nc, dynamicNil)
-                        Left err -> pure (evalError ctxWithInterfaces err (xobjInfo protocolXObj))
+          if isProtocol protocolBinder
+            then case checkOrphanRule c protocolPath t of
+              Left err -> pure (evalError c (show err) (xobjInfo protocolXObj))
+              Right () ->
+                case verifyProtocolImplementation c t (binderXObj protocolBinder) of
+                  Left errs ->
+                    pure (evalError c (unlines (map show errs)) (xobjInfo protocolXObj))
+                  Right (ctx', memberImplPairs) ->
+                    -- 1. Register each found implementation in its respective interface
+                    let registerWithInterface context (mPath, implPath) =
+                          case lookupBinderInGlobalEnv context (qualifyNull context implPath) of
+                            Right implBinder ->
+                              -- Find the member interface
+                              case lookupBinderInTypeEnv context (markQualified mPath) of
+                                Right interBinder ->
+                                  let (nc, _) = registerInInterface context implBinder interBinder
+                                   in fromRight context nc
+                                _ -> context
+                            _ -> context
+                        ctxWithInterfaces = foldl' registerWithInterface ctx' memberImplPairs
+                        -- 2. Atomic registration of the instance in the protocol object
+                        _implPaths = map snd memberImplPairs
+                        maybeNewCtx = case protocolBinder of
+
+                          Binder meta (XObj (Lst [XObj (Protocol ms is) info ty, sym]) i t') ->
+                            let updatedProtocol = XObj (Lst [XObj (Protocol ms (addIfNotPresent t is)) info ty, sym]) i t'
+                                updatedBinder = Binder meta updatedProtocol
+                             in first show $ insertTypeBinder ctxWithInterfaces (markQualified protocolPath) updatedBinder
+                          _ -> Right ctxWithInterfaces
+                     in case maybeNewCtx of
+                          Right nc -> pure (nc, dynamicNil)
+                          Left err -> pure (evalError ctxWithInterfaces err (xobjInfo protocolXObj))
+            else
+              let msg = "Symbol `" ++ show protocolPath ++ "` is not a protocol"
+               in pure (evalError c msg (xobjInfo protocolXObj))
         Left _ -> do
           let msg = "Protocol `" ++ show protocolPath ++ "` not found"
           emitError msg
@@ -557,6 +586,8 @@ primitiveDefinterface _ ctx [nameXObj@(XObj (Sym (SymPath [] name) _) _ _), _tyX
                 memberXObjs = map (\(n, _) -> XObj (Sym (SymPath [] n) Symbol) Nothing Nothing) parsedMembers
                 protocolBinderWithMeta = Meta.updateBinderMeta protocolBinder "members" (XObj (Lst memberXObjs) Nothing Nothing)
                 ctxWithProtocol = fromRight (error "primitives: couldn't insert type binder for protocol") $ insertTypeBinder ctx protocolPath protocolBinderWithMeta
+                -- Phase 3: retroactively register in the protocol itself
+                ctxWithProtocol' = fromRight ctxWithProtocol $ retroactivelyRegisterInInterface ctxWithProtocol protocolBinderWithMeta
                 -- Register each member as an individual interface linked back to the protocol
                 registerMember c (mName, mTy) =
                   let interface = defineInterface mName [mTy] [] (xobjInfo nameXObj)
@@ -564,7 +595,7 @@ primitiveDefinterface _ ctx [nameXObj@(XObj (Sym (SymPath [] name) _) _ _), _tyX
                       interfaceBinderWithMeta = Meta.updateBinderMeta interfaceBinder "protocol" (XObj (Sym (SymPath [] name) Symbol) Nothing Nothing)
                       c' = fromRight (error "primitives: couldn't insert type binder for member interface") $ insertTypeBinder c (markQualified (SymPath [] mName)) interfaceBinderWithMeta
                    in fromRight (error "primitives: couldn't retroactively register in member interface") $ retroactivelyRegisterInInterface c' interfaceBinderWithMeta
-                finalCtx = foldl' registerMember ctxWithProtocol parsedMembers
+                finalCtx = foldl' registerMember ctxWithProtocol' parsedMembers
              in pure (finalCtx, dynamicNil)
   where
     parseMember (XObj (Lst [XObj (Sym (SymPath [] mName) _) _ _, mTyX]) _ _) =
