@@ -1,1 +1,1 @@
-The reference 'r' is no longer valid because the value it depends on (`my-var`) has been moved or deleted at line 5, column 37 in '/home/sqrew/Desktop/Carp-fork/test/test-for-errors/use_after_delete_demangle.carp'. at /home/sqrew/Desktop/Carp-fork/test/test-for-errors/use_after_delete_demangle.carp:1:1.
+The reference 'r' is no longer valid because the value it depends on (`my-var`) has been moved or deleted at line 5, column 37 in 'test/test-for-errors/use_after_delete_demangle.carp'. at test/test-for-errors/use_after_delete_demangle.carp:1:1.

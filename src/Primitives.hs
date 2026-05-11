@@ -203,21 +203,21 @@ primitiveImplements xobj ctx args =
               case verifyProtocolImplementation c t (binderXObj protocolBinder) of
                 Left errs ->
                   pure (evalError c (unlines (map show errs)) (xobjInfo protocolXObj))
-                Right (ctx', implPaths) ->
+                Right (ctx', memberImplPairs) ->
                   -- 1. Register each found implementation in its respective interface
-                  let registerWithInterface context implPath =
+                  let registerWithInterface context (mPath, implPath) =
                         case lookupBinderInGlobalEnv context (qualifyNull context implPath) of
                           Right implBinder ->
-                            -- Find which member interface this belongs to
-                            let memberName = getName (binderXObj implBinder)
-                             in case lookupBinderInTypeEnv context (markQualified (SymPath [] memberName)) of
-                                  Right interBinder ->
-                                    let (nc, _) = registerInInterface context implBinder interBinder
-                                     in fromRight context nc
-                                  _ -> context
+                            -- Find the member interface
+                            case lookupBinderInTypeEnv context (markQualified mPath) of
+                              Right interBinder ->
+                                let (nc, _) = registerInInterface context implBinder interBinder
+                                 in fromRight context nc
+                              _ -> context
                           _ -> context
-                      ctxWithInterfaces = foldl' registerWithInterface ctx' implPaths
+                      ctxWithInterfaces = foldl' registerWithInterface ctx' memberImplPairs
                       -- 2. Atomic registration of the instance in the protocol object
+                      implPaths = map snd memberImplPairs
                       maybeNewCtx = case protocolBinder of
                         Binder meta (XObj (Lst [XObj (Protocol ms is) info ty, sym]) i t') ->
                           let updatedProtocol = XObj (Lst [XObj (Protocol ms (addIfNotPresent t is)) info ty, sym]) i t'

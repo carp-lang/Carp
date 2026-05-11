@@ -169,15 +169,18 @@ registerInInterface ctx implementation interface =
     _ -> (Right ctx, Nothing)
 
 -- | Verify that a type fully implements all members of a protocol.
-verifyProtocolImplementation :: Context -> Ty -> XObj -> Either [InterfaceError] (Context, [SymPath])
+verifyProtocolImplementation :: Context -> Ty -> XObj -> Either [InterfaceError] (Context, [(SymPath, SymPath)])
 verifyProtocolImplementation ctx ty _protocol@(XObj (Lst [XObj (Protocol memberPaths _) _ _, _]) _ _) =
   let typeEnv = contextTypeEnv ctx
-      checkMember (errors, paths) (SymPath _ mName) =
+      checkMember (errors, paths) mPath@(SymPath _ mName) =
         case Env.getBinder typeEnv mName of
           Right (Binder _ (XObj (Lst [XObj (Interface [sig] iPaths) _ _, _]) _ _)) ->
-            let specializedSig = replaceTyVars (Map.fromList [("a", ty)]) sig
+            let dummy = XObj (Lst []) Nothing Nothing
+                specializedSig = case solve [Constraint sig ty dummy dummy dummy OrdInterfaceImpl] of
+                  Right mappings -> replaceTyVars mappings sig
+                  Left _ -> sig -- If unification fails, specializedSig remains generic and getFirstSatisfyingImplementation will fail.
              in case getFirstSatisfyingImplementation ctx iPaths specializedSig of
-                  Just implPath -> (errors, implPath : paths)
+                  Just implPath -> (errors, (mPath, implPath) : paths)
                   Nothing -> ((NonInterface (SymPath [] mName)) : errors, paths)
           _ -> ((NonInterface (SymPath [] mName)) : errors, paths)
       (allErrors, foundPaths) = foldl' checkMember ([], []) memberPaths
@@ -187,8 +190,9 @@ verifyProtocolImplementation ctx ty _protocol@(XObj (Lst [XObj (Protocol memberP
 verifyProtocolImplementation ctx _ _ = Right (ctx, []) -- Should not happen if called correctly
 
 -- | Enforce the orphan instance rule for protocols.
+-- TODO: Protocols should only be implemented in the same module as the type or the protocol.
 checkOrphanRule :: Context -> SymPath -> Ty -> Either InterfaceError ()
-checkOrphanRule _ctx _protocol _ty = Right () -- Placeholder for Phase 2
+checkOrphanRule _ctx _protocol _ty = Right ()
 
 -- | For forms that were declared as implementations of interfaces that didn't exist,
 -- retroactively register those forms with the interface once its defined.

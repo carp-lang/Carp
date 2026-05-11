@@ -249,7 +249,20 @@
 (implements Wrapper Wrap)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;; 12. Runtime Behavior Sanity Check
+;; 12. Different Names in Protocol Implementation
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(definterface DiffName
+  [(the-member (Fn [a] a))])
+
+(deftype DiffNameType [])
+(defn the-implementation [x] x)
+(implements the-member the-implementation)
+
+(implements DiffNameType DiffName)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;; 13. Runtime Behavior Sanity Check
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (deftest test
@@ -266,6 +279,7 @@
         dt (DiffType.init)
         dt2 (DiffType2.init)
         dt3 (DiffType3.init)
+        dnt (DiffNameType.init)
         t1 (assert-equal test 10 (id 10) "legacy id")
         t2 (assert-equal (ref t1) &2 &(foo 2) "Implements works as expected.")
         t3 (assert-equal (ref t2) &5 &(foo true) "Implementations can be declared before definitions.")
@@ -288,5 +302,6 @@
         t19 (assert-equal (ref t18) &dt (diff &dt) "different type variable name works (generic impl)")
         t20 (assert-equal (ref t19) &dt2 (diff2 &dt2) "different type variable name works (concrete impl)")
         t21 (assert-equal (ref t20) &dt3 (diff3 &dt3) "standard 'a' type variable works")
-        t22 (assert-equal (ref t21) 42 (wrap 42) "single-member list form works")]
-    t22))
+        t22 (assert-equal (ref t21) 42 (wrap 42) "single-member list form works")
+        t23 (assert-equal (ref t22) 100 (the-member 100) "protocol member with different impl name works")]
+    t23))

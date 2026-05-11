@@ -24,3 +24,9 @@ The `unsafe-` prefix is an optional naming convention; there *are* a few functio
 
 ### REPL
 *REPL* stands for "Read Eval Print Loop" and is a common feature of a Lisp system. It allows expressions to be entered and executed at a command prompt. In Carp it is spelled with uppercase letters.
+
+### Interface
+An *interface* is a generic function signature that can have multiple concrete implementations.
+
+### Protocol
+A *protocol* is a collection of interfaces that can be implemented together as a unit for a specific type.
