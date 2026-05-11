@@ -1,4 +1,4 @@
-[ERROR] [INTERFACE ERROR] r : (Fn [a] Int) doesn't match the interface signature (Fn [(Ref a tyvar-from-info-0_4_12)] Int)
-protocol_ref_mismatch.carp:3:15 [INTERFACE ERROR] r : (Fn [a] Int) doesn't match the interface signature (Fn [(Ref a tyvar-from-info-0_4_12)] Int)
-protocol_ref_mismatch.carp:13:15 [INTERFACE ERROR] r: Can't implement the non-interface `r`
+r : (Fn [a] Int) doesn't match the interface signature (Fn [(Ref a tyvar-from-info-0_4_12)] Int)
+protocol_ref_mismatch.carp:3:15 r : (Fn [a] Int) doesn't match the interface signature (Fn [(Ref a tyvar-from-info-0_4_12)] Int)
+protocol_ref_mismatch.carp:13:15 r: Can't implement the non-interface `r`
 

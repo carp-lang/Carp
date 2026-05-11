@@ -1,2 +1,2 @@
-[ERROR] Protocol `NotAProtocol` not found
+Protocol `NotAProtocol` not found
 protocol_non_existent.carp:6:15 Protocol `NotAProtocol` not found
