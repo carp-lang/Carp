@@ -11,7 +11,7 @@ Also there is documentation about:
 
 * [C Interop](CInterop.md); 
 * [how to contribute](Contributing.md);
-* [support for implementig interfaces for datatypes based on their members](Derive.md); 
+* [support for implementing interfaces and protocols for datatypes based on their members](Derive.md); 
 * [custom resource deallocation](Drop.md); 
 * [the dynamic evaluator VM architecture](EvaluatorVM.md);
 * [historical dynamic evaluator semantics notes](DynamicSemantics.md); 
