@@ -66,61 +66,28 @@ otherBases = do
 withBases :: Parsec.Parsec String ParseState (Maybe Info, String)
 withBases = Parsec.try otherBases <|> maybeSigned
 
-double :: Parsec.Parsec String ParseState XObj
-double = do
-  (i, num) <- maybeSigned
-  _ <- Parsec.char '.'
-  incColumn 1
-  decimals <- Parsec.many1 Parsec.digit
-  incColumn (length decimals)
-  pure (XObj (Num DoubleTy (Floating (read (num ++ "." ++ decimals)))) i Nothing)
-
-float :: Parsec.Parsec String ParseState XObj
-float = do
-  (i, num) <- maybeSigned
-  _ <- Parsec.char '.'
-  incColumn 1
-  decimals <- Parsec.many1 Parsec.digit
-  incColumn (length decimals)
-  _ <- Parsec.char 'f'
-  incColumn 1
-  pure (XObj (Num FloatTy (Floating (read (num ++ "." ++ decimals)))) i Nothing)
-
-floatNoPeriod :: Parsec.Parsec String ParseState XObj
-floatNoPeriod =
-  do
-    (i, num) <- withBases
-    _ <- Parsec.char 'f'
-    incColumn 1
-    pure (XObj (Num FloatTy (Floating (read num))) i Nothing)
-
-integer :: Parsec.Parsec String ParseState XObj
-integer = do
-  (i, num) <- withBases
-  pure (XObj (Num IntTy (Integral (read num))) i Nothing)
-
-byte :: Parsec.Parsec String ParseState XObj
-byte = do
-  (i, num) <- withBases
-  _ <- Parsec.char 'b'
-  incColumn 1
-  pure (XObj (Num ByteTy (Integral (read num))) i Nothing)
-
-long :: Parsec.Parsec String ParseState XObj
-long = do
-  (i, num) <- withBases
-  _ <- Parsec.char 'l'
-  incColumn 1
-  pure (XObj (Num LongTy (Integral (read num))) i Nothing)
-
 number :: Parsec.Parsec String ParseState XObj
-number =
-  Parsec.try float
-    <|> Parsec.try floatNoPeriod
-    <|> Parsec.try byte
-    <|> Parsec.try double
-    <|> Parsec.try long
-    <|> Parsec.try integer
+number = Parsec.try $ do
+  (i, num) <- withBases
+  suffix <- Parsec.optionMaybe (Parsec.oneOf ".blf")
+  case suffix of
+    Just '.' -> do
+      incColumn 1
+      decimals <- Parsec.many1 Parsec.digit
+      incColumn (length decimals)
+      hasF <- Parsec.option False (Parsec.char 'f' *> incColumn 1 *> pure True)
+      let n = read (num ++ "." ++ decimals)
+      pure (XObj (Num (if hasF then FloatTy else DoubleTy) (Floating n)) i Nothing)
+    Just 'b' -> do
+      incColumn 1
+      pure (XObj (Num ByteTy (Integral (read num))) i Nothing)
+    Just 'l' -> do
+      incColumn 1
+      pure (XObj (Num LongTy (Integral (read num))) i Nothing)
+    Just 'f' -> do
+      incColumn 1
+      pure (XObj (Num FloatTy (Floating (read num))) i Nothing)
+    _ -> pure (XObj (Num IntTy (Integral (read num))) i Nothing)
 
 rawString :: Parsec.Parsec String ParseState XObj
 rawString = do
@@ -593,7 +560,19 @@ unquote = symReaderMacro "%" "unquote"
 
 sexpr :: Parsec.Parsec String ParseState XObj
 sexpr = do
-  x <- Parsec.choice [ref, deref, copy, quote, quasiquote, unquoteSplicing, unquote, list, staticArray, array, dictionary, atom]
+  c <- Parsec.lookAhead Parsec.anyChar
+  x <- case c of
+    '&' -> ref
+    '~' -> deref
+    '@' -> copy
+    '\'' -> quote
+    '`' -> quasiquote
+    '%' -> Parsec.try unquoteSplicing <|> unquote
+    '(' -> list
+    '[' -> array
+    '$' -> staticArray
+    '{' -> dictionary
+    _ -> atom
   _ <- whitespaceOrNothing
   pure x
 
