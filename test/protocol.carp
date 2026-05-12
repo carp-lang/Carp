@@ -152,11 +152,19 @@
     (assert-equal protocol-test
                   &@"Nick (35)"
                   &(show &p)
-                  "Dispatch remains stable after multiple implementations (Person)")
+                  "Dispatch remains stable after multiple implementations (Person)"))
+
+  (let [p (Person.init @"Nick" 35)
+        r (Robot.init 99)
+        pt (Point.init 3 4)]
     (assert-equal protocol-test
                   &@"Robot #99"
                   &(show &r)
-                  "Robot dispatch remains stable")
+                  "Robot dispatch remains stable"))
+
+  (let [p (Person.init @"Nick" 35)
+        r (Robot.init 99)
+        pt (Point.init 3 4)]
     (assert-equal protocol-test
                   &@"Point(3, 4)"
                   &(show &pt)
@@ -168,7 +176,10 @@
     (assert-equal protocol-test
                   &@"Nick (35)"
                   &(show &p1)
-                  "Type can participate in MyShow (multi-test)")
+                  "Type can participate in MyShow (multi-test)"))
+
+  (let [p1 (Person.init @"Nick" 35)
+        p2 (Person.init @"Nick" 35)]
     (assert-true protocol-test
                  (eq &p1 &p2)
                  "Type can participate in MyEq simultaneously")))
