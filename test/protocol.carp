@@ -1,13 +1,35 @@
 (load-and-use Test)
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;; Basic protocol definitions
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defprotocol MyShow
+  [(show (Fn [(Ref a)] String))])
+
+(defprotocol MyEq
+  [(eq (Fn [(Ref a) (Ref a)] Bool))])
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;; Test types
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (deftype Person
   [name String
    age Int])
 
-(defprotocol Show
-  [(show (Fn [(Ref a)] String))])
+(deftype Robot
+  [id Int])
 
-(impl-for Person Show
+(deftype Point
+  [x Int
+   y Int])
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;; Person implementations
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(impl-for Person MyShow
   (defn show [p]
     (String.concat
       &[@(Person.name p)
@@ -15,9 +37,138 @@
         (Int.str @(Person.age p))
         @")"])))
 
-(deftest test
+(impl-for Person MyEq
+  (defn eq [a b]
+    (if (String.= (Person.name a) (Person.name b))
+      (Int.= @(Person.age a) @(Person.age b))
+      false)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;; Robot implementations
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(impl-for Robot MyShow
+  (defn show [r]
+    (String.concat
+      &[@"Robot #"
+        (Int.str @(Robot.id r))])))
+
+(impl-for Robot MyEq
+  (defn eq [a b]
+    (Int.= @(Robot.id a) @(Robot.id b))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;; Point implementations
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(impl-for Point MyShow
+  (defn show [p]
+    (String.concat
+      &[@"Point("
+        (Int.str @(Point.x p))
+        @", "
+        (Int.str @(Point.y p))
+        @")"])))
+
+(impl-for Point MyEq
+  (defn eq [a b]
+    (if (Int.= @(Point.x a) @(Point.x b))
+      (Int.= @(Point.y a) @(Point.y b))
+      false)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;; Consolidated tests
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(deftest protocol-test
+  ;; MyShow dispatch tests
   (let [p (Person.init @"Nick" 35)]
-    (assert-equal test
+    (assert-equal protocol-test
                   &@"Nick (35)"
                   &(show &p)
-                  "Protocols with impl-for work as expected")))
+                  "MyShow dispatch works for Person"))
+
+  (let [r (Robot.init 7)]
+    (assert-equal protocol-test
+                  &@"Robot #7"
+                  &(show &r)
+                  "MyShow dispatch works for Robot"))
+
+  (let [p (Point.init 10 20)]
+    (assert-equal protocol-test
+                  &@"Point(10, 20)"
+                  &(show &p)
+                  "MyShow dispatch works for Point"))
+
+  ;; MyEquality tests - Person
+  (let [a (Person.init @"Nick" 35)
+        b (Person.init @"Nick" 35)]
+    (assert-true protocol-test
+                 (eq &a &b)
+                 "Person equality succeeds for identical values"))
+
+  (let [a (Person.init @"Nick" 35)
+        b (Person.init @"Erik" 35)]
+    (assert-false protocol-test
+                  (eq &a &b)
+                  "Person equality fails for differing names"))
+
+  (let [a (Person.init @"Nick" 35)
+        b (Person.init @"Nick" 40)]
+    (assert-false protocol-test
+                  (eq &a &b)
+                  "Person equality fails for differing ages"))
+
+  ;; MyEquality tests - Robot
+  (let [a (Robot.init 1)
+        b (Robot.init 1)]
+    (assert-true protocol-test
+                 (eq &a &b)
+                 "Robot equality succeeds for identical ids"))
+
+  (let [a (Robot.init 1)
+        b (Robot.init 2)]
+    (assert-false protocol-test
+                  (eq &a &b)
+                  "Robot equality fails for differing ids"))
+
+  ;; MyEquality tests - Point
+  (let [a (Point.init 1 2)
+        b (Point.init 1 2)]
+    (assert-true protocol-test
+                 (eq &a &b)
+                 "Point equality succeeds for identical coordinates"))
+
+  (let [a (Point.init 1 2)
+        b (Point.init 5 9)]
+    (assert-false protocol-test
+                  (eq &a &b)
+                  "Point equality fails for differing coordinates"))
+
+  ;; Cross-type dispatch sanity
+  (let [p (Person.init @"Nick" 35)
+        r (Robot.init 99)
+        pt (Point.init 3 4)]
+    (assert-equal protocol-test
+                  &@"Nick (35)"
+                  &(show &p)
+                  "Dispatch remains stable after multiple implementations (Person)")
+    (assert-equal protocol-test
+                  &@"Robot #99"
+                  &(show &r)
+                  "Robot dispatch remains stable")
+    (assert-equal protocol-test
+                  &@"Point(3, 4)"
+                  &(show &pt)
+                  "Point dispatch remains stable"))
+
+  ;; Multiple protocol implementation sanity
+  (let [p1 (Person.init @"Nick" 35)
+        p2 (Person.init @"Nick" 35)]
+    (assert-equal protocol-test
+                  &@"Nick (35)"
+                  &(show &p1)
+                  "Type can participate in MyShow (multi-test)")
+    (assert-true protocol-test
+                 (eq &p1 &p2)
+                 "Type can participate in MyEq simultaneously")))
