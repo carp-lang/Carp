@@ -132,8 +132,8 @@ String String_prn(const String* s) {
     return buffer;
 }
 
-char String_char_MINUS_at(const String* s, int i) {
-    return (*s)[i];
+Char String_char_MINUS_at(const String* s, int i) {
+    return (uint8_t)(*s)[i];
 }
 
 String String_format(const String* str, const String* s) {
