@@ -434,15 +434,25 @@ primitiveDefmodule _ ctx (x : _) =
 primitiveDefmodule xobj ctx [] =
   pure (throwErr DefmoduleNoArgs ctx (xobjInfo xobj))
 
-primitiveProtocolMembers :: BinaryPrimitiveCallback
-primitiveProtocolMembers _ ctx _ membersXObj =
-  case membersXObj of
-    XObj (Lst members) _ _ -> foldM step (ctx, dynamicNil) members
-    XObj (Arr members) _ _ -> foldM step (ctx, dynamicNil) members
-    _ -> pure (evalError ctx ("`protocol-members` expects a list or array of definitions as second argument, but got `" ++ pretty membersXObj ++ "`") (xobjInfo membersXObj))
+primitiveImplFor :: VariadicPrimitiveCallback
+primitiveImplFor xobj ctx (typeXObj@(XObj (Sym (SymPath _ typeName) _) _ _) : protocolXObj : body) =
+  do
+    let oldPath = contextPath ctx
+        newPath = oldPath ++ [typeName]
+        ctxWithModule = ctx {contextPath = newPath}
+    (ctxAfterBody, result) <- foldM step (ctxWithModule, dynamicNil) body
+    case result of
+      Left err -> pure (ctxAfterBody, Left err)
+      Right _ ->
+        let ctxRestored = ctxAfterBody {contextPath = oldPath}
+         in primitiveImpl xobj ctxRestored typeXObj protocolXObj
   where
     step (c, Left e) _ = pure (c, Left e)
     step (c, Right _) m = eval c m PreferDynamic
+primitiveImplFor _ ctx (typeXObj : _) =
+  pure (evalError ctx ("`impl-for` expects a type name as first argument, but got `" ++ pretty typeXObj ++ "`") (xobjInfo typeXObj))
+primitiveImplFor xobj ctx [] =
+  pure (evalError ctx "`impl-for` expects at least two arguments (type and protocol)" (xobjInfo xobj))
 
 --------------------------------------------------------------------------------
 -- Type pre-declaration

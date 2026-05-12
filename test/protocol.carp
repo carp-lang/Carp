@@ -1,26 +1,23 @@
 (load-and-use Test)
 
-(defprotocol Show
-  [(show (Fn [(Ref a)] String))])
-
 (deftype Person
   [name String
    age Int])
 
-(defmodule Person
-  (protocol-members Show
-    [(defn show [p]
-       (String.concat
-         &[@(Person.name p)
-           @" ("
-           (Int.str @(Person.age p))
-           @")"]))]))
+(defprotocol Show
+  [(show (Fn [(Ref a)] String))])
 
-(impl Person Show)
+(impl-for Person Show
+  (defn show [p]
+    (String.concat
+      &[@(Person.name p)
+        @" ("
+        (Int.str @(Person.age p))
+        @")"])))
 
 (deftest test
   (let [p (Person.init @"Nick" 35)]
     (assert-equal test
                   &@"Nick (35)"
                   &(show &p)
-                  "Protocols work as expected")))
+                  "Protocols with impl-for work as expected")))

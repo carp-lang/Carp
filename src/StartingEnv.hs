@@ -339,9 +339,19 @@ dynamicModule =
             f "meta" primitiveMeta "gets the value under `\"mykey\"` in the meta map associated with a symbol. It returns `()` if the key isn’t found." "(meta mysymbol \"mykey\")",
             f "definterface" primitiveDefinterface "defines a new interface (which could be a function or symbol)." "(definterface mysymbol MyType)",
             f "implements" primitiveImplements "designates a function as an implementation of an interface." "(implements zero Maybe.zero)",
-            f "defprotocol" primitiveDefprotocol "defines a new protocol." "(defprotocol Show [(show (Fn [a] String))])",
-            f "protocol-members" primitiveProtocolMembers "groups behavioral contracts." "(protocol-members Show [(defn show [x] (str x))])",
-            f "impl" primitiveImpl "attaches a type to a protocol." "(impl Person Show)"
+            f "defprotocol" primitiveDefprotocol "defines a new protocol." "(defprotocol Show [(show (Fn [a] String))])"
+          ]
+    variadics' =
+      let f = makeVariadicPrim . spath
+       in [ f "impl-for" primitiveImplFor "attaches a type to a protocol and provides implementations." "(impl-for Person Show (defn show [p] ...))",
+            f "file" primitiveFile "returns the file a symbol was defined in." "(file mysymbol)",
+            f "line" primitiveLine "returns the line a symbol was defined on." "(line mysymbol)",
+            f "column" primitiveColumn "returns the column a symbol was defined on." "(column mysymbol)",
+            f "register-type" primitiveRegisterType "registers a new type from C." "(register-type Name <optional: c-name> <optional: members>)",
+            f "defmodule" primitiveDefmodule "defines a new module in which `expressions` are defined." "(defmodule MyModule <expressions>)",
+            f "register" primitiveRegister "registers a new function. This is used to define C functions and other symbols that will be available at link time." "(register name <signature> <optional: override>)",
+            f "deftype" primitiveDeftype "defines a new sumtype or struct." "(deftype Name <members>)",
+            f "help" primitiveHelp "prints help." "(help)"
           ]
     ternaries' =
       let f = makeTernaryPrim . spath
@@ -352,17 +362,6 @@ dynamicModule =
     quaternaries' =
       let f = makeQuaternaryPrim . spath
        in [ f "deftemplate" primitiveDeftemplate "defines a new C template." "(deftemplate symbol Type declString defString)"
-          ]
-    variadics' =
-      let f = makeVariadicPrim . spath
-       in [ f "file" primitiveFile "returns the file a symbol was defined in." "(file mysymbol)",
-            f "line" primitiveLine "returns the line a symbol was defined on." "(line mysymbol)",
-            f "column" primitiveColumn "returns the column a symbol was defined on." "(column mysymbol)",
-            f "register-type" primitiveRegisterType "registers a new type from C." "(register-type Name <optional: c-name> <optional: members>)",
-            f "defmodule" primitiveDefmodule "defines a new module in which `expressions` are defined." "(defmodule MyModule <expressions>)",
-            f "register" primitiveRegister "registers a new function. This is used to define C functions and other symbols that will be available at link time." "(register name <signature> <optional: override>)",
-            f "deftype" primitiveDeftype "defines a new sumtype or struct." "(deftype Name <members>)",
-            f "help" primitiveHelp "prints help." "(help)"
           ]
     mods =
       [ ("String", Binder emptyMeta (XObj (Mod dynamicStringModule E.empty) Nothing Nothing)),
