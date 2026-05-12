@@ -10,6 +10,10 @@
 (defprotocol MyEq
   [(eq (Fn [(Ref a) (Ref a)] Bool))])
 
+(defprotocol MyOrd
+  [(lt (Fn [(Ref a) (Ref a)] Bool))
+   (gt (Fn [(Ref a) (Ref a)] Bool))])
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; Test types
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -24,6 +28,45 @@
 (deftype Point
   [x Int
    y Int])
+
+(deftype (MyBox a) [val a])
+
+(deftype (MyPair a b) [first a second b])
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;; Primitive implementations
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(impl-for Int MyShow
+  (defn show [i]
+    (Int.str @i)))
+
+(impl-for Int MyOrd
+  (defn lt [a b] (Int.< @a @b))
+  (defn gt [a b] (Int.> @a @b)))
+
+(impl-for String MyShow
+  (defn show [s] (copy s)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;; Generic implementations
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(impl-for MyBox MyOrd
+  (defn lt [a b]
+    (lt (MyBox.val a) (MyBox.val b)))
+  ;; Test interdependence: gt calls lt interface
+  (defn gt [a b]
+    (lt b a)))
+
+(impl-for MyPair MyShow
+  (defn show [p]
+    (String.concat
+      &[@"(Pair "
+        (show (MyPair.first p))
+        @" "
+        (show (MyPair.second p))
+        @")"])))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; Person implementations
@@ -182,4 +225,32 @@
         p2 (Person.init @"Nick" 35)]
     (assert-true protocol-test
                  (eq &p1 &p2)
-                 "Type can participate in MyEq simultaneously")))
+                 "Type can participate in MyEq simultaneously"))
+
+  ;; Generic Box + Interdependence tests
+  (let [b1 (MyBox.init 10)
+        b2 (MyBox.init 20)]
+    (let [state (assert-true protocol-test
+                             (lt &b1 &b2)
+                             "Generic MyBox lt works")]
+      (let [state (assert-false &state
+                                (gt &b1 &b2)
+                                "Generic MyBox gt works (via lt interdependence)")]
+        (assert-true &state
+                     (gt &b2 &b1)
+                     "Generic MyBox gt works for greater value"))))
+
+  ;; MyPair Show tests
+  (let [pair (MyPair.init 1 @"hi")]
+    (assert-equal protocol-test
+                  &@"(Pair 1 hi)"
+                  &(MyPair.show &pair)
+                  "MyPair MyShow works for (MyPair Int String)"))
+
+  ;; Nested MyBox Ord tests
+  (let [nested1 (MyBox.init (MyBox.init 10))
+        nested2 (MyBox.init (MyBox.init 20))]
+    (assert-true protocol-test
+                 (MyBox.lt &nested1 &nested2)
+                 "Nested MyBox lt works"))
+)
