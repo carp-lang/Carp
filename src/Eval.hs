@@ -434,6 +434,16 @@ primitiveDefmodule _ ctx (x : _) =
 primitiveDefmodule xobj ctx [] =
   pure (throwErr DefmoduleNoArgs ctx (xobjInfo xobj))
 
+primitiveProtocolMembers :: BinaryPrimitiveCallback
+primitiveProtocolMembers _ ctx _ membersXObj =
+  case membersXObj of
+    XObj (Lst members) _ _ -> foldM step (ctx, dynamicNil) members
+    XObj (Arr members) _ _ -> foldM step (ctx, dynamicNil) members
+    _ -> pure (evalError ctx ("`protocol-members` expects a list or array of definitions as second argument, but got `" ++ pretty membersXObj ++ "`") (xobjInfo membersXObj))
+  where
+    step (c, Left e) _ = pure (c, Left e)
+    step (c, Right _) m = eval c m PreferDynamic
+
 --------------------------------------------------------------------------------
 -- Type pre-declaration
 

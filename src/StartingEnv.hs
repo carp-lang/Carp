@@ -338,7 +338,10 @@ dynamicModule =
        in [ f "defdynamic" primitiveDefdynamic "defines a new dynamic value, i.e. a value available at compile time." "(defdynamic name value)",
             f "meta" primitiveMeta "gets the value under `\"mykey\"` in the meta map associated with a symbol. It returns `()` if the key isn’t found." "(meta mysymbol \"mykey\")",
             f "definterface" primitiveDefinterface "defines a new interface (which could be a function or symbol)." "(definterface mysymbol MyType)",
-            f "implements" primitiveImplements "designates a function as an implementation of an interface." "(implements zero Maybe.zero)"
+            f "implements" primitiveImplements "designates a function as an implementation of an interface." "(implements zero Maybe.zero)",
+            f "defprotocol" primitiveDefprotocol "defines a new protocol." "(defprotocol Show [(show (Fn [a] String))])",
+            f "protocol-members" primitiveProtocolMembers "groups behavioral contracts." "(protocol-members Show [(defn show [x] (str x))])",
+            f "impl" primitiveImpl "attaches a type to a protocol." "(impl Person Show)"
           ]
     ternaries' =
       let f = makeTernaryPrim . spath
