@@ -190,6 +190,7 @@ toC toCMode emitLines mutualGroup (Binder meta root) = renderEmitterState (execS
             Ref -> dontVisit
             Deref -> dontVisit
             (Interface _ _) -> dontVisit
+            (Protocol _ _) -> dontVisit
             (Dict _) -> dontVisit
             (Fn _ _) -> dontVisit
             LocalDef -> dontVisit
@@ -675,6 +676,9 @@ toC toCMode emitLines mutualGroup (Binder meta root) = renderEmitterState (execS
         -- Interface
         XObj (Interface _ _) _ _ : _ ->
           pure ""
+        -- Protocol
+        XObj (Protocol _ _) _ _ : _ ->
+          pure ""
         -- Break
         [XObj Break minfo _] -> do
           case minfo of
@@ -768,6 +772,7 @@ toC toCMode emitLines mutualGroup (Binder meta root) = renderEmitterState (execS
         hasRef (FuncTy ats rt _) = any hasRef ats || hasRef rt
         hasRef (StructTy _ tys) = any hasRef tys
         hasRef (PointerTy p) = hasRef p
+        hasRef (ProtocolTy _ is) = any hasRef is
         hasRef _ = False
     visitTCO :: Int -> [(String, Ty)] -> Ty -> Set.Set Deleter -> Maybe (String, Map.Map String Int) -> XObj -> State EmitterState ()
     visitTCO indent' params retTy accDels mutualInfo xobj = case xobj of
@@ -1154,6 +1159,8 @@ toDeclaration (Binder meta xobj@(XObj (Lst xobjs) _ ty)) =
       defaliasToDeclaration aliasTy path
     [XObj (Interface _ _) _ _, _] ->
       ""
+    [XObj (Protocol _ _) _ _, _] ->
+      ""
     XObj (External _) _ _ : _ ->
       ""
     XObj (ExternalType Nothing) _ _ : _ ->
@@ -1265,6 +1272,7 @@ findMutualGroups env =
     hasRef (FuncTy ats rt _) = any hasRef ats || hasRef rt
     hasRef (StructTy _ tys) = any hasRef tys
     hasRef (PointerTy p) = hasRef p
+    hasRef (ProtocolTy _ is) = any hasRef is
     hasRef _ = False
 
 envToC :: Env -> ToCMode -> Bool -> Either ToCError String

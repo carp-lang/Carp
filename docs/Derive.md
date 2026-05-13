@@ -29,14 +29,19 @@ name and interface to implement:
 ```
 
 The code above will provide implementations of `zero` and `=` for the type
-`Point` based on its members. The prerequisites for this to work
+`Point` based on its members. Prerequisites for this to work
 are that types are *concrete*—there are no type variables present—and *its
 members implement the interface*. This is because the definition of both
 functions hinges on the definition of its members: `zero` on a type is just
 `zero` of all its members, equality of a type just equality of all of its
 members.
 
-Carp only provides automatic derivation of `=`, `zero`, and `str`. Since the
+Note: `derive` currently only works on individual interfaces. While a protocol
+is a collection of interfaces, you must still derive each member interface
+individually if a deriver is available.
+
+Carp only provides automatic derivation of `=`, `zero`, and `str`.
+
 code you depend on might provide other derivers, you can inspect them by
 calling `(derivables)`. If you want to find out if a certain interface is
 derivable, you can call `(derivable? <interface>)`. Please note that the

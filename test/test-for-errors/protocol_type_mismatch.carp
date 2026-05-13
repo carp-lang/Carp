@@ -1,0 +1,13 @@
+(Project.config "file-path-print-length" "short")
+
+(definterface NumLike
+  [(add (Fn [a a] a))])
+
+(deftype BadNum [])
+
+(defn add [x y] 42) ;; wrong: returns Int instead of a (BadNum)
+
+(implements add add)
+
+;; This should fail because add's signature doesn't match NumLike for BadNum
+(implements BadNum NumLike)

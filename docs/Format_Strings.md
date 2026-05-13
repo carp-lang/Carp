@@ -18,8 +18,8 @@ It’s works similarly to [`printf`](https://en.wikipedia.org/wiki/Printf_format
 in C. `fmt` will check that the amount of arguments and format specifiers in
 the format string match.
 
-All arguments to `fmt` must implement the `format` interface, which is defined
-as:
+All arguments to `fmt` must implement the `format` interface (which could
+be standalone or part of a protocol), which is defined as:
 
 ```clojure
 (definterface format (Fn [String a] String)
@@ -40,7 +40,8 @@ Also, all `fmt` format strings must be literals.
 Similarly to `fmt`, `fstr` takes a literal string. It uses a simpler interface
 than `fmt`, however, in which the expressions are embedded directly into the
 string and formatted using `str`. As such, the return types of all expressions
-in a `fstr` must implement the `str` interface.
+in a `fstr` must implement the `str` interface (which could be standalone or
+part of a protocol).
 
 ```clojure
 (def x 1)

@@ -36,16 +36,15 @@ system.
 
 A few conditions determine whether or not a user defined type is linear:
 
-- **Implementation of the `blit` interface**: this interface explicitly marks a
-  type as *non-linear*. Any type that implements it is ignored by the memory
-  management system and is assumed to pose no risks in relation to memory
-  allocation and deallocation.
+- **Implementation of the `blit` interface**: this interface (which could be
+  standalone or part of a protocol) explicitly marks a type as *non-linear*.
+  Any type that implements it is ignored by the memory management system and
+  is assumed to pose no risks in relation to memory allocation and deallocation.
 - **Implementation of the `delete` interface**: this interface explicitly marks
   a type as *linear*. Any type that implements it is managed by the memory
   management system. Carp will call the implementation of this interface whenever
   the memory management system decides it's safe to deallocate the memory
-  associated with a value of the type that implements this interface. 
-
+  associated with a value of the type that implements this interface.
 When you define a type directly in Carp code, using `deftype` Carp will
 *automatically implement the delete interface for you*. As a consequence, any
 type that you declare using `deftype` will be managed by the memory management

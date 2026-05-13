@@ -232,7 +232,13 @@ int sum(int *arr, int len) {
   (println* (sum-c (Array.unsafe-raw &ints) (Array.length &ints))))
 ```
 
-Again, you might want to wrap the bare C function in more Carp-esque interface.
+Note: When you register a C function, you can also declare that it implements an
+interface or a member of a protocol using `implements`:
+
+```clojure
+(register my-c-fn (Fn [Int] Int))
+(implements some-interface my-c-fn)
+```
 
 ```clojure
 (relative-include "sum.h")

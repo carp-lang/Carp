@@ -1,0 +1,5 @@
+(Project.config "file-path-print-length" "short")
+
+(definterface Bad
+  [(f (Fn [a] Int))
+   (f (Fn [a] Int))])

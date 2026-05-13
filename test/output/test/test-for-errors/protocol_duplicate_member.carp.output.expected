@@ -1,0 +1,1 @@
+protocol_duplicate_member.carp:4:3 Name collision in protocol `Bad`: members must have unique names

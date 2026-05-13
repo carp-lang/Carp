@@ -782,8 +782,8 @@ commandSexpressionInternal ctx xobj bol =
                   Just DynamicTy -> XObj (Sym (SymPath [] "defdynamic") Symbol) i t
                   _ -> XObj (Sym (SymPath [] "fn") Symbol) i t
            in pure (ctx, Right (XObj (Lst [headSym, name, args, XObj (Lst []) i t]) i t))
-        (XObj (Lst [inter@(XObj (Interface ty _) _ _), path]) i t) ->
-          pure (ctx, Right (XObj (Lst [toSymbols inter, path, reify ty]) i t))
+        (XObj (Lst [inter@(XObj (Interface tys _) _ _), path]) i t) ->
+          pure (ctx, Right (XObj (Lst [toSymbols inter, path, XObj (Lst (map reify tys)) i t]) i t))
         (XObj (Lst forms) i t) ->
           pure (ctx, Right (XObj (Lst (map toSymbols forms)) i t))
         mdl@(XObj (Mod e _) _ _) ->
@@ -834,6 +834,7 @@ toSymbols (XObj Def i t) = XObj (Sym (SymPath [] "def") Symbol) i t
 toSymbols (XObj (Deftype _) i t) = XObj (Sym (SymPath [] "deftype") Symbol) i t
 toSymbols (XObj (DefSumtype _) i t) = XObj (Sym (SymPath [] "deftype") Symbol) i t
 toSymbols (XObj (Interface _ _) i t) = XObj (Sym (SymPath [] "definterface") Symbol) i t
+toSymbols (XObj (Protocol _ _) i t) = XObj (Sym (SymPath [] "definterface") Symbol) i t
 toSymbols (XObj Macro i t) = XObj (Sym (SymPath [] "defmacro") Symbol) i t
 toSymbols (XObj (Command _) i t) = XObj (Sym (SymPath [] "command") Symbol) i t
 toSymbols (XObj (Primitive _) i t) = XObj (Sym (SymPath [] "primitive") Symbol) i t
@@ -907,3 +908,4 @@ commandType ctx (XObj x _ _) =
     typeOf Ref = "ref"
     typeOf Deref = "deref"
     typeOf (Interface _ _) = "interface"
+    typeOf (Protocol _ _) = "protocol"

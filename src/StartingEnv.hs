@@ -336,9 +336,7 @@ dynamicModule =
     binaries' =
       let f = makeBinaryPrim . spath
        in [ f "defdynamic" primitiveDefdynamic "defines a new dynamic value, i.e. a value available at compile time." "(defdynamic name value)",
-            f "meta" primitiveMeta "gets the value under `\"mykey\"` in the meta map associated with a symbol. It returns `()` if the key isn’t found." "(meta mysymbol \"mykey\")",
-            f "definterface" primitiveDefinterface "defines a new interface (which could be a function or symbol)." "(definterface mysymbol MyType)",
-            f "implements" primitiveImplements "designates a function as an implementation of an interface." "(implements zero Maybe.zero)"
+            f "meta" primitiveMeta "gets the value under `\"mykey\"` in the meta map associated with a symbol. It returns `()` if the key isn’t found." "(meta mysymbol \"mykey\")"
           ]
     ternaries' =
       let f = makeTernaryPrim . spath
@@ -357,6 +355,8 @@ dynamicModule =
             f "column" primitiveColumn "returns the column a symbol was defined on." "(column mysymbol)",
             f "register-type" primitiveRegisterType "registers a new type from C." "(register-type Name <optional: c-name> <optional: members>)",
             f "defmodule" primitiveDefmodule "defines a new module in which `expressions` are defined." "(defmodule MyModule <expressions>)",
+            f "definterface" primitiveDefinterface "defines a new interface (which could be a function or symbol or protocol)." "(definterface <name> <type> | <name> [<members>])",
+            f "implements" primitiveImplements "designates a type as an instance of a protocol or interface." "(implements <type> <protocol> | <interface> <implementation>)",
             f "register" primitiveRegister "registers a new function. This is used to define C functions and other symbols that will be available at link time." "(register name <signature> <optional: override>)",
             f "deftype" primitiveDeftype "defines a new sumtype or struct." "(deftype Name <members>)",
             f "help" primitiveHelp "prints help." "(help)"
@@ -550,22 +550,22 @@ startingTypeEnv =
       Map.fromList
         [ interfaceBinder
             "delete"
-            (FuncTy [VarTy "a"] UnitTy StaticLifetimeTy)
+            [FuncTy [VarTy "a"] UnitTy StaticLifetimeTy]
             ([SymPath ["Array"] "delete", SymPath ["StaticArray"] "delete", SymPath ["Box"] "delete"] ++ registerFunctionFunctionsWithInterface "delete")
             builtInSymbolInfo,
           interfaceBinder
             "copy"
-            (FuncTy [RefTy (VarTy "a") (VarTy "q")] (VarTy "a") StaticLifetimeTy)
+            [FuncTy [RefTy (VarTy "a") (VarTy "q")] (VarTy "a") StaticLifetimeTy]
             ([SymPath ["Array"] "copy", SymPath ["Pointer"] "copy", SymPath ["Box"] "copy"] ++ registerFunctionFunctionsWithInterface "copy")
             builtInSymbolInfo,
           interfaceBinder
             "str"
-            (FuncTy [VarTy "a"] StringTy StaticLifetimeTy)
+            [FuncTy [VarTy "a"] StringTy StaticLifetimeTy]
             (SymPath ["Array"] "str" : SymPath ["StaticArray"] "str" : SymPath ["Box"] "str" : registerFunctionFunctionsWithInterface "str")
             builtInSymbolInfo,
           interfaceBinder
             "prn"
-            (FuncTy [VarTy "a"] StringTy StaticLifetimeTy)
+            [FuncTy [VarTy "a"] StringTy StaticLifetimeTy]
             (SymPath ["StaticArray"] "str" : SymPath ["Box"] "prn" : registerFunctionFunctionsWithInterface "prn") -- QUESTION: Where is 'prn' for dynamic Array:s registered? Can't find it... (but it is)
             builtInSymbolInfo
         ]
@@ -577,5 +577,5 @@ registerFunctionFunctionsWithInterface interfaceName =
   map (\arity -> SymPath ["Function", "Arity" ++ show arity] interfaceName) [0 .. maxArity]
 
 -- | Create a binder for an interface definition.
-interfaceBinder :: String -> Ty -> [SymPath] -> Info -> (String, Binder)
-interfaceBinder name t paths i = (name, Binder emptyMeta (defineInterface name t paths (Just i)))
+interfaceBinder :: String -> [Ty] -> [SymPath] -> Info -> (String, Binder)
+interfaceBinder name ts paths i = (name, Binder emptyMeta (defineInterface name ts paths (Just i)))
