@@ -256,13 +256,17 @@ the filename and module name are the same.")
 (defmacro comment [:rest forms]
   ())
 
-(hidden build-vararg)
-(defndynamic build-vararg [func forms]
-  (if (= (length forms) 0)
+(hidden build-vararg-left-internal)
+(defndynamic build-vararg-left-internal [func acc forms]
+  (if (empty? forms)
+    acc
+    (build-vararg-left-internal func (list func acc (car forms)) (cdr forms))))
+
+(hidden build-vararg-left)
+(defndynamic build-vararg-left [func forms]
+  (if (empty? forms)
     (macro-error "vararg macro needs at least one argument")
-    (if (= (length forms) 1)
-      (car forms)
-      (list func (car forms) (build-vararg func (cdr forms))))))
+    (build-vararg-left-internal func (car forms) (cdr forms))))
 
 (doc ignore "ignores the return value of the expression `form`.")
 (defmacro ignore [form]
@@ -432,3 +436,33 @@ the filename and module name are the same.")
             (list 'register name '(Fn [] ()))))
   )
 )
+
+(doc sum-variadic "Variadic addition. Expands to nested binary `+` calls. (sum-variadic) evaluates to 0.")
+(defmacro sum-variadic [:rest forms]
+  (if (empty? forms)
+    0
+    (build-vararg-left '+ forms)))
+
+(doc product-variadic "Variadic multiplication. Expands to nested binary `*` calls. (product-variadic) evaluates to 1.")
+(defmacro product-variadic [:rest forms]
+  (if (empty? forms)
+    1
+    (build-vararg-left '* forms)))
+
+(doc sub-variadic "Variadic subtraction. Expands to nested binary `-` calls. (sub-variadic x) is equivalent to (neg x).")
+(defmacro sub-variadic [:rest forms]
+  (if (= (length forms) 1)
+    (list 'neg (car forms))
+    (build-vararg-left '- forms)))
+
+(doc div-variadic "Variadic division. Expands to nested binary `/` calls.")
+(defmacro div-variadic [:rest forms]
+  (build-vararg-left '/ forms))
+
+(doc inc! "Increments a variable in-place.")
+(defmacro inc! [var]
+  (list 'set! var (list 'inc var)))
+
+(doc dec! "Decrements a variable in-place.")
+(defmacro dec! [var]
+  (list 'set! var (list 'dec var)))
