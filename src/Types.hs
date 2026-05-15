@@ -67,6 +67,7 @@ data Ty
   | MacroTy
   | DynamicTy -- the type of dynamic functions (used in REPL and macros)
   | InterfaceTy
+  | ProtocolTy
   | CTy -- C literals
   | Universe -- the type of types of types (the type of TypeTy)
   deriving (Eq, Ord, Generic)
@@ -180,6 +181,7 @@ instance Show Ty where
   show ModuleTy = "Module"
   show TypeTy = "Type"
   show InterfaceTy = "Interface"
+  show ProtocolTy = "Protocol"
   show (StructTy s []) = show s
   show (StructTy s typeArgs) = "(" ++ show s ++ " " ++ joinWithSpace (map show typeArgs) ++ ")"
   show (ConcreteNameTy spath) = show spath

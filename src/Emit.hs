@@ -1165,6 +1165,7 @@ toDeclaration (Binder meta xobj@(XObj (Lst xobjs) _ ty)) =
     XObj (Primitive _) _ _ : _ ->
       ""
     _ -> error ("Internal compiler error: Can't emit other kinds of definitions: " ++ show xobj)
+toDeclaration (Binder _ (XObj MetaStub _ _)) = ""
 toDeclaration (Binder _ (XObj (Sym (SymPath [] "dummy") Symbol) Nothing (Just IntTy))) = ""
 toDeclaration (Binder _ (XObj (Closure _ _) _ _)) = ""
 toDeclaration _ = error "Missing case."

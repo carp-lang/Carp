@@ -1,0 +1,11 @@
+(defprotocol Show
+  [(show (Fn [a] String))])
+
+(deftype Person [name String])
+
+(defmodule Person
+  ;; Wrong signature: takes two arguments instead of one
+  (defn show [p extra]
+    @"bad"))
+
+(impl-for Person Show)

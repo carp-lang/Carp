@@ -505,6 +505,78 @@ primitiveDefinterface xobj ctx nameXObj@(XObj (Sym path@(SymPath [] name) _) _ _
 primitiveDefinterface _ ctx name _ =
   pure (evalError ctx ("`definterface` expects a name as first argument, but got `" ++ pretty name ++ "`") (xobjInfo name))
 
+primitiveDefprotocol :: BinaryPrimitiveCallback
+primitiveDefprotocol xobj ctx nameXObj@(XObj (Sym (SymPath [] name) _) _ _) membersXObj =
+  case membersXObj of
+    XObj (Lst members) _ _ -> defineProtocol members
+    XObj (Arr members) _ _ -> defineProtocol members
+    _ -> pure (evalError ctx ("`defprotocol` expects a list or array of members as second argument, but got `" ++ pretty membersXObj ++ "`") (xobjInfo membersXObj))
+  where
+    defineProtocol members = do
+      (finalCtx, result) <- foldM step (ctx, dynamicNil) members
+      case result of
+        Left err -> pure (finalCtx, Left err)
+        Right _ ->
+          let protocolPath = markQualified (SymPath [] name)
+              protocolBinder = Binder emptyMeta (XObj MetaStub (xobjInfo nameXObj) (Just ProtocolTy))
+              protocolBinder' = Meta.updateBinderMeta protocolBinder "protocol-members" (XObj (Lst members) Nothing Nothing)
+           in case insertTypeBinder finalCtx protocolPath protocolBinder' of
+                Left err -> pure (toEvalError ctx nameXObj (MetaSetFailed nameXObj (show err)))
+                Right ctx' -> pure (ctx', dynamicNil)
+    step (c, Left e) _ = pure (c, Left e)
+    step (c, Right _) (XObj (Lst [mname, mty]) _ _) =
+      primitiveDefinterface xobj c mname mty
+    step (c, _) m =
+      pure (evalError c ("Invalid protocol member: " ++ pretty m) (xobjInfo m))
+primitiveDefprotocol _ ctx name _ =
+  pure (evalError ctx ("`defprotocol` expects a name as first argument, but got `" ++ pretty name ++ "`") (xobjInfo name))
+
+primitiveImpl :: BinaryPrimitiveCallback
+primitiveImpl xobj ctx typeXObj@(XObj (Sym typePath _) _ _) protocolXObj@(XObj (Sym protocolPath _) _ _) =
+  case lookupBinderInTypeEnv ctx protocolPath of
+    Left _ -> pure (evalError ctx ("Protocol not found: " ++ show protocolPath) (xobjInfo protocolXObj))
+    Right protocolBinder ->
+      case Meta.getBinderMetaValue "impl-types" protocolBinder of
+        Just (XObj (Lst already) _ _)
+          | any (\x -> getPath x == typePath) already ->
+              pure (evalError ctx ("Coherence violation: " ++ show typePath ++ " already implements " ++ show protocolPath) (xobjInfo xobj))
+        _ -> registerAndProceed protocolBinder
+  where
+    registerAndProceed protocolBinder =
+      case Meta.getBinderMetaValue "protocol-members" protocolBinder of
+        Just (XObj (Lst members) _ _) -> do
+          (finalCtx, result) <- foldM step (ctx, dynamicNil) members
+          case result of
+            Left err -> pure (finalCtx, Left err)
+            Right _ ->
+              case lookupBinderInTypeEnv finalCtx protocolPath of
+                Left _ -> pure (finalCtx, dynamicNil)
+                Right pb ->
+                  let typeXObjClean = XObj (Sym typePath Symbol) Nothing Nothing
+                      pb' = case Meta.getBinderMetaValue "impl-types" pb of
+                              Just (XObj (Lst already) _ _) ->
+                                Meta.updateBinderMeta pb "impl-types" (XObj (Lst (already ++ [typeXObjClean])) Nothing Nothing)
+                              _ ->
+                                Meta.updateBinderMeta pb "impl-types" (XObj (Lst [typeXObjClean]) Nothing Nothing)
+                   in case insertTypeBinder finalCtx (markQualified protocolPath) pb' of
+                        Left err -> pure (toEvalError ctx xobj (MetaSetFailed xobj (show err)))
+                        Right ctx' -> pure (ctx', dynamicNil)
+        _ -> pure (evalError ctx ("Binder is not a protocol: " ++ show protocolPath) (xobjInfo protocolXObj))
+    step (c, Left e) _ = pure (c, Left e)
+    step (c, Right _) (XObj (Lst [XObj (Sym (SymPath _ mname) _) _ _, _]) _ _) =
+      let SymPath tPath tName = getPath typeXObj
+          implPath = SymPath (tPath ++ [tName]) mname
+          interfacePath = SymPath [] mname
+          interfaceXObj = XObj (Sym interfacePath Symbol) Nothing Nothing
+          implXObj = XObj (Sym implPath Symbol) Nothing Nothing
+       in case lookupBinderInGlobalEnv c implPath of
+            Left _ -> pure (evalError c ("Implementation not found for protocol member `" ++ mname ++ "`: " ++ show implPath) (xobjInfo xobj))
+            Right _ -> primitiveImplements xobj c interfaceXObj implXObj
+    step (c, _) m =
+      pure (evalError c ("Invalid protocol member in definition: " ++ pretty m) (xobjInfo m))
+primitiveImpl _ ctx typeXObj _ =
+  pure (evalError ctx ("`impl` expects a type name as first argument, but got `" ++ pretty typeXObj ++ "`") (xobjInfo typeXObj))
+
 registerInternal :: Context -> String -> XObj -> Maybe String -> IO (Context, Either EvalError XObj)
 registerInternal ctx name ty override =
   pure $ maybe invalidType validType (xobjToTy ty)
