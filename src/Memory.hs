@@ -628,11 +628,11 @@ refTargetIsAlive xobj =
              in case Set.toList deadVars of
                   [] -> pure (Right xobj)
                   (deadName : _) ->
-                    let original = Map.lookup deadName (memStateNames m)
+                    let originalName = Map.lookup deadName (memStateNames m)
                      in pure
                           ( case xobjObj xobj of
-                              (Lst (LetPat _ _ body)) -> Left (UsingDeadReference body deadName original)
-                              _ -> Left (UsingDeadReference xobj deadName original)
+                              (Lst (LetPat _ _ body)) -> Left (UsingDeadReference body deadName originalName)
+                              _ -> Left (UsingDeadReference xobj deadName originalName)
                           )
           Just LifetimeOutsideFunction ->
             pure (Right xobj)
@@ -677,11 +677,11 @@ returnRefTargetIsAlive xobj =
        in case Set.toList deadVars of
             [] -> pure (Right xobj)
             (deadName : _) ->
-              let original = Map.lookup deadName (memStateNames m)
-                  reportOn = case xobjObj fnBody of
+              let reportOn = case xobjObj fnBody of
                     Lst (LetPat _ _ body) -> body
                     _ -> fnBody
-               in pure (Left (UsingDeadReference reportOn deadName original))
+                  originalName = Map.lookup deadName (memStateNames m)
+               in pure (Left (UsingDeadReference reportOn deadName originalName))
 
 -- | Map from lifetime variables (of refs) to a `LifetimeMode`
 -- | (usually containing the name of the XObj that the lifetime is tied to).
