@@ -1,0 +1,16 @@
+(load-and-use Test)
+(use Test)
+
+(defprotocol MyShow
+  [(show (Fn [(Ref a)] String))])
+
+(deftype (MyBox a) [val a])
+
+(impl-for MyBox MyShow
+  (defn show [c]
+    (let [_ (MyBox.val c)]
+      @"Box")))
+
+(defn main []
+  (let [b (MyBox.init 10)]
+    (println* (show &b))))

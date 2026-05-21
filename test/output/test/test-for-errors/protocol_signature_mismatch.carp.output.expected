@@ -1,0 +1,2 @@
+[ERROR] [INTERFACE ERROR] Person.show : (Fn [a, b] String) doesn't match the interface signature (Fn [a] String)
+[INTERFACE ERROR] Person.show : (Fn [a, b] String) doesn't match the interface signature (Fn [a] String)
