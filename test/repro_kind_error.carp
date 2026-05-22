@@ -1,7 +1,7 @@
 (load-and-use Test)
 (use Test)
 
-(defprotocol MyShow
+(defprotocol (MyShow a) 
   [(show (Fn [(Ref a)] String))])
 
 (deftype (MyBox a) [val a])

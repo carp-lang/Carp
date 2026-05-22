@@ -4,13 +4,13 @@
 ;; Basic protocol definitions
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defprotocol MyShow
+(defprotocol (MyShow a) 
   [(show (Fn [(Ref a)] String))])
 
-(defprotocol MyEq
+(defprotocol (MyEq a) 
   [(eq (Fn [(Ref a) (Ref a)] Bool))])
 
-(defprotocol MyOrd
+(defprotocol (MyOrd a) 
   [(lt (Fn [(Ref a) (Ref a)] Bool))
    (gt (Fn [(Ref a) (Ref a)] Bool))])
 

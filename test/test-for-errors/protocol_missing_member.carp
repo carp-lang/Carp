@@ -1,4 +1,4 @@
-(defprotocol Show
+(defprotocol (Show a) 
   [(show (Fn [a] String))])
 
 (deftype Person [name String])

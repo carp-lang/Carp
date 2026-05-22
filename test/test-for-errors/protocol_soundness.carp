@@ -1,7 +1,8 @@
-(defprotocol NumLike
+(defprotocol (NumLike a) 
   [(add (Fn [a a] a))])
 
 (deftype BadNum [x Int])
 
 (impl-for BadNum NumLike
   (defn add [x y] 123)) ;; Returns Int, but should return BadNum
+(defn main [] ())

@@ -506,13 +506,18 @@ primitiveDefinterface _ ctx name _ =
   pure (evalError ctx ("`definterface` expects a name as first argument, but got `" ++ pretty name ++ "`") (xobjInfo name))
 
 primitiveDefprotocol :: BinaryPrimitiveCallback
-primitiveDefprotocol xobj ctx nameXObj@(XObj (Sym (SymPath [] name) _) _ _) membersXObj =
-  case membersXObj of
-    XObj (Lst members) _ _ -> defineProtocol members
-    XObj (Arr members) _ _ -> defineProtocol members
-    _ -> pure (evalError ctx ("`defprotocol` expects a list or array of members as second argument, but got `" ++ pretty membersXObj ++ "`") (xobjInfo membersXObj))
+primitiveDefprotocol xobj ctx nameXObj membersXObj =
+  case nameXObj of
+    XObj (Lst (XObj (Sym (SymPath [] name) _) _ _ : vars)) _ _ ->
+      defineProtocol name vars
+    _ -> pure (evalError ctx ("`defprotocol` expects a list with a name and type variables as first argument (e.g. `(MyProtocol a)`), but got `" ++ pretty nameXObj ++ "`") (xobjInfo nameXObj))
   where
-    defineProtocol members = do
+    defineProtocol name vars =
+      case membersXObj of
+        XObj (Lst members) _ _ -> defineProtocolWithVars name vars members
+        XObj (Arr members) _ _ -> defineProtocolWithVars name vars members
+        _ -> pure (evalError ctx ("`defprotocol` expects a list or array of members as second argument, but got `" ++ pretty membersXObj ++ "`") (xobjInfo membersXObj))
+    defineProtocolWithVars name vars members = do
       (finalCtx, result) <- foldM step (ctx, dynamicNil) members
       case result of
         Left err -> pure (finalCtx, Left err)
@@ -520,7 +525,8 @@ primitiveDefprotocol xobj ctx nameXObj@(XObj (Sym (SymPath [] name) _) _ _) memb
           let protocolPath = markQualified (SymPath [] name)
               protocolBinder = Binder emptyMeta (XObj MetaStub (xobjInfo nameXObj) (Just ProtocolTy))
               protocolBinder' = Meta.updateBinderMeta protocolBinder "protocol-members" (XObj (Lst members) Nothing Nothing)
-           in case insertTypeBinder finalCtx protocolPath protocolBinder' of
+              protocolBinder'' = Meta.updateBinderMeta protocolBinder' "protocol-vars" (XObj (Lst vars) Nothing Nothing)
+           in case insertTypeBinder finalCtx protocolPath protocolBinder'' of
                 Left err -> pure (toEvalError ctx nameXObj (MetaSetFailed nameXObj (show err)))
                 Right ctx' -> pure (ctx', dynamicNil)
     step (c, Left e) _ = pure (c, Left e)
@@ -528,8 +534,6 @@ primitiveDefprotocol xobj ctx nameXObj@(XObj (Sym (SymPath [] name) _) _ _) memb
       primitiveDefinterface xobj c mname mty
     step (c, _) m =
       pure (evalError c ("Invalid protocol member: " ++ pretty m) (xobjInfo m))
-primitiveDefprotocol _ ctx name _ =
-  pure (evalError ctx ("`defprotocol` expects a name as first argument, but got `" ++ pretty name ++ "`") (xobjInfo name))
 
 primitiveImpl :: BinaryPrimitiveCallback
 primitiveImpl xobj ctx typeXObj protocolXObj@(XObj (Sym protocolPath _) _ _) =
@@ -546,7 +550,7 @@ primitiveImpl xobj ctx typeXObj protocolXObj@(XObj (Sym protocolPath _) _ _) =
     registerAndProceed protocolBinder =
       case Meta.getBinderMetaValue "protocol-members" protocolBinder of
         Just (XObj (Lst members) _ _) -> do
-          (finalCtx, result) <- foldM step (ctx, dynamicNil) members
+          (finalCtx, result) <- foldM (step protocolBinder) (ctx, dynamicNil) members
           case result of
             Left err -> pure (finalCtx, Left err)
             Right _ ->
@@ -563,8 +567,8 @@ primitiveImpl xobj ctx typeXObj protocolXObj@(XObj (Sym protocolPath _) _ _) =
                         Left err -> pure (toEvalError ctx xobj (MetaSetFailed xobj (show err)))
                         Right ctx' -> pure (ctx', dynamicNil)
         _ -> pure (evalError ctx ("Binder is not a protocol: " ++ show protocolPath) (xobjInfo protocolXObj))
-    step (c, Left e) _ = pure (c, Left e)
-    step (c, Right _) (XObj (Lst [XObj (Sym (SymPath _ mname) _) _ _, mtyXObj]) _ _) =
+    step _ (c, Left e) _ = pure (c, Left e)
+    step protocolBinder (c, Right _) (XObj (Lst [XObj (Sym (SymPath _ mname) _) _ _, mtyXObj]) _ _) =
       let SymPath tPath _ = case typeXObj of
                               (XObj (Sym p _) _ _) -> p
                               (XObj (Lst (XObj (Sym p _) _ _ : _)) _ _) -> p
@@ -580,17 +584,22 @@ primitiveImpl xobj ctx typeXObj protocolXObj@(XObj (Sym protocolPath _) _ _) =
        in case lookupBinderInGlobalEnv c implPath of
             Left _ -> pure (evalError c ("Implementation not found for protocol member `" ++ mname ++ "`: " ++ show implPath) (xobjInfo xobj))
             Right implBinder ->
-              case (xobjTy (binderXObj implBinder), xobjToTy typeXObj, xobjToTy mtyXObj) of
-                (Just actualTy, Just concreteTy, Just genericTy) ->
-                  let expectedTy =
-                        case typeVariablesInOrderOfAppearance genericTy of
-                          (VarTy v : _) -> replaceTyVars (Map.fromList [(v, concreteTy)]) genericTy
-                          _ -> genericTy
+              case (xobjTy (binderXObj implBinder), xobjToTy typeXObj, xobjToTy mtyXObj, Meta.getBinderMetaValue "protocol-vars" protocolBinder) of
+                (Just actualTy, _, Just genericTy, Just (XObj (Lst vars) _ _)) ->
+                  let varNames = map getSimpleName vars
+                      typeXObjs = if length varNames > 1
+                                  then case typeXObj of
+                                         (XObj (Lst xs) _ _) -> xs
+                                         _ -> [typeXObj]
+                                  else [typeXObj]
+                      typeTys = map (fromMaybe UnitTy . xobjToTy) typeXObjs
+                      mappings = Map.fromList (zip varNames typeTys)
+                      expectedTy = replaceTyVars mappings genericTy
                    in if areUnifiable expectedTy actualTy
                         then primitiveImplements xobj c interfaceXObj implXObj
                         else pure (evalError c ("Protocol signature mismatch for `" ++ mname ++ "`. Expected `" ++ show expectedTy ++ "` but got `" ++ show actualTy ++ "`.") (xobjInfo xobj))
                 _ -> primitiveImplements xobj c interfaceXObj implXObj
-    step (c, _) m =
+    step _ (c, _) m =
       pure (evalError c ("Invalid protocol member in definition: " ++ pretty m) (xobjInfo m))
 primitiveImpl _ ctx typeXObj _ =
   pure (evalError ctx ("`impl` expects a type name as first argument, but got `" ++ pretty typeXObj ++ "`") (xobjInfo typeXObj))

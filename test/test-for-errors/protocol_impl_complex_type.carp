@@ -1,4 +1,4 @@
-(defprotocol Show
+(defprotocol (Show a) 
   [(show (Fn [a] String))])
 
 ;; SHOULD FAIL: impl-for currently only takes a Symbol (type name)
