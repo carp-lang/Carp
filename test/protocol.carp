@@ -53,11 +53,11 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (impl-for (MyBox a) MyOrd
-  (defn lt [a b]
-    (lt (MyBox.val a) (MyBox.val b)))
+  (defn lt [x y]
+    (lt (MyBox.val x) (MyBox.val y)))
   ;; Test interdependence: gt calls lt interface
-  (defn gt [a b]
-    (lt b a)))
+  (defn gt [x y]
+    (lt y x)))
 
 (impl-for (MyPair a b) MyShow
   (defn show [p]
@@ -67,6 +67,18 @@
         @" "
         (show (MyPair.second p))
         @")"])))
+
+(impl-for (Maybe Int) MyShow
+  (defn show [m]
+    (match @m
+      (Just x) (String.concat &[@"Maybe Int: " (Int.str x)])
+      Nothing @"Maybe Int: Nothing")))
+
+(impl-for (Maybe String) MyShow
+  (defn show [m]
+    (match @m
+      (Just x) (String.concat &[@"Maybe String: " x])
+      Nothing @"Maybe String: Nothing")))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; Person implementations
@@ -246,6 +258,18 @@
                   &@"(Pair 1 hi)"
                   &(show &pair)
                   "MyPair MyShow works for (MyPair Int String)"))
+
+  ;; Complex Type (Maybe Int, Maybe String) tests
+  (let [m1 (Just 10)
+        m2 (Just @"hi")]
+    (let [state (assert-equal protocol-test
+                              &@"Maybe Int: 10"
+                              &(show &m1)
+                              "Complex Type (Maybe Int) MyShow works")]
+      (assert-equal &state
+                    &@"Maybe String: hi"
+                    &(show &m2)
+                    "Complex Type (Maybe String) MyShow works")))
 
   ;; Nested MyBox Ord tests
   (let [nested1 (MyBox.init (MyBox.init 10))

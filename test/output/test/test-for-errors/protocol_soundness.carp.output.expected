@@ -1,1 +1,2 @@
-Core Primitives:0:0 Protocol signature mismatch for `add`. Expected `(Fn [BadNum, BadNum] BadNum)` but got `(Fn [a, b] Int)`.
+ Inferred Macro, can't unify with Int.
+/home/sqrew/Desktop/Carp-fork/test/test-for-errors/protocol_soundness.carp:7:3 Inferred (Fn [t0, t1] Int), can't unify with BadNum.

@@ -11,7 +11,7 @@ import Control.Monad.IO.Class (MonadIO, liftIO)
 import Data.Bifunctor
 import Data.Either (fromRight, isRight, rights)
 import Data.Functor ((<&>))
-import Data.List (foldl')
+import Data.List (foldl', intercalate)
 import Data.Maybe (fromJust, fromMaybe)
 import Deftype
 import Emit
@@ -578,7 +578,8 @@ primitiveImpl xobj ctx typeXObj protocolXObj =
                               _ -> getPath typeXObj
           typeName = case typeXObj of
                        (XObj (Sym (SymPath _ name) _) _ _) -> name
-                       (XObj (Lst (XObj (Sym (SymPath _ name) _) _ _ : _)) _ _) -> name
+                       (XObj (Lst (XObj (Sym (SymPath _ name) _) _ _ : args)) _ _) ->
+                         name ++ (if null args then "" else "_" ++ intercalate "_" (map pretty args))
                        _ -> pretty typeXObj
           implPath = SymPath (tPath ++ [typeName]) mname
           interfacePath = SymPath [] mname

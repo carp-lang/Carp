@@ -11,7 +11,7 @@ import Control.Monad.State
 import Control.Monad (foldM, when)
 import Data.Bits ((.&.))
 import Data.Either (fromRight)
-import Data.List (foldl', isSuffixOf)
+import Data.List (foldl', intercalate, isSuffixOf)
 import Data.List.Split (splitOn)
 import Data.Maybe (fromJust, fromMaybe, isJust)
 import Deftype (typeModuleStubBindings)
@@ -38,8 +38,10 @@ import System.Exit (ExitCode (..), exitSuccess, exitWith)
 import System.Process (readProcessWithExitCode)
 import qualified Text.Parsec as Parsec
 import TypeError
+import TypePredicates (isTypeGeneric)
 import Types
 import Util
+import Reify (reify)
 import Prelude hiding (exp, mod)
 
 -- Prefer dynamic bindings
@@ -435,29 +437,54 @@ primitiveDefmodule xobj ctx [] =
   pure (throwErr DefmoduleNoArgs ctx (xobjInfo xobj))
 
 primitiveImplFor :: VariadicPrimitiveCallback
-primitiveImplFor xobj ctx (typeXObj : protocolXObj : body) =
-  case typeNameFrom typeXObj of
-    Nothing -> pure (evalError ctx ("`impl-for` expects a type name as first argument, but got `" ++ pretty typeXObj ++ "`") (xobjInfo typeXObj))
-    Just typeName -> do
-      let oldPath = contextPath ctx
-          newPath = oldPath ++ [typeName]
-          ctxWithModule = ctx {contextPath = newPath}
-      (ctxAfterBody, result) <- foldM step (ctxWithModule, dynamicNil) body
-      case result of
-        Left err -> pure (ctxAfterBody, Left err)
-        Right _ ->
-          let ctxRestored = ctxAfterBody {contextPath = oldPath}
-           in primitiveImpl xobj ctxRestored typeXObj protocolXObj
-  where
-    typeNameFrom (XObj (Sym (SymPath _ name) _) _ _) = Just name
-    typeNameFrom (XObj (Lst (XObj (Sym (SymPath _ name) _) _ _ : _)) _ _) = Just name
-    typeNameFrom _ = Nothing
-    step (c, Left e) _ = pure (c, Left e)
-    step (c, Right _) m = eval c m PreferDynamic
+primitiveImplFor xobj ctx (typeXObj : protocolXObj@(XObj (Sym protocolPath _) _ _) : body) =
+  case lookupBinderInTypeEnv ctx protocolPath of
+    Left _ -> pure (evalError ctx ("Protocol not found: " ++ show protocolPath) (xobjInfo protocolXObj))
+    Right protocolBinder ->
+      case typeNameFrom typeXObj of
+        Nothing -> pure (evalError ctx ("`impl-for` expects a type name as first argument, but got `" ++ pretty typeXObj ++ "`") (xobjInfo typeXObj))
+        Just typeName -> do
+          let members = Meta.getBinderMetaValue "protocol-members" protocolBinder
+              vars = Meta.getBinderMetaValue "protocol-vars" protocolBinder
+              sigs = case (members, vars, xobjToTy typeXObj) of
+                       (Just (XObj (Lst ms) _ _), Just (XObj (Lst vs) _ _), Just concreteTy) ->
+                         if isTypeGeneric concreteTy
+                         then []
+                         else let varNames = map getSimpleName vs
+                                  typeXObjs = if length varNames > 1
+                                              then case typeXObj of
+                                                     (XObj (Lst xs) _ _) -> xs
+                                                     _ -> [typeXObj]
+                                              else [typeXObj]
+                                  typeTys = map (fromMaybe UnitTy . xobjToTy) typeXObjs
+                                  mappings = Map.fromList (zip varNames typeTys)
+                                  genSig (XObj (Lst [mnameX, mtyX]) _ _) =
+                                    case xobjToTy mtyX of
+                                      Just genericTy ->
+                                        let specializedTy = replaceTyVars mappings genericTy
+                                        in [XObj (Sym (SymPath [] "sig") Symbol) Nothing Nothing, mnameX, reify specializedTy]
+                                      _ -> []
+                                  genSig _ = []
+                              in map (\m -> XObj (Lst (genSig m)) (xobjInfo m) (Just MacroTy)) ms
+                       _ -> []
+          let bodyWithSigs = sigs ++ body
+              moduleNameXObj = XObj (Sym (SymPath [] typeName) Symbol) (xobjInfo typeXObj) Nothing
+          (ctxAfterModule, result) <- primitiveDefmodule xobj ctx (moduleNameXObj : bodyWithSigs)
+          case result of
+            Left err -> pure (ctxAfterModule, Left err)
+            Right _ -> primitiveImpl xobj ctxAfterModule typeXObj protocolXObj
+primitiveImplFor _ ctx (_ : protocolXObj : _) =
+  pure (evalError ctx ("`impl-for` expects a protocol name as second argument, but got `" ++ pretty protocolXObj ++ "`") (xobjInfo protocolXObj))
 primitiveImplFor xobj ctx [_] =
   pure (evalError ctx "`impl-for` expects at least two arguments (type and protocol)" (xobjInfo xobj))
 primitiveImplFor xobj ctx [] =
   pure (evalError ctx "`impl-for` expects at least two arguments (type and protocol)" (xobjInfo xobj))
+
+typeNameFrom :: XObj -> Maybe String
+typeNameFrom (XObj (Sym (SymPath _ name) _) _ _) = Just name
+typeNameFrom (XObj (Lst (XObj (Sym (SymPath _ name) _) _ _ : args)) _ _) =
+  Just (name ++ (if null args then "" else "_" ++ intercalate "_" (map pretty args)))
+typeNameFrom _ = Nothing
 
 --------------------------------------------------------------------------------
 -- Type pre-declaration
