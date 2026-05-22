@@ -455,7 +455,7 @@ primitiveImplFor xobj ctx (typeXObj : protocolXObj : body) =
     step (c, Left e) _ = pure (c, Left e)
     step (c, Right _) m = eval c m PreferDynamic
 primitiveImplFor xobj ctx [_] =
-  pure (evalError ctx ("`impl-for` expects at least two arguments (type and protocol)") (xobjInfo xobj))
+  pure (evalError ctx "`impl-for` expects at least two arguments (type and protocol)" (xobjInfo xobj))
 primitiveImplFor xobj ctx [] =
   pure (evalError ctx "`impl-for` expects at least two arguments (type and protocol)" (xobjInfo xobj))
 

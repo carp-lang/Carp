@@ -46,7 +46,7 @@
   (defn gt [a b] (Int.> @a @b)))
 
 (impl-for String MyShow
-  (defn show [s] (copy s)))
+  (defn show [s] (copy (the (Ref String) s))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; Generic implementations
@@ -244,13 +244,13 @@
   (let [pair (MyPair.init 1 @"hi")]
     (assert-equal protocol-test
                   &@"(Pair 1 hi)"
-                  &(MyPair.show &pair)
+                  &(show &pair)
                   "MyPair MyShow works for (MyPair Int String)"))
 
   ;; Nested MyBox Ord tests
   (let [nested1 (MyBox.init (MyBox.init 10))
         nested2 (MyBox.init (MyBox.init 20))]
     (assert-true protocol-test
-                 (MyBox.lt &nested1 &nested2)
+                 (lt &nested1 &nested2)
                  "Nested MyBox lt works"))
 )
