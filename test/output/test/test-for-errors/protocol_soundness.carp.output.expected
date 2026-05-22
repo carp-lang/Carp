@@ -1,0 +1,1 @@
+Core Primitives:0:0 Protocol signature mismatch for `add`. Expected `(Fn [BadNum, BadNum] BadNum)` but got `(Fn [a, b] Int)`.

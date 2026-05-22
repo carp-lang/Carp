@@ -6,7 +6,7 @@
 
 (deftype (MyBox a) [val a])
 
-(impl-for MyBox MyShow
+(impl-for (MyBox a) MyShow
   (defn show [c]
     (let [_ (MyBox.val c)]
       @"Box")))

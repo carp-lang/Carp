@@ -1,2 +1,1 @@
-[ERROR] [INTERFACE ERROR] Person.show : (Fn [a, b] String) doesn't match the interface signature (Fn [a] String)
-[INTERFACE ERROR] Person.show : (Fn [a, b] String) doesn't match the interface signature (Fn [a] String)
+Core Primitives:0:0 Protocol signature mismatch for `show`. Expected `(Fn [Person] String)` but got `(Fn [a, b] String)`.

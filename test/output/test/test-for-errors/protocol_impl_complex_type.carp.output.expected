@@ -1,1 +1,1 @@
-/home/sqrew/Desktop/Carp-fork/test/test-for-errors/protocol_impl_complex_type.carp:5:11 `impl-for` expects a type name as first argument, but got `(Maybe Int)`
+Core Primitives:0:0 Implementation not found for protocol member `show`: Maybe.show

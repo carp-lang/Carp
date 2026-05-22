@@ -435,22 +435,27 @@ primitiveDefmodule xobj ctx [] =
   pure (throwErr DefmoduleNoArgs ctx (xobjInfo xobj))
 
 primitiveImplFor :: VariadicPrimitiveCallback
-primitiveImplFor xobj ctx (typeXObj@(XObj (Sym (SymPath _ typeName) _) _ _) : protocolXObj : body) =
-  do
-    let oldPath = contextPath ctx
-        newPath = oldPath ++ [typeName]
-        ctxWithModule = ctx {contextPath = newPath}
-    (ctxAfterBody, result) <- foldM step (ctxWithModule, dynamicNil) body
-    case result of
-      Left err -> pure (ctxAfterBody, Left err)
-      Right _ ->
-        let ctxRestored = ctxAfterBody {contextPath = oldPath}
-         in primitiveImpl xobj ctxRestored typeXObj protocolXObj
+primitiveImplFor xobj ctx (typeXObj : protocolXObj : body) =
+  case typeNameFrom typeXObj of
+    Nothing -> pure (evalError ctx ("`impl-for` expects a type name as first argument, but got `" ++ pretty typeXObj ++ "`") (xobjInfo typeXObj))
+    Just typeName -> do
+      let oldPath = contextPath ctx
+          newPath = oldPath ++ [typeName]
+          ctxWithModule = ctx {contextPath = newPath}
+      (ctxAfterBody, result) <- foldM step (ctxWithModule, dynamicNil) body
+      case result of
+        Left err -> pure (ctxAfterBody, Left err)
+        Right _ ->
+          let ctxRestored = ctxAfterBody {contextPath = oldPath}
+           in primitiveImpl xobj ctxRestored typeXObj protocolXObj
   where
+    typeNameFrom (XObj (Sym (SymPath _ name) _) _ _) = Just name
+    typeNameFrom (XObj (Lst (XObj (Sym (SymPath _ name) _) _ _ : _)) _ _) = Just name
+    typeNameFrom _ = Nothing
     step (c, Left e) _ = pure (c, Left e)
     step (c, Right _) m = eval c m PreferDynamic
-primitiveImplFor _ ctx (typeXObj : _) =
-  pure (evalError ctx ("`impl-for` expects a type name as first argument, but got `" ++ pretty typeXObj ++ "`") (xobjInfo typeXObj))
+primitiveImplFor xobj ctx [_] =
+  pure (evalError ctx ("`impl-for` expects at least two arguments (type and protocol)") (xobjInfo xobj))
 primitiveImplFor xobj ctx [] =
   pure (evalError ctx "`impl-for` expects at least two arguments (type and protocol)" (xobjInfo xobj))
 

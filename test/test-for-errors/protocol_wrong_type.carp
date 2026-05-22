@@ -1,0 +1,7 @@
+(defprotocol MyShow
+  [(show (Fn [a] String))])
+
+(deftype Person [name String])
+
+(impl-for Person MyShow
+  (defn show [p] 123)) ;; Wrong return type, should be String

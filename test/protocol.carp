@@ -52,14 +52,14 @@
 ;; Generic implementations
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(impl-for MyBox MyOrd
+(impl-for (MyBox a) MyOrd
   (defn lt [a b]
     (lt (MyBox.val a) (MyBox.val b)))
   ;; Test interdependence: gt calls lt interface
   (defn gt [a b]
     (lt b a)))
 
-(impl-for MyPair MyShow
+(impl-for (MyPair a b) MyShow
   (defn show [p]
     (String.concat
       &[@"(Pair "
