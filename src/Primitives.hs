@@ -135,10 +135,10 @@ primitiveImplements _ ctx x@(XObj (Sym interface@(SymPath _ _) _) _ _) (XObj (Sy
     warn = emitWarning (show (NonExistentInterfaceWarning x))
     addToInterface :: Binder -> Binder -> IO (Context, Either EvalError XObj)
     addToInterface inter impl =
-      let (newCtx, maybeErr) = case registerInInterface ctx impl inter of
-            (Right nc, me) -> (nc, me)
-            _ -> error "primitives: failed to register in interface"
-       in maybe (updateMeta impl newCtx) (handleError newCtx impl) maybeErr
+      let (newCtx, maybeErr) = registerInInterface ctx impl inter
+       in case newCtx of
+            Right nc -> maybe (updateMeta impl nc) (handleError nc impl) maybeErr
+            Left _ -> error "primitives: failed to register in interface"
     handleError :: Context -> Binder -> InterfaceError -> IO (Context, Either EvalError XObj)
     handleError context impl e@(AlreadyImplemented _ oldImplPath _ _) =
       emitWarning (show e) >> pure (removeInterfaceFromImplements oldImplPath x context) >>= updateMeta impl
@@ -552,8 +552,8 @@ primitiveImpl xobj ctx typeXObj protocolXObj =
     typePath = getPath typeXObj
     registerAndProceed protocolPath protocolBinder =
       case Meta.getBinderMetaValue "protocol-members" protocolBinder of
-        Just (XObj (Lst members) _ _) -> do
-          (finalCtx, result) <- foldM (step protocolBinder) (ctx, dynamicNil) members
+        Just (XObj (Lst membersList) _ _) -> do
+          (finalCtx, result) <- foldM (step protocolBinder) (ctx, dynamicNil) membersList
           case result of
             Left err -> pure (finalCtx, Left err)
             Right _ ->
@@ -588,7 +588,9 @@ primitiveImpl xobj ctx typeXObj protocolXObj =
        in case lookupBinderInGlobalEnv c implPath of
             Left _ -> pure (evalError c ("Implementation not found for protocol member `" ++ mname ++ "`: " ++ show implPath) (xobjInfo xobj))
             Right implBinder ->
-              case (xobjTy (binderXObj implBinder), xobjToTy mtyXObj, Meta.getBinderMetaValue "protocol-vars" protocolBinder) of
+              if isMetaStub (binderXObj implBinder)
+              then pure (evalError c ("Implementation not found for protocol member `" ++ mname ++ "`: " ++ show implPath) (xobjInfo xobj))
+              else case (xobjTy (binderXObj implBinder), xobjToTy mtyXObj, Meta.getBinderMetaValue "protocol-vars" protocolBinder) of
                 (Just actualTy, Just genericTy, Just (XObj (Lst vars) _ _)) ->
                   let varNames = map getSimpleName vars
                       typeXObjs = if length varNames > 1
@@ -605,6 +607,10 @@ primitiveImpl xobj ctx typeXObj protocolXObj =
                 _ -> primitiveImplements xobj c interfaceXObj implXObj
     step _ (c, _) m =
       pure (evalError c ("Invalid protocol member in definition: " ++ pretty m) (xobjInfo m))
+
+isMetaStub :: XObj -> Bool
+isMetaStub (XObj (Lst (XObj MetaStub _ _ : _)) _ _) = True
+isMetaStub _ = False
 
 registerInternal :: Context -> String -> XObj -> Maybe String -> IO (Context, Either EvalError XObj)
 registerInternal ctx name ty override =

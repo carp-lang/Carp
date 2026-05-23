@@ -1,0 +1,9 @@
+(defprotocol (MyProtocol a)
+  [(member1 (Fn [(Ref a)] Int))
+   (member2 (Fn [(Ref a)] Int))])
+
+(deftype Person [age Int])
+
+;; This ONLY implements member1. Should fail!
+(impl-for Person MyProtocol
+  (defn member1 [p] @(Person.age p)))
