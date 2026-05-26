@@ -336,6 +336,14 @@ toC toCMode emitLines mutualGroup (Binder meta root) = renderEmitterState (execS
                               srcExpr = case lookupMode of
                                 LookupLocal (Capture _) -> "_env->" ++ pathToC path
                                 _ -> pathToC path
+                              -- Refs/pointers don't own their pointee, so the outer
+                              -- env's delete is already a no-op for them. Zeroing
+                              -- the source would also break repeat invocations of
+                              -- the outer closure (second call would see NULL).
+                              isBorrow = case forceTy xobj of
+                                RefTy _ _ -> True
+                                PointerTy _ -> True
+                                _ -> False
                            in do
                                 appendToSrc
                                   (addIndent indent ++ dstField ++ " = " ++ srcExpr ++ ";\n")
@@ -345,13 +353,14 @@ toC toCMode emitLines mutualGroup (Binder meta root) = renderEmitterState (execS
                                 -- delete is a no-op for this field — otherwise both envs
                                 -- would try to free the same heap data on teardown.
                                 case lookupMode of
-                                  LookupLocal (Capture _) ->
-                                    appendToSrc
-                                      ( addIndent indent ++ "memset(&" ++ srcExpr
-                                          ++ ", 0, sizeof("
-                                          ++ srcExpr
-                                          ++ "));\n"
-                                      )
+                                  LookupLocal (Capture _)
+                                    | not isBorrow ->
+                                      appendToSrc
+                                        ( addIndent indent ++ "memset(&" ++ srcExpr
+                                            ++ ", 0, sizeof("
+                                            ++ srcExpr
+                                            ++ "));\n"
+                                        )
                                   _ -> pure ()
                         _ -> appendToSrc ""
                   )
