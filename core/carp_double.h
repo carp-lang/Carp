@@ -1,4 +1,13 @@
+#ifndef CARP_DOUBLE_H
+#define CARP_DOUBLE_H
+
+#include <math.h>
+#include <float.h>
+#include <stdbool.h>
+#include <string.h>
+
 const double CARP_DBL_MAX = DBL_MAX;
+const double CARP_DBL_MIN = DBL_MIN;
 
 double Double__PLUS_(double x, double y) {
     return x + y;
@@ -29,47 +38,46 @@ double Double_copy(const double* x) {
     return *x;
 }
 
-// Double.toInt : Double -> Int
-int Double_to_MINUS_int(double x) {
-    return (int)x;
-}
-
 double Double_from_MINUS_int(int x) {
     return (double)x;
-}
-
-Long Double_to_MINUS_bytes(double x) {
-    Long y;
-    memcpy(&y, &x, sizeof(double));
-    return y;
-}
-
-float Double_to_MINUS_float(double x) {
-    return (float)x;
 }
 
 double Double_from_MINUS_float(float x) {
     return (double)x;
 }
 
-Long Double_to_MINUS_long(double x) {
-    return (Long)x;
-}
-
 double Double_from_MINUS_long(Long x) {
     return (double)x;
-}
-
-uint64_t Double_to_MINUS_uint64(double x) {
-    return (uint64_t)x;
 }
 
 double Double_from_MINUS_uint64(uint64_t x) {
     return (double)x;
 }
 
+int Double_to_MINUS_int(double x) {
+    return (int)x;
+}
+
+float Double_to_MINUS_float(double x) {
+    return (float)x;
+}
+
+Long Double_to_MINUS_long(double x) {
+    return (Long)x;
+}
+
+uint64_t Double_to_MINUS_uint64(double x) {
+    return (uint64_t)x;
+}
+
+Long Double_to_MINUS_bytes(double x) {
+    Long res;
+    memcpy(&res, &x, sizeof(double));
+    return res;
+}
+
 double Double_abs(double x) {
-    return x > 0.0 ? x : -x;
+    return fabs(x);
 }
 
 double Double_acos(double x) {
@@ -103,10 +111,7 @@ double Double_sin(double x) {
 double Double_tan(double x) {
     return tan(x);
 }
-<<<<<<< HEAD
-=======
 
->>>>>>> fix/missing-double-tan
 double Double_sinh(double x) {
     return sinh(x);
 }
@@ -159,6 +164,4 @@ double Double_mod(double x, double y) {
     return fmod(x, y);
 }
 
-double Double_tan(double x) {
-    return tan(x);
-}
+#endif
