@@ -100,6 +100,9 @@ double Double_sin(double x) {
     return sin(x);
 }
 
+double Double_tan(double x) {
+    return tan(x);
+}
 double Double_sinh(double x) {
     return sinh(x);
 }
