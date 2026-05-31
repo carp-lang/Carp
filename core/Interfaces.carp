@@ -74,8 +74,3 @@
 
 (definterface sign (Fn [a] a))
 
-(definterface round (Fn [a] Int))
-(definterface to-float (Fn [a] Float))
-(definterface to-long (Fn [a] Long))
-(definterface to-uint64 (Fn [a] Uint64))
-(definterface to-bytes (Fn [a] b))

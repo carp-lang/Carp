@@ -1,8 +1,8 @@
 #ifndef CARP_DOUBLE_H
 #define CARP_DOUBLE_H
 
-#include <math.h>
 #include <float.h>
+#include <math.h>
 #include <stdbool.h>
 #include <string.h>
 
