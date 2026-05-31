@@ -164,4 +164,8 @@ double Double_mod(double x, double y) {
     return fmod(x, y);
 }
 
+int Double_round(double x) {
+    return (int)round(x);
+}
+
 #endif
