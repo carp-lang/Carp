@@ -977,7 +977,9 @@ static WGPUGeomPipelineWrapper* wgpu_create_geom_pipeline(WGPUContext* ctx,
                                                               const char* vs_entry,
                                                               const char* fs_entry,
                                                               WGPUTextureFormat target_format,
-                                                              WGPUPrimitiveTopology topology) {
+                                                              WGPUPrimitiveTopology topology,
+                                                              uint32_t stride,
+                                                              WGPUVertexFormat attr1_format) {
     if (!ctx || !ctx->device) {
         wgpu_set_error("wgpu_create_geom_pipeline: null context or device");
         return NULL;
@@ -1017,21 +1019,21 @@ static WGPUGeomPipelineWrapper* wgpu_create_geom_pipeline(WGPUContext* ctx,
         return NULL;
     }
 
-    /* Vertex buffer layout: interleaved position (float32x3) + color (float32x3). */
+    /* Vertex buffer layout: interleaved data. */
     WGPUVertexAttribute attrs[2] = {
         {
-            .format         = WGPUVertexFormat_Float32x3,
+            .format         = (stride == 32) ? WGPUVertexFormat_Float32x4 : WGPUVertexFormat_Float32x3,
             .offset         = 0,
             .shaderLocation = 0,
         },
         {
-            .format         = WGPUVertexFormat_Float32x3,
-            .offset         = 12,
+            .format         = attr1_format,
+            .offset         = (stride == 32) ? 16 : 12,
             .shaderLocation = 1,
         },
     };
     WGPUVertexBufferLayout vb_layout = {
-        .arrayStride    = 24,
+        .arrayStride    = stride,
         .stepMode       = WGPUVertexStepMode_Vertex,
         .attributeCount = 2,
         .attributes     = attrs,
@@ -1126,7 +1128,8 @@ static WGPUGeomPipelineWrapper* wgpu_create_geom_pipeline_str(WGPUContext* ctx,
                                                                 const char* vs_entry,
                                                                 const char* fs_entry,
                                                                 const char* format_str,
-                                                                const char* topology_str) {
+                                                                const char* topology_str,
+                                                                uint32_t stride) {
     WGPUTextureFormat fmt = wgpu_parse_texture_format(format_str);
     if (fmt == WGPUTextureFormat_Undefined) {
         char buf[256];
@@ -1150,7 +1153,8 @@ static WGPUGeomPipelineWrapper* wgpu_create_geom_pipeline_str(WGPUContext* ctx,
         return NULL;
     }
 
-    return wgpu_create_geom_pipeline(ctx, shader, vs_entry, fs_entry, fmt, topo);
+    WGPUVertexFormat attr1_fmt = (stride == 32) ? WGPUVertexFormat_Float32x4 : WGPUVertexFormat_Float32x3;
+    return wgpu_create_geom_pipeline(ctx, shader, vs_entry, fs_entry, fmt, topo, stride, attr1_fmt);
 }
 
 static void wgpu_geom_pipeline_free(WGPUGeomPipelineWrapper* pipe) {

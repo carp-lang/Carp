@@ -323,7 +323,7 @@ Clear color is black.")
 
   ; -- Geometry pipeline -------------------------------------------
 
-  (register create-geom-pipeline-  (Fn [(Ptr WGPUContext) (Ptr CChar) (Ptr CChar) (Ptr CChar) (Ptr CChar) (Ptr CChar)]
+  (register create-geom-pipeline-  (Fn [(Ptr WGPUContext) (Ptr CChar) (Ptr CChar) (Ptr CChar) (Ptr CChar) (Ptr CChar) Int]
                                         (Ptr WGPUGeomPipelineWrapper))         "wgpu_create_geom_pipeline_str")
   (register free-geom-pipeline     (Fn [(Ptr WGPUGeomPipelineWrapper)] ())     "wgpu_geom_pipeline_free")
 
@@ -433,13 +433,14 @@ stride 24 bytes. Includes depth testing (Less) and one uniform buffer binding.
 `topology` is the primitive topology string (e.g. \"triangle-list\", \"point-list\").
 Returns (Success geom-pipeline) or (Error message).
 Call (WGPURender.free-geom-pipeline pipe) when done.")
-  (defn create-geom-pipeline [ctx wgsl vs-entry fs-entry format topology]
+  (defn create-geom-pipeline [ctx wgsl vs-entry fs-entry format topology stride]
     (let [p (create-geom-pipeline- ctx
                                    (String.cstr wgsl)
                                    (String.cstr vs-entry)
                                    (String.cstr fs-entry)
                                    (String.cstr format)
-                                   (String.cstr topology))]
+                                   (String.cstr topology)
+                                   stride)]
       (if (geom-pipeline-null?- p)
         (Result.Error (get-error))
         (Result.Success p))))
