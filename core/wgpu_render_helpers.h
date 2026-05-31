@@ -62,6 +62,16 @@ static WGPUTextureFormat wgpu_parse_texture_format(const char* name) {
     return WGPUTextureFormat_Undefined;
 }
 
+static WGPUPrimitiveTopology wgpu_parse_primitive_topology(const char* name) {
+    if (!name) return WGPUPrimitiveTopology_TriangleList;
+    if (strcmp(name, "point-list") == 0) return WGPUPrimitiveTopology_PointList;
+    if (strcmp(name, "line-list") == 0) return WGPUPrimitiveTopology_LineList;
+    if (strcmp(name, "line-strip") == 0) return WGPUPrimitiveTopology_LineStrip;
+    if (strcmp(name, "triangle-list") == 0) return WGPUPrimitiveTopology_TriangleList;
+    if (strcmp(name, "triangle-strip") == 0) return WGPUPrimitiveTopology_TriangleStrip;
+    return WGPUPrimitiveTopology_TriangleList;
+}
+
 /* ------------------------------------------------------------------ */
 /* Surface & Swapchain                                                 */
 /* ------------------------------------------------------------------ */
@@ -308,28 +318,13 @@ static WGPUSampler wgpu_create_sampler(WGPUContext* ctx) {
 /* ------------------------------------------------------------------ */
 
 static WGPURenderPipelineWrapper* wgpu_create_render_pipeline(WGPUContext* ctx,
-                                                                const char* wgsl_source,
+                                                                WGPUShaderModule shader,
                                                                 const char* vs_entry,
                                                                 const char* fs_entry,
-                                                                WGPUTextureFormat target_format) {
+                                                                WGPUTextureFormat target_format,
+                                                                WGPUPrimitiveTopology topology) {
     if (!ctx) {
         wgpu_set_error("wgpu_create_render_pipeline: null context");
-        return NULL;
-    }
-    if (target_format == WGPUTextureFormat_Undefined) {
-        wgpu_set_error("wgpu_create_render_pipeline: undefined target format");
-        return NULL;
-    }
-
-    /* Compile the shader module. */
-    WGPUShaderSourceWGSL wgsl = {
-        .chain = { .sType = WGPUSType_ShaderSourceWGSL },
-        .code  = { .data = wgsl_source, .length = strlen(wgsl_source) },
-    };
-    WGPUShaderModuleDescriptor shader_desc = { .nextInChain = &wgsl.chain };
-    WGPUShaderModule shader = wgpuDeviceCreateShaderModule(ctx->device, &shader_desc);
-    if (!shader) {
-        wgpu_set_error("wgpu_create_render_pipeline: shader compilation failed — check WGSL source");
         return NULL;
     }
 
@@ -356,7 +351,7 @@ static WGPURenderPipelineWrapper* wgpu_create_render_pipeline(WGPUContext* ctx,
             .buffers     = NULL,
         },
         .primitive = {
-            .topology         = WGPUPrimitiveTopology_TriangleList,
+            .topology         = topology,
             .stripIndexFormat = WGPUIndexFormat_Undefined,
             .frontFace        = WGPUFrontFace_CCW,
             .cullMode         = WGPUCullMode_None,
@@ -589,7 +584,20 @@ static WGPURenderPipelineWrapper* wgpu_create_render_pipeline_str(WGPUContext* c
         wgpu_set_error(buf);
         return NULL;
     }
-    return wgpu_create_render_pipeline(ctx, wgsl_source, vs_entry, fs_entry, fmt);
+
+    /* Compile shader module. */
+    WGPUShaderSourceWGSL wgsl = {
+        .chain = { .sType = WGPUSType_ShaderSourceWGSL },
+        .code  = { .data = wgsl_source, .length = strlen(wgsl_source) },
+    };
+    WGPUShaderModuleDescriptor shader_desc = { .nextInChain = &wgsl.chain };
+    WGPUShaderModule shader = wgpuDeviceCreateShaderModule(ctx->device, &shader_desc);
+    if (!shader) {
+        wgpu_set_error("wgpu_create_render_pipeline: shader compilation failed — check WGSL source");
+        return NULL;
+    }
+
+    return wgpu_create_render_pipeline(ctx, shader, vs_entry, fs_entry, fmt, WGPUPrimitiveTopology_TriangleList);
 }
 
 /* ------------------------------------------------------------------ */
@@ -927,32 +935,17 @@ static void wgpu_depth_texture_free(WGPUDepthTexture* dt) {
 /* ------------------------------------------------------------------ */
 
 static WGPUGeomPipelineWrapper* wgpu_create_geom_pipeline(WGPUContext* ctx,
-                                                            const char* wgsl_source,
-                                                            const char* vs_entry,
-                                                            const char* fs_entry,
-                                                            WGPUTextureFormat target_format) {
-    if (!ctx) {
-        wgpu_set_error("wgpu_create_geom_pipeline: null context");
-        return NULL;
-    }
-    if (target_format == WGPUTextureFormat_Undefined) {
-        wgpu_set_error("wgpu_create_geom_pipeline: undefined target format");
+                                                              WGPUShaderModule shader,
+                                                              const char* vs_entry,
+                                                              const char* fs_entry,
+                                                              WGPUTextureFormat target_format,
+                                                              WGPUPrimitiveTopology topology) {
+    if (!ctx || !ctx->device) {
+        wgpu_set_error("wgpu_create_geom_pipeline: null context or device");
         return NULL;
     }
 
-    /* Compile shader module. */
-    WGPUShaderSourceWGSL wgsl = {
-        .chain = { .sType = WGPUSType_ShaderSourceWGSL },
-        .code  = { .data = wgsl_source, .length = strlen(wgsl_source) },
-    };
-    WGPUShaderModuleDescriptor shader_desc = { .nextInChain = &wgsl.chain };
-    WGPUShaderModule shader = wgpuDeviceCreateShaderModule(ctx->device, &shader_desc);
-    if (!shader) {
-        wgpu_set_error("wgpu_create_geom_pipeline: shader compilation failed — check WGSL source");
-        return NULL;
-    }
-
-    /* Bind group layout: one uniform buffer at binding 0, visible to vertex+fragment. */
+    /* Bind group layout for standard geometry: set 0, binding 0 = uniform buffer. */
     WGPUBindGroupLayoutEntry bgl_entry = {
         .binding    = 0,
         .visibility = WGPUShaderStage_Vertex | WGPUShaderStage_Fragment,
@@ -1054,7 +1047,7 @@ static WGPUGeomPipelineWrapper* wgpu_create_geom_pipeline(WGPUContext* ctx,
             .buffers     = &vb_layout,
         },
         .primitive = {
-            .topology         = WGPUPrimitiveTopology_TriangleList,
+            .topology         = topology,
             .stripIndexFormat = WGPUIndexFormat_Undefined,
             .frontFace        = WGPUFrontFace_CCW,
             .cullMode         = WGPUCullMode_Back,
@@ -1094,7 +1087,8 @@ static WGPUGeomPipelineWrapper* wgpu_create_geom_pipeline_str(WGPUContext* ctx,
                                                                 const char* wgsl_source,
                                                                 const char* vs_entry,
                                                                 const char* fs_entry,
-                                                                const char* format_str) {
+                                                                const char* format_str,
+                                                                const char* topology_str) {
     WGPUTextureFormat fmt = wgpu_parse_texture_format(format_str);
     if (fmt == WGPUTextureFormat_Undefined) {
         char buf[256];
@@ -1104,7 +1098,21 @@ static WGPUGeomPipelineWrapper* wgpu_create_geom_pipeline_str(WGPUContext* ctx,
         wgpu_set_error(buf);
         return NULL;
     }
-    return wgpu_create_geom_pipeline(ctx, wgsl_source, vs_entry, fs_entry, fmt);
+    WGPUPrimitiveTopology topo = wgpu_parse_primitive_topology(topology_str);
+
+    /* Compile shader module. */
+    WGPUShaderSourceWGSL wgsl = {
+        .chain = { .sType = WGPUSType_ShaderSourceWGSL },
+        .code  = { .data = wgsl_source, .length = strlen(wgsl_source) },
+    };
+    WGPUShaderModuleDescriptor shader_desc = { .nextInChain = &wgsl.chain };
+    WGPUShaderModule shader = wgpuDeviceCreateShaderModule(ctx->device, &shader_desc);
+    if (!shader) {
+        wgpu_set_error("wgpu_create_geom_pipeline: shader compilation failed — check WGSL source");
+        return NULL;
+    }
+
+    return wgpu_create_geom_pipeline(ctx, shader, vs_entry, fs_entry, fmt, topo);
 }
 
 static void wgpu_geom_pipeline_free(WGPUGeomPipelineWrapper* pipe) {
