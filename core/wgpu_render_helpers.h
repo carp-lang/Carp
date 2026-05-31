@@ -1404,4 +1404,51 @@ static WGPUBindGroup wgpu_create_render_storage_uniform_bind_group(
     return bg;
 }
 
+static void wgpu_run_geom_pass_continue(WGPUFrameState* frame,
+                                         WGPUGeomPipelineWrapper* pipe,
+                                         WGPUBindGroup bind_group,
+                                         WGPUVertexBufferWrapper* vb,
+                                         WGPUDepthTexture* depth,
+                                         uint32_t vertex_count,
+                                         WGPURenderTexture* target) {
+    if (!frame || !pipe || !vb || !depth) return;
+
+    WGPUTextureView target_view = target ? target->view : frame->swapchain_view;
+
+    WGPURenderPassColorAttachment color_att = {
+        .view       = target_view,
+        .loadOp     = WGPULoadOp_Load,
+        .storeOp    = WGPUStoreOp_Store,
+        .clearValue = { .r = 0.0, .g = 0.0, .b = 0.0, .a = 1.0 },
+        .depthSlice = WGPU_DEPTH_SLICE_UNDEFINED,
+    };
+
+    WGPURenderPassDepthStencilAttachment depth_att = {
+        .view              = depth->view,
+        .depthLoadOp       = WGPULoadOp_Load,
+        .depthStoreOp      = WGPUStoreOp_Store,
+        .depthClearValue   = 1.0f,
+        .stencilLoadOp     = WGPULoadOp_Undefined,
+        .stencilStoreOp    = WGPUStoreOp_Undefined,
+        .depthReadOnly     = false,
+        .stencilReadOnly   = false,
+    };
+
+    WGPURenderPassDescriptor pass_desc = {
+        .colorAttachmentCount    = 1,
+        .colorAttachments        = &color_att,
+        .depthStencilAttachment  = &depth_att,
+    };
+
+    WGPURenderPassEncoder pass = wgpuCommandEncoderBeginRenderPass(frame->encoder, &pass_desc);
+    if (!pass) return;
+
+    wgpuRenderPassEncoderSetPipeline(pass, pipe->pipeline);
+    wgpuRenderPassEncoderSetBindGroup(pass, 0, bind_group, 0, NULL);
+    wgpuRenderPassEncoderSetVertexBuffer(pass, 0, vb->buffer, 0, vb->size);
+    wgpuRenderPassEncoderDraw(pass, vertex_count, 1, 0, 0);
+    wgpuRenderPassEncoderEnd(pass);
+    wgpuRenderPassEncoderRelease(pass);
+}
+
 #endif /* WGPU_RENDER_HELPERS_H */

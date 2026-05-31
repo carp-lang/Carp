@@ -346,9 +346,14 @@ Clear color is black.")
   ; -- Geometry pass (non-indexed) ---------------------------------
 
   (register run-geom-pass-         (Fn [(Ptr WGPUFrameState) (Ptr WGPUGeomPipelineWrapper)
-                                         WGPUBindGroup (Ptr WGPUVertexBufferWrapper)
-                                         (Ptr WGPUDepthTexture) Int (Ptr WGPURenderTexture)] ())
+                                          WGPUBindGroup (Ptr WGPUVertexBufferWrapper) (Ptr WGPUDepthTexture)
+                                          Uint32 (Ptr WGPURenderTexture)] ())
                                                                                "wgpu_run_geom_pass")
+  (register run-geom-pass-continue- (Fn [(Ptr WGPUFrameState) (Ptr WGPUGeomPipelineWrapper)
+                                          WGPUBindGroup (Ptr WGPUVertexBufferWrapper) (Ptr WGPUDepthTexture)
+                                          Uint32 (Ptr WGPURenderTexture)] ())
+                                                                               "wgpu_run_geom_pass_continue")
+
 
   ; -- Index buffer ------------------------------------------------
 
@@ -443,6 +448,12 @@ Clear color is black, depth clear value is 1.0.")
     (match target
       (Maybe.Just rt) (run-geom-pass- frame pipeline bind-group vertex-buffer depth vertex-count rt)
       (Maybe.Nothing)  (run-geom-pass- frame pipeline bind-group vertex-buffer depth vertex-count (null-render-texture))))
+
+  (doc run-geom-pass-continue "Executes a geometry pass that LOADS existing buffer data instead of clearing it.")
+  (defn run-geom-pass-continue [frame pipeline bind-group vertex-buffer depth vertex-count target]
+    (match target
+      (Maybe.Just rt) (run-geom-pass-continue- frame pipeline bind-group vertex-buffer depth vertex-count rt)
+      (Maybe.Nothing)  (run-geom-pass-continue- frame pipeline bind-group vertex-buffer depth vertex-count (null-render-texture))))
 
   (doc create-index-buffer "Creates a GPU index buffer from an (Array Int).
 Each element is treated as a uint32 index.
