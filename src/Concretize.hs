@@ -27,17 +27,19 @@ import AssignTypes
 import Constraints
 import Control.Applicative
 import Control.Monad.State
+import Control.Monad (foldM, unless)
 import Data.Either (fromRight)
 import Data.List (foldl')
 import Data.Maybe (fromMaybe)
 import Debug.Trace
-import Env (EnvironmentError, empty, envIsExternal, findTypeBinder, getBinder, insert, insertX, search)
+import Env (EnvironmentError, empty, envIsExternal, getBinder, insert, insertX, search, searchTypeDef)
 import Forms
 import Info
 import InitialTypes
 import Managed
 import qualified Map
 import Memory (manageMemory)
+import qualified Meta
 import Obj
 import Polymorphism
 import Reify
@@ -371,20 +373,28 @@ visitSymbol visited allowAmbig tenv env xobj@(SymPat path mode) =
     Right (foundEnv, binder)
       | envIsExternal foundEnv ->
         let theXObj = binderXObj binder
-            theType = fromMaybe (error "concretize: can't concretize a symbol without a type") $ xobjTy theXObj
-            typeOfVisited = fromMaybe (error ("Missing type on " ++ show xobj ++ " at " ++ prettyInfoFromXObj xobj ++ " when looking up path " ++ show path)) (xobjTy xobj)
-         in if --(trace $ "CHECKING " ++ getName xobj ++ " : " ++ show theType ++ " with visited type " ++ show typeOfVisited ++ " and visited definitions: " ++ show visitedDefinitions) $
-            (isTypeGeneric theType && not (isTypeGeneric typeOfVisited))
-              then case concretizeDefinition allowAmbig tenv env visited theXObj typeOfVisited of
-                Left err -> pure (Left err)
-                Right (concrete, deps) ->
-                  do
-                    modify (concrete :)
-                    modify (deps ++)
-                    pure (Right (XObj (Sym (getPath concrete) mode) (xobjInfo xobj) (xobjTy xobj)))
-              else pure (Right xobj)
+         in if isMetaStubXObj theXObj
+              then -- MetaStub: predeclared but not yet fully defined (forward reference or mutual recursion).
+              -- Skip concretization; the real definition will be available at emit time.
+                pure (Right xobj)
+              else
+                let theType = fromMaybe (error "concretize: can't concretize a symbol without a type") $ xobjTy theXObj
+                    typeOfVisited = fromMaybe (error ("Missing type on " ++ show xobj ++ " at " ++ prettyInfoFromXObj xobj ++ " when looking up path " ++ show path)) (xobjTy xobj)
+                 in if --(trace $ "CHECKING " ++ getName xobj ++ " : " ++ show theType ++ " with visited type " ++ show typeOfVisited ++ " and visited definitions: " ++ show visitedDefinitions) $
+                    (isTypeGeneric theType && not (isTypeGeneric typeOfVisited))
+                      then case concretizeDefinition allowAmbig tenv env visited theXObj typeOfVisited of
+                        Left err -> pure (Left err)
+                        Right (concrete, deps) ->
+                          do
+                            modify (concrete :)
+                            modify (deps ++)
+                            pure (Right (XObj (Sym (getPath concrete) mode) (xobjInfo xobj) (xobjTy xobj)))
+                      else pure (Right xobj)
       | otherwise -> pure (Right xobj)
     _ -> pure (Right xobj)
+  where
+    isMetaStubXObj (XObj (Lst (XObj MetaStub _ _ : _)) _ _) = True
+    isMetaStubXObj _ = False
 visitSymbol _ _ _ _ x = pure (Left (CannotConcretize x))
 
 -- | Concretely type a context-dependent multi-symbol.
@@ -552,7 +562,7 @@ concretizeType typeEnv env arrayTy@(StructTy (ConcreteNameTy (SymPath [] "Static
       deps <- mapM (concretizeType typeEnv env) varTys
       Right (defineStaticArrayTypeAlias arrayTy : concat deps)
 concretizeType typeEnv env genericStructTy@(StructTy (ConcreteNameTy path@(SymPath _ name)) _) =
-  case (getBinder typeEnv name) <> (findTypeBinder env path) of
+  case (getBinder typeEnv name) <> (searchTypeDef (TypeEnv env) path) of
     Right (Binder _ x) -> go x
     _ -> Right []
   where
@@ -625,7 +635,10 @@ instantiateGenericStructType typeEnv env originalStructTy@(StructTy _ _) generic
           validMembers = replaceGenericTypeSymbolsOnMembers mappings' nameFixedMembers
           concretelyTypedMembers = replaceGenericTypeSymbolsOnMembers mappings memberXObjs
           sname = getStructName originalStructTy
-      candidate <- TC.mkStructCandidate sname renamedOrig typeEnv env validMembers (getPathFromStructName sname)
+      let concreteVars = case genericStructTy of
+            StructTy _ vs -> vs
+            _ -> renamedOrig
+      candidate <- TC.mkStructCandidate sname concreteVars typeEnv env validMembers (getPathFromStructName sname)
       validateType (TC.setRestriction candidate TC.AllowAny)
       deps <- mapM (depsForStructMemberPair typeEnv env) (pairwise concretelyTypedMembers)
       let xobj =
@@ -663,7 +676,10 @@ instantiateGenericSumtype typeEnv env originalStructTy@(StructTy _ originalTyVar
         let concretelyTypedCases = map (replaceGenericTypeSymbolsOnCase mappings) nameFixedCases
             sname = (getStructName originalStructTy)
         deps <- mapM (depsForCase typeEnv env) concretelyTypedCases
-        candidate <- TC.mkSumtypeCandidate sname renamedOrig typeEnv env concretelyTypedCases (getPathFromStructName sname)
+        let concreteVars = case genericStructTy of
+              StructTy _ vs -> vs
+              _ -> renamedOrig
+        candidate <- TC.mkSumtypeCandidate sname concreteVars typeEnv env concretelyTypedCases (getPathFromStructName sname)
         validateType (TC.setRestriction candidate TC.AllowAny)
         pure
           ( XObj
@@ -827,20 +843,45 @@ concretizeDefinition allowAmbiguity typeEnv globalEnv visitedDefinitions definit
 -- | Find all the dependencies of a polymorphic function with a name and a desired concrete type.
 depsOfPolymorphicFunction :: TypeEnv -> Env -> [SymPath] -> String -> Ty -> [XObj]
 depsOfPolymorphicFunction typeEnv env visitedDefinitions functionName functionType =
-  case allImplementations typeEnv env functionName functionType of
-    [] ->
-      (trace $ "[Warning] No '" ++ functionName ++ "' function found with type " ++ show functionType ++ ".")
-        []
-    -- TODO: this code was added to solve a bug (presumably) but it seems OK to comment it out?!
-    -- [(_, (Binder xobj@(XObj (Lst (XObj (Instantiate template) _ _ : _)) _ _)))] ->
-    --   []
-    [(_, Binder _ single)] ->
-      case concretizeDefinition False typeEnv env visitedDefinitions single functionType of
-        Left err -> error (show err)
-        Right (ok, deps) -> ok : deps
-    tooMany ->
-      (trace $ "Too many '" ++ functionName ++ "' functions found with type " ++ show functionType ++ ", can't figure out dependencies:\n  " ++ joinWith "\n  " (map ((" - " ++) . show . snd) tooMany))
-        []
+  let concretizeCandidate (Binder _ single) =
+        case concretizeDefinition False typeEnv env visitedDefinitions single functionType of
+          Left err -> error (show err)
+          Right (ok, deps) -> ok : deps
+   in case allImplementations typeEnv env functionName functionType of
+        [] ->
+          (trace $ "[Warning] No '" ++ functionName ++ "' function found with type " ++ show functionType ++ ".")
+            []
+        -- TODO: this code was added to solve a bug (presumably) but it seems OK to comment it out?!
+        -- [(_, (Binder xobj@(XObj (Lst (XObj (Instantiate template) _ _ : _)) _ _)))] ->
+        --   []
+        [(_, Binder meta single)] ->
+          if Meta.member "stub" meta
+            then []
+            else concretizeCandidate (Binder meta single)
+        tooMany ->
+          let nonStub = filter (\(_, Binder meta _) -> not (Meta.member "stub" meta)) tooMany
+              typeVarCount (_, Binder _ single) =
+                case xobjTy single of
+                  Just t -> length (typeVariablesInOrderOfAppearance t)
+                  Nothing -> maxBound :: Int
+              mostSpecificNonStub =
+                case nonStub of
+                  [] -> []
+                  _ ->
+                    let minCount = minimum (map typeVarCount nonStub)
+                     in filter (\candidate -> typeVarCount candidate == minCount) nonStub
+              selected =
+                case mostSpecificNonStub of
+                  [x] -> Just x
+                  _ ->
+                    case nonStub of
+                      [x] -> Just x
+                      _ -> Nothing
+           in case selected of
+                Just (_, binder) -> concretizeCandidate binder
+                Nothing ->
+                  (trace $ "Too many '" ++ functionName ++ "' functions found with type " ++ show functionType ++ ", can't figure out dependencies:\n  " ++ joinWith "\n  " (map ((" - " ++) . show . snd) tooMany))
+                    []
 
 -- | Helper for finding the 'delete' function for a type.
 depsForDeleteFunc :: TypeEnv -> Env -> Ty -> [XObj]

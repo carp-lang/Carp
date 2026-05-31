@@ -1,0 +1,2 @@
+recursive_type_by_value_mutual.carp:3:10  Recursive type `A` appears by value in member type `B`. Use `Ptr` or `Box`.
+recursive_type_by_value_mutual.carp:4:10  Recursive type `B` appears by value in member type `A`. Use `Ptr` or `Box`.

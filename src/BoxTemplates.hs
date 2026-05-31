@@ -127,7 +127,7 @@ copy =
             [ "$DECL {",
               "  $t* copy;",
               "  copy = CARP_MALLOC(sizeof($t));",
-              "  *copy = *box;",
+              "  *copy = **box;",
               "  return copy;",
               "}"
             ]
@@ -178,18 +178,17 @@ delete =
 prn :: (String, Binder)
 prn =
   let path = SymPath ["Box"] "prn"
-      t = FuncTy [boxTy] StringTy StaticLifetimeTy
+      t = FuncTy [(RefTy boxTy (VarTy "q"))] StringTy StaticLifetimeTy
       docs = "Returns a string representation of a Box."
-      decl = templateLiteral "String $NAME ($t* box)"
       templateCreator =
         TemplateCreator $
           ( \tenv env ->
               Template
                 t
-                decl
+                (templateLiteral "String $NAME ($t** box)")
                 ( \ft ->
                     case ft of
-                      (FuncTy [boxT] StringTy _) ->
+                      (FuncTy [RefTy boxT _] StringTy _) ->
                         multilineTemplate
                           [ "$DECL {",
                             "  if(!box){",
@@ -205,7 +204,7 @@ prn =
                 )
                 ( \ft ->
                     case ft of
-                      (FuncTy [(StructTy (ConcreteNameTy (SymPath [] "Box")) [inner])] StringTy _) ->
+                      (FuncTy [RefTy (StructTy (ConcreteNameTy (SymPath [] "Box")) [inner]) _] StringTy _) ->
                         depsForPrnFunc tenv env inner
                       _ -> error "box tempaltes: prn called with non box"
                 )

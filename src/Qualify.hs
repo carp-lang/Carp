@@ -399,19 +399,30 @@ qualifySym typeEnv globalEnv localEnv xobj@(XObj (Sym path@(SymPath _ name) _) i
               InternalEnv -> pure (XObj (Sym (getPath xobj') (LookupLocal (captureOrNot found origin))) i t)
               ExternalEnv -> pure (XObj (Sym (getPath xobj') modality) i t)
     resolveMulti :: (Show e, E.Environment e) => SymPath -> [(e, Binder)] -> Either QualificationError XObj
-    resolveMulti _ [] =
-      Left (FailedToFindSymbol xobj)
-    resolveMulti _ [(e, b)] =
-      resolve (E.prj e) (E.prj e) b
     resolveMulti spath xs =
-      let localOnly = remove (E.envIsExternal . fst) xs
-          paths = map (getModuleSym . (second binderXObj)) xs
-       in case localOnly of
-            [] -> case spath of
-              (SymPath [] _) ->
-                Right $ XObj (MultiSym name paths) i t
-              _ -> Left (QualifiedMulti spath)
-            ys -> Left (LocalMulti spath (map (first E.prj) ys))
+      case dedupeCandidates xs of
+        [] ->
+          Left (FailedToFindSymbol xobj)
+        [(e, b)] ->
+          resolve (E.prj e) (E.prj e) b
+        deduped ->
+          let localOnly = remove (E.envIsExternal . fst) deduped
+              paths = map (getModuleSym . binderXObj . snd) deduped
+           in case localOnly of
+                [] -> case spath of
+                  (SymPath [] _) ->
+                    Right $ XObj (MultiSym name paths) i t
+                  _ -> Left (QualifiedMulti spath)
+                ys -> Left (LocalMulti spath (map (first E.prj) ys))
+    dedupeCandidates :: (E.Environment e) => [(e, Binder)] -> [(e, Binder)]
+    dedupeCandidates = go Set.empty
+      where
+        go _ [] = []
+        go seen (candidate@(_, binder) : rest) =
+          let candidatePath = getModuleSym (binderXObj binder)
+           in if Set.member candidatePath seen
+                then go seen rest
+                else candidate : go (Set.insert candidatePath seen) rest
     nakedInit :: Env -> Either QualificationError XObj
     nakedInit e =
       maybe
@@ -421,7 +432,7 @@ qualifySym typeEnv globalEnv localEnv xobj@(XObj (Sym path@(SymPath _ name) _) i
             >>= \name' ->
               pure (XObj (Sym (SymPath ((init (pathToEnv e)) ++ [name']) "init") (LookupGlobal CarpLand AFunction)) i t)
         )
-    getModuleSym (_, x) =
+    getModuleSym x =
       case x of
         XObj (Mod ev _) _ _ ->
           fromRight

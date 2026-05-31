@@ -1,0 +1,7 @@
+(Project.config "file-path-print-length" "short")
+
+; sig declares 3 args with shared lifetime but defn has 2
+(sig too-many (Fn [(Ref String a) (Ref String a) (Ref String a)] String))
+(defn too-many [x y] (StringCopy.append x y))
+
+(defn main [] (IO.println &(too-many &@"a" &@"b")))

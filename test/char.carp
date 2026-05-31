@@ -142,4 +142,19 @@
                 \A
                 (from-byte 65b)
                 "from-byte works as expected")
+  (assert-true test
+               (whitespace? \space)
+               "whitespace? works for space")
+  (assert-true test
+               (whitespace? \tab)
+               "whitespace? works for tab")
+  (assert-true test
+               (whitespace? \newline)
+               "whitespace? works for newline")
+  (assert-true test
+               (whitespace? \return)
+               "whitespace? works for return")
+  (assert-false test
+                (whitespace? \a)
+                "whitespace? returns false for non-whitespace")
 )

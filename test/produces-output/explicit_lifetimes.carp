@@ -1,0 +1,53 @@
+(Project.no-echo)
+
+; Test: explicit lifetime variable on Ref in sig — shared lifetime.
+(sig same-lifetime-refs (Fn [(Ref String a) (Ref String a)] String))
+(defn same-lifetime-refs [x y]
+  (StringCopy.append x y))
+
+; Test: distinct lifetime variables on Ref in sig.
+(sig different-lifetime-refs (Fn [(Ref String a) (Ref String b)] String))
+(defn different-lifetime-refs [x y]
+  (StringCopy.append x y))
+
+; Test: chain of functions threading a ref through, sharing lifetime 'a'.
+(sig ref-identity (Fn [(Ref String a)] (Ref String a)))
+(defn ref-identity [x] x)
+
+(sig ref-chain (Fn [(Ref String a)] (Ref String a)))
+(defn ref-chain [x] (ref-identity (ref-identity x)))
+
+; Test: higher-order function with lifetime-annotated closure.
+(sig apply-ref-fn (Fn [(Ref (Fn [(Ref String a)] (Ref String a) b) c) (Ref String a)] (Ref String a)))
+(defn apply-ref-fn [f x] (~f x))
+
+; Test: struct field access with shared lifetime.
+(deftype LifetimePair [fst String snd String])
+
+(sig get-fst (Fn [(Ref LifetimePair a)] (Ref String a)))
+(defn get-fst [p] (LifetimePair.fst p))
+
+(sig get-snd (Fn [(Ref LifetimePair a)] (Ref String a)))
+(defn get-snd [p] (LifetimePair.snd p))
+
+; Test: copy from lifetime-annotated ref.
+(sig copy-via-ref (Fn [(Ref String a)] String))
+(defn copy-via-ref [x] @x)
+
+; Test: explicit lifetime on Fn type (closure capture lifetime).
+(sig apply-closure (Fn [(Ref (Fn [] String a) b)] String))
+(defn apply-closure [f] (~f))
+
+(defn-do main []
+  (IO.println &(same-lifetime-refs &@"hello " &@"world"))
+  (IO.println &(different-lifetime-refs &@"foo" &@"bar"))
+  (let-do [s @"chained"]
+    (IO.println (ref-chain &s)))
+  (let-do [s @"higher-order"]
+    (IO.println (apply-ref-fn &ref-identity &s)))
+  (let-do [p (LifetimePair.init @"left" @"right")]
+    (IO.println (get-fst &p))
+    (IO.println (get-snd &p)))
+  (IO.println &(copy-via-ref &@"copied"))
+  (let-do [s @"captured"]
+    (IO.println &(apply-closure &(fn [] @&s)))))

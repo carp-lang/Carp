@@ -1,0 +1,13 @@
+;; Mutual TCO: is-even / is-odd with deep recursion
+(defn is-even [n]
+  (if (= n 0) true (is-odd (- n 1))))
+
+(defn is-odd [n]
+  (if (= n 0) false (is-even (- n 1))))
+
+(defn main []
+  (do
+    (IO.println &(Bool.str (is-even 10000000)))
+    (IO.println &(Bool.str (is-odd 10000000)))
+    (IO.println &(Bool.str (is-even 0)))
+    (IO.println &(Bool.str (is-odd 1)))))

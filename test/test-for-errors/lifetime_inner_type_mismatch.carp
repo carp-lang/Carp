@@ -1,0 +1,7 @@
+(Project.config "file-path-print-length" "short")
+
+; sig says return (Ref Int a) but body returns (Ref String a)
+(sig wrong-inner-type (Fn [(Ref String a)] (Ref Int a)))
+(defn wrong-inner-type [x] x)
+
+(defn main [] (ignore (wrong-inner-type &@"hi")))

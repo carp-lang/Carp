@@ -1,0 +1,308 @@
+(Project.no-echo)
+
+(deftype Json
+  JNull
+  (JBool [Bool])
+  (JNumber [Double])
+  (JString [String])
+  (JArray [(Array (Box Json))])
+  (JObject [(Array (Pair String (Box Json)))])
+)
+
+(defn ok [x]
+  (Result.Success x))
+
+(defn err [msg]
+  (Result.Error msg))
+
+(defn whitespace? [c]
+  (or (= c \space)
+      (= c \tab)
+      (= c \newline)
+      (= c \return)))
+
+(defn char-at-safe [s i]
+  (if (< i (String.length s))
+    (Maybe.Just (String.char-at s i))
+    (Maybe.Nothing)))
+
+(defn skip-ws [s i]
+  (match (char-at-safe s i)
+    (Maybe.Just c) (if (whitespace? c) (skip-ws s (Int.inc i)) i)
+    (Maybe.Nothing) i))
+
+(defn parse-literal [s i literal value]
+  (let [lit-len (String.length literal)
+        end (+ i lit-len)]
+    (if (> end (String.length s))
+      (err @"Unexpected end of input")
+      (if (= literal &(String.slice s i end))
+        (ok (Pair.init value end))
+        (err @"Unexpected literal")))))
+
+(defn escape-for-string [c]
+  (case c
+    \" (Maybe.Just \" )
+    \\ (Maybe.Just \\ )
+    \/ (Maybe.Just \/ )
+    \b (Maybe.Just \backspace)
+    \f (Maybe.Just \formfeed)
+    \n (Maybe.Just \newline)
+    \r (Maybe.Just \return)
+    \t (Maybe.Just \tab)
+    (Maybe.Nothing)))
+
+(defn parse-string-chars [s i acc]
+  (match (char-at-safe s i)
+    (Maybe.Nothing) (err @"Unterminated string")
+    (Maybe.Just c)
+      (if (= c \" )
+        (ok (Pair.init (String.from-chars &acc) (Int.inc i)))
+        (if (= c \\)
+          (match (char-at-safe s (Int.inc i))
+            (Maybe.Nothing) (err @"Unterminated escape")
+            (Maybe.Just esc)
+              (match (escape-for-string esc)
+                (Maybe.Nothing) (err @"Unsupported escape")
+                (Maybe.Just out)
+                  (do
+                    (Array.push-back! &acc out)
+                    (parse-string-chars s (+ i 2) acc))))
+          (do
+            (Array.push-back! &acc c)
+            (parse-string-chars s (Int.inc i) acc))))))
+
+(defn parse-string [s i]
+  (if (= (String.char-at s i) \" )
+    (parse-string-chars s (Int.inc i) (the (Array Char) []))
+    (err @"Expected string")))
+
+(defn scan-number [s i saw-dot saw-digit]
+  (match (char-at-safe s i)
+    (Maybe.Nothing) (Pair.init i saw-digit)
+    (Maybe.Just c)
+      (if (Char.num? c)
+        (scan-number s (Int.inc i) saw-dot true)
+        (if (and (= c \. ) (not saw-dot))
+          (scan-number s (Int.inc i) true saw-digit)
+          (Pair.init i saw-digit)))))
+
+(defn parse-number [s i]
+  (let [start i
+        first (String.char-at s i)
+        j (if (= first \- ) (Int.inc i) i)
+        scan (scan-number s j false false)
+        end @(Pair.a &scan)
+        saw-digit @(Pair.b &scan)]
+    (if (not saw-digit)
+      (err @"Invalid number")
+      (let [num-str (String.slice s start end)]
+        (match (Double.from-string &num-str)
+          (Maybe.Nothing) (err @"Invalid number")
+          (Maybe.Just n) (ok (Pair.init (Box.init (Json.JNumber n)) end)))))))
+
+(register parse-value (Fn [&String Int] (Result (Pair (Box Json) Int) String)))
+
+(defn parse-array-elements [s i acc]
+  (match (parse-value s i)
+    (Result.Error e) (Result.Error e)
+    (Result.Success res)
+      (let [val @(Pair.a &res)
+            next (skip-ws s @(Pair.b &res))]
+        (do
+          (Array.push-back! &acc val)
+          (match (char-at-safe s next)
+            (Maybe.Just c)
+              (if (= c \])
+                (ok (Pair.init (Box.init (Json.JArray acc)) (Int.inc next)))
+                (if (= c \,)
+                  (parse-array-elements s (skip-ws s (Int.inc next)) acc)
+                  (err @"Expected ',' or ']'")))
+            _
+              (err @"Expected ',' or ']'"))))))
+
+(defn parse-array [s i]
+  (let [start (skip-ws s (Int.inc i))]
+    (match (char-at-safe s start)
+      (Maybe.Just c)
+        (if (= c \])
+          (ok (Pair.init (Box.init (Json.JArray (the (Array (Box Json)) []))) (Int.inc start)))
+          (parse-array-elements s start (the (Array (Box Json)) [])))
+      (Maybe.Nothing)
+        (err @"Unexpected end of input"))))
+
+(defn parse-object-members [s i acc]
+  (let [i0 (skip-ws s i)]
+    (match (parse-string s i0)
+      (Result.Error e) (Result.Error e)
+      (Result.Success key-res)
+        (let [key @(Pair.a &key-res)
+              after-key (skip-ws s @(Pair.b &key-res))]
+          (match (char-at-safe s after-key)
+            (Maybe.Just c)
+              (if (= c \:)
+                (match (parse-value s (skip-ws s (Int.inc after-key)))
+                  (Result.Error e) (Result.Error e)
+                  (Result.Success val-res)
+                    (let [val @(Pair.a &val-res)
+                          next (skip-ws s @(Pair.b &val-res))]
+                      (do
+                        (Array.push-back! &acc (Pair.init key val))
+                        (match (char-at-safe s next)
+                          (Maybe.Just c2)
+                            (if (= c2 \})
+                              (ok (Pair.init (Box.init (Json.JObject acc)) (Int.inc next)))
+                              (if (= c2 \,)
+                                (parse-object-members s (skip-ws s (Int.inc next)) acc)
+                                (err @"Expected ',' or '}'")))
+                          _
+                            (err @"Expected ',' or '}'")))))
+                (err @"Expected ':'"))
+            _
+              (err @"Expected ':'"))))))
+
+(defn parse-object [s i]
+  (let [start (skip-ws s (Int.inc i))]
+    (match (char-at-safe s start)
+      (Maybe.Just c)
+        (if (= c \})
+          (ok (Pair.init (Box.init (Json.JObject (the (Array (Pair String (Box Json))) []))) (Int.inc start)))
+          (parse-object-members s start (the (Array (Pair String (Box Json))) [])))
+      (Maybe.Nothing)
+        (err @"Unexpected end of input"))))
+
+(defn parse-value [s i]
+  (let [j (skip-ws s i)]
+    (match (char-at-safe s j)
+      (Maybe.Nothing) (err @"Unexpected end of input")
+      (Maybe.Just c)
+        (if (= c \" )
+          (match (parse-string s j)
+            (Result.Error e) (Result.Error e)
+            (Result.Success res)
+              (let [str @(Pair.a &res)
+                    next @(Pair.b &res)]
+                (ok (Pair.init (Box.init (Json.JString str)) next))))
+          (if (= c \[) (parse-array s j)
+            (if (= c \{) (parse-object s j)
+              (if (= c \t) (parse-literal s j "true" (Box.init (Json.JBool true)))
+                (if (= c \f) (parse-literal s j "false" (Box.init (Json.JBool false)))
+                  (if (= c \n) (parse-literal s j "null" (Box.init (Json.JNull)))
+                    (if (or (= c \- ) (Char.num? c))
+                      (parse-number s j)
+                      (err @"Unexpected token")))))))))))
+
+(defn parse-json [s]
+  (match (parse-value s 0)
+    (Result.Error e) (Result.Error e)
+    (Result.Success res)
+      (let [end (skip-ws s @(Pair.b &res))]
+        (if (< end (String.length s))
+          (err @"Trailing characters")
+          (ok @(Pair.a &res))))))
+
+(defn escape-char [c]
+  (let [ch @c]
+    (case ch
+      \" @"\\\""
+      \\ @"\\\\"
+      \newline @"\\n"
+      \tab @"\\t"
+      \return @"\\r"
+      \backspace @"\\b"
+      \formfeed @"\\f"
+      (Char.str ch))))
+
+(defn escape-string [s]
+  (String.concat &(Array.copy-map &escape-char &(String.chars &s))))
+
+(defn quote-string [s]
+  (let [escaped (escape-string s)]
+    (String.concat &[@"\"" escaped @"\""])))
+
+(defn indentation [level]
+  (String.repeat (* level 2) " "))
+
+(register pretty-json (Fn [&Json Int] String))
+
+(defn build-array-lines [arr indent]
+  (let-do [inner (Int.inc indent)
+           pad (indentation inner)
+           len (Array.length &arr)
+           last (Int.dec len)
+           lines (the (Array String) [])
+           comma @","]
+    (for [i 0 len]
+      (let-do [item (Array.unsafe-nth &arr i)
+               item-str (pretty-json (Box.peek item) inner)]
+        (if (< i last)
+          (Array.push-back! &lines (String.append &(String.concat &[(String.copy &pad) item-str]) &comma))
+          (Array.push-back! &lines (String.concat &[(String.copy &pad) item-str])))))
+    lines))
+
+(defn pretty-array [arr indent]
+  (if (= 0 (Array.length &arr))
+    @"[]"
+    (let [lines (build-array-lines arr indent)
+          newline @"\n"
+          body (String.join &newline &lines)
+          close-pad (indentation indent)
+          open @"["
+          close-bracket @"]"
+          close (String.append &close-pad &close-bracket)
+          out1 (String.append &open &newline)
+          out2 (String.append &out1 &body)
+          out3 (String.append &out2 &newline)
+          out4 (String.append &out3 &close)]
+      out4)))
+
+(defn build-object-lines [pairs indent]
+  (let-do [inner (Int.inc indent)
+           pad (indentation inner)
+           len (Array.length &pairs)
+           last (Int.dec len)
+           lines (the (Array String) [])
+           comma @","]
+    (for [i 0 len]
+      (let-do [p (Array.unsafe-nth &pairs i)
+               key @(Pair.a p)
+               val (Pair.b p)
+               key-str (quote-string key)
+               val-str (pretty-json (Box.peek val) inner)]
+        (if (< i last)
+          (Array.push-back! &lines (String.append &(String.concat &[(String.copy &pad) key-str @": " val-str]) &comma))
+          (Array.push-back! &lines (String.concat &[(String.copy &pad) key-str @": " val-str])))))
+    lines))
+
+(defn pretty-object [pairs indent]
+  (if (= 0 (Array.length &pairs))
+    @"{}"
+    (let [lines (build-object-lines pairs indent)
+          newline @"\n"
+          body (String.join &newline &lines)
+          close-pad (indentation indent)
+          open @"{"
+          close-brace @"}"
+          close (String.append &close-pad &close-brace)
+          out1 (String.append &open &newline)
+          out2 (String.append &out1 &body)
+          out3 (String.append &out2 &newline)
+          out4 (String.append &out3 &close)]
+      out4)))
+
+(defn pretty-json [j indent]
+  (match @j
+    (Json.JNull) @"null"
+    (Json.JBool b) (if b @"true" @"false")
+    (Json.JNumber n) (Double.str n)
+    (Json.JString s) (quote-string s)
+    (Json.JArray arr) (pretty-array arr indent)
+    (Json.JObject pairs) (pretty-object pairs indent)))
+
+(defn main []
+  (let [input @"{\"ok\": true, \"nums\": [1, 2.5, null], \"msg\": \"hi\"}"]
+    (match (parse-json &input)
+      (Result.Error e)
+        (println* @"Parse error: " e)
+      (Result.Success json-box)
+        (println* (pretty-json (Box.peek &json-box) 0)))))

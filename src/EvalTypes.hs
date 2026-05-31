@@ -1,6 +1,7 @@
 module EvalTypes
   ( LookupPreference (..),
     EvalExecMode (..),
+    EvalPhase (..),
   )
 where
 
@@ -12,6 +13,11 @@ data EvalExecMode
   = ExecFunction
   | ExecDynamic
   | ExecMacro
+  deriving (Show, Eq)
+
+data EvalPhase
+  = PhaseExecute
+  | PhaseExpand
   deriving (Show, Eq)
 
 data LookupPreference

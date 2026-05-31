@@ -1,4 +1,5 @@
 on:
+  workflow_dispatch:
   push:
     tags:
       - 'v*' # Push events to matching v*, i.e. v1.0, v20.15.10
@@ -31,7 +32,7 @@ jobs:
         run: echo ::set-output name=VERSION::${GITHUB_REF#refs/*/}
 
       - name: Checkout code
-        uses: actions/checkout@v2
+        uses: actions/checkout@v6
 
       - if: matrix.os == 'MacOS'
         uses: haskell-actions/setup@v2
@@ -60,7 +61,7 @@ jobs:
         run: scoop install llvm --global
 
       - if: matrix.os == 'Windows'
-        uses: actions/cache@v4
+        uses: actions/cache@v5
         name: Cache stack dependencies
         with:
           path: C:\\Users\\runneradmin\\AppData\\Local\\Programs\\stack
@@ -68,7 +69,7 @@ jobs:
           restore-keys: ${{ runner.os }}-stack-deps
 
       - if: matrix.os == 'Windows'
-        uses: actions/cache@v4
+        uses: actions/cache@v5
         name: Cache stack build
         with:
           path: C:\\Users\\runneradmin\\AppData\\Roaming\\stack\
@@ -80,7 +81,7 @@ jobs:
         run: "./scripts/release.sh carp-${{ steps.get_tag_name.outputs.VERSION }}-${{ matrix.artefact-name }} --noprompt"
 
       - name: Upload Artefact
-        uses: actions/upload-artifact@v2
+        uses: actions/upload-artifact@v7
         with:
           name: carp-${{ steps.get_tag_name.outputs.VERSION }}-${{ matrix.artefact-name }}.zip
           path: ./releases/carp-${{ steps.get_tag_name.outputs.VERSION }}-${{ matrix.artefact-name }}.zip
@@ -100,19 +101,19 @@ jobs:
         run: mkdir ./releases
 
       - name: Retrieve Windows artefact
-        uses: actions/download-artifact@v4.1.7
+        uses: actions/download-artifact@v8.0.1
         with:
           name: carp-${{ steps.get_tag_name.outputs.VERSION }}-x86_64-windows.zip
           path: ./releases
 
       - name: Retrieve MacOS artefact
-        uses: actions/download-artifact@v4.1.7
+        uses: actions/download-artifact@v8.0.1
         with:
           name: carp-${{ steps.get_tag_name.outputs.VERSION }}-x86_64-macos.zip
           path: ./releases
 
       - name: Retrieve Linux artefact
-        uses: actions/download-artifact@v4.1.7
+        uses: actions/download-artifact@v8.0.1
         with:
           name: carp-${{ steps.get_tag_name.outputs.VERSION }}-x86_64-linux.zip
           path: ./releases

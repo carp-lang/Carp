@@ -69,6 +69,52 @@ foo ; symbol
 (defmodule <name> <definition1> <definition2> ...) ;; The main way to organize your program into smaller parts
 ```
 
+Top-level `defn` and `def` forms can reference each other regardless of
+definition order within a file. This means you can call a function before it is
+defined, and mutually recursive functions work without any special declaration:
+
+```clojure
+(defn main [] (IO.println &(Int.str (add-one 41))))
+(defn add-one [x] (+ x 1))
+
+;; Mutual recursion
+(defn is-even [n] (if (= n 0) true (is-odd (- n 1))))
+(defn is-odd [n] (if (= n 0) false (is-even (- n 1))))
+```
+
+Note that order independence only applies to `defn` and `def` forms within a
+single file. Other forms like `defmodule`, `use`, `sig`, and macros are still
+processed in source order. Files loaded via `(load ...)` are also processed in
+the order they are loaded.
+
+Self-recursive functions in tail position are automatically optimized into
+loops, avoiding stack overflow on deep recursion. This works even when managed
+types (like `String`) are in scope:
+
+```clojure
+(defn sum-to [n acc]
+  (if (= n 0) acc (sum-to (- n 1) (+ acc n))))
+
+(defn repeat-str [n acc]
+  (if (= n 0)
+    acc
+    (let [piece @"x"]
+      (repeat-str (- n 1) (StringCopy.append &acc &piece)))))
+```
+
+Tail position is recognized through `if`, `do`, `let`, and `the` forms. The
+optimization is not applied when any parameter has a reference type.
+
+Groups of mutually recursive functions are also optimized when they share the
+same parameter types, parameter names, and return type:
+
+```clojure
+(defn is-even [n]
+  (if (= n 0) true (is-odd (- n 1))))
+
+(defn is-odd [n]
+  (if (= n 0) false (is-even (- n 1))))
+```
 ### Conditional statements with `cond`
 The `cond` statement executes a block of code if a specified condition is true. If the condition is false, another block of code can be executed.
 
@@ -238,6 +284,27 @@ Note that match works with *values* (not references) takes ownership over the va
 Note that this code would not take ownership over `might-be-a-string`. Also, the `s` in the first case is a reference, since it wouldn't be safe to destructure the `Maybe` into values in this situation.
 
 **Note:** A sumtype cannot have more than 128 inhabitants, also known as constructors. If that reads to you like a byte limitation, you’re on the right track. While this is a limitation, it has not proved to be a problem as of yet.
+
+### Recursive Types
+Carp supports recursive types when the recursion goes through indirection, i.e. `Box` or `Ptr`. Direct recursion is rejected because the compiler must be able to compute a concrete, finite size for each type.
+
+Examples (allowed):
+```clojure
+;; A linked list using a sumtype
+(deftype (List a)
+  (Nil)
+  (Cons [a (Box (List a))]))
+
+;; A recursive struct
+(deftype Node [value Int next (Box Node)])
+```
+
+Direct recursion (not allowed):
+```clojure
+(deftype Bad [self Bad])
+```
+
+`Box` is a managed, linear pointer type, so ownership rules apply. `Ptr` is unmanaged and is for advanced use cases where you handle lifetime and deallocation yourself.
 
 ### Modules and Name Lookup
 Functions and variables can be stored in modules which are named and can be nested. To use a symbol inside a module

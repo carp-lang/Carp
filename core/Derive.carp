@@ -71,7 +71,7 @@ the generated function to avoid collisions.")
           deriver (get-deriver f Derive.derivers)]
       (if (empty? deriver)
         (macro-error (String.concat ["no deriver found for interface " (str f) "!"]))
-        (eval ((cadr deriver) t name))))))
+        ((cadr deriver) t name)))))
 
 (use Derive)
 

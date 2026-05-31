@@ -1,0 +1,10 @@
+(Project.config "file-path-print-length" "short")
+
+; set! with ref outliving source via function call.
+; The reference returned by Array.unsafe-nth depends on &a,
+; which goes out of scope before x is used.
+(defn main []
+  (let-do [x ""]
+    (let [a [@"hello" @"world"]]
+      (set! x (Array.unsafe-nth &a 1)))
+    (println* x)))

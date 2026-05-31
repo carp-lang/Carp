@@ -401,4 +401,12 @@
                   (addr)
                   dst)
                 "asm works")
+  (let-do [x 0]
+    (do
+      (when-do true (set! x 1) (set! x (inc x)))
+      (assert-equal test 2 x "when-do executes multi-form body when true")))
+  (let-do [x 0]
+    (do
+      (unless-do false (set! x 1) (set! x (inc x)))
+      (assert-equal test 2 x "unless-do executes multi-form body when false")))
 )

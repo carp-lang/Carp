@@ -4,6 +4,7 @@ module EvalVM
   ( compileEvalIR,
     runEvalCode,
     runEvalIRVM,
+    runEvalIRVMWithPhase,
   )
 where
 
@@ -171,26 +172,34 @@ compileEvalIR ir = mkEvalCode (fst (compileWithState emptyState ir) [IHalt])
         BoundInternal p -> RHQualified p
 
 runEvalIRVM :: Context -> EvalIR -> LookupPreference -> IO (Context, Either EvalError XObj)
-runEvalIRVM ctx ir preference =
+runEvalIRVM = runEvalIRVMWithPhase PhaseExecute
+
+runEvalIRVMWithPhase :: EvalPhase -> Context -> EvalIR -> LookupPreference -> IO (Context, Either EvalError XObj)
+runEvalIRVMWithPhase phase ctx ir preference =
   case evalIRCacheKey ir of
-    Nothing -> runEvalCode ctx preference (compileEvalIR ir)
+    Nothing -> runEvalCodeWithPhase phase ctx preference (compileEvalIR ir)
     Just key -> do
       cache <- readIORef evalIRCodeCache
       case Map.lookup key cache of
-        Just cached -> runEvalCode ctx preference cached
+        Just cached -> runEvalCodeWithPhase phase ctx preference cached
         Nothing ->
           let compiled = compileEvalIR ir
            in do
                 writeIORef evalIRCodeCache (Map.insert key compiled cache)
-                runEvalCode ctx preference compiled
+                runEvalCodeWithPhase phase ctx preference compiled
 
 evalDynamicVM :: Context -> XObj -> IO (Context, Either EvalError XObj)
 evalDynamicVM ctx xobj =
   let ctx' = ensureDynamicUse ctx
-   in runEvalIRVM ctx' (lowerExpr ctx' xobj) PreferDynamic
+   in runEvalIRVMWithPhase PhaseExecute ctx' (lowerExpr ctx' xobj) PreferDynamic
+
+evalExpandVM :: Context -> XObj -> IO (Context, Either EvalError XObj)
+evalExpandVM ctx xobj =
+  let ctx' = ensureDynamicUse ctx
+   in runEvalIRVMWithPhase PhaseExpand ctx' (lowerExpr ctx' xobj) PreferDynamic
 
 macroExpandVM :: Context -> XObj -> IO (Context, Either EvalError XObj)
-macroExpandVM ctx xobj = expand MacroExpandOnly evalDynamicVM ctx xobj
+macroExpandVM ctx xobj = expand MacroExpandOnly evalExpandVM ctx xobj
 
 ensureDynamicUse :: Context -> Context
 ensureDynamicUse ctx =
@@ -407,7 +416,7 @@ annotateWithinContextVM ctx xobj = do
   case sig of
     Left err -> pure (ctx, Left err)
     Right okSig -> do
-      (_, expansionResult) <- expandAll evalDynamicVM ctxDyn xobj
+      (_, expansionResult) <- expandAll evalExpandVM ctxDyn xobj
       case expansionResult of
         Left err -> pure (ctx, Left err)
         Right expanded ->
@@ -560,8 +569,8 @@ primitiveDefmacroVM _ ctx (XObj (Sym (SymPath [] name) _) _ _) params body =
 primitiveDefmacroVM _ ctx notName _ _ =
   pure (throwErr (InvalidArgs "`defmacro` expected a name as first argument." [notName]) ctx (xobjInfo notName))
 
-specialCommandWithVM :: Context -> SymPath -> [EvalIR] -> IO (Context, Either EvalError XObj)
-specialCommandWithVM ctx path forms = do
+specialCommandWithVM :: EvalPhase -> Context -> SymPath -> [EvalIR] -> IO (Context, Either EvalError XObj)
+specialCommandWithVM phase ctx path forms = do
   let globalEnv = contextGlobalEnv ctx
       useThese = envUseModules globalEnv
       ctx' = replaceGlobalEnv ctx (globalEnv {envUseModules = Set.insert path useThese})
@@ -577,11 +586,11 @@ specialCommandWithVM ctx path forms = do
       case accRes of
         Left _ -> pure (accCtx, accRes)
         Right _ -> do
-          (nextCtx, evaled) <- runEvalIRVM accCtx form PreferDynamic
+          (nextCtx, evaled) <- runEvalIRVMWithPhase phase accCtx form PreferDynamic
           pure (nextCtx, evaled)
 
-specialCommandSetVM :: Context -> EvalIR -> EvalIR -> IO (Context, Either EvalError XObj)
-specialCommandSetVM ctx targetIR valueIR =
+specialCommandSetVM :: EvalPhase -> Context -> EvalIR -> EvalIR -> IO (Context, Either EvalError XObj)
+specialCommandSetVM phase ctx targetIR valueIR =
   case raiseExpr targetIR of
     orig@(XObj (Sym path@(SymPath _ _) _) _ _) ->
       let lookupInternal =
@@ -603,7 +612,7 @@ specialCommandSetVM ctx targetIR valueIR =
   where
     evalAndSet :: Binder -> (Context -> Env -> Either EvalError XObj -> Binder -> IO (Context, Either EvalError XObj)) -> Env -> IO (Context, Either EvalError XObj)
     evalAndSet binder setter env =
-      evalDynamicVM ctx (raiseExpr valueIR)
+      runEvalIRVMWithPhase phase ctx valueIR PreferDynamic
         >>= \(newCtx, result) ->
           case result of
             Right evald ->
@@ -634,15 +643,15 @@ setStaticOrDynamicVarVM path@(SymPath _ name) env binder value =
       fromRight env (E.replaceInPlace env name (Binder meta (XObj (Lst [lett, sym, value]) (xobjInfo value) t)))
     _ -> env
 
-execIRLetBC :: Context -> LookupPreference -> EvalIR -> EvalIR -> Maybe Info -> Maybe Ty -> IO (Context, Either EvalError XObj)
-execIRLetBC ctx preference bindings body info _ =
+execIRLetBC :: EvalPhase -> Context -> LookupPreference -> EvalIR -> EvalIR -> Maybe Info -> Maybe Ty -> IO (Context, Either EvalError XObj)
+execIRLetBC phase ctx preference bindings body info _ =
   case bindings of
     IRArray flatBindings _ _ ->
       let binds = unwrapLetBindsBC (pairwise flatBindings) []
           letNamesInOrder = collectBindingNamesInOrder (pairwise flatBindings)
           ni = Env Map.empty (contextInternalEnv ctx) Nothing Set.empty InternalEnv 0
        in do
-            eitherCtx <- foldrM (successiveEvalBindBC preference) (Right (replaceInternalEnv ctx ni)) binds
+            eitherCtx <- foldrM (successiveEvalBindBC phase preference) (Right (replaceInternalEnv ctx ni)) binds
             case eitherCtx of
               Left err -> pure (ctx, Left err)
               Right newCtx -> do
@@ -657,7 +666,7 @@ execIRLetBC ctx preference bindings body info _ =
                     localSlots = Map.union letSlots baseLocalSlots
                     localNameSlots = Map.union letNameSlots baseLocalNameSlots
                     localPref = PreferLocal localNamesSet localSlots localNameSlots localExecMode
-                (finalCtx, evaledBody) <- runEvalIRVM newCtx body localPref
+                (finalCtx, evaledBody) <- runEvalIRVMWithPhase phase newCtx body localPref
                 let e = fromMaybe E.empty $ contextInternalEnv finalCtx
                     parentEnv = envParent e
                 pure (replaceInternalEnvMaybe finalCtx parentEnv, evaledBody)
@@ -704,15 +713,15 @@ nextLocalSlot slots
   | null (Map.keys slots) = 0
   | otherwise = 1 + maximum (Map.keys slots)
 
-successiveEvalBindBC :: LookupPreference -> (String, EvalIR) -> Either EvalError Context -> IO (Either EvalError Context)
-successiveEvalBindBC _ _ err@(Left _) = pure err
-successiveEvalBindBC preference (name, valueIR) (Right ctx') = do
+successiveEvalBindBC :: EvalPhase -> LookupPreference -> (String, EvalIR) -> Either EvalError Context -> IO (Either EvalError Context)
+successiveEvalBindBC _ _ _ err@(Left _) = pure err
+successiveEvalBindBC phase preference (name, valueIR) (Right ctx') = do
   let valueXObj = raiseExpr valueIR
       origin = contextInternalEnv ctx'
       recFix = E.recursive origin (Just "let-rec-env") 0
       envWithSelf = fromRight recFix $ if isFn valueXObj then E.insertX recFix (SymPath [] name) valueXObj else Right recFix
       ctx'' = replaceInternalEnv ctx' envWithSelf
-  (newCtx, res) <- runEvalIRVM ctx'' valueIR preference
+  (newCtx, res) <- runEvalIRVMWithPhase phase ctx'' valueIR preference
   case res of
     Right okX ->
       pure $
@@ -742,34 +751,34 @@ execIRFnBC ctx preference args body info ty = do
     _ ->
       pure (throwErr (UnknownForm (raiseExpr (IRFn args body info ty))) ctx info)
 
-execIRWhileBC :: Context -> LookupPreference -> EvalIR -> EvalIR -> Maybe Info -> Maybe Ty -> IO (Context, Either EvalError XObj)
-execIRWhileBC ctx preference cond body _ _ = loop ctx
+execIRWhileBC :: EvalPhase -> Context -> LookupPreference -> EvalIR -> EvalIR -> Maybe Info -> Maybe Ty -> IO (Context, Either EvalError XObj)
+execIRWhileBC phase ctx preference cond body _ _ = loop ctx
   where
     loop loopCtx = do
-      (condCtx, condResult) <- runEvalIRVM loopCtx cond preference
+      (condCtx, condResult) <- runEvalIRVMWithPhase phase loopCtx cond preference
       case condResult of
         Left err -> pure (condCtx, Left err)
         Right condValue ->
           case xobjObj condValue of
             Bol False -> pure (condCtx, Right (XObj (Lst []) Nothing Nothing))
             Bol True -> do
-              (bodyCtx, bodyResult) <- runEvalIRVM condCtx body preference
+              (bodyCtx, bodyResult) <- runEvalIRVMWithPhase phase condCtx body preference
               case bodyResult of
                 Left err -> pure (bodyCtx, Left err)
                 Right _ -> loop bodyCtx
             _ -> pure (throwErr (IfContainsNonBool (raiseExpr cond)) ctx (irInfoBC cond))
 
-execIRWithBC :: Context -> EvalIR -> [EvalIR] -> Maybe Info -> Maybe Ty -> IO (Context, Either EvalError XObj)
-execIRWithBC ctx sym forms info _ =
+execIRWithBC :: EvalPhase -> Context -> EvalIR -> [EvalIR] -> Maybe Info -> Maybe Ty -> IO (Context, Either EvalError XObj)
+execIRWithBC phase ctx sym forms info _ =
   case symToPathBC sym of
-    Just path -> specialCommandWithVM ctx path forms
+    Just path -> specialCommandWithVM phase ctx path forms
     Nothing -> pure (throwErr (UnknownForm (raiseExpr (IRWith sym forms info Nothing))) ctx info)
 
-execIRSetBC :: Context -> EvalIR -> EvalIR -> Maybe Info -> Maybe Ty -> IO (Context, Either EvalError XObj)
-execIRSetBC ctx target value _ _ = specialCommandSetVM ctx target value
+execIRSetBC :: EvalPhase -> Context -> EvalIR -> EvalIR -> Maybe Info -> Maybe Ty -> IO (Context, Either EvalError XObj)
+execIRSetBC phase ctx target value _ _ = specialCommandSetVM phase ctx target value
 
-execIRCallBC :: Context -> LookupPreference -> EvalIR -> [EvalIR] -> [EvalCode] -> Maybe Info -> Maybe Ty -> IO (Context, Either EvalError XObj)
-execIRCallBC appCtx preference fun args argCodes info ty =
+execIRCallBC :: EvalPhase -> Context -> LookupPreference -> EvalIR -> [EvalIR] -> [EvalCode] -> Maybe Info -> Maybe Ty -> IO (Context, Either EvalError XObj)
+execIRCallBC phase appCtx preference fun args argCodes info ty =
   let refDerefArityMessage name args' =
         let argXObjs = map raiseExpr args'
             count = length argXObjs
@@ -800,29 +809,29 @@ execIRCallBC appCtx preference fun args argCodes info ty =
               case keywordNameBC fun of
                 Just "if" ->
                   case args of
-                    [a, b, c] -> execIRIfBC appCtx preference a b c
+                    [a, b, c] -> execIRIfBC phase appCtx preference a b c
                     _ -> pure (throwErr (UnknownForm (callXObjBC fun args info ty)) appCtx info)
                 Just "let" ->
                   case args of
-                    [a, b] -> execIRLetBC appCtx preference a b info ty
+                    [a, b] -> execIRLetBC phase appCtx preference a b info ty
                     _ -> pure (throwErr (UnknownForm (callXObjBC fun args info ty)) appCtx info)
                 Just "fn" ->
                   case args of
                     [a, b] -> execIRFnBC appCtx preference a b info ty
                     _ -> pure (throwErr (UnknownForm (callXObjBC fun args info ty)) appCtx info)
                 Just "do" ->
-                  execIRDoBC appCtx preference args
+                  execIRDoBC phase appCtx preference args
                 Just "while" ->
                   case args of
-                    [a, b] -> execIRWhileBC appCtx preference a b info ty
+                    [a, b] -> execIRWhileBC phase appCtx preference a b info ty
                     _ -> pure (throwErr (UnknownForm (callXObjBC fun args info ty)) appCtx info)
                 Just "with" ->
                   case args of
-                    (sym : forms) -> execIRWithBC appCtx sym forms info ty
+                    (sym : forms) -> execIRWithBC phase appCtx sym forms info ty
                     _ -> pure (throwErr (UnknownForm (callXObjBC fun args info ty)) appCtx info)
                 Just "set!" ->
                   case args of
-                    [a, b] -> execIRSetBC appCtx a b info ty
+                    [a, b] -> execIRSetBC phase appCtx a b info ty
                     _ -> pure (throwErr (UnknownForm (callXObjBC fun args info ty)) appCtx info)
                 Just "def" -> specialCommandDefineVM appCtx (callXObjBC fun args info ty)
                 Just "defn" -> specialCommandDefineVM appCtx (callXObjBC fun args info ty)
@@ -840,10 +849,10 @@ execIRCallBC appCtx preference fun args argCodes info ty =
                     _ -> pure (throwErr (UnknownForm (callXObjBC fun args info ty)) appCtx info)
                 Just "the" -> pure (evalError appCtx "EvalVM `the` is not implemented yet." info)
                 _ -> do
-                  (newCtx, fResult) <- runEvalIRVM appCtx fun preference
+                  (newCtx, fResult) <- runEvalIRVMWithPhase phase appCtx fun preference
                   case fResult of
                     Left err -> pure (newCtx, Left err)
-                    Right funXObj -> dispatchCallableBC newCtx preference fun args argCodes info ty funXObj
+                    Right funXObj -> dispatchCallableBC phase newCtx preference fun args argCodes info ty funXObj
   where
     inlineCallable =
       case raiseExpr fun of
@@ -871,8 +880,8 @@ paramsFromSpec proper rest =
         Nothing -> properParams
         Just restName -> properParams ++ [sym ":rest", sym restName]
 
-dispatchCallableBC :: Context -> LookupPreference -> EvalIR -> [EvalIR] -> [EvalCode] -> Maybe Info -> Maybe Ty -> XObj -> IO (Context, Either EvalError XObj)
-dispatchCallableBC appCtx preference fun args argCodes info ty funXObj =
+dispatchCallableBC :: EvalPhase -> Context -> LookupPreference -> EvalIR -> [EvalIR] -> [EvalCode] -> Maybe Info -> Maybe Ty -> XObj -> IO (Context, Either EvalError XObj)
+dispatchCallableBC phase appCtx preference fun args argCodes info ty funXObj =
   if isStaticDefinitionBC funXObj
     then pure (appCtx, Left (HasStaticCall (callXObjBC fun args info ty) info))
     else dispatchByClass (classifyCallableBC funXObj)
@@ -887,7 +896,7 @@ dispatchCallableBC appCtx preference fun args argCodes info ty funXObj =
             Just err -> pure err
             Nothing -> dispatchCompiledClosure mode capturedCtx cid proper rest
         InlineFn params body ->
-          runInlineFnCallBC appCtx preference funExpr params body args argCodes info
+          runInlineFnCallBC phase appCtx preference funExpr params body args argCodes info
         MacroDefForm ->
           dispatchMacroDef
         DynamicDefForm ->
@@ -895,24 +904,24 @@ dispatchCallableBC appCtx preference fun args argCodes info ty funXObj =
         DefDynamicForm ->
           dispatchDefdynamic
         CommandForm arity ->
-          runCommandCallBC appCtx preference arity args argCodes info
+          runCommandCallBC phase appCtx preference arity args argCodes info
         PrimitiveForm prim ->
           runPrimitiveCallBC appCtx funXObj prim args info
         UnknownCallable ->
           pure (evalError appCtx ("Unknown callable object in EvalVM: " ++ pretty funXObj ++ " in call " ++ pretty (callXObjBC fun args info ty)) info)
     resolveAndDispatch spath =
       case resolveSymbol appCtx spath info preference of
-        Just (resolvedCtx, Right resolvedFun) -> dispatchCallableBC resolvedCtx preference fun args argCodes info ty resolvedFun
+        Just (resolvedCtx, Right resolvedFun) -> dispatchCallableBC phase resolvedCtx preference fun args argCodes info ty resolvedFun
         Just (resolvedCtx, Left err) -> pure (resolvedCtx, Left err)
         Nothing -> pure (throwErr (UnknownForm (callXObjBC fun args info ty)) appCtx info)
     dispatchCompiledClosure mode capturedCtx cid proper rest =
       case mode of
         CallAsMacro ->
-          runCompiledMacroClosureCallBC appCtx capturedCtx cid proper rest args
+          runCompiledMacroClosureCallBC phase appCtx preference cid proper rest args
         CallAsDynamic ->
-          runCompiledDynamicClosureCallBC appCtx cid proper rest argCodes
+          runCompiledDynamicClosureCallBC phase appCtx cid proper rest argCodes
         CallAsFunction ->
-          runCompiledClosureCallBC appCtx preference capturedCtx cid proper rest argCodes
+          runCompiledClosureCallBC phase appCtx preference capturedCtx cid proper rest argCodes
     dispatchMacroDef =
       case map raiseExpr args of
         [name, params, body] -> primitiveDefmacroVM funXObj appCtx name params body
@@ -967,8 +976,8 @@ classifyCallableBC xobj =
       PrimitiveForm prim
     _ -> UnknownCallable
 
-runInlineFnCallBC :: Context -> LookupPreference -> XObj -> [XObj] -> XObj -> [EvalIR] -> [EvalCode] -> Maybe Info -> IO (Context, Either EvalError XObj)
-runInlineFnCallBC appCtx preference funExpr params body argsToCall argCodes info =
+runInlineFnCallBC :: EvalPhase -> Context -> LookupPreference -> XObj -> [XObj] -> XObj -> [EvalIR] -> [EvalCode] -> Maybe Info -> IO (Context, Either EvalError XObj)
+runInlineFnCallBC phase appCtx preference funExpr params body argsToCall argCodes info =
   case parseParamSpec params of
     Left err -> pure (appCtx, Left err)
     Right (proper, rest) -> do
@@ -981,59 +990,68 @@ runInlineFnCallBC appCtx preference funExpr params body argsToCall argCodes info
             Left cerr -> pure (ctxAfterCompile, Left cerr)
             Right code -> do
               cid <- registerVMClosureCode code
-              runCompiledClosureCallBC ctxAfterCompile preference ctxAfterCompile cid proper rest argCodes
+              runCompiledClosureCallBC phase ctxAfterCompile preference ctxAfterCompile cid proper rest argCodes
 
-runCompiledClosureCallBC :: Context -> LookupPreference -> Context -> Int -> [String] -> Maybe String -> [EvalCode] -> IO (Context, Either EvalError XObj)
-runCompiledClosureCallBC appCtx preference capturedCtx cid proper restName argCodes = do
-  (ctxWithArgs, evaledArgs) <- evalManyCodeBC appCtx preference argCodes
+runCompiledClosureCallBC :: EvalPhase -> Context -> LookupPreference -> Context -> Int -> [String] -> Maybe String -> [EvalCode] -> IO (Context, Either EvalError XObj)
+runCompiledClosureCallBC phase appCtx preference capturedCtx cid proper restName argCodes = do
+  (ctxWithArgs, evaledArgs) <- evalManyCodeBC phase appCtx preference argCodes
   case evaledArgs of
     Right okArgs -> do
       let callCtx = replaceInternalEnvMaybe ctxWithArgs (contextInternalEnv capturedCtx)
           compileMode = compileModeForPreference preference
-      (ctx', res) <- applyCompiledBC compileMode callCtx cid proper restName okArgs
+      (ctx', res) <- applyCompiledBC phase compileMode callCtx cid proper restName okArgs
       pure (replaceInternalEnvMaybe ctx' (contextInternalEnv ctxWithArgs), res)
     Left err -> pure (ctxWithArgs, Left err)
 
-runCompiledDynamicClosureCallBC :: Context -> Int -> [String] -> Maybe String -> [EvalCode] -> IO (Context, Either EvalError XObj)
-runCompiledDynamicClosureCallBC appCtx cid proper restName argCodes = do
-  (ctxWithArgs, evaledArgs) <- evalManyCodeBC appCtx PreferDynamic argCodes
+runCompiledDynamicClosureCallBC :: EvalPhase -> Context -> Int -> [String] -> Maybe String -> [EvalCode] -> IO (Context, Either EvalError XObj)
+runCompiledDynamicClosureCallBC phase appCtx cid proper restName argCodes = do
+  (ctxWithArgs, evaledArgs) <- evalManyCodeBC phase appCtx PreferDynamic argCodes
   case evaledArgs of
     Right okArgs -> do
-      (ctx', res) <- applyCompiledBC CompileModeDynamic ctxWithArgs cid proper restName okArgs
+      (ctx', res) <- applyCompiledBC phase CompileModeDynamic ctxWithArgs cid proper restName okArgs
       pure (replaceInternalEnvMaybe ctx' (contextInternalEnv ctxWithArgs), res)
     Left err -> pure (ctxWithArgs, Left err)
 
-runCompiledMacroClosureCallBC :: Context -> Context -> Int -> [String] -> Maybe String -> [EvalIR] -> IO (Context, Either EvalError XObj)
-runCompiledMacroClosureCallBC appCtx _ cid proper restName argsToCall = do
-  (ctx', res) <- applyCompiledBC CompileModeMacro appCtx cid proper restName (map raiseExpr argsToCall)
+runCompiledMacroClosureCallBC :: EvalPhase -> Context -> LookupPreference -> Int -> [String] -> Maybe String -> [EvalIR] -> IO (Context, Either EvalError XObj)
+runCompiledMacroClosureCallBC phase appCtx preference cid proper restName argsToCall = do
+  (ctx', res) <- applyCompiledBC phase CompileModeMacro appCtx cid proper restName (map raiseExpr argsToCall)
   case res of
-    Right xobj' -> macroExpandVM ctx' xobj'
+    Right xobj' -> do
+      (expandedCtx, expandedRes) <- macroExpandVM ctx' xobj'
+      case expandedRes of
+        Left err -> pure (expandedCtx, Left err)
+        Right expanded ->
+          case phase of
+            -- Expansion commands should observe macro output as data.
+            PhaseExpand -> pure (expandedCtx, Right expanded)
+            -- Normal evaluation should execute the expanded form immediately.
+            PhaseExecute -> runEvalIRVMWithPhase phase expandedCtx (lowerExpr expandedCtx expanded) preference
     Left _ -> pure (appCtx, res)
 
-runCommandCallBC :: Context -> LookupPreference -> CommandFunctionType -> [EvalIR] -> [EvalCode] -> Maybe Info -> IO (Context, Either EvalError XObj)
-runCommandCallBC appCtx preference arity callArgs argCodes callInfo =
+runCommandCallBC :: EvalPhase -> Context -> LookupPreference -> CommandFunctionType -> [EvalIR] -> [EvalCode] -> Maybe Info -> IO (Context, Either EvalError XObj)
+runCommandCallBC phase appCtx preference arity callArgs argCodes callInfo =
   case (arity, callArgs) of
     (NullaryCommandFunction nullary, []) -> nullary appCtx
     (UnaryCommandFunction unary, [_]) -> do
-      (c, evaledArgs) <- evalManyCodeBC appCtx preference (take 1 argCodes)
+      (c, evaledArgs) <- evalManyCodeBC phase appCtx preference (take 1 argCodes)
       case evaledArgs of
         Right [x'] -> unary c x'
         Left err -> pure (c, Left err)
         _ -> pure (throwErr (UnknownForm (raiseExpr (IRCall (IRLiteral (XObj (Lst []) Nothing Nothing)) callArgs callInfo Nothing))) c callInfo)
     (BinaryCommandFunction binary, [_, _]) -> do
-      (c, evaledArgs) <- evalManyCodeBC appCtx preference (take 2 argCodes)
+      (c, evaledArgs) <- evalManyCodeBC phase appCtx preference (take 2 argCodes)
       case evaledArgs of
         Right [x', y'] -> binary c x' y'
         Left err -> pure (c, Left err)
         _ -> pure (throwErr (UnknownForm (raiseExpr (IRCall (IRLiteral (XObj (Lst []) Nothing Nothing)) callArgs callInfo Nothing))) c callInfo)
     (TernaryCommandFunction ternary, [_, _, _]) -> do
-      (c, evaledArgs) <- evalManyCodeBC appCtx preference (take 3 argCodes)
+      (c, evaledArgs) <- evalManyCodeBC phase appCtx preference (take 3 argCodes)
       case evaledArgs of
         Right [x', y', z'] -> ternary c x' y' z'
         Left err -> pure (c, Left err)
         _ -> pure (throwErr (UnknownForm (raiseExpr (IRCall (IRLiteral (XObj (Lst []) Nothing Nothing)) callArgs callInfo Nothing))) c callInfo)
     (VariadicCommandFunction variadic, xs) -> do
-      (c, evaledArgs) <- evalManyCodeBC appCtx preference (take (length xs) argCodes)
+      (c, evaledArgs) <- evalManyCodeBC phase appCtx preference (take (length xs) argCodes)
       case evaledArgs of
         Right args' -> variadic c args'
         Left err -> pure (c, Left err)
@@ -1051,8 +1069,8 @@ runPrimitiveCallBC appCtx fun prim callArgs callInfo =
         (VariadicPrimitive variadic, xs) -> variadic fun appCtx xs
         _ -> pure (throwErr (UnknownForm (raiseExpr (IRCall (IRLiteral fun) callArgs callInfo Nothing))) appCtx callInfo)
 
-applyCompiledBC :: CompileMode -> Context -> Int -> [String] -> Maybe String -> [XObj] -> IO (Context, Either EvalError XObj)
-applyCompiledBC compileMode appCtx cid proper restName argVals = do
+applyCompiledBC :: EvalPhase -> CompileMode -> Context -> Int -> [String] -> Maybe String -> [XObj] -> IO (Context, Either EvalError XObj)
+applyCompiledBC phase compileMode appCtx cid proper restName argVals = do
   mpayload <- lookupVMClosurePayload cid
   case mpayload of
     Nothing ->
@@ -1102,11 +1120,11 @@ applyCompiledBC compileMode appCtx cid proper restName argVals = do
               CompileModeFunction -> ExecFunction
               CompileModeDynamic -> ExecDynamic
               CompileModeMacro -> ExecMacro
-      (finalCtx, result) <- runEvalCode localCtx (PreferLocal localNames localSlots localNameSlots localExecMode) code
+      (finalCtx, result) <- runEvalCodeWithPhase phase localCtx (PreferLocal localNames localSlots localNameSlots localExecMode) code
       pure (replaceInternalEnvMaybe finalCtx (contextInternalEnv compileCtx), result)
 
-evalManyCodeBC :: Context -> LookupPreference -> [EvalCode] -> IO (Context, Either EvalError [XObj])
-evalManyCodeBC startCtx preference xs = do
+evalManyCodeBC :: EvalPhase -> Context -> LookupPreference -> [EvalCode] -> IO (Context, Either EvalError [XObj])
+evalManyCodeBC phase startCtx preference xs = do
   (newCtx, evaled) <- foldlM successiveEval (startCtx, Right []) xs
   pure (newCtx, fmap reverse evaled)
   where
@@ -1114,29 +1132,29 @@ evalManyCodeBC startCtx preference xs = do
       case acc of
         Left _ -> pure (ctx', acc)
         Right l -> do
-          (nextCtx, evald) <- runEvalCode ctx' preference code
+          (nextCtx, evald) <- runEvalCodeWithPhase phase ctx' preference code
           pure $ case evald of
             Right res -> (nextCtx, Right (res : l))
             Left err -> (nextCtx, Left err)
 
-execIRDoBC :: Context -> LookupPreference -> [EvalIR] -> IO (Context, Either EvalError XObj)
-execIRDoBC ctx preference forms =
+execIRDoBC :: EvalPhase -> Context -> LookupPreference -> [EvalIR] -> IO (Context, Either EvalError XObj)
+execIRDoBC phase ctx preference forms =
   foldlM
     ( \(ctx', acc) next ->
         case acc of
           Left _ -> pure (ctx', acc)
-          Right _ -> runEvalIRVM ctx' next preference
+          Right _ -> runEvalIRVMWithPhase phase ctx' next preference
     )
     (ctx, Right (XObj (Lst []) Nothing Nothing))
     forms
 
-execIRIfBC :: Context -> LookupPreference -> EvalIR -> EvalIR -> EvalIR -> IO (Context, Either EvalError XObj)
-execIRIfBC ctx preference cond trueBranch falseBranch = do
-  (newCtx, evd) <- runEvalIRVM ctx cond preference
+execIRIfBC :: EvalPhase -> Context -> LookupPreference -> EvalIR -> EvalIR -> EvalIR -> IO (Context, Either EvalError XObj)
+execIRIfBC phase ctx preference cond trueBranch falseBranch = do
+  (newCtx, evd) <- runEvalIRVMWithPhase phase ctx cond preference
   case evd of
     Right cond' ->
       case xobjObj cond' of
-        Bol b -> runEvalIRVM newCtx (if b then trueBranch else falseBranch) preference
+        Bol b -> runEvalIRVMWithPhase phase newCtx (if b then trueBranch else falseBranch) preference
         _ -> pure (throwErr (IfContainsNonBool (raiseExpr cond)) ctx (irInfoBC cond))
     Left e -> pure (newCtx, Left e)
 
@@ -1194,7 +1212,10 @@ symToPathBC (IRSymbol ref _ _ _) = Just (refToSymPath ref)
 symToPathBC _ = Nothing
 
 runEvalCode :: Context -> LookupPreference -> EvalCode -> IO (Context, Either EvalError XObj)
-runEvalCode ctx preference code = go ctx preference 0 [] Map.empty Map.empty
+runEvalCode = runEvalCodeWithPhase PhaseExecute
+
+runEvalCodeWithPhase :: EvalPhase -> Context -> LookupPreference -> EvalCode -> IO (Context, Either EvalError XObj)
+runEvalCodeWithPhase phase ctx preference code = go ctx preference 0 [] Map.empty Map.empty
   where
     codeLen = evalCodeLen code
     codeArr = evalCodeArray code
@@ -1303,7 +1324,7 @@ runEvalCode ctx preference code = go ctx preference 0 [] Map.empty Map.empty
                       PreferLocal _ localSlots _ execMode ->
                         case Map.lookup slot localSlots of
                           Just funXObj -> do
-                            (nextCtx, result) <- dispatchCallableBC currentCtx currentPref funIR args argCodes i t funXObj
+                            (nextCtx, result) <- dispatchCallableBC phase currentCtx currentPref funIR args argCodes i t funXObj
                             case result of
                               Right value -> go nextCtx currentPref (pc + 1) (value : stack) symbolCache callableCache
                               Left err -> pure (nextCtx, Left err)
@@ -1322,7 +1343,7 @@ runEvalCode ctx preference code = go ctx preference 0 [] Map.empty Map.empty
                     ckey = cacheKey currentCtx sid
                     funIR = IRSymbol ref mode i t
                     dispatchWith funXObj = do
-                      (nextCtx, result) <- dispatchCallableBC currentCtx currentPref funIR args argCodes i t funXObj
+                      (nextCtx, result) <- dispatchCallableBC phase currentCtx currentPref funIR args argCodes i t funXObj
                       case result of
                         Right value ->
                           let callableCache' =
@@ -1341,7 +1362,7 @@ runEvalCode ctx preference code = go ctx preference 0 [] Map.empty Map.empty
                                   if refCacheable
                                     then Map.insert (cacheKey resolvedCtx sid) funXObj callableCache
                                     else callableCache
-                            (nextCtx, result) <- dispatchCallableBC resolvedCtx currentPref funIR args argCodes i t funXObj
+                            (nextCtx, result) <- dispatchCallableBC phase resolvedCtx currentPref funIR args argCodes i t funXObj
                             case result of
                               Right value -> go nextCtx currentPref (pc + 1) (value : stack) symbolCache callableCache'
                               Left err -> pure (nextCtx, Left err)
@@ -1358,12 +1379,12 @@ runEvalCode ctx preference code = go ctx preference 0 [] Map.empty Map.empty
               Right (items, rest) ->
                 go currentCtx currentPref (pc + 1) (XObj (StaticArr (reverse items)) i t : rest) symbolCache callableCache
           IExecCall fun args argCodes i t -> do
-            (nextCtx, result) <- execIRCallBC currentCtx currentPref fun args argCodes i t
+            (nextCtx, result) <- execIRCallBC phase currentCtx currentPref fun args argCodes i t
             case result of
               Right value -> go nextCtx currentPref (pc + 1) (value : stack) symbolCache callableCache
               Left err -> pure (nextCtx, Left err)
           IExecLet bindings body i t -> do
-            (nextCtx, result) <- execIRLetBC currentCtx currentPref bindings body i t
+            (nextCtx, result) <- execIRLetBC phase currentCtx currentPref bindings body i t
             case result of
               Right value -> go nextCtx currentPref (pc + 1) (value : stack) symbolCache callableCache
               Left err -> pure (nextCtx, Left err)
@@ -1373,17 +1394,17 @@ runEvalCode ctx preference code = go ctx preference 0 [] Map.empty Map.empty
               Right value -> go nextCtx currentPref (pc + 1) (value : stack) symbolCache callableCache
               Left err -> pure (nextCtx, Left err)
           IExecWhile cond body i t -> do
-            (nextCtx, result) <- execIRWhileBC currentCtx currentPref cond body i t
+            (nextCtx, result) <- execIRWhileBC phase currentCtx currentPref cond body i t
             case result of
               Right value -> go nextCtx currentPref (pc + 1) (value : stack) symbolCache callableCache
               Left err -> pure (nextCtx, Left err)
           IExecWith sym forms i t -> do
-            (nextCtx, result) <- execIRWithBC currentCtx sym forms i t
+            (nextCtx, result) <- execIRWithBC phase currentCtx sym forms i t
             case result of
               Right value -> go nextCtx currentPref (pc + 1) (value : stack) symbolCache callableCache
               Left err -> pure (nextCtx, Left err)
           IExecSet target value i t -> do
-            (nextCtx, result) <- execIRSetBC currentCtx target value i t
+            (nextCtx, result) <- execIRSetBC phase currentCtx target value i t
             case result of
               Right value' ->
                 let pref' = syncLocalSlotAfterSet nextCtx currentPref target

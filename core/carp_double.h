@@ -103,6 +103,10 @@ double Double_sin(double x) {
 double Double_tan(double x) {
     return tan(x);
 }
+<<<<<<< HEAD
+=======
+
+>>>>>>> fix/missing-double-tan
 double Double_sinh(double x) {
     return sinh(x);
 }
@@ -153,4 +157,8 @@ double Double_floor(double x) {
 
 double Double_mod(double x, double y) {
     return fmod(x, y);
+}
+
+double Double_tan(double x) {
+    return tan(x);
 }

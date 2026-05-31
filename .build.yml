@@ -11,4 +11,4 @@ tasks:
      stack test
   - carp-test: |
      cd Carp
-     scripts/run_carp_tests.sh --no_sdl
+     scripts/run_carp_tests.sh -j 4 --no_sdl

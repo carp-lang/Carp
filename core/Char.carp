@@ -54,6 +54,13 @@
   (defn alphanum? [c]
     (or (alpha? c) (num? c)))
 
+  (doc whitespace? "tests whether a character is a whitespace character.")
+  (defn whitespace? [c]
+    (let [i (to-int c)]
+      (or (= i 32)    ; space
+          (or (and (>= i 9) (<= i 13)) ; \t, \n, \v, \f, \r
+              (= i 160)))))            ; non-breaking space
+
   (defn zero [] (the Char (from-int 0)))
   (implements zero Char.zero)
 )

@@ -53,3 +53,47 @@ String IO_unsafe_MINUS_read_MINUS_file(const String* filename) {
 
     return buffer;
 }
+
+/* Raw file descriptor operations. */
+#include <fcntl.h>
+#include <sys/stat.h>
+#ifdef _WIN32
+#include <io.h>
+#else
+#include <unistd.h>
+#endif
+
+int IO_Raw_open(String* path, int flags) {
+#ifdef _WIN32
+    return _open(*path, flags);
+#else
+    return open(*path, flags);
+#endif
+}
+
+int IO_Raw_close_fd(int fd) {
+#ifdef _WIN32
+    return _close(fd);
+#else
+    return close(fd);
+#endif
+}
+
+Long IO_Raw_fstat_size(int fd) {
+#ifdef _WIN32
+    struct _stat64 st;
+    if (_fstat64(fd, &st) == -1) return -1;
+#else
+    struct stat st;
+    if (fstat(fd, &st) == -1) return -1;
+#endif
+    return (Long)st.st_size;
+}
+
+int IO_Raw_fileno(void* fp) {
+#ifdef _WIN32
+    return _fileno((FILE*)fp);
+#else
+    return fileno((FILE*)fp);
+#endif
+}

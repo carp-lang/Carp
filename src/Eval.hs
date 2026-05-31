@@ -8,20 +8,23 @@ import Context
 import Control.Applicative
 import Control.Exception
 import Control.Monad.State
+import Control.Monad (foldM, when)
 import Data.Bits ((.&.))
 import Data.Either (fromRight)
-import Data.List (isSuffixOf)
+import Data.List (foldl', isSuffixOf)
 import Data.List.Split (splitOn)
 import Data.Maybe (fromJust, fromMaybe, isJust)
+import Deftype (typeModuleStubBindings)
 import Emit
 import qualified Env as E
 import EvalError
 import EvalIR (EvalIR (..), lowerExpr)
-import EvalTypes (LookupPreference (..))
-import EvalVM (runEvalIRVM)
+import EvalTypes (EvalPhase (..), LookupPreference (..))
+import EvalVM (runEvalIRVMWithPhase)
 import Expand
 import Infer
 import Info
+import Interfaces (registerInInterfaceIfNeeded)
 import qualified Map
 import qualified Meta
 import Obj
@@ -49,14 +52,20 @@ evalStatic ctx xobj = evalIR ctx (lowerExpr ctx xobj) PreferGlobal
 
 -- | IR entry point for evaluator execution.
 evalIR :: Context -> EvalIR -> LookupPreference -> IO (Context, Either EvalError XObj)
-evalIR = runEvalIRVM
+evalIR = evalIRWithPhase PhaseExecute
+
+evalIRWithPhase :: EvalPhase -> Context -> EvalIR -> LookupPreference -> IO (Context, Either EvalError XObj)
+evalIRWithPhase = runEvalIRVMWithPhase
 
 -- | Public evaluator entry now routes through IR by default.
 eval :: Context -> XObj -> LookupPreference -> IO (Context, Either EvalError XObj)
 eval ctx xobj preference = evalIR ctx (lowerExpr ctx xobj) preference
 
+evalExpand :: Context -> XObj -> IO (Context, Either EvalError XObj)
+evalExpand ctx xobj = evalIRWithPhase PhaseExpand ctx (lowerExpr ctx xobj) PreferDynamic
+
 macroExpand :: Context -> XObj -> IO (Context, Either EvalError XObj)
-macroExpand ctx xobj = expand MacroExpandOnly evalDynamic ctx xobj
+macroExpand ctx xobj = expand MacroExpandOnly evalExpand ctx xobj
 
 -- | Parses a string and then converts the resulting forms to commands, which are evaluated in order.
 executeString :: Bool -> Bool -> Context -> String -> String -> IO Context
@@ -84,15 +93,20 @@ executeStringAtLine line doCatch printResult ctx input fileName =
               _ <- liftIO $ treatErr ctx (replaceChars (Map.fromList [('\n', " ")]) (show parseError)) parseErrorXObj
               pure ctx
       Right xobjs -> do
-        (res, ctx') <-
-          foldM
-            interactiveFolder
-            (XObj (Lst []) (Just dummyInfo) (Just UnitTy), ctx)
-            xobjs
-        when
-          (printResult && xobjTy res /= Just UnitTy)
-          (putStrLnWithColor Yellow ("=> " ++ prettyDynamic res))
-        pure ctx'
+        ctxWithStubs <- predeclareTypesInForms ctx xobjs
+        let staticMap = Map.fromList [(n, x) | x <- xobjs, Just n <- [staticBindingName x]]
+        if null (Map.keys staticMap)
+          then do
+            (res, ctx') <-
+              foldM
+                interactiveFolder
+                (XObj (Lst []) (Just dummyInfo) (Just UnitTy), ctxWithStubs)
+                xobjs
+            when
+              (printResult && xobjTy res /= Just UnitTy)
+              (putStrLnWithColor Yellow ("=> " ++ prettyDynamic res))
+            pure ctx'
+          else processFormsWithForwardRefs ctxWithStubs staticMap xobjs
     interactiveFolder (_, context) =
       executeCommand context
     treatErr ctx' e xobj = do
@@ -210,6 +224,57 @@ catcher ctx exception =
         BuildAndRun -> exitWith (ExitFailure rc)
         Check -> exitSuccess
 
+-- | Get the name of a top-level static binding (defn/def), if it is one.
+staticBindingName :: XObj -> Maybe String
+staticBindingName (XObj (Lst (XObj (Sym (SymPath _ "defn") _) _ _ : XObj (Sym (SymPath [] name) _) _ _ : _)) _ _) = Just name
+staticBindingName (XObj (Lst (XObj (Sym (SymPath _ "def") _) _ _ : XObj (Sym (SymPath [] name) _) _ _ : _)) _ _) = Just name
+staticBindingName _ = Nothing
+
+-- | Process forms in source order, resolving forward references between static bindings.
+-- Predeclares MetaStub binders (see Meta.stub) so mutual references resolve during
+-- type inference, then processes each form after ensuring its dependencies are defined.
+processFormsWithForwardRefs :: Context -> Map.Map String XObj -> [XObj] -> IO Context
+processFormsWithForwardRefs ctx staticMap xobjs = do
+  (ctx', _) <- foldM step (predeclare ctx xobjs, Set.empty) xobjs
+  pure ctx'
+  where
+    predeclare c [] = c
+    predeclare c (x : xs) = case staticBindingName x of
+      Just name
+        | Left _ <- lookupBinderInGlobalEnv c qpath ->
+          predeclare (fromRight c (insertInGlobalEnv c qpath (Meta.stub (SymPath [] name)))) xs
+        where
+          qpath = qualifyPath c (SymPath [] name)
+      _ -> predeclare c xs
+    step (c, done) form = case staticBindingName form of
+      Just name | Set.member name done -> pure (c, done)
+      Just name -> do
+        (c', done') <- ensureDeps c (Set.insert name done) form
+        (_, c'') <- executeCommand c' form
+        pure (c'', Set.insert name done')
+      _ -> do
+        (_, c') <- executeCommand c form
+        pure (c', done)
+    ensureDeps c handled form =
+      let deps =
+            [ n | n <- Set.toList (symRefs form), Map.member n staticMap, Set.notMember n handled
+            ]
+       in foldM
+            ( \(c', h) n -> case Map.lookup n staticMap of
+                Nothing -> pure (c', h)
+                Just dep -> do
+                  let h' = Set.insert n h
+                  (c'', h'') <- ensureDeps c' h' dep
+                  (_, c''') <- executeCommand c'' dep
+                  pure (c''', h'')
+            )
+            (c, handled)
+            deps
+    symRefs (XObj (Sym (SymPath _ name) _) _ _) = Set.fromList [name]
+    symRefs (XObj (Lst cs) _ _) = foldl (\s c -> Set.union s (symRefs c)) Set.empty cs
+    symRefs (XObj (Arr cs) _ _) = foldl (\s c -> Set.union s (symRefs c)) Set.empty cs
+    symRefs _ = Set.empty
+
 specialCommandWith :: Context -> XObj -> SymPath -> [XObj] -> IO (Context, Either EvalError XObj)
 specialCommandWith ctx _ path forms = do
   let env = fromMaybe (contextGlobalEnv ctx) $ contextInternalEnv ctx <|> maybeId (innermostModuleEnv ctx) <|> Just (contextGlobalEnv ctx)
@@ -296,7 +361,7 @@ annotateWithinContext ctx xobj = do
   case sig of
     Left err -> pure (ctx, Left err)
     Right okSig -> do
-      (_, expansionResult) <- expandAll (evalDynamic) ctx xobj
+      (_, expansionResult) <- expandAll evalExpand ctx xobj
       case expansionResult of
         Left err -> pure (ctx, Left err)
         Right expanded ->
@@ -354,8 +419,9 @@ primitiveDefmodule xobj ctx@(Context env i tenv pathStrings _ _ _ _ _) (XObj (Sy
     -- Define bindings for the module.
     defineModuleBindings :: (Context, Either EvalError XObj) -> IO (Context, Either EvalError XObj)
     defineModuleBindings (context, Left e) = pure (context, Left e)
-    defineModuleBindings (context, _) =
-      foldM step (context, dynamicNil) innerExpressions
+    defineModuleBindings (context, _) = do
+      contextWithStubs <- predeclareTypesInForms context innerExpressions
+      foldM step (contextWithStubs, dynamicNil) innerExpressions
     step :: (Context, Either EvalError XObj) -> XObj -> IO (Context, Either EvalError XObj)
     step (ctx', Left e) _ = pure (ctx', Left e)
     step (ctx', Right _) expressions =
@@ -367,6 +433,81 @@ primitiveDefmodule _ ctx (x : _) =
   pure (throwErr (DefmoduleContainsNonSymbol x) ctx (xobjInfo x))
 primitiveDefmodule xobj ctx [] =
   pure (throwErr DefmoduleNoArgs ctx (xobjInfo xobj))
+
+--------------------------------------------------------------------------------
+-- Type pre-declaration
+
+predeclareTypesInForms :: Context -> [XObj] -> IO Context
+predeclareTypesInForms ctx xobjs = foldM predeclareType ctx xobjs
+  where
+    predeclareType :: Context -> XObj -> IO Context
+    predeclareType ctx' xobj =
+      case xobjObj xobj of
+        Lst (XObj (Sym (SymPath [] "deftype") _) _ _ : name : rest) ->
+          pure (predeclareDeftype ctx' (xobjInfo xobj) name rest)
+        _ -> pure ctx'
+
+predeclareDeftype :: Context -> Maybe Info -> XObj -> [XObj] -> Context
+predeclareDeftype ctx info nameX rest =
+  case parseTypeHead nameX of
+    Nothing -> ctx
+    Just (name, vars) ->
+      let qpath = qualifyPath ctx (SymPath [] name)
+          selfTy = StructTy (ConcreteNameTy (unqualify qpath)) vars
+          (typeX, _, _) = selectConstructor rest selfTy
+          stubBindings = typeModuleStubBindings selfTy (pathOf qpath ++ [name])
+          ctxWithType = insertStubTypeBinder ctx qpath typeX
+          ctxWithModule = insertStubTypeModule ctxWithType qpath name info stubBindings
+       in registerStubInterfaces ctxWithModule stubBindings
+
+parseTypeHead :: XObj -> Maybe (String, [Ty])
+parseTypeHead xobj =
+  case xobjObj xobj of
+    Sym (SymPath [] name) _ -> Just (name, [])
+    Lst (XObj (Sym (SymPath [] name) _) _ _ : tyvars) ->
+      case mapM xobjToTy tyvars of
+        Just vars -> Just (name, vars)
+        Nothing -> Nothing
+    _ -> Nothing
+
+pathOf :: QualifiedPath -> [String]
+pathOf = (\(SymPath path _) -> path) . unqualify
+
+insertStubTypeBinder :: Context -> QualifiedPath -> XObj -> Context
+insertStubTypeBinder ctx qpath typeX =
+  case lookupTypeBinderMaybe ctx qpath of
+    Just _ -> ctx
+    Nothing -> fromRight ctx (insertTypeBinder ctx qpath (toBinder typeX))
+
+insertStubTypeModule :: Context -> QualifiedPath -> String -> Maybe Info -> [(String, Binder)] -> Context
+insertStubTypeModule ctx qpath name info stubBindings =
+  case E.searchBinder (contextGlobalEnv ctx) (unqualify qpath) of
+    Right _ -> ctx
+    Left _ ->
+      let innerEnv = either (const Nothing) Just (innermostModuleEnv ctx)
+          moduleValueEnv = E.addListOfBindings (E.new innerEnv (Just name)) stubBindings
+          moduleTypeEnv = E.new (Just (contextTypeEnv ctx)) (Just name)
+          stubModuleXObj = XObj (Mod moduleValueEnv moduleTypeEnv) info (Just ModuleTy)
+       in fromRight ctx (insertInGlobalEnv ctx qpath (toBinder stubModuleXObj))
+
+registerStubInterfaces :: Context -> [(String, Binder)] -> Context
+registerStubInterfaces ctx stubBindings =
+  foldl' registerStub ctx stubBindings
+  where
+    registerStub :: Context -> (String, Binder) -> Context
+    registerStub ctx' (interfaceName, binder) =
+      case (xobjTy (binderXObj binder), E.getBinder (contextTypeEnv ctx') interfaceName) of
+        (Just sig, Right interfaceBinder) ->
+          case registerInInterfaceIfNeeded ctx' binder interfaceBinder sig of
+            (Right ctx'', _) -> ctx''
+            _ -> ctx'
+        _ -> ctx'
+
+lookupTypeBinderMaybe :: Context -> QualifiedPath -> Maybe Binder
+lookupTypeBinderMaybe ctx qpath =
+  case unqualify qpath of
+    SymPath [] name -> either (const Nothing) Just (E.getBinder (contextTypeEnv ctx) name)
+    SymPath path name -> either (const Nothing) Just (E.searchTypeBinder (contextGlobalEnv ctx) (SymPath path name))
 
 -- | "NORMAL" COMMANDS (just like the ones in Command.hs, but these need access to 'eval', etc.)
 
@@ -572,7 +713,7 @@ commandExpand = macroExpand
 -- | i.e. (Int.+ 2 3) => "_0 = 2 + 3"
 commandC :: UnaryCommandCallback
 commandC ctx xobj = do
-  (newCtx, result) <- expandAll (evalDynamic) ctx xobj
+  (newCtx, result) <- expandAll evalExpand ctx xobj
   case result of
     Left err -> pure (newCtx, Left err)
     Right expanded -> do
@@ -590,7 +731,7 @@ commandC ctx xobj = do
 -- | This function will return the compiled AST.
 commandExpandCompiled :: UnaryCommandCallback
 commandExpandCompiled ctx xobj = do
-  (newCtx, result) <- expandAll (evalDynamic) ctx xobj
+  (newCtx, result) <- expandAll evalExpand ctx xobj
   case result of
     Left err -> pure (newCtx, Left err)
     Right expanded -> do
@@ -606,7 +747,7 @@ printC xobj =
     Left e ->
       strWithColor Red (show e ++ ", can't print resulting code.\n")
     Right _ ->
-      strWithColor Green (toC All (Binder emptyMeta xobj))
+      strWithColor Green (toC All False [] (Binder emptyMeta xobj))
 
 buildMainFunction :: XObj -> XObj
 buildMainFunction xobj =

@@ -6,6 +6,7 @@ module Obj where
 
 import Control.Applicative
 import Control.Monad.State
+import Control.Monad (zipWithM)
 import Data.Char
 import Data.Hashable
 import Data.List (intercalate)
@@ -218,6 +219,10 @@ isLiteral _ = False
 isBool :: XObj -> Bool
 isBool (XObj (Bol _) _ _) = True
 isBool _ = False
+
+isStr :: XObj -> Bool
+isStr (XObj (Str _) _ _) = True
+isStr _ = False
 
 isExternalFunction :: XObj -> Bool
 isExternalFunction (XObj (Lst (XObj (External _) _ _ : _)) _ _) = True
@@ -878,8 +883,8 @@ xobjToTy (XObj (Lst [XObj (Sym (SymPath _ "Fn") _) _ _, XObj (Arr argTys) _ _, r
   do
     okArgTys <- mapM xobjToTy argTys
     okRetTy <- xobjToTy retTy
-    _ <- xobjToTy lifetime
-    pure (FuncTy okArgTys okRetTy StaticLifetimeTy)
+    okLifetime <- xobjToTy lifetime
+    pure (FuncTy okArgTys okRetTy okLifetime)
 xobjToTy (XObj (Lst []) _ _) = Just UnitTy
 xobjToTy (XObj (Lst (x : xs)) _ _) =
   do

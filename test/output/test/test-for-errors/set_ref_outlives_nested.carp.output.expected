@@ -1,0 +1,1 @@
+set_ref_outlives_nested.carp:9:15 The reference 'x' isn't alive.

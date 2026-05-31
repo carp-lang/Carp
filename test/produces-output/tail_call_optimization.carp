@@ -1,0 +1,44 @@
+; Self-recursive tail call optimization
+
+; Simple countdown
+(defn countdown [n]
+  (if (= n 0) 0 (countdown (- n 1))))
+
+; Accumulator pattern
+(defn sum-to [n acc]
+  (if (= n 0) acc (sum-to (- n 1) (+ acc n))))
+
+; Parameter swap (gcd)
+(defn gcd- [a b]
+  (if (= b 0) a (gcd- b (mod a b))))
+
+; TCO with do form
+(defn countdown-do [n]
+  (do
+    (if (= n 0) 0 (countdown-do (- n 1)))))
+
+; TCO with let
+(defn countdown-let [n]
+  (let [m (- n 1)]
+    (if (= n 0) 0 (countdown-let m))))
+
+; TCO with managed types (string accumulator)
+(defn repeat-str [n acc]
+  (if (= n 0)
+    acc
+    (let [piece @"x"]
+      (repeat-str (- n 1) (StringCopy.append &acc &piece)))))
+
+; Non-tail recursion should still work (factorial)
+(defn factorial [n]
+  (if (= n 0) 1 (* n (factorial (- n 1)))))
+
+(defn main []
+  (do
+    (IO.println &(Int.str (countdown 1000000)))
+    (IO.println &(Int.str (sum-to 100 0)))
+    (IO.println &(Int.str (gcd- 48 18)))
+    (IO.println &(Int.str (countdown-do 1000000)))
+    (IO.println &(Int.str (countdown-let 1000000)))
+    (IO.println &(repeat-str 5 @""))
+    (IO.println &(Int.str (factorial 10)))))

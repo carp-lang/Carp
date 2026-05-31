@@ -40,7 +40,7 @@ jobs:
       run: stack test
 
     - name: Run Carp Tests
-      run: ./scripts/run_carp_tests.sh
+      run: ./scripts/run_carp_tests.sh -j 4
 
     - name: List Contents of Docs Directory
       run: ls ./docs/core

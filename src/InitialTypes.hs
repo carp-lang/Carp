@@ -1,6 +1,7 @@
 module InitialTypes where
 
 import Control.Monad.State
+import Control.Monad (replicateM, foldM, join)
 import Data.Either (fromRight)
 import qualified Env as E
 import Info

@@ -450,8 +450,8 @@ void Pattern_internal_reprepstate(PatternMatchState* ms) {
 Array Pattern_match_MINUS_groups(Pattern* p, String* s) {
     String str = *s;
     Pattern pat = *p;
-    int lstr = strlen(str);
-    int lpat = strlen(pat);
+    size_t lstr = strlen(str);
+    size_t lpat = strlen(pat);
     PatternMatchState ms;
     String s1 = str;
     int anchor = (*pat == '^');
@@ -484,8 +484,8 @@ PatternMatchResult Pattern_match_MINUS_from(Pattern* p, String* s,
     PatternMatchResult result = {.start = -1, .end = -1};
     String str = *s + startpos;
     Pattern pat = *p;
-    int lstr = strlen(str);
-    int lpat = strlen(pat);
+    size_t lstr = strlen(str);
+    size_t lpat = strlen(pat);
     PatternMatchState ms;
     String s1 = str;
     int anchor = (*pat == '^');
@@ -546,8 +546,8 @@ Array Array_push_back(Array res, Array tmp) {
 Array Pattern_match_MINUS_all_MINUS_groups(Pattern* p, String* s) {
     String str = *s;
     Pattern pat = *p;
-    int lstr = strlen(str);
-    int lpat = strlen(pat);
+    size_t lstr = strlen(str);
+    size_t lpat = strlen(pat);
     PatternGMatchState gm;
     Pattern_internal_prepstate(&gm.ms, str, lstr, pat, lpat);
     gm.src = str;
@@ -572,7 +572,7 @@ String Pattern_internal_add_char(String a, Char b) {
         return buffer;
     }
 
-    int len = strlen(a) + 2;
+    size_t len = strlen(a) + 2;
     String buffer = CARP_MALLOC(len);
     snprintf(buffer, len, "%s%c", a, b);
     CARP_FREE(a);
@@ -613,8 +613,8 @@ String Pattern_substitute(Pattern* p, String* s, String* t, int ns) {
     String str = *s;
     Pattern pat = *p;
     String tr = *t;
-    int lstr = strlen(str);
-    int lpat = strlen(pat);
+    size_t lstr = strlen(str);
+    size_t lpat = strlen(pat);
     String lastmatch = NULL; /* end of last match */
     int anchor = (*pat == '^');
     String res = NULL;
@@ -643,7 +643,7 @@ String Pattern_substitute(Pattern* p, String* s, String* t, int ns) {
 
     if (!res) return String_copy(&str);
 
-    int l = strlen(res) + strlen(str) + 1;
+    size_t l = strlen(res) + strlen(str) + 1;
     String buffer = CARP_MALLOC(l);
     snprintf(buffer, l, "%s%s", res, str);
     CARP_FREE(res);
@@ -669,7 +669,7 @@ String Pattern_str(Pattern* p) {
 }
 
 String Pattern_prn(Pattern* p) {
-    int n = strlen(*p) + 4;
+    size_t n = strlen(*p) + 4;
     String buffer = CARP_MALLOC(n);
     snprintf(buffer, n, "#\"%s\"", *p);
     return buffer;

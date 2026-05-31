@@ -1,0 +1,29 @@
+(Project.no-echo)
+
+; Simple forward reference: main calls add-one defined below
+(defn main []
+  (do
+    (IO.println &(Int.str (add-one 41)))
+    (IO.println &(Int.str (chain 10)))
+    (IO.println &(Bool.str (is-even 10)))
+    (IO.println &(Bool.str (is-even 7)))))
+
+(defn add-one [x]
+  (+ x 1))
+
+; Chain of forward references: chain -> chain-b -> chain-c
+(defn chain [x]
+  (chain-b (+ x 1)))
+
+(defn chain-b [x]
+  (chain-c (* x 2)))
+
+(defn chain-c [x]
+  (- x 1))
+
+; Mutual recursion
+(defn is-even [n]
+  (if (= n 0) true (is-odd (- n 1))))
+
+(defn is-odd [n]
+  (if (= n 0) false (is-even (- n 1))))

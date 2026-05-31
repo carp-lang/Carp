@@ -1,0 +1,1 @@
+lambda_leaking_capture.carp:6:18 Can't give away captured value 's'.

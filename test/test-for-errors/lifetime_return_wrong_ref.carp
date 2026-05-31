@@ -1,0 +1,7 @@
+(Project.config "file-path-print-length" "short")
+
+; sig says return (Ref String a) but body returns y which is (Ref Int a)
+(sig pick-wrong (Fn [(Ref String a) (Ref Int a)] (Ref String a)))
+(defn pick-wrong [x y] y)
+
+(defn main [] (IO.println (pick-wrong &@"hi" &42)))
