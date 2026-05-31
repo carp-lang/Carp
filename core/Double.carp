@@ -103,6 +103,8 @@
   (register tan (Fn [Double] Double))
   (doc tanh "returns the hyperbolic tangent of `a`.")
   (register tanh (Fn [Double] Double))
+  (doc round "returns the nearest integer to `a`.")
+  (register round (Fn [Double] Int))
 
   (implements abs Double.abs)
   (implements acos Double.acos)
@@ -126,6 +128,7 @@
   (implements sqrt Double.sqrt)
   (implements tan Double.tan)
   (implements tanh Double.tanh)
+  (implements to-int Double.to-int)
   (implements sign Double.sign)
 
   (doc sign "Returns `-1.0` if `x` is negative, `0.0` if zero, or `1.0` if positive.
