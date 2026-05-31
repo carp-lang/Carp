@@ -805,6 +805,44 @@ static WGPUVertexBufferWrapper* wgpu_create_vertex_buffer(WGPUContext* ctx,
     return vb;
 }
 
+static WGPUVertexBufferWrapper* wgpu_create_storage_vertex_buffer(WGPUContext* ctx,
+                                                                   const void* data,
+                                                                   uint64_t size) {
+    if (!ctx) {
+        wgpu_set_error("wgpu_create_storage_vertex_buffer: null context");
+        return NULL;
+    }
+
+    WGPUBufferDescriptor desc = {
+        .usage            = WGPUBufferUsage_Vertex | WGPUBufferUsage_Storage | WGPUBufferUsage_CopyDst | WGPUBufferUsage_CopySrc,
+        .size             = size,
+        .mappedAtCreation = data ? 1 : 0,
+    };
+    WGPUBuffer buffer = wgpuDeviceCreateBuffer(ctx->device, &desc);
+    if (!buffer) {
+        wgpu_set_error("wgpu_create_storage_vertex_buffer: wgpuDeviceCreateBuffer failed");
+        return NULL;
+    }
+
+    if (data) {
+        void* mapped = wgpuBufferGetMappedRange(buffer, 0, size);
+        if (mapped) {
+            memcpy(mapped, data, size);
+            wgpuBufferUnmap(buffer);
+        }
+    }
+
+    WGPUVertexBufferWrapper* vb = calloc(1, sizeof(WGPUVertexBufferWrapper));
+    if (!vb) {
+        wgpu_set_error("wgpu_create_storage_vertex_buffer: allocation failed");
+        wgpuBufferRelease(buffer);
+        return NULL;
+    }
+    vb->buffer = buffer;
+    vb->size   = size;
+    return vb;
+}
+
 static void wgpu_vertex_buffer_free(WGPUVertexBufferWrapper* vb) {
     if (!vb) return;
     if (vb->buffer) wgpuBufferRelease(vb->buffer);

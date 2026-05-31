@@ -303,6 +303,8 @@ Clear color is black.")
 
   (register create-vertex-buffer-  (Fn [(Ptr WGPUContext) (Ptr Float) Uint64]
                                         (Ptr WGPUVertexBufferWrapper))         "wgpu_create_vertex_buffer")
+  (register create-storage-vertex-buffer- (Fn [(Ptr WGPUContext) (Ptr Float) Uint64]
+                                        (Ptr WGPUVertexBufferWrapper))         "wgpu_create_storage_vertex_buffer")
   (register free-vertex-buffer     (Fn [(Ptr WGPUVertexBufferWrapper)] ())     "wgpu_vertex_buffer_free")
 
   ; -- Uniform buffer ----------------------------------------------
@@ -385,6 +387,16 @@ Call (WGPURender.free-vertex-buffer vb) when done.")
     (let [vb (create-vertex-buffer- ctx
                                     (WGPU.array->ptr data)
                                     (Uint64.from-long (Long.from-int (* (Array.length data) 4))))]
+      (if (vertex-buffer-null?- vb)
+        (Result.Error (get-error))
+        (Result.Success vb))))
+
+  (doc create-storage-vertex-buffer "Creates a GPU buffer usable as both Vertex and Storage from an (Array Float).
+Returns (Success vertex-buffer) or (Error message).")
+  (defn create-storage-vertex-buffer [ctx data]
+    (let [vb (create-storage-vertex-buffer- ctx
+                                            (WGPU.array->ptr data)
+                                            (Uint64.from-long (Long.from-int (* (Array.length data) 4))))]
       (if (vertex-buffer-null?- vb)
         (Result.Error (get-error))
         (Result.Success vb))))
