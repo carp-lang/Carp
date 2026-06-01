@@ -79,8 +79,9 @@
                                     WGPUComputePipeline)                                "wgpu_create_compute_pipeline")
   (register create-buffer-     (Fn [(Ptr WGPUContext) Uint64] WGPUBuffer)               "wgpu_create_storage_buffer")
   (register write-buffer-      (Fn [(Ptr WGPUContext) WGPUBuffer (Ptr Float) Uint64] ()) "wgpu_write_buffer")
-  (register create-bind-group- (Fn [(Ptr WGPUContext) WGPUComputePipeline
-                                     (Ptr WGPUBuffer) Int] WGPUBindGroup)               "wgpu_create_bind_group")
+  (register create-bind-group- (Fn [(Ptr WGPUContext) WGPUComputePipeline (Ptr WGPUBuffer) Int] WGPUBindGroup) "wgpu_create_bind_group")
+  (register create-bind-group-raw- (Fn [(Ptr WGPUContext) WGPUBindGroupLayout (Ptr WGPUBuffer) Int] WGPUBindGroup) "wgpu_create_bind_group_raw")
+
   (register dispatch           (Fn [(Ptr WGPUContext) WGPUComputePipeline
                                      WGPUBindGroup Int] ())                             "wgpu_dispatch_and_wait")
   (register read-buffer-       (Fn [(Ptr WGPUContext) WGPUBuffer (Ptr Float) Uint64] ()) "wgpu_read_buffer")

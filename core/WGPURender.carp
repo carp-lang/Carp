@@ -299,7 +299,21 @@ Clear color is black.")
   (register geom-pipeline-null?-   (Fn [(Ptr WGPUGeomPipelineWrapper)] Bool)  "wgpu_geom_pipeline_is_null")
   (register index-buffer-null?-    (Fn [(Ptr WGPUIndexBufferWrapper)] Bool)   "wgpu_index_buffer_is_null")
 
-  ; -- Vertex buffer -----------------------------------------------
+  (deftemplate get-r-pipeline (Fn [(Ptr WGPURenderPipelineWrapper)] WGPURenderPipeline)
+    "WGPURenderPipeline $NAME(WGPURenderPipelineWrapper* w)"
+    "$DECL { return w->pipeline; }")
+
+  (deftemplate get-r-bgl (Fn [(Ptr WGPURenderPipelineWrapper)] WGPUBindGroupLayout)
+    "WGPUBindGroupLayout $NAME(WGPURenderPipelineWrapper* w)"
+    "$DECL { return w->bgl; }")
+
+  (deftemplate get-g-pipeline (Fn [(Ptr WGPUGeomPipelineWrapper)] WGPURenderPipeline)
+    "WGPURenderPipeline $NAME(WGPUGeomPipelineWrapper* w)"
+    "$DECL { return w->pipeline; }")
+
+  (deftemplate get-g-bgl (Fn [(Ptr WGPUGeomPipelineWrapper)] WGPUBindGroupLayout)
+    "WGPUBindGroupLayout $NAME(WGPUGeomPipelineWrapper* w)"
+    "$DECL { return w->bgl; }")
 
   (register create-vertex-buffer-  (Fn [(Ptr WGPUContext) (Ptr Float) Uint64]
                                         (Ptr WGPUVertexBufferWrapper))         "wgpu_create_vertex_buffer")

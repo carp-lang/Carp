@@ -193,12 +193,10 @@ static void wgpu_write_buffer(WGPUContext* ctx, WGPUBuffer buffer,
 /* Bind group                                                          */
 /* ------------------------------------------------------------------ */
 
-static WGPUBindGroup wgpu_create_bind_group(WGPUContext* ctx,
-                                             WGPUComputePipeline pipeline,
-                                             WGPUBuffer* buffers,
-                                             uint32_t buffer_count) {
-    WGPUBindGroupLayout layout = wgpuComputePipelineGetBindGroupLayout(pipeline, 0);
-
+static WGPUBindGroup wgpu_create_bind_group_raw(WGPUContext* ctx,
+                                                 WGPUBindGroupLayout layout,
+                                                 WGPUBuffer* buffers,
+                                                 uint32_t buffer_count) {
     WGPUBindGroupEntry entries[8];
     uint32_t count = buffer_count < 8 ? buffer_count : 8;
     for (uint32_t i = 0; i < count; i++) {
@@ -209,7 +207,15 @@ static WGPUBindGroup wgpu_create_bind_group(WGPUContext* ctx,
     WGPUBindGroupDescriptor desc = {
         .layout = layout, .entryCount = count, .entries = entries,
     };
-    WGPUBindGroup bg = wgpuDeviceCreateBindGroup(ctx->device, &desc);
+    return wgpuDeviceCreateBindGroup(ctx->device, &desc);
+}
+
+static WGPUBindGroup wgpu_create_bind_group(WGPUContext* ctx,
+                                             WGPUComputePipeline pipeline,
+                                             WGPUBuffer* buffers,
+                                             uint32_t buffer_count) {
+    WGPUBindGroupLayout layout = wgpuComputePipelineGetBindGroupLayout(pipeline, 0);
+    WGPUBindGroup bg = wgpu_create_bind_group_raw(ctx, layout, buffers, buffer_count);
     wgpuBindGroupLayoutRelease(layout);
     return bg;
 }
