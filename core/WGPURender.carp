@@ -228,8 +228,8 @@ Use this when creating pipelines that render into the surface, to ensure format 
 `format` is a texture format string: \"bgra8unorm\", \"rgba8unorm\", or \"rgba16float\".
 Returns (Success render-texture) or (Error message).
 Call (WGPURender.free-render-texture rt) when done.")
-  (defn create-render-texture [ctx width height format]
-    (let [rt (create-render-texture- ctx width height (String.cstr &format))]
+  (defn create-render-texture [ctx width height &format]
+    (let [rt (create-render-texture- ctx width height (String.cstr format))]
       (if (texture-null?- rt)
         (Result.Error (get-error))
         (Result.Success rt))))
@@ -248,12 +248,12 @@ The source must contain both vertex and fragment shaders.
 `format` is the target texture format string.
 Returns (Success pipeline) or (Error message).
 Call (WGPURender.free-pipeline pipe) when done.")
-  (defn create-pipeline [ctx wgsl vs-entry fs-entry format]
+  (defn create-pipeline [ctx &wgsl &vs-entry &fs-entry &format]
     (let [p (create-pipeline- ctx
-                              (String.cstr &wgsl)
-                              (String.cstr &vs-entry)
-                              (String.cstr &fs-entry)
-                              (String.cstr &format))]
+                              (String.cstr wgsl)
+                              (String.cstr vs-entry)
+                              (String.cstr fs-entry)
+                              (String.cstr format))]
       (if (pipeline-null?- p)
         (Result.Error (get-error))
         (Result.Success p))))
@@ -447,13 +447,13 @@ stride 24 bytes. Includes depth testing (Less) and one uniform buffer binding.
 `topology` is the primitive topology string (e.g. \"triangle-list\", \"point-list\").
 Returns (Success geom-pipeline) or (Error message).
 Call (WGPURender.free-geom-pipeline pipe) when done.")
-  (defn create-geom-pipeline [ctx wgsl vs-entry fs-entry format topology stride]
+  (defn create-geom-pipeline [ctx &wgsl &vs-entry &fs-entry &format &topology stride]
     (let [p (create-geom-pipeline- ctx
-                                   (String.cstr &wgsl)
-                                   (String.cstr &vs-entry)
-                                   (String.cstr &fs-entry)
-                                   (String.cstr &format)
-                                   (String.cstr &topology)
+                                   (String.cstr wgsl)
+                                   (String.cstr vs-entry)
+                                   (String.cstr fs-entry)
+                                   (String.cstr format)
+                                   (String.cstr topology)
                                    stride)]
       (if (geom-pipeline-null?- p)
         (Result.Error (get-error))
