@@ -56,6 +56,23 @@ expandAll eval ctx root =
               else expandAll eval newCtx expanded
           err -> pure (newCtx, err)
 
+-- | Bind fn parameters / let names into a local scope so they shadow same-named
+-- globals during expansion, instead of being substituted (which never terminates).
+withLocalScope :: Context -> [XObj] -> Context
+withLocalScope ctx names =
+  let base = case contextInternalEnv ctx of
+        Just e -> e -- accumulate into the enclosing scope so nested binders stack
+        Nothing -> nested (Just (contextEnv ctx)) Nothing 0
+      localEnv = foldl bindName base names
+   in replaceInternalEnv ctx localEnv
+  where
+    bindName e s@(XObj (Sym path _) _ _) = either (const e) id (insertX e path s)
+    bindName e _ = e
+
+symsOf :: XObj -> [XObj]
+symsOf (XObj (Arr xs) _ _) = xs
+symsOf _ = []
+
 -- | Macro expansion of a single form
 expand :: ExpansionMode -> DynamicEvaluator -> Context -> XObj -> IO (Context, Either EvalError XObj)
 expand mode eval ctx xobj =
@@ -129,9 +146,9 @@ expand mode eval ctx xobj =
     expandListFull (XObj (Defalias _) _ _ : _) _ _ = pure (ctx, Right xobj)
     expandListFull [defnExpr@(XObj (Defn _) _ _), name, args, body] i' t' =
       do
-        (ctx', expandedBody) <- expand mode eval ctx body
+        (ctx', expandedBody) <- expand mode eval (withLocalScope ctx (symsOf args)) body
         pure
-          ( ctx',
+          ( replaceInternalEnvMaybe ctx' (contextInternalEnv ctx),
             do
               okBody <- expandedBody
               Right (XObj (Lst [defnExpr, name, args, okBody]) i' t')
@@ -185,10 +202,11 @@ expand mode eval ctx xobj =
     expandListFull (letExpr@(XObj Let _ _) : XObj (Arr bindings) bindi bindt : body : _) i' t' =
       if even (length bindings)
         then do
-          (ctx', bind) <- expandPairs ctx (pairwise bindings)
+          let scoped = withLocalScope ctx (map fst (pairwise bindings))
+          (ctx', bind) <- expandPairs scoped (pairwise bindings)
           (newCtx, expandedBody) <- expand mode eval ctx' body
           pure
-            ( newCtx,
+            ( replaceInternalEnvMaybe newCtx (contextInternalEnv ctx),
               do
                 okBindings <- bind
                 okBody <- expandedBody
@@ -358,6 +376,8 @@ expand mode eval ctx xobj =
           case p of
             [] ->
               case getBinder (contextEnv ctx :: Env) name of
+                -- A locally-scoped name shadows globals: keep it as-is rather than substituting.
+                Right (Binder _ (XObj (Sym _ _) _ _)) -> pure (ctx, Right xobj)
                 Right (Binder _ found) -> pure (ctx, Right (matchDef found))
                 _ -> searchForBinder
             _ -> searchForBinder
