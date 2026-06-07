@@ -1,0 +1,2 @@
+ Inferred Macro, can't unify with Int.
+/home/sqrew/Desktop/Carp-fork/test/test-for-errors/protocol_soundness.carp:7:3 Inferred (Fn [t0, t1] Int), can't unify with BadNum.

@@ -53,6 +53,7 @@ tyToCManglePtr _ ty = f ty
     f DynamicTy = err "dynamic functions"
     f StaticLifetimeTy = err "lifetimes"
     f InterfaceTy = err "interfaces"
+    f ProtocolTy = err "protocols"
     f Universe = err "universe"
     f (PointerTy _) = err "pointers"
     f (RefTy _ _) = err "references"

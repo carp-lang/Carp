@@ -1,0 +1,7 @@
+(defprotocol (Show a) 
+  [(show (Fn [a] String))])
+
+(deftype Person [name String])
+
+;; This should fail because 'show' is not implemented
+(impl-for Person Show)

@@ -1,0 +1,12 @@
+(defprotocol (Show a) 
+  [(show (Fn [a] String))])
+
+(deftype Person [name String])
+
+(defmodule Person
+  (defn show [p] @"one"))
+
+(impl-for Person Show)
+
+;; SHOULD FAIL: Duplicate implementation for symbol 'Person'
+(impl-for Person Show)
