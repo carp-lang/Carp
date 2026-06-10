@@ -31,6 +31,7 @@ module Context
 where
 
 import Data.Bifunctor
+import Data.List (stripPrefix)
 import Debug.Trace
 import qualified Env as E
 import Obj
@@ -309,11 +310,18 @@ lookupBinderInTypeEnv ctx path =
   let typeEnv = contextTypeEnv ctx
       global = contextGlobalEnv ctx
       fullPath@(SymPath qualification name) = contextualize path ctx
-      theType =
-        ( case qualification of
-            [] -> E.getBinder typeEnv name
-            _ -> E.searchTypeBinder global fullPath
-        )
+      lookup' (SymPath [] n) = E.getBinder typeEnv n
+      lookup' p = E.searchTypeBinder global p
+      theType = case stripPrefix (contextPath ctx) qualification of
+        Just stripped
+          | not (null (contextPath ctx)) ->
+            case lookup' fullPath of
+              Right b -> Right b
+              Left err ->
+                case lookup' (SymPath stripped name) of
+                  Right b | isType (binderXObj b) -> Right b
+                  _ -> Left err
+        _ -> lookup' fullPath
    in replaceLeft (NotFoundType fullPath) theType
 
 -- | Lookup a binder in a context's global environment.

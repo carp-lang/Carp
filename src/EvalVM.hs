@@ -381,9 +381,11 @@ resolveSymbol ctx spath@(SymPath p n) info preference =
           )
             <|> lookupInUsedModules rest
     checkPrivate meta found =
-      if metaIsTrue meta "private"
+      if metaIsTrue meta "private" && not (privateAccessible (getPath found))
         then pure (throwErr (PrivateBinding (getPath found)) ctx info)
         else resolveFound found
+    privateAccessible (SymPath modulePath _) =
+      null modulePath || modulePath == contextPath ctx
     lookupInternalBinder = E.lookupBinderInParentChain
     resolveDef (XObj (Lst [XObj DefDynamic _ _, _, value]) _ _) = value
     resolveDef (XObj (Lst [XObj LocalDef _ _, _, value]) _ _) = value
@@ -917,7 +919,7 @@ dispatchCallableBC phase appCtx preference fun args argCodes info ty funXObj =
     dispatchCompiledClosure mode capturedCtx cid proper rest =
       case mode of
         CallAsMacro ->
-          runCompiledMacroClosureCallBC phase appCtx preference cid proper rest args
+          runCompiledMacroClosureCallBC phase appCtx preference capturedCtx cid proper rest args
         CallAsDynamic ->
           runCompiledDynamicClosureCallBC phase appCtx cid proper rest argCodes
         CallAsFunction ->
@@ -1012,9 +1014,11 @@ runCompiledDynamicClosureCallBC phase appCtx cid proper restName argCodes = do
       pure (replaceInternalEnvMaybe ctx' (contextInternalEnv ctxWithArgs), res)
     Left err -> pure (ctxWithArgs, Left err)
 
-runCompiledMacroClosureCallBC :: EvalPhase -> Context -> LookupPreference -> Int -> [String] -> Maybe String -> [EvalIR] -> IO (Context, Either EvalError XObj)
-runCompiledMacroClosureCallBC phase appCtx preference cid proper restName argsToCall = do
-  (ctx', res) <- applyCompiledBC phase CompileModeMacro appCtx cid proper restName (map raiseExpr argsToCall)
+runCompiledMacroClosureCallBC :: EvalPhase -> Context -> LookupPreference -> Context -> Int -> [String] -> Maybe String -> [EvalIR] -> IO (Context, Either EvalError XObj)
+runCompiledMacroClosureCallBC phase appCtx preference capturedCtx cid proper restName argsToCall = do
+  let macroCtx = replacePath appCtx (contextPath capturedCtx)
+  (bodyCtx, res) <- applyCompiledBC phase CompileModeMacro macroCtx cid proper restName (map raiseExpr argsToCall)
+  let ctx' = replacePath bodyCtx (contextPath appCtx)
   case res of
     Right xobj' -> do
       (expandedCtx, expandedRes) <- macroExpandVM ctx' xobj'

@@ -1,0 +1,17 @@
+(load "Test.carp")
+(use Test)
+
+; Regression test: a macro must be able to use private dynamic helpers from
+; its own module, both via qualified and unqualified references, no matter
+; where it is invoked from.
+
+(defmodule M
+  (hidden helper)
+  (private helper)
+  (defndynamic helper [x] x)
+  (defmacro qualified [] (M.helper 1))
+  (defmacro unqualified [] (helper 2)))
+
+(deftest test
+  (assert-equal test 1 (M.qualified) "macro can call a private same-module helper (qualified)")
+  (assert-equal test 2 (M.unqualified) "macro can call a private same-module helper (unqualified)"))
