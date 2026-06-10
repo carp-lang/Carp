@@ -384,9 +384,12 @@ expand mode eval ctx xobj =
           where
             qpath = qualifyPath ctx (SymPath [] name)
             searchForBinder =
-              case lookupBinderInGlobalEnv ctx path <> lookupBinderInGlobalEnv ctx qpath of
+              case lookupBinderInGlobalEnv ctx path <> fallbackLookup of
                 Right (Binder meta found) -> isPrivate meta (matchDef found) (getPath found)
                 Left _ -> pure (ctx, Right xobj) -- symbols that are not found are left as-is
+            fallbackLookup
+              | null p = lookupBinderInGlobalEnv ctx qpath
+              | otherwise = lookupBinderInGlobalEnv ctx (markQualified path)
             isPrivate m x (SymPath p' _) =
               pure $
                 if (metaIsTrue m "private") && (not (null p') && p' /= contextPath ctx)
