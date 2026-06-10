@@ -1,0 +1,27 @@
+(load "Test.carp")
+(use Test)
+
+; Regression test: an unqualified reference to an interface in value position
+; (e.g. `&str` passed to a higher-order function) used to get the binding of
+; a same-named macro in the enclosing module substituted for it, which made
+; expansion loop forever.
+
+(defmodule M
+  (deftype T (A [Long]) (B []))
+  (defmodule T
+    (defn str [t]
+      (match @t
+        (T.A i) (Long.str i)
+        (T.B) @"b"))
+    (implements str M.T.str))
+
+  (defmacro str [a] a)
+
+  (defn join-all [o]
+    (Array.join ", " &(Array.copy-map &str o))))
+
+(deftest test
+  (assert-equal test
+                "1, b"
+                &(M.join-all &[(M.T.A 1l) (M.T.B)])
+                "interface references in value positions aren't shadowed by macros"))
