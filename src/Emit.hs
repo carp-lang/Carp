@@ -1330,7 +1330,7 @@ typeEnvToDeclarations typeEnv global =
             allScoredBinders
         pure (forwardDecls ++ concat okDecls)
   where
-    addEnvToScore tyE = (sortDeclarationBinders tyE global (map snd (Map.toList (binders tyE))))
+    addEnvToScore tyE = (sortDeclarationBinders typeEnv tyE global (map snd (Map.toList (binders tyE))))
     go sorted (XObj (Mod e t) _ _) = sorted ++ (foldl go (addEnvToScore t) (findModules e))
     go xs _ = xs
 
@@ -1366,7 +1366,7 @@ forwardDeclFromBinder _ = Nothing
 
 envToDeclarations :: TypeEnv -> Env -> Either ToCError String
 envToDeclarations typeEnv env =
-  let bindersWithScore = sortDeclarationBinders typeEnv env (map snd (Map.toList (envBindings env)))
+  let bindersWithScore = sortDeclarationBinders typeEnv typeEnv env (map snd (Map.toList (envBindings env)))
    in do
         okDecls <-
           mapM
@@ -1381,10 +1381,10 @@ envToDeclarations typeEnv env =
 -- debugScorePair :: (Int, Binder) -> (Int, Binder)
 -- debugScorePair (s,b) = trace ("Scored binder: " ++ show b ++ ", score: " ++ show s) (s,b)
 
-sortDeclarationBinders :: TypeEnv -> Env -> [Binder] -> [(Int, Binder)]
-sortDeclarationBinders typeEnv env binders' =
+sortDeclarationBinders :: TypeEnv -> TypeEnv -> Env -> [Binder] -> [(Int, Binder)]
+sortDeclarationBinders rootTypeEnv typeEnv env binders' =
   --trace ("\nSORTED: " ++ (show (sortOn fst (map (scoreBinder typeEnv) binders))))
-  sortOn fst (map (scoreTypeBinder typeEnv env) binders')
+  sortOn fst (map (scoreTypeBinder rootTypeEnv typeEnv env) binders')
 
 sortGlobalVariableBinders :: Env -> [Binder] -> [(Int, Binder)]
 sortGlobalVariableBinders globalEnv binders' =

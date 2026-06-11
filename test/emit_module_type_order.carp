@@ -1,0 +1,20 @@
+(load "Test.carp")
+(use Test)
+
+; Regression test: a generic type instantiated with a module-nested type used
+; to be emitted before that type's struct definition in the generated C. The
+; dependency scorer couldn't resolve types inside modules (nor root types
+; referenced from module type members), so emission order degenerated to
+; accidental fallback scores.
+
+(defmodule M
+  (deftype Q (Lo []) (Hi []))
+  (deftype P [desc String inner (Maybe M.Q)])
+  (defn whole []
+    (the (Result M.P String) (Result.Success (P.init @"fine" (Maybe.Nothing))))))
+
+(deftest test
+  (assert-equal test
+                "fine"
+                (M.P.desc &(Result.unsafe-from-success (M.whole)))
+                "module-nested types are emitted before generic types embedding them"))
