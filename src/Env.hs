@@ -40,6 +40,7 @@ module Env
     deleteBinding,
     addListOfBindings,
     addUsePath,
+    removeUsePath,
     -------------------------
     -- finds
     findPoly,
@@ -425,6 +426,9 @@ addListOfBindings e bindings =
 -- | Add a module path to an environment's list of used modules.
 addUsePath :: Environment e => e -> SymPath -> e
 addUsePath e path = inj ((prj e) {envUseModules = Set.insert path (envUseModules (prj e))})
+
+removeUsePath :: Environment e => e -> SymPath -> e
+removeUsePath e path = inj ((prj e) {envUseModules = Set.delete path (envUseModules (prj e))})
 
 --------------------------------------------------------------------------------
 -- Additional binding lookup functions

@@ -1,0 +1,26 @@
+(load "Test.carp")
+(use Test)
+
+; Regression test: the implicit `use Dynamic` that macro expansion installs
+; used to leak into the global env, which made unqualified multisym calls
+; (like `reduce` under `(use Array)`) inside nested modules pick up Dynamic
+; module candidates and stay generic instead of resolving concretely.
+
+(defmodule O
+  (deftype CM [values (Array (Pair String String))])
+  (defmodule CM
+    (use Array)
+    (defn to-map [m]
+      (reduce
+        &(fn [a v] (Map.put a (Pair.a v) (Pair.b v)))
+        {}
+        (CM.values m)))))
+
+(defn stringify []
+  (str &(Map.get &(O.CM.to-map &(O.CM.init [(Pair.init @"k" @"v")])) "k")))
+
+(deftest test
+  (assert-equal test
+                "v"
+                &(stringify)
+                "unqualified multisym calls in nested modules resolve concretely"))
