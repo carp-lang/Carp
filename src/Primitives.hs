@@ -512,7 +512,8 @@ registerInternal ctx name ty override =
     invalidType =
       evalError
         ctx
-        ( "Can't understand type when registering '" ++ name
+        ( "Can't understand type when registering '"
+            ++ name
             ++ "'"
         )
         (xobjInfo ty)
@@ -571,7 +572,8 @@ primitiveRegister x ctx _ =
   pure
     ( evalError
         ctx
-        ( "I didn’t understand the form `" ++ pretty x
+        ( "I didn’t understand the form `"
+            ++ pretty x
             ++ "`.\n\nIs it valid? Every `register` needs to follow the form `(register name <signature> <optional: override>)`."
         )
         (xobjInfo x)
@@ -610,9 +612,9 @@ selectConstructor xs =
    in \t ->
         ( XObj
             ( Lst
-                ( XObj (constructor t) Nothing Nothing :
-                  XObj (Sym (getStructPath t) Symbol) Nothing Nothing :
-                  mems
+                ( XObj (constructor t) Nothing Nothing
+                    : XObj (Sym (getStructPath t) Symbol) Nothing Nothing
+                    : mems
                 )
             )
             Nothing
@@ -899,8 +901,8 @@ primitiveHelp _ ctx [XObj (Sym (SymPath [] "language") _) _ _] =
   openBrowserHelper ctx "https://github.com/carp-lang/Carp/blob/master/docs/LanguageGuide.md"
 primitiveHelp _ ctx [XObj (Sym (SymPath [] "core") _) _ _] =
   openBrowserHelper ctx "https://carp-lang.github.io/carp-docs/core/core_index.html"
-primitiveHelp _ ctx [XObj (Sym (SymPath [] "gitter") _) _ _] =
-  openBrowserHelper ctx "https://gitter.im/carp-lang/Carp"
+primitiveHelp _ ctx [XObj (Sym (SymPath [] "chat") _) _ _] =
+  openBrowserHelper ctx "https://discord.gg/yyjnBcMqYM"
 primitiveHelp _ ctx [XObj (Sym (SymPath [] "shortcuts") _) _ _] =
   liftIO $ do
     putStrLn ""
@@ -928,7 +930,7 @@ primitiveHelp _ ctx [] =
     putStrLn "compiler  - Learn how to use the compiler / repl        (web)"
     putStrLn "language  - Syntax and semantics of the language        (web)"
     putStrLn "core      - Core library API documentation              (web)"
-    putStrLn "gitter    - Get help from the community                 (web)"
+    putStrLn "chat      - Get help from the community                 (web)"
     putStrLn "shortcuts - Useful shortcuts in the REPL                     "
     putStrLn "about     - Print some information about this program        "
     putStrLn ""
@@ -936,7 +938,7 @@ primitiveHelp _ ctx [] =
 primitiveHelp _ ctx args =
   return (evalError ctx ("Invalid args to `help`: " ++ joinWithComma (map pretty args)) Nothing)
 
-openBrowserHelper :: MonadIO m => Context -> String -> m (Context, Either EvalError XObj)
+openBrowserHelper :: (MonadIO m) => Context -> String -> m (Context, Either EvalError XObj)
 openBrowserHelper ctx url =
   liftIO $ do
     _ <- openBrowser url
