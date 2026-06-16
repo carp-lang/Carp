@@ -1,0 +1,33 @@
+(load "Test.carp")
+(use Test)
+
+; Regression test: a module-level macro with the same name as a function in a
+; sibling submodule used to hijack qualified references to that function
+; during expansion (in call position this produced an "unexpected static
+; call" error, in value position an infinite expansion loop).
+
+(defmodule M
+  (deftype T (A [Long]) (B []))
+  (defmodule T
+    (defn str [t]
+      (match @t
+        (T.A i) (Long.str i)
+        (T.B) @"b"))
+    (implements str M.T.str))
+
+  (defmacro str [a] a)
+
+  (defn describe [t] (M.T.str t))
+
+  (defn join-all [o]
+    (Array.join ", " &(Array.copy-map &M.T.str o))))
+
+(deftest test
+  (assert-equal test
+                "1"
+                &(M.describe &(M.T.A 1l))
+                "qualified call isn't hijacked by a same-named sibling macro")
+  (assert-equal test
+                "1, b"
+                &(M.join-all &[(M.T.A 1l) (M.T.B)])
+                "qualified reference isn't hijacked by a same-named sibling macro"))
