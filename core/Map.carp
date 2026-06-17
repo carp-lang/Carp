@@ -197,7 +197,8 @@
     (let-do [idx (Int.positive-mod (hash k) @(n-buckets m))
              b (buckets m)
              n (Array.unsafe-nth b idx)]
-      (set-len! m (Int.inc @(len m)))
+      (when (= (Bucket.find n k) -1)
+        (set-len! m (Int.inc @(len m))))
       (Bucket.put! n k v)))
 
   (doc resize "Resize a map `m` to size `s`.")
