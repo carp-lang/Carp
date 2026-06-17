@@ -189,21 +189,34 @@ runEvalIRVMWithPhase phase ctx ir preference =
                 runEvalCodeWithPhase phase ctx preference compiled
 
 evalDynamicVM :: Context -> XObj -> IO (Context, Either EvalError XObj)
-evalDynamicVM ctx xobj =
-  let ctx' = ensureDynamicUse ctx
-   in runEvalIRVMWithPhase PhaseExecute ctx' (lowerExpr ctx' xobj) PreferDynamic
+evalDynamicVM ctx xobj = do
+  let hadDynamicUse = Set.member dynamicUsePath (envUseModules (contextGlobalEnv ctx))
+      ctx' = ensureDynamicUse ctx
+  (resCtx, res) <- runEvalIRVMWithPhase PhaseExecute ctx' (lowerExpr ctx' xobj) PreferDynamic
+  pure (scrubDynamicUse hadDynamicUse resCtx, res)
 
 evalExpandVM :: Context -> XObj -> IO (Context, Either EvalError XObj)
-evalExpandVM ctx xobj =
-  let ctx' = ensureDynamicUse ctx
-   in runEvalIRVMWithPhase PhaseExpand ctx' (lowerExpr ctx' xobj) PreferDynamic
+evalExpandVM ctx xobj = do
+  let hadDynamicUse = Set.member dynamicUsePath (envUseModules (contextGlobalEnv ctx))
+      ctx' = ensureDynamicUse ctx
+  (resCtx, res) <- runEvalIRVMWithPhase PhaseExpand ctx' (lowerExpr ctx' xobj) PreferDynamic
+  pure (scrubDynamicUse hadDynamicUse resCtx, res)
 
 macroExpandVM :: Context -> XObj -> IO (Context, Either EvalError XObj)
 macroExpandVM ctx xobj = expand MacroExpandOnly evalExpandVM ctx xobj
 
+dynamicUsePath :: SymPath
+dynamicUsePath = SymPath [] "Dynamic"
+
 ensureDynamicUse :: Context -> Context
 ensureDynamicUse ctx =
-  replaceGlobalEnv ctx (E.addUsePath (contextGlobalEnv ctx) (SymPath [] "Dynamic"))
+  replaceGlobalEnv ctx (E.addUsePath (contextGlobalEnv ctx) dynamicUsePath)
+
+scrubDynamicUse :: Bool -> Context -> Context
+scrubDynamicUse hadDynamicUse ctx =
+  if hadDynamicUse
+    then ctx
+    else replaceGlobalEnv ctx (E.removeUsePath (contextGlobalEnv ctx) dynamicUsePath)
 
 data VMClosurePayload
   = VMPrecompiled EvalCode
@@ -408,19 +421,18 @@ specialCommandDefineVM ctx xobj = do
 
 annotateWithinContextVM :: Context -> XObj -> IO (Context, Either EvalError (XObj, [XObj]))
 annotateWithinContextVM ctx xobj = do
-  let ctxDyn = ensureDynamicUse ctx
-      globalEnv = contextGlobalEnv ctxDyn
-      typeEnv = contextTypeEnv ctxDyn
-      sig = getSigFromDefnOrDefVM ctxDyn xobj
+  let globalEnv = contextGlobalEnv ctx
+      typeEnv = contextTypeEnv ctx
+      sig = getSigFromDefnOrDefVM ctx xobj
       fppl = projectFilePathPrintLength (contextProj ctx)
   case sig of
     Left err -> pure (ctx, Left err)
     Right okSig -> do
-      (_, expansionResult) <- expandAll evalExpandVM ctxDyn xobj
+      (_, expansionResult) <- expandAll evalExpandVM ctx xobj
       case expansionResult of
         Left err -> pure (ctx, Left err)
         Right expanded ->
-          let xobjFullSymbols = qualify ctxDyn expanded
+          let xobjFullSymbols = qualify ctx expanded
            in case xobjFullSymbols of
                 Left err -> pure (evalError ctx (show err) (xobjInfo xobj))
                 Right xs ->
