@@ -715,7 +715,7 @@ addToLifetimesMappingsIfRef internal xobj =
       pure ()
   where
     makeLifetimeMode =
-      if internal
+      if internal && not refTargetIsGlobal
         then
           LifetimeInsideFunction $
             Set.fromList
@@ -724,6 +724,13 @@ addToLifetimesMappingsIfRef internal xobj =
                   _ -> varOfXObj xobj
               ]
         else LifetimeOutsideFunction
+    refTargetIsGlobal =
+      case xobj of
+        XObj (Lst [XObj Ref _ _, target]) _ _ ->
+          isGlobalFunc target || isGlobalVariable target
+        _ -> False
+    isGlobalVariable (XObj (Sym _ (LookupGlobal _ _)) _ _) = True
+    isGlobalVariable _ = False
     mergeLifetimeMode LifetimeOutsideFunction LifetimeOutsideFunction = LifetimeOutsideFunction
     mergeLifetimeMode (LifetimeInsideFunction a) (LifetimeInsideFunction b) = LifetimeInsideFunction (Set.union a b)
     mergeLifetimeMode (LifetimeInsideFunction a) LifetimeOutsideFunction = LifetimeMixed a

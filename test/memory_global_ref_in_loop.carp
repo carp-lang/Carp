@@ -1,0 +1,26 @@
+(load "Test.carp")
+(use Test)
+
+; Regression test: a reference to a global function (e.g. `&str` passed to
+; copy-map) inside a while/for body used to fail the memory checker's second
+; pass over the loop with "reference isn't alive".
+
+(deftype T (A [Long]) (B []))
+(defmodule T
+  (defn str [t]
+    (match @t
+      (T.A i) (Long.str i)
+      (T.B) @"b"))
+  (implements str T.str))
+
+(defn join-in-loop []
+  (let-do [acc []]
+    (for [i 0 2]
+      (set! acc (Array.push-back acc (Array.join ", " &(Array.copy-map &str &[(T.A 1l) (T.B)])))))
+    (Array.join "; " &acc)))
+
+(deftest test
+  (assert-equal test
+                "1, b; 1, b"
+                &(join-in-loop)
+                "refs to global functions inside loops stay alive"))
