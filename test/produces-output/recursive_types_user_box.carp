@@ -1,0 +1,50 @@
+(Project.no-echo)
+
+;; Exercises the `recursive` flag: a *user* type (not the built-in Box) opting
+;; into heap-indirection so it can break value-recursion. `Cell` is an ordinary
+;; one-slot owning box; `(recursive Cell)` lets it stand in a by-value-recursive
+;; position, and a generic recursive type is then routed through it.
+
+(deftype (Cell a) [ptr (Ptr a)])
+
+(defmodule Cell
+  (deftemplate heap-alloc (Fn [a] (Ptr a)) "$a* $NAME($a v)"
+    "$DECL { $a* p = CARP_MALLOC(sizeof($a)); *p = v; return p; }")
+  (deftemplate heap-free (Fn [(Ptr a)] ()) "void $NAME($a* p)"
+    "$DECL { CARP_FREE(p); }")
+
+  (sig wrap (Fn [a] (Cell a)))
+  (defn wrap [value] (Cell.init (Cell.heap-alloc value)))
+
+  (sig peek (Fn [(Ref (Cell a) q)] (Ref a q)))
+  (defn peek [c] (Pointer.to-ref @(Cell.ptr c)))
+
+  ;; The author vouches copy/delete own the contents through the pointer.
+  (sig copy (Fn [(Ref (Cell a) q)] (Cell a)))
+  (defn copy [c] (Cell.wrap @(Cell.peek c)))
+  (implements copy Cell.copy)
+
+  (sig delete (Fn [(Cell a)] ()))
+  (defn delete [c]
+    (let-do [p @(Cell.ptr &c)]
+      (ignore (Pointer.to-value p))
+      (Cell.heap-free p)))
+  (implements delete Cell.delete))
+
+(recursive Cell)
+
+;; Generic recursive type whose recursion goes through the user box.
+(deftype (Lst a) (Cons [a (Cell (Lst a))]) (Nil []))
+
+(defn prepend [x lst] (Lst.Cons x (Cell.wrap lst)))
+
+(defn sum [lst]
+  (match-ref lst
+    (Lst.Nil) 0
+    (Lst.Cons x rest) (+ @x (sum (Cell.peek rest)))))
+
+(defn main []
+  (let-do [l (prepend 1 (prepend 2 (prepend 3 (Lst.Nil))))
+           c @&l]
+    (IO.println &(Int.str (sum &l)))
+    (IO.println &(Int.str (sum &c)))))

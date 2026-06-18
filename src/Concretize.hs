@@ -9,8 +9,11 @@ module Concretize
     depsForCopyFunc,
     depsForPrnFunc,
     depsForDeleteFunc,
+    depsForDeleteFuncVisited,
     depsForDeleteFuncs,
     depsOfPolymorphicFunction,
+    selfDeleterPath,
+    selfCopierPath,
     typesStrFunctionType,
     concreteDelete,
     memberDeletion,
@@ -394,13 +397,24 @@ visitSymbol visited allowAmbig tenv env xobj@(SymPat path mode) =
                     typeOfVisited = fromMaybe (error ("Missing type on " ++ show xobj ++ " at " ++ prettyInfoFromXObj xobj ++ " when looking up path " ++ show path)) (xobjTy xobj)
                  in if --(trace $ "CHECKING " ++ getName xobj ++ " : " ++ show theType ++ " with visited type " ++ show typeOfVisited ++ " and visited definitions: " ++ show visitedDefinitions) $
                     (isTypeGeneric theType && not (isTypeGeneric typeOfVisited))
-                      then case concretizeDefinition allowAmbig tenv env visited theXObj typeOfVisited of
-                        Left err -> pure (Left err)
-                        Right (concrete, deps) ->
-                          do
-                            modify (concrete :)
-                            modify (deps ++)
-                            pure (Right (XObj (Sym (getPath concrete) mode) (xobjInfo xobj) (xobjTy xobj)))
+                      then -- Memoize within this form: a branching recursive type
+                      -- (e.g. an AVL node reaching the same Rc on left+right) would
+                      -- otherwise re-concretize identical instances per path. If the
+                      -- instance is already in deps, just rename the reference.
+
+                        let SymPath defModule defName = getPath theXObj
+                            instancePath = SymPath defModule (defName ++ polymorphicSuffix theType typeOfVisited)
+                         in do
+                              done <- get
+                              if any ((== instancePath) . getPath) done
+                                then pure (Right (XObj (Sym instancePath mode) (xobjInfo xobj) (xobjTy xobj)))
+                                else case concretizeDefinition allowAmbig tenv env visited theXObj typeOfVisited of
+                                  Left err -> pure (Left err)
+                                  Right (concrete, deps) ->
+                                    do
+                                      modify (concrete :)
+                                      modify (deps ++)
+                                      pure (Right (XObj (Sym (getPath concrete) mode) (xobjInfo xobj) (xobjTy xobj)))
                       else pure (Right xobj)
       | otherwise -> pure (Right xobj)
     _ -> pure (Right xobj)
@@ -556,44 +570,56 @@ concretizeTypeOfXObj _ _ _ = pure (Right ())
 
 -- | Find all the concrete deps of a type.
 concretizeType :: TypeEnv -> Env -> Ty -> Either TypeError [XObj]
-concretizeType _ _ ft@FuncTy {} =
+concretizeType = concretizeTypeV []
+
+-- | As 'concretizeType', but 'vis' tracks instances already being concretized
+-- up the stack so a recursive type (reaching itself, e.g. through an 'Rc')
+-- breaks the cycle instead of re-instantiating forever.
+concretizeTypeV :: [Ty] -> TypeEnv -> Env -> Ty -> Either TypeError [XObj]
+concretizeTypeV _ _ _ ft@FuncTy {} =
   if isTypeGeneric ft
     then Right []
     else Right [defineFunctionTypeAlias ft]
-concretizeType typeEnv env arrayTy@(StructTy (ConcreteNameTy (SymPath [] "Array")) varTys) =
+concretizeTypeV vis typeEnv env arrayTy@(StructTy (ConcreteNameTy (SymPath [] "Array")) varTys) =
   if isTypeGeneric arrayTy
     then Right []
     else do
-      deps <- mapM (concretizeType typeEnv env) varTys
+      deps <- mapM (concretizeTypeV vis typeEnv env) varTys
       Right (defineArrayTypeAlias arrayTy : concat deps)
 -- TODO: Remove ugly duplication of code here:
-concretizeType typeEnv env arrayTy@(StructTy (ConcreteNameTy (SymPath [] "StaticArray")) varTys) =
+concretizeTypeV vis typeEnv env arrayTy@(StructTy (ConcreteNameTy (SymPath [] "StaticArray")) varTys) =
   if isTypeGeneric arrayTy
     then Right []
     else do
-      deps <- mapM (concretizeType typeEnv env) varTys
+      deps <- mapM (concretizeTypeV vis typeEnv env) varTys
       Right (defineStaticArrayTypeAlias arrayTy : concat deps)
-concretizeType typeEnv env genericStructTy@(StructTy (ConcreteNameTy path@(SymPath _ name)) _) =
-  case (getBinder typeEnv name) <> (searchTypeDef (TypeEnv env) path) of
-    Right (Binder _ x) -> go x
-    _ -> Right []
+concretizeTypeV vis typeEnv env genericStructTy@(StructTy (ConcreteNameTy path@(SymPath _ name)) _) =
+  if isTypeGeneric genericStructTy
+    then Right [] -- still generic (e.g. (Rc (Lst a)) inside a generic fn); defer until monomorphized
+    else
+      if genericStructTy `elem` vis
+        then Right [] -- already being concretized up the stack; break the cycle
+        else case (getBinder typeEnv name) <> (searchTypeDef (TypeEnv env) path) of
+          Right (Binder _ x) -> go x
+          _ -> Right []
   where
+    vis' = genericStructTy : vis
     go :: XObj -> Either TypeError [XObj]
     go (XObj (Lst (XObj (Deftype originalStructTy) _ _ : _ : rest)) _ _) =
       if isTypeGeneric originalStructTy
-        then instantiateGenericStructType typeEnv env originalStructTy genericStructTy rest
+        then instantiateGenericStructType vis' typeEnv env originalStructTy genericStructTy rest
         else Right []
     go (XObj (Lst (XObj (DefSumtype originalStructTy) _ _ : _ : rest)) _ _) =
       if isTypeGeneric originalStructTy
-        then instantiateGenericSumtype typeEnv env originalStructTy genericStructTy rest
+        then instantiateGenericSumtype vis' typeEnv env originalStructTy genericStructTy rest
         else Right []
     go (XObj (Lst (XObj (ExternalType _) _ _ : _)) _ _) = Right []
     go x = error ("Non-deftype found in type env: " ++ pretty x)
-concretizeType t e (RefTy rt _) =
-  concretizeType t e rt
-concretizeType t e (PointerTy pt) =
-  concretizeType t e pt
-concretizeType _ _ _ =
+concretizeTypeV vis t e (RefTy rt _) =
+  concretizeTypeV vis t e rt
+concretizeTypeV vis t e (PointerTy pt) =
+  concretizeTypeV vis t e pt
+concretizeTypeV _ _ _ _ =
   Right [] -- ignore all other types
 
 -- | Renames the type variable literals in a sum type for temporary validation.
@@ -628,8 +654,8 @@ renameGenericTypeSymbolsOnProduct vars members =
 -- | Given an generic struct type and a concrete version of it, generate all dependencies needed to use the concrete one.
 --
 -- Turns (deftype (A a) [x a, y a]) into (deftype (A Int) [x Int, y Int])
-instantiateGenericStructType :: TypeEnv -> Env -> Ty -> Ty -> [XObj] -> Either TypeError [XObj]
-instantiateGenericStructType typeEnv env originalStructTy@(StructTy _ _) genericStructTy membersXObjs =
+instantiateGenericStructType :: [Ty] -> TypeEnv -> Env -> Ty -> Ty -> [XObj] -> Either TypeError [XObj]
+instantiateGenericStructType vis typeEnv env originalStructTy@(StructTy _ _) genericStructTy membersXObjs =
   (replaceLeft (FailedToInstantiateGenericType originalStructTy) solution >>= go)
   where
     fake1 = XObj (Sym (SymPath [] "a") Symbol) Nothing Nothing
@@ -652,7 +678,7 @@ instantiateGenericStructType typeEnv env originalStructTy@(StructTy _ _) generic
             _ -> renamedOrig
       candidate <- TC.mkStructCandidate sname concreteVars typeEnv env validMembers (getPathFromStructName sname)
       validateType (TC.setRestriction candidate TC.AllowAny)
-      deps <- mapM (depsForStructMemberPair typeEnv env) (pairwise concretelyTypedMembers)
+      deps <- mapM (depsForStructMemberPair vis typeEnv env) (pairwise concretelyTypedMembers)
       let xobj =
             XObj
               ( Lst
@@ -665,17 +691,17 @@ instantiateGenericStructType typeEnv env originalStructTy@(StructTy _ _) generic
               (Just TypeTy) :
             concat deps
       pure xobj
-instantiateGenericStructType _ _ t _ _ = Left (FailedToInstantiateGenericType t)
+instantiateGenericStructType _ _ _ t _ _ = Left (FailedToInstantiateGenericType t)
 
-depsForStructMemberPair :: TypeEnv -> Env -> (XObj, XObj) -> Either TypeError [XObj]
-depsForStructMemberPair typeEnv env (_, tyXObj) =
-  maybe (Left (NotAType tyXObj)) (concretizeType typeEnv env) (xobjToTy tyXObj)
+depsForStructMemberPair :: [Ty] -> TypeEnv -> Env -> (XObj, XObj) -> Either TypeError [XObj]
+depsForStructMemberPair vis typeEnv env (_, tyXObj) =
+  maybe (Left (NotAType tyXObj)) (concretizeTypeV vis typeEnv env) (xobjToTy tyXObj)
 
 -- | Given an generic sumtype and a concrete version of it, generate all dependencies needed to use the concrete one.
 --
 -- Turn (deftype (Maybe a) (Just a) (Nothing)) into (deftype (Maybe Int) (Just Int) (Nothing))
-instantiateGenericSumtype :: TypeEnv -> Env -> Ty -> Ty -> [XObj] -> Either TypeError [XObj]
-instantiateGenericSumtype typeEnv env originalStructTy@(StructTy _ originalTyVars) genericStructTy cases =
+instantiateGenericSumtype :: [Ty] -> TypeEnv -> Env -> Ty -> Ty -> [XObj] -> Either TypeError [XObj]
+instantiateGenericSumtype vis typeEnv env originalStructTy@(StructTy _ originalTyVars) genericStructTy cases =
   let fake1 = XObj (Sym (SymPath [] "a") Symbol) Nothing Nothing
       fake2 = XObj (Sym (SymPath [] "b") Symbol) Nothing Nothing
       (rename, renamedOrig) = case evalState (renameVarTys originalStructTy) 0 of
@@ -684,14 +710,19 @@ instantiateGenericSumtype typeEnv env originalStructTy@(StructTy _ originalTyVar
       nameFixedCases = map (renameGenericTypeSymbolsOnSum (zip originalTyVars renamedOrig)) cases
       fixLeft l = replaceLeft (FailedToInstantiateGenericType originalStructTy) l
    in do
-        mappings <- fixLeft $ solve [Constraint rename genericStructTy fake1 fake2 fake1 OrdMultiSym]
-        let concretelyTypedCases = map (replaceGenericTypeSymbolsOnCase mappings) nameFixedCases
+        -- 'mappings' (keyed on the original vars) substitutes every occurrence,
+        -- including nested ones like (Rc (Lst a)). 'mappings'' (keyed on the
+        -- renamed vars) only builds the validation candidate.
+        mappings <- fixLeft $ solve [Constraint originalStructTy genericStructTy fake1 fake2 fake1 OrdMultiSym]
+        mappings' <- fixLeft $ solve [Constraint rename genericStructTy fake1 fake2 fake1 OrdMultiSym]
+        let concretelyTypedCases = map (replaceGenericTypeSymbolsOnCase mappings) cases
+            validCases = map (replaceGenericTypeSymbolsOnCase mappings') nameFixedCases
             sname = (getStructName originalStructTy)
-        deps <- mapM (depsForCase typeEnv env) concretelyTypedCases
+        deps <- mapM (depsForCase vis typeEnv env) concretelyTypedCases
         let concreteVars = case genericStructTy of
               StructTy _ vs -> vs
               _ -> renamedOrig
-        candidate <- TC.mkSumtypeCandidate sname concreteVars typeEnv env concretelyTypedCases (getPathFromStructName sname)
+        candidate <- TC.mkSumtypeCandidate sname concreteVars typeEnv env validCases (getPathFromStructName sname)
         validateType (TC.setRestriction candidate TC.AllowAny)
         pure
           ( XObj
@@ -705,19 +736,19 @@ instantiateGenericSumtype typeEnv env originalStructTy@(StructTy _ originalTyVar
               (Just TypeTy) :
             concat deps
           )
-instantiateGenericSumtype _ _ _ _ _ = error "instantiategenericsumtype"
+instantiateGenericSumtype _ _ _ _ _ _ = error "instantiategenericsumtype"
 
 -- Resolves dependencies for sumtype cases.
 -- NOTE: This function only accepts cases that are in "canonical form"
 -- (Just [x]) aka XObj (Lst (Sym...) (Arr members))
 -- On other cases it will return an error.
-depsForCase :: TypeEnv -> Env -> XObj -> Either TypeError [XObj]
-depsForCase typeEnv env (XObj (Lst [_, XObj (Arr members) _ _]) _ _) =
+depsForCase :: [Ty] -> TypeEnv -> Env -> XObj -> Either TypeError [XObj]
+depsForCase vis typeEnv env (XObj (Lst [_, XObj (Arr members) _ _]) _ _) =
   concat
     <$> mapM
-      (\t -> maybe (Left (NotAType t)) (concretizeType typeEnv env) (xobjToTy t))
+      (\t -> maybe (Left (NotAType t)) (concretizeTypeV vis typeEnv env) (xobjToTy t))
       members
-depsForCase _ _ x = Left (InvalidSumtypeCase x)
+depsForCase _ _ _ x = Left (InvalidSumtypeCase x)
 
 -- | Replace instances of generic types in type candidate field definitions.
 replaceGenericTypeSymbolsOnFields :: Map.Map String Ty -> [TC.TypeField] -> [TC.TypeField]
@@ -830,7 +861,7 @@ concretizeDefinition allowAmbiguity typeEnv globalEnv visitedDefinitions definit
                       pure (managed, deps ++ memDeps)
                 Left e -> Left e
         XObj (Lst (XObj (Deftemplate (TemplateCreator templateCreator)) _ _ : _)) _ _ ->
-          let template = templateCreator typeEnv globalEnv
+          let template = templateCreator (newPath : visitedDefinitions) typeEnv globalEnv
            in Right (instantiateTemplate newPath concreteType template)
         XObj (Lst [XObj (External _) _ _, _, _]) _ _ ->
           if name == "NULL"
@@ -856,9 +887,16 @@ concretizeDefinition allowAmbiguity typeEnv globalEnv visitedDefinitions definit
 depsOfPolymorphicFunction :: TypeEnv -> Env -> [SymPath] -> String -> Ty -> [XObj]
 depsOfPolymorphicFunction typeEnv env visitedDefinitions functionName functionType =
   let concretizeCandidate (Binder _ single) =
-        case concretizeDefinition False typeEnv env visitedDefinitions single functionType of
-          Left err -> error (show err)
-          Right (ok, deps) -> ok : deps
+        let polyType = fromMaybe (error "concretize: candidate without a type") (xobjTy single)
+            SymPath ps nm = getPath single
+            instancePath = SymPath ps (nm ++ polymorphicSuffix polyType functionType)
+         in -- Already being concretized up the stack: emitted there. Re-listing
+            -- it here would contribute a bodyless stub overwriting the real def.
+            if instancePath `elem` visitedDefinitions
+              then []
+              else case concretizeDefinition False typeEnv env visitedDefinitions single functionType of
+                Left err -> error (show err)
+                Right (ok, deps) -> ok : deps
    in case allImplementations typeEnv env functionName functionType of
         [] ->
           (trace $ "[Warning] No '" ++ functionName ++ "' function found with type " ++ show functionType ++ ".")
@@ -896,6 +934,23 @@ depsOfPolymorphicFunction typeEnv env visitedDefinitions functionName functionTy
                     []
 
 -- | Helper for finding the 'delete' function for a type.
+-- | Instance path of a concrete type's 'delete', from its generic original.
+-- Seeds the visited set so a type's own delete terminates on recursion.
+selfDeleterPath :: Ty -> Ty -> SymPath
+selfDeleterPath generic concrete =
+  let SymPath modPath tyName = getStructPath concrete
+      suffix = polymorphicSuffix (typesDeleterFunctionType generic) (typesDeleterFunctionType concrete)
+   in SymPath (modPath ++ [tyName]) ("delete" ++ suffix)
+
+-- | Instance path of a concrete type's 'copy', from its generic original.
+-- Seeds the visited set so a type's own copy terminates on recursion (e.g. a
+-- user box whose copy deep-copies a payload that reaches the type again).
+selfCopierPath :: Ty -> Ty -> SymPath
+selfCopierPath generic concrete =
+  let SymPath modPath tyName = getStructPath concrete
+      suffix = polymorphicSuffix (typesCopyFunctionType generic) (typesCopyFunctionType concrete)
+   in SymPath (modPath ++ [tyName]) ("copy" ++ suffix)
+
 depsForDeleteFunc :: TypeEnv -> Env -> Ty -> [XObj]
 depsForDeleteFunc typeEnv env t =
   depsForDeleteFuncVisited typeEnv env [] t

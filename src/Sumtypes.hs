@@ -86,7 +86,12 @@ generateBinders candidate =
     (okPrn, _) <- binderForStrOrPrn candidate "prn"
     okDelete <- binderForDelete candidate
     (okCopy, okCopyDeps) <- binderForCopy candidate
-    okMemberDeps <- memberDeps (TC.getTypeEnv candidate) (TC.getValueEnv candidate) (TC.getFields candidate)
+    -- Generic types defer member deps to instantiation; computing them now
+    -- would instantiate still-generic (possibly self-recursive) members.
+    okMemberDeps <-
+      if isTypeGeneric (TC.toType candidate)
+        then pure []
+        else memberDeps (TC.getTypeEnv candidate) (TC.getValueEnv candidate) (TC.getFields candidate)
     let binders = okIniters ++ [okStr, okPrn, okDelete, okCopy, okTag]
         deps = okMemberDeps ++ okCopyDeps ++ okStrDeps
     pure (binders, deps)
@@ -149,7 +154,7 @@ initers candidate = mapM binderForCaseInit (TC.getFields candidate)
           deps tenv env = \typ -> case typ of
             (FuncTy _ concrete _) -> either (const []) id (concretizeType tenv env concrete)
             _ -> []
-          temp = TemplateCreator $ \tenv env -> Template t decl body (deps tenv env)
+          temp = TemplateCreator $ \_visited tenv env -> Template t decl body (deps tenv env)
        in defineTypeParameterizedTemplate temp binderPath ft docs
     genericCaseInit _ _ = error "genericCaseInit"
 
@@ -222,8 +227,8 @@ binderForDelete candidate =
       tokensForDeleteBody tenv env originalT ty (TC.getFields value)
     body _ = toTemplate "/* template error! */"
     deps :: TG.DepenGenerator TC.TypeCandidate
-    deps GeneratorArg {tenv, env, originalT, instanceT = (FuncTy [ty] _ _), value} =
-      depsForDelete tenv env originalT ty (TC.getFields value)
+    deps GeneratorArg {tenv, env, originalT, instanceT = (FuncTy [ty] _ _), value, visited} =
+      depsForDelete tenv env visited originalT ty (TC.getFields value)
     deps _ = []
 
 -- | Helper function to create the binder for the 'copy' template.
@@ -249,16 +254,14 @@ binderForCopy candidate =
       tokensForSumtypeCopy tenv env originalT ty (TC.getFields value)
     body _ = toTemplate "/* template error! */"
     deps :: TG.DepenGenerator TC.TypeCandidate
-    deps GeneratorArg {tenv, env, originalT, instanceT = (FuncTy [RefTy ty _] _ _), value} =
-      depsForCopy tenv env originalT ty (TC.getFields value)
+    deps GeneratorArg {tenv, env, originalT, instanceT = (FuncTy [RefTy ty _] _ _), value, visited} =
+      depsForCopy tenv env visited originalT ty (TC.getFields value)
     deps _ = []
 
 -------------------------------------------------------------------------------
 -- Token and dep generators
 
 type TokenGen = TypeEnv -> Env -> Ty -> Ty -> [TC.TypeField] -> [Token]
-
-type DepGen = TypeEnv -> Env -> Ty -> Ty -> [TC.TypeField] -> [XObj]
 
 --------------------------------------------------------------------------------
 -- Initializers
@@ -304,15 +307,17 @@ accessor HeapAlloc = "->"
 -- Copy
 
 -- | Generates dependencies for sum type copy functions.
-depsForCopy :: DepGen
-depsForCopy tenv env generic concrete fields =
+depsForCopy :: TypeEnv -> Env -> [SymPath] -> Ty -> Ty -> [TC.TypeField] -> [XObj]
+depsForCopy tenv env vis generic concrete fields =
   let mappings = unifySignatures generic concrete
       concreteFields = replaceGenericTypesOnCases mappings fields
    in if isTypeGeneric concrete
         then []
         else
           concatMap
-            (depsOfPolymorphicFunction tenv env [] "copy" . typesCopyFunctionType)
+            -- Seed visited with this copy's own path plus ancestors, so a type
+            -- whose copy deep-copies a payload that reaches itself terminates.
+            (depsOfPolymorphicFunction tenv env (selfCopierPath generic concrete : vis) "copy" . typesCopyFunctionType)
             (filter (isManaged tenv env) (concatMap TC.fieldTypes concreteFields))
 
 -- | Generates C function bodies for sum type copy functions.
@@ -365,15 +370,17 @@ tokensForDeleteBody tenv env generic concrete fields =
             ]
 
 -- | Generates deps for the body of a delete function.
-depsForDelete :: TypeEnv -> Env -> Ty -> Ty -> [TC.TypeField] -> [XObj]
-depsForDelete tenv env generic concrete fields =
+depsForDelete :: TypeEnv -> Env -> [SymPath] -> Ty -> Ty -> [TC.TypeField] -> [XObj]
+depsForDelete tenv env vis generic concrete fields =
   let mappings = unifySignatures generic concrete
       concreteFields = replaceGenericTypesOnCases mappings fields
    in if isTypeGeneric concrete
         then []
         else
           concatMap
-            (depsOfPolymorphicFunction tenv env [] "delete" . typesDeleterFunctionType)
+            -- Seed visited with this delete's own path plus ancestors, so a type
+            -- recursing through an 'Rc' reaches its own delete and terminates.
+            (depsOfPolymorphicFunction tenv env (selfDeleterPath generic concrete : vis) "delete" . typesDeleterFunctionType)
             (filter (isManaged tenv env) (concatMap (TC.fieldTypes) concreteFields))
 
 --------------------------------------------------------------------------------

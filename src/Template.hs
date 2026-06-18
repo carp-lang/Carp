@@ -40,7 +40,7 @@ defineTemplate path t docs declaration definition depsFunc =
   let (SymPath _ name) = path
       template = Template t (const declaration) (const definition) depsFunc
       i = Info 0 0 (show path ++ ".template") Set.empty 0
-      defLst = [XObj (Deftemplate (TemplateCreator (\_ _ -> template))) Nothing Nothing, XObj (Sym path Symbol) Nothing Nothing]
+      defLst = [XObj (Deftemplate (TemplateCreator (\_ _ _ -> template))) Nothing Nothing, XObj (Sym path Symbol) Nothing Nothing]
       docObj = XObj (Str docs) (Just dummyInfo) Nothing
       meta = Meta.set "doc" docObj emptyMeta
    in (name, Binder meta (XObj (Lst defLst) (Just i) (Just t)))

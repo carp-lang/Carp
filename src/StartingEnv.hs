@@ -331,7 +331,8 @@ dynamicModule =
             f "eval" primitiveEval "evaluates a list." "(eval mycode)",
             f "defined?" primitiveDefined "checks whether a symbol is defined." "(defined? mysymbol)",
             f "type" primitiveType "prints the type of a symbol." "(type mysymbol)",
-            f "kind" primitiveKind "prints the kind of a symbol." "(kind mysymbol)"
+            f "kind" primitiveKind "prints the kind of a symbol." "(kind mysymbol)",
+            f "recursive" primitiveRecursive "marks a type as a heap indirection that may appear in otherwise by-value-recursive member positions. The author vouches that the type's copy/delete own its contents correctly." "(recursive MyRc)"
           ]
     binaries' =
       let f = makeBinaryPrim . spath
@@ -567,7 +568,14 @@ startingTypeEnv =
             "prn"
             (FuncTy [VarTy "a"] StringTy StaticLifetimeTy)
             (SymPath ["StaticArray"] "str" : SymPath ["Box"] "prn" : registerFunctionFunctionsWithInterface "prn") -- QUESTION: Where is 'prn' for dynamic Array:s registered? Can't find it... (but it is)
-            builtInSymbolInfo
+            builtInSymbolInfo,
+          -- Box carries the 'recursive' flag itself, rather than being a special
+          -- case in the recursion checks; it is the canonical heap indirection.
+          ( "Box",
+            Binder
+              (Meta.set "recursive" trueXObj emptyMeta)
+              (XObj (Lst [XObj (ExternalType Nothing) Nothing Nothing, XObj (Sym (SymPath [] "Box") Symbol) Nothing Nothing]) Nothing (Just TypeTy))
+          )
         ]
     builtInSymbolInfo = Info (-1) (-1) "Built-in." Set.empty (-1)
 

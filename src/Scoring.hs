@@ -2,6 +2,7 @@ module Scoring (scoreTypeBinder, scoreValueBinder) where
 
 import Data.Maybe (fromJust)
 import Env as E
+import qualified Meta
 import Obj
 import qualified Set
 import TypePredicates
@@ -20,6 +21,9 @@ scoreTypeBinder rootTypeEnv typeEnv env b@(Binder _ (XObj (Lst (XObj x _ _ : XOb
           -- will at least have the same score as the type, but
           -- need to come after. The increment represents this dependency
           (depthOfType rootTypeEnv typeEnv env Set.empty selfName aliasedType + 1, b)
+    -- A flagged type holds only a pointer: no by-value deps, emit early.
+    Deftype s | flagged rootTypeEnv typeEnv env s -> (1, b)
+    DefSumtype s | flagged rootTypeEnv typeEnv env s -> (1, b)
     Deftype s -> depthOfStruct s
     DefSumtype s -> depthOfStruct s
     ExternalType _ -> (0, b)
@@ -42,7 +46,11 @@ depthOfDeftype rootTypeEnv typeEnv env visited (XObj (Lst (_ : XObj (Sym (SymPat
     [] -> 100
     xs -> maximum xs
   where
-    depthsFromVarTys = map (depthOfType rootTypeEnv typeEnv env visited (concat (path ++ [selfName]))) varTys
+    -- A flagged type stores its args behind a pointer: score them shallow
+    -- (a forward decl suffices) rather than as by-value deps.
+    depthsFromVarTys
+      | flagged rootTypeEnv typeEnv env (StructTy (ConcreteNameTy (SymPath path selfName)) varTys) = map (const 1) varTys
+      | otherwise = map (depthOfType rootTypeEnv typeEnv env visited (concat (path ++ [selfName]))) varTys
     expandCase :: XObj -> [Int]
     expandCase (XObj (Arr arr) _ _) =
       let members = memberXObjsToPairs arr
@@ -64,7 +72,7 @@ depthOfType rootTypeEnv typeEnv env visited selfName theType =
     else visitType theType + 1
   where
     visitType :: Ty -> Int
-    visitType (StructTy boxName [_]) | isBoxName boxName = 1
+    visitType t@(StructTy (ConcreteNameTy _) [_]) | flagged rootTypeEnv typeEnv env t = 1
     visitType t@(StructTy _ varTys) = depthOfStructType t varTys
     visitType (FuncTy argTys retTy ltTy) =
       -- trace ("Depth of args of " ++ show argTys ++ ": " ++ show (map (visitType . Just) argTys))
@@ -129,9 +137,15 @@ depthOfType rootTypeEnv typeEnv env visited selfName theType =
             [] -> 1
             xs -> maximum xs + 1
 
-isBoxName :: Ty -> Bool
-isBoxName (ConcreteNameTy (SymPath _ "Box")) = True
-isBoxName _ = False
+-- | Is this type marked 'recursive' (a heap indirection) on its type binder?
+flagged :: TypeEnv -> TypeEnv -> Env -> Ty -> Bool
+flagged rootTypeEnv typeEnv env (StructTy (ConcreteNameTy path@(SymPath _ name)) _) =
+  case E.getBinder typeEnv name <> E.getBinder rootTypeEnv name <> E.searchTypeDef (TypeEnv env) path of
+    Right b -> case Meta.getBinderMetaValue "recursive" b of
+      Just (XObj (Bol True) _ _) -> True
+      _ -> False
+    Left _ -> False
+flagged _ _ _ _ = False
 
 -- | Scoring of value bindings ('def' and 'defn')
 -- | The score is used for sorting the bindings before emitting them.

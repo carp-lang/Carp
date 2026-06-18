@@ -4,6 +4,7 @@ import Control.Monad (foldM)
 import Data.List (nubBy, (\\))
 import Data.Maybe (mapMaybe)
 import qualified Env as E
+import qualified Meta
 import Obj
 import qualified Reify as R
 import qualified Set
@@ -70,7 +71,7 @@ containsSelfByValue tenv env selfTy = go Set.empty
         RefTy _ _ -> False
         PointerTy _ -> False
         FuncTy {} -> False
-        StructTy boxName [_] | isBoxName boxName -> False
+        StructTy (ConcreteNameTy _) [_] | flagged tenv env t -> False
         StructTy (ConcreteNameTy _) vars ->
           isSelfStruct selfTy t
             || if Set.member t visited
@@ -108,9 +109,15 @@ lookupTypeBinder tenv env (SymPath path name) =
     [] -> either (const Nothing) Just (E.getBinder tenv name)
     _ -> either (const Nothing) Just (E.searchTypeBinder env (SymPath path name))
 
-isBoxName :: Ty -> Bool
-isBoxName (ConcreteNameTy (SymPath _ "Box")) = True
-isBoxName _ = False
+-- | Is this type marked 'recursive' (a heap indirection) on its type binder?
+flagged :: TypeEnv -> Env -> Ty -> Bool
+flagged tenv env (StructTy (ConcreteNameTy spath) _) =
+  case lookupTypeBinder tenv env spath of
+    Just b -> case Meta.getBinderMetaValue "recursive" b of
+      Just (XObj (Bol True) _ _) -> True
+      _ -> False
+    Nothing -> False
+flagged _ _ _ = False
 
 isSelfStruct :: Ty -> Ty -> Bool
 isSelfStruct (StructTy (ConcreteNameTy (SymPath selfPath selfName)) selfVars) (StructTy (ConcreteNameTy (SymPath path name)) vars) =
@@ -169,8 +176,8 @@ canBeUsedAsMemberType tname typeVarRestriction typeEnv globalEnv typeVariables t
     checkStruct :: Ty -> [Ty] -> Either TypeError ()
     checkStruct (ConcreteNameTy (SymPath [] "Array")) [innerType] =
       canBeUsedAsMemberType tname typeVarRestriction typeEnv globalEnv typeVariables innerType
-    checkStruct boxName [innerType]
-      | isBoxName boxName =
+    checkStruct cname [innerType]
+      | flagged typeEnv globalEnv (StructTy cname [innerType]) =
         canBeUsedAsMemberType tname typeVarRestriction typeEnv globalEnv typeVariables innerType
     checkStruct (ConcreteNameTy path@(SymPath _ name)) vars =
       case E.getBinder typeEnv name <> E.searchTypeDef (TypeEnv globalEnv) path of
