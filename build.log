@@ -1,0 +1,2 @@
+[WARNING] The interface count is not defined. Did you define it using `definterface`?
+Warning: the body of the 'for' loop can only contain one expression at /home/sqrew/Desktop/Carp-fork/core/Array.carp:3:18.

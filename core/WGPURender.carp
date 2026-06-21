@@ -321,6 +321,15 @@ Clear color is black.")
                                         (Ptr WGPUVertexBufferWrapper))         "wgpu_create_storage_vertex_buffer")
   (register free-vertex-buffer     (Fn [(Ptr WGPUVertexBufferWrapper)] ())     "wgpu_vertex_buffer_free")
 
+  (register update-vertex-buffer-  (Fn [(Ptr WGPUContext) (Ptr WGPUVertexBufferWrapper)
+                                         (Ptr Float) Uint64] ())              "wgpu_update_vertex_buffer")
+
+  (doc update-vertex-buffer "Uploads an (Array Float) into an existing vertex buffer.")
+  (defn update-vertex-buffer [ctx vb data]
+    (update-vertex-buffer- ctx vb
+                            (WGPU.array->ptr data)
+                            (Uint64.from-long (Long.from-int (* (Array.length data) 4)))))
+
   ; -- Uniform buffer ----------------------------------------------
 
   (register create-uniform-buffer- (Fn [(Ptr WGPUContext) Uint64]
@@ -369,7 +378,10 @@ Clear color is black.")
                                           WGPUBindGroup (Ptr WGPUVertexBufferWrapper) (Ptr WGPUDepthTexture)
                                           Uint32 (Ptr WGPURenderTexture)] ())
                                                                                "wgpu_run_geom_pass_continue")
-
+  (register run-geom-pass-overlay- (Fn [(Ptr WGPUFrameState) (Ptr WGPUGeomPipelineWrapper)
+                                          WGPUBindGroup (Ptr WGPUVertexBufferWrapper) (Ptr WGPUDepthTexture)
+                                          Uint32 (Ptr WGPURenderTexture)] ())
+                                                                               "wgpu_run_geom_pass_overlay")
 
   ; -- Index buffer ------------------------------------------------
 
@@ -481,6 +493,12 @@ Clear color is black, depth clear value is 1.0.")
     (match target
       (Maybe.Just rt) (run-geom-pass-continue- frame pipeline bind-group vertex-buffer depth vertex-count rt)
       (Maybe.Nothing)  (run-geom-pass-continue- frame pipeline bind-group vertex-buffer depth vertex-count (null-render-texture))))
+
+  (doc run-geom-pass-overlay "Executes a geometry pass that LOADS existing color but CLEARS the depth buffer. Ideal for overlays.")
+  (defn run-geom-pass-overlay [frame pipeline bind-group vertex-buffer depth vertex-count target]
+    (match target
+      (Maybe.Just rt) (run-geom-pass-overlay- frame pipeline bind-group vertex-buffer depth vertex-count rt)
+      (Maybe.Nothing)  (run-geom-pass-overlay- frame pipeline bind-group vertex-buffer depth vertex-count (null-render-texture))))
 
   (doc create-index-buffer "Creates a GPU index buffer from an (Array Int).
 Each element is treated as a uint32 index.
