@@ -1,0 +1,23 @@
+(load "Test.carp")
+(use Test)
+
+; Regression test: the root fallback for context-relative type lookups must
+; only return actual type definitions. Interfaces also live in the type env,
+; and falling back to them hijacked same-named value lookups inside modules,
+; e.g. breaking lifetime inference for this implementation of `=`.
+
+(deftype MiniT [count Long])
+
+(defmodule MiniT
+  (sig call (Fn [(Ref (Fn [a] a) q) a (Ref MiniT r)] a))
+  (defn call [f init t-ref] (do (ignore t-ref) (~f init)))
+
+  (sig = (Fn [(Ref MiniT q) (Ref MiniT q)] Bool))
+  (defn = [a-ref b-ref]
+    (call &(fn [acc] (and acc (> @(MiniT.count b-ref) 0l))) true a-ref))
+  (implements = MiniT.=))
+
+(deftest test
+  (assert-false test
+                (= &(MiniT.init 0l) &(MiniT.init 0l))
+                "same-named interfaces don't hijack module value lookups"))
