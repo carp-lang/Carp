@@ -73,9 +73,14 @@ symsOf :: XObj -> [XObj]
 symsOf (XObj (Arr xs) _ _) = xs
 symsOf _ = []
 
+data SymbolPosition = HeadPosition | ValuePosition deriving (Eq)
+
 -- | Macro expansion of a single form
 expand :: ExpansionMode -> DynamicEvaluator -> Context -> XObj -> IO (Context, Either EvalError XObj)
-expand mode eval ctx xobj =
+expand = expandAt ValuePosition
+
+expandAt :: SymbolPosition -> ExpansionMode -> DynamicEvaluator -> Context -> XObj -> IO (Context, Either EvalError XObj)
+expandAt pos mode eval ctx xobj =
   case xobjObj xobj of
     Lst _ -> expandList xobj
     Arr _ -> expandArray xobj
@@ -306,7 +311,7 @@ expand mode eval ctx xobj =
             Right sym -> expand mode eval ctx' (XObj (Lst (sym : args)) (xobjInfo xobj) (xobjTy xobj))
             Left err -> pure (ctx', Left err)
         else do
-          (_, expandedF) <- expand mode eval ctx f
+          (_, expandedF) <- expandAt HeadPosition mode eval ctx f
           (ctx'', expandedArgs) <- expandMany ctx args
           case expandedF of
             Right (XObj (Lst [XObj Dynamic _ _, _, XObj (Arr _) _ _, _]) _ _) ->
@@ -378,18 +383,23 @@ expand mode eval ctx xobj =
               case getBinder (contextEnv ctx :: Env) name of
                 -- A locally-scoped name shadows globals: keep it as-is rather than substituting.
                 Right (Binder _ (XObj (Sym _ _) _ _)) -> pure (ctx, Right xobj)
-                Right (Binder _ found) -> pure (ctx, Right (matchDef found))
+                Right (Binder _ found) -> pure (ctx, Right (substitute found))
                 _ -> searchForBinder
             _ -> searchForBinder
           where
             qpath = qualifyPath ctx (SymPath [] name)
             searchForBinder =
               case lookupBinderInGlobalEnv ctx path <> fallbackLookup of
-                Right (Binder meta found) -> isPrivate meta (matchDef found) (getPath found)
+                Right (Binder meta found) -> isPrivate meta (substitute found) (getPath found)
                 Left _ -> pure (ctx, Right xobj) -- symbols that are not found are left as-is
             fallbackLookup
               | null p = lookupBinderInGlobalEnv ctx qpath
               | otherwise = lookupBinderInGlobalEnv ctx (markQualified path)
+            substitute found =
+              let result = matchDef found
+               in if pos == ValuePosition && (isMacroCallable result || isDynamicCallable result)
+                    then xobj
+                    else result
             isPrivate m x (SymPath p' _) =
               pure $
                 if (metaIsTrue m "private") && (not (null p') && p' /= contextPath ctx)
