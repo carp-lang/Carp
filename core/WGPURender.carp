@@ -179,6 +179,25 @@
                                              (Ptr WGPURenderTexture) WGPUSampler] WGPUBindGroup)
                                                                             "wgpu_create_texture_bind_group")
 
+  ; 3D Texture and Voxel helpers
+  (register create-3d-texture- (Fn [(Ptr WGPUContext) Int Int Int (Ptr CChar)]
+                                    (Ptr WGPURenderTexture))                "wgpu_create_3d_texture_str")
+  (register update-3d-texture-subregion-floats- (Fn [(Ptr WGPUContext) (Ptr WGPURenderTexture)
+                                                      Int Int Int Int Int Int (Ptr Float) Int] ())
+                                                                            "wgpu_update_3d_texture_subregion_floats")
+  (register copy-buffer-to-3d-texture- (Fn [(Ptr WGPUContext) WGPUBuffer (Ptr WGPURenderTexture) Int Int Int] ())
+                                        "wgpu_copy_buffer_to_3d_texture")
+  (register copy-buffer-subregion-to-3d-texture- (Fn [(Ptr WGPUContext) WGPUBuffer Long (Ptr WGPURenderTexture) Int Int Int Int Int Int] ())
+                                                  "wgpu_copy_buffer_subregion_to_3d_texture")
+  (register create-voxel-render-bind-group- (Fn [(Ptr WGPUContext) (Ptr WGPURenderPipelineWrapper)
+                                                  WGPUBuffer WGPUBuffer (Ptr WGPUUniformBufferWrapper)
+                                                  (Ptr WGPURenderTexture) WGPUSampler] WGPUBindGroup)
+                                                                            "wgpu_create_voxel_render_bind_group")
+  (register create-voxel-render-bind-group-chunked- (Fn [(Ptr WGPUContext) (Ptr WGPURenderPipelineWrapper)
+                                                          WGPUBuffer WGPUBuffer (Ptr WGPUUniformBufferWrapper)
+                                                          (Ptr WGPURenderTexture) WGPUSampler WGPUBuffer] WGPUBindGroup)
+                                                                                    "wgpu_create_voxel_render_bind_group_chunked")
+
   ; Frame management
   (register begin-frame-       (Fn [(Ptr WGPURenderSurface) (Ptr WGPUContext)]
                                     (Ptr WGPUFrameState))                   "wgpu_begin_frame")
@@ -263,6 +282,36 @@ and a sampler at binding 1, using the pipeline's auto-derived layout.
 Returns (Success bind-group) or (Error message).")
   (defn create-texture-bind-group [ctx pipeline texture sampler]
     (let [bg (create-texture-bind-group- ctx pipeline texture sampler)]
+      (if (bindgroup-null?- bg)
+        (Result.Error (get-error))
+        (Result.Success bg))))
+
+  (doc create-3d-texture "Creates an offscreen 3D texture.
+`format` is a texture format string: e.g. \"rgba16float\".
+Returns (Success render-texture) or (Error message).
+Call (WGPURender.free-render-texture rt) when done.")
+  (defn create-3d-texture [ctx width height depth format]
+    (let [rt (create-3d-texture- ctx width height depth (String.cstr format))]
+      (if (texture-null?- rt)
+        (Result.Error (get-error))
+        (Result.Success rt))))
+
+  (doc update-3d-texture-subregion-floats "Updates a subregion of a 3D texture from a flat Float array.")
+  (defn update-3d-texture-subregion-floats [ctx rt offsetX offsetY offsetZ sizeX sizeY sizeZ data]
+    (update-3d-texture-subregion-floats- ctx rt offsetX offsetY offsetZ sizeX sizeY sizeZ (WGPU.array->ptr data) (Array.length data)))
+
+  (doc create-voxel-render-bind-group "Creates a bind group for voxel rendering.
+Returns (Success bind-group) or (Error message).")
+  (defn create-voxel-render-bind-group [ctx pipeline storage-buf1 storage-buf2 ub voxel-tex voxel-sampler]
+    (let [bg (create-voxel-render-bind-group- ctx pipeline storage-buf1 storage-buf2 ub voxel-tex voxel-sampler)]
+      (if (bindgroup-null?- bg)
+        (Result.Error (get-error))
+        (Result.Success bg))))
+
+  (doc create-voxel-render-bind-group-chunked "Creates a bind group for chunked voxel rendering.
+Returns (Success bind-group) or (Error message).")
+  (defn create-voxel-render-bind-group-chunked [ctx pipeline storage-buf1 storage-buf2 ub voxel-tex voxel-sampler chunk-lookup-buf]
+    (let [bg (create-voxel-render-bind-group-chunked- ctx pipeline storage-buf1 storage-buf2 ub voxel-tex voxel-sampler chunk-lookup-buf)]
       (if (bindgroup-null?- bg)
         (Result.Error (get-error))
         (Result.Success bg))))
@@ -537,5 +586,17 @@ Returns (Success bind-group) or (Error message).")
       (if (bindgroup-null?- bg)
         (Result.Error (get-error))
         (Result.Success bg))))
+
+  (doc copy-buffer-to-3d-texture "Copies a GPU buffer into a 3D texture view.")
+  (defn copy-buffer-to-3d-texture [ctx buffer rt w h d]
+    (copy-buffer-to-3d-texture- ctx buffer rt w h d))
+
+  (doc copy-buffer-subregion-to-3d-texture "Copies a subregion of a GPU buffer into a 3D texture view.")
+  (defn copy-buffer-subregion-to-3d-texture [ctx buffer offset rt dx dy dz w h d]
+    (copy-buffer-subregion-to-3d-texture- ctx buffer offset rt dx dy dz w h d))
+
+  (doc copy-buffer-to-3d-texture-offset "Copies a buffer to a 3D texture at a destination offset, assuming source offset is 0.")
+  (defn copy-buffer-to-3d-texture-offset [ctx buffer rt dx dy dz w h d]
+    (copy-buffer-subregion-to-3d-texture- ctx buffer 0l rt dx dy dz w h d))
 
 )

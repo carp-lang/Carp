@@ -70,8 +70,10 @@ static void on_device_error(WGPUDevice const* device,
                              WGPUStringView message,
                              void* userdata1, void* userdata2) {
     (void)device; (void)type; (void)userdata1; (void)userdata2;
-    if (message.data && message.length > 0)
+    if (message.data && message.length > 0) {
+        fprintf(stderr, "WGPU DEVICE ERROR: %.*s\n", (int)message.length, message.data);
         wgpu_set_error(message.data);
+    }
 }
 
 static void on_map(WGPUMapAsyncStatus status,
@@ -187,6 +189,11 @@ static WGPUBuffer wgpu_create_storage_buffer(WGPUContext* ctx, uint64_t size) {
 static void wgpu_write_buffer(WGPUContext* ctx, WGPUBuffer buffer,
                                const void* data, uint64_t size) {
     wgpuQueueWriteBuffer(ctx->queue, buffer, 0, data, size);
+}
+
+static void wgpu_write_buffer_offset(WGPUContext* ctx, WGPUBuffer buffer, uint64_t offset,
+                                     const void* data, uint64_t size) {
+    wgpuQueueWriteBuffer(ctx->queue, buffer, offset, data, size);
 }
 
 /* ------------------------------------------------------------------ */

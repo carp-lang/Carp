@@ -79,6 +79,7 @@
                                     WGPUComputePipeline)                                "wgpu_create_compute_pipeline")
   (register create-buffer-     (Fn [(Ptr WGPUContext) Uint64] WGPUBuffer)               "wgpu_create_storage_buffer")
   (register write-buffer-      (Fn [(Ptr WGPUContext) WGPUBuffer (Ptr Float) Uint64] ()) "wgpu_write_buffer")
+  (register write-buffer-offset- (Fn [(Ptr WGPUContext) WGPUBuffer Long (Ptr Float) Uint64] ()) "wgpu_write_buffer_offset")
   (register create-bind-group- (Fn [(Ptr WGPUContext) WGPUComputePipeline (Ptr WGPUBuffer) Int] WGPUBindGroup) "wgpu_create_bind_group")
   (register create-bind-group-raw- (Fn [(Ptr WGPUContext) WGPUBindGroupLayout (Ptr WGPUBuffer) Int] WGPUBindGroup) "wgpu_create_bind_group_raw")
 
@@ -152,6 +153,10 @@ Returns (Success bind-group) or (Error message).")
   (doc write-floats "Uploads a (Array Float) into a GPU buffer.")
   (defn write-floats [ctx buf arr]
     (write-buffer- ctx buf (array->ptr arr) (bytes-for (Array.length arr))))
+
+  (doc write-floats-offset "Uploads a (Array Float) into a GPU buffer at a specified byte offset.")
+  (defn write-floats-offset [ctx buf offset arr]
+    (write-buffer-offset- ctx buf offset (array->ptr arr) (bytes-for (Array.length arr))))
 
   (doc read-floats "Reads `n` floats back from a GPU buffer. Blocks until done.")
   (defn read-floats [ctx buf n]

@@ -1455,6 +1455,59 @@ static WGPUBindGroup wgpu_create_render_storage_uniform_bind_group(
     return bg;
 }
 
+static WGPUBindGroup wgpu_create_render_two_storage_uniform_bind_group(
+    WGPUContext* ctx,
+    WGPURenderPipelineWrapper* pipe,
+    WGPUBuffer storage_buf1,
+    WGPUBuffer storage_buf2,
+    WGPUUniformBufferWrapper* ub)
+{
+    if (!ctx || !pipe || !ub) {
+        wgpu_set_error("wgpu_create_render_two_storage_uniform_bind_group: null argument");
+        return NULL;
+    }
+
+    WGPUBindGroupLayout layout = wgpuRenderPipelineGetBindGroupLayout(pipe->pipeline, 0);
+    if (!layout) {
+        wgpu_set_error("wgpu_create_render_two_storage_uniform_bind_group: failed to get bind group layout");
+        return NULL;
+    }
+
+    WGPUBindGroupEntry entries[3] = {
+        {
+            .binding = 0,
+            .buffer  = storage_buf1,
+            .offset  = 0,
+            .size    = WGPU_WHOLE_SIZE,
+        },
+        {
+            .binding = 1,
+            .buffer  = ub->buffer,
+            .offset  = 0,
+            .size    = ub->size,
+        },
+        {
+            .binding = 2,
+            .buffer  = storage_buf2,
+            .offset  = 0,
+            .size    = WGPU_WHOLE_SIZE,
+        },
+    };
+    WGPUBindGroupDescriptor desc = {
+        .layout     = layout,
+        .entryCount = 3,
+        .entries    = entries,
+    };
+
+    WGPUBindGroup bg = wgpuDeviceCreateBindGroup(ctx->device, &desc);
+    wgpuBindGroupLayoutRelease(layout);
+    if (!bg) {
+        wgpu_set_error("wgpu_create_render_two_storage_uniform_bind_group: bind group creation failed");
+    }
+    return bg;
+}
+
+
 static void wgpu_run_geom_pass_overlay(WGPUFrameState* frame,
                                          WGPUGeomPipelineWrapper* pipe,
                                          WGPUBindGroup bind_group,
@@ -1549,6 +1602,377 @@ static void wgpu_run_geom_pass_continue(WGPUFrameState* frame,
     wgpuRenderPassEncoderDraw(pass, vertex_count, 1, 0, 0);
     wgpuRenderPassEncoderEnd(pass);
     wgpuRenderPassEncoderRelease(pass);
+}
+
+static uint16_t wgpu_float_to_half(float f) {
+    union { float f; uint32_t u; } u = { f };
+    uint32_t sign = (u.u >> 16) & 0x8000;
+    int32_t exponent = ((u.u >> 23) & 0xff) - 127;
+    uint32_t mantissa = u.u & 0x7fffff;
+
+    if (exponent <= -15) {
+        return sign;
+    } else if (exponent >= 16) {
+        return sign | 0x7c00;
+    } else {
+        return sign | ((exponent + 15) << 10) | (mantissa >> 13);
+    }
+}
+
+static WGPURenderTexture* wgpu_create_3d_texture(WGPUContext* ctx,
+                                                 uint32_t width,
+                                                 uint32_t height,
+                                                 uint32_t depth,
+                                                 WGPUTextureFormat format);
+
+static WGPURenderTexture* wgpu_create_3d_texture_str(WGPUContext* ctx,
+                                                     uint32_t width,
+                                                     uint32_t height,
+                                                     uint32_t depth,
+                                                     const char* format_str) {
+    WGPUTextureFormat format = wgpu_parse_texture_format(format_str);
+    return wgpu_create_3d_texture(ctx, width, height, depth, format);
+}
+
+static WGPURenderTexture* wgpu_create_3d_texture(WGPUContext* ctx,
+                                                 uint32_t width,
+                                                 uint32_t height,
+                                                 uint32_t depth,
+                                                 WGPUTextureFormat format) {
+    if (!ctx) {
+        wgpu_set_error("wgpu_create_3d_texture: null context");
+        return NULL;
+    }
+    if (format == WGPUTextureFormat_Undefined) {
+        wgpu_set_error("wgpu_create_3d_texture: undefined texture format");
+        return NULL;
+    }
+
+    WGPUTextureDescriptor tex_desc = {
+        .usage       = WGPUTextureUsage_TextureBinding | WGPUTextureUsage_CopyDst,
+        .dimension   = WGPUTextureDimension_3D,
+        .size        = { .width = width, .height = height, .depthOrArrayLayers = depth },
+        .format      = format,
+        .mipLevelCount   = 1,
+        .sampleCount     = 1,
+    };
+    WGPUTexture texture = wgpuDeviceCreateTexture(ctx->device, &tex_desc);
+    if (!texture) {
+        wgpu_set_error("wgpuDeviceCreateTexture failed for 3D texture");
+        return NULL;
+    }
+
+    WGPUTextureViewDescriptor view_desc = {
+        .format          = format,
+        .dimension       = WGPUTextureViewDimension_3D,
+        .baseMipLevel    = 0,
+        .mipLevelCount   = 1,
+        .baseArrayLayer  = 0,
+        .arrayLayerCount = 1,
+        .aspect          = WGPUTextureAspect_All,
+    };
+    WGPUTextureView view = wgpuTextureCreateView(texture, &view_desc);
+    if (!view) {
+        wgpuTextureRelease(texture);
+        wgpu_set_error("wgpuTextureCreateView failed for 3D texture");
+        return NULL;
+    }
+
+    WGPURenderTexture* rt = calloc(1, sizeof(WGPURenderTexture));
+    rt->texture = texture;
+    rt->view = view;
+    rt->format = format;
+    rt->width = width;
+    rt->height = height;
+    return rt;
+}
+
+static void wgpu_update_3d_texture_subregion(
+    WGPUContext* ctx,
+    WGPURenderTexture* rt,
+    uint32_t offsetX, uint32_t offsetY, uint32_t offsetZ,
+    uint32_t sizeX, uint32_t sizeY, uint32_t sizeZ,
+    const void* data,
+    uint32_t data_size)
+{
+    if (!ctx || !rt || !data) return;
+
+    WGPUTexelCopyTextureInfo destination = {
+        .texture = rt->texture,
+        .mipLevel = 0,
+        .origin = { .x = offsetX, .y = offsetY, .z = offsetZ },
+        .aspect = WGPUTextureAspect_All,
+    };
+
+    WGPUTexelCopyBufferLayout data_layout = {
+        .offset = 0,
+        .bytesPerRow = sizeX * 8, // RGBA16Float = 8 bytes per pixel
+        .rowsPerImage = sizeY,
+    };
+
+    WGPUExtent3D write_size = {
+        .width = sizeX,
+        .height = sizeY,
+        .depthOrArrayLayers = sizeZ,
+    };
+
+    wgpuQueueWriteTexture(ctx->queue, &destination, data, data_size, &data_layout, &write_size);
+}
+
+static void wgpu_update_3d_texture_subregion_floats(
+    WGPUContext* ctx,
+    WGPURenderTexture* rt,
+    uint32_t offsetX, uint32_t offsetY, uint32_t offsetZ,
+    uint32_t sizeX, uint32_t sizeY, uint32_t sizeZ,
+    const float* float_data,
+    uint32_t num_floats)
+{
+    if (!ctx || !rt || !float_data) return;
+
+    // Convert floats to half-floats in a temporary buffer
+    uint16_t* half_data = malloc(num_floats * sizeof(uint16_t));
+    if (!half_data) return;
+
+    for (uint32_t i = 0; i < num_floats; i++) {
+        half_data[i] = wgpu_float_to_half(float_data[i]);
+    }
+
+    WGPUTexelCopyTextureInfo destination = {
+        .texture = rt->texture,
+        .mipLevel = 0,
+        .origin = { .x = offsetX, .y = offsetY, .z = offsetZ },
+        .aspect = WGPUTextureAspect_All,
+    };
+
+    WGPUTexelCopyBufferLayout data_layout = {
+        .offset = 0,
+        .bytesPerRow = sizeX * 8, // RGBA16Float = 8 bytes per pixel
+        .rowsPerImage = sizeY,
+    };
+
+    WGPUExtent3D write_size = {
+        .width = sizeX,
+        .height = sizeY,
+        .depthOrArrayLayers = sizeZ,
+    };
+
+    wgpuQueueWriteTexture(ctx->queue, &destination, half_data, num_floats * sizeof(uint16_t), &data_layout, &write_size);
+    free(half_data);
+}
+
+static WGPUBindGroup wgpu_create_voxel_render_bind_group(
+    WGPUContext* ctx,
+    WGPURenderPipelineWrapper* pipe,
+    WGPUBuffer storage_buf1,
+    WGPUBuffer storage_buf2,
+    WGPUUniformBufferWrapper* ub,
+    WGPURenderTexture* voxel_tex,
+    WGPUSampler voxel_sampler)
+{
+    if (!ctx || !pipe || !ub || !voxel_tex || !voxel_sampler) {
+        wgpu_set_error("wgpu_create_voxel_render_bind_group: null argument");
+        return NULL;
+    }
+
+    WGPUBindGroupLayout layout = wgpuRenderPipelineGetBindGroupLayout(pipe->pipeline, 0);
+    if (!layout) {
+        wgpu_set_error("wgpu_create_voxel_render_bind_group: failed to get bind group layout");
+        return NULL;
+    }
+
+    WGPUBindGroupEntry entries[5] = {
+        {
+            .binding = 0,
+            .buffer  = storage_buf1,
+            .offset  = 0,
+            .size    = WGPU_WHOLE_SIZE,
+        },
+        {
+            .binding = 1,
+            .buffer  = ub->buffer,
+            .offset  = 0,
+            .size    = ub->size,
+        },
+        {
+            .binding = 2,
+            .buffer  = storage_buf2,
+            .offset  = 0,
+            .size    = WGPU_WHOLE_SIZE,
+        },
+        {
+            .binding     = 3,
+            .textureView = voxel_tex->view,
+        },
+        {
+            .binding = 4,
+            .sampler = voxel_sampler,
+        },
+    };
+    WGPUBindGroupDescriptor desc = {
+        .layout     = layout,
+        .entryCount = 5,
+        .entries    = entries,
+    };
+
+    WGPUBindGroup bg = wgpuDeviceCreateBindGroup(ctx->device, &desc);
+    wgpuBindGroupLayoutRelease(layout);
+    if (!bg) {
+        wgpu_set_error("wgpu_create_voxel_render_bind_group: bind group creation failed");
+    }
+    return bg;
+}
+
+static WGPUBindGroup wgpu_create_voxel_render_bind_group_chunked(
+    WGPUContext* ctx,
+    WGPURenderPipelineWrapper* pipe,
+    WGPUBuffer storage_buf1,
+    WGPUBuffer storage_buf2,
+    WGPUUniformBufferWrapper* ub,
+    WGPURenderTexture* voxel_tex,
+    WGPUSampler voxel_sampler,
+    WGPUBuffer chunk_lookup_buf)
+{
+    if (!ctx || !pipe || !ub || !voxel_tex || !voxel_sampler || !chunk_lookup_buf) {
+        wgpu_set_error("wgpu_create_voxel_render_bind_group_chunked: null argument");
+        return NULL;
+    }
+
+    WGPUBindGroupLayout layout = wgpuRenderPipelineGetBindGroupLayout(pipe->pipeline, 0);
+    if (!layout) {
+        wgpu_set_error("wgpu_create_voxel_render_bind_group_chunked: failed to get bind group layout");
+        return NULL;
+    }
+
+    WGPUBindGroupEntry entries[6] = {
+        {
+            .binding = 0,
+            .buffer  = storage_buf1,
+            .offset  = 0,
+            .size    = WGPU_WHOLE_SIZE,
+        },
+        {
+            .binding = 1,
+            .buffer  = ub->buffer,
+            .offset  = 0,
+            .size    = ub->size,
+        },
+        {
+            .binding = 2,
+            .buffer  = storage_buf2,
+            .offset  = 0,
+            .size    = WGPU_WHOLE_SIZE,
+        },
+        {
+            .binding     = 3,
+            .textureView = voxel_tex->view,
+        },
+        {
+            .binding = 4,
+            .sampler = voxel_sampler,
+        },
+        {
+            .binding = 5,
+            .buffer  = chunk_lookup_buf,
+            .offset  = 0,
+            .size    = WGPU_WHOLE_SIZE,
+        },
+    };
+    WGPUBindGroupDescriptor desc = {
+        .layout     = layout,
+        .entryCount = 6,
+        .entries    = entries,
+    };
+
+    WGPUBindGroup bg = wgpuDeviceCreateBindGroup(ctx->device, &desc);
+    wgpuBindGroupLayoutRelease(layout);
+    if (!bg) {
+        wgpu_set_error("wgpu_create_voxel_render_bind_group_chunked: bind group creation failed");
+    }
+    return bg;
+}
+
+static void wgpu_copy_buffer_to_3d_texture(
+    WGPUContext* ctx,
+    WGPUBuffer buffer,
+    WGPURenderTexture* rt,
+    uint32_t width, uint32_t height, uint32_t depth)
+{
+    WGPUCommandEncoder encoder = wgpuDeviceCreateCommandEncoder(ctx->device, NULL);
+    
+    WGPUTexelCopyTextureInfo destination = {
+        .texture = rt->texture,
+        .mipLevel = 0,
+        .origin = { .x = 0, .y = 0, .z = 0 },
+        .aspect = WGPUTextureAspect_All,
+    };
+
+    WGPUTexelCopyBufferLayout data_layout = {
+        .offset = 0,
+        .bytesPerRow = width * 8, // RGBA16Float = 8 bytes per pixel
+        .rowsPerImage = height,
+    };
+
+    WGPUTexelCopyBufferInfo source = {
+        .buffer = buffer,
+        .layout = data_layout,
+    };
+
+    WGPUExtent3D write_size = {
+        .width = width,
+        .height = height,
+        .depthOrArrayLayers = depth,
+    };
+
+    wgpuCommandEncoderCopyBufferToTexture(encoder, &source, &destination, &write_size);
+    
+    WGPUCommandBuffer cmd = wgpuCommandEncoderFinish(encoder, NULL);
+    wgpuCommandEncoderRelease(encoder);
+    wgpuQueueSubmit(ctx->queue, 1, &cmd);
+    wgpuCommandBufferRelease(cmd);
+    wgpuDevicePoll(ctx->device, 1, NULL);
+}
+
+static void wgpu_copy_buffer_subregion_to_3d_texture(
+    WGPUContext* ctx,
+    WGPUBuffer buffer,
+    uint64_t buffer_offset,
+    WGPURenderTexture* rt,
+    uint32_t dest_x, uint32_t dest_y, uint32_t dest_z,
+    uint32_t width, uint32_t height, uint32_t depth)
+{
+    WGPUCommandEncoder encoder = wgpuDeviceCreateCommandEncoder(ctx->device, NULL);
+    
+    WGPUTexelCopyTextureInfo destination = {
+        .texture = rt->texture,
+        .mipLevel = 0,
+        .origin = { .x = dest_x, .y = dest_y, .z = dest_z },
+        .aspect = WGPUTextureAspect_All,
+    };
+
+    WGPUTexelCopyBufferLayout data_layout = {
+        .offset = buffer_offset,
+        .bytesPerRow = width * 8, // RGBA16Float = 8 bytes per pixel
+        .rowsPerImage = height,
+    };
+
+    WGPUTexelCopyBufferInfo source = {
+        .buffer = buffer,
+        .layout = data_layout,
+    };
+
+    WGPUExtent3D write_size = {
+        .width = width,
+        .height = height,
+        .depthOrArrayLayers = depth,
+    };
+
+    wgpuCommandEncoderCopyBufferToTexture(encoder, &source, &destination, &write_size);
+    
+    WGPUCommandBuffer cmd = wgpuCommandEncoderFinish(encoder, NULL);
+    wgpuCommandEncoderRelease(encoder);
+    wgpuQueueSubmit(ctx->queue, 1, &cmd);
+    wgpuCommandBufferRelease(cmd);
+    wgpuDevicePoll(ctx->device, 1, NULL);
 }
 
 #endif /* WGPU_RENDER_HELPERS_H */
