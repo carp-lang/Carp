@@ -191,6 +191,20 @@ String String_tail(const String* s) {
     return news;
 }
 
+bool String_starts_MINUS_with_QMARK_(const String* s, const String* sub) {
+    size_t ls = strlen(*s);
+    size_t lsub = strlen(*sub);
+    if (lsub > ls) return false;
+    return memcmp(*s, *sub, lsub) == 0;
+}
+
+bool String_ends_MINUS_with_QMARK_(const String* s, const String* sub) {
+    size_t ls = strlen(*s);
+    size_t lsub = strlen(*sub);
+    if (lsub > ls) return false;
+    return memcmp(*s + (ls - lsub), *sub, lsub) == 0;
+}
+
 String String_empty() {
     String s = CARP_MALLOC(1);
     s[0] = '\0';
@@ -392,6 +406,49 @@ int String_index_MINUS_of_MINUS_string(const String* s, const String* needle) {
         return -1;
     }
     return (int)(result - *s);
+}
+
+String String_replace(const String* s, const String* needle, const String* replacement) {
+    size_t needle_len = strlen(*needle);
+    if (needle_len == 0) {
+        return String_copy(s);
+    }
+
+    size_t s_len = strlen(*s);
+    size_t replacement_len = strlen(*replacement);
+
+    // First pass: count occurrences
+    size_t count = 0;
+    const char* tmp = *s;
+    while ((tmp = strstr(tmp, *needle))) {
+        count++;
+        tmp += needle_len;
+    }
+
+    if (count == 0) {
+        return String_copy(s);
+    }
+
+    // Allocate once
+    size_t new_len = s_len + (count * replacement_len) - (count * needle_len);
+    String result = CARP_MALLOC(new_len + 1);
+    if (result == NULL) return NULL;
+
+    // Second pass: fill the buffer
+    char* insert_ptr = result;
+    const char* current_ptr = *s;
+    while (count--) {
+        const char* next_needle = strstr(current_ptr, *needle);
+        size_t skipped_len = next_needle - current_ptr;
+        memcpy(insert_ptr, current_ptr, skipped_len);
+        insert_ptr += skipped_len;
+        memcpy(insert_ptr, *replacement, replacement_len);
+        insert_ptr += replacement_len;
+        current_ptr = next_needle + needle_len;
+    }
+    strcpy(insert_ptr, current_ptr);
+
+    return result;
 }
 
 String Pointer_strp(void* in) {
