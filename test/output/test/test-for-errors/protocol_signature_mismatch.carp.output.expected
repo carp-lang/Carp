@@ -1,0 +1,1 @@
+Core Primitives:0:0 Protocol signature mismatch for `show`. Expected `(Fn [Person] String)` but got `(Fn [a, b] String)`.

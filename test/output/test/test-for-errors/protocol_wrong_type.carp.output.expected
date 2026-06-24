@@ -1,0 +1,2 @@
+ Inferred Macro, can't unify with Int.
+/home/sqrew/Desktop/Carp-fork/test/test-for-errors/protocol_wrong_type.carp:7:3 Inferred (Fn [t0] Int), can't unify with String.
