@@ -54,6 +54,7 @@ tyToCManglePtr _ ty = f ty
     f StaticLifetimeTy = err "lifetimes"
     f InterfaceTy = err "interfaces"
     f Universe = err "universe"
+    f (ProtocolTy _ _) = error "ProtocolTy reached C emission -- this is a compiler bug"
     f (PointerTy _) = err "pointers"
     f (RefTy _ _) = err "references"
     f CTy = "c_code" -- Literal C; we shouldn't emit anything.

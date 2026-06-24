@@ -64,6 +64,9 @@ renameVarTys rootType = do
       x' <- rename x
       lt' <- rename lt
       pure (RefTy x' lt')
+    rename (ProtocolTy n is) = do
+      is' <- mapM rename is
+      pure (ProtocolTy n is')
     rename x = pure x
 
 -- | Adds initial types to a s-expression and all its sub-nodes.
@@ -155,7 +158,9 @@ initialTypes typeEnv rootEnv root = evalState (visit rootEnv root) 0
     visitInterfaceSym _ xobj@(XObj (InterfaceSym name) _ _) =
       do
         freshTy <- case E.getBinder typeEnv name of
-          Right (Binder _ (XObj (Lst [XObj (Interface interfaceSignature _) _ _, _]) _ _)) -> renameVarTys interfaceSignature
+          Right (Binder _ (XObj (Lst [XObj (Interface (sig : _) _) _ _, _]) _ _)) -> renameVarTys sig
+          Right (Binder _ (XObj (Lst [XObj (Interface [] _) _ _, _]) _ _)) -> genVarTy
+          Right (Binder _ (XObj (Lst [XObj (Protocol _ _) _ _, _]) _ _)) -> genVarTy -- Phase 3: Protocol typing
           Right (Binder _ x) -> error ("A non-interface named '" ++ name ++ "' was found in the type environment: " ++ pretty x)
           Left _ -> genVarTy
         pure (Right xobj {xobjTy = Just freshTy})

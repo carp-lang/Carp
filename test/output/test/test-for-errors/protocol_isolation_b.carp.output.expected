@@ -1,0 +1,2 @@
+protocol_isolation_b.carp:16:24 [INTERFACE ERROR] get: Can't implement the non-interface `get`
+

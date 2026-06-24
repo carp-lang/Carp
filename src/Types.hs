@@ -27,6 +27,7 @@ module Types
     getPathFromStructName,
     getNameFromStructName,
     getStructPath,
+    getTyVars,
     promoteNumber,
   )
 where
@@ -69,6 +70,7 @@ data Ty
   | InterfaceTy
   | CTy -- C literals
   | Universe -- the type of types of types (the type of TypeTy)
+  | ProtocolTy SymPath [Ty] -- a constrained type (protocol) and its member types
   deriving (Eq, Ord, Generic)
 
 instance Hashable Ty
@@ -197,6 +199,8 @@ instance Show Ty where
   show DynamicTy = "Dynamic"
   show Universe = "Universe"
   show CTy = "C"
+  show (ProtocolTy s []) = "(Protocol " ++ show s ++ ")"
+  show (ProtocolTy s is) = "(Protocol " ++ show s ++ ": " ++ joinWithComma (map show is) ++ ")"
 
 showMaybeTy :: Maybe Ty -> String
 showMaybeTy (Just t) = show t
@@ -295,6 +299,9 @@ areUnifiable (FuncTy argTysA retTyA ltA) (FuncTy argTysB retTyB ltB)
 areUnifiable FuncTy {} _ = False
 areUnifiable CTy _ = True
 areUnifiable _ CTy = True
+areUnifiable (ProtocolTy n _) (ProtocolTy n' _) = n == n'
+areUnifiable (ProtocolTy _ _) _ = False
+areUnifiable _ (ProtocolTy _ _) = False
 areUnifiable a b
   | a == b = True
   | otherwise = False
@@ -329,6 +336,8 @@ replaceTyVars mappings t =
         _ -> StructTy (replaceTyVars mappings name) (fmap (replaceTyVars mappings) tyArgs)
     (PointerTy x) -> PointerTy (replaceTyVars mappings x)
     (RefTy x lt) -> RefTy (replaceTyVars mappings x) (replaceTyVars mappings lt)
+    (ProtocolTy n is) -> ProtocolTy n (map (replaceTyVars mappings) is)
+    Universe -> Universe
     _ -> t
 
 -- | The type of a type's copying function.
@@ -363,6 +372,16 @@ getStructPath :: Ty -> SymPath
 getStructPath (StructTy (ConcreteNameTy spath) _) = spath
 getStructPath (StructTy (VarTy name) _) = (SymPath [] name)
 getStructPath _ = (SymPath [] "")
+
+-- | Extract all type variables from a type.
+getTyVars :: Ty -> [Ty]
+getTyVars (VarTy n) = [VarTy n]
+getTyVars (FuncTy argTys retTy lt) = concatMap getTyVars argTys ++ getTyVars retTy ++ getTyVars lt
+getTyVars (StructTy n tyArgs) = getTyVars n ++ concatMap getTyVars tyArgs
+getTyVars (PointerTy p) = getTyVars p
+getTyVars (RefTy r lt) = getTyVars r ++ getTyVars lt
+getTyVars (ProtocolTy _ is) = concatMap getTyVars is
+getTyVars _ = []
 
 -- N.B.: promoteNumber is only safe for numeric types!
 promoteNumber :: Ty -> Ty -> Ty

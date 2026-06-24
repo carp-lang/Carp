@@ -1,0 +1,14 @@
+(Project.config "file-path-print-length" "short")
+
+(definterface Big
+  [(a (Fn [a] Int))
+   (b (Fn [a] Int))
+   (c (Fn [a] Int))])
+
+(deftype T [])
+
+(defn a [x] 1)
+(implements a a)
+
+;; This should fail because b and c are missing
+(implements T Big)

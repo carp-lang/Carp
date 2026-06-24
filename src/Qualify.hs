@@ -379,6 +379,13 @@ qualifySym typeEnv globalEnv localEnv xobj@(XObj (Sym path@(SymPath _ name) _) i
             InternalEnv -> pure (XObj (Sym (getPath xobj) (LookupLocal (captureOrNot e localEnv))) i t)
             _ -> pure (XObj (InterfaceSym name) i t)
         _ -> pure (XObj (InterfaceSym name) i t)
+    resolve _ _ (Binder _ (XObj (Lst (XObj (Protocol _ _) _ _ : _)) _ _)) =
+      case (E.search localEnv path) of
+        Right (e, Binder _ _) ->
+          case envMode e of
+            InternalEnv -> pure (XObj (Sym (getPath xobj) (LookupLocal (captureOrNot e localEnv))) i t)
+            _ -> pure (XObj (InterfaceSym name) i t)
+        _ -> pure (XObj (InterfaceSym name) i t)
     resolve _ _ (Binder _ x@(XObj (Lst (XObj (External (Just overrideName)) _ _ : _)) _ _)) =
       pure (XObj (Sym (getPath x) (LookupGlobalOverride overrideName)) i t)
     resolve _ _ (Binder _ (XObj (Mod modenv _) _ _)) =

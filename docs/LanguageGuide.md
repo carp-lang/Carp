@@ -494,6 +494,43 @@ call by calling the implementing function you need
 directly. It usually isn't useful to provide multiple
 implementations that have the same function signature.
 
+#### Protocols
+
+Protocols are collections of interfaces that can be implemented together as a
+unit. You can define a protocol by providing a list of names and signatures to
+`definterface`:
+
+```clojure
+(definterface Eq
+  [(eq (Fn [(Ref a) (Ref a)] Bool))
+   (neq (Fn [(Ref a) (Ref a)] Bool))])
+```
+
+Defining a protocol also automatically defines each of its members as an
+individual interface.
+
+You can implement a protocol for a type using `implements`. Carp will verify
+that all members of the protocol have a matching implementation for that type:
+
+```clojure
+(deftype Person [id Int])
+
+(defn person-eq [a b]
+  (Int.= @(Person.id a) @(Person.id b)))
+
+(defn person-neq [a b]
+  (not (person-eq a b)))
+
+(implements eq person-eq)
+(implements neq person-neq)
+
+;; Atomic implementation of the Eq protocol for Person
+(implements Person Eq)
+```
+
+If any member of the protocol is missing an implementation for the type, Carp
+will report an error.
+
 ### C Interop
 ```clojure
 (system-include "math.h") ;; compiles to #include <math.h>

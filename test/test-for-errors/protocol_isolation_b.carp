@@ -1,0 +1,16 @@
+(Project.config "file-path-print-length" "short")
+
+(definterface Only
+  [(get (Fn [a] Int))])
+
+(deftype IsolationA [])
+(deftype IsolationB [])
+
+(sig get (Fn [IsolationA] Int))
+(defn get [x] 7)
+
+(implements get get)
+(implements IsolationA Only)
+
+;; IsolationB never implemented Only -- should fail
+(implements IsolationB Only)

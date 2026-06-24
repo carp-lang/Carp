@@ -8,11 +8,13 @@ isTypeGeneric (FuncTy argTys retTy _) = any isTypeGeneric argTys || isTypeGeneri
 isTypeGeneric (StructTy n tyArgs) = isTypeGeneric n || any isTypeGeneric tyArgs
 isTypeGeneric (PointerTy p) = isTypeGeneric p
 isTypeGeneric (RefTy r _) = isTypeGeneric r
+isTypeGeneric (ProtocolTy _ is) = any isTypeGeneric is
 isTypeGeneric _ = False
 
 isFullyGenericType :: Ty -> Bool
 isFullyGenericType (VarTy _) = True
 isFullyGenericType (StructTy name members) = isFullyGenericType name && all isFullyGenericType members
+isFullyGenericType (ProtocolTy _ is) = all isFullyGenericType is
 isFullyGenericType _ = False
 
 isUnit :: Ty -> Bool

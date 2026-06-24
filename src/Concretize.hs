@@ -458,6 +458,9 @@ visitInterfaceSym visited allowAmbig tenv env xobj@(InterfaceSymPat name) =
               [] -> pure (Right xobj) -- No exact match of types
               [y] -> updateSym y
               ps -> pure (Left (SeveralExactMatches xobj name actualType (map (\(t, _, p) -> (t, p)) ps)))
+    go (Binder _ (ListPat (ProtocolPat _ _instances))) =
+      -- Fallback to normal multi-sym style lookup if possible.
+      pure (Left (CannotConcretize xobj)) 
     go _ = pure (Left (CannotConcretize xobj))
     -- TODO: Should we also check for allowAmbig here?
     updateSym (_, mode, path) = if isTypeGeneric actualType then pure (Right xobj) else replace mode path
