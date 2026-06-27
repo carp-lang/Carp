@@ -25,7 +25,8 @@ literal x = XObj (Sym (SymPath [] x) Symbol) Nothing Nothing
 array :: (Reifiable a) => [a] -> XObj
 array x = XObj (Arr (map reify x)) Nothing Nothing
 
-lifetime :: Show a => a -> XObj
+lifetime :: Ty -> XObj
+lifetime StaticLifetimeTy = literal "Static"
 lifetime x = literal ("<" ++ show x ++ ">")
 
 -- Types

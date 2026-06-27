@@ -1,0 +1,75 @@
+(load "Test.carp")
+(load "GpuArray.carp")
+(use-all Test WGPU GpuArray)
+
+; ---------------------------------------------------------------------------
+; WGSL shader for testing: element-wise add.
+; C[i] = A[i] + B[i], three storage buffers.
+; ---------------------------------------------------------------------------
+
+(def test-add-shader
+  "@group(0) @binding(0) var<storage, read>       a: array<f32>;
+@group(0) @binding(1) var<storage, read>       b: array<f32>;
+@group(0) @binding(2) var<storage, read_write> c: array<f32>;
+
+@compute @workgroup_size(64)
+fn main(@builtin(global_invocation_id) id: vec3<u32>) {
+    let i = id.x;
+    if (i >= arrayLength(&a)) { return; }
+    c[i] = a[i] + b[i];
+}")
+
+; ---------------------------------------------------------------------------
+; GPU runtime tests.
+;
+; If create-context returns Error (no GPU / headless CI), the test suite
+; reports one skipped pass and exits cleanly.  No GPU == not a failure.
+;
+; Takes state :: (Ref Test.State), returns Test.State (same as all assert-*).
+; ---------------------------------------------------------------------------
+
+(defn gpu-tests [state]
+  (match (create-context)
+    (Result.Error _)
+      (let-do [_ (println* "  [wgpu] no GPU available — skipping runtime tests")]
+        (assert-true state true "GPU unavailable, tests skipped"))
+    (Result.Success ctx)
+  (match (create-pipeline ctx test-add-shader "main")
+    (Result.Error _)
+      (do (free-context ctx)
+          (assert-true state false "create-pipeline returned Error"))
+    (Result.Success pipe)
+  (match (GpuArray.from-floats ctx &[1.0f 2.0f 3.0f 4.0f 5.0f])
+    (Result.Error _)
+      (do (free-pipeline pipe) (free-context ctx)
+          (assert-true state false "GpuArray.from-floats A returned Error"))
+    (Result.Success ga-a)
+  (match (GpuArray.from-floats ctx &[10.0f 20.0f 30.0f 40.0f 50.0f])
+    (Result.Error _)
+      (do (GpuArray.free &ga-a)
+          (free-pipeline pipe) (free-context ctx)
+          (assert-true state false "GpuArray.from-floats B returned Error"))
+    (Result.Success ga-b)
+  (match (GpuArray.create ctx 5)
+    (Result.Error _)
+      (do (GpuArray.free &ga-b) (GpuArray.free &ga-a)
+          (free-pipeline pipe) (free-context ctx)
+          (assert-true state false "GpuArray.create C returned Error"))
+    (Result.Success ga-c)
+  ; Dispatch compute, read back, clean up, then assert.
+  ; Cleanup before assert so all GPU resources are released before we return.
+  (do
+    (WGPU.dispatch-with ctx pipe ga-a ga-b ga-c)
+    (let [result (GpuArray.download &ga-c)]
+      (do
+        (GpuArray.free &ga-c)
+        (GpuArray.free &ga-b)
+        (GpuArray.free &ga-a)
+        (free-pipeline pipe)
+        (free-context ctx)
+        (assert-ref-equal state
+          [11.0f 22.0f 33.0f 44.0f 55.0f] result
+          "element-wise add: [1 2 3 4 5] + [10 20 30 40 50] = [11 22 33 44 55]"))))))))))
+
+(deftest test
+  (gpu-tests test))

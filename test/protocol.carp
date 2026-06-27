@@ -1,0 +1,280 @@
+(load-and-use Test)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;; Basic protocol definitions
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defprotocol (MyShow a) 
+  [(show (Fn [(Ref a)] String))])
+
+(defprotocol (MyEq a) 
+  [(eq (Fn [(Ref a) (Ref a)] Bool))])
+
+(defprotocol (MyOrd a) 
+  [(lt (Fn [(Ref a) (Ref a)] Bool))
+   (gt (Fn [(Ref a) (Ref a)] Bool))])
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;; Test types
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(deftype Person
+  [name String
+   age Int])
+
+(deftype Robot
+  [id Int])
+
+(deftype Point
+  [x Int
+   y Int])
+
+(deftype (MyBox a) [val a])
+
+(deftype (MyPair a b) [first a second b])
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;; Primitive implementations
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(impl-for Int MyShow
+  (defn show [i]
+    (Int.str @i)))
+
+(impl-for Int MyOrd
+  (defn lt [a b] (Int.< @a @b))
+  (defn gt [a b] (Int.> @a @b)))
+
+(impl-for String MyShow
+  (defn show [s] (copy (the (Ref String) s))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;; Generic implementations
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(impl-for (MyBox a) MyOrd
+  (defn lt [x y]
+    (lt (MyBox.val x) (MyBox.val y)))
+  ;; Test interdependence: gt calls lt interface
+  (defn gt [x y]
+    (lt y x)))
+
+(impl-for (MyPair a b) MyShow
+  (defn show [p]
+    (String.concat
+      &[@"(Pair "
+        (show (MyPair.first p))
+        @" "
+        (show (MyPair.second p))
+        @")"])))
+
+(impl-for (Maybe Int) MyShow
+  (defn show [m]
+    (match @m
+      (Just x) (String.concat &[@"Maybe Int: " (Int.str x)])
+      Nothing @"Maybe Int: Nothing")))
+
+(impl-for (Maybe String) MyShow
+  (defn show [m]
+    (match @m
+      (Just x) (String.concat &[@"Maybe String: " x])
+      Nothing @"Maybe String: Nothing")))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;; Person implementations
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(impl-for Person MyShow
+  (defn show [p]
+    (String.concat
+      &[@(Person.name p)
+        @" ("
+        (Int.str @(Person.age p))
+        @")"])))
+
+(impl-for Person MyEq
+  (defn eq [a b]
+    (if (String.= (Person.name a) (Person.name b))
+      (Int.= @(Person.age a) @(Person.age b))
+      false)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;; Robot implementations
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(impl-for Robot MyShow
+  (defn show [r]
+    (String.concat
+      &[@"Robot #"
+        (Int.str @(Robot.id r))])))
+
+(impl-for Robot MyEq
+  (defn eq [a b]
+    (Int.= @(Robot.id a) @(Robot.id b))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;; Point implementations
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(impl-for Point MyShow
+  (defn show [p]
+    (String.concat
+      &[@"Point("
+        (Int.str @(Point.x p))
+        @", "
+        (Int.str @(Point.y p))
+        @")"])))
+
+(impl-for Point MyEq
+  (defn eq [a b]
+    (if (Int.= @(Point.x a) @(Point.x b))
+      (Int.= @(Point.y a) @(Point.y b))
+      false)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;; Consolidated tests
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(deftest protocol-test
+  ;; MyShow dispatch tests
+  (let [p (Person.init @"Nick" 35)]
+    (assert-equal protocol-test
+                  &@"Nick (35)"
+                  &(show &p)
+                  "MyShow dispatch works for Person"))
+
+  (let [r (Robot.init 7)]
+    (assert-equal protocol-test
+                  &@"Robot #7"
+                  &(show &r)
+                  "MyShow dispatch works for Robot"))
+
+  (let [p (Point.init 10 20)]
+    (assert-equal protocol-test
+                  &@"Point(10, 20)"
+                  &(show &p)
+                  "MyShow dispatch works for Point"))
+
+  ;; MyEquality tests - Person
+  (let [a (Person.init @"Nick" 35)
+        b (Person.init @"Nick" 35)]
+    (assert-true protocol-test
+                 (eq &a &b)
+                 "Person equality succeeds for identical values"))
+
+  (let [a (Person.init @"Nick" 35)
+        b (Person.init @"Erik" 35)]
+    (assert-false protocol-test
+                  (eq &a &b)
+                  "Person equality fails for differing names"))
+
+  (let [a (Person.init @"Nick" 35)
+        b (Person.init @"Nick" 40)]
+    (assert-false protocol-test
+                  (eq &a &b)
+                  "Person equality fails for differing ages"))
+
+  ;; MyEquality tests - Robot
+  (let [a (Robot.init 1)
+        b (Robot.init 1)]
+    (assert-true protocol-test
+                 (eq &a &b)
+                 "Robot equality succeeds for identical ids"))
+
+  (let [a (Robot.init 1)
+        b (Robot.init 2)]
+    (assert-false protocol-test
+                  (eq &a &b)
+                  "Robot equality fails for differing ids"))
+
+  ;; MyEquality tests - Point
+  (let [a (Point.init 1 2)
+        b (Point.init 1 2)]
+    (assert-true protocol-test
+                 (eq &a &b)
+                 "Point equality succeeds for identical coordinates"))
+
+  (let [a (Point.init 1 2)
+        b (Point.init 5 9)]
+    (assert-false protocol-test
+                  (eq &a &b)
+                  "Point equality fails for differing coordinates"))
+
+  ;; Cross-type dispatch sanity
+  (let [p (Person.init @"Nick" 35)
+        r (Robot.init 99)
+        pt (Point.init 3 4)]
+    (assert-equal protocol-test
+                  &@"Nick (35)"
+                  &(show &p)
+                  "Dispatch remains stable after multiple implementations (Person)"))
+
+  (let [p (Person.init @"Nick" 35)
+        r (Robot.init 99)
+        pt (Point.init 3 4)]
+    (assert-equal protocol-test
+                  &@"Robot #99"
+                  &(show &r)
+                  "Robot dispatch remains stable"))
+
+  (let [p (Person.init @"Nick" 35)
+        r (Robot.init 99)
+        pt (Point.init 3 4)]
+    (assert-equal protocol-test
+                  &@"Point(3, 4)"
+                  &(show &pt)
+                  "Point dispatch remains stable"))
+
+  ;; Multiple protocol implementation sanity
+  (let [p1 (Person.init @"Nick" 35)
+        p2 (Person.init @"Nick" 35)]
+    (assert-equal protocol-test
+                  &@"Nick (35)"
+                  &(show &p1)
+                  "Type can participate in MyShow (multi-test)"))
+
+  (let [p1 (Person.init @"Nick" 35)
+        p2 (Person.init @"Nick" 35)]
+    (assert-true protocol-test
+                 (eq &p1 &p2)
+                 "Type can participate in MyEq simultaneously"))
+
+  ;; Generic Box + Interdependence tests
+  (let [b1 (MyBox.init 10)
+        b2 (MyBox.init 20)]
+    (let [state (assert-true protocol-test
+                             (lt &b1 &b2)
+                             "Generic MyBox lt works")]
+      (let [state (assert-false &state
+                                (gt &b1 &b2)
+                                "Generic MyBox gt works (via lt interdependence)")]
+        (assert-true &state
+                     (gt &b2 &b1)
+                     "Generic MyBox gt works for greater value"))))
+
+  ;; MyPair Show tests
+  (let [pair (MyPair.init 1 @"hi")]
+    (assert-equal protocol-test
+                  &@"(Pair 1 hi)"
+                  &(show &pair)
+                  "MyPair MyShow works for (MyPair Int String)"))
+
+  ;; Complex Type (Maybe Int, Maybe String) tests
+  (let [m1 (Just 10)
+        m2 (Just @"hi")]
+    (let [state (assert-equal protocol-test
+                              &@"Maybe Int: 10"
+                              &(show &m1)
+                              "Complex Type (Maybe Int) MyShow works")]
+      (assert-equal &state
+                    &@"Maybe String: hi"
+                    &(show &m2)
+                    "Complex Type (Maybe String) MyShow works")))
+
+  ;; Nested MyBox Ord tests
+  (let [nested1 (MyBox.init (MyBox.init 10))
+        nested2 (MyBox.init (MyBox.init 20))]
+    (assert-true protocol-test
+                 (lt &nested1 &nested2)
+                 "Nested MyBox lt works"))
+)
