@@ -472,6 +472,20 @@ primitiveMetaSet _ ctx (XObj (Sym (SymPath _ _) _) _ _) key _ =
 primitiveMetaSet _ ctx target _ _ =
   argumentErr ctx "meta-set!" "a symbol" "first" target
 
+-- | Mark a type as a heap indirection allowed in by-value-recursive positions
+-- (generalizes Box). The author vouches its copy/delete own the contents.
+primitiveRecursive :: UnaryPrimitiveCallback
+primitiveRecursive _ ctx target@(XObj (Sym path _) _ _) =
+  let qpath = qualifyPath ctx path
+   in pure $ case lookupBinderInTypeEnv ctx qpath of
+        Right binder ->
+          case insertTypeBinder ctx qpath (Meta.updateBinderMeta binder "recursive" trueXObj) of
+            Right c -> (c, dynamicNil)
+            Left e -> toEvalError ctx target (MetaSetFailed target (show e))
+        Left _ -> evalError ctx ("`recursive` can't find the type `" ++ show path ++ "`") (xobjInfo target)
+primitiveRecursive _ ctx target =
+  argumentErr ctx "recursive" "a symbol" "first" target
+
 primitiveDefinterface :: BinaryPrimitiveCallback
 primitiveDefinterface xobj ctx nameXObj@(XObj (Sym path@(SymPath [] name) _) _ _) ty =
   pure $ maybe invalidType validType (xobjToTy ty)
@@ -790,7 +804,7 @@ primitiveDeftemplate _ ctx (XObj (Sym p@(SymPath [] _) _) _ _) ty (XObj (Str dec
              in insertInGlobalEnv ctx (qualifyPath ctx p) (Binder meta registration)
           else
             let templateCreator = getTemplateCreator template
-                (registration, _) = instantiateTemplate (contextualize p ctx) t (templateCreator typeEnv globalEnv)
+                (registration, _) = instantiateTemplate (contextualize p ctx) t (templateCreator [] typeEnv globalEnv)
                 meta = fromRight emptyMeta (lookupMeta globalEnv (getPath registration))
              in insertInGlobalEnv ctx (qualifyPath ctx p) (Binder meta registration)
       _ -> error "primitivedeftemplate1"

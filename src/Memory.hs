@@ -3,7 +3,8 @@
 module Memory (manageMemory) where
 
 import Control.Monad.State
-import Data.Maybe (fromMaybe)
+import Data.List (isPrefixOf)
+import Data.Maybe (fromMaybe, mapMaybe)
 import Forms
 import Info
 import Managed
@@ -38,6 +39,15 @@ data LifetimeMode
 -- | Find out what deleters are needed and where in an XObj.
 -- | Deleters will be added to the info field on XObj so that
 -- | the code emitter can access them and insert calls to destructors.
+-- | The self-typed argument of its own type's 'delete' must not be auto-deleted.
+isOwnDeleterParam :: SymPath -> XObj -> Bool
+isOwnDeleterParam (SymPath modPath fname) arg =
+  (fname == "delete" || "delete__" `isPrefixOf` fname)
+    && not (null modPath)
+    && case xobjTy arg of
+      Just (StructTy (ConcreteNameTy (SymPath _ tn)) _) -> tn == last modPath
+      _ -> False
+
 manageMemory :: TypeEnv -> Env -> XObj -> Either TypeError (XObj, Set.Set Ty)
 manageMemory typeEnv globalEnv root =
   let (finalObj, finalState) = runState (visit root) (MemState Set.empty Set.empty Map.empty Set.empty Map.empty)
@@ -118,7 +128,7 @@ manageMemory typeEnv globalEnv root =
     visitList :: XObj -> State MemState (Either TypeError XObj)
     visitList xobj@(XObj (Lst lst) i t) =
       case lst of
-        [defn@(XObj (Defn maybeCaptures) _ _), nameSymbol@(XObj (Sym _ _) _ _), args@(XObj (Arr argList) _ _), body] ->
+        [defn@(XObj (Defn maybeCaptures) _ _), nameSymbol@(XObj (Sym defPath _) _ _), args@(XObj (Arr argList) _ _), body] ->
           let captures = maybe [] Set.toList maybeCaptures
            in do
                 mapM_ (manage typeEnv globalEnv) argList
@@ -143,6 +153,9 @@ manageMemory typeEnv globalEnv root =
                 modify (\m -> m {memStateParamDeleters = paramDels})
                 visitedBody <- visit body
                 result <- unmanage typeEnv globalEnv body
+                -- Drop the self-typed param's end-of-scope deleter: it would be
+                -- this very 'delete' calling itself. Still borrowable in the body.
+                modify (\m -> m {memStateDeleters = memStateDeleters m \\ Set.fromList (mapMaybe (createDeleter typeEnv globalEnv) (filter (isOwnDeleterParam defPath) argList))})
                 whenRightReturn result $
                   do
                     okBody <- visitedBody

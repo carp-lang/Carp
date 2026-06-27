@@ -40,7 +40,7 @@ init =
               ]
           )
       deps = const []
-      template = TemplateCreator $ \_ _ -> Template t decl body deps
+      template = TemplateCreator $ \_visited _ _ -> Template t decl body deps
    in defineTypeParameterizedTemplate template path t docs
 
 -- | Defines a template for converting a boxed value to a local value.
@@ -62,7 +62,7 @@ unbox =
               ]
           )
       deps = const []
-      template = TemplateCreator $ \_ _ -> Template t decl body deps
+      template = TemplateCreator $ \_visited _ _ -> Template t decl body deps
    in defineTypeParameterizedTemplate template path t docs
 
 -- | Defines a template for getting a reference to the value stored in a box without performing an additional allocation.
@@ -81,7 +81,7 @@ peek =
               ]
           )
       deps = const []
-      template = TemplateCreator $ \_ _ -> Template t decl body deps
+      template = TemplateCreator $ \_visited _ _ -> Template t decl body deps
    in defineTypeParameterizedTemplate template path t docs
 
 -- | Defines a template for copying a box. The copy will also be heap allocated.
@@ -92,7 +92,7 @@ copy =
       docs = "Copies a box."
       decl = (templateLiteral "$t* $NAME ($t** box)")
       template = TemplateCreator $
-        \tenv env ->
+        \_visited tenv env ->
           Template
             t
             decl
@@ -140,7 +140,7 @@ delete =
       docs = "Deletes a box, freeing its associated memory."
       decl = (templateLiteral "void $NAME ($t* box)")
       templateCreator = TemplateCreator $
-        \tenv env ->
+        \_visited tenv env ->
           Template
             t
             decl
@@ -182,7 +182,7 @@ prn =
       docs = "Returns a string representation of a Box."
       templateCreator =
         TemplateCreator $
-          ( \tenv env ->
+          ( \_visited tenv env ->
               Template
                 t
                 (templateLiteral "String $NAME ($t** box)")
@@ -219,7 +219,7 @@ str =
       docs = "Returns a string representation of a Box."
       templateCreator =
         TemplateCreator $
-          ( \tenv env ->
+          ( \_visited tenv env ->
               Template
                 t
                 (templateLiteral "String $NAME ($t** box)")

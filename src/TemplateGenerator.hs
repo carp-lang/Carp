@@ -17,7 +17,9 @@ data GeneratorArg a = GeneratorArg
     env :: Env,
     originalT :: Ty,
     instanceT :: Ty,
-    value :: a
+    value :: a,
+    -- | Visited set, so dep generators can break recursive-type cycles.
+    visited :: [SymPath]
   }
 
 type TypeGenerator a = GeneratorArg a -> Ty
@@ -45,6 +47,7 @@ generateConcreteTypeTemplate candidate gen =
           (TC.toType candidate)
           (TC.toType candidate)
           candidate
+          []
       t = (genT gen) $ arg
       d = (\tt -> (decl gen) $ (arg {instanceT = tt}))
       b = (\tt -> (body gen) $ (arg {instanceT = tt}))
@@ -60,6 +63,7 @@ generateConcreteFieldTemplate candidate field gen =
           (TC.toType candidate)
           (TC.toType candidate)
           field
+          []
       t = (genT gen) $ arg
       d = (\tt -> (decl gen) $ (arg {instanceT = tt}))
       b = (\tt -> (body gen) $ (arg {instanceT = tt}))
@@ -75,14 +79,15 @@ generateGenericFieldTemplate candidate field gen =
           (TC.toType candidate)
           (TC.toType candidate)
           field
+          []
       t = (genT gen) arg
    in TemplateCreator $
-        \tenv env ->
+        \vis tenv env ->
           Template
             t
-            (\tt -> (decl gen) $ (arg {instanceT = tt, tenv = tenv, env = env}))
-            (\tt -> (body gen) $ (arg {instanceT = tt, tenv = tenv, env = env}))
-            (\tt -> (deps gen) $ (arg {instanceT = tt, tenv = tenv, env = env}))
+            (\tt -> (decl gen) $ (arg {instanceT = tt, tenv = tenv, env = env, visited = vis}))
+            (\tt -> (body gen) $ (arg {instanceT = tt, tenv = tenv, env = env, visited = vis}))
+            (\tt -> (deps gen) $ (arg {instanceT = tt, tenv = tenv, env = env, visited = vis}))
 
 generateGenericTypeTemplate :: TC.TypeCandidate -> TemplateGenerator TC.TypeCandidate -> TemplateCreator
 generateGenericTypeTemplate candidate gen =
@@ -93,11 +98,12 @@ generateGenericTypeTemplate candidate gen =
           (TC.toType candidate)
           (TC.toType candidate)
           candidate
+          []
       t = (genT gen) arg
    in TemplateCreator $
-        \tenv env ->
+        \vis tenv env ->
           Template
             t
-            (\tt -> (decl gen) $ (arg {instanceT = tt, tenv = tenv, env = env}))
-            (\tt -> (body gen) $ (arg {instanceT = tt, tenv = tenv, env = env}))
-            (\tt -> (deps gen) $ (arg {instanceT = tt, tenv = tenv, env = env}))
+            (\tt -> (decl gen) $ (arg {instanceT = tt, tenv = tenv, env = env, visited = vis}))
+            (\tt -> (body gen) $ (arg {instanceT = tt, tenv = tenv, env = env, visited = vis}))
+            (\tt -> (deps gen) $ (arg {instanceT = tt, tenv = tenv, env = env, visited = vis}))

@@ -134,7 +134,11 @@ generateTypeBindings candidate =
     (okPrn, _) <- binderForStrOrPrn "prn" candidate
     (okDelete, deleteDeps) <- binderForDelete candidate
     (okCopy, copyDeps) <- binderForCopy candidate
-    okMemberDeps <- memberDeps (TC.getTypeEnv candidate) (TC.getValueEnv candidate) (TC.getFields candidate)
+    -- Generic types defer their concrete member deps to instantiation time.
+    okMemberDeps <-
+      if isTypeGeneric (TC.toType candidate)
+        then pure []
+        else memberDeps (TC.getTypeEnv candidate) (TC.getValueEnv candidate) (TC.getFields candidate)
     pure
       ( (okInit : okStr : okPrn : okDelete : okCopy : okMembers),
         (okMemberDeps ++ deleteDeps ++ membersDeps ++ copyDeps ++ strDeps)
@@ -539,13 +543,15 @@ deleteGenerator = TG.mkTemplateGenerator genT decl body deps
             ]
     body _ = toTemplate "/* template error! */"
     deps :: TG.DepenGenerator TC.TypeCandidate
-    deps GeneratorArg {tenv, env, originalT, instanceT = (FuncTy [structT] _ _), value}
+    deps GeneratorArg {tenv, env, originalT, instanceT = (FuncTy [structT] _ _), value, visited}
       | isTypeGeneric structT = []
       | otherwise =
         let mappings = unifySignatures originalT structT
             concreteFields = replaceGenericTypeSymbolsOnFields mappings (TC.getFields value)
          in concatMap
-              (depsOfPolymorphicFunction tenv env [] "delete" . typesDeleterFunctionType)
+              -- Seed visited with this delete's own path plus ancestors, so a
+              -- struct recursing through an 'Rc' reaches its delete and terminates.
+              (depsOfPolymorphicFunction tenv env (selfDeleterPath originalT structT : visited) "delete" . typesDeleterFunctionType)
               (filter (isManaged tenv env) (concatMap TC.fieldTypes concreteFields))
     deps _ = []
 
@@ -565,14 +571,16 @@ copyGenerator = TG.mkTemplateGenerator genT decl body deps
        in tokensForCopy tenv env members
     body _ = toTemplate "/* template error! */"
     deps :: TG.DepenGenerator TC.TypeCandidate
-    deps GeneratorArg {tenv, env, originalT, instanceT = (FuncTy [RefTy structT _] _ _), value}
+    deps GeneratorArg {tenv, env, originalT, instanceT = (FuncTy [RefTy structT _] _ _), value, visited}
       | isTypeGeneric structT = []
       | otherwise =
         let mappings = unifySignatures originalT structT
             concreteFields = replaceGenericTypeSymbolsOnFields mappings (TC.getFields value)
             members = map fieldToTuple concreteFields
          in concatMap
-              (depsOfPolymorphicFunction tenv env [] "copy" . typesCopyFunctionType)
+              -- Seed visited with this copy's own path plus ancestors, so a
+              -- struct whose copy reaches itself through an indirection terminates.
+              (depsOfPolymorphicFunction tenv env (selfCopierPath originalT structT : visited) "copy" . typesCopyFunctionType)
               (filter (isManaged tenv env) (map snd members))
     deps _ = []
 

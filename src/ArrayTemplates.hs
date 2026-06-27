@@ -31,8 +31,8 @@ templateEMap =
     endomorphism = FuncTy [VarTy "a"] (VarTy "a") (VarTy "fq")
     documentation =
       "applies a function `f` to an array `a`. The type of the elements cannot change."
-    creatorFunc :: TypeEnv -> Env -> Template
-    creatorFunc _ _ =
+    creatorFunc :: [SymPath] -> TypeEnv -> Env -> Template
+    creatorFunc _ _ _ =
       Template
         templateType
         (templateLiteral "Array $NAME(Lambda *f, Array a)")
@@ -96,7 +96,7 @@ templateEFilter = defineTypeParameterizedTemplate templateCreator path t docs
           "}"
         ]
     templateCreator = TemplateCreator $
-      \typeEnv env ->
+      \_visited typeEnv env ->
         Template
           t
           (const (toTemplate "Array $NAME(Lambda *predicate, Array a)")) -- Lambda used to be $(Fn [(Ref a)] Bool)
@@ -138,7 +138,7 @@ templatePushBack =
           "}"
         ]
     creator = TemplateCreator $
-      \_ _ ->
+      \_visited _ _ ->
         Template
           t
           ( \case
@@ -181,7 +181,7 @@ templatePushBackBang =
           "}"
         ]
     creator = TemplateCreator $
-      \_ _ ->
+      \_visited _ _ ->
         Template
           t
           ( \case
@@ -210,7 +210,7 @@ templatePopBack = defineTypeParameterizedTemplate templateCreator path t docs
     t = FuncTy [arrayTyA] arrayTyA StaticLifetimeTy
     docs = "removes the last element of an array and returns the new array."
     templateCreator = TemplateCreator $
-      \typeEnv env ->
+      \_visited typeEnv env ->
         Template
           t
           (const (toTemplate "Array $NAME(Array a)"))
@@ -246,7 +246,7 @@ templatePopBackBang =
     docs = "removes an element `value` from the end of an array `a` in-place and returns it."
     creator =
       TemplateCreator $
-        \_ _ ->
+        \_visited _ _ ->
           Template
             t
             (templateLiteral "$a $NAME(Array *aRef)")
@@ -343,7 +343,7 @@ templateAset = defineTypeParameterizedTemplate templateCreator path t docs
     t = FuncTy [StructTy (ConcreteNameTy (SymPath [] "Array")) [VarTy "t"], IntTy, VarTy "t"] (StructTy (ConcreteNameTy (SymPath [] "Array")) [VarTy "t"]) StaticLifetimeTy
     docs = "sets an array element at the index `n` to a new value."
     templateCreator = TemplateCreator $
-      \typeEnv env ->
+      \_visited typeEnv env ->
         Template
           t
           ( \case
@@ -384,7 +384,7 @@ templateAsetBang = defineTypeParameterizedTemplate templateCreator path t docs
     t = FuncTy [RefTy (StructTy (ConcreteNameTy (SymPath [] "Array")) [VarTy "t"]) (VarTy "q"), IntTy, VarTy "t"] UnitTy StaticLifetimeTy
     docs = "sets an array element at the index `n` to a new value in place."
     templateCreator = TemplateCreator $
-      \typeEnv env ->
+      \_visited typeEnv env ->
         Template
           t
           ( \case
@@ -426,7 +426,7 @@ templateAsetUninitializedBang = defineTypeParameterizedTemplate templateCreator 
     t = FuncTy [RefTy (StructTy (ConcreteNameTy (SymPath [] "Array")) [VarTy "t"]) (VarTy "q"), IntTy, VarTy "t"] UnitTy StaticLifetimeTy
     docs = "sets an uninitialized array member. The old member will not be deleted."
     templateCreator = TemplateCreator $
-      \_ _ ->
+      \_visited _ _ ->
         Template
           t
           ( \case
@@ -460,7 +460,7 @@ templateLength = defineTypeParameterizedTemplate templateCreator path t docs
     t = FuncTy [RefTy (StructTy (ConcreteNameTy (SymPath [] "Array")) [VarTy "t"]) (VarTy "q")] IntTy StaticLifetimeTy
     docs = "gets the length of the array."
     templateCreator = TemplateCreator $
-      \typeEnv env ->
+      \_visited typeEnv env ->
         Template
           t
           (const (toTemplate "int $NAME (Array *a)"))
@@ -478,7 +478,7 @@ templateAllocate = defineTypeParameterizedTemplate templateCreator path t docs
     t = FuncTy [IntTy] (StructTy (ConcreteNameTy (SymPath [] "Array")) [VarTy "t"]) StaticLifetimeTy
     docs = "allocates an uninitialized array. You can initialize members using [`aset-uninitialized`](#aset-uninitialized)."
     templateCreator = TemplateCreator $
-      \typeEnv env ->
+      \_visited typeEnv env ->
         Template
           t
           (const (toTemplate "Array $NAME (int n)"))
@@ -512,7 +512,7 @@ templateDeleteArray = defineTypeParameterizedTemplate templateCreator path t doc
     t = FuncTy [arrayTyA] UnitTy StaticLifetimeTy
     docs = "deletes an array. This function should usually not be called manually."
     templateCreator = TemplateCreator $
-      \typeEnv env ->
+      \visited typeEnv env ->
         Template
           t
           (const (toTemplate "void $NAME (Array a)"))
@@ -524,8 +524,9 @@ templateDeleteArray = defineTypeParameterizedTemplate templateCreator path t doc
               _ -> error "array template: delete called with non array"
           )
           ( \case
-              (FuncTy [StructTy (ConcreteNameTy (SymPath [] "Array")) [insideType]] UnitTy _) ->
-                depsForDeleteFunc typeEnv env insideType
+              (FuncTy [arrayType@(StructTy (ConcreteNameTy (SymPath [] "Array")) [insideType])] UnitTy _) ->
+                -- Seed visited so a type recursing through an array element terminates.
+                depsForDeleteFuncVisited typeEnv env (selfDeleterPath arrayTyA arrayType : visited) insideType
               _ -> error "array template: delete called with non array"
           )
 
@@ -578,7 +579,7 @@ templateCopyArray = defineTypeParameterizedTemplate templateCreator path t docs
     t = FuncTy [arrayRef] arrayTyA StaticLifetimeTy
     docs = "copies an array."
     templateCreator = TemplateCreator $
-      \typeEnv env ->
+      \_visited typeEnv env ->
         Template
           t
           (const (toTemplate "Array $NAME (Array* a)"))
@@ -638,7 +639,7 @@ templateStrArray :: (String, Binder)
 templateStrArray = defineTypeParameterizedTemplate templateCreator path t docs
   where
     templateCreator = TemplateCreator $
-      \typeEnv env ->
+      \_visited typeEnv env ->
         Template
           t
           (const (toTemplate "String $NAME (Array* a)"))

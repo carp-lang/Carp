@@ -45,7 +45,7 @@ templateLength = defineTypeParameterizedTemplate templateCreator path t docs
     t = FuncTy [RefTy (StructTy concreteArray [VarTy "t"]) (VarTy "q")] IntTy StaticLifetimeTy
     docs = "gets the length of the static array."
     templateCreator = TemplateCreator $
-      \typeEnv env ->
+      \_visited typeEnv env ->
         Template
           t
           (const (toTemplate "int $NAME (Array *a)"))
@@ -63,7 +63,7 @@ templateDeleteArray = defineTypeParameterizedTemplate templateCreator path t doc
     t = FuncTy [StructTy concreteArray [VarTy "a"]] UnitTy StaticLifetimeTy
     docs = "deletes a static array. This function should not be called manually (there shouldn't be a way to create value types of type StaticArray)."
     templateCreator = TemplateCreator $
-      \typeEnv env ->
+      \_visited typeEnv env ->
         Template
           t
           (const (toTemplate "void $NAME (Array a)"))
@@ -95,7 +95,7 @@ templateAsetBang = defineTypeParameterizedTemplate templateCreator path t docs
     t = FuncTy [RefTy (StructTy concreteArray [VarTy "t"]) (VarTy "q"), IntTy, VarTy "t"] UnitTy StaticLifetimeTy
     docs = "sets a static array element at the index `n` to a new value in place."
     templateCreator = TemplateCreator $
-      \typeEnv env ->
+      \_visited typeEnv env ->
         Template
           t
           (const (toTemplate "void $NAME (Array *aRef, int n, $t newValue)"))
@@ -128,7 +128,7 @@ templateAsetUninitializedBang = defineTypeParameterizedTemplate templateCreator 
     t = FuncTy [RefTy (StructTy (ConcreteNameTy (SymPath [] "StaticArray")) [VarTy "t"]) (VarTy "q"), IntTy, VarTy "t"] UnitTy StaticLifetimeTy
     docs = "sets an uninitialized static array member. The old member will not be deleted."
     templateCreator = TemplateCreator $
-      \_ _ ->
+      \_visited _ _ ->
         Template
           t
           ( \case
@@ -159,7 +159,7 @@ templateStrArray :: (String, Binder)
 templateStrArray = defineTypeParameterizedTemplate templateCreator path t docs
   where
     templateCreator = TemplateCreator $
-      \typeEnv env ->
+      \_visited typeEnv env ->
         Template
           t
           (const (toTemplate "String $NAME (Array* a)"))

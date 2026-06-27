@@ -5,8 +5,8 @@
 module Obj where
 
 import Control.Applicative
-import Control.Monad.State
 import Control.Monad (zipWithM)
+import Control.Monad.State
 import Data.Char
 import Data.Hashable
 import Data.List (intercalate)
@@ -315,7 +315,9 @@ instance Show CommandFunctionType where
   show (TernaryCommandFunction _) = "TernaryCommandFunction { ... }"
   show (VariadicCommandFunction _) = "VariadicCommandFunction { ... }"
 
-newtype TemplateCreator = TemplateCreator {getTemplateCreator :: TypeEnv -> Env -> Template}
+-- | The '[SymPath]' is the visited set of definitions being concretized up the
+-- stack, so a template's dep generation can break recursive-type cycles.
+newtype TemplateCreator = TemplateCreator {getTemplateCreator :: [SymPath] -> TypeEnv -> Env -> Template}
 
 instance Hashable TemplateCreator where
   hashWithSalt s = const s
