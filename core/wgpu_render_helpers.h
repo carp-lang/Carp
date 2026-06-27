@@ -313,6 +313,30 @@ static WGPUSampler wgpu_create_sampler(WGPUContext* ctx) {
     return sampler;
 }
 
+static WGPUSampler wgpu_create_sampler_repeat(WGPUContext* ctx) {
+    if (!ctx) {
+        wgpu_set_error("wgpu_create_sampler_repeat: null context");
+        return NULL;
+    }
+    WGPUSamplerDescriptor desc = {
+        .addressModeU  = WGPUAddressMode_Repeat,
+        .addressModeV  = WGPUAddressMode_Repeat,
+        .addressModeW  = WGPUAddressMode_Repeat,
+        .magFilter     = WGPUFilterMode_Linear,
+        .minFilter     = WGPUFilterMode_Linear,
+        .mipmapFilter  = WGPUMipmapFilterMode_Linear,
+        .lodMinClamp   = 0.0f,
+        .lodMaxClamp   = 32.0f,
+        .compare       = WGPUCompareFunction_Undefined,
+        .maxAnisotropy = 1,
+    };
+    WGPUSampler sampler = wgpuDeviceCreateSampler(ctx->device, &desc);
+    if (!sampler) {
+        wgpu_set_error("wgpuDeviceCreateSampler repeat failed");
+    }
+    return sampler;
+}
+
 /* ------------------------------------------------------------------ */
 /* Render pipeline                                                     */
 /* ------------------------------------------------------------------ */
@@ -1830,9 +1854,11 @@ static WGPUBindGroup wgpu_create_voxel_render_bind_group_chunked(
     WGPUUniformBufferWrapper* ub,
     WGPURenderTexture* voxel_tex,
     WGPUSampler voxel_sampler,
-    WGPUBuffer chunk_lookup_buf)
+    WGPUBuffer chunk_lookup_buf,
+    WGPURenderTexture* noise_tex,
+    WGPUSampler noise_sampler)
 {
-    if (!ctx || !pipe || !ub || !voxel_tex || !voxel_sampler || !chunk_lookup_buf) {
+    if (!ctx || !pipe || !ub || !voxel_tex || !voxel_sampler || !chunk_lookup_buf || !noise_tex || !noise_sampler) {
         wgpu_set_error("wgpu_create_voxel_render_bind_group_chunked: null argument");
         return NULL;
     }
@@ -1843,7 +1869,7 @@ static WGPUBindGroup wgpu_create_voxel_render_bind_group_chunked(
         return NULL;
     }
 
-    WGPUBindGroupEntry entries[6] = {
+    WGPUBindGroupEntry entries[8] = {
         {
             .binding = 0,
             .buffer  = storage_buf1,
@@ -1876,10 +1902,18 @@ static WGPUBindGroup wgpu_create_voxel_render_bind_group_chunked(
             .offset  = 0,
             .size    = WGPU_WHOLE_SIZE,
         },
+        {
+            .binding     = 6,
+            .textureView = noise_tex->view,
+        },
+        {
+            .binding = 7,
+            .sampler = noise_sampler,
+        },
     };
     WGPUBindGroupDescriptor desc = {
         .layout     = layout,
-        .entryCount = 6,
+        .entryCount = 8,
         .entries    = entries,
     };
 

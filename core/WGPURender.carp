@@ -168,6 +168,7 @@
 
   ; Sampler
   (register create-sampler-    (Fn [(Ptr WGPUContext)] WGPUSampler)         "wgpu_create_sampler")
+  (register create-sampler-repeat- (Fn [(Ptr WGPUContext)] WGPUSampler)     "wgpu_create_sampler_repeat")
 
   ; Render pipeline
   (register create-pipeline-   (Fn [(Ptr WGPUContext) (Ptr CChar) (Ptr CChar) (Ptr CChar) (Ptr CChar)]
@@ -195,7 +196,8 @@
                                                                             "wgpu_create_voxel_render_bind_group")
   (register create-voxel-render-bind-group-chunked- (Fn [(Ptr WGPUContext) (Ptr WGPURenderPipelineWrapper)
                                                           WGPUBuffer WGPUBuffer (Ptr WGPUUniformBufferWrapper)
-                                                          (Ptr WGPURenderTexture) WGPUSampler WGPUBuffer] WGPUBindGroup)
+                                                          (Ptr WGPURenderTexture) WGPUSampler WGPUBuffer
+                                                          (Ptr WGPURenderTexture) WGPUSampler] WGPUBindGroup)
                                                                                     "wgpu_create_voxel_render_bind_group_chunked")
 
   ; Frame management
@@ -261,6 +263,14 @@ Returns (Success sampler) or (Error message).")
         (Result.Error (get-error))
         (Result.Success s))))
 
+  (doc create-sampler-repeat "Creates a linear-repeat sampler suitable for noise sampling.
+Returns (Success sampler) or (Error message).")
+  (defn create-sampler-repeat [ctx]
+    (let [s (create-sampler-repeat- ctx)]
+      (if (sampler-null?- s)
+        (Result.Error (get-error))
+        (Result.Success s))))
+
   (doc create-pipeline "Creates a render pipeline from WGSL source.
 The source must contain both vertex and fragment shaders.
 `vs-entry` and `fs-entry` are the entry point names.
@@ -310,8 +320,8 @@ Returns (Success bind-group) or (Error message).")
 
   (doc create-voxel-render-bind-group-chunked "Creates a bind group for chunked voxel rendering.
 Returns (Success bind-group) or (Error message).")
-  (defn create-voxel-render-bind-group-chunked [ctx pipeline storage-buf1 storage-buf2 ub voxel-tex voxel-sampler chunk-lookup-buf]
-    (let [bg (create-voxel-render-bind-group-chunked- ctx pipeline storage-buf1 storage-buf2 ub voxel-tex voxel-sampler chunk-lookup-buf)]
+  (defn create-voxel-render-bind-group-chunked [ctx pipeline storage-buf1 storage-buf2 ub voxel-tex voxel-sampler chunk-lookup-buf noise-tex noise-sampler]
+    (let [bg (create-voxel-render-bind-group-chunked- ctx pipeline storage-buf1 storage-buf2 ub voxel-tex voxel-sampler chunk-lookup-buf noise-tex noise-sampler)]
       (if (bindgroup-null?- bg)
         (Result.Error (get-error))
         (Result.Success bg))))
