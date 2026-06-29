@@ -1,7 +1,6 @@
 module StartingEnv where
 
 import qualified ArrayTemplates
-import qualified BoxTemplates
 import Commands
 import Data.Maybe (fromMaybe)
 import qualified Env as E
@@ -109,29 +108,6 @@ templatePointerCopy =
           ]
     )
     (const [])
-
--- | The Box module contains functions for working with Boxes (pointers to heap allocated values).
-boxModule :: Env
-boxModule =
-  Env
-    { envBindings = bindings,
-      envParent = Nothing,
-      envModuleName = Just "Box",
-      envUseModules = Set.empty,
-      envMode = ExternalEnv,
-      envFunctionNestingLevel = 0
-    }
-  where
-    bindings =
-      Map.fromList
-        [ BoxTemplates.init,
-          BoxTemplates.unbox,
-          BoxTemplates.peek,
-          BoxTemplates.delete,
-          BoxTemplates.copy,
-          BoxTemplates.prn,
-          BoxTemplates.str
-        ]
 
 maxArity :: Int
 maxArity = 9
@@ -533,7 +509,6 @@ startingGlobalEnv noArray =
           ++ [("Dynamic", Binder emptyMeta (XObj (Mod dynamicModule E.empty) Nothing Nothing))]
           ++ [("Function", Binder emptyMeta (XObj (Mod functionModule E.empty) Nothing Nothing))]
           ++ [("Unsafe", Binder emptyMeta (XObj (Mod unsafeModule E.empty) Nothing Nothing))]
-          ++ [("Box", Binder emptyMeta (XObj (Mod boxModule E.empty) Nothing Nothing))]
 
 -- | The type environment (containing deftypes and interfaces) before any code is run.
 startingTypeEnv :: Env
@@ -552,30 +527,23 @@ startingTypeEnv =
         [ interfaceBinder
             "delete"
             (FuncTy [VarTy "a"] UnitTy StaticLifetimeTy)
-            ([SymPath ["Array"] "delete", SymPath ["StaticArray"] "delete", SymPath ["Box"] "delete"] ++ registerFunctionFunctionsWithInterface "delete")
+            ([SymPath ["Array"] "delete", SymPath ["StaticArray"] "delete"] ++ registerFunctionFunctionsWithInterface "delete")
             builtInSymbolInfo,
           interfaceBinder
             "copy"
             (FuncTy [RefTy (VarTy "a") (VarTy "q")] (VarTy "a") StaticLifetimeTy)
-            ([SymPath ["Array"] "copy", SymPath ["Pointer"] "copy", SymPath ["Box"] "copy"] ++ registerFunctionFunctionsWithInterface "copy")
+            ([SymPath ["Array"] "copy", SymPath ["Pointer"] "copy"] ++ registerFunctionFunctionsWithInterface "copy")
             builtInSymbolInfo,
           interfaceBinder
             "str"
             (FuncTy [VarTy "a"] StringTy StaticLifetimeTy)
-            (SymPath ["Array"] "str" : SymPath ["StaticArray"] "str" : SymPath ["Box"] "str" : registerFunctionFunctionsWithInterface "str")
+            (SymPath ["Array"] "str" : SymPath ["StaticArray"] "str" : registerFunctionFunctionsWithInterface "str")
             builtInSymbolInfo,
           interfaceBinder
             "prn"
             (FuncTy [VarTy "a"] StringTy StaticLifetimeTy)
-            (SymPath ["StaticArray"] "str" : SymPath ["Box"] "prn" : registerFunctionFunctionsWithInterface "prn") -- QUESTION: Where is 'prn' for dynamic Array:s registered? Can't find it... (but it is)
-            builtInSymbolInfo,
-          -- Box carries the 'recursive' flag itself, rather than being a special
-          -- case in the recursion checks; it is the canonical heap indirection.
-          ( "Box",
-            Binder
-              (Meta.set "recursive" trueXObj emptyMeta)
-              (XObj (Lst [XObj (ExternalType Nothing) Nothing Nothing, XObj (Sym (SymPath [] "Box") Symbol) Nothing Nothing]) Nothing (Just TypeTy))
-          )
+            (SymPath ["StaticArray"] "str" : registerFunctionFunctionsWithInterface "prn") -- QUESTION: Where is 'prn' for dynamic Array:s registered? Can't find it... (but it is)
+            builtInSymbolInfo
         ]
     builtInSymbolInfo = Info (-1) (-1) "Built-in." Set.empty (-1)
 

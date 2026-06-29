@@ -1,5 +1,72 @@
+(doc Box
+  "A heap-allocated, owning box: a single managed value behind one pointer.
+
+`Box` is an ordinary user type that opts into heap indirection via the
+`recursive` flag, so it can break value-recursion the same way a built-in
+indirection would, e.g.
+
+  (deftype IntList (Cons [Int (Box IntList)]) (Nil []))
+
+It is the reference implementation of a `recursive` type.")
+(deftype (Box a) [data (Ptr a)])
+(recursive Box)
+
 (defmodule Box
+  (hidden heap-alloc)
+  (deftemplate heap-alloc (Fn [a] (Ptr a)) "$a* $NAME($a v)"
+    "$DECL { $a* p = CARP_MALLOC(sizeof($a)); *p = v; return p; }")
+
+  (hidden heap-free)
+  (deftemplate heap-free (Fn [(Ptr a)] ()) "void $NAME($a* p)"
+    "$DECL { CARP_FREE(p); }")
+
+  ; the value-taking `init` below shadows the generated field constructor
+  (hidden from-ptr)
+  (deftemplate from-ptr (Fn [(Ptr a)] (Box a)) "Box__$a $NAME($a* p)"
+    "$DECL { Box__$a b; b.data = p; return b; }")
+
+  (doc init "Initializes a box pointing to value `t`.")
+  (sig init (Fn [a] (Box a)))
+  (defn init [value] (Box.from-ptr (Box.heap-alloc value)))
+
+  (doc peek
+    "Returns a reference to the value stored in a box without an allocation.")
+  (sig peek (Fn [(Ref (Box a) q)] (Ref a q)))
+  (defn peek [b] (Pointer.to-ref @(Box.data b)))
+
+  (doc unbox "Converts a boxed value to a local value, deleting the box.")
+  (sig unbox (Fn [(Box a)] a))
+  (defn unbox [b]
+    (let-do [p @(Box.data &b)
+             local (Pointer.to-value p)]
+      (Box.heap-free p)
+      (Unsafe.leak b)
+      local))
+
+  (doc copy "Copies a box and its contents.")
+  (sig copy (Fn [(Ref (Box a) q)] (Box a)))
+  (defn copy [b] (Box.init @(Box.peek b)))
+  (implements copy Box.copy)
+
+  (doc delete "Deletes a box, deleting its contents and freeing its memory.")
+  (sig delete (Fn [(Box a)] ()))
+  (defn delete [b]
+    (let-do [p @(Box.data &b)]
+      (ignore (Pointer.to-value p))
+      (Box.heap-free p)))
+  (implements delete Box.delete)
+
+  (doc prn "Returns a string representation of a Box.")
+  (sig prn (Fn [(Ref (Box a) q)] String))
+  (defn prn [b] (fmt "(Box %s)" &(prn (Box.peek b))))
+  (implements prn Box.prn)
+
+  (doc str "Returns a string representation of a Box.")
+  (sig str (Fn [(Ref (Box a) q)] String))
+  (defn str [b] (Box.prn b))
+  (implements str Box.str)
+
+  (doc = "Equality on boxes, by their contents.")
   (defn = [box-a box-b]
-    (= (Box.unbox @box-a) (Box.unbox @box-b)))
-  (implements = =)
-)
+    (= (Box.peek box-a) (Box.peek box-b)))
+  (implements = Box.=))
