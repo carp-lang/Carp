@@ -18,7 +18,6 @@ library
   hs-source-dirs:      src
   exposed-modules:     ArrayTemplates,
                        AssignTypes,
-                       BoxTemplates,
                        ColorText,
                        Commands,
                        Concretize,
