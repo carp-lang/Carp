@@ -12,10 +12,11 @@ import Data.Bifunctor
 import Data.Either (fromRight, isRight, rights)
 import Data.Functor ((<&>))
 import Data.List (foldl')
-import Data.Maybe (fromJust, fromMaybe)
+import Data.Maybe (fromJust, fromMaybe, mapMaybe)
 import Deftype
 import Emit
 import Env (addUsePath, contextEnv, insert, lookupBinderEverywhere, lookupEverywhere, lookupMeta, searchBinder)
+import qualified Env
 import EvalError
 import Infer
 import Info
@@ -134,11 +135,26 @@ primitiveImplements _ ctx x@(XObj (Sym interface@(SymPath _ _) _) _ _) (XObj (Sy
     warn :: IO ()
     warn = emitWarning (show (NonExistentInterfaceWarning x))
     addToInterface :: Binder -> Binder -> IO (Context, Either EvalError XObj)
-    addToInterface inter impl =
-      let (newCtx, maybeErr) = case registerInInterface ctx impl inter of
+    addToInterface inter impl = do
+      let (registeredCtx, maybeErr) = case registerInInterface ctx impl inter of
             (Right nc, me) -> (nc, me)
             _ -> error "primitives: failed to register in interface"
-       in maybe (updateMeta impl newCtx) (handleError newCtx impl) maybeErr
+      -- a type can gain delete/copy after another embedded it; re-derive embedders
+      newCtx <- maybe (pure registeredCtx) (rebakeContainersOf registeredCtx) (newlyManagedType inter impl)
+      maybe (updateMeta impl newCtx) (handleError newCtx impl) maybeErr
+    newlyManagedType :: Binder -> Binder -> Maybe Ty
+    newlyManagedType inter impl =
+      case getBinderPath inter of
+        SymPath _ ifaceName
+          | ifaceName == "delete" || ifaceName == "copy" ->
+            case xobjTy (binderXObj impl) of
+              Just (FuncTy [t] UnitTy _) -> concreteStruct t
+              Just (FuncTy [RefTy t _] _ _) -> concreteStruct t
+              _ -> Nothing
+        _ -> Nothing
+      where
+        concreteStruct t@(StructTy (ConcreteNameTy _) _) = Just t
+        concreteStruct _ = Nothing
     handleError :: Context -> Binder -> InterfaceError -> IO (Context, Either EvalError XObj)
     handleError context impl e@(AlreadyImplemented _ oldImplPath _ _) =
       emitWarning (show e) >> pure (removeInterfaceFromImplements oldImplPath x context) >>= updateMeta impl
@@ -728,6 +744,63 @@ autoDerive c ty interfaces =
             (ci, Just err@AlreadyImplemented {}) -> emitWarning (show err) >> pure (ci, dynamicNil :: Either EvalError XObj)
             (_, Just err) -> pure $ evalError c (show err) Nothing
             (ci, Nothing) -> pure (ci, dynamicNil :: Either EvalError XObj)
+
+rebakeContainersOf :: Context -> Ty -> IO Context
+rebakeContainersOf ctx managed@(StructTy (ConcreteNameTy (SymPath _ tname)) _) =
+  foldM (rebakeIfDirectMember managed tname) ctx (allTypeDefs ctx)
+rebakeContainersOf ctx _ = pure ctx
+
+allTypeDefs :: Context -> [XObj]
+allTypeDefs ctx =
+  let te = contextTypeEnv ctx
+   in concatMap (mapMaybe asTypeDef . Map.elems . Env.binders) (te : Env.lookupChildren te)
+  where
+    asTypeDef (Binder _ x@(XObj (Lst (XObj (Deftype _) _ _ : _)) _ _)) = Just x
+    asTypeDef (Binder _ x@(XObj (Lst (XObj (DefSumtype _) _ _ : _)) _ _)) = Just x
+    asTypeDef _ = Nothing
+
+rebakeIfDirectMember :: Ty -> String -> Context -> XObj -> IO Context
+rebakeIfDirectMember managed mname ctx tdef =
+  case tdef of
+    XObj (Lst (XObj (Deftype t) _ _ : _ : mems)) _ _
+      | eligible t mems -> regen moduleForDeftypeInContext t mems
+    XObj (Lst (XObj (DefSumtype t) _ _ : _ : mems)) _ _
+      | eligible t mems -> regen moduleForSumtypeInContext t mems
+    _ -> pure ctx
+  where
+    eligible t mems = case t of
+      StructTy (ConcreteNameTy _) [] -> t /= managed && directMember mname mems
+      _ -> False
+    regen creator t mems =
+      let (SymPath modpath name) = getStructPath t
+       in case creator (ctx {contextPath = modpath}) name [] mems Nothing of
+            Right (_, XObj (Mod menv _) _ _, _) ->
+              pure (foldl' (replaceDerived modpath name menv) ctx ["delete", "copy"])
+            _ -> pure ctx
+
+replaceDerived :: [String] -> String -> Env -> Context -> String -> Context
+replaceDerived modpath name menv context fname =
+  case Map.lookup fname (Env.binders menv) of
+    Nothing -> context
+    Just fresh ->
+      let qp = markQualified (SymPath (modpath ++ [name]) fname)
+          merged = case lookupBinderInGlobalEnv context qp of
+            Right (Binder oldMeta _) -> Binder oldMeta (binderXObj fresh)
+            _ -> fresh
+       in fromRight context (insertInGlobalEnv context qp merged)
+
+directMember :: String -> [XObj] -> Bool
+directMember mname = any fromForm
+  where
+    fromForm (XObj (Arr fields) _ _) = any isM (typesOf fields)
+    fromForm (XObj (Lst (XObj (Sym _ _) _ _ : rest)) _ _) =
+      any caseArr rest
+    fromForm _ = False
+    caseArr (XObj (Arr tys) _ _) = any isM tys
+    caseArr _ = False
+    typesOf fields = [x | (i, x) <- zip [(0 :: Int) ..] fields, odd i]
+    isM (XObj (Sym (SymPath _ s) _) _ _) = s == mname
+    isM _ = False
 
 -- | Add a module to the list of implicitly imported modules.
 primitiveUse :: UnaryPrimitiveCallback
