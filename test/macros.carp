@@ -401,6 +401,60 @@
                   (addr)
                   dst)
                 "asm works")
+  (assert-equal test
+                10
+                (sum-variadic 1 2 3 4)
+                "sum-variadic macro works for Int")
+  (assert-equal test
+                10.0
+                (sum-variadic 1.0 2.0 3.0 4.0)
+                "sum-variadic macro works for Double")
+  (assert-equal test
+                24
+                (product-variadic 2 3 4)
+                "product-variadic macro works for Int")
+  (assert-equal test
+                24.0
+                (product-variadic 2.0 3.0 4.0)
+                "product-variadic macro works for Double")
+  (assert-equal test
+                3
+                (sub-variadic 10 5 2)
+                "sub-variadic macro works for Int (multiple args)")
+  (assert-equal test
+                -10
+                (sub-variadic 10)
+                "sub-variadic macro works for Int (single arg -> neg)")
+  (assert-equal test
+                2
+                (div-variadic 24 4 3)
+                "div-variadic macro works for Int")
+  (assert-equal test
+                2.0
+                (div-variadic 24.0 4.0 3.0)
+                "div-variadic macro works for Double")
+  (assert-equal test
+                0
+                (sum-variadic)
+                "sum-variadic identity works")
+  (assert-equal test
+                1
+                (product-variadic)
+                "product-variadic identity works")
+  (let-do [x 10]
+    (do
+      (inc! x)
+      (assert-equal test
+                    11
+                    x
+                    "inc! macro works")))
+  (let-do [x 10]
+    (do
+      (dec! x)
+      (assert-equal test
+                    9
+                    x
+                    "dec! macro works")))
   (let-do [x 0]
     (do
       (when-do true (set! x 1) (set! x (inc x)))
