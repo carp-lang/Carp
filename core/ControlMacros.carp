@@ -98,8 +98,8 @@ Example:
      ""
      "```"
      "(doto-ref @\"hi\""
-     "  (string-set! 0 \o)"
-     "  (string-set! 1 \y))"
+     "  (string-set! 0 \\o)"
+     "  (string-set! 1 \\y))"
      "```")
 (defmacro doto-ref [thing :rest expressions]
   (let [s (gensym)]
@@ -125,6 +125,87 @@ Example:
   (list 'while condition
         (cons 'do forms)))
 
+(hidden if-let-internal)
+(defndynamic if-let-internal [bindings then else]
+  (if (= (length bindings) 0)
+    then
+    (let [var (car bindings)
+          expr (cadr bindings)
+          rest (cdr (cdr bindings))
+          res (list 'match expr
+                    (list 'Maybe.Just var) (if-let-internal rest then else)
+                    (list 'Maybe.Nothing) else)]
+      res)))
+
+(doc if-let "Conditional binding for Maybe. If each binding's expression evaluates to Just, its value is bound to the corresponding name and the 'then' branch is executed. If any expression evaluates to Nothing, the 'else' branch is executed.
+
+Example:
+```
+(if-let [x (Maybe.Just 10)
+         y (Maybe.Just 20)]
+  (+ x y)
+  0)
+```")
+(defmacro if-let [bindings then else]
+  (if-let-internal bindings then else))
+
+(doc when-let "Conditional binding for Maybe. If each binding's expression evaluates to Just, its value is bound to the corresponding name and the body is executed.")
+(defmacro when-let [bindings body]
+  (if-let-internal bindings body ()))
+
+(doc while-let "Repeatedly evaluates the bindings and binds their values to the names if they are all Just, executing the body each time. The loop stops when any Nothing is encountered.")
+(defmacro while-let [bindings :rest body]
+  (let [var (car bindings)
+        expr (cadr bindings)
+        rest (cdr (cdr bindings))]
+    `(while true
+       (match %expr
+         (Maybe.Just %var)
+           (if-let %rest
+             (do %@body)
+             (break))
+         (Maybe.Nothing) (break)))))
+
+(hidden if-let-ok-internal)
+(defndynamic if-let-ok-internal [bindings then else]
+  (if (= (length bindings) 0)
+    then
+    (let [var (car bindings)
+          expr (cadr bindings)
+          rest (cdr (cdr bindings))]
+      (list 'match expr
+            (list 'Result.Success var) (if-let-ok-internal rest then else)
+            (list 'Result.Error '_) else))))
+
+(doc if-let-ok "Conditional binding for Result. If each binding's expression evaluates to Success, its value is bound to the corresponding name and the 'then' branch is executed. If any expression evaluates to Error, the 'else' branch is executed.
+
+Example:
+```
+(if-let-ok [x (Result.Success 10)
+            y (Result.Success 20)]
+  (+ x y)
+  0)
+```")
+(defmacro if-let-ok [bindings then else]
+  (if-let-ok-internal bindings then else))
+
+(doc when-let-ok "Conditional binding for Result. If each binding's expression evaluates to Success, its value is bound to the corresponding name and the body is executed.")
+(defmacro when-let-ok [bindings body]
+  (if-let-ok-internal bindings body ()))
+
+(doc while-let-ok "Repeatedly evaluates the bindings and binds their values to the names if they are all Success, executing the body each time. The loop stops when any Error is encountered.")
+(defmacro while-let-ok [bindings :rest body]
+  (let [var (car bindings)
+        expr (cadr bindings)
+        rest (cdr (cdr bindings))]
+    `(while true
+       (match %expr
+         (Result.Success %var)
+           (if-let-ok %rest
+             (do %@body)
+             (break))
+         (Result.Error _) (break)))))
+
 (doc defn-do "is a `defn` with an implicit `do` body.")
 (defmacro defn-do [name arguments :rest body]
   (list 'defn name arguments (cons 'do body)))
@@ -133,11 +214,11 @@ Example:
 (defmacro forever-do [:rest forms]
   (list 'while true (cons 'do forms)))
 
- (doc ignore-do 
- ("Wraps side-effecting `forms` in a `do`, " false)
- "ignoring all of their results."
- "In other words, executes `forms` only for their side effects.")
- (defmacro ignore-do [:rest forms]
+(doc ignore-do 
+     ("Wraps side-effecting `forms` in a `do`, " false)
+     "ignoring all of their results."
+     "In other words, executes `forms` only for their side effects.")
+(defmacro ignore-do [:rest forms]
    (cons 'do (expand (apply ignore* forms))))
 
 (doc when "is an `if` without an else branch.")
