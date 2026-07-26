@@ -118,7 +118,7 @@ manageMemory typeEnv globalEnv root =
                 Just pathOfDeleteFunc ->
                   ProperDeleter pathOfDeleteFunc (getDropFunc typeEnv globalEnv (xobjInfo xobj) t) var
                 Nothing ->
-                  error ("No deleter found for Static Array : " ++ show t) -- Just (FakeDeleter var)
+                  error ("No deleter found for Static Array : " ++ show t) --Just (FakeDeleter var)
           m <- get
           let newDeleters = Set.insert deleter (memStateDeleters m)
               newDeps = Set.insert t (memStateDeps m)
@@ -191,7 +191,7 @@ manageMemory typeEnv globalEnv root =
                     newInfo = setDeletersOnInfo i diff
                     survivors = postDeleters Set.\\ diff -- Same as just pre deleters, right?!
                 modify (\m -> m {memStateDeleters = survivors})
-                -- trace ("LET Pre: " ++ show preDeleters ++ "\nPost: " ++ show postDeleters ++ "\nDiff: " ++ show diff ++ "\nSurvivors: " ++ show survivors)
+                --trace ("LET Pre: " ++ show preDeleters ++ "\nPost: " ++ show postDeleters ++ "\nDiff: " ++ show diff ++ "\nSurvivors: " ++ show survivors)
                 manage typeEnv globalEnv xobj
                 pure $ do
                   okBody <- visitedBody
@@ -468,8 +468,8 @@ manageMemory typeEnv globalEnv root =
         pure (fmap concat result')
     visitCaseLhs matchMode xobj@(XObj (Sym (SymPath _ name) _) _ _)
       | (matchMode == MatchValue) && isVarName name = do
-          manage typeEnv globalEnv xobj
-          pure (Right [])
+        manage typeEnv globalEnv xobj
+        pure (Right [])
       | otherwise = pure (Right [])
     visitCaseLhs _ (XObj Ref _ _) =
       pure (Right [])
@@ -519,15 +519,7 @@ manage typeEnv globalEnv xobj =
     else case createDeleter typeEnv globalEnv xobj of
       Just deleter -> do
         m <- get
-        let var = varOfXObj xobj
-            deleterV = \case
-              -- It's probably better to export deleterVar in Info.hs's.
-              ProperDeleter _ _ v -> v
-              RefDeleter v -> v
-              PrimDeleter v -> v
-              FakeDeleter v -> v
-            filteredDeleters = Set.filter (\d -> deleterV d /= var) (memStateDeleters m)
-            newDeleters = Set.insert deleter filteredDeleters
+        let newDeleters = Set.insert deleter (memStateDeleters m)
             t = fromMaybe (error "memory: can't manage xobj without type") $ xobjTy xobj
             newDeps = Set.insert t (memStateDeps m)
             newNames = Map.insert (varOfXObj xobj) (getName xobj) (memStateNames m)
@@ -564,7 +556,7 @@ transferOwnership typeEnv globalEnv from to =
   do
     result <- unmanage typeEnv globalEnv from
     whenRight result $ do
-      manage typeEnv globalEnv to -- (trace ("Transfered from " ++ getName from ++ " '" ++ varOfXObj from ++ "' to " ++ getName to ++ " '" ++ varOfXObj to ++ "'") to)
+      manage typeEnv globalEnv to --(trace ("Transfered from " ++ getName from ++ " '" ++ varOfXObj from ++ "' to " ++ getName to ++ " '" ++ varOfXObj to ++ "'") to)
       pure (Right ())
 
 -- | Transfer ownership, and ensure the resulting set has only *one* deleter per variable.
@@ -729,10 +721,10 @@ addToLifetimesMappingsIfRef internal xobj =
           Nothing ->
             put $ m {memStateLifetimes = Map.insert lt makeLifetimeMode lifetimes}
     Just _ ->
-      -- trace ("Won't add to mappings! " ++ pretty xobj ++ " : " ++ show notThisType ++ " at " ++ prettyInfoFromXObj xobj) $
+      --trace ("Won't add to mappings! " ++ pretty xobj ++ " : " ++ show notThisType ++ " at " ++ prettyInfoFromXObj xobj) $
       pure ()
     _ ->
-      -- trace ("No type on " ++ pretty xobj ++ " at " ++ prettyInfoFromXObj xobj) $
+      --trace ("No type on " ++ pretty xobj ++ " at " ++ prettyInfoFromXObj xobj) $
       pure ()
   where
     makeLifetimeMode =
@@ -804,7 +796,7 @@ createDeleter typeEnv globalEnv xobj =
               Just pathOfDeleteFunc ->
                 Just (ProperDeleter pathOfDeleteFunc (getDropFunc typeEnv globalEnv (xobjInfo xobj) t) var)
               Nothing ->
-                -- trace ("Found no delete function for " ++ var ++ " : " ++ (showMaybeTy (ty xobj)))
+                --trace ("Found no delete function for " ++ var ++ " : " ++ (showMaybeTy (ty xobj)))
                 Just (FakeDeleter var)
             else Just (PrimDeleter var)
     Nothing -> error ("No type, can't manage " ++ show xobj)
