@@ -1,4 +1,4 @@
-module Expand (expandAll, expand, ExpansionMode (..), replaceSourceInfoOnXObj) where
+module Expand (expandAll, expand, ExpansionMode (..), replaceSourceInfoOnXObj, setNewIdentifiers) where
 
 import Context
 import Control.Monad.State (State, evalState, get, put)
@@ -119,13 +119,13 @@ expandAt pos mode eval ctx xobj =
       pure (ctx, Right xobj)
     expandListMacroOnly [callable] _ _
       | isMacroCallable callable =
-        eval ctx xobj
+          eval ctx xobj
     expandListMacroOnly (x@(XObj (Sym _ _) _ _) : args) i' t' = do
       (_, f) <- eval ctx x
       case f of
         Right m
           | isMacroCallable m ->
-            eval ctx (XObj (Lst (x : args)) i' t')
+              eval ctx (XObj (Lst (x : args)) i' t')
         _ -> do
           (newCtx, expanded) <- expandMany ctx args
           pure
@@ -229,25 +229,25 @@ expandAt pos mode eval ctx xobj =
             )
     expandListFull (matchExpr@(XObj (Match _) _ _) : expr : rest) i' t'
       | null rest =
-        pure (evalError ctx "I encountered a `match` without forms" (xobjInfo xobj))
+          pure (evalError ctx "I encountered a `match` without forms" (xobjInfo xobj))
       | even (length rest) =
-        do
-          (ctx', expandedExpr) <- expand mode eval ctx expr
-          (newCtx, expandedPairs) <- expandMatchPairs ctx' (pairwise rest)
-          pure
-            ( newCtx,
-              do
-                okExpandedExpr <- expandedExpr
-                okExpandedPairs <- expandedPairs
-                Right (XObj (Lst (matchExpr : okExpandedExpr : concat okExpandedPairs)) i' t')
-            )
+          do
+            (ctx', expandedExpr) <- expand mode eval ctx expr
+            (newCtx, expandedPairs) <- expandMatchPairs ctx' (pairwise rest)
+            pure
+              ( newCtx,
+                do
+                  okExpandedExpr <- expandedExpr
+                  okExpandedPairs <- expandedPairs
+                  Right (XObj (Lst (matchExpr : okExpandedExpr : concat okExpandedPairs)) i' t')
+              )
       | otherwise =
-        pure
-          ( evalError
-              ctx
-              "I encountered an odd number of forms inside a `match`"
-              (xobjInfo xobj)
-          )
+          pure
+            ( evalError
+                ctx
+                "I encountered an odd number of forms inside a `match`"
+                (xobjInfo xobj)
+            )
     expandListFull (doExpr@(XObj Do _ _) : expressions) i' t' =
       do
         (newCtx, expandedExpressions) <- expandMany ctx expressions
@@ -270,7 +270,8 @@ expandAt pos mode eval ctx xobj =
       pure
         ( evalError
             ctx
-            ( "I encountered the value `" ++ pretty xobj
+            ( "I encountered the value `"
+                ++ pretty xobj
                 ++ "` inside a `with` at "
                 ++ prettyInfoFromXObj xobj
                 ++ ".\n\n`with` accepts only symbols."
@@ -320,10 +321,10 @@ expandAt pos mode eval ctx xobj =
               eval ctx'' xobj
             Right funX
               | isDynamicCallable funX ->
-                eval ctx'' xobj
+                  eval ctx'' xobj
             Right funX
               | isMacroCallable funX ->
-                eval ctx'' xobj
+                  eval ctx'' xobj
             Right (XObj (Lst [XObj (Command (NullaryCommandFunction nullary)) _ _, _, _]) _ _) ->
               nullary ctx''
             Right (XObj (Lst [XObj (Command (UnaryCommandFunction unary)) _ _, _, _]) _ _) ->
@@ -460,7 +461,7 @@ setNewIdentifiers root =
   let final = evalState (visit root) 0
    in final
   where
-    --trace ("ROOT: " ++ prettyTyped root ++ "FINAL: " ++ prettyTyped final) final
+    -- trace ("ROOT: " ++ prettyTyped root ++ "FINAL: " ++ prettyTyped final) final
 
     visit :: XObj -> State Int XObj
     visit xobj =

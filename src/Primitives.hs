@@ -17,6 +17,7 @@ import Deftype
 import Emit
 import Env (addUsePath, contextEnv, insert, lookupBinderEverywhere, lookupEverywhere, lookupMeta, searchBinder)
 import EvalError
+import Expand (setNewIdentifiers)
 import Infer
 import Info
 import Interfaces
@@ -866,7 +867,8 @@ primitiveType any' ctx (XObj (Lst [XObj (Sym (SymPath [] "type") _) _ _, rest]) 
       Left e -> pure (ctx, Left e)
 primitiveType _ ctx x@XObj {} =
   let tenv = contextTypeEnv ctx
-      typed = either (\_ -> annotate tenv (contextGlobalEnv ctx) (Qualified x) Nothing) (\q -> annotate tenv (contextGlobalEnv ctx) q Nothing) $ qualify ctx x
+      x' = setNewIdentifiers x -- renumbering
+      typed = either (\_ -> annotate tenv (contextGlobalEnv ctx) (Qualified x') Nothing) (\q -> annotate tenv (contextGlobalEnv ctx) q Nothing) $ qualify ctx x'
    in liftIO $ either fail' ok typed
   where
     fail' _ = pure (evalError ctx ("Can't get the type of: " ++ pretty x) (xobjInfo x))
@@ -876,7 +878,8 @@ primitiveType _ ctx x@XObj {} =
 primitiveKind :: UnaryPrimitiveCallback
 primitiveKind _ ctx x@XObj {} =
   let tenv = contextTypeEnv ctx
-      typed = either (\_ -> annotate tenv (contextGlobalEnv ctx) (Qualified x) Nothing) (\q -> annotate tenv (contextGlobalEnv ctx) q Nothing) $ qualify ctx x
+      x' = setNewIdentifiers x -- renumbering
+      typed = either (\_ -> annotate tenv (contextGlobalEnv ctx) (Qualified x') Nothing) (\q -> annotate tenv (contextGlobalEnv ctx) q Nothing) $ qualify ctx x'
    in pure (either fail' ok typed)
   where
     fail' _ = evalError ctx ("Can't get the kind of: " ++ pretty x) (xobjInfo x)
