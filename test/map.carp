@@ -502,4 +502,14 @@
                 3
                 (Array.length &(Bag.to-array &(Bag.from-array &[1 2 1])))
                 "Bag.to-array works 2"
+  )
+  (assert-dynamic-equal test
+                       '(Map String Int)
+                       (type {@"test" 1})
+                       "no clash on map literal with copied value"
+  )
+  (assert-dynamic-equal test
+                       '(Map Int Int)
+                       (type {1 @&1})
+                       "no clash on map literal with copied ref"
   ))
