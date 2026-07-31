@@ -124,6 +124,13 @@
   ]
  )
 
+; set! on a unit-typed variable should not emit broken C (issue #1542)
+(defn set-unit []
+  (let [x ()]
+    (do
+      (set! x ())
+      1)))
+
 (deftest test
   (assert-equal test
                 1
@@ -193,4 +200,8 @@
     (Mangled.default-value &(Mangled.set-default-value (Mangled.init 0 @"foo")
     @"bar"))
     "struct field names are mangled correctly")
+  (assert-equal test
+    1
+    (set-unit)
+    "test that `set!` on a unit-typed variable compiles correctly")
 )

@@ -57,18 +57,26 @@ data ToCError
 
 instance Show ToCError where
   show (InvalidParameter xobj) =
-    "I encountered an invalid parameter `" ++ show (xobjObj xobj) ++ "` at "
+    "I encountered an invalid parameter `"
+      ++ show (xobjObj xobj)
+      ++ "` at "
       ++ prettyInfoFromXObj xobj
       ++ "."
   show (InvalidList xobj) =
-    "I encountered an invalid list `" ++ show (xobjObj xobj) ++ "` at "
+    "I encountered an invalid list `"
+      ++ show (xobjObj xobj)
+      ++ "` at "
       ++ prettyInfoFromXObj xobj
       ++ "."
   show (DontVisitObj xobj) =
-    "I can’t visit " ++ show (xobjObj xobj) ++ " at " ++ prettyInfoFromXObj xobj
+    "I can’t visit "
+      ++ show (xobjObj xobj)
+      ++ " at "
+      ++ prettyInfoFromXObj xobj
       ++ "."
   show (CannotEmitUnit xobj) =
-    "I can't emit code for the unit type `()` at " ++ prettyInfoFromXObj xobj
+    "I can't emit code for the unit type `()` at "
+      ++ prettyInfoFromXObj xobj
       ++ "."
   show (CannotEmitExternal xobj) =
     "I can’t emit code for the external function/variable `"
@@ -77,13 +85,16 @@ instance Show ToCError where
       ++ prettyInfoFromXObj xobj
       ++ "."
   show (CannotEmitModKeyword xobj) =
-    "I can’t emit code for the module `" ++ show (xobjObj xobj) ++ "` at "
+    "I can’t emit code for the module `"
+      ++ show (xobjObj xobj)
+      ++ "` at "
       ++ prettyInfoFromXObj xobj
       ++ "."
   show (BinderIsMissingType b) =
     "I encountered a binder `" ++ show b ++ "` that is missing its type."
   show (UnresolvedMultiSymbol xobj@(XObj (MultiSym symName symPaths) _ _)) =
-    "I found an ambiguous symbol `" ++ symName
+    "I found an ambiguous symbol `"
+      ++ symName
       ++ "` at "
       ++ prettyInfoFromXObj xobj
       ++ "\n\nPossibilities:\n  "
@@ -91,19 +102,23 @@ instance Show ToCError where
       ++ "\n\nAll possibilities have the correct type."
   show (UnresolvedMultiSymbol _) = error "show unresolvedmultisymbol"
   show (UnresolvedInterfaceSymbol xobj@(XObj (InterfaceSym symName) _ _)) =
-    "I found an interface `" ++ symName
+    "I found an interface `"
+      ++ symName
       ++ "` that is unresolved in the context at "
       ++ prettyInfoFromXObj xobj
   show (UnresolvedInterfaceSymbol _) = error "show unresolvedinterfacesymbol"
   show (UnresolvedGenericType xobj@(XObj _ _ (Just t))) =
-    "I found an unresolved generic type `" ++ show t
+    "I found an unresolved generic type `"
+      ++ show t
       ++ "` for the expression `"
       ++ pretty xobj
       ++ "` at "
       ++ prettyInfoFromXObj xobj
   show (UnresolvedGenericType _) = error "show unresolvedgenerictype"
   show (CannotSet xobj) =
-    "I can’t emit code for setting `" ++ pretty xobj ++ "` at "
+    "I can’t emit code for setting `"
+      ++ pretty xobj
+      ++ "` at "
       ++ prettyInfoFromXObj xobj
       ++ "\n\nOnly variables can be reset using `set!`."
 
@@ -132,7 +147,7 @@ toC toCMode emitLines mutualGroup (Binder meta root) = renderEmitterState (execS
       case xobjInfo xobj of
         Just i
           | infoLine i > 0 && infoFile i /= "dummy-file" ->
-            appendToSrc ("#line " ++ show (infoLine i) ++ " \"" ++ infoFile i ++ "\"\n")
+              appendToSrc ("#line " ++ show (infoLine i) ++ " \"" ++ infoFile i ++ "\"\n")
         _ -> pure ()
     emitLineDirInfo :: Info -> State EmitterState ()
     emitLineDirInfo i =
@@ -260,12 +275,12 @@ toC toCMode emitLines mutualGroup (Binder meta root) = renderEmitterState (execS
             _
               | not (null mutualGroup),
                 pathToC path == pathToC (fst (head mutualGroup)) ->
-                -- First member of mutual group: emit merged dispatch + wrappers
-                emitMutualGroup indent mutualGroup
+                  -- First member of mutual group: emit merged dispatch + wrappers
+                  emitMutualGroup indent mutualGroup
             _
               | not (null mutualGroup) ->
-                -- Non-first member of mutual group: skip (already emitted)
-                pure ""
+                  -- Non-first member of mutual group: skip (already emitted)
+                  pure ""
             _ ->
               do
                 let innerIndent = indent + indentAmount
@@ -314,7 +329,8 @@ toC toCMode emitLines mutualGroup (Binder meta root) = renderEmitterState (execS
                 lambdaEnvType = StructTy (ConcreteNameTy lambdaEnvTypeName) []
                 lambdaEnvName = freshVar info ++ "_env"
             appendToSrc
-              ( addIndent indent ++ "// This lambda captures "
+              ( addIndent indent
+                  ++ "// This lambda captures "
                   ++ show (length capturedVars)
                   ++ " variables: "
                   ++ joinWithComma (map getName capturedVars)
@@ -323,7 +339,10 @@ toC toCMode emitLines mutualGroup (Binder meta root) = renderEmitterState (execS
             when needEnv $
               do
                 appendToSrc
-                  ( addIndent indent ++ tyToC lambdaEnvType ++ " *" ++ lambdaEnvName
+                  ( addIndent indent
+                      ++ tyToC lambdaEnvType
+                      ++ " *"
+                      ++ lambdaEnvName
                       ++ " = CARP_MALLOC(sizeof("
                       ++ tyToC lambdaEnvType
                       ++ "));\n"
@@ -355,12 +374,14 @@ toC toCMode emitLines mutualGroup (Binder meta root) = renderEmitterState (execS
                                 case lookupMode of
                                   LookupLocal (Capture _)
                                     | not isBorrow ->
-                                      appendToSrc
-                                        ( addIndent indent ++ "memset(&" ++ srcExpr
-                                            ++ ", 0, sizeof("
-                                            ++ srcExpr
-                                            ++ "));\n"
-                                        )
+                                        appendToSrc
+                                          ( addIndent indent
+                                              ++ "memset(&"
+                                              ++ srcExpr
+                                              ++ ", 0, sizeof("
+                                              ++ srcExpr
+                                              ++ "));\n"
+                                          )
                                   _ -> pure ()
                         _ -> appendToSrc ""
                   )
@@ -449,20 +470,24 @@ toC toCMode emitLines mutualGroup (Binder meta root) = renderEmitterState (execS
                 -- A better idea is to not specialise the names, which happens when calling 'concretize' on the lhs
                 -- This requires a bunch of extra machinery though, so this will do for now...
 
-                (var ++ periodOrArrow ++ "_tag == " ++ tagName caseTy (removeSuffix caseName)) :
-                concat (zipWith (\c i -> tagCondition (var ++ periodOrArrow ++ "u." ++ removeSuffix caseName ++ ".member" ++ show i) "." (forceTy c) c) unitless ([0 ..] :: [Int]))
+                (var ++ periodOrArrow ++ "_tag == " ++ tagName caseTy (removeSuffix caseName))
+                  : concat (zipWith (\c i -> tagCondition (var ++ periodOrArrow ++ "u." ++ removeSuffix caseName ++ ".member" ++ show i) "." (forceTy c) c) unitless ([0 ..] :: [Int]))
                 where
                   unitless = remove (isUnit . forceTy) caseMatchers
               tagCondition _ _ _ _ =
                 []
-              --error ("tagCondition fell through: " ++ show x)
+              -- error ("tagCondition fell through: " ++ show x)
 
               tempVarToAvoidClash = freshVar exprInfo ++ "_temp"
               emitCaseMatcher :: (String, String) -> String -> XObj -> Integer -> State EmitterState ()
               emitCaseMatcher (periodOrArrow, ampersandOrNot) caseName (XObj (Sym path _) _ t) index =
                 let tt = fromMaybe (error "emit: case matcher has no type") $ t
                  in appendToSrc
-                      ( addIndent indent' ++ tyToCLambdaFix tt ++ " " ++ pathToC path ++ " = "
+                      ( addIndent indent'
+                          ++ tyToCLambdaFix tt
+                          ++ " "
+                          ++ pathToC path
+                          ++ " = "
                           ++ ampersandOrNot
                           ++ tempVarToAvoidClash
                           ++ periodOrArrow
@@ -509,7 +534,9 @@ toC toCMode emitLines mutualGroup (Binder meta root) = renderEmitterState (execS
                   appendToSrc "if(true) {\n"
                   appendToSrc (addIndent indent' ++ tyToCLambdaFix exprTy ++ " " ++ tempVarToAvoidClash ++ " = " ++ exprVar ++ ";\n")
                   appendToSrc
-                    ( addIndent indent' ++ tyToCLambdaFix exprTy ++ " "
+                    ( addIndent indent'
+                        ++ tyToCLambdaFix exprTy
+                        ++ " "
                         ++ pathToC firstPath
                         ++ " = "
                         ++ tempVarToAvoidClash
@@ -592,16 +619,23 @@ toC toCMode emitLines mutualGroup (Binder meta root) = renderEmitterState (execS
                     (XObj (Sym sym _) _ _) -> pathToC sym
                     _ -> error (show (CannotSet variable))
                 varInfo = infoOrUnknown $ xobjInfo variable
-            --appendToSrc (addIndent indent ++ "// " ++ show (length (infoDelete varInfo)) ++ " deleters for " ++ properVariableName ++ ":\n")
+            -- appendToSrc (addIndent indent ++ "// " ++ show (length (infoDelete varInfo)) ++ " deleters for " ++ properVariableName ++ ":\n")
             delete indent (infoDelete varInfo)
-            appendToSrc
-              ( addIndent indent ++ properVariableName ++ " = " ++ valueVar ++ "; "
-                  ++ " // "
-                  ++ show (fromMaybe (VarTy "?") (xobjTy variable))
-                  ++ " = "
-                  ++ show (fromMaybe (VarTy "?") (xobjTy value))
-                  ++ "\n"
-              )
+            case xobjTy variable of
+              Just UnitTy -> pure () -- () = () => no emit.
+              _ ->
+                appendToSrc
+                  ( addIndent indent
+                      ++ properVariableName
+                      ++ " = "
+                      ++ valueVar
+                      ++ "; "
+                      ++ " // "
+                      ++ show (fromMaybe (VarTy "?") (xobjTy variable))
+                      ++ " = "
+                      ++ show (fromMaybe (VarTy "?") (xobjTy value))
+                      ++ "\n"
+                  )
             pure ""
         -- The
         [XObj The _ _, _, value] ->
@@ -919,7 +953,9 @@ toC toCMode emitLines mutualGroup (Binder meta root) = renderEmitterState (execS
           Just (StructTy (ConcreteNameTy (SymPath [] "Array")) [innerTy]) ->
             do
               appendToSrc
-                ( addIndent indent ++ "Array " ++ arrayVar
+                ( addIndent indent
+                    ++ "Array "
+                    ++ arrayVar
                     ++ " = { .len = "
                     ++ show len
                     ++ ","
@@ -944,7 +980,11 @@ toC toCMode emitLines mutualGroup (Binder meta root) = renderEmitterState (execS
           ( case innerTy of
               UnitTy -> "/* () */"
               _ ->
-                addIndent indent ++ "((" ++ tyToCLambdaFix innerTy ++ "*)" ++ arrayVar
+                addIndent indent
+                  ++ "(("
+                  ++ tyToCLambdaFix innerTy
+                  ++ "*)"
+                  ++ arrayVar
                   ++ ".data)["
                   ++ show index
                   ++ "] = "
@@ -964,7 +1004,9 @@ toC toCMode emitLines mutualGroup (Binder meta root) = renderEmitterState (execS
             do
               appendToSrc (addIndent indent ++ tyToCLambdaFix innerTy ++ " " ++ arrayDataVar ++ "[" ++ show len ++ "];\n")
               appendToSrc
-                ( addIndent indent ++ "Array " ++ arrayVar
+                ( addIndent indent
+                    ++ "Array "
+                    ++ arrayVar
                     ++ " = { .len = "
                     ++ show len
                     ++ ","
@@ -1012,7 +1054,8 @@ defnToDeclaration meta path@(SymPath _ name) argList retTy =
       annotationsStr = joinWith " " (map strToC annotations)
       sep = if not (null annotationsStr) then " " else ""
       fullname = if (null override) then (pathToC path) else override
-   in annotationsStr ++ sep
+   in annotationsStr
+        ++ sep
         ++ if name == "main"
           then "int main(int argc, char** argv)"
           else
@@ -1053,7 +1096,7 @@ memberTypeToC selfTy t =
   case t of
     PointerTy inner
       | isSelfStruct selfTy inner ->
-        "struct " ++ tyToC inner ++ "*"
+          "struct " ++ tyToC inner ++ "*"
     _ ->
       tyToCLambdaFix t
   where
@@ -1090,7 +1133,7 @@ defSumtypeToDeclaration sumTy@(StructTy _ _) rest =
         appendToSrc (addIndent indent ++ "} u;\n")
         appendToSrc (addIndent indent ++ "char _tag;\n")
         appendToSrc ("};\n")
-        --appendToSrc ("// " ++ show typeVariables ++ "\n")
+        -- appendToSrc ("// " ++ show typeVariables ++ "\n")
         mapM_ emitSumtypeCaseTagDefinition (zip [0 ..] rest)
       emitSumtypeCase :: Int -> XObj -> State EmitterState ()
       emitSumtypeCase ind (XObj (Lst [XObj (Sym (SymPath [] caseName) _) _ _, XObj (Arr []) _ _]) _ _) =
@@ -1119,7 +1162,11 @@ defaliasToDeclaration :: Ty -> SymPath -> String
 defaliasToDeclaration t path =
   case t of
     (FuncTy argTys retTy _) ->
-      "typedef " ++ tyToCLambdaFix retTy ++ "(*" ++ pathToC path ++ ")("
+      "typedef "
+        ++ tyToCLambdaFix retTy
+        ++ "(*"
+        ++ pathToC path
+        ++ ")("
         ++ intercalate ", " (map fixer argTys)
         ++ ");\n"
     _ -> "typedef " ++ tyToC t ++ " " ++ pathToC path ++ ";\n"
@@ -1360,7 +1407,7 @@ forwardDeclFromBinder (Binder _ (XObj (Lst xobjs) _ _)) =
       case t of
         StructTy {}
           | not (isTypeGeneric t) ->
-            Just ("typedef struct " ++ tyToC t ++ " " ++ tyToC t ++ ";\n")
+              Just ("typedef struct " ++ tyToC t ++ " " ++ tyToC t ++ ";\n")
         _ -> Nothing
 forwardDeclFromBinder _ = Nothing
 
@@ -1383,7 +1430,7 @@ envToDeclarations typeEnv env =
 
 sortDeclarationBinders :: TypeEnv -> TypeEnv -> Env -> [Binder] -> [(Int, Binder)]
 sortDeclarationBinders rootTypeEnv typeEnv env binders' =
-  --trace ("\nSORTED: " ++ (show (sortOn fst (map (scoreBinder typeEnv) binders))))
+  -- trace ("\nSORTED: " ++ (show (sortOn fst (map (scoreBinder typeEnv) binders))))
   sortOn fst (map (scoreTypeBinder rootTypeEnv typeEnv env) binders')
 
 sortGlobalVariableBinders :: Env -> [Binder] -> [(Int, Binder)]
