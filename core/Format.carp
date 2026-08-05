@@ -106,7 +106,13 @@ Example:
 (defmacro fstr [s]
   (list 'String.concat (list 'ref (f-internal s))))
 
-(defmacro format [s x]
-  (if (list? s)
-    (list 'format* s x)
-    (list 'fmt s x)))
+(defmacro format [s :rest args]
+  (if (/= (length args) 1)
+    (macro-error
+     (str "format expects 1 value, but got "
+          (length args)
+          ". Please use `fmt`."))
+    (let [x (car args)]
+      (if (list? s)
+        (list 'format* s x)
+        (list 'fmt s x)))))
