@@ -1,2 +1,0 @@
-(defn main []
-  (format "%d" 1 2))
