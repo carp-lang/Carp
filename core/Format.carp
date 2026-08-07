@@ -30,11 +30,11 @@
                     (str "error in format string: too many arguments to format string (missing directive for '"
                          (cadr args)
                          "')"))
-                  `(ref (format* %s %(car args))))
+                  `(ref (format %s %(car args))))
                 (let [slice (String.slice s 0 (+ (inc idx) next))]
                   `(ref
                      (String.append
-                       (ref (format* %slice %(car args)))
+                       (ref (format %slice %(car args)))
                        %(fmt-internal (String.slice s (+ (inc idx) next) len)
                                       (cdr args)))))))))))))
 
@@ -106,7 +106,3 @@ Example:
 (defmacro fstr [s]
   (list 'String.concat (list 'ref (f-internal s))))
 
-(defmacro format [s x]
-  (if (list? s)
-    (list 'format* s x)
-    (list 'fmt s x)))
