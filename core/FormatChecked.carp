@@ -1,0 +1,29 @@
+(hidden format-directives)
+(doc format-directives "counts the format directives in `s`, ignoring escaped `%%`.")
+(defndynamic format-directives [s]
+  (let [idx (String.index-of s \%)
+        len (String.length s)]
+    (cond
+      (= idx -1) 0 ;; no %
+      (= idx (dec len)) -1 ;; found % at the end -> error
+      (= \% (String.char-at s (inc idx))) ;; next char = % -> this is an escaped %
+        (format-directives (String.suffix s (+ idx 2))) ;; other %?
+      (let [rest (format-directives (String.suffix s (inc idx)))]
+        (cond
+          (= rest -1) -1 ;; ex: "a%%%" -> error
+          (= rest 0) 1   ;; found %    -> ok
+          2)))))         ;; too many % -> error
+
+(doc format-unchecked "formats `x` into `s` without checking the format string. Prefer `format`, which checks it at compile time.")
+(defn format-unchecked [s x] (format s x))
+
+(doc format "formats `x` into the format string `s`. `s` must contain exactly one format directive, and is required to be a string literal. Use `fmt` to format more than one value.")
+(defmacro format [s x]
+  (let [n (format-directives s)]
+    (cond
+      (= n -1)
+        (macro-error (str "found `%` in \"" s "\", but at the end."))
+      (= n 1)
+        `(format-unchecked %s %x)
+      (macro-error (str "error in format string: expected exactly one directive, but found " n
+          " in \"" s "\". use fmt to format more than one value")))))
