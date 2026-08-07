@@ -1,1 +1,3 @@
-dummy-file:0:0 format expects 1 value, but got 2. Please use `fmt`.
+format-wrong-arity.carp:2:3 format expected 2 arguments but received 3.
+
+The arguments 2 are not needed.

@@ -1,1 +1,1 @@
-dummy-file:0:0 error in format string: too many arguments to format string (missing directive for '1')
+dummy-file:0:0 error in format string: expected exactly one directive, but found 0 in "test". use fmt to format more than one value
