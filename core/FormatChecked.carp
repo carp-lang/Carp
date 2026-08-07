@@ -22,7 +22,7 @@
   (let [n (format-directives s)]
     (cond
       (= n -1)
-        (macro-error (str "found `%` in \"" s "\", but at the end."))
+        (macro-error (str "error in format string: found `%` in \"" s "\", but at the end."))
       (= n 1)
         `(format-unchecked %s %x)
       (macro-error (str "error in format string: expected exactly one directive, but found " n
