@@ -1,3 +1,0 @@
-format-wrong-arity.carp:2:3 format expected 2 arguments but received 3.
-
-The arguments 2 are not needed.
