@@ -22,8 +22,8 @@
     (cond
       (= n -1)
         (macro-error (str "error in format string: found `%` in \"" s "\", but at the end."))
-      (= n 0
-        (macro-error (str "error in format string: no directive found in \"" s "\", but a value was given.")))
+      (= n 0)
+        (macro-error (str "error in format string: no directive found in \"" s "\", but a value was given."))
       (= n 1)
         `(format-unchecked %s %x)
       (macro-error (str "error in format string: expected exactly one directive, but found " n
