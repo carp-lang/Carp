@@ -292,3 +292,53 @@ Example:
             (list 'eval (list 'apply f-name (list 'quote (append quote-args (collect-into
                                                                              remaining list))))))))
   )
+(defndynamic cond-thread-binds [threader expr clauses idx]
+  (if (= (length clauses) 0)
+    (list)
+    (if (= (length clauses) 1)
+      (macro-error "cond-> and cond--> require an even number of clauses")
+      (let [test (car clauses)
+            step (cadr clauses)
+            next-clauses (cddr clauses)
+            g (Symbol.concat ['cond_thread (Symbol.from idx)])]
+        (cons g
+              (cons `(if %test (%threader %expr %step) %expr)
+                    (cond-thread-binds threader g next-clauses (+ idx 1))))))))
+
+(doc cond-> "Threads an expression through a series of forms, but only executes the form if the corresponding condition is true.
+
+Example:
+
+```
+(cond-> 10
+  true (+ 5)
+  false (* 2)
+  true (- 3)) ; => 12
+```")
+(defmacro cond-> [expr :rest clauses]
+  (let [g0 (gensym-with 'cond_thread)
+        binds (cond-thread-binds '-> g0 clauses 1)
+        full-binds (cons g0 (cons expr binds))]
+    `(let %(collect-into full-binds 'array)
+       %(if (= (length binds) 0)
+          g0
+          (last (all-but-last binds))))))
+
+(doc cond--> "Threads an expression through a series of forms as the last argument, but only executes the form if the corresponding condition is true.
+
+Example:
+
+```
+(cond--> 10
+  true (- 20)
+  false (/ 2)
+  true (+ 5)) ; => 15 (i.e. (+ (- 20 10) 5))
+```")
+(defmacro cond--> [expr :rest clauses]
+  (let [g0 (gensym-with 'cond_thread)
+        binds (cond-thread-binds '--> g0 clauses 1)
+        full-binds (cons g0 (cons expr binds))]
+    `(let %(collect-into full-binds 'array)
+       %(if (= (length binds) 0)
+          g0
+          (last (all-but-last binds))))))
