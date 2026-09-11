@@ -352,6 +352,7 @@ primitiveInfo _ ctx target@(XObj (Sym path@(SymPath _ name) _) _ _) =
         >> maybe (pure ()) (printMetaBool "Private") (Meta.get "private" metaData)
         >> maybe (pure ()) (printMetaBool "Hidden") (Meta.get "hidden" metaData)
         >> maybe (pure ()) (printMetaVal "Signature" pretty) (Meta.get "sig" metaData)
+        >> maybe (pure ()) (\xobj -> putStr ("  Example:\n" ++ (unlines . map ("    " ++) . lines $ either (const "") id (unwrapStringXObj xobj)))) (Meta.get "docexample" metaData)
         >> maybe (pure ()) printDeprecated (Meta.get "deprecated" metaData)
         >> when (projectPrintTypedAST proj) (putStrLnWithColor Yellow (prettyTyped x))
     printMetaBool :: String -> XObj -> IO ()

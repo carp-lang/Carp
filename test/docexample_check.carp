@@ -1,0 +1,17 @@
+;; This file verifies the 'docexample' macro and metadata in core/Test.carp
+(load-and-use Test)
+
+(sig my-add (Fn [Int Int] Int))
+(doc my-add "Adds two integers.")
+(docexample my-add "(my-add 10 20)")
+(defn my-add [a b] (+ a b))
+
+(defmacro get-my-add-docexample []
+  (meta my-add "docexample"))
+
+(deftest docexample-test
+  (assert-dynamic-equal docexample-test
+                        (get-my-add-docexample)
+                        "(my-add 10 20)"
+                        "docexample metadata is resolved correctly at compile-time")
+)

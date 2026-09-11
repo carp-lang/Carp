@@ -96,6 +96,14 @@
 (defmacro print-sig [name]
   (list 'macro-log (list 'meta name "sig")))
 
+(doc docexample "Annotate a binding with a code example.")
+(defmacro docexample [name example-string]
+  (list 'meta-set! name "docexample" example-string))
+
+(doc print-docexample "Print the annotated example for a binding.")
+(defmacro print-docexample [name]
+  (list 'macro-log (list 'meta name "docexample")))
+
 (doc hidden "Mark a binding as hidden, this will make it not print with the 'info' command.")
 (defmacro hidden [name]
   (list 'meta-set! name "hidden" true))
