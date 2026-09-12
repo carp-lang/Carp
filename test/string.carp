@@ -373,8 +373,8 @@
                 "str identity works as expected")
   (assert-equal test
                 "hello 42"
-                &(format "hello %d" 42)
-                "format works as expected")
+                &(unsafe-format "hello %d" 42)
+                "unsafe-format works as expected")
   (assert-equal test
                 "hello"
                 &(copy "hello")

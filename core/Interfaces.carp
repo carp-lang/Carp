@@ -33,7 +33,7 @@
 (definterface to-int (λ [a] Int))
 (definterface from-int (λ [Int] a))
 
-(definterface format (λ [&String a] String))
+(definterface unsafe-format (λ [&String a] String))
 (definterface from-string (λ [&String] a))
 
 (definterface random (Fn [] a))
