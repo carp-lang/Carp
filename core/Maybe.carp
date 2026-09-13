@@ -140,4 +140,45 @@ It is the inverse of [`and-then`](#and-then).")
   (doc zero "returns `Nothing`.")
   (defn zero [] (Nothing))
   (implements zero Maybe.zero)
+
+  (hidden if-let-internal)
+  (defndynamic if-let-internal [bindings then else]
+    (if (= (length bindings) 0)
+      then
+      (let [var (car bindings)
+            expr (cadr bindings)
+            rest (cdr (cdr bindings))
+            res (list 'match expr
+                      (list 'Maybe.Just var) (if-let-internal rest then else)
+                      (list 'Maybe.Nothing) else)]
+        res)))
+
+  (doc if-let "Conditional binding for Maybe. If each binding's expression evaluates to Just, its value is bound to the corresponding name and the 'then' branch is executed. If any expression evaluates to Nothing, the 'else' branch is executed.
+
+Example:
+```
+(Maybe.if-let [x (Maybe.Just 10)
+               y (Maybe.Just 20)]
+  (+ x y)
+  0)
+```")
+  (defmacro if-let [bindings then else]
+    (if-let-internal bindings then else))
+
+  (doc when-let "Conditional binding for Maybe. If each binding's expression evaluates to Just, its value is bound to the corresponding name and the body is executed.")
+  (defmacro when-let [bindings body]
+    (if-let-internal bindings body ()))
+
+  (doc while-let "Repeatedly evaluates the bindings and binds their values to the names if they are all Just, executing the body each time. The loop stops when any Nothing is encountered.")
+  (defmacro while-let [bindings :rest body]
+    (let [var (car bindings)
+          expr (cadr bindings)
+          rest (cdr (cdr bindings))]
+      `(while true
+         (match %expr
+           (Maybe.Just %var)
+             (Maybe.if-let %rest
+               (do %@body)
+               (break))
+           (Maybe.Nothing) (break)))))
 )
