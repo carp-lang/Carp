@@ -36,6 +36,9 @@ As an example, consider this definition of `sum` based on `reduce`:
 ```
 
 It will sum the previous sum with each new value, starting at `0`.")
+  (docexample reduce "```clojure
+(Array.reduce &(fn [x y] (+ x @y)) 0 &[1 2 3 4]) ;; => 10
+```")
   (defn reduce [f x xs]
     (let [total x]
       (do
@@ -47,6 +50,9 @@ It will sum the previous sum with each new value, starting at `0`.")
 and then all intermediate values.
 
 For example, a scan using `Int.+` over the array [1 1 1 1 1] (starting at 0) will return [0 1 2 3 4 5].")
+  (docexample scan "```clojure
+(Array.scan &(fn [x y] (+ @x @y)) 0 &[1 1 1 1]) ;; => [0 1 2 3 4]
+```")
   (defn scan [f x xs]
     (let [n (length xs)
           ys (allocate (inc n))]
@@ -60,6 +66,9 @@ For example, a scan using `Int.+` over the array [1 1 1 1 1] (starting at 0) wil
 Also does not create a new array, but reuses the initial one instead (by taking ownership over `xs`.)
 
 For example, an endo-scan using `Int.+` over the array [1 1 1 1 1] will return [1 2 3 4 5]")
+  (docexample endo-scan "```clojure
+(Array.endo-scan &(fn [x y] (+ @x @y)) [1 1 1 1]) ;; => [1 2 3 4]
+```")
   (defn endo-scan [f xs]
     (let [n (length &xs)]
       (do
@@ -68,11 +77,18 @@ For example, an endo-scan using `Int.+` over the array [1 1 1 1 1] will return [
         xs)))
 
   (doc empty? "checks whether the array `a` is empty.")
+  (docexample empty? "```clojure
+(Array.empty? &[]) ;; => true
+(Array.empty? &[1 2 3]) ;; => false
+```")
   (defn empty? [a]
     (= (Array.length a) 0))
   (implements empty? Array.empty?)
 
   (doc any? "checks whether any of the elements in `a` match the function `f`.")
+  (docexample any? "```clojure
+(Array.any? &(fn [x] (= @x 2)) &[1 2 3]) ;; => true
+```")
   (defn any? [f a]
     (let-do [res false]
       (for [i 0 (length a)]
@@ -83,6 +99,9 @@ For example, an endo-scan using `Int.+` over the array [1 1 1 1 1] will return [
       res))
 
   (doc all? "checks whether all of the elements in `a` match the function `f`.")
+  (docexample all? "```clojure
+(Array.all? &(fn [x] (< @x 10)) &[1 2 3]) ;; => true
+```")
   (defn all? [f a]
     (let-do [res true]
       (for [i 0 (length a)]
@@ -95,6 +114,9 @@ For example, an endo-scan using `Int.+` over the array [1 1 1 1 1] will return [
   (doc find "finds an element in `a` that matches the function `f` and wraps it in a `Just`.
 
 If it doesn’t find an element, `Nothing` will be returned.")
+  (docexample find "```clojure
+(Array.find &(fn [x] (= @x 2)) &[1 2 3]) ;; => (Maybe.Just 2)
+```")
   (defn find [f a]
     (let-do [res (Maybe.Nothing)]
       (for [i 0 (length a)]
@@ -107,6 +129,9 @@ If it doesn’t find an element, `Nothing` will be returned.")
   (doc find-index "finds the index of the first element in `a` that matches the function `f` and wraps it in a `Just`.
 
 If it doesn’t find an index, `Nothing` will be returned.")
+  (docexample find-index "```clojure
+(Array.find-index &(fn [x] (= @x 2)) &[1 2 3]) ;; => (Maybe.Just 1)
+```")
   (defn find-index [f a]
     (let-do [ret (Maybe.Nothing)]
       (for [i 0 (length a)]
@@ -119,6 +144,9 @@ If it doesn’t find an index, `Nothing` will be returned.")
   (doc find-last "finds the last element in `a` that matches the function `f` and wraps it in a `Just`.
 
 If it doesn’t find an element, `Nothing` will be returned.")
+  (docexample find-last "```clojure
+(Array.find-last &(fn [x] (= @x 2)) &[1 2 2 3]) ;; => (Maybe.Just 2)
+```")
   (defn find-last [f a]
     (let-do [res (Maybe.Nothing)]
       (for [i (Int.dec (length a)) -1 -1]
@@ -687,7 +715,28 @@ The length of the resulting array is the length of the shortest input array.")
          (let [%var (Array.unsafe-nth %xsym %i)]
            %expr)))))
 
+(doc foreach "executes `expr` for each element in the array `binding`.")
+(docexample foreach "```clojure
+(foreach [x &[1 2 3]]
+  (println* x))
+```")
 (defmacro foreach [binding expr]
   (if (array? binding)
     (foreach-internal (car binding) (cadr binding) expr)
     (macro-error "Binding has to be an array.")))
+
+
+(doc Array.map "applies a function `f` to all elements of the array, returning a new array.")
+(docexample Array.map "```clojure\n(Array.map &(fn [x] (+ @x 1)) &[1 2 3]) ;; => [2 3 4]\n```")
+
+(doc Array.endo-map "applies a function `f` to all elements of the array in place, modifying the original array and returning it.")
+(docexample Array.endo-map "```clojure\n(Array.endo-map &(fn [x] (+ @x 1)) [1 2 3]) ;; => [2 3 4]\n```")
+
+(doc Array.push-back "adds an element to the end of the array, returning a new array.")
+(docexample Array.push-back "```clojure\n(Array.push-back [1 2] 3) ;; => [1 2 3]\n```")
+
+(doc Array.pop-back "removes the last element from the array, returning a new array.")
+(docexample Array.pop-back "```clojure\n(Array.pop-back [1 2 3]) ;; => [1 2]\n```")
+
+(doc Array.length "returns the number of elements in the array.")
+(docexample Array.length "```clojure\n(Array.length &[1 2 3]) ;; => 3\n```")
