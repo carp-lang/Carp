@@ -10,21 +10,21 @@
 
 (sig test-result-do-success (Fn [] (Result Int String)))
 (defn test-result-do-success []
-  (result-do [a (Result.Success 1)
+  (Result.do [a (Result.Success 1)
               b (Result.Success (+ a 1))
               c (Result.Success (+ b 1))]
     (Result.Success c)))
 
 (sig test-result-do-error (Fn [] (Result Int String)))
 (defn test-result-do-error []
-  (result-do [a (Result.Success 1)
+  (Result.do [a (Result.Success 1)
               b (the (Result Int String) (Result.Error @"error!"))
               c (Result.Success (+ a 1))]
     (Result.Success c)))
 
 (sig test-result-do-zero (Fn [] (Result Int String)))
 (defn test-result-do-zero []
-  (result-do []
+  (Result.do []
     (Result.Success 1)))
 
 (deftest test

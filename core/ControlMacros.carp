@@ -194,32 +194,6 @@ Example:
     (list 'let [name form]
       (case-internal name branches))))
 
-(hidden result-do-internal)
-(defndynamic result-do-internal [bindings body]
-  (if (= (length bindings) 0)
-    body
-    (let [name (car bindings)
-          expr (cadr bindings)
-          err-name (gensym)]
-      `(match %expr
-         (Result.Success %name) %(result-do-internal (cddr bindings) body)
-         (Result.Error %err-name) (Result.Error %err-name)))))
-
-(hidden result-do-arity-check)
-(defndynamic result-do-arity-check [bindings]
-  (if (= (mod (length bindings) 2) 1)
-    (macro-error "result-do requires an even number of forms in bindings (name/expr pairs)")
-    true))
-
-(doc result-do
-  "Flattens nested Result operations.
-  Takes an array of binding pairs `[name expr]` and a `body`.
-  If any `expr` evaluates to `(Result.Error e)`, it immediately short-circuits and returns that error.
-  Otherwise, it binds the unwrapped Success value to `name` and continues to the next step.")
-(defmacro result-do [bindings body]
-  (do
-    (result-do-arity-check bindings)
-    (result-do-internal bindings body)))
 
 (defmodule Dynamic
   (doc flip
