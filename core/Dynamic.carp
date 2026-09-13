@@ -124,6 +124,6 @@ integers [`imod`](#imod).")
 (defndynamic add-c [relpath]
   (Project.config "cmod" (relative-to (current-file) relpath)))
 
-(doc source-location "Returns a string representing the file and line number of the given AST node. Useful for building custom logging and profiling macros.")
+(doc source-location "Returns a string representing the file, line, and column number of the given AST node. Useful for building custom logging and profiling macros.")
 (defmacro source-location [x]
-  (Dynamic.String.concat [(eval (list 'file x)) ":" (str (eval (list 'line x)))]))
+  (Dynamic.String.concat [(eval (list 'file x)) ":" (str (eval (list 'line x))) ":" (str (eval (list 'column x)))]))
