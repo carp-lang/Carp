@@ -409,4 +409,7 @@
     (do
       (unless-do false (set! x 1) (set! x (inc x)))
       (assert-equal test 2 x "unless-do executes multi-form body when false")))
+  (assert-true test
+               (String.contains-string? (source-location 'x) "test/macros.carp")
+               "source-location works as expected")
 )
