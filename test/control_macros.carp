@@ -8,8 +8,18 @@
              (set! test-string @"new-string") ;; ignored, but side-effect performed
              (- 4 4)))
 
+(defn test-as-thread []
+  (as-> @"hello " it
+        (String.append &it "world")
+        (String.append &it "!")
+        (String.length &it)))
+
 (deftest test
   (assert-true test
     (and (= () (test-ignore-do)) (= &test-string "new-string"))
     "ignore-do performs side effects and ignores all results")
+  (assert-equal test
+    12
+    (test-as-thread)
+    "as-> successfully threads and allows borrowing")
 )

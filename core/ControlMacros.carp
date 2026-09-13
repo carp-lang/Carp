@@ -60,6 +60,22 @@ Example:
 (defmacro --> [:rest forms]
   (thread-last-internal forms))
 
+(doc as-> "threads an expression through the following forms by binding it to the specified `name`.
+This allows the threaded value to be used in any position (or multiple times) within each form, unlike `->` or `-->`.
+
+Example:
+```
+(as-> [1 2 3] it
+      (Array.length &it)
+      (+ it 10)
+      (Vector2.init it it))
+```")
+(defmacro as-> [expr name :rest forms]
+  (if (= (length forms) 0)
+    expr
+    `(let [%name %expr]
+       (as-> %(car forms) %name %@(cdr forms)))))
+
 (hidden comp-internal)
 (defndynamic comp-internal [sym fns]
   (if (= (length fns) 0)
