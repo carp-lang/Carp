@@ -194,31 +194,7 @@ Example:
     (list 'let [name form]
       (case-internal name branches))))
 
-(hidden maybe-do-internal)
-(defndynamic maybe-do-internal [bindings body]
-  (if (= (length bindings) 0)
-    body
-    (let [name (car bindings)
-          expr (cadr bindings)]
-      `(match %expr
-         (Maybe.Just %name) %(maybe-do-internal (cddr bindings) body)
-         (Maybe.Nothing) (Maybe.Nothing)))))
 
-(hidden maybe-do-arity-check)
-(defndynamic maybe-do-arity-check [bindings]
-  (if (= (mod (length bindings) 2) 1)
-    (macro-error "maybe-do requires an even number of forms in bindings (name/expr pairs)")
-    true))
-
-(doc maybe-do
-  "Flattens nested Maybe operations.
-  Takes an array of binding pairs `[name expr]` and a `body`.
-  If any `expr` evaluates to `(Maybe.Nothing)`, it immediately short-circuits and returns `(Maybe.Nothing)`.
-  Otherwise, it binds the unwrapped Just value to `name` and continues to the next step.")
-(defmacro maybe-do [bindings body]
-  (do
-    (maybe-do-arity-check bindings)
-    (maybe-do-internal bindings body)))
 
 (defmodule Dynamic
   (doc flip

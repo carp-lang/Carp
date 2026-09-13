@@ -10,21 +10,21 @@
 
 (sig test-maybe-do-success (Fn [] (Maybe Int)))
 (defn test-maybe-do-success []
-  (maybe-do [a (Maybe.Just 1)
+  (Maybe.do [a (Maybe.Just 1)
              b (Maybe.Just (+ a 1))
              c (Maybe.Just (+ b 1))]
     (Maybe.Just c)))
 
 (sig test-maybe-do-error (Fn [] (Maybe Int)))
 (defn test-maybe-do-error []
-  (maybe-do [a (Maybe.Just 1)
+  (Maybe.do [a (Maybe.Just 1)
              b (the (Maybe Int) (Maybe.Nothing))
              c (Maybe.Just (+ a 1))]
     (Maybe.Just c)))
 
 (sig test-maybe-do-zero (Fn [] (Maybe Int)))
 (defn test-maybe-do-zero []
-  (maybe-do []
+  (Maybe.do []
     (Maybe.Just 1)))
 
 (deftest test
