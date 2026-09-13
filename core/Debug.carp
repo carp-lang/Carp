@@ -39,31 +39,37 @@ immediately, raising a `SIGABRT` if it fails.")
              (IO.println &(fmt "Invalid memory balance: %d" (Debug.memory-balance)))
              (ignore (System.exit 1)))))))
 
-  (doc trace "prints the value of an expression to `stdout`, then returns its value.")
+  (doc trace "prints the expression and its value to `stdout`, then returns its value.")
   (defmacro trace [x]
-    (let [sym (gensym)]
+    (let [sym (gensym)
+          x-str (str x)]
       `(let-do [%sym %x]
-        ; we use eval here to ensure we resolve the symbol before putting it
-        ; into file, line, and column
-        (IO.println
-          (ref
-            (fmt "%s:%d:%d: %s"
-              %(eval `(file %x))
-              %(eval `(line %x))
-              %(eval `(column %x))
-              &(str %sym))))
-        %sym)
-    )
-  )
+         (IO.println
+           (ref
+             (fmt "%s:%d:%d: %s = %s"
+               %(eval `(file %x))
+               %(eval `(line %x))
+               %(eval `(column %x))
+               %x-str
+               &(prn &%sym))))
+         %sym)))
 
   (doc leak-array "leaks some memory. This function is useful for testing tools that detect leaks.")
   (register leak-array (Fn [a] ()) "Debug_leak_MINUS_array")
 
 )
 
-;; Crash the program with an error message unless the expression evaluates to 'true'.
-(defmacro assert [expr]
-  `(unless (= true %expr)
-     (do
-       (println* (fmt "Assertion '%s' failed at line %d, column %d in file %s" %(str expr) %(line) %(column) %(file)))
-       (System.abort))))
+(doc assert "Crash the program with an error message unless the expression evaluates to 'true'. Supports an optional custom message.")
+(defmacro assert [expr :rest msg]
+  (let [has-msg (> (length msg) 0)]
+    (if has-msg
+      (let [custom-msg (car msg)]
+        `(unless (= true %expr)
+           (let [msg-val (str %custom-msg)]
+             (do
+               (println* (fmt "Assertion '%s' failed: %s at line %d, column %d in file %s" %(str expr) &msg-val %(eval `(line %expr)) %(eval `(column %expr)) %(eval `(file %expr))))
+               (System.abort)))))
+      `(unless (= true %expr)
+         (do
+           (println* (fmt "Assertion '%s' failed at line %d, column %d in file %s" %(str expr) %(eval `(line %expr)) %(eval `(column %expr)) %(eval `(file %expr))))
+           (System.abort))))))

@@ -1,0 +1,11 @@
+;; This file verifies the improved 'trace' and 'assert' macros in core/Debug.carp
+
+(defn main []
+  (let [x (Debug.trace (+ 10 20))
+        y (Debug.trace @"hello")]
+    (do
+      (assert (= x 30))
+      (assert (= x 30) "x must be 30")
+      ;; Print success message
+      (IO.println "All test assertions passed successfully!")
+      ())))

@@ -103,6 +103,7 @@ printf '%s\n' \
     ./test/produces-output/forward_references.carp \
     ./test/produces-output/explicit_lifetimes.carp \
     ./test/produces-output/repl.carp \
+    ./test/produces-output/trace_assert_check.carp \
     | xargs -n1 -P"$JOBS" -I{} sh -c './test/execute.sh "$1"' _ {}
 
 echo "Actual tests (using the test suite)"
