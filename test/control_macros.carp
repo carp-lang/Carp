@@ -8,8 +8,39 @@
              (set! test-string @"new-string") ;; ignored, but side-effect performed
              (- 4 4)))
 
+(sig test-maybe-do-success (Fn [] (Maybe Int)))
+(defn test-maybe-do-success []
+  (Maybe.do [a (Maybe.Just 1)
+             b (Maybe.Just (+ a 1))
+             c (Maybe.Just (+ b 1))]
+    (Maybe.Just c)))
+
+(sig test-maybe-do-error (Fn [] (Maybe Int)))
+(defn test-maybe-do-error []
+  (Maybe.do [a (Maybe.Just 1)
+             b (the (Maybe Int) (Maybe.Nothing))
+             c (Maybe.Just (+ a 1))]
+    (Maybe.Just c)))
+
+(sig test-maybe-do-zero (Fn [] (Maybe Int)))
+(defn test-maybe-do-zero []
+  (Maybe.do []
+    (Maybe.Just 1)))
+
 (deftest test
   (assert-true test
     (and (= () (test-ignore-do)) (= &test-string "new-string"))
     "ignore-do performs side effects and ignores all results")
+  (assert-equal test
+    &(Maybe.Just 3)
+    &(test-maybe-do-success)
+    "maybe-do successfully returns unwrapped success")
+  (assert-equal test
+    &(the (Maybe Int) (Maybe.Nothing))
+    &(test-maybe-do-error)
+    "maybe-do correctly short-circuits on Nothing")
+  (assert-equal test
+    &(Maybe.Just 1)
+    &(test-maybe-do-zero)
+    "maybe-do works with zero bindings")
 )

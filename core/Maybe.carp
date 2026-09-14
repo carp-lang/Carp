@@ -140,4 +140,23 @@ It is the inverse of [`and-then`](#and-then).")
   (doc zero "returns `Nothing`.")
   (defn zero [] (Nothing))
   (implements zero Maybe.zero)
+
+  (hidden do-internal)
+  (defndynamic do-internal [bindings body]
+    (if (= (mod (length bindings) 2) 1)
+      (macro-error "Maybe.do requires an even number of forms in bindings (name/expr pairs)")
+      (if (= (length bindings) 0)
+        body
+        (let [name (car bindings)
+              expr (cadr bindings)]
+          `(match %expr
+             (Maybe.Just %name) %(do-internal (cddr bindings) body)
+             (Maybe.Nothing) (Maybe.Nothing))))))
+
+  (doc do "Flattens nested Maybe operations.
+Takes an array of binding pairs `[name expr]` and a `body`.
+If any `expr` evaluates to `(Maybe.Nothing)`, it immediately short-circuits and returns `(Maybe.Nothing)`.
+Otherwise, it binds the unwrapped Just value to `name` and continues to the next step.")
+  (defmacro do [bindings body]
+    (do-internal bindings body))
 )
