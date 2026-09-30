@@ -354,6 +354,26 @@
                           (eval `(+ %x (+ %@(map inc [1 2])))))
                         "quasiquote reader works as expected")
   (assert-dynamic-equal test
+                        '(quasiquote (x (unquote 4)))
+                        ``(x %%(* 2 2))
+                        "nested quasiquote evaluates double unquotes")
+  (assert-dynamic-equal test
+                        '(quasiquote (x (unquote (* 2 2))))
+                        ``(x %(* 2 2))
+                        "nested quasiquote leaves inner unquotes")
+  (assert-dynamic-equal test
+                        '(a (quasiquote (b (unquote x))))
+                        `(a `(b %x))
+                        "quasiquote leaves nested quasiquotes unexpanded")
+  (assert-dynamic-equal test
+                        '(quasiquote (quasiquote (x (unquote (unquote 3)))))
+                        ```(x %%%(+ 1 2))
+                        "triple quasiquote evaluates triple unquotes")
+  (assert-dynamic-equal test
+                        4
+                        (eval (eval ``(+ 1 %%(+ 1 2))))
+                        "nested quasiquote evaluates level by level")
+  (assert-dynamic-equal test
                         12
                         (eval (postwalk (fn [x] (if (= x '+) '* x))
                                         '(+ 2 (+ 2 3))))

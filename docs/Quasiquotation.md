@@ -40,3 +40,13 @@ expression can be used inside the `unquote` variants.
 ; or
 `(+ %@(map inc [1 2])) ; => (+ 2 3)
 ```
+
+Quasiquotes can be nested. Each `quasiquote` raises the nesting level by one,
+and each `unquote` or `unquote-splicing` lowers it by one. Only expressions
+that reach level zero are evaluated, all other forms are kept in the result, so
+nested quasiquotes are expanded one level at a time.
+
+```clojure
+``(x %%(* 2 2)) ; => `(x %4)
+``(x %(* 2 2))  ; => `(x %(* 2 2))
+```
