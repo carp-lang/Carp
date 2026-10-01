@@ -152,6 +152,46 @@ It is the inverse of [`success?`](#success?).")
           (Success _) false
           (Error y) (= x y))))
   (implements = Result.=)
+
+  (hidden if-let-internal)
+  (defndynamic if-let-internal [bindings then else]
+    (if (= (length bindings) 0)
+      then
+      (let [var (car bindings)
+            expr (cadr bindings)
+            rest (cdr (cdr bindings))]
+        (list 'match expr
+              (list 'Result.Success var) (if-let-internal rest then else)
+              (list 'Result.Error '_) else))))
+
+  (doc if-let "Conditional binding for Result. If each binding's expression evaluates to Success, its value is bound to the corresponding name and the 'then' branch is executed. If any expression evaluates to Error, the 'else' branch is executed.
+
+Example:
+```
+(Result.if-let [x (Result.Success 10)
+                y (Result.Success 20)]
+  (+ x y)
+  0)
+```")
+  (defmacro if-let [bindings then else]
+    (if-let-internal bindings then else))
+
+  (doc when-let "Conditional binding for Result. If each binding's expression evaluates to Success, its value is bound to the corresponding name and the body is executed.")
+  (defmacro when-let [bindings body]
+    (if-let-internal bindings body ()))
+
+  (doc while-let "Repeatedly evaluates the bindings and binds their values to the names if they are all Success, executing the body each time. The loop stops when any Error is encountered.")
+  (defmacro while-let [bindings :rest body]
+    (let [var (car bindings)
+          expr (cadr bindings)
+          rest (cdr (cdr bindings))]
+      `(while true
+         (match %expr
+           (Result.Success %var)
+             (Result.if-let %rest
+               (do %@body)
+               (break))
+           (Result.Error _) (break)))))
 )
 
 (defmodule Maybe
