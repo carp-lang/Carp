@@ -82,6 +82,30 @@
   (Unsafe.C.asm addr "mov %1, %0\\n" "add $1, %0\\n" : "=r" (dst) : "r" (src)))
 
 (deftest test
+  (assert-equal test
+                15
+                (cond--> 10
+                  true (- 20)
+                  false (/ 2)
+                  true (+ 5))
+                "cond--> evaluates correctly")
+  (assert-equal test
+                12
+                (cond-> 10
+                  true (+ 5)
+                  false (* 2)
+                  true (- 3))
+                "cond-> evaluates correctly")
+  (assert-equal test
+                "hello world."
+                &(let [add-world (fn [s] (String.concat &[s, @" world"]))
+                       add-bang (fn [s] (String.concat &[s, @"!"]))
+                       add-dot (fn [s] (String.concat &[s, @"."]))]
+                   (cond-> @"hello"
+                     true add-world
+                     false add-bang
+                     true add-dot))
+                "cond-> handles non-copyable types correctly")
   (assert-true test
                (test-let-do)
                "let-do works as expected")
