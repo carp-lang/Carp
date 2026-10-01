@@ -136,7 +136,8 @@ Char String_char_MINUS_at(const String* s, int i) {
     return (uint8_t)(*s)[i];
 }
 
-String String_format(const String* str, const String* s) {
+String String_unsafe_MINUS_format(const String* str, const String* s) {
+    CHK_FORMAT(*str);
     int size = snprintf(NULL, 0, *str, *s) + 1;
     String buffer = CARP_MALLOC(size);
     snprintf(buffer, size, *str, *s);
@@ -227,7 +228,8 @@ String Bool_str(bool b) {
     }
 }
 
-String Bool_format(const String* str, bool b) {
+String Bool_unsafe_MINUS_format(const String* str, bool b) {
+    CHK_FORMAT(*str);
     int size = snprintf(NULL, 0, *str, b) + 1;
     String buffer = CARP_MALLOC(size);
     snprintf(buffer, size, *str, b);
@@ -255,7 +257,8 @@ String Char_prn(Char c) {
     return buffer;
 }
 
-String Char_format(const String* str, char b) {
+String Char_unsafe_MINUS_format(const String* str, char b) {
+    CHK_FORMAT(*str);
     int size = snprintf(NULL, 0, *str, b) + 1;
     String buffer = CARP_MALLOC(size);
     snprintf(buffer, size, *str, b);
@@ -269,7 +272,8 @@ String Double_str(double x) {
     return buffer;
 }
 
-String Double_format(const String* s, double x) {
+String Double_unsafe_MINUS_format(const String* s, double x) {
+    CHK_FORMAT(*s);
     int size = snprintf(NULL, 0, *s, x) + 1;
     String buffer = CARP_MALLOC(size);
     snprintf(buffer, size, *s, x);
@@ -289,7 +293,8 @@ String Float_str(float x) {
     return buffer;
 }
 
-String Float_format(const String* str, float x) {
+String Float_unsafe_MINUS_format(const String* str, float x) {
+    CHK_FORMAT(*str);
     int size = snprintf(NULL, 0, *str, x) + 1;
     String buffer = CARP_MALLOC(size);
     snprintf(buffer, size, *str, x);
@@ -309,7 +314,8 @@ String Int_str(int x) {
     return buffer;
 }
 
-String Int_format(const String* str, int x) {
+String Int_unsafe_MINUS_format(const String* str, int x) {
+    CHK_FORMAT(*str);
     int size = snprintf(NULL, 0, *str, x) + 1;
     String buffer = CARP_MALLOC(size);
     snprintf(buffer, size, *str, x);
@@ -329,7 +335,8 @@ String Long_str(Long x) {
     return buffer;
 }
 
-String Long_format(const String* str, Long x) {
+String Long_unsafe_MINUS_format(const String* str, Long x) {
+    CHK_FORMAT(*str);
     int size = snprintf(NULL, 0, *str, x) + 1;
     String buffer = CARP_MALLOC(size);
     snprintf(buffer, size, *str, x);
@@ -349,7 +356,8 @@ String Byte_str(uint8_t x) {
     return buffer;
 }
 
-String Byte_format(const String* str, uint8_t x) {
+String Byte_unsafe_MINUS_format(const String* str, uint8_t x) {
+    CHK_FORMAT(*str);
     int size = snprintf(NULL, 0, *str, x) + 1;
     String buffer = CARP_MALLOC(size);
     snprintf(buffer, size, *str, x);

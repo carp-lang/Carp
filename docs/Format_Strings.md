@@ -18,22 +18,36 @@ It’s works similarly to [`printf`](https://en.wikipedia.org/wiki/Printf_format
 in C. `fmt` will check that the amount of arguments and format specifiers in
 the format string match.
 
-All arguments to `fmt` must implement the `format` interface, which is defined
-as:
+All arguments to `fmt` must implement the `unsafe-format` interface, which is
+defined as:
 
 ```clojure
-(definterface format (Fn [String a] String)
+(definterface unsafe-format (Fn [String a] String))
 ```
 
 The types are expected to take a format specifier and format according to it.
 As such, which format specifiers are supported is dependent on the
-implementation of `format` on that type. Standard library types expose regular
-format specifiers as in C.
-
-Please note that, because `format` is often implemented on top of `snprintf`
-and similar functions, using faulty format specifiers might lead to problems.
+implementation of `unsafe-format` on that type. Standard library types expose
+regular format specifiers as in C.
 
 Also, all `fmt` format strings must be literals.
+
+## `unsafe-format`
+
+`unsafe-format` formats a single value. It is a thin wrapper over `snprintf`
+and similar C functions, and it is unsafe in the way its name suggests: it does
+no compile-time checking, so a format string that does not carry exactly one
+directive reads arguments that were never passed.
+
+```clojure
+(Int.unsafe-format "%d%d" 1) ; one argument, two directives
+```
+
+Unless the program is built with `NDEBUG`, every `unsafe-format` implementation
+checks its format string at runtime and aborts on a mismatch, in the same way
+array indexing is bounds-checked. This is a backstop, not a substitute for
+checking: prefer `fmt`, which verifies the format string at compile time and
+works for any number of arguments.
 
 ## `fstr`
 

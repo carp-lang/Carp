@@ -26,6 +26,7 @@ typedef void* c_code;
 
 #if defined NDEBUG
 #define CHK_INDEX(i, n)
+#define CHK_FORMAT(s)
 #else
 
 #define CHK_INDEX(i, n)                                                    \
@@ -37,6 +38,42 @@ typedef void* c_code;
                    __si);                                                  \
             abort();                                                       \
         }                                                                  \
+    } while (0)
+
+/* The 'unsafe-format' implementations forward to snprintf with exactly one
+ * value, so their format string must carry exactly one directive. An escaped
+ * '%%' consumes no value and does not count. */
+#define CHK_FORMAT(s)                                                         \
+    do {                                                                      \
+        const char* __fs = (s);                                               \
+        const char* __fp = __fs;                                              \
+        size_t __fn = 0;                                                      \
+        int __ft = 0;                                                         \
+        for (; *__fp; __fp++) {                                               \
+            if (*__fp != '%') continue;                                       \
+            if (__fp[1] == '%') {                                             \
+                __fp++;                                                       \
+                continue;                                                     \
+            }                                                                 \
+            if (__fp[1] == '\0') {                                            \
+                __ft = 1;                                                     \
+                break;                                                        \
+            }                                                                 \
+            __fn++;                                                           \
+        }                                                                     \
+        if (__ft) {                                                           \
+            printf(__FILE__                                                   \
+                   ":%u: bad format string: trailing '%%' in \"%s\"\n",       \
+                   __LINE__, __fs);                                           \
+            abort();                                                          \
+        }                                                                     \
+        if (__fn != 1) {                                                      \
+            printf(__FILE__                                                   \
+                   ":%u: bad format string: expected exactly one directive, " \
+                   "found %zu in \"%s\"\n",                                   \
+                   __LINE__, __fn, __fs);                                     \
+            abort();                                                          \
+        }                                                                     \
     } while (0)
 #endif
 
