@@ -1,0 +1,9 @@
+(Project.config "file-path-print-length" "short")
+(defn main []
+  (let [x (Debug.trace (+ 10 20))
+        y (Debug.trace @"hello")]
+    (do
+      (assert (= x 30))
+      (assert (= x 30) "x must be 30")
+      (IO.println "All test assertions passed successfully!")
+      ())))

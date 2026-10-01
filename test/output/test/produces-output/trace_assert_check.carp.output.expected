@@ -1,0 +1,3 @@
+trace_assert_check.carp:3:24: (+ 10 20) = 30
+trace_assert_check.carp:4:25: (copy "hello") = @"hello"
+All test assertions passed successfully!
