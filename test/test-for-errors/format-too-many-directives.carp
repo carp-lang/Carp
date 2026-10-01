@@ -1,0 +1,2 @@
+(defn main []
+  (format "%d%d" 1))

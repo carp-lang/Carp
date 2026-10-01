@@ -61,6 +61,7 @@
 (load-once "Control.carp")
 (load-once "Opaque.carp")
 (load-once "Unit.carp")
+(load-once "FormatChecked.carp")
 
 (posix-only
  (system-include "sys/wait.h")
