@@ -31,11 +31,28 @@ Example:
   (defmacro unquote-splicing [form]
     (macro-error "unquotes need to be wrapped inside quasiquotes."))
 
+  (hidden quasiquote-elems)
+  (defndynamic quasiquote-elems [init elems depth]
+    (reduce
+      (fn [acc elem]
+        (if (and (= depth 0)
+                 (list? elem)
+                 (= (length elem) 2)
+                 (= (car elem) 'unquote-splicing))
+          (list 'append acc (cadr elem))
+          (list 'cons-last (quasiquote- elem depth) acc)))
+      init
+      elems))
+
   (hidden quasiquote-list)
-  (defndynamic quasiquote-list [form]
-    (let [app (car form)]
+  (defndynamic quasiquote-list [form depth]
+    (let [app (car form)
+          head (list 'quote (list app))]
      (cond
-       (= app 'quasiquote) form
+       (= app 'quasiquote)
+         (quasiquote-elems head (cdr form) (+ depth 1))
+       (and (> depth 0) (or (= app 'unquote) (= app 'unquote-splicing)))
+         (quasiquote-elems head (cdr form) (- depth 1))
        (and (= app 'unquote) (= (length form) 2))
          (cadr form)
        (= app 'unquote)
@@ -44,23 +61,15 @@ Example:
          (macro-error "unquote-splicing needs an enclosing list.")
        (= app 'unquote-splicing)
          (macro-error "unquote-splicing takes exactly one argument.")
-       (reduce
-         (fn [acc elem]
-           (if (and  (list? elem)
-                     (= (length elem) 2)
-                     (= (car elem) 'unquote-splicing))
-             (list 'append acc (cadr elem))
-             (list 'cons-last (quasiquote- elem) acc)))
-         '()
-         form))))
+       (quasiquote-elems '() form depth))))
 
   (hidden quasiquote-)
-  (defndynamic quasiquote- [form]
+  (defndynamic quasiquote- [form depth]
     (cond
       (and (list? form) (> (length form) 0))
-        (quasiquote-list form)
+        (quasiquote-list form depth)
       (array? form)
-        (collect-into (map quasiquote- form) array)
+        (collect-into (map (fn [x] (quasiquote- x depth)) form) array)
       (list 'quote form)))
 
   (doc quasiquote "is a quotation that may have expressions inside it in the
@@ -76,6 +85,6 @@ Example:
 `(1 %x %@y)) ; => (1 1 2 3 4)
 ```")
   (defmacro quasiquote [form]
-    (quasiquote- form)))
+    (quasiquote- form 0)))
 
 (use Quasiquote)
