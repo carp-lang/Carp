@@ -182,7 +182,7 @@ binderForStrOrPrn candidate strOrPrn =
       binderP = SymPath (TC.getFullPath candidate) strOrPrn
       binderT = FuncTy [RefTy (TC.toType candidate) (VarTy "q")] StringTy StaticLifetimeTy
    in Right $
-        if isTypeGeneric (TC.toType candidate)
+        if isTypeGeneric (TC.toType candidate) || flagged (TC.getTypeEnv candidate) (TC.getValueEnv candidate) (TC.toType candidate)
           then (defineTypeParameterizedTemplate (TG.generateGenericTypeTemplate candidate strGenerator) binderP binderT doc, [])
           else instanceBinderWithDeps binderP binderT (TG.generateConcreteTypeTemplate candidate strGenerator) doc
   where
@@ -212,7 +212,7 @@ binderForDelete candidate =
       binderT = FuncTy [t] UnitTy StaticLifetimeTy
       binderP = SymPath (TC.getFullPath candidate) "delete"
    in Right $
-        if isTypeGeneric t
+        if isTypeGeneric t || flagged (TC.getTypeEnv candidate) (TC.getValueEnv candidate) t
           then defineTypeParameterizedTemplate (TG.generateGenericTypeTemplate candidate generator) binderP binderT doc
           else instanceBinder binderP binderT (TG.generateConcreteTypeTemplate candidate generator) doc
   where
@@ -239,7 +239,7 @@ binderForCopy candidate =
       binderT = FuncTy [RefTy t (VarTy "q")] t StaticLifetimeTy
       binderP = SymPath (TC.getFullPath candidate) "copy"
    in Right $
-        if isTypeGeneric (TC.toType candidate)
+        if isTypeGeneric (TC.toType candidate) || flagged (TC.getTypeEnv candidate) (TC.getValueEnv candidate) (TC.toType candidate)
           then (defineTypeParameterizedTemplate (TG.generateGenericTypeTemplate candidate generator) binderP binderT doc, [])
           else instanceBinderWithDeps binderP binderT (TG.generateConcreteTypeTemplate candidate generator) doc
   where
