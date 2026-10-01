@@ -1,1 +1,1 @@
-duplicate_binding.carp:5:9 Duplicate binding `x` inside `let`.
+duplicate_binding.carp:5:9 Duplicate binding `x` inside `let`. Each name in a `let` must be unique.

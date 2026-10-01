@@ -1,1 +1,1 @@
-set_ref_outlives_multiple.carp:11:15 The reference 'x' isn't alive.
+set_ref_outlives_multiple.carp:11:15 The reference 'x' is no longer valid.

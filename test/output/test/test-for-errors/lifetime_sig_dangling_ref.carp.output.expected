@@ -1,1 +1,1 @@
-lifetime_sig_dangling_ref.carp:5:33 The reference '(ref local)' isn't alive.
+lifetime_sig_dangling_ref.carp:5:33 The reference '(ref local)' is no longer valid.
