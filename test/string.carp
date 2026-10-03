@@ -162,6 +162,30 @@
                 &(trim "   string  ")
                 "trim works as expected")
   (assert-equal test
+                "a \t b"
+                &(trim "\t\n\v\f\r a \t b \r\f\v\n\t")
+                "trim removes every whitespace byte and keeps inner ones")
+  (assert-equal test
+                ""
+                &(trim " \t\r\n ")
+                "trim empties an all-whitespace string")
+  (assert-equal test
+                ""
+                &(trim-left " \t ")
+                "trim-left empties an all-whitespace string")
+  (assert-equal test
+                ""
+                &(trim-right " \t ")
+                "trim-right empties an all-whitespace string")
+  (assert-equal test
+                ""
+                &(trim "")
+                "trim leaves the empty string empty")
+  (assert-equal test
+                &(from-bytes &[194b 160b 120b 194b 160b])
+                &(trim &(from-bytes &[32b 194b 160b 120b 194b 160b 32b]))
+                "trim leaves a UTF-8 non-breaking space alone")
+  (assert-equal test
                 "string"
                 &(chomp "string\n")
                 "chomp works as expected I")
