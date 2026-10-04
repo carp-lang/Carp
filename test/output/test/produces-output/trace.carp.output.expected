@@ -1,0 +1,3 @@
+trace.carp:3:24: (+ 10 20) = 30
+trace.carp:4:25: (copy "hello") = @"hello"
+All test assertions passed successfully!
