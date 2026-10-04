@@ -206,6 +206,10 @@ binderToHtml moduleName (Binder meta xobj) =
         Just found -> pretty found
         Nothing -> ""
       htmlDoc = commonmarkToHtml [optSafe] $ Text.pack docString
+      docexampleStr = case Meta.get "docexample" meta of
+        Just (XObj (Str s) _ _) -> "```clojure\n" ++ s ++ "\n```"
+        _ -> ""
+      htmlDocExample = commonmarkToHtml [optSafe] $ Text.pack docexampleStr
    in H.div ! A.class_ "binder" $
         do
           H.a ! A.class_ "anchor" ! A.href (H.stringValue ("#" ++ name)) $
@@ -223,6 +227,11 @@ binderToHtml moduleName (Binder meta xobj) =
             Just nameAndArgs -> H.pre ! A.class_ "args" $ H.toHtml nameAndArgs
             Nothing -> H.span $ H.toHtml ("" :: String)
           H.p ! A.class_ "doc" $ H.preEscapedToHtml htmlDoc
+          when (not (Prelude.null docexampleStr)) $
+            H.div ! A.class_ "docexample" $
+              do
+                H.div ! A.class_ "example-title" $ H.toHtml ("Example:" :: String)
+                H.preEscapedToHtml htmlDocExample
           when isDeprecated $
             H.div ! A.class_ "deprecation-text" $
               H.preEscapedToHtml deprecationStr

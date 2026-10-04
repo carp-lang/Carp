@@ -111,6 +111,21 @@ code {
     color: #aaa;
 }
 
+.example-title {
+    margin-top: 0.5em;
+    margin-bottom: 0.2em;
+    font-size: 0.8em;
+    color: #777;
+    font-weight: bold;
+}
+
+.docexample pre {
+    background-color: #f7f7f7;
+    border-left: 3px solid #ddd;
+    padding: 6px 10px;
+    margin: 0.2em 0em 0.5em 0em;
+}
+
 .module-description {
     margin: 0em;
 }
