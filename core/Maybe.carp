@@ -140,4 +140,58 @@ It is the inverse of [`and-then`](#and-then).")
   (doc zero "returns `Nothing`.")
   (defn zero [] (Nothing))
   (implements zero Maybe.zero)
+
+  (hidden if-let-internal)
+  (defndynamic if-let-internal [bindings then else]
+    (cond
+      (not (or (array? bindings) (list? bindings)))
+        (macro-error "bindings must be an array")
+      (= (mod (length bindings) 2) 1)
+        (macro-error "bindings must have an even number of elements")
+      (= (length bindings) 0)
+        then
+      (let [var (car bindings)
+            expr (cadr bindings)
+            rest (cdr (cdr bindings))]
+        (list 'match expr
+              (list 'Maybe.Just var) (if-let-internal rest then else)
+              (list 'Maybe.Nothing) else))))
+
+  (doc if-let "Conditional binding for Maybe. If each binding's expression evaluates to Just, its value is bound to the corresponding name and the 'then' branch is executed. If any expression evaluates to Nothing, the 'else' branch is executed.
+
+Example:
+```
+(Maybe.if-let [x (Maybe.Just 10)
+               y (Maybe.Just 20)]
+  (+ x y)
+  0)
+```")
+  (defmacro if-let [bindings then else]
+    (if-let-internal bindings then else))
+
+  (doc when-let "Conditional binding for Maybe. If each binding's expression evaluates to Just, its value is bound to the corresponding name and the body is executed.")
+  (defmacro when-let [bindings :rest body]
+    (let [do-body (if (= (length body) 0) () (cons 'do body))]
+      (if-let-internal bindings do-body ())))
+
+  (doc while-let "Repeatedly evaluates the bindings and binds their values to the names if they are all Just, executing the body each time. The loop stops when any Nothing is encountered.")
+  (defmacro while-let [bindings :rest body]
+    (cond
+      (not (or (array? bindings) (list? bindings)))
+        (macro-error "bindings must be an array")
+      (= (length bindings) 0)
+        (macro-error "while-let requires at least one binding")
+      (= (mod (length bindings) 2) 1)
+        (macro-error "bindings must have an even number of elements")
+      (let [var (car bindings)
+            expr (cadr bindings)
+            rest (cdr (cdr bindings))
+            do-body (if (= (length body) 0) () (cons 'do body))]
+        `(while true
+           (match %expr
+             (Maybe.Just %var)
+               (Maybe.if-let %rest
+                 %do-body
+                 (break))
+             (Maybe.Nothing) (break))))))
 )

@@ -203,4 +203,80 @@
                 0
                 (map-or-else (the (Maybe Int) (Nothing)) &(fn [] 0) &(fn [v] (* v 2)))
                 "map-or-else works on Nothing")
+
+  (assert-equal test
+                15
+                (Maybe.if-let [x (Maybe.Just 10)]
+                  (+ x 5)
+                  0)
+                "Maybe.if-let works with Just")
+  (assert-equal test
+                0
+                (Maybe.if-let [x (the (Maybe Int) (Maybe.Nothing))]
+                  (+ x 5)
+                  0)
+                "Maybe.if-let works with Nothing")
+  (assert-equal test
+                30
+                (Maybe.if-let [x (Maybe.Just 10)
+                               y (Maybe.Just 20)]
+                  (+ x y)
+                  0)
+                "Maybe.if-let works with multiple Just bindings")
+  (assert-equal test
+                0
+                (Maybe.if-let [x (Maybe.Just 10)
+                               y (the (Maybe Int) (Maybe.Nothing))]
+                  (+ x y)
+                  0)
+                "Maybe.if-let works with multiple bindings when one is Nothing")
+  (assert-equal test
+                15
+                (if-let [x (Just 10)]
+                  (+ x 5)
+                  0)
+                "if-let works unqualified")
+  (let-do [val 0]
+    (Maybe.when-let [x (Maybe.Just 42)]
+      (set! val x))
+    (assert-equal test
+                  42
+                  val
+                  "Maybe.when-let works with Just"))
+  (let-do [val 0]
+    (Maybe.when-let [x (the (Maybe Int) (Maybe.Nothing))]
+      (set! val 42))
+    (assert-equal test
+                  0
+                  val
+                  "Maybe.when-let works with Nothing"))
+  (let-do [val 0
+           val2 0]
+    (Maybe.when-let [x (Maybe.Just 10)
+                     y (Maybe.Just 20)]
+      (set! val x)
+      (set! val2 y))
+    (assert-equal test
+                  30
+                  (+ val val2)
+                  "Maybe.when-let works with multiple expressions and bindings"))
+  (let-do [counter 0
+           res []]
+    (Maybe.while-let [x (if (< counter 3) (Maybe.Just counter) (the (Maybe Int) (Maybe.Nothing)))]
+      (set! res (Array.push-back res x))
+      (set! counter (inc counter)))
+    (assert-equal test
+                  &[0 1 2]
+                  &res
+                  "Maybe.while-let works with single binding"))
+  (let-do [counter 0
+           res []]
+    (Maybe.while-let [x (if (< counter 3) (Maybe.Just counter) (the (Maybe Int) (Maybe.Nothing)))
+                      y (Maybe.Just 10)]
+      (set! res (Array.push-back res (+ x y)))
+      (set! counter (inc counter)))
+    (assert-equal test
+                  &[10 11 12]
+                  &res
+                  "Maybe.while-let works with multiple bindings"))
 )

@@ -181,4 +181,84 @@
                 0
                 (map-or-else (the (Result Int Int) (Error 10)) &(fn [] 0) &(fn [v] (* v 2)))
                 "map-or-else works with Error")
+
+  (assert-equal test
+                15
+                (Result.if-let [x (the (Result Int String) (Success 10))]
+                  (+ x 5)
+                  0)
+                "Result.if-let works with Success")
+  (assert-equal test
+                0
+                (Result.if-let [x (the (Result Int String) (Error @"error"))]
+                  (+ x 5)
+                  0)
+                "Result.if-let works with Error")
+  (assert-equal test
+                30
+                (Result.if-let [x (the (Result Int String) (Success 10))
+                                y (the (Result Int String) (Success 20))]
+                  (+ x y)
+                  0)
+                "Result.if-let works with multiple Success bindings")
+  (assert-equal test
+                0
+                (Result.if-let [x (the (Result Int String) (Success 10))
+                                y (the (Result Int String) (Error @"error"))]
+                  (+ x y)
+                  0)
+                "Result.if-let works with multiple bindings when one is Error")
+  (assert-equal test
+                15
+                (if-let [x (the (Result Int String) (Success 10))]
+                  (+ x 5)
+                  0)
+                "if-let works unqualified in Result")
+  (let-do [val 0]
+    (Result.when-let [x (the (Result Int String) (Success 42))]
+      (set! val x))
+    (assert-equal test
+                  42
+                  val
+                  "Result.when-let works with Success"))
+  (let-do [val 0]
+    (Result.when-let [x (the (Result Int String) (Error @"error"))]
+      (set! val 42))
+    (assert-equal test
+                  0
+                  val
+                  "Result.when-let works with Error"))
+  (let-do [val 0
+           val2 0]
+    (Result.when-let [x (the (Result Int String) (Success 10))
+                      y (the (Result Int String) (Success 20))]
+      (set! val x)
+      (set! val2 y))
+    (assert-equal test
+                  30
+                  (+ val val2)
+                  "Result.when-let works with multiple expressions and bindings"))
+  (let-do [counter 0
+           res []]
+    (Result.while-let [x (if (< counter 3)
+                           (the (Result Int String) (Success counter))
+                           (the (Result Int String) (Error @"stop")))]
+      (set! res (Array.push-back res x))
+      (set! counter (inc counter)))
+    (assert-equal test
+                  &[0 1 2]
+                  &res
+                  "Result.while-let works with single binding"))
+  (let-do [counter 0
+           res []]
+    (Result.while-let [x (if (< counter 3)
+                           (the (Result Int String) (Success counter))
+                           (the (Result Int String) (Error @"stop")))
+                       y (the (Result Int String) (Success 10))]
+      (set! res (Array.push-back res (+ x y)))
+      (set! counter (inc counter)))
+    (assert-equal test
+                  &[10 11 12]
+                  &res
+                  "Result.while-let works with multiple bindings"))
 )
