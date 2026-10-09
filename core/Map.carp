@@ -284,6 +284,26 @@ when its hash is [`empty-slot`](#empty-slot) and its entry is `Nothing`.")
           (Maybe.Just e) (Maybe.Just @(Pair.b e))
           _ (Maybe.Nothing)))))
 
+  (doc update-value! "calls `f` with a reference to the value at key `k`.
+Does nothing if the key is not found. The reference allows mutation through
+FFI functions (e.g. reading into a stream's buffer).")
+  (defn update-value! [m k f]
+    (let [i (find m k)]
+      (when (<= 0 i)
+        (match-ref (Array.unsafe-nth (entries m) i)
+          (Maybe.Just e) (~f (Pair.b e))
+          _ ()))))
+
+  (doc value-ref! "calls `f` with a reference to the value at key `k` and
+returns whatever `f` returns. If the key is missing, returns `default`.")
+  (defn value-ref! [m k f default]
+    (let [i (find m k)]
+      (if (< i 0)
+        default
+        (match-ref (Array.unsafe-nth (entries m) i)
+          (Maybe.Just e) (~f (Pair.b e))
+          _ default))))
+
   (doc update "Update value at key k in map with function f, if it exists.")
   (defn update [m k f]
     (let [i (find &m k)]

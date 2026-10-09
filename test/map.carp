@@ -274,6 +274,19 @@
                "remove! shrinks the map"
   )
   (assert-equal test
+                "xb!"
+                &(let-do [m {@"k" @"ab"}]
+                   (Map.update-value! &m "k" &(fn [v] (String.string-set! v 0 \x)))
+                   (Map.update-value! &m "missing" &(fn [v] (String.string-set! v 0 \z)))
+                   (Map.value-ref! &m "k" &(fn [v] (String.append v "!")) @""))
+                "update-value! passes a reference to the stored value"
+  )
+  (assert-equal test
+                "none"
+                &(Map.value-ref! &{@"k" @"ab"} "missing" &(fn [v] @v) @"none")
+                "value-ref! returns the default for a missing key"
+  )
+  (assert-equal test
                 12
                 (do
                   (set! for-each-sum 0)
