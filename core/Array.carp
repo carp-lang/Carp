@@ -242,15 +242,27 @@ If the array is empty, returns `Nothing`")
   (defn rest [xs]
     (suffix xs 1))
 
+  (doc unsafe-nth-value "returns the value at index `i` of an array `a` (just like [unsafe-nth](#unsafe-nth)) but does not take its reference, and does *not* copy the value. Should only be used for optimizations and when you know what you're doing, circumvents the borrow checker!")
+  (deftemplate unsafe-nth-value (Fn [(Ref (Array a)) Int] a)
+    "$a $NAME(Array *a, int i)"
+    "$DECL { return (($a*)a->data)[i]; }")
+
+  (doc swap! "swaps the indices `i` and `j` of an array `a` in place.")
+  (defn swap! [a i j]
+    ; moves the elements instead of copying them
+    (let-do [x (unsafe-nth-value a i)
+             y (unsafe-nth-value a j)]
+      (aset-uninitialized! a i y)
+      (aset-uninitialized! a j x)))
+
   (doc reverse "reverses an array.")
   (defn reverse [a]
     (let-do [i 0
              j (Int.dec (length &a))]
       (while (Int.< i j)
-        (let-do [tmp @(unsafe-nth &a i)]
-          (aset! &a i @(unsafe-nth &a j))
+        (do
+          (Array.swap! &a i j)
           (set! i (Int.inc i))
-          (aset! &a j tmp)
           (set! j (Int.dec j))))
       a))
 
@@ -281,11 +293,6 @@ If the element is not found, returns `Nothing`")
           (set! c (Int.inc c))))
       c))
 
-    (doc unsafe-nth-value "returns the value at index `i` of an array `a` (just like [unsafe-nth](#unsafe-nth)) but does not take its reference, and does *not* copy the value. Should only be used for optimizations and when you know what you're doing, circumvents the borrow checker!")
-  (deftemplate unsafe-nth-value (Fn [(Ref (Array a)) Int] a)
-    "$a $NAME(Array *a, int i)"
-    "$DECL { return (($a*)a->data)[i]; }")
-
   (doc aupdate "transmutes (i.e. updates) the element at index `i` of an array `a` using the function `f`.")
   (defn aupdate [a i f]
     (do
@@ -298,16 +305,9 @@ If the element is not found, returns `Nothing`")
 
   (doc swap "swaps the indices `i` and `j` of an array `a`.")
   (defn swap [a i j]
-    (let [x @(unsafe-nth &a i)
-          y @(unsafe-nth &a j)]
-      (aset (aset a i y) j x)))
-
-  (doc swap! "swaps the indices `i` and `j` of an array `a` in place.")
-  (defn swap! [a i j]
-    (let-do [x @(unsafe-nth a i)
-             y @(unsafe-nth a j)]
-      (aset! a i y)
-      (aset! a j x)))
+    (do
+      (Array.swap! &a i j)
+      a))
 
   (doc repeat "repeats the function `f` `n` times and stores the results in an array.")
   (defn repeat [n f]

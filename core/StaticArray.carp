@@ -207,10 +207,11 @@ If the array is empty, returns `Nothing`")
 
   (doc swap! "swaps the indices `i` and `j` of an array `a` in place.")
   (defn swap! [a i j]
-    (let-do [x @(unsafe-nth a i)
-             y @(unsafe-nth a j)]
-      (aset! a i y)
-      (aset! a j x)))
+    ; moves the elements instead of copying them
+    (let-do [x (unsafe-nth-value a i)
+             y (unsafe-nth-value a j)]
+      (aset-uninitialized! a i y)
+      (aset-uninitialized! a j x)))
 
   (doc nth "gets a reference to the `n`th element from an array `arr` wrapped on a `Maybe`.
 
