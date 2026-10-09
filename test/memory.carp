@@ -538,7 +538,8 @@
     (for [i 0 200] (Map.put! &m &(str i) &(str (* 2 i))))
     (for [i 0 200] (Map.update-with-default! &m &(str i) &(fn [s] (String.append &s "!")) @""))
     (for [i 0 190] (Map.remove! &m &(str i)))
-    (ignore (Map.keys &m))))
+    (ignore (Map.keys &m))
+    (ignore (Map.str &m))))
 
 (defn map-2 []
   (let [m (Map.put (Map.put (Map.create) "a" "b") "c" "d")
@@ -550,7 +551,9 @@
     (for [i 0 200] (Set.put! &s &(str i)))
     (for [i 0 200] (Set.put! &s &(str i)))
     (for [i 0 190] (Set.remove! &s &(str i)))
-    (ignore (Set.to-array &s))))
+    (ignore (Set.to-array &s))
+    (ignore (Set.str &s))
+    (ignore (Bag.str &(Bag.from-array &[@"a" @"a" @"b"])))))
 
 (deftest test
   (assert-no-leak test scope-1 "scope-1 does not leak")

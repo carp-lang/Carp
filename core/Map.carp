@@ -435,11 +435,19 @@ returns whatever `f` returns. If the key is missing, returns `default`.")
                m))
 
   (defn str [m]
-    (let [res (kv-reduce &(fn [s k v]
-                           (String.join "" &[s @" " (prn @k) @" " (prn @v)]))
-                         @"{"
-                         m)]
-      (String.append &res " }")))
+    ; collects the pieces and joins them once, instead of copying the
+    ; growing string for every entry
+    (let-do [parts (kv-reduce &(fn [parts k v]
+                                 (do
+                                   (Array.push-back! &parts @" ")
+                                   (Array.push-back! &parts (prn @k))
+                                   (Array.push-back! &parts @" ")
+                                   (Array.push-back! &parts (prn @v))
+                                   parts))
+                              [@"{"]
+                              m)]
+      (Array.push-back! &parts @" }")
+      (String.concat &parts)))
 
   (doc reverse "reverses they keys and values in a given map `m`.")
   (defn reverse [m]
@@ -639,10 +647,15 @@ returns whatever `f` returns. If the key is missing, returns `default`.")
     (reduce &(fn [arr elt] (Array.push-back arr @elt)) [] s))
 
   (defn str [set]
-    (let [res (reduce &(fn [s e] (String.join "" &[s @" " (prn e)]))
-                      @"{"
-                      set)]
-      (String.append &res " }")))
+    (let-do [parts (reduce &(fn [parts e]
+                              (do
+                                (Array.push-back! &parts @" ")
+                                (Array.push-back! &parts (prn e))
+                                parts))
+                           [@"{"]
+                           set)]
+      (Array.push-back! &parts @" }")
+      (String.concat &parts)))
   (implements str Set.str)
 )
 
@@ -919,9 +932,14 @@ collision.")
     (reduce &(fn [arr elt] (Array.push-back arr @elt)) [] b))
 
   (defn str [set]
-    (let [res (reduce &(fn [s e] (String.join "" &[s @" " (prn e)]))
-                      @"(Bag"
-                      set)]
-      (String.append &res ")")))
+    (let-do [parts (reduce &(fn [parts e]
+                              (do
+                                (Array.push-back! &parts @" ")
+                                (Array.push-back! &parts (prn e))
+                                parts))
+                           [@"(Bag"]
+                           set)]
+      (Array.push-back! &parts @")")
+      (String.concat &parts)))
   (implements str Bag.str)
 )
