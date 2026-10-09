@@ -529,6 +529,26 @@
   (let [a (Array.sort (Array.reverse [@"c" @"a" @"b" @"d"]))]
     (ignore (Array.swap a 0 3))))
 
+(defn map-1 []
+  (let-do [m (the (Map String String) (Map.create))]
+    (for [i 0 200] (Map.put! &m &(str i) &(str i)))
+    (for [i 0 200] (Map.put! &m &(str i) &(str (* 2 i))))
+    (for [i 0 200] (Map.update-with-default! &m &(str i) &(fn [s] (String.append &s "!")) @""))
+    (for [i 0 190] (Map.remove! &m &(str i)))
+    (ignore (Map.keys &m))))
+
+(defn map-2 []
+  (let [m (Map.put (Map.put (Map.create) "a" "b") "c" "d")
+        n (Map.update (Map.remove m "a") "c" &(fn [s] (String.append &s "!")))]
+    (ignore (Map.get &n "c"))))
+
+(defn set-1 []
+  (let-do [s (the (Set String) (Set.create))]
+    (for [i 0 200] (Set.put! &s &(str i)))
+    (for [i 0 200] (Set.put! &s &(str i)))
+    (for [i 0 190] (Set.remove! &s &(str i)))
+    (ignore (Set.to-array &s))))
+
 (deftest test
   (assert-no-leak test scope-1 "scope-1 does not leak")
   (assert-no-leak test scope-2 "scope-2 does not leak")
@@ -607,5 +627,8 @@
   (assert-no-leak test box-2 "box-2 does not leak")
   (assert-no-leak test blit-1 "blit-1 does not leak")
   (assert-no-leak test (fn [] (shadow-1 2)) "shadow-1 does not leak")
+  (assert-no-leak test map-1 "map-1 does not leak")
+  (assert-no-leak test map-2 "map-2 does not leak")
+  (assert-no-leak test set-1 "set-1 does not leak")
   (assert-no-leak test swap-1 "swap-1 does not leak")
   )
