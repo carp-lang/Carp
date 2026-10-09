@@ -286,6 +286,10 @@
                 &(Map.value-ref! &{@"k" @"ab"} "missing" &(fn [v] @v) @"none")
                 "value-ref! returns the default for a missing key"
   )
+  (assert-false test
+                (= &{1 0} &{2 0})
+                "= is false when a key is missing and the other map holds a zero value"
+  )
   (assert-equal test
                 12
                 (do

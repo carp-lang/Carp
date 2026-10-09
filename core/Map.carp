@@ -373,8 +373,7 @@ returns whatever `f` returns. If the key is missing, returns `default`.")
 
   (defn = [m1 m2]
     (and (= (length m1) (length m2))
-         ;; we could use contains? and get-with-default here to avoid requiring a (zero) for the value type
-         (all? &(fn [k v] (= v &(get m2 k))) m1)))
+         (all? &(fn [k v] (value-ref! m2 k &(fn [v2] (= v v2)) false)) m1)))
   (implements = Map.=)
 
   (doc for-each "Execute the binary function f for all keys and values in the map m.")
