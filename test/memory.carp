@@ -529,6 +529,9 @@
   (let [a (Array.sort (Array.reverse [@"c" @"a" @"b" @"d"]))]
     (ignore (Array.swap a 0 3))))
 
+(defn remove-nth-1 []
+  (ignore (Array.remove-nth 1 [@"a" @"b" @"c" @"d"])))
+
 (defn map-1 []
   (let-do [m (the (Map String String) (Map.create))]
     (for [i 0 200] (Map.put! &m &(str i) &(str i)))
@@ -631,4 +634,5 @@
   (assert-no-leak test map-2 "map-2 does not leak")
   (assert-no-leak test set-1 "set-1 does not leak")
   (assert-no-leak test swap-1 "swap-1 does not leak")
+  (assert-no-leak test remove-nth-1 "remove-nth-1 does not leak")
   )

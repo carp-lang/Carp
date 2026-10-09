@@ -216,9 +216,9 @@ If the array is empty, returns `Nothing`")
 
   (doc slice "gets a subarray from `start-index` to `end-index`.")
   (defn slice [xs start-index end-index]
-    (let-do [result []]
+    (let-do [result (allocate (max 0 (- end-index start-index)))]
       (for [i start-index end-index]
-        (set! result (push-back result @(unsafe-nth xs i))))
+        (aset-uninitialized! &result (- i start-index) @(unsafe-nth xs i)))
       result))
   (implements slice Array.slice)
 
@@ -423,8 +423,9 @@ If the `index` is out of bounds, return `Maybe.Nothing`")
     (do
       ;;(assert (<= 0 i))
       ;;(assert (< i (Array.length &arr)))
+      ; moves the element to the end without copying anything, then drops it
       (for [j i (Int.dec (Array.length &arr))]
-        (aset! &arr j @(unsafe-nth &arr (inc j))))
+        (Array.swap! &arr j (inc j)))
       (pop-back arr)))
 
   (doc copy-filter "filters the elements in an array.
@@ -536,14 +537,13 @@ Example:
 ; => (Pair 6 [2 4 6])
 ```")
   (defn map-reduce [f acc a]
-    (reduce
-      &(fn [a el]
-        (let [l (Pair.b &a)
-              acc (Pair.a &a)
-              p (~f acc el)]
-          (Pair.init @(Pair.a &p) (Array.push-back @l @(Pair.b &p)))))
-      (Pair.init acc [])
-      a))
+    (let-do [res (allocate (length a))]
+      (for [i 0 (length a)]
+        (let [p (~f &acc (unsafe-nth a i))]
+          (do
+            (set! acc @(Pair.a &p))
+            (aset-uninitialized! &res i @(Pair.b &p)))))
+      (Pair.init acc res)))
 
   (doc take-while "Takes elements from the array `a` as long as the predicate `f` returns true.
 Returns a new array of all leading elements that satisfy the predicate.

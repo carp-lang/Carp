@@ -318,6 +318,14 @@
                     (remove-nth 1 [1 2 3])
                     "remove-nth works")
   (assert-ref-equal test
+                    [@"a" @"c"]
+                    (remove-nth 1 [@"a" @"b" @"c"])
+                    "remove-nth works on managed values")
+  (assert-ref-equal test
+                    [@"a" @"b"]
+                    (remove-nth 2 [@"a" @"b" @"c"])
+                    "remove-nth works on the last element")
+  (assert-ref-equal test
                     [1.0 1.5 2.0 2.5]
                     (unreduce 1.0 &(fn [x] (< x 3.0)) &(fn [x] (+ x 0.5)))
                     "unreduce works")
