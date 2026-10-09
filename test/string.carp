@@ -108,6 +108,15 @@
                (starts-with? "heller" "hell")
                "starts-with? works as expected")
   (assert-true test
+               (starts-with? "ölheller" "öl")
+               "starts-with? works on multi-byte prefixes")
+  (assert-true test
+               (ends-with? "hellerö" "rö")
+               "ends-with? works on multi-byte suffixes")
+  (assert-false test
+               (starts-with? "öl" "ölheller")
+               "starts-with? is false for a longer prefix")
+  (assert-true test
                (in? "metacarpenter" "carp")
                "in? works on matching pattern")
   (assert-false test
