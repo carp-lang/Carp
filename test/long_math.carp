@@ -73,4 +73,14 @@
   (assert-equal test -1l (sign -5l) "sign works as expected II")
   (assert-equal test 0l (sign 0l) "sign works as expected III")
   (assert-equal test 30l (add-ref &10l &20l) "add-ref works as expected")
+  (assert-equal test 9223372036854775807l MAX "MAX is the int64 maximum")
+  (assert-equal test (- -9223372036854775807l 1l) MIN "MIN is the int64 minimum")
+  (assert-equal test
+                &(Maybe.Just 9223372036854775807l)
+                &(from-string "9223372036854775807")
+                "from-string reads the int64 maximum")
+  (assert-equal test
+                &(Maybe.Just -21474836470l)
+                &(from-string "-21474836470")
+                "from-string reads past 32 bits")
 )
