@@ -239,7 +239,7 @@ binderForStrOrPrn strOrPrn candidate =
   let binderP = SymPath (TC.getFullPath candidate) strOrPrn
       binderT = (FuncTy [RefTy (TC.toType candidate) (VarTy "q")] StringTy StaticLifetimeTy)
       doc = "converts a `" ++ TC.getName candidate ++ "` to a string."
-   in if isTypeGeneric (TC.toType candidate)
+   in if isTypeGeneric (TC.toType candidate) || flagged (TC.getTypeEnv candidate) (TC.getValueEnv candidate) (TC.toType candidate)
         then Right $ (defineTypeParameterizedTemplate (TG.generateGenericTypeTemplate candidate strGenerator) binderP binderT doc, [])
         else Right $ instanceBinderWithDeps binderP binderT (TG.generateConcreteTypeTemplate candidate strGenerator) doc
 
@@ -249,7 +249,7 @@ binderForDelete candidate =
   let doc = "deletes a `" ++ TC.getName candidate ++ "`. Should usually not be called manually."
       binderP = SymPath (TC.getFullPath candidate) "delete"
       binderT = FuncTy [(TC.toType candidate)] UnitTy StaticLifetimeTy
-   in if isTypeGeneric (TC.toType candidate)
+   in if isTypeGeneric (TC.toType candidate) || flagged (TC.getTypeEnv candidate) (TC.getValueEnv candidate) (TC.toType candidate)
         then Right $ (defineTypeParameterizedTemplate (TG.generateGenericTypeTemplate candidate deleteGenerator) binderP binderT doc, [])
         else Right $ instanceBinderWithDeps binderP binderT (TG.generateConcreteTypeTemplate candidate deleteGenerator) doc
 
@@ -259,7 +259,7 @@ binderForCopy candidate =
   let doc = "copies a `" ++ TC.getName candidate ++ "`."
       binderP = SymPath (TC.getFullPath candidate) "copy"
       binderT = FuncTy [RefTy (TC.toType candidate) (VarTy "q")] (TC.toType candidate) StaticLifetimeTy
-   in if isTypeGeneric (TC.toType candidate)
+   in if isTypeGeneric (TC.toType candidate) || flagged (TC.getTypeEnv candidate) (TC.getValueEnv candidate) (TC.toType candidate)
         then Right $ (defineTypeParameterizedTemplate (TG.generateGenericTypeTemplate candidate copyGenerator) binderP binderT doc, [])
         else Right $ instanceBinderWithDeps binderP binderT (TG.generateConcreteTypeTemplate candidate copyGenerator) doc
 
