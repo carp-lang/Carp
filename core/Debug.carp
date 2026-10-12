@@ -47,10 +47,8 @@ immediately, raising a `SIGABRT` if it fails.")
         ; into file, line, and column
         (IO.println
           (ref
-            (fmt "%s:%d:%d: %s"
-              %(eval `(file %x))
-              %(eval `(line %x))
-              %(eval `(column %x))
+            (fmt "%s: %s"
+              %(eval `(source-location %x))
               &(str %sym))))
         %sym)
     )
@@ -65,5 +63,5 @@ immediately, raising a `SIGABRT` if it fails.")
 (defmacro assert [expr]
   `(unless (= true %expr)
      (do
-       (println* (fmt "Assertion '%s' failed at line %d, column %d in file %s" %(str expr) %(line) %(column) %(file)))
+       (println* (fmt "Assertion '%s' failed at %s" %(str expr) %(eval `(source-location %expr))))
        (System.abort))))
