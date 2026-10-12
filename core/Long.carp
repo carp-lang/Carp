@@ -3,9 +3,9 @@
 (doc Long "is a bigger integral data type (its size is 64 bits). Its suffix is
 `l`.")
 (defmodule Long
-  (register MAX Long "LONG_MAX")
+  (register MAX Long "INT64_MAX")
   (implements MAX MAX)
-  (register MIN Long "LONG_MIN")
+  (register MIN Long "INT64_MIN")
   (implements MIN MIN)
   (register + (λ [Long Long] Long))
   (register - (λ [Long Long] Long))

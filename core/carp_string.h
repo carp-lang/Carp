@@ -345,7 +345,7 @@ String Long_unsafe_MINUS_format(const String* str, Long x) {
 
 bool Long_from_MINUS_string_MINUS_internal(const String* s, Long* target) {
     char* err;
-    *target = strtol(*s, &err, 10);
+    *target = strtoll(*s, &err, 10);
     return *err == 0;
 }
 
