@@ -45,6 +45,7 @@ library
                        Interfaces,
                        Managed,
                        Map,
+                       Memo,
                        Memory,
                        Meta,
                        Obj,
