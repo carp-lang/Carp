@@ -161,17 +161,38 @@ list of those characters.")
   (defn hex? [s]
     (Pattern.matches? #"^[\x]*$" s))
 
+  (private trim-byte?)
+  (hidden trim-byte?)
+  ; the bytes `\s` matches: space, \t, \n, \v, \f and \r
+  (defn trim-byte? [c]
+    (let [i (Char.to-int c)]
+      (or (= i 32) (and (>= i 9) (<= i 13)))))
+
   (doc trim-left "trims whitespace from the left of a string.")
   (defn trim-left [s]
-    (Pattern.substitute #"^\s+" s "" 1))
+    (let-do [len (length s)
+             i 0]
+      (while (and (< i len) (trim-byte? (char-at s i)))
+        (set! i (Int.inc i)))
+      (byte-slice s i len)))
 
   (doc trim-right "trims whitespace from the right of a string.")
   (defn trim-right [s]
-    (Pattern.substitute #"\s+$" s "" 1))
+    (let-do [j (length s)]
+      (while (and (> j 0) (trim-byte? (char-at s (Int.dec j))))
+        (set! j (Int.dec j)))
+      (byte-slice s 0 j)))
 
   (doc trim "trims whitespace from both sides of a string.")
   (defn trim [s]
-    (trim-left &(trim-right s)))
+    (let-do [len (length s)
+             i 0
+             j len]
+      (while (and (< i len) (trim-byte? (char-at s i)))
+        (set! i (Int.inc i)))
+      (while (and (> j i) (trim-byte? (char-at s (Int.dec j))))
+        (set! j (Int.dec j)))
+      (byte-slice s i j)))
 
   (doc chomp "trims a newline from the end of a string.")
   (defn chomp [s]
