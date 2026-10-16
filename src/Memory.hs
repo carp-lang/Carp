@@ -69,6 +69,8 @@ manageMemory typeEnv globalEnv root =
                 Left err -> Left err
                 Right _ -> Right (ok {xobjInfo = newInfo}, deps)
   where
+    -- Shared by every deleter lookup in this pass.
+    polySpace = polySearchSpace globalEnv
     visit :: XObj -> State MemState (Either TypeError XObj)
     visit xobj =
       do
@@ -77,11 +79,11 @@ manageMemory typeEnv globalEnv root =
           Arr _ -> visitArray xobj
           StaticArr _ -> visitStaticArray xobj
           Str _ -> do
-            manage typeEnv globalEnv xobj
+            manage typeEnv globalEnv polySpace xobj
             addToLifetimesMappingsIfRef False xobj -- TODO: Should "internal = True" here? TODO: Possible to remove this one?
             pure (Right xobj)
           Pattern _ -> do
-            manage typeEnv globalEnv xobj
+            manage typeEnv globalEnv polySpace xobj
             addToLifetimesMappingsIfRef False xobj -- TODO: Also possible to remove, *should* be superseeded by (***) below?
             pure (Right xobj)
           _ ->
@@ -100,7 +102,7 @@ manageMemory typeEnv globalEnv root =
         results <- mapM (unmanage typeEnv globalEnv) arr
         whenRight (sequence results) $
           do
-            _ <- manage typeEnv globalEnv xobj -- TODO: result is discarded here, is that OK?
+            _ <- manage typeEnv globalEnv polySpace xobj -- TODO: result is discarded here, is that OK?
             pure (Right xobj)
     visitArray _ = error "Must visit array."
     visitStaticArray :: XObj -> State MemState (Either TypeError XObj)
@@ -114,9 +116,9 @@ manageMemory typeEnv globalEnv root =
               t = case xobjTy xobj of
                 Just (RefTy (StructTy (ConcreteNameTy (SymPath [] "StaticArray")) [vs]) _) -> (StructTy (ConcreteNameTy (SymPath [] "StaticArray")) [vs])
                 _ -> error "memory: can't visit static array of non static array type"
-              deleter = case nameOfPolymorphicFunction typeEnv globalEnv (FuncTy [t] UnitTy StaticLifetimeTy) "delete" of
+              deleter = case nameOfPolymorphicFunctionIn polySpace (FuncTy [t] UnitTy StaticLifetimeTy) "delete" of
                 Just pathOfDeleteFunc ->
-                  ProperDeleter pathOfDeleteFunc (getDropFunc typeEnv globalEnv (xobjInfo xobj) t) var
+                  ProperDeleter pathOfDeleteFunc (getDropFunc polySpace (xobjInfo xobj) t) var
                 Nothing ->
                   error ("No deleter found for Static Array : " ++ show t) --Just (FakeDeleter var)
           m <- get
@@ -131,7 +133,7 @@ manageMemory typeEnv globalEnv root =
         [defn@(XObj (Defn maybeCaptures) _ _), nameSymbol@(XObj (Sym defPath _) _ _), args@(XObj (Arr argList) _ _), body] ->
           let captures = maybe [] Set.toList maybeCaptures
            in do
-                mapM_ (manage typeEnv globalEnv) argList
+                mapM_ (manage typeEnv globalEnv polySpace) argList
                 -- Add the captured variables (if any, only happens in lifted lambdas) as fake deleters
                 -- TODO: Use another kind of Deleter for this case since it's pretty special?
                 mapM_
@@ -155,7 +157,7 @@ manageMemory typeEnv globalEnv root =
                 result <- unmanage typeEnv globalEnv body
                 -- Drop the self-typed param's end-of-scope deleter: it would be
                 -- this very 'delete' calling itself. Still borrowable in the body.
-                modify (\m -> m {memStateDeleters = memStateDeleters m \\ Set.fromList (mapMaybe (createDeleter typeEnv globalEnv) (filter (isOwnDeleterParam defPath) argList))})
+                modify (\m -> m {memStateDeleters = memStateDeleters m \\ Set.fromList (mapMaybe (createDeleter typeEnv globalEnv polySpace) (filter (isOwnDeleterParam defPath) argList))})
                 whenRightReturn result $
                   do
                     okBody <- visitedBody
@@ -164,7 +166,7 @@ manageMemory typeEnv globalEnv root =
         -- Fn / λ (Lambda)
         [fn@(XObj (Fn _ captures) _ _), args@(XObj (Arr _) _ _), body] ->
           do
-            manage typeEnv globalEnv xobj -- manage inner lambdas but leave their bodies unvisited, they will be visited in the lifted version...
+            manage typeEnv globalEnv polySpace xobj -- manage inner lambdas but leave their bodies unvisited, they will be visited in the lifted version...
             mapM_ (unmanage typeEnv globalEnv) captures
             pure (Right (XObj (Lst [fn, args, body]) i t))
 
@@ -192,7 +194,7 @@ manageMemory typeEnv globalEnv root =
                     survivors = postDeleters Set.\\ diff -- Same as just pre deleters, right?!
                 modify (\m -> m {memStateDeleters = survivors})
                 --trace ("LET Pre: " ++ show preDeleters ++ "\nPost: " ++ show postDeleters ++ "\nDiff: " ++ show diff ++ "\nSurvivors: " ++ show survivors)
-                manage typeEnv globalEnv xobj
+                manage typeEnv globalEnv polySpace xobj
                 pure $ do
                   okBody <- visitedBody
                   let finalBody = searchForInnerBreak diff okBody
@@ -212,7 +214,7 @@ manageMemory typeEnv globalEnv root =
                 Right (okCorrectVariable, okMode) ->
                   do
                     preDeleters <- gets memStateDeleters
-                    let ownsTheVarBefore = case createDeleter typeEnv globalEnv okCorrectVariable of
+                    let ownsTheVarBefore = case createDeleter typeEnv globalEnv polySpace okCorrectVariable of
                           Nothing -> Right ()
                           Just d ->
                             if Set.member d preDeleters || isLookupGlobal okMode
@@ -225,7 +227,7 @@ manageMemory typeEnv globalEnv root =
                     _ <- unmanage typeEnv globalEnv value -- The assigned value can't be used anymore
                     managed <- gets memStateDeleters
                     -- Delete the value previously stored in the variable, if it's still alive
-                    let deleters = case createDeleter typeEnv globalEnv okCorrectVariable of
+                    let deleters = case createDeleter typeEnv globalEnv polySpace okCorrectVariable of
                           Just d -> Set.fromList [d]
                           Nothing -> Set.empty
                         newVariable =
@@ -240,7 +242,7 @@ manageMemory typeEnv globalEnv root =
                             _ -> error "memory: unexpected variable mode in set!"
                     case okMode of
                       Symbol -> error "Should only be a global/local lookup symbol."
-                      LookupLocal _ -> manage typeEnv globalEnv okCorrectVariable
+                      LookupLocal _ -> manage typeEnv globalEnv polySpace okCorrectVariable
                       LookupGlobal _ _ -> pure ()
                       _ -> error "memory: unexpected ok mode in set!"
                     pure $ case okMode of
@@ -256,7 +258,7 @@ manageMemory typeEnv globalEnv root =
         ThePat theExpr typeXObj value ->
           do
             visitedValue <- visit value
-            result <- transferOwnership typeEnv globalEnv value xobj
+            result <- transferOwnership typeEnv globalEnv polySpace value xobj
             whenRightReturn result $
               do
                 okValue <- visitedValue
@@ -281,7 +283,7 @@ manageMemory typeEnv globalEnv root =
         DoPat doExpr expressions ->
           do
             visitedExpressions <- mapM visit expressions
-            result <- transferOwnership typeEnv globalEnv (last expressions) xobj
+            result <- transferOwnership typeEnv globalEnv polySpace (last expressions) xobj
             whenRightReturn result $ do
               okExpressions <- sequence visitedExpressions
               Right (XObj (Lst (doExpr : okExpressions)) i t)
@@ -293,7 +295,7 @@ manageMemory typeEnv globalEnv root =
             visitedExpr <- visit expr
             afterExprDeleters <- gets memStateDeleters
             visitedBody <- visit body
-            manage typeEnv globalEnv body
+            manage typeEnv globalEnv polySpace body
             postDeleters <- gets memStateDeleters
             -- Visit an extra time to simulate repeated use
             visitedExpr2 <- visit expr
@@ -324,7 +326,7 @@ manageMemory typeEnv globalEnv root =
                   runState
                     ( do
                         v <- visit ifTrue
-                        result <- transferOwnership typeEnv globalEnv ifTrue xobj
+                        result <- transferOwnership typeEnv globalEnv polySpace ifTrue xobj
                         pure $ case result of
                           Left e -> error (show e)
                           Right () -> v
@@ -334,7 +336,7 @@ manageMemory typeEnv globalEnv root =
                   runState
                     ( do
                         v <- visit ifFalse
-                        result <- transferOwnership typeEnv globalEnv ifFalse xobj
+                        result <- transferOwnership typeEnv globalEnv polySpace ifFalse xobj
                         pure $ case result of
                           Left e -> error (show e)
                           Right () -> v
@@ -345,7 +347,7 @@ manageMemory typeEnv globalEnv root =
                 deletedInBoth = Set.intersection deletedInTrue deletedInFalse
                 createdInTrue = memStateDeleters stillAliveTrue \\ preDeleters
                 createdInFalse = memStateDeleters stillAliveFalse \\ preDeleters
-                selfDeleter = case createDeleter typeEnv globalEnv xobj of
+                selfDeleter = case createDeleter typeEnv globalEnv polySpace xobj of
                   Just ok -> Set.fromList [ok]
                   Nothing -> Set.empty
                 createdAndDeletedInTrue = createdInTrue \\ selfDeleter
@@ -356,7 +358,7 @@ manageMemory typeEnv globalEnv root =
                 -- Note: The following line merges all previous deps and the new ones, could be optimized?
                 depsAfter = Set.unions [memStateDeps stillAliveTrue, memStateDeps stillAliveFalse, deps]
             put $ preState {memStateDeleters = stillAliveAfter, memStateDeps = depsAfter}
-            manage typeEnv globalEnv xobj
+            manage typeEnv globalEnv polySpace xobj
             pure $ do
               okExpr <- visitedExpr
               okTrue <- visitedTrue
@@ -387,7 +389,7 @@ manageMemory typeEnv globalEnv root =
                           (finalXObj, postDeleters) = analyzeFinal okVisitedExpr visitedCases preDeleters
                        in do
                             modify (\m -> m {memStateDeleters = postDeleters, memStateDeps = Set.union (memStateDeps m) depsFromCases})
-                            manage typeEnv globalEnv xobj
+                            manage typeEnv globalEnv polySpace xobj
                             pure (Right finalXObj)
           where
             analyzeFinal :: XObj -> [(Set.Set Deleter, (XObj, XObj))] -> Set.Set Deleter -> (XObj, Set.Set Deleter)
@@ -426,7 +428,7 @@ manageMemory typeEnv globalEnv root =
               Right args ->
                 do
                   unmanagedArgs <- sequence <$> mapM unmanageArg args
-                  manage typeEnv globalEnv xobj
+                  manage typeEnv globalEnv polySpace xobj
                   pure $ do
                     okArgs <- unmanagedArgs
                     Right (XObj (Lst (XObj (Lst [deref, f]) xi xt : okArgs)) i t)
@@ -440,7 +442,7 @@ manageMemory typeEnv globalEnv root =
               Left err -> pure (Left err)
               Right args -> do
                 unmanagedArgs <- sequence <$> mapM unmanageArg args
-                manage typeEnv globalEnv xobj
+                manage typeEnv globalEnv polySpace xobj
                 pure $ do
                   okF <- visitedF
                   okArgs <- unmanagedArgs
@@ -468,7 +470,7 @@ manageMemory typeEnv globalEnv root =
         pure (fmap concat result')
     visitCaseLhs matchMode xobj@(XObj (Sym (SymPath _ name) _) _ _)
       | (matchMode == MatchValue) && isVarName name = do
-        manage typeEnv globalEnv xobj
+        manage typeEnv globalEnv polySpace xobj
         pure (Right [])
       | otherwise = pure (Right [])
     visitCaseLhs _ (XObj Ref _ _) =
@@ -481,7 +483,7 @@ manageMemory typeEnv globalEnv root =
         visitedExpr <- visit expr
         addToLifetimesMappingsIfRef True expr
         -- ensures this deleter is the only deleter associated with name for the duration of the let scope (shadowing).
-        result <- exclusiveTransferOwnership typeEnv globalEnv expr name
+        result <- exclusiveTransferOwnership typeEnv globalEnv polySpace expr name
         whenRightReturn result $ do
           okExpr <- visitedExpr
           pure (name, okExpr)
@@ -512,11 +514,11 @@ manageMemory typeEnv globalEnv root =
 -- The basic primitives of memory management
 
 -- | Add `xobj` to the set of alive variables, in need of deletion at end of scope.
-manage :: TypeEnv -> Env -> XObj -> State MemState ()
-manage typeEnv globalEnv xobj =
+manage :: TypeEnv -> Env -> PolySearchSpace -> XObj -> State MemState ()
+manage typeEnv globalEnv polySpace xobj =
   if isSymbolThatCaptures xobj -- When visiting lifted lambdas, don't manage symbols that capture (they are owned by the environment).
     then pure ()
-    else case createDeleter typeEnv globalEnv xobj of
+    else case createDeleter typeEnv globalEnv polySpace xobj of
       Just deleter -> do
         m <- get
         let newDeleters = Set.insert deleter (memStateDeleters m)
@@ -551,27 +553,27 @@ unmanage typeEnv globalEnv xobj =
         else pure (Right ())
 
 -- | A combination of `manage` and `unmanage`.
-transferOwnership :: TypeEnv -> Env -> XObj -> XObj -> State MemState (Either TypeError ())
-transferOwnership typeEnv globalEnv from to =
+transferOwnership :: TypeEnv -> Env -> PolySearchSpace -> XObj -> XObj -> State MemState (Either TypeError ())
+transferOwnership typeEnv globalEnv polySpace from to =
   do
     result <- unmanage typeEnv globalEnv from
     whenRight result $ do
-      manage typeEnv globalEnv to --(trace ("Transfered from " ++ getName from ++ " '" ++ varOfXObj from ++ "' to " ++ getName to ++ " '" ++ varOfXObj to ++ "'") to)
+      manage typeEnv globalEnv polySpace to --(trace ("Transfered from " ++ getName from ++ " '" ++ varOfXObj from ++ "' to " ++ getName to ++ " '" ++ varOfXObj to ++ "'") to)
       pure (Right ())
 
 -- | Transfer ownership, and ensure the resulting set has only *one* deleter per variable.
 --
 -- Multiple deleters can arise when one variable shadows an earlier one from a wider scope.
 -- see issue #597
-exclusiveTransferOwnership :: TypeEnv -> Env -> XObj -> XObj -> State MemState (Either TypeError ())
-exclusiveTransferOwnership tenv genv from to =
+exclusiveTransferOwnership :: TypeEnv -> Env -> PolySearchSpace -> XObj -> XObj -> State MemState (Either TypeError ())
+exclusiveTransferOwnership tenv genv polySpace from to =
   do
     result <- unmanage tenv genv from
     whenRight result $ do
       m <- get
       let pre = memStateDeleters m
       put $ m {memStateDeleters = Set.empty} -- add just this new deleter to the set
-      manage tenv genv to
+      manage tenv genv polySpace to
       post <- gets memStateDeleters
       modify (\s -> s {memStateDeleters = uniqueDeleter post pre}) -- replace any duplicates and union with the prior set
       pure (Right ())
@@ -785,25 +787,25 @@ deletersMatchingXObj xobj deleters =
 setDeletersOnXObj :: XObj -> Set.Set Deleter -> XObj
 setDeletersOnXObj xobj deleters = xobj {xobjInfo = setDeletersOnInfo (xobjInfo xobj) deleters}
 
-createDeleter :: TypeEnv -> Env -> XObj -> Maybe Deleter
-createDeleter typeEnv globalEnv xobj =
+createDeleter :: TypeEnv -> Env -> PolySearchSpace -> XObj -> Maybe Deleter
+createDeleter typeEnv globalEnv polySpace xobj =
   case xobjTy xobj of
     Just (RefTy _ _) -> Just (RefDeleter (varOfXObj xobj))
     Just t ->
       let var = varOfXObj xobj
        in if isManaged typeEnv globalEnv t
-            then case nameOfPolymorphicFunction typeEnv globalEnv (FuncTy [t] UnitTy StaticLifetimeTy) "delete" of
+            then case nameOfPolymorphicFunctionIn polySpace (FuncTy [t] UnitTy StaticLifetimeTy) "delete" of
               Just pathOfDeleteFunc ->
-                Just (ProperDeleter pathOfDeleteFunc (getDropFunc typeEnv globalEnv (xobjInfo xobj) t) var)
+                Just (ProperDeleter pathOfDeleteFunc (getDropFunc polySpace (xobjInfo xobj) t) var)
               Nothing ->
                 --trace ("Found no delete function for " ++ var ++ " : " ++ (showMaybeTy (ty xobj)))
                 Just (FakeDeleter var)
             else Just (PrimDeleter var)
     Nothing -> error ("No type, can't manage " ++ show xobj)
 
-getDropFunc :: TypeEnv -> Env -> Maybe Info -> Ty -> Maybe SymPath
-getDropFunc typeEnv globalEnv i t =
-  nameOfPolymorphicFunction typeEnv globalEnv (FuncTy [RefTy t (VarTy (makeTypeVariableNameFromInfo i))] UnitTy StaticLifetimeTy) "drop"
+getDropFunc :: PolySearchSpace -> Maybe Info -> Ty -> Maybe SymPath
+getDropFunc polySpace i t =
+  nameOfPolymorphicFunctionIn polySpace (FuncTy [RefTy t (VarTy (makeTypeVariableNameFromInfo i))] UnitTy StaticLifetimeTy) "drop"
 
 -- | To make the `while` form behave correctly with memory management rules
 searchForInnerBreak :: Set.Set Deleter -> XObj -> XObj
