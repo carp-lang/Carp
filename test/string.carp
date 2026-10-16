@@ -98,6 +98,18 @@
                 "😲😲😲😲"
                 &(suffix "😲😲😲😲😲" 1)
                 "suffix works as expected II")
+  (assert-equal test
+                "😲ö"
+                &(slice "a😲öb" 1 3)
+                "slice works on multi-byte characters")
+  (assert-equal test
+                "a😲"
+                &(prefix "a😲öb" 2)
+                "prefix works on multi-byte characters")
+  (assert-equal test
+                ""
+                &(slice "abc" 2 2)
+                "slice of an empty range is empty")
   (assert-true test
                (ends-with? "heller" "ler")
                "ends-with? works as expected")
@@ -107,6 +119,15 @@
   (assert-true test
                (starts-with? "heller" "hell")
                "starts-with? works as expected")
+  (assert-true test
+               (starts-with? "ölheller" "öl")
+               "starts-with? works on multi-byte prefixes")
+  (assert-true test
+               (ends-with? "hellerö" "rö")
+               "ends-with? works on multi-byte suffixes")
+  (assert-false test
+               (starts-with? "öl" "ölheller")
+               "starts-with? is false for a longer prefix")
   (assert-true test
                (in? "metacarpenter" "carp")
                "in? works on matching pattern")
@@ -197,6 +218,10 @@
                 &[@"erik" @"sved" @"hej" @"foo"]
                 &(split-by "erikmsvedlhejxfoo" &[\m \l \x])
                 "split-by works correctly")
+  (assert-equal test
+                &[@"" @"a" @"" @"b" @""]
+                &(split-by ",a,,b," &[\,])
+                "split-by keeps empty fields")
   (assert-equal test
                 "hello world"
                 &(append "hello " "world")

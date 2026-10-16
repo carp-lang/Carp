@@ -588,8 +588,9 @@ templateCopyArray = defineTypeParameterizedTemplate templateCreator path t docs
                 [TokDecl, TokC "{\n"]
                   ++ [TokC "    Array copy;\n"]
                   ++ [TokC "    copy.len = a->len;\n"]
-                  ++ [TokC "    copy.capacity = a->capacity;\n"]
-                  ++ [TokC "    copy.data = CARP_MALLOC(sizeof(", TokTy (VarTy "a") Normal, TokC ") * a->capacity);\n"]
+                  -- a copy holds only what it copies, not the source's spare capacity
+                  ++ [TokC "    copy.capacity = a->len;\n"]
+                  ++ [TokC "    copy.data = CARP_MALLOC(sizeof(", TokTy (VarTy "a") Normal, TokC ") * a->len);\n"]
                   ++ copyTy typeEnv env arrayType
                   ++ [TokC "    return copy;\n"]
                   ++ [TokC "}\n"]

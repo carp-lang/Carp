@@ -216,9 +216,9 @@ If the array is empty, returns `Nothing`")
 
   (doc slice "gets a subarray from `start-index` to `end-index`.")
   (defn slice [xs start-index end-index]
-    (let-do [result []]
+    (let-do [result (allocate (max 0 (- end-index start-index)))]
       (for [i start-index end-index]
-        (set! result (push-back result @(unsafe-nth xs i))))
+        (aset-uninitialized! &result (- i start-index) @(unsafe-nth xs i)))
       result))
   (implements slice Array.slice)
 
@@ -242,15 +242,27 @@ If the array is empty, returns `Nothing`")
   (defn rest [xs]
     (suffix xs 1))
 
+  (doc unsafe-nth-value "returns the value at index `i` of an array `a` (just like [unsafe-nth](#unsafe-nth)) but does not take its reference, and does *not* copy the value. Should only be used for optimizations and when you know what you're doing, circumvents the borrow checker!")
+  (deftemplate unsafe-nth-value (Fn [(Ref (Array a)) Int] a)
+    "$a $NAME(Array *a, int i)"
+    "$DECL { return (($a*)a->data)[i]; }")
+
+  (doc swap! "swaps the indices `i` and `j` of an array `a` in place.")
+  (defn swap! [a i j]
+    ; moves the elements instead of copying them
+    (let-do [x (unsafe-nth-value a i)
+             y (unsafe-nth-value a j)]
+      (aset-uninitialized! a i y)
+      (aset-uninitialized! a j x)))
+
   (doc reverse "reverses an array.")
   (defn reverse [a]
     (let-do [i 0
              j (Int.dec (length &a))]
       (while (Int.< i j)
-        (let-do [tmp @(unsafe-nth &a i)]
-          (aset! &a i @(unsafe-nth &a j))
+        (do
+          (Array.swap! &a i j)
           (set! i (Int.inc i))
-          (aset! &a j tmp)
           (set! j (Int.dec j))))
       a))
 
@@ -281,11 +293,6 @@ If the element is not found, returns `Nothing`")
           (set! c (Int.inc c))))
       c))
 
-    (doc unsafe-nth-value "returns the value at index `i` of an array `a` (just like [unsafe-nth](#unsafe-nth)) but does not take its reference, and does *not* copy the value. Should only be used for optimizations and when you know what you're doing, circumvents the borrow checker!")
-  (deftemplate unsafe-nth-value (Fn [(Ref (Array a)) Int] a)
-    "$a $NAME(Array *a, int i)"
-    "$DECL { return (($a*)a->data)[i]; }")
-
   (doc aupdate "transmutes (i.e. updates) the element at index `i` of an array `a` using the function `f`.")
   (defn aupdate [a i f]
     (do
@@ -298,16 +305,9 @@ If the element is not found, returns `Nothing`")
 
   (doc swap "swaps the indices `i` and `j` of an array `a`.")
   (defn swap [a i j]
-    (let [x @(unsafe-nth &a i)
-          y @(unsafe-nth &a j)]
-      (aset (aset a i y) j x)))
-
-  (doc swap! "swaps the indices `i` and `j` of an array `a` in place.")
-  (defn swap! [a i j]
-    (let-do [x @(unsafe-nth a i)
-             y @(unsafe-nth a j)]
-      (aset! a i y)
-      (aset! a j x)))
+    (do
+      (Array.swap! &a i j)
+      a))
 
   (doc repeat "repeats the function `f` `n` times and stores the results in an array.")
   (defn repeat [n f]
@@ -423,8 +423,9 @@ If the `index` is out of bounds, return `Maybe.Nothing`")
     (do
       ;;(assert (<= 0 i))
       ;;(assert (< i (Array.length &arr)))
+      ; moves the element to the end without copying anything, then drops it
       (for [j i (Int.dec (Array.length &arr))]
-        (aset! &arr j @(unsafe-nth &arr (inc j))))
+        (Array.swap! &arr j (inc j)))
       (pop-back arr)))
 
   (doc copy-filter "filters the elements in an array.
@@ -536,14 +537,13 @@ Example:
 ; => (Pair 6 [2 4 6])
 ```")
   (defn map-reduce [f acc a]
-    (reduce
-      &(fn [a el]
-        (let [l (Pair.b &a)
-              acc (Pair.a &a)
-              p (~f acc el)]
-          (Pair.init @(Pair.a &p) (Array.push-back @l @(Pair.b &p)))))
-      (Pair.init acc [])
-      a))
+    (let-do [res (allocate (length a))]
+      (for [i 0 (length a)]
+        (let [p (~f &acc (unsafe-nth a i))]
+          (do
+            (set! acc @(Pair.a &p))
+            (aset-uninitialized! &res i @(Pair.b &p)))))
+      (Pair.init acc res)))
 
   (doc take-while "Takes elements from the array `a` as long as the predicate `f` returns true.
 Returns a new array of all leading elements that satisfy the predicate.

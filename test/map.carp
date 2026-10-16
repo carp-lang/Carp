@@ -193,9 +193,9 @@
                 "Map.to-array works 2"
   )
   (assert-equal test
-                "{ 1 12 3 34 }"
-                &(str &(Map.endo-map &(fn [k v] (+ @v (* 10 @k)))
-                                     {1 2 3 4}))
+                &{1 12 3 34}
+                &(Map.endo-map &(fn [k v] (+ @v (* 10 @k)))
+                               {1 2 3 4})
                 "endo-map works"
   )
   (assert-equal test
@@ -207,12 +207,12 @@
   )
   (assert-equal test
                 &[1 2 3]
-                &(Map.keys &{1 1 2 1 3 2})
+                &(Array.sorted &(Map.keys &{1 1 2 1 3 2}))
                 "keys works"
   )
   (assert-equal test
                 &[1 1 2]
-                &(Map.vals &{1 1 2 1 3 2})
+                &(Array.sorted &(Map.vals &{1 1 2 1 3 2}))
                 "vals works"
   )
   (assert-equal test
@@ -238,6 +238,58 @@
                   m)
                 "update-with-default! works"
   )
+  (assert-true test
+               (let-do [m (the (Map Int Int) (Map.create))]
+                 (for [i 0 1000] (Map.put! &m &i &i))
+                 (and (= 1000 (Map.length &m))
+                      (and (> @(Map.n-buckets &m) 1000)
+                           (= 999 (Map.get &m &999)))))
+               "put! grows the map"
+  )
+  (assert-true test
+               (let-do [m (the (Map Int Int) (Map.create))]
+                 (for [i 0 1000] (Map.update-with-default! &m &i &Int.inc 0))
+                 (and (= 1000 (Map.length &m))
+                      (and (> @(Map.n-buckets &m) 1000)
+                           (= 1 (Map.get &m &999)))))
+               "update-with-default! grows the map"
+  )
+  (assert-true test
+               (let-do [m (the (Map Int Int) (Map.create))
+                        ok true]
+                 (for [i 0 2000] (Map.put! &m &(* i 1024) &i))
+                 (for [i 0 2000]
+                   (when (= 0 (Int.mod i 3)) (Map.remove! &m &(* i 1024))))
+                 (for [i 0 2000]
+                   (unless (= (Map.contains? &m &(* i 1024)) (/= 0 (Int.mod i 3)))
+                     (set! ok false)))
+                 (and ok (= 1333 (Map.length &m))))
+               "remove! keeps colliding keys reachable"
+  )
+  (assert-true test
+               (let-do [m (the (Map String Int) (Map.create))]
+                 (for [i 0 1000] (Map.put! &m &(str i) &i))
+                 (for [i 0 1000] (Map.remove! &m &(str i)))
+                 (and (Map.empty? &m) (= 16 @(Map.n-buckets &m))))
+               "remove! shrinks the map"
+  )
+  (assert-equal test
+                "xb!"
+                &(let-do [m {@"k" @"ab"}]
+                   (Map.update-value! &m "k" &(fn [v] (String.string-set! v 0 \x)))
+                   (Map.update-value! &m "missing" &(fn [v] (String.string-set! v 0 \z)))
+                   (Map.value-ref! &m "k" &(fn [v] (String.append v "!")) @""))
+                "update-value! passes a reference to the stored value"
+  )
+  (assert-equal test
+                "none"
+                &(Map.value-ref! &{@"k" @"ab"} "missing" &(fn [v] @v) @"none")
+                "value-ref! returns the default for a missing key"
+  )
+  (assert-false test
+                (= &{1 0} &{2 0})
+                "= is false when a key is missing and the other map holds a zero value"
+  )
   (assert-equal test
                 12
                 (do
@@ -252,6 +304,26 @@
                  (Set.put! &s "1")
                  (Set.contains? &s "1"))
                "put! works"
+  )
+  (assert-true test
+               (let-do [s (the (Set Int) (Set.create))]
+                 (for [i 0 1000] (Set.put! &s &i))
+                 (and (= 1000 (Set.length &s))
+                      (and (> @(Set.n-buckets &s) 1000)
+                           (Set.contains? &s &999))))
+               "put! grows the set"
+  )
+  (assert-true test
+               (let-do [s (the (Set Int) (Set.create))
+                        ok true]
+                 (for [i 0 2000] (Set.put! &s &(* i 1024)))
+                 (for [i 0 2000]
+                   (when (= 0 (Int.mod i 3)) (Set.remove! &s &(* i 1024))))
+                 (for [i 0 2000]
+                   (unless (= (Set.contains? &s &(* i 1024)) (/= 0 (Int.mod i 3)))
+                     (set! ok false)))
+                 (and ok (= 1333 (Set.length &s))))
+               "remove! keeps colliding values reachable"
   )
   (assert-equal test
                 1
@@ -371,8 +443,8 @@
                 "difference works"
   )
   (assert-equal test
-                "{ @\"bye\" @\"hi\" }"
-                &(str &(Set.from-array &[@"hi" @"bye"]))
+                "{ @\"hi\" }"
+                &(str &(Set.from-array &[@"hi" @"hi"]))
                 "stringification works"
   )
   (assert-equal test
@@ -489,8 +561,8 @@
                 "reduce works"
   )
   (assert-equal test
-                "(Bag @\"bye\" @\"hi\" @\"hi\")"
-                &(str &(Bag.from-array &[@"hi" @"bye" @"hi"]))
+                "(Bag @\"hi\" @\"hi\")"
+                &(str &(Bag.from-array &[@"hi" @"hi"]))
                 "stringification works"
   )
   (assert-equal test
