@@ -361,7 +361,9 @@ manageMemory typeEnv globalEnv root =
               okExpr <- visitedExpr
               okTrue <- visitedTrue
               okFalse <- visitedFalse
-              pure (XObj (Lst [ifExpr, okExpr, setDeletersOnXObj okTrue delsTrue, setDeletersOnXObj okFalse delsFalse]) i t)
+              let okTrue' = searchForInnerBreak delsTrue okTrue
+                  okFalse' = searchForInnerBreak delsFalse okFalse
+              pure (XObj (Lst [ifExpr, okExpr, setDeletersOnXObj okTrue' delsTrue, setDeletersOnXObj okFalse' delsFalse]) i t)
 
         -- Match
         -- The general idea of how to figure out what to delete in a 'match' statement:
@@ -409,7 +411,8 @@ manageMemory typeEnv globalEnv root =
                           -- because the right one can collide with
                           -- the other expressions, e.g. a 'let'
                           let newLhsInfo = setDeletersOnInfo (xobjInfo lhs) finalSetOfDeleters
-                           in [lhs {xobjInfo = newLhsInfo}, rhs]
+                              newRhs = searchForInnerBreak finalSetOfDeleters rhs
+                           in [lhs {xobjInfo = newLhsInfo}, newRhs]
                       )
                       okVisitedCases
                       deletersForEachCase
