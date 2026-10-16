@@ -46,6 +46,8 @@ module Env
     findPoly,
     findPolyIn,
     polyEnvs,
+    cachedPolyEnvs,
+    cachedLookupEverywhere,
     findAllByMeta,
     findChildren,
     findImportedEnvs,
@@ -71,9 +73,12 @@ import Data.Either (fromRight, rights)
 import Data.List (foldl', unfoldr)
 import Data.Maybe (fromMaybe, listToMaybe, mapMaybe)
 import qualified Map
+import Memo
 import qualified Meta
 import Obj
 import qualified Set
+import System.IO.Unsafe (unsafePerformIO)
+import System.Mem.StableName (StableName)
 import Types
 
 --------------------------------------------------------------------------------
@@ -487,6 +492,24 @@ polyMatches ty = areUnifiable ty . fromMaybe Universe . xobjTy . binderXObj
 -- search it with 'findPolyIn'.
 polyEnvs :: Environment e => e -> [e]
 polyEnvs e = e : concatMap polyEnvs (findChildren e)
+
+-- | 'polyEnvs' for a value environment, remembered for recent environments
+-- (see "Memo"), since many lookups in a row usually share an environment.
+cachedPolyEnvs :: Env -> [Env]
+cachedPolyEnvs = memoOnIdentity polyEnvsCache polyEnvs
+
+polyEnvsCache :: MemoCache (StableName Env) [Env]
+polyEnvsCache = unsafePerformIO newMemoCache
+{-# NOINLINE polyEnvsCache #-}
+
+-- | 'lookupEverywhere' for a value environment, with the expensive part, finding
+-- all module environments, remembered for recent environments (see "Memo").
+cachedLookupEverywhere :: Env -> String -> [(Env, Binder)]
+cachedLookupEverywhere = lookupExhuastive (memoOnIdentity lookupChildrenCache lookupChildren)
+
+lookupChildrenCache :: MemoCache (StableName Env) [Env]
+lookupChildrenCache = unsafePerformIO newMemoCache
+{-# NOINLINE lookupChildrenCache #-}
 
 -- | Like 'findPoly', but searches a list of environments built by 'polyEnvs'.
 findPolyIn :: Environment e => [e] -> String -> Ty -> Maybe (e, Binder)

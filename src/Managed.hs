@@ -1,7 +1,10 @@
 module Managed where
 
 import Interfaces
+import Memo
 import Obj
+import System.IO.Unsafe (unsafePerformIO)
+import System.Mem.StableName (StableName)
 import Types
 
 -- | Should this type be handled by the memory management system.
@@ -25,11 +28,17 @@ data ManagedTypes = ManagedTypes
     deleteImplementationTypes :: [Ty]
   }
 
+-- | Remembered for the most recent environments (see "Memo"), since the many
+-- checks during one top-level form share them.
 findManagedTypes :: TypeEnv -> Env -> ManagedTypes
-findManagedTypes typeEnv globalEnv =
+findManagedTypes = memoOnIdentity2 managedTypesCache $ \typeEnv globalEnv ->
   ManagedTypes
     (interfaceImplementationTypes typeEnv globalEnv "blit")
     (interfaceImplementationTypes typeEnv globalEnv "delete")
+
+managedTypesCache :: MemoCache (StableName TypeEnv, StableName Env) ManagedTypes
+managedTypesCache = unsafePerformIO newMemoCache
+{-# NOINLINE managedTypesCache #-}
 
 -- | Like 'isManaged', but checks against precomputed 'ManagedTypes'.
 isManagedIn :: ManagedTypes -> Ty -> Bool
