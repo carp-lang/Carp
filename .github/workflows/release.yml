@@ -18,7 +18,7 @@ jobs:
            artefact-name: "x86_64-linux"
 
          - os: MacOS
-           runner: macos-latest
+           runner: macos-15
            artefact-name: "x86_64-macos"
 
          - os: Windows
