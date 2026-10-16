@@ -5,6 +5,7 @@
 *.output.actual
 
 .stack-work/
+.stack-work-prof/
 
 /CarpHask-exe.prof
 
