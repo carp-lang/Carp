@@ -730,11 +730,11 @@ exists in the map, it is updated.")
     (doc get-with-default "gets the value under the key `k`. If `k` doesn’t
 exist in the map, the default value is returned.")
     (defndynamic get-with-default [m k default-value]
-      (if (Map.contains? m k)
-        (let [idx (Dynamic.imod (hash k) (length m))
-              l (List.nth m idx)]
-          (cadr (List.find l (fn [pair] (= (car pair) k)))))
-          default-value))
+      (let [idx (Dynamic.imod (hash k) (length m))
+            pair (List.find (List.nth m idx) (fn [pair] (= (car pair) k)))]
+        (if (empty? pair)
+          default-value
+          (cadr pair))))
 
     (doc get "gets the value under the key `k`. If `k` doesn’t exist in the
 map, `nil` is returned.")
