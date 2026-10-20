@@ -313,12 +313,11 @@ framework](https://www.libsdl.org/).")
       (SDL.render-copy rend texture (Pointer.address &dims) (Pointer.address &dest))))
 
   (defn-do bg [rend color]
-    (with Int
-          (set-render-draw-color rend
-                                 (SDL_Color.r color)
-                                 (SDL_Color.g color)
-                                 (SDL_Color.b color)
-                                 255))
+    (set-render-draw-color rend
+                           (SDL_Color.r color)
+                           (SDL_Color.g color)
+                           (SDL_Color.b color)
+                           255)
     (render-clear rend))
 
   )
