@@ -708,7 +708,7 @@ returns whatever `f` returns. If the key is missing, returns `default`.")
     (doc shrink "shrinks dynamic map.")
     (defndynamic shrink [m]
       (let [new-size (/ (length m) 2)]
-        (if (< new-size dflt-len)
+        (if (< new-size Map.dflt-len)
           m
           (Map.resize m new-size))))
 

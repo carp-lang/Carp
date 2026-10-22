@@ -191,5 +191,15 @@
                      {1 "hi" 2 "bye" 3 "!"}
                      (Map.merge {1 "bye" 3 "!"} {2 "bye" 1 "hi"})
                      "merge works"
-                     Map.=))
+                     Map.=)
+
+  (assert-dynamic-equal test
+                        16
+                        (length (Map.shrink (Map.create)))
+                        "shrink keeps a map at the default size")
+
+  (assert-dynamic-equal test
+                        32
+                        (length (Map.shrink (Map.resize (Map.create) 64)))
+                        "shrink halves a larger map"))
 
