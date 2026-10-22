@@ -8,31 +8,21 @@
 (defndynamic thread-first-internal [xs]
   (if (< (length xs) 2)
     (thread-single-form xs)
-    (if (= (length xs) 2)
-      (if (list? (last xs))
-        (cons (caadr xs)
-              (cons (car xs)
-                    (cdadr xs)))
-        (list (cadr xs) (car xs)))
-      (if (list? (last xs))
-        (append
-         (list
-          (car (last xs))
-          (thread-first-internal (all-but-last xs)))
-         (cdr (last xs)))
-        (list (last xs) (thread-first-internal (all-but-last xs)))))))
+    (if (list? (last xs))
+      (append
+       (list
+        (car (last xs))
+        (thread-first-internal (all-but-last xs)))
+       (cdr (last xs)))
+      (list (last xs) (thread-first-internal (all-but-last xs))))))
 
 (hidden thread-last-internal)
 (defndynamic thread-last-internal [xs]
   (if (< (length xs) 2)
     (thread-single-form xs)
-    (if (= (length xs) 2)
-      (if (list? (last xs))
-        (cons-last (car xs) (last xs))
-        (list (cadr xs) (car xs)))
-      (if (list? (last xs))
-        (cons-last (thread-last-internal (all-but-last xs)) (last xs))
-        (list (last xs) (thread-last-internal (all-but-last xs)))))))
+    (if (list? (last xs))
+      (cons-last (thread-last-internal (all-but-last xs)) (last xs))
+      (list (last xs) (thread-last-internal (all-but-last xs))))))
 
 (deprecated => "deprecated in favor of `->`.")
 (defmacro => [:rest forms]
