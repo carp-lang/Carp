@@ -806,8 +806,7 @@ doesn’t exist, the map is returned unchanged.")
     (defndynamic remove [m k]
       (let [idx (Dynamic.imod (hash k) (length m))
             removed (List.update-nth m idx (fn [l] (filter (fn [pair] (/= (car pair) k)) l)))]
-        (if (and (< (/ (* (Map.len removed) 100) (length removed)) Map.min-load)
-                 (> (length removed) Map.dflt-len))
+        (if (< (/ (* (Map.len removed) 100) (length removed)) Map.min-load)
           (Map.shrink removed)
           removed)))
 
