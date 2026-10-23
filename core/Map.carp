@@ -804,11 +804,13 @@ function `f`. If `k` doesn’t exist in the map, it is set to `(f v)`.")
     (doc remove "removes the pair under the key `k` from the map `m`. If it
 doesn’t exist, the map is returned unchanged.")
     (defndynamic remove [m k]
-      (let [idx (Dynamic.imod (hash k) (length m))
-            removed (List.update-nth m idx (fn [l] (filter (fn [pair] (/= (car pair) k)) l)))]
-        (if (< (/ (* (Map.len removed) 100) (length removed)) Map.min-load)
-          (Map.shrink removed)
-          removed)))
+      (if (Map.contains? m k)
+        (let [idx (Dynamic.imod (hash k) (length m))
+              removed (List.update-nth m idx (fn [l] (filter (fn [pair] (/= (car pair) k)) l)))]
+          (if (< (/ (* (Map.len removed) 100) (length removed)) Map.min-load)
+            (Map.shrink removed)
+            removed))
+        m))
 
     (doc all? "checks whether all key value pairs in `m` satisfy the predicate
 `pred`. `pred` takes the pair `(k v)` as its sole argument.")
