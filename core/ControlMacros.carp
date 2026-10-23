@@ -1,11 +1,13 @@
+(hidden thread-single-form)
+(defndynamic thread-single-form [xs]
+  (if (= (length xs) 1)
+    (car xs)
+    (macro-error "a threading macro such as -> needs at least one form to thread")))
+
 (hidden thread-first-internal)
 (defndynamic thread-first-internal [xs]
-  (if (= (length xs) 2)
-    (if (list? (last xs))
-      (cons (caadr xs)
-            (cons (car xs)
-                  (cdadr xs)))
-      (list (cadr xs) (car xs)))
+  (if (< (length xs) 2)
+    (thread-single-form xs)
     (if (list? (last xs))
       (append
        (list
@@ -16,10 +18,8 @@
 
 (hidden thread-last-internal)
 (defndynamic thread-last-internal [xs]
-  (if (= (length xs) 2)
-    (if (list? (last xs))
-      (cons-last (car xs) (last xs))
-      (list (cadr xs) (car xs)))
+  (if (< (length xs) 2)
+    (thread-single-form xs)
     (if (list? (last xs))
       (cons-last (thread-last-internal (all-but-last xs)) (last xs))
       (list (last xs) (thread-last-internal (all-but-last xs))))))

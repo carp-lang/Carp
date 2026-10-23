@@ -22,4 +22,12 @@
     12
     (test-as-thread)
     "as-> successfully threads and allows borrowing")
+  (assert-equal test
+    1
+    (-> 1)
+    "-> with a single form returns it")
+  (assert-equal test
+    1
+    (--> 1)
+    "--> with a single form returns it")
 )
