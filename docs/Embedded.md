@@ -103,7 +103,7 @@ a template for your own](https://github.com/carp-lang/Carp/blob/master/core/Core
 
 ### Binary size
 
-Binary size is something that Carp does not optimizie for by default. You can
+Binary size is something that Carp does not optimize for by default. You can
 usually shave off a fairly large amount of memory by using [Link Time
 Optimization (LTO)](https://wiki.debian.org/LTO) and telling your compiler to
 optimize for size (if you are using GCC or Clang, `(add-cflag "-Os")` will do

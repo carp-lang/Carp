@@ -31,7 +31,7 @@ The evaluator has since moved to a VM-backed architecture. For the current imple
 [TODO]
 
 ## 0. Terms used in this document
-* form : Any valid Carp data struture as represented in text.
+* form : Any valid Carp data structure as represented in text.
 * top level : Any form that isn't embedded in another form.
 * Static Carp : The compiled version of the Carp language.
 * Dynamic Carp : The interpreted, functional, GC'ed version of the Carp language.
@@ -88,7 +88,7 @@ Questions:
 Yes.
 
 #### How are they mutated? When do these mutations come into affect?
-Using `set!`. The mutation comes into effect immedately (using IORefs internally).
+Using `set!`. The mutation comes into effect immediately (using IORefs internally).
 
 #### Do global variables have lexical or dynamic scope?
 Lexical (no dynamic scope for anything).
@@ -158,7 +158,7 @@ Questions:
 
 ### 2.2 REPL
 Questions:
-* How does the REPL know when to evalutate something in the dynamic or static context?
+* How does the REPL know when to evaluate something in the dynamic or static context?
 * When does it decide to run the given code in the dynamic or static context?
 
 ## 3. Types

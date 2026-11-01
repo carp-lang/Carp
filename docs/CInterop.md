@@ -359,7 +359,7 @@ tedious to write a version for every type of number, let's see how
 
 Carp allows us to use generic type in type signatures, `a` in that example. You
 can use `$` plus the generic name you used in your signature to refer to that
-type in your C code. Carp will then generate a separate function everytime the
+type in your C code. Carp will then generate a separate function every time the
 template is used with a different type.
 
 Warning! You'll need to be careful when calling that function as you've lost
