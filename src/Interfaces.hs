@@ -7,6 +7,7 @@ module Interfaces
     registerInInterface,
     retroactivelyRegisterInInterface,
     interfaceImplementedForTy,
+    interfaceImplementationTypes,
     removeInterfaceFromImplements,
     InterfaceError (..),
   )
@@ -159,9 +160,14 @@ retroactivelyRegisterInInterface ctx interface =
 -- | e.g. Is "delete" implemented for `(Fn [String] ())` ?
 interfaceImplementedForTy :: TypeEnv -> Env -> String -> Ty -> Bool
 interfaceImplementedForTy typeEnv globalEnv interfaceName matchingTy =
+  any (areUnifiable matchingTy) (interfaceImplementationTypes typeEnv globalEnv interfaceName)
+
+-- | The types of all registered implementations of an interface, or none if
+-- there is no such interface.
+interfaceImplementationTypes :: TypeEnv -> Env -> String -> [Ty]
+interfaceImplementationTypes typeEnv globalEnv interfaceName =
   case Env.getBinder typeEnv interfaceName of
     Right (Binder _ (XObj (Lst (XObj (Interface _ paths) _ _ : _)) _ _)) ->
       let lookupType' path = forceTy . binderXObj <$> (Env.searchBinder globalEnv path)
-          matches = filter (areUnifiable matchingTy) (rights (map lookupType' paths))
-       in not . null $ matches
-    _ -> False
+       in rights (map lookupType' paths)
+    _ -> []

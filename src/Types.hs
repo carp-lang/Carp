@@ -268,15 +268,10 @@ areUnifiable :: Ty -> Ty -> Bool
 areUnifiable (VarTy _) (VarTy _) = True
 areUnifiable (VarTy _) _ = True
 areUnifiable _ (VarTy _) = True
-areUnifiable (StructTy a aArgs) (StructTy b bArgs)
-  | length aArgs /= length bArgs = False
-  | areUnifiable a b =
-    let argBools = zipWith areUnifiable aArgs bArgs
-     in all (== True) argBools
-  | otherwise = False
-areUnifiable (StructTy (VarTy _) aArgs) (FuncTy bArgs _ _)
-  | length aArgs /= length bArgs = False
-  | otherwise = all (== True) (zipWith areUnifiable aArgs bArgs)
+areUnifiable (StructTy a aArgs) (StructTy b bArgs) =
+  areUnifiable a b && allUnifiable aArgs bArgs
+areUnifiable (StructTy (VarTy _) aArgs) (FuncTy bArgs _ _) =
+  allUnifiable aArgs bArgs
 areUnifiable (StructTy (VarTy _) args) (RefTy _ _)
   | length args == 2 = True
   | otherwise = False
@@ -285,19 +280,21 @@ areUnifiable (PointerTy a) (PointerTy b) = areUnifiable a b
 areUnifiable (PointerTy _) _ = False
 areUnifiable (RefTy a ltA) (RefTy b ltB) = areUnifiable a b && areUnifiable ltA ltB
 areUnifiable RefTy {} _ = False
-areUnifiable (FuncTy argTysA retTyA ltA) (FuncTy argTysB retTyB ltB)
-  | length argTysA /= length argTysB = False
-  | otherwise =
-    let argBools = zipWith areUnifiable argTysA argTysB
-        retBool = areUnifiable retTyA retTyB
-        ltBool = areUnifiable ltA ltB
-     in all (== True) (ltBool : retBool : argBools)
+areUnifiable (FuncTy argTysA retTyA ltA) (FuncTy argTysB retTyB ltB) =
+  areUnifiable ltA ltB && areUnifiable retTyA retTyB && allUnifiable argTysA argTysB
 areUnifiable FuncTy {} _ = False
 areUnifiable CTy _ = True
 areUnifiable _ CTy = True
 areUnifiable a b
   | a == b = True
   | otherwise = False
+
+-- | Are two lists of types the same length and pairwise unifiable?
+-- (Written out rather than with 'zipWith' since this is very hot.)
+allUnifiable :: [Ty] -> [Ty] -> Bool
+allUnifiable (a : as) (b : bs) = areUnifiable a b && allUnifiable as bs
+allUnifiable [] [] = True
+allUnifiable _ _ = False
 
 -- Checks whether or not the kindedness of types match
 -- Kinds are polymorphic constructors such as (f a)

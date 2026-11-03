@@ -1,5 +1,8 @@
 module Polymorphism
   ( nameOfPolymorphicFunction,
+    PolySearchSpace,
+    polySearchSpace,
+    nameOfPolymorphicFunctionIn,
     allImplementations,
     FunctionFinderResult (..),
     findFunctionForMember,
@@ -8,7 +11,6 @@ module Polymorphism
 where
 
 import Data.Either (fromRight, rights)
-import Data.List (unionBy)
 import Data.Maybe (fromMaybe)
 import Env
 import Managed
@@ -25,14 +27,27 @@ import Types
 --
 -- TODO: Environments are passed in different order here!!!
 nameOfPolymorphicFunction :: TypeEnv -> Env -> Ty -> String -> Maybe SymPath
-nameOfPolymorphicFunction _ env functionType functionName =
-  let foundBinder =
-        (findPoly env functionName functionType)
-          <> (findPoly (progenitor env) functionName functionType)
+nameOfPolymorphicFunction _ env = nameOfPolymorphicFunctionIn (polySearchSpace env)
+
+-- | The environments searched by 'nameOfPolymorphicFunction', flattened so
+-- that many lookups in the same environment can share the work of walking it.
+newtype PolySearchSpace = PolySearchSpace [Env]
+
+polySearchSpace :: Env -> PolySearchSpace
+polySearchSpace env =
+  PolySearchSpace $ case parent env of
+    -- A root environment is its own progenitor; don't search it twice.
+    Nothing -> cachedPolyEnvs env
+    Just _ -> cachedPolyEnvs env ++ cachedPolyEnvs (progenitor env)
+
+-- | Like 'nameOfPolymorphicFunction', but searches a precomputed 'PolySearchSpace'.
+nameOfPolymorphicFunctionIn :: PolySearchSpace -> Ty -> String -> Maybe SymPath
+nameOfPolymorphicFunctionIn (PolySearchSpace envs) functionType functionName =
+  let foundBinder = findPolyIn envs functionName functionType
    in case foundBinder of
-        Right (_, (Binder _ (XObj (Lst (XObj (External (Just name)) _ _ : _)) _ _))) ->
+        Just (_, (Binder _ (XObj (Lst (XObj (External (Just name)) _ _ : _)) _ _))) ->
           Just (SymPath [] name)
-        Right (_, (Binder _ single)) ->
+        Just (_, (Binder _ single)) ->
           let t' = fromMaybe (error "polymorphism: binder without type") $ xobjTy single
               (SymPath pathStrings name) = getPath single
               suffix = polymorphicSuffix t' functionType
@@ -59,13 +74,35 @@ allImplementations typeEnv env functionName functionType =
         case rights $ map (\p -> search env p) (paths ++ [(SymPath [] functionName)]) of
           [] -> getPoly
           -- getPoly might return some functions we already found. Use set ops
-          -- to remove duplicates.
-          found -> (unionBy (\x y -> (snd x) == (snd y)) found getPoly)
+          -- to remove duplicates. Binders are identified by their path;
+          -- comparing them structurally would compare entire definitions.
+          found -> unionByPath found getPoly
       -- just a regular function; look for it
       _ -> fromRight [] ((fmap (: []) (find' env (SymPath [] functionName))) <> pure (lookupEverywhere env functionName))
-    getPoly = case findPoly env functionName functionType of
-      Right r -> [r]
-      Left _ -> (lookupEverywhere env functionName)
+    getPoly = case findPolyIn (cachedPolyEnvs env) functionName functionType of
+      Just r -> [r]
+      Nothing -> case parent env of
+        -- From a root environment, lookupEverywhere only visits environments
+        -- that were just searched, so none of what it finds can pass the
+        -- signature filter above.
+        Nothing -> []
+        Just _ -> cachedLookupEverywhere env functionName
+
+-- | 'unionBy' comparing binder paths: all of the first list, then the
+-- elements of the second whose path hasn't been seen yet. The second list
+-- is almost always empty or a single binder, so this computes the paths of
+-- the first list at most once instead of once per comparison.
+unionByPath :: [(Env, Binder)] -> [(Env, Binder)] -> [(Env, Binder)]
+unionByPath xs [] = xs
+unionByPath xs ys = xs ++ go (map bindingPath xs) ys
+  where
+    go _ [] = []
+    go seen (y : rest)
+      | p `elem` seen = go seen rest
+      | otherwise = y : go (p : seen) rest
+      where
+        p = bindingPath y
+    bindingPath = getPath . binderXObj . snd
 
 -- | The various results when trying to find a function using 'findFunctionForMember'.
 data FunctionFinderResult

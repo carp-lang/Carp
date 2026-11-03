@@ -36,6 +36,7 @@ import Data.List (foldl')
 import Data.Maybe (fromMaybe)
 import Debug.Trace
 import Env (EnvironmentError, empty, envIsExternal, getBinder, insert, insertX, search, searchTypeDef)
+import qualified Env
 import Forms
 import Info
 import InitialTypes
@@ -892,11 +893,17 @@ depsOfPolymorphicFunction typeEnv env visitedDefinitions functionName functionTy
             instancePath = SymPath ps (nm ++ polymorphicSuffix polyType functionType)
          in -- Already being concretized up the stack: emitted there. Re-listing
             -- it here would contribute a bodyless stub overwriting the real def.
-            if instancePath `elem` visitedDefinitions
+            -- Already defined by an earlier form: it and its own dependencies
+            -- are in the environment, so concretizing it again is wasted work.
+            if instancePath `elem` visitedDefinitions || isDefinedInstance instancePath
               then []
               else case concretizeDefinition False typeEnv env visitedDefinitions single functionType of
                 Left err -> error (show err)
                 Right (ok, deps) -> ok : deps
+      isDefinedInstance path = case Env.findBinderMaybe env path of
+        Just (Binder _ (XObj (Lst (XObj MetaStub _ _ : _)) _ _)) -> False
+        Just _ -> True
+        Nothing -> False
    in case allImplementations typeEnv env functionName functionType of
         [] ->
           (trace $ "[Warning] No '" ++ functionName ++ "' function found with type " ++ show functionType ++ ".")
