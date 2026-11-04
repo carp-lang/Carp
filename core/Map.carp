@@ -708,7 +708,7 @@ returns whatever `f` returns. If the key is missing, returns `default`.")
     (doc shrink "shrinks dynamic map.")
     (defndynamic shrink [m]
       (let [new-size (/ (length m) 2)]
-        (if (< new-size dflt-len)
+        (if (< new-size Map.dflt-len)
           m
           (Map.resize m new-size))))
 
@@ -720,7 +720,7 @@ returns whatever `f` returns. If the key is missing, returns `default`.")
     (doc put "adds a value `v` under the key `k` into the map. If `k` already
 exists in the map, it is updated.")
     (defndynamic put [m k v]
-      (if (> (/ (* (Map.len m) 100) (length m)) Map.min-load)
+      (if (> (/ (* (Map.len m) 100) (length m)) Map.max-load)
         (Map.put (Map.grow m) k v)
         (if (Map.contains? m k)
           (Map.update m k (fn [_] v))
@@ -804,10 +804,13 @@ function `f`. If `k` doesn’t exist in the map, it is set to `(f v)`.")
     (doc remove "removes the pair under the key `k` from the map `m`. If it
 doesn’t exist, the map is returned unchanged.")
     (defndynamic remove [m k]
-      (if (> (/ (* (Map.len m) 100) (length m)) Map.min-load)
-        (Map.remove (Map.shrink m) k)
-        (let [idx (imod (hash k) (length m))]
-          (reduce (fn [acc l] (cons (filter (fn [pair] (/= (car pair) k)) l) acc)) '() m))))
+      (if (Map.contains? m k)
+        (let [idx (Dynamic.imod (hash k) (length m))
+              removed (List.update-nth m idx (fn [l] (filter (fn [pair] (/= (car pair) k)) l)))]
+          (if (< (/ (* (Map.len removed) 100) (length removed)) Map.min-load)
+            (Map.shrink removed)
+            removed))
+        m))
 
     (doc all? "checks whether all key value pairs in `m` satisfy the predicate
 `pred`. `pred` takes the pair `(k v)` as its sole argument.")
