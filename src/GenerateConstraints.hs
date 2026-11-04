@@ -133,8 +133,12 @@ genConstraints _ root rootSig = fmap sort (gen root)
                   mkRetConstr _ = Nothing
                   returnConstraints = mapMaybe (\(_, rhs) -> mkRetConstr rhs) (pairwise cases)
                   -- Each case lhs should have the same type as the expression matching on
-                  mkExprConstr x@(XObj _ _ (Just t)) = Just (Constraint (wrapTyInRefIfMatchingRef t) exprType x expr xobj OrdArg) -- TODO: Ord
-                  mkExprConstr _ = Nothing
+                  mkExprConstr x@(XObj (Sym _symPath _symMode) _ (Just t)) =
+                    Just (Constraint (wrapInRefTyIfMatchRef matchMode t) (wrapInRefTyIfMatchRef matchMode exprType) x expr xobj OrdArg)
+                  mkExprConstr x@(XObj _ _ (Just t)) =
+                    Just (Constraint (wrapInRefTyIfMatchRef matchMode t) exprType x expr xobj OrdArg) -- TODO: Ord
+                  mkExprConstr _ =
+                    Nothing
                   exprConstraints = mapMaybe (\(lhs, _) -> mkExprConstr lhs) (pairwise cases)
               -- Constraints for the variables in the left side of each matching case,
               -- like the 'r'/'g'/'b' in (match col (RGB r g b) ...) being constrained to Int.
@@ -157,11 +161,6 @@ genConstraints _ root rootSig = fmap sort (gen root)
                     ++ returnConstraints
                     ++ exprConstraints
                 )
-            where
-              wrapTyInRefIfMatchingRef t =
-                case matchMode of
-                  MatchValue -> t
-                  MatchRef -> RefTy t (VarTy "whatever")
           -- While
           [XObj While _ _, expr, body] ->
             do
